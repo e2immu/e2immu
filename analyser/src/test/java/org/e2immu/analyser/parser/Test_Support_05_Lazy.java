@@ -104,7 +104,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
             assertEquals("Type java.util.function.Supplier<T>,Type param T",
-                    d.typeAnalysis().getImplicitlyImmutableDataTypes()
+                    d.typeAnalysis().getTransparentTypes()
                             .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(",")));
         }
     };

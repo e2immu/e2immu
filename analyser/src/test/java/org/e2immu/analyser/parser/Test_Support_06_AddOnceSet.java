@@ -48,7 +48,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[Type param V]", d.typeAnalysis().getTransparentTypes().toString());
 
                 assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 if (d.iteration() >= 2) {

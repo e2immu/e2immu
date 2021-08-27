@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 /*
 The difference with earlier tests is that with Counter, we will not be using
-implicitly immutable as arguments to the SAM accept.
+unbound parameter types as arguments to the SAM accept.
 
 This is an important test to get right.
 It requires annotated APIs, including an @IgnoreModification on System.out.

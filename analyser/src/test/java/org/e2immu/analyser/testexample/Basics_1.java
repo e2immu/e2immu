@@ -29,7 +29,7 @@ public class Basics_1 {
         return f1;
     }
 
-    // this method is here to ensure that Set<String> does not become an implicitly immutable type
+    // this method is here to ensure that Set<String> does not become transparent
     public boolean contains(String s) {
         return f1 != null && f1.contains(s);
     }

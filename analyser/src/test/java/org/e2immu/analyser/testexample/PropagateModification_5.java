@@ -17,7 +17,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 /*
-types T and S are implicitly immutable
+types T and S are unbound type parameters
 Type T[] is not -> ts part of support data
 myFunction sits somewhere in between
 

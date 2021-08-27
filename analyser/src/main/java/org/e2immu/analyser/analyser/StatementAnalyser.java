@@ -3026,18 +3026,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         /*
-        1/ variables of implicitly immutable type cannot link.
+        1/ variables of transparent type cannot link.
         2/ level 2 immutable types cannot link.
 
          */
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            Boolean implicit = variable.parameterizedType()
-                    .isImplicitlyImmutable(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
-            if (implicit == Boolean.TRUE) {
+            Boolean transparent = variable.parameterizedType()
+                    .isTransparent(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            if (transparent == Boolean.TRUE) {
                 return LinkedVariables.EMPTY;
             }
-            boolean delayed = implicit == null;
+            boolean delayed = transparent == null;
 
             if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, getCurrentType())) {
                 VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);

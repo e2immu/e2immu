@@ -207,7 +207,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     if (lv1.contains(parameterInfo)) {
                         if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
                             parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
-                            log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
+                            log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is part of immutable content",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
                         }
                     }

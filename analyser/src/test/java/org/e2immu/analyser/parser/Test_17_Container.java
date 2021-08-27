@@ -315,7 +315,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container_4".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             }
         };
 

@@ -239,12 +239,12 @@ public class E2ImmutableComposition_0 {
      * Field composition: Modifiable data containing transparent data
      */
     @E2Container
-    static class ImmutableArrayOfImplicitlyImmutableOnes implements NonEmptyImmutableList<One<Integer>> {
+    static class ImmutableArrayOfTransparentOnes implements NonEmptyImmutableList<One<Integer>> {
 
         private final One<Integer>[] ones;
 
         @SuppressWarnings("unchecked")
-        public ImmutableArrayOfImplicitlyImmutableOnes(int size, @Dependent1 Supplier<One<Integer>> generator) {
+        public ImmutableArrayOfTransparentOnes(int size, @Dependent1 Supplier<One<Integer>> generator) {
             ones = new One[size];
             Arrays.setAll(ones, i -> generator.get());
         }
@@ -321,7 +321,7 @@ public class E2ImmutableComposition_0 {
     /**
      * Third of a series of variants based on an array field.
      * <p>
-     * This one shows the actual replacement of the implicitly immutable data of type {@link One<Integer>}
+     * This one shows the actual replacement of the transparent type in {@link One<Integer>}
      * of the first in the series, by the marker interface {@link Marker}.
      * <p>
      * Note that we still have to use a generator to obtain sensible values for the {@link Marker} objects.

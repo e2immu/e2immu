@@ -36,8 +36,8 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("v".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
-                else assertTrue(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                if (d.iteration() == 0) assertNull(d.fieldAnalysis().isTransparentType());
+                else assertTrue(d.fieldAnalysis().isTransparentType());
             }
         };
 
@@ -48,7 +48,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
             }
         };
 
-        // fields k and v do not link to the constructor's parameters because they are implicitly immutable
+        // fields k and v do not link to the constructor's parameters because they are transparent
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
             assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));

@@ -35,7 +35,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Map<FieldReference, Expression> approvedPreconditionsE1;
     private final Map<FieldReference, Expression> approvedPreconditionsE2;
 
-    private final Set<ParameterizedType> implicitlyImmutableDataTypes;
+    private final Set<ParameterizedType> transparentTypes;
     private final Map<String, MethodInfo> aspects;
     private final Set<FieldInfo> eventuallyImmutableFields;
     private final Set<FieldInfo> visibleFields;
@@ -46,14 +46,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<FieldReference, Expression> approvedPreconditionsE1,
                              Map<FieldReference, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
-                             Set<ParameterizedType> implicitlyImmutableDataTypes,
+                             Set<ParameterizedType> transparentTypes,
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
         this.approvedPreconditionsE2 = approvedPreconditionsE2;
-        this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
+        this.transparentTypes = transparentTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
         this.visibleFields = visibleFields;
@@ -125,8 +125,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Set<ParameterizedType> getImplicitlyImmutableDataTypes() {
-        return implicitlyImmutableDataTypes;
+    public Set<ParameterizedType> getTransparentTypes() {
+        return transparentTypes;
     }
 
     @Override
@@ -156,7 +156,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
         public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
-        public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
+        public final SetOnce<Set<ParameterizedType>> transparentDataTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
 
@@ -272,13 +272,13 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Set<ParameterizedType> getImplicitlyImmutableDataTypes() {
+        public Set<ParameterizedType> getTransparentTypes() {
             if (typeInfo.isPrimaryType()) {
-                return implicitlyImmutableDataTypes.getOrDefaultNull();
+                return transparentDataTypes.getOrDefaultNull();
             }
             if (analyserContext == null) return Set.of(); // FIXME
             TypeAnalysis primaryTypeAnalysis = analyserContext.getTypeAnalysis(typeInfo.primaryType());
-            return primaryTypeAnalysis.getImplicitlyImmutableDataTypes();
+            return primaryTypeAnalysis.getTransparentTypes();
         }
 
         @Override
@@ -325,7 +325,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE1.toImmutableMap(),
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
-                    implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
+                    transparentDataTypes.isSet() ? transparentDataTypes.get() : Set.of(),
                     getAspects(),
                     visibleFields);
         }

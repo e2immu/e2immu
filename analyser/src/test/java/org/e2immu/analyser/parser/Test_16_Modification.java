@@ -654,11 +654,11 @@ public class Test_16_Modification extends CommonTestRunner {
                     .getProperty(VariableProperty.INDEPENDENT));
         };
 
-        // there is no implicitly immutable content in this type; as a consequence, the parameter s
+        // there is no transparent content in this type; as a consequence, the parameter s
         // can never be @Dependent1 (even if it weren't of immutable type String)
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
-                assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -738,7 +738,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_10".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             }
         };
 
@@ -905,7 +905,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             }
         };
 
@@ -1248,9 +1248,9 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) assertNull(d.typeAnalysis().getImplicitlyImmutableDataTypes());
+                if (d.iteration() == 0) assertNull(d.typeAnalysis().getTransparentTypes());
                 else
-                    assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                    assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -1404,8 +1404,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) assertNull(d.typeAnalysis().getImplicitlyImmutableDataTypes());
-                else assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                if (d.iteration() == 0) assertNull(d.typeAnalysis().getTransparentTypes());
+                else assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -1424,13 +1424,13 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.typeAnalysis().getImplicitlyImmutableDataTypes());
+                    assertNull(d.typeAnalysis().getTransparentTypes());
                 } else {
-                    assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                    assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
                 }
             }
             if ("Modification_21".equals(d.typeInfo().simpleName)) {
-                assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 

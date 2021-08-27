@@ -29,9 +29,9 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /*
-Compute the list of types which cannot be replaced by an unbound parameter type (which are not implicitly immutable)
+Compute the list of types which cannot be replaced by an unbound parameter type (which are not transparent)
 
-Extra: abstract types on which ONLY abstract methods without modification status are called, are also implicitly immutable.
+Extra: abstract types on which ONLY abstract methods without modification status are called, are also transparent.
 */
 public class ExplicitTypes {
 

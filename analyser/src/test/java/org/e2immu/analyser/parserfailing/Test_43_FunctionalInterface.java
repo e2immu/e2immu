@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parserfailing;
 
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -195,7 +194,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FunctionalInterfaceModified2".equals(d.typeInfo().name())) {
-                assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 

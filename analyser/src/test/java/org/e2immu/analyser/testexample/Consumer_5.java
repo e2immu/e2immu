@@ -28,7 +28,6 @@ public class Consumer_5<S> {
         void add(@NotModified T t);
     }
 
-    // of implicitly immutable type
     private final S s;
 
     public Consumer_5(@Dependent1 S in) {

@@ -37,7 +37,7 @@ public interface FieldAnalysis extends Analysis {
 
     LinkedVariables getLinked1Variables();
 
-    Boolean isOfImplicitlyImmutableDataType();
+    Boolean isTransparentType();
 
     FieldInfo getFieldInfo();
 

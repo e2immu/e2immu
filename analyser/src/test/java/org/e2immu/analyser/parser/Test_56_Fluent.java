@@ -148,7 +148,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
-                assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
             if ("IFluent_0".equals(d.typeInfo().simpleName)) {

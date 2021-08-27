@@ -33,8 +33,7 @@ public class Consumer_10 {
 
     @E1Container
     static class Configuration {
-        // not implicitly immutable; the entries are neither.
-        // the entries are @Container, mutable, dependent.
+        // not transparent; the entries are neither. They are @Container, mutable, dependent.
         private final Map<String, String> map = new HashMap<>();
 
         @Modified
@@ -51,8 +50,7 @@ public class Consumer_10 {
 
         @NotModified
         public void forEach(@IgnoreModifications
-                            @Dependent
-                                    MyConsumer<Map.Entry<String, String>> consumer) {
+                            @Dependent MyConsumer<Map.Entry<String, String>> consumer) {
             map.entrySet().forEach(consumer::accept);
         }
     }

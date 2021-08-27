@@ -53,8 +53,8 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty(),
-                        () -> "Have " + d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
+                        () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }

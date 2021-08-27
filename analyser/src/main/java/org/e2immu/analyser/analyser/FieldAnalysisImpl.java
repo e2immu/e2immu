@@ -32,14 +32,14 @@ import java.util.stream.Collectors;
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     private final FieldInfo fieldInfo;
-    public final boolean isOfImplicitlyImmutableDataType;
+    public final boolean isOfTransparentType;
     public final LinkedVariables variablesLinkedToMe;
     public final LinkedVariables variablesLinked1ToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
-                              boolean isOfImplicitlyImmutableDataType,
+                              boolean isOfTransparentType,
                               LinkedVariables variablesLinkedToMe,
                               LinkedVariables variablesLinked1ToMe,
                               Expression effectivelyFinalValue,
@@ -48,7 +48,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
-        this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
+        this.isOfTransparentType = isOfTransparentType;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
@@ -80,8 +80,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Boolean isOfImplicitlyImmutableDataType() {
-        return isOfImplicitlyImmutableDataType;
+    public Boolean isTransparentType() {
+        return isOfTransparentType;
     }
 
     @Override
@@ -191,14 +191,14 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
         public final SetOnce<LinkedVariables> linked1Variables = new SetOnce<>();
 
-        private final SetOnce<Boolean> isOfImplicitlyImmutableDataType = new SetOnce<>();
+        private final SetOnce<Boolean> isOfTransparentType = new SetOnce<>();
 
-        public void setImplicitlyImmutableDataType(boolean value) {
-            isOfImplicitlyImmutableDataType.set(value);
+        public void setTransparentType(boolean value) {
+            isOfTransparentType.set(value);
         }
 
-        public boolean isOfImplicitlyImmutableDataTypeIsSet() {
-            return isOfImplicitlyImmutableDataType.isSet();
+        public boolean isOfTransparentTypeIsSet() {
+            return isOfTransparentType.isSet();
         }
 
         @Override
@@ -224,14 +224,14 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Boolean isOfImplicitlyImmutableDataType() {
-            return isOfImplicitlyImmutableDataType.getOrDefaultNull();
+        public Boolean isTransparentType() {
+            return isOfTransparentType.getOrDefaultNull();
         }
 
         @Override
         public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
-                    isOfImplicitlyImmutableDataType.getOrDefault(false),
+                    isOfTransparentType.getOrDefault(false),
                     linkedVariables.getOrDefault(LinkedVariables.EMPTY),
                     linked1Variables.getOrDefault(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),

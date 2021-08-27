@@ -174,7 +174,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
-            assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
             assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }

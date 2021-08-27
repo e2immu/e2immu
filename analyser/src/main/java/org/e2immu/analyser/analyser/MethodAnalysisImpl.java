@@ -319,7 +319,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private boolean allowIndependentOnMethod() {
             return !Primitives.isVoidOrJavaLangVoid(returnType) &&
-                    returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
+                    returnType.isTransparentOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
         }
 
         protected void writeEventual(Eventual eventual) {

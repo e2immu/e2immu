@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /*
-Situation: consumer applied to a non-implicitly immutable field.
+Situation: consumer applied to a non-transparent field.
 
 The consumer 'in' in 'print' is @NotModified; reasoning goes as follows:
 
@@ -32,7 +32,7 @@ In this particular case, there is no modification, so 'in' remains @NotModified.
 @E1Container
 public class Consumer_9 {
 
-    // not implicitly immutable
+    // not transparent
     private final Set<Integer> integers;
 
     @Independent

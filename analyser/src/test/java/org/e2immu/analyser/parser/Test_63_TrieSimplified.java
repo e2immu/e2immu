@@ -277,14 +277,14 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                // we need to wait at least one iteration on implicitly immutable
+                // we need to wait at least one iteration on transparent types
                 // iteration 1 delayed because of @Modified of goTo
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {
                 assertEquals("[Type param T, Type param T]",
-                        d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                        d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -407,8 +407,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if("add".equals(d.methodInfo().name)) {
-                if("node".equals(d.variableName())) {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
                     int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
                     if ("1.0.1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);

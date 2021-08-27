@@ -337,7 +337,7 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            builder.implicitlyImmutableDataTypes.set(Set.of());
+            builder.transparentDataTypes.set(Set.of());
             ti.typeAnalysis.set(builder.build());
         }
     }
@@ -357,7 +357,7 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            builder.implicitlyImmutableDataTypes.set(Set.of());
+            builder.transparentDataTypes.set(Set.of());
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,

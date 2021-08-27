@@ -73,7 +73,7 @@ public interface TypeAnalysis extends Analysis {
     /**
      * @return null when not yet set
      */
-    Set<ParameterizedType> getImplicitlyImmutableDataTypes();
+    Set<ParameterizedType> getTransparentTypes();
 
     default int getTypeProperty(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;

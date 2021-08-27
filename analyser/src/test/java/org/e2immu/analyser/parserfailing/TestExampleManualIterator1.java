@@ -76,7 +76,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             // assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
-            assertEquals("E", d.typeAnalysis().getImplicitlyImmutableDataTypes()
+            assertEquals("E", d.typeAnalysis().getTransparentTypes()
                     .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
         }
         if ("MyIteratorImpl".equals(typeInfo.simpleName)) {

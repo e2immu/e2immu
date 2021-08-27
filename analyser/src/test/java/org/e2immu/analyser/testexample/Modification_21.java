@@ -21,14 +21,13 @@ import java.util.Set;
 
 /*
 Infinite loop is broken, but too harshly.
-Note that 'set' is not of implicitly immutable type, as of 20210618 these types are computed over the primary type,
+Note that 'set' is not of transparent type, as of 20210618 these types are computed over the primary type,
 and there is the c.addAll(d) as operation on Set<String>, and the assignment of a new set
  */
 public class Modification_21 {
 
     final Set<String> s2 = new HashSet<>();
 
-    // implicitly immutable
     static class C1 {
         @Modified
         final Set<String> set;

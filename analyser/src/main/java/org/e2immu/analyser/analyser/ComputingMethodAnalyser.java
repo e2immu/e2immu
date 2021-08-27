@@ -323,15 +323,15 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 break;
             }
 
-            // THIRD CRITERION: is there a field whose content can change? Non-primitive, not implicitly immutable, not E2
+            // THIRD CRITERION: is there a field whose content can change? Non-primitive, not transparent, not E2
 
-            Optional<FieldAnalysis> haveDelayOnImplicitlyImmutableType = fieldAnalysesOfTypeInfo
-                    .stream().filter(fa -> fa.isOfImplicitlyImmutableDataType() == null).findFirst();
-            if (haveDelayOnImplicitlyImmutableType.isPresent()) {
-                log(DELAYED, "Delaying eventual in {} until we know about implicitly immutable type of (findFirst) field {}",
-                        methodInfo.fullyQualifiedName, haveDelayOnImplicitlyImmutableType.get().getFieldInfo().name);
-                assert translatedDelay(EVENTUAL_PREP_WORK, haveDelayOnImplicitlyImmutableType.get()
-                                .getFieldInfo().fullyQualifiedName() + D_IMPLICITLY_IMMUTABLE_DATA,
+            Optional<FieldAnalysis> haveDelayOnTransparentType = fieldAnalysesOfTypeInfo
+                    .stream().filter(fa -> fa.isTransparentType() == null).findFirst();
+            if (haveDelayOnTransparentType.isPresent()) {
+                log(DELAYED, "Delaying eventual in {} until we know about transparent types of (findFirst) field {}",
+                        methodInfo.fullyQualifiedName, haveDelayOnTransparentType.get().getFieldInfo().name);
+                assert translatedDelay(EVENTUAL_PREP_WORK, haveDelayOnTransparentType.get()
+                                .getFieldInfo().fullyQualifiedName() + D_TRANSPARENT_TYPE,
                         methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
                 return DELAYS;
             }
@@ -341,7 +341,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         int immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                         return !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
                                 && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
-                                && !fa.isOfImplicitlyImmutableDataType();
+                                && !fa.isTransparentType();
                     });
             if (haveContentChangeableField) {
                 break;
@@ -830,7 +830,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsPotentiallyCircularMethod() == null ||
                                 (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsPotentiallyCircularMethod() && (
                                         analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY ||
-                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) == null ||
+                                                mi.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) == null ||
                                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
         if (someOtherMethodNotYetDecided.isPresent()) {
@@ -841,7 +841,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE ||
-                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) &&
+                        !mi.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) &&
                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == MultiLevel.DEPENDENT);
     }
 
@@ -920,11 +920,11 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             return Level.DELAY;
         }
 
-        Optional<VariableInfo> implicitlyImmutableNotSet = methodAnalysis.getLastStatement().variableStream()
+        Optional<VariableInfo> transparentNotSet = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .filter(vi -> delayOnImplicitlyImmutableTypeOfVariable(vi.variable(), analyserContext))
+                .filter(vi -> delayOnTransparentTypeOfVariable(vi.variable(), analyserContext))
                 .findFirst();
-        if (implicitlyImmutableNotSet.isPresent()) {
+        if (transparentNotSet.isPresent()) {
             return Level.DELAY;
         }
 
@@ -940,7 +940,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         Optional<ParameterInfo> nonImmutableStaticallyAssignedToParameter =
                 methodAnalysis.getLastStatement().variableStream()
                         .filter(vi -> vi.variable() instanceof FieldReference)
-                        .filter(vi -> isFieldOfImplicitlyImmutableType(vi.variable(), analyserContext))
+                        .filter(vi -> isFieldOfTransparentType(vi.variable(), analyserContext))
                         .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
                         .filter(v -> v instanceof ParameterInfo)
                         .filter(v -> v.parameterizedType().defaultImmutable(analyserContext) != MultiLevel.EFFECTIVELY_E2IMMUTABLE)
@@ -976,22 +976,22 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     methodInfo.fullyQualifiedName());
             return Level.DELAY;
         }
-        // method does not return an implicitly immutable data type
+        // method does not return a transparent type
         VariableInfo returnVariable = getReturnAsVariable();
 
         // @Dependent1
 
         LinkedVariables staticallyAssigned = returnVariable.getStaticallyAssignedVariables();
-        boolean implicitlyImmutableDelayed = staticallyAssigned.isDelayed() ||
-                staticallyAssigned.variables().stream().anyMatch(v -> delayOnImplicitlyImmutableTypeOfVariable(v, analyserContext));
-        if (implicitlyImmutableDelayed) {
-            log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not know for assigned field",
+        boolean transparentDelayed = staticallyAssigned.isDelayed() ||
+                staticallyAssigned.variables().stream().anyMatch(v -> delayOnTransparentTypeOfVariable(v, analyserContext));
+        if (transparentDelayed) {
+            log(DELAYED, "Delaying @Independent on {}, transparent type status not yet known for assigned field",
                     methodInfo.fullyQualifiedName);
             return Level.DELAY;
         }
-        boolean returnValueLinkedToImplicitlyImmutableField = staticallyAssigned.variables().stream()
-                .anyMatch(v -> isFieldOfImplicitlyImmutableType(v, analyserContext));
-        if (returnValueLinkedToImplicitlyImmutableField) {
+        boolean returnValueLinkedToFieldOfTransparentType = staticallyAssigned.variables().stream()
+                .anyMatch(v -> isFieldOfTransparentType(v, analyserContext));
+        if (returnValueLinkedToFieldOfTransparentType) {
             return MultiLevel.DEPENDENT_1;
         }
         int independent = returnVariable.getProperty(VariableProperty.INDEPENDENT);
@@ -1003,7 +1003,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         LinkedVariables linkedVariables = returnVariable.getLinkedVariables();
         if (linkedVariables.isDelayed()) {
-            log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references",
+            log(DELAYED, "Delaying @Independent on {}, transparent status not known for all field references",
                     methodInfo.fullyQualifiedName);
             return Level.DELAY;
         }
@@ -1038,15 +1038,15 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         return myOwnType ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
-    public static boolean delayOnImplicitlyImmutableTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {
+    public static boolean delayOnTransparentTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {
         return v instanceof FieldReference &&
-                analysisProvider.getFieldAnalysis(((FieldReference) v).fieldInfo).isOfImplicitlyImmutableDataType() == null;
+                analysisProvider.getFieldAnalysis(((FieldReference) v).fieldInfo).isTransparentType() == null;
     }
 
-    public static boolean isFieldOfImplicitlyImmutableType(Variable variable, AnalysisProvider analysisProvider) {
+    public static boolean isFieldOfTransparentType(Variable variable, AnalysisProvider analysisProvider) {
         if (!(variable instanceof FieldReference)) return false;
         FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(((FieldReference) variable).fieldInfo);
-        return fieldAnalysis.isOfImplicitlyImmutableDataType() == Boolean.TRUE;
+        return fieldAnalysis.isTransparentType() == Boolean.TRUE;
     }
 
     @Override

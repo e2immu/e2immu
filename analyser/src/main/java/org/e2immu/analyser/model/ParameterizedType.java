@@ -818,19 +818,19 @@ public class ParameterizedType {
         return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
     }
 
-    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
+    public Boolean isTransparentOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         if (arrays > 0) return false;
         Boolean immu = isAtLeastEventuallyE2Immutable(analysisProvider);
         if (immu == Boolean.TRUE) return true;
-        Boolean implicit = isImplicitlyImmutable(analysisProvider, typeBeingAnalysed);
-        if (implicit == Boolean.TRUE) return true;
-        return immu == null || implicit == null ? null : false;
+        Boolean transparent = isTransparent(analysisProvider, typeBeingAnalysed);
+        if (transparent == Boolean.TRUE) return true;
+        return immu == null || transparent == null ? null : false;
     }
 
-    public Boolean isImplicitlyImmutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
+    public Boolean isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
-        Set<ParameterizedType> implicitTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
-        return implicitTypes == null ? null : implicitTypes.contains(this);
+        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
+        return transparentTypes == null ? null : transparentTypes.contains(this);
     }
 
     public Boolean isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {

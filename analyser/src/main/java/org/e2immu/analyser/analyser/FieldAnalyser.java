@@ -49,7 +49,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FieldAnalyser.class);
 
     // analyser components, constants are used in tests and delay debugging
-    public static final String COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE = "computeImplicitlyImmutableDataType";
+    public static final String COMPUTE_TRANSPARENT_TYPE = "computeTransparentType";
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
     public static final String ANALYSE_FINAL_VALUE = "analyseFinalValue";
@@ -109,7 +109,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, sharedState -> computeImplicitlyImmutableDataType())
+                .add(COMPUTE_TRANSPARENT_TYPE, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_ASSIGNMENTS, sharedState -> allAssignmentsHaveBeenSet())
@@ -268,16 +268,16 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisStatus computeImplicitlyImmutableDataType() {
-        assert !fieldAnalysis.isOfImplicitlyImmutableDataTypeIsSet();
-        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
-            assert translatedDelay(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE,
-                    myTypeAnalyser.typeInfo.fullyQualifiedName + D_IMPLICITLY_IMMUTABLE_DATA,
-                    fqn + D_IMPLICITLY_IMMUTABLE_DATA);
+    private AnalysisStatus computeTransparentType() {
+        assert !fieldAnalysis.isOfTransparentTypeIsSet();
+        if (myTypeAnalyser.typeAnalysis.getTransparentTypes() == null) {
+            assert translatedDelay(COMPUTE_TRANSPARENT_TYPE,
+                    myTypeAnalyser.typeInfo.fullyQualifiedName + D_TRANSPARENT_TYPE,
+                    fqn + D_TRANSPARENT_TYPE);
             return DELAYS;
         }
-        boolean implicit = myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(fieldInfo.type);
-        fieldAnalysis.setImplicitlyImmutableDataType(implicit);
+        boolean transparent = myTypeAnalyser.typeAnalysis.getTransparentTypes().contains(fieldInfo.type);
+        fieldAnalysis.setTransparentType(transparent);
         return DONE;
     }
 
@@ -971,9 +971,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
-            log(DELAYED, "Linked1Variables not yet set for {}, waiting on implicitly immutable types",
-                    fqn);
+        if (myTypeAnalyser.typeAnalysis.getTransparentTypes() == null) {
+            log(DELAYED, "Linked1Variables not yet set for {}, waiting for transparent types", fqn);
             return DELAYS;
         }
 
@@ -982,7 +981,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(vi -> vi.valueIsSet() && vi.getValue().isInstanceOf(VariableExpression.class))
                 .map(vi -> vi.getValue().asInstanceOf(VariableExpression.class).variable())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
-                .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
+                .filter(v -> myTypeAnalyser.typeAnalysis.getTransparentTypes().contains(v.parameterizedType()))
                 .collect(Collectors.toSet());
         fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables, false));
         log(LINKED_VARIABLES, "FA: Set link1s of {} to [{}]", fqn,

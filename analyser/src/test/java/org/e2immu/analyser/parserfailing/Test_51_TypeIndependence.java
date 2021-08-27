@@ -54,15 +54,15 @@ public class Test_51_TypeIndependence extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE, d.fieldAnalysis()
                         .getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                    assertNull(d.fieldAnalysis().isTransparentType());
                 } else {
-                    assertFalse(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                    assertFalse(d.fieldAnalysis().isTransparentType());
                 }
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            assertEquals("[Type param T]", d.typeAnalysis().getTransparentTypes().toString());
             if ("IteratorImpl".equals(d.typeInfo().simpleName)) {
                 int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
                 assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));

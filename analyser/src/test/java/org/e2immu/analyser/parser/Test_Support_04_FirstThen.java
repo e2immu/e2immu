@@ -109,7 +109,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-        assertEquals("Type param S,Type param T", d.typeAnalysis().getImplicitlyImmutableDataTypes()
+        assertEquals("Type param S,Type param T", d.typeAnalysis().getTransparentTypes()
                 .stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
         assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsIsFrozen(false));
     };

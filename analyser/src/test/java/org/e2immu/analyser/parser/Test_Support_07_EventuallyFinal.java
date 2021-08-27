@@ -42,7 +42,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyFinal".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[Type param T]", d.typeAnalysis().getTransparentTypes().toString());
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }

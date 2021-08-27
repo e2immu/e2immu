@@ -36,13 +36,13 @@ public class Dependent1_3<T> {
         T get();
     }
 
-    @Independent // not @Dependent1 because mySupplier is not implicitly immutable!
+    @Independent // not @Dependent1 because mySupplier is not transparent!
     public Dependent1_3(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
     }
 
     @NotModified
-    @Dependent1 // because returns implicitly immutable content of a field, using a method
+    @Dependent1 // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

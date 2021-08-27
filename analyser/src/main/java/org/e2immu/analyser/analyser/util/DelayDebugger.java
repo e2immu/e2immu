@@ -69,7 +69,7 @@ public interface DelayDebugger {
 
     // Type analyser
     String D_ASPECTS = ".aspects";
-    String D_IMPLICITLY_IMMUTABLE_DATA = ".implicitlyImmutableData";
+    String D_TRANSPARENT_TYPE = ".transparentType";
     String D_APPROVED_PRECONDITIONS_E1 = ".approvedPreconditionsE1";
     String D_APPROVED_PRECONDITIONS_E2 = ".approvedPreconditionsE2";
 

@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 
 // simplest version of Modification_10 that has an infinite loop
-// we explicitly use methods of the List type, so that it does not become implicitly immutable.
+// we explicitly use methods of the List type, so that it does not become transparent.
 // then, immutable is between the extremes (MUTABLE, Level 2), this causes the delay
 
 @E1Container

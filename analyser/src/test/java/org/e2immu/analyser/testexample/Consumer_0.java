@@ -25,7 +25,7 @@ public class Consumer_0<S> {
         void accept(T t);
     }
 
-    // of implicitly immutable type
+    // of unbound parameter type
     private final S s;
 
     public Consumer_0(@Dependent1 S in) {

@@ -19,7 +19,7 @@ import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 /*
-so while T is implicitly immutable, this promise is broken by the use
+so while T is an unbound type parameter, the transparency promise is broken by the use
 of a cast in the incrementedT method
  */
 @E1Immutable

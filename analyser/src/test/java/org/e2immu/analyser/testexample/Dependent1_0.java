@@ -23,7 +23,7 @@ first test, direct assignment to fields
  */
 public class Dependent1_0<T> {
 
-    // and not @Linked, because T is implicitly immutable in this type
+    // and not @Linked, because T is unbound in this type
     @Linked1(to = {"Dependent1_0:t"})
     @Final
     private T t;

@@ -42,7 +42,7 @@ public class Dependent1_4<T> {
     }
 
     // independent, because while not E2, MySupplier is Independent itself
-    // not Dep1, because mySupplier is not implicitly immutable.
+    // not Dep1, because mySupplier is not transparent.
     @Independent
     public Dependent1_4(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
@@ -50,7 +50,7 @@ public class Dependent1_4<T> {
 
     // modified because get() is a modifying method
     @Modified
-    @Dependent1 // because returns implicitly immutable content of a field, using a method
+    @Dependent1 // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

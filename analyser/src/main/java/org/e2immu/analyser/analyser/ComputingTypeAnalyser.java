@@ -61,7 +61,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ComputingTypeAnalyser extends TypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
 
-    public static final String ANALYSE_IMPLICITLY_IMMUTABLE_TYPES = "analyseImplicitlyImmutableTypes";
+    public static final String ANALYSE_TRANSPARENT_TYPES = "analyseTransparentTypes";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_E1 = "computeApprovedPreconditionsE1";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_E2 = "computeApprovedPreconditionsE2";
@@ -94,7 +94,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add(FIND_ASPECTS, iteration -> findAspects());
         if (typeInfo.isPrimaryType()) {
-            builder.add(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES, iteration -> analyseImplicitlyImmutableTypes());
+            builder.add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes());
         }
         if (!typeInfo.isInterface()) {
             builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, this::computeApprovedPreconditionsE1)
@@ -241,15 +241,14 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     /*
-    this computation is a crude approximation of what is meant with implicitly immutable type of a field: you can replace
+    this computation is a crude approximation of what it means to be a field of transparent type: you can replace
     the field's type by an unbound parameter type.
-
      */
-    private AnalysisStatus analyseImplicitlyImmutableTypes() {
-        if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DONE;
+    private AnalysisStatus analyseTransparentTypes() {
+        if (typeAnalysis.transparentDataTypes.isSet()) return DONE;
         assert typeInfo.isPrimaryType();
 
-        log(IMMUTABLE_LOG, "Computing implicitly immutable types for primary type {}", typeInfo.fullyQualifiedName);
+        log(IMMUTABLE_LOG, "Computing transparent types for primary type {}", typeInfo.fullyQualifiedName);
 
         // first, determine the types of fields, methods and constructors of my type and all sub-types
 
@@ -283,8 +282,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                             return type.isAssignableFrom(analyserContext, t);
                         } catch (IllegalStateException illegalStateException) {
                             LOGGER.warn("Cannot determine if {} is assignable from {}", type, t);
-                            /* this is a type which is implicitly present somewhere,
-                             but not directly in the hierarchy */
+                            // this is a type which is implicitly present somewhere, but not directly in the hierarchy
                             return false;
                         }
                     });
@@ -299,10 +297,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isNotContracted();
         }).findFirst();
         if (immutableDelay.isPresent()) {
-            log(DELAYED, "Delaying implicitly immutable data types on {} because of immutable", typeInfo.fullyQualifiedName);
-            assert translatedDelay(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES,
+            log(DELAYED, "Delaying computation of transparent types on {} because of immutable", typeInfo.fullyQualifiedName);
+            assert translatedDelay(ANALYSE_TRANSPARENT_TYPES,
                     immutableDelay.get().typeInfo.fullyQualifiedName + D_IMMUTABLE,
-                    typeInfo.fullyQualifiedName + D_IMPLICITLY_IMMUTABLE_DATA);
+                    typeInfo.fullyQualifiedName + D_TRANSPARENT_TYPE);
             return DELAYS;
         }
         typesOfFields.removeIf(type -> {
@@ -312,8 +310,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         });
 
-        typeAnalysis.implicitlyImmutableDataTypes.set(Set.copyOf(typesOfFields));
-        log(IMMUTABLE_LOG, "Implicitly immutable data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
+        typeAnalysis.transparentDataTypes.set(Set.copyOf(typesOfFields));
+        log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
         return DONE;
     }
 
@@ -649,21 +647,21 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser instanceof ComputingMethodAnalyser cma) {
-                Set<ParameterizedType> implicitlyImmutableTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
-                if (implicitlyImmutableTypes == null) {
-                    log(DELAYED, "Delay independence of type {}, implicitly immutable types not known",
+                Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
+                if (transparentTypes == null) {
+                    log(DELAYED, "Delay independence of type {}, transparent types not yet known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                if (!typeAnalysis.getImplicitlyImmutableDataTypes().contains(methodAnalyser.methodInfo.returnType())) {
+                if (!typeAnalysis.getTransparentTypes().contains(methodAnalyser.methodInfo.returnType())) {
                     VariableInfo variableInfo = cma.getReturnAsVariable();
                     if (variableInfo == null) {
-                        log(DELAYED, "Delay independence of type {}, method {}'s return statement not known",
+                        log(DELAYED, "Delay independence of type {}, method {}'s return statement not yet known",
                                 typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                         return DELAYS;
                     }
                     if (variableInfo.getLinkedVariables() == null) {
-                        log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
+                        log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not yet known",
                                 typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                         return DELAYS;
                     }
@@ -725,9 +723,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
      * <p>
      * RULE 1: All fields must be @NotModified.
      * <p>
-     * RULE 2: All fields must be private, or their types must be level 2 immutable or implicitly immutable (replaceable by Object)
+     * RULE 2: All fields must be private, or their types must be level 2 immutable (incl. unbound, transparent)
      * <p>
-     * RULE 3: All methods and constructors must be independent of the non-level2 non implicitly immutable fields
+     * RULE 3: All methods and constructors must be independent of the non-level 2 immutable fields
      *
      * @return true if a change was made to typeAnalysis
      */
@@ -831,14 +829,14 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo);
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
-            if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {
-                log(DELAYED, "Field {} not yet known if implicitly immutable, delaying @E2Immutable on type", fieldFQN);
+            if (fieldAnalysis.isTransparentType() == null) {
+                log(DELAYED, "Field {} not yet known if of transparent type, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
             }
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
             // this follows automatically if they are primitive or E2Immutable themselves
-            // because of down-casts on non-primitives, e.g. from ImplicitlyImmutable to explicit, we cannot rely on the static type
+            // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
             boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
 
             int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
@@ -874,7 +872,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
                 }
             } else if (!isPrimitive) {
-                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType() && fieldE2Immutable != MultiLevel.EFFECTIVE;
+                boolean fieldRequiresRules = !fieldAnalysis.isTransparentType() && fieldE2Immutable != MultiLevel.EFFECTIVE;
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);

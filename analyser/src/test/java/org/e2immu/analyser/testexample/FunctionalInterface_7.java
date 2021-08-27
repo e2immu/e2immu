@@ -25,7 +25,7 @@ import java.util.function.Function;
 /*
 Situation: consumer applied to other parameter.
 
-It is important to realize that Y is not an implicitly immutable type in FunctionalInterface_7.
+It is important to realize that Y is not a transparent type in FunctionalInterface_7.
 Neither does FunctionalInterface_7 have fields.
 So there is no @Dependent1; and applyToParameter cannot propagate modifications.
 It must make parameter Y @Modified.

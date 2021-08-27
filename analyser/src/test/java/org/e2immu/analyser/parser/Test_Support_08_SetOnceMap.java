@@ -42,7 +42,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.function.Function<K,V>, Type param K, Type param V",
-                        d.typeAnalysis().getImplicitlyImmutableDataTypes().stream()
+                        d.typeAnalysis().getTransparentTypes().stream()
                                 .map(ParameterizedType::toString).sorted().collect(Collectors.joining(", ")));
                 int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));

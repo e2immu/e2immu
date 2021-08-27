@@ -44,7 +44,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("[Type param T, Type param T, Type param T, Type param T, Type param T, Type param T]",
-                        d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                        d.typeAnalysis().getTransparentTypes().toString());
 
                 int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));

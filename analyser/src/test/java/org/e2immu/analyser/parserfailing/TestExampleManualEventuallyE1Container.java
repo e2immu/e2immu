@@ -98,8 +98,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                     .map(Object::toString)
                     .collect(Collectors.joining(";")));
         }
-        Set<ParameterizedType> implicitlyImmutable = d.typeAnalysis().getImplicitlyImmutableDataTypes();
-        assertTrue(implicitlyImmutable.isEmpty());
+        Set<ParameterizedType> transparentTypes = d.typeAnalysis().getTransparentTypes();
+        assertTrue(transparentTypes.isEmpty());
     };
 
     @Test

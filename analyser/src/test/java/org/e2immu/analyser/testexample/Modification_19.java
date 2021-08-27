@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /*
-Here, Set<String> is not implicitly immutable in C1, so there is a link between c and s2.
+Here, Set<String> is not transparent in C1, so there is a link between c and s2.
 See Modification_21 where the size() method is not present.
  */
 public class Modification_19 {
@@ -36,7 +36,7 @@ public class Modification_19 {
         }
 
         int size() {
-            return set.size(); // not implicitly immutable
+            return set.size(); // set not transparent!
         }
     }
 

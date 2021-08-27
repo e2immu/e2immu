@@ -176,17 +176,17 @@ public interface ParameterAnalysis extends Analysis {
              for abstract types
              */
             case CONTAINER: {
-                Boolean implicit = parameterInfo.parameterizedType.isImplicitlyImmutable(analysisProvider, parameterInfo.owner.typeInfo);
-                if (implicit == Boolean.TRUE) return Level.TRUE;
+                Boolean transparent = parameterInfo.parameterizedType.isTransparent(analysisProvider, parameterInfo.owner.typeInfo);
+                if (transparent == Boolean.TRUE) return Level.TRUE;
                 // if implicit is null, we cannot return FALSE, we'll have to wait!
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                int withoutImplicitDelay;
+                int withoutDelay;
                 if (bestType != null) {
-                    withoutImplicitDelay = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
+                    withoutDelay = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
                 } else {
-                    withoutImplicitDelay = Level.best(getPropertyFromMapNeverDelay(VariableProperty.CONTAINER), Level.FALSE);
+                    withoutDelay = Level.best(getPropertyFromMapNeverDelay(VariableProperty.CONTAINER), Level.FALSE);
                 }
-                return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
+                return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
             }
 
             case IMMUTABLE: {

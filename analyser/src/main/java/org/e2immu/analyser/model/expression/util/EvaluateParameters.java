@@ -130,7 +130,7 @@ public class EvaluateParameters {
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
                     Boolean cannotBeModified = parameterExpression.returnType()
-                            .isImplicitlyOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext(),
+                            .isTransparentOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext(),
                                     evaluationContext.getCurrentType());
                     if (cannotBeModified == null) {
                         map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE); // DELAY

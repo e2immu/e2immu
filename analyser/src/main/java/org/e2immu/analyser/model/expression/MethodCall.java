@@ -816,8 +816,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
        If they are non-modifying, the method result can be substituted, sometimes in terms of fields.
        In our implementation, linking to 'this' is not needed, we catch modifying methods on this directly
     4/ if the return type of the method is level 2 immutable, there is no linking.
-    5/ if the return type of the method is implicitly immutable in the type, there is no linking.
-       (there may be a @Dependent1 or @Dependent2, but that's not relevant here)
+    5/ if the return type of the method is transparent in the type, there is no linking.
+       (there may be a @Dependent1, but that's not relevant here)
     6/ if a (the object) is @E2Immutable, the method must be @Independent, so it cannot link
     7/ if the method is @Independent, then it does not link to the fields -> empty.
        Note that in the *current* implementation, all modifying methods are @Dependent
@@ -845,13 +845,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return LinkedVariables.EMPTY;
         }
 
-        // RULE 5: neither can implicitly immutable types
+        // RULE 5: neither can transparent types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        Set<ParameterizedType> implicitlyImmutable = typeAnalysis.getImplicitlyImmutableDataTypes();
-        if (implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
+        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
+        if (transparentTypes != null && transparentTypes.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
-        delayed |= implicitlyImmutable == null;
+        delayed |= transparentTypes == null;
 
         // RULE 4: if the return type is @E2Immutable, then no links at all
 

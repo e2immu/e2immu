@@ -319,7 +319,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    // need to wait for implicitly immutable types
+                    // need to wait for transparent types
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
                     assertEquals("set.isEmpty()",
@@ -331,9 +331,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                    assertNull(d.fieldAnalysis().isTransparentType());
                 } else {
-                    assertFalse(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                    assertFalse(d.fieldAnalysis().isTransparentType());
                 }
             }
         };
@@ -394,7 +394,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    // need to wait for implicitly immutable types
+                    // need to wait for transparent types
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
                     assertEquals("set.size()<=0",
@@ -453,7 +453,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
             if ("initialize".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    // need to wait for implicitly immutable types
+                    // need to wait for transparent types
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
                     assertEquals("0==set.size()",

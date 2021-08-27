@@ -78,7 +78,7 @@ public class TestModificationGraph extends CommonTestRunner {
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
-            assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
         }
     };
 

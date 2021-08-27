@@ -441,7 +441,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Warnings_5".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             }
         };
 

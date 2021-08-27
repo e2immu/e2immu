@@ -263,11 +263,10 @@ public class Test_48_Store extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
 
-        // implicitly immutable types have nothing to do with this, given that there is only one
-        // field, of type int
+        // transparent types have nothing to do with this, given that there is only one field, of type int
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Store_7".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param E]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[Type param E]", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
