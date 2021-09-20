@@ -66,6 +66,11 @@ public class Parser {
                 previousParser.input.globalTypeContext(), previousParser.input.byteCodeInspector());
     }
 
+    // meant for tests only!
+    public void preload(String packageName) {
+        Input.preload(input.globalTypeContext(), getByteCodeInspector(), input.classPath(), packageName);
+    }
+
     public record RunResult(List<SortedType> annotatedAPISortedTypes,
                             List<SortedType> sourceSortedTypes,
                             TypeMap typeMap) {
@@ -303,7 +308,6 @@ public class Parser {
         LOGGER.info("Returning composer data with {} types", typesToWrite.size());
         return new ComposerData(typesToWrite, typeMap);
     }
-
 
     // only meant to be used in tests!!
     public TypeContext getTypeContext() {

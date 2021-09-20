@@ -53,12 +53,6 @@ public record InputConfiguration(List<String> sources,
         private String sourceEncoding;
 
         public InputConfiguration build() {
-            if (classPathParts.isEmpty()) {
-                classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH));
-            }
-            if (sourceDirs.isEmpty()) {
-                sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(Configuration.PATH_SEPARATOR)));
-            }
             Charset sourceCharset = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
             return new InputConfiguration(List.copyOf(sourceDirs),
                     List.copyOf(classPathParts),

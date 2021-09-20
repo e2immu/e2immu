@@ -162,6 +162,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @Dependent1
+        @NotModified // FIXME this should be the default, but fails when removed
         Stream<E> stream();
 
         default int toArray$Transfer$Size(int i) {
@@ -185,6 +186,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @Dependent1
+        @NotModified // FIXME
         <T> T[] toArray(@NotNull IntFunction<T[]> generator);
     }
 
@@ -232,7 +234,7 @@ public class JavaUtil extends AnnotatedAPI {
         @E2Container
         @NotNull1
         @Dependent1
-        <EE> List<EE> copyOf(@NotNull1 Collection<? extends E> collection);
+        <EE> List<EE> copyOf(@NotNull1 Collection<? extends EE> collection);
 
         @NotNull1
         @Dependent1
@@ -258,7 +260,9 @@ public class JavaUtil extends AnnotatedAPI {
             return 1;
         }
 
-        <F> boolean of$Postcondition(F e1);
+        default <F> boolean of$Postcondition(F e1) {
+            return contains(e1);
+        }
 
         @NotNull1
         @E2Container

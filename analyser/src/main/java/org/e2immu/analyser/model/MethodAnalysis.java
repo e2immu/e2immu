@@ -28,7 +28,8 @@ public interface MethodAnalysis extends Analysis {
 
     static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
-                .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
+                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, p).build())
+                .collect(Collectors.toList());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(AnalysisMode.CONTRACTED,
                 primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, parameterAnalyses);
@@ -103,6 +104,9 @@ public interface MethodAnalysis extends Analysis {
 
     Function<Integer, Integer> OVERRIDE_FALSE = x -> Level.FALSE;
     Function<Integer, Integer> OVERRIDE_EFFECTIVELY_NOT_NULL = x -> MultiLevel.EFFECTIVELY_NOT_NULL;
+    Function<Integer, Integer> OVERRIDE_E2IMMUTABLE = x -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+    Function<Integer, Integer> OVERRIDE_INDEPENDENT = x -> MultiLevel.INDEPENDENT;
+
     Function<Integer, Integer> NO_INFLUENCE = x -> x;
 
     default Function<Integer, Integer> influenceOfType(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
@@ -110,6 +114,14 @@ public interface MethodAnalysis extends Analysis {
         ParameterizedType returnType = methodInfo.returnType();
 
         switch (variableProperty) {
+            case IMMUTABLE:
+                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_E2IMMUTABLE;
+                return NO_INFLUENCE;
+
+            case INDEPENDENT:
+                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_INDEPENDENT;
+                return NO_INFLUENCE;
+
             case MODIFIED_METHOD:
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 if (!methodInfo.isConstructor &&
@@ -143,18 +155,14 @@ public interface MethodAnalysis extends Analysis {
     The ShallowMethodAnalyser sets explicit values for this case.
      */
     default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        boolean shallow = getMethodInfo().shallowAnalysis();
-
         return switch (variableProperty) {
-            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty, shallow);
-            default -> shallow ? getPropertyFromMapNeverDelay(variableProperty) :
-                    getPropertyFromMapDelayWhenAbsent(variableProperty);
+            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONSTANT, CONTAINER, FINALIZER, IMMUTABLE -> getPropertyCheckOverrides(analysisProvider, variableProperty);
+            default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);
         };
     }
 
-    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider,
-                                          VariableProperty variableProperty,
-                                          boolean shallow) {
+    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        boolean shallow = getMethodInfo().shallowAnalysis();
         int mineAsIs = getPropertyFromMapDelayWhenAbsent(variableProperty);
         int influencedByType = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
         if (!shallow) return influencedByType;

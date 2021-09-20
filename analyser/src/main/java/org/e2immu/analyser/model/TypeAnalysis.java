@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.variable.FieldReference;
 
@@ -76,11 +78,14 @@ public interface TypeAnalysis extends Analysis {
     Set<ParameterizedType> getTransparentTypes();
 
     default int getTypeProperty(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        if (getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis()) {
-            return getPropertyFromMapNeverDelay(variableProperty);
-        }
-        return getPropertyFromMapDelayWhenAbsent(variableProperty);
+        return switch (variableProperty) {
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, INDEPENDENT,
+                    FINALIZER -> getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis()
+                    ? getPropertyFromMapNeverDelay(variableProperty)
+                    : getPropertyFromMapDelayWhenAbsent(variableProperty);
+            default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, variableProperty);
+        };
     }
 
     /**

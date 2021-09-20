@@ -118,7 +118,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             throw rte;
                         }
                     });
-            typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.fromBool(hasFinalizers.get()));
+            if (hasFinalizers.get()) {
+                typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+            }
         }
         this.methodAnalysers = Map.copyOf(methodAnalysers);
     }

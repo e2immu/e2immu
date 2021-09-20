@@ -21,6 +21,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/*
+Principle of property computation, for 3 modes: aggregated, contracted, computed
+
+In the case of contracted, we may not have information but the parent type/method/parameter
+may have. Due to loading order, this parent may not be available yet.
+For this reason, the final computation is done on-demand rather than hard-baked.
+Unless the mode is computed, we should always be able to return a value, and never a delay.
+
+ */
 public interface Analysis {
 
     default Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
@@ -75,22 +84,16 @@ public interface Analysis {
 
      getXXXProperty is then always implemented in XXXAnalysis
      */
-    default int getProperty(VariableProperty variableProperty) {
-        return Level.DELAY;
-    }
+    int getProperty(VariableProperty variableProperty);
 
     // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
-    default int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        return Level.DELAY;
-    }
+    int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty);
 
     /**
      * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
-     * Reverts to <code>variableProperty.valueWhenAbsent(annotationMode())</code> when no value present in map.
+     * Reverts to <code>variableProperty.valueWhenAbsent</code> when no value present in map.
      */
-    default int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return variableProperty.valueWhenAbsent();
-    }
+    int getPropertyFromMapNeverDelay(VariableProperty variableProperty);
 
     Location location();
 

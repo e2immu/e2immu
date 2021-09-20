@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.parser.Primitives;
 
 public interface FieldAnalysis extends Analysis {
@@ -67,7 +65,13 @@ public interface FieldAnalysis extends Analysis {
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
 
+            case CONSTANT:
+            case CONTAINER:
+            case FINAL:
+                break;
+
             default:
+                throw new PropertyException(Analyser.AnalyserIdentification.FIELD, variableProperty);
         }
         if (fieldInfo.owner.shallowAnalysis()) {
             return getPropertyFromMapNeverDelay(variableProperty);

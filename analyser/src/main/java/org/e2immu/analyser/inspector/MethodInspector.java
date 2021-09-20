@@ -86,9 +86,10 @@ public class MethodInspector {
 
     private MethodInspectionImpl.Builder fqnIsKnown(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
         builder.readyToComputeFQN(inspectionProvider);
-        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getDistinguishingName());
+        String distinguishingName = builder.getDistinguishingName();
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
-            log(INSPECTOR, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
+            log(INSPECTOR, "Inspecting method {}, already byte-code inspected", distinguishingName);
             assert !fullInspection;
 
             builderOnceFQNIsKnown.set(existing);
@@ -96,7 +97,7 @@ public class MethodInspector {
         }
         if (methodInspection == null) {
             if (fullInspection) {
-                log(INSPECTOR, "Inspecting method {}, full inspection", builder.getDistinguishingName());
+                log(INSPECTOR, "Inspecting method {}, full inspection", distinguishingName);
                 builderOnceFQNIsKnown.set(builder);
                 return builder;
             }
@@ -105,13 +106,13 @@ public class MethodInspector {
 
             MethodInspection parent = allowCopyFromSuperType(inspectionProvider, builder);
             if (parent != null) {
-                log(INSPECTOR, "Create method {} as copy from super type, shallow inspection", builder.getDistinguishingName());
+                log(INSPECTOR, "Create method {} as copy from super type, shallow inspection", distinguishingName);
                 builder.setReturnType(parent.getReturnType());
                 builderOnceFQNIsKnown.set(builder);
                 typeMapBuilder.registerMethodInspection(builder);
                 return builder;
             }
-            throw new UnsupportedOperationException("Cannot find method " + builder.getDistinguishingName());
+            throw new UnsupportedOperationException("Cannot find method " + distinguishingName);
         }
         throw new UnsupportedOperationException();
     }

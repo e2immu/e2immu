@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -25,10 +27,6 @@ import java.util.Set;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 public interface ParameterAnalysis extends Analysis {
-
-    static ParameterAnalysis createEmpty(ParameterInfo parameterInfo) {
-        return () -> new Location(parameterInfo);
-    }
 
     enum AssignedOrLinked {
         ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_IMMUTABLE)),
@@ -186,6 +184,10 @@ public interface ParameterAnalysis extends Analysis {
                 return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
             }
 
+            case CONTEXT_IMMUTABLE:
+            case EXTERNAL_IMMUTABLE:
+                break;
+
             case IMMUTABLE: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int formalImmutable;
@@ -221,7 +223,18 @@ public interface ParameterAnalysis extends Analysis {
                 break;
             }
 
+            case IGNORE_MODIFICATIONS: {
+                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+                if (bestType != null && bestType.isPrimaryType()
+                        && bestType.isAbstract()
+                        && "java.util.function".equals(bestType.packageName())) {
+                    return Level.TRUE;
+                }
+                break;
+            }
+
             default:
+                throw new PropertyException(Analyser.AnalyserIdentification.PARAMETER, variableProperty);
         }
         return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
     }

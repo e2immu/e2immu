@@ -320,6 +320,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     @Override
+    public int getProperty(VariableProperty variableProperty) {
+        throw new UnsupportedOperationException("? statemens have no property");
+    }
+
+    @Override
     public Location location() {
         return new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
     }
