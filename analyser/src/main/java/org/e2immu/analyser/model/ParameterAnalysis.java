@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.PropertyException;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -112,6 +109,9 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterProperty(AnalysisProvider analysisProvider,
                                      ParameterInfo parameterInfo,
                                      VariableProperty variableProperty) {
+        int propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, variableProperty);
+        if (propertyFromType > Level.DELAY) return propertyFromType;
+
         switch (variableProperty) {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
@@ -125,13 +125,24 @@ public interface ParameterAnalysis extends Analysis {
                 // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified
                 // if the method is not abstract and @Container is true, then we must have @NotModified
                 // but if the method is abstract, and @Container is to be computed, the default is @Modified
-                if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
-                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE
-                        && (!parameterInfo.owner.isAbstract() || parameterInfo.owner.typeInfo.typePropertiesAreContracted())) {
-                    return Level.FALSE;
+                if (!parameterInfo.owner.isPrivate()) {
+                    int ownerTypeContainer = analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
+                            .getProperty(VariableProperty.CONTAINER);
+                    if (ownerTypeContainer == Level.TRUE
+                            && (!parameterInfo.owner.isAbstract() || parameterInfo.owner.typeInfo.typePropertiesAreContracted())) {
+                        return Level.FALSE;
+                    }
                 }
                 int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
                 if (mv != Level.DELAY) return mv;
+
+                // unless otherwise contracted, non-private abstract methods have modified parameters
+                if (!parameterInfo.owner.isPrivate() && parameterInfo.owner.isAbstract()) {
+                    return Level.TRUE;
+                }
+                // note that parameters of E2Immutable type need not necessarily be @NotModified!
+                // there can be a modification of the immutable content (see e.g. Modification_23)
+
                 /* TODO replacement code @Dependent1
                 if (parameterInfo.owner.isAbstract()) {
                     int pm = analysisProvider.getMethodAnalysis(parameterInfo.owner).getMethodProperty(analysisProvider,
@@ -156,6 +167,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
                 return Math.max(cm, mom);
             }
+
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
@@ -186,6 +198,7 @@ public interface ParameterAnalysis extends Analysis {
 
             case CONTEXT_IMMUTABLE:
             case EXTERNAL_IMMUTABLE:
+            case EXTERNAL_NOT_NULL:
                 break;
 
             case IMMUTABLE: {

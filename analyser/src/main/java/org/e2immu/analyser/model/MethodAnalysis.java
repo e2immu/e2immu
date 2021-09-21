@@ -103,10 +103,8 @@ public interface MethodAnalysis extends Analysis {
     }
 
     Function<Integer, Integer> OVERRIDE_FALSE = x -> Level.FALSE;
+    Function<Integer, Integer> OVERRIDE_TRUE = x -> Level.TRUE;
     Function<Integer, Integer> OVERRIDE_EFFECTIVELY_NOT_NULL = x -> MultiLevel.EFFECTIVELY_NOT_NULL;
-    Function<Integer, Integer> OVERRIDE_E2IMMUTABLE = x -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-    Function<Integer, Integer> OVERRIDE_INDEPENDENT = x -> MultiLevel.INDEPENDENT;
-
     Function<Integer, Integer> NO_INFLUENCE = x -> x;
 
     default Function<Integer, Integer> influenceOfType(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
@@ -114,28 +112,29 @@ public interface MethodAnalysis extends Analysis {
         ParameterizedType returnType = methodInfo.returnType();
 
         switch (variableProperty) {
-            case IMMUTABLE:
-                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_E2IMMUTABLE;
-                return NO_INFLUENCE;
-
             case INDEPENDENT:
-                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_INDEPENDENT;
+                if (methodInfo.isConstructor) {
+                    int worstOverParameters = methodInfo.methodInspection.get().getParameters().stream()
+                            .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi)
+                                    .getParameterProperty(analysisProvider, pi, VariableProperty.INDEPENDENT))
+                            .min().orElse(MultiLevel.INDEPENDENT);
+                    if (worstOverParameters > Level.DELAY) return x -> worstOverParameters;
+                }
                 return NO_INFLUENCE;
 
             case MODIFIED_METHOD:
+                if (methodInfo.isConstructor) return OVERRIDE_TRUE; // by definition
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
-                if (!methodInfo.isConstructor &&
-                        // keep this isAbstract check! See PropagateModification_1;
-                        // a type can be @E2Immutable with an abstract method,
-                        // which can still have MODIFIED_METHOD == Level.DELAY rather than Level.FALSE
-                        !methodInfo.isAbstract() &&
+                // keep this isAbstract check! See PropagateModification_1;
+                // a type can be @E2Immutable with an abstract method,
+                // which can still have MODIFIED_METHOD == Level.DELAY rather than Level.FALSE
+                if (!methodInfo.isAbstract() &&
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return OVERRIDE_FALSE;
                 }
                 return NO_INFLUENCE;
 
             case NOT_NULL_EXPRESSION:
-                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return OVERRIDE_EFFECTIVELY_NOT_NULL;
                 return NO_INFLUENCE;
@@ -155,6 +154,9 @@ public interface MethodAnalysis extends Analysis {
     The ShallowMethodAnalyser sets explicit values for this case.
      */
     default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        int propertyFromType = ImplicitProperties.fromType(getMethodInfo().returnType(), variableProperty);
+        if (propertyFromType > Level.DELAY) return propertyFromType;
+
         return switch (variableProperty) {
             case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONSTANT, CONTAINER, FINALIZER, IMMUTABLE -> getPropertyCheckOverrides(analysisProvider, variableProperty);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);

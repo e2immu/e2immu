@@ -112,14 +112,14 @@ public enum VariableProperty {
     /**
      * The default for parameters is @Modified
      */
-    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE),
+    MODIFIED_VARIABLE("@Modified variable"),
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
     CONTEXT_MODIFIED("modified in context"),
     /**
      * The default for methods is @NotModified
      */
-    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.FALSE),
-    TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.FALSE),
+    MODIFIED_METHOD("@Modified method"),
+    TEMP_MODIFIED_METHOD("@Modified method, temp"),
 
     /*
     @Dependent, @Independent, @Dependent1, @Dependent2

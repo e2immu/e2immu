@@ -24,7 +24,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,6 +54,7 @@ public class TestDefaultAnnotations {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
+        parser.preload("java.util");
         parser.run();
         typeContext = parser.getTypeContext();
 
@@ -127,8 +130,71 @@ public class TestDefaultAnnotations {
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.FINALIZER));
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.FINAL));
 
-        // FIELD
+    }
 
+    // Collection.toArray(T[] array) returns array
+    @Test
+    public void testArrayAsParameterAndReturnType() {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+
+        MethodInfo toArray = collection.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> "toArray".equals(m.name))
+                .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
+                        m.methodInspection.get().getParameters().get(0).parameterizedType.arrays == 1)
+                .findFirst().orElseThrow();
+        ParameterInfo tArray = toArray.methodInspection.get().getParameters().get(0);
+        ParameterAnalysis tArrayAnalysis = tArray.parameterAnalysis.get();
+
+        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.IDENTITY));
+        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.NULLABLE, tArrayAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, tArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+        MethodAnalysis toArrayAnalysis = toArray.methodAnalysis.get();
+        assertEquals(Level.TRUE, toArrayAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.NULLABLE, toArrayAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+    }
+
+    @Test
+    public void testConstructor() {
+
+        // CONSTRUCTOR 1
+
+        TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
+
+        MethodInfo emptyConstructor = arrayList.findConstructor(0);
+        MethodAnalysis emptyAnalysis = emptyConstructor.methodAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT, emptyAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        // all constructors are modified, by definition
+        assertEquals(Level.TRUE, emptyAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
+        TypeInfo hashMap = typeContext.getFullyQualified(HashMap.class);
+
+        // CONSTRUCTOR 2
+
+        // constructor with int and float parameters
+        MethodInfo twoConstructor = hashMap.findConstructor(2);
+        MethodAnalysis twoAnalysis = twoConstructor.methodAnalysis.get();
+        assertEquals(MultiLevel.INDEPENDENT, twoAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(Level.TRUE, twoAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
+        ParameterInfo intParam = twoConstructor.methodInspection.get().getParameters().get(0);
+        ParameterAnalysis intAnalysis = intParam.parameterAnalysis.get();
+
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, intAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, intAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, intAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(Level.FALSE, intAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertThrows(PropertyException.class, () -> intAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+    }
+
+    @Test
+    public void testField() {
         TypeInfo system = typeContext.getFullyQualified(System.class);
         assertNotNull(system);
 
@@ -138,10 +204,12 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, outAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(MultiLevel.MUTABLE, outAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, outAnalysis.getProperty(VariableProperty.FINAL));
+        assertEquals(Level.FALSE, outAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
 
         if (outAnalysis instanceof FieldAnalysisImpl outAnalysisImpl) {
             assertEquals(1, outAnalysisImpl.properties.size()); // FINAL
             assertTrue(outAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
         } else fail();
+
     }
 }

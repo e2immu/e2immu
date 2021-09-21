@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.parser.Primitives;
 
 public interface FieldAnalysis extends Analysis {
 
@@ -45,9 +44,11 @@ public interface FieldAnalysis extends Analysis {
                                  FieldInfo fieldInfo,
                                  TypeInfo bestType,
                                  VariableProperty variableProperty) {
+        int propertyFromType = ImplicitProperties.fromType(fieldInfo.type, variableProperty);
+        if (propertyFromType > Level.DELAY) return propertyFromType;
+
         switch (variableProperty) {
             case IMMUTABLE:
-                if (fieldInfo.type.arrays > 0) return MultiLevel.MUTABLE;
                 int fieldImmutable = getPropertyFromMapDelayWhenAbsent(variableProperty);
                 if (fieldImmutable == Level.DELAY && !fieldInfo.owner.shallowAnalysis()) {
                     return Level.DELAY;
@@ -56,18 +57,12 @@ public interface FieldAnalysis extends Analysis {
                         analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
                 return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
-            case NOT_NULL_EXPRESSION:
-            case CONTEXT_NOT_NULL:
-            case NOT_NULL_PARAMETER:
-                throw new UnsupportedOperationException("Property " + variableProperty);
-
+            case INDEPENDENT:
             case EXTERNAL_NOT_NULL:
-                if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                break;
-
             case CONSTANT:
             case CONTAINER:
             case FINAL:
+            case MODIFIED_OUTSIDE_METHOD:
                 break;
 
             default:
