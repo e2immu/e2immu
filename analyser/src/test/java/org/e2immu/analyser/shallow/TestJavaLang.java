@@ -23,10 +23,12 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,7 +66,6 @@ public class TestJavaLang {
     private void testE2ContainerType(TypeAnalysis typeAnalysis) {
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.INDEPENDENT_2, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS));
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
@@ -82,6 +83,7 @@ public class TestJavaLang {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
         testE2ContainerType(objectAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, objectAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
@@ -89,6 +91,7 @@ public class TestJavaLang {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
         testE2ContainerType(typeAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
 
@@ -104,5 +107,57 @@ public class TestJavaLang {
 
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_2, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testStringBuilder() {
+        TypeInfo sb = typeContext.getFullyQualified(StringBuilder.class);
+        TypeAnalysis typeAnalysis = sb.typeAnalysis.get();
+
+        MethodInfo appendBoolean = sb.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> "append".equals(m.name))
+                .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
+                        Primitives.isBoolean(m.methodInspection.get().getParameters().get(0).parameterizedType))
+                .findFirst().orElseThrow();
+        MethodAnalysis appendAnalysis = appendBoolean.methodAnalysis.get();
+
+        // a @Fluent method in a modifiable type is @Dependent (it returns 'this', which is modifiable)
+        assertEquals(Level.TRUE, appendAnalysis.getProperty(VariableProperty.FLUENT));
+        assertEquals(MultiLevel.DEPENDENT, appendAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        // as a consequence, the type is DEPENDENT as well
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+    }
+
+    @Test
+    public void testCharSequence() {
+        TypeInfo string = typeContext.getFullyQualified(String.class);
+        TypeAnalysis typeAnalysis = string.typeAnalysis.get();
+        testE2ContainerType(typeAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testComparable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        testE2ContainerType(typeAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testSerializable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        testE2ContainerType(typeAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testAppendable() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Appendable.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 }

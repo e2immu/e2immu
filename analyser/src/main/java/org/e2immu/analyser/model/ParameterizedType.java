@@ -721,17 +721,7 @@ public class ParameterizedType {
     }
 
     public boolean isUnboundTypeParameter(InspectionProvider inspectionProvider) {
-        if (typeParameter == null || arrays > 0) return false;
-        if (wildCard != WildCard.NONE) return false; // we're in a definition
-        TypeParameter definition;
-        if (typeParameter.getOwner().isLeft()) {
-            TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
-            definition = typeInspection.typeParameters().get(typeParameter.getIndex());
-        } else {
-            MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
-            definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
-        }
-        return definition.getTypeBounds().isEmpty();
+        return bestTypeInfo(inspectionProvider) == null;
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {
@@ -772,9 +762,27 @@ public class ParameterizedType {
     }
 
     public TypeInfo bestTypeInfo() {
+        return bestTypeInfo(InspectionProvider.DEFAULT);
+    }
+
+    public TypeInfo bestTypeInfo(InspectionProvider inspectionProvider) {
         if (typeInfo != null) return typeInfo;
-        if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
-            return parameters.get(0).bestTypeInfo();
+        if (typeParameter != null) {
+            if (wildCard == WildCard.EXTENDS && parameters.size() == 1) {
+                return parameters.get(0).bestTypeInfo();
+            }
+            TypeParameter definition;
+            if (typeParameter.getOwner().isLeft()) {
+                TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
+                definition = typeInspection.typeParameters().get(typeParameter.getIndex());
+            } else {
+                MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
+                definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
+            }
+            if (!definition.getTypeBounds().isEmpty()) {
+                // IMPROVE should be a joint type
+                return definition.getTypeBounds().get(0).typeInfo;
+            }
         }
         return null;
     }

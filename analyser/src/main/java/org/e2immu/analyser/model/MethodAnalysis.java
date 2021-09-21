@@ -113,16 +113,37 @@ public interface MethodAnalysis extends Analysis {
 
         switch (variableProperty) {
             case INDEPENDENT:
-                if (methodInfo.isConstructor) {
-                    int worstOverParameters = methodInfo.methodInspection.get().getParameters().stream()
-                            .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi)
-                                    .getParameterProperty(analysisProvider, pi, VariableProperty.INDEPENDENT))
-                            .min().orElse(MultiLevel.INDEPENDENT);
-                    if (worstOverParameters > Level.DELAY) return x -> worstOverParameters;
+                int worstOverParameters = methodInfo.methodInspection.get().getParameters().stream()
+                        .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi)
+                                .getParameterProperty(analysisProvider, pi, VariableProperty.INDEPENDENT))
+                        .min().orElse(MultiLevel.INDEPENDENT);
+                int returnValue;
+                if (methodInfo.isConstructor || methodInfo.isVoid()) {
+                    returnValue = MultiLevel.INDEPENDENT;
+                } else {
+                    int immutable = getMethodProperty(analysisProvider, VariableProperty.IMMUTABLE);
+                    if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                        TypeInfo bestType = returnType.bestTypeInfo();
+                        if (bestType != null) {
+                            // no idea yet
+                            int typeIndependent = analysisProvider.getTypeAnalysis(bestType).getTypeProperty(analysisProvider, variableProperty);
+                            if (typeIndependent == MultiLevel.INDEPENDENT) {
+                                return inMethod -> Math.max(inMethod, Math.min(worstOverParameters, MultiLevel.INDEPENDENT));
+                            }
+                            returnValue = Level.DELAY;
+                        } else {
+                            // unbound type parameter
+                            return inMethod -> Math.max(inMethod, Math.min(worstOverParameters, MultiLevel.DEPENDENT_1));
+                        }
+                    } else {
+                        returnValue = Level.DELAY;
+                    }
                 }
+                int worst = Math.min(worstOverParameters, returnValue);
+                if (worst > Level.DELAY) return x -> worstOverParameters;
                 return NO_INFLUENCE;
 
-            case MODIFIED_METHOD:
+            case MODIFIED_METHOD: {
                 if (methodInfo.isConstructor) return OVERRIDE_TRUE; // by definition
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 // keep this isAbstract check! See PropagateModification_1;
@@ -133,7 +154,7 @@ public interface MethodAnalysis extends Analysis {
                     return OVERRIDE_FALSE;
                 }
                 return NO_INFLUENCE;
-
+            }
             case NOT_NULL_EXPRESSION:
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return OVERRIDE_EFFECTIVELY_NOT_NULL;
@@ -143,6 +164,12 @@ public interface MethodAnalysis extends Analysis {
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return NO_INFLUENCE;
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
                 return inMethod -> Math.max(inMethod, container);
+
+            case IMMUTABLE: {
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
+                int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                return inMethod -> Math.max(inMethod, immutable);
+            }
 
             default:
                 return NO_INFLUENCE;

@@ -72,6 +72,13 @@ public interface TypeInspection extends Inspection {
         return getAnnotations().stream().anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
     }
 
+    default boolean onlyHasPrivateMethods() {
+        return Stream.concat(methodStream(Methods.THIS_TYPE_ONLY),
+                        typeInfo().typeResolution.get().superTypesExcludingJavaLangObject().stream()
+                                .flatMap(t -> methodStream(Methods.THIS_TYPE_ONLY)))
+                .allMatch(MethodInfo::isPrivate);
+    }
+
     enum Methods {
 
         THIS_TYPE_ONLY(false, null),

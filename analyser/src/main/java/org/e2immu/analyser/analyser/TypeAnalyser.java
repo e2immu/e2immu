@@ -129,7 +129,7 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
 
     private void checkWorseThanSpecifiedInInterfacesImplemented() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
-            int valueFromOverrides = typeAnalysis.valueFromInterfacesImplemented(analyserContext, variableProperty);
+            int valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, variableProperty);
             int value = typeAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
                 boolean complain = value < valueFromOverrides;

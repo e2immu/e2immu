@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -77,14 +77,30 @@ public interface TypeAnalysis extends Analysis {
      */
     Set<ParameterizedType> getTransparentTypes();
 
-    default int getTypeProperty(VariableProperty variableProperty) {
-        return switch (variableProperty) {
-            case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, INDEPENDENT,
-                    FINALIZER -> getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis()
-                    ? getPropertyFromMapNeverDelay(variableProperty)
-                    : getPropertyFromMapDelayWhenAbsent(variableProperty);
+    default int getTypeProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
+
+        switch (variableProperty) {
+            case INDEPENDENT -> {
+                int independentInMap = getPropertyFromMapDelayWhenAbsent(variableProperty);
+                if (independentInMap > Level.DELAY) return independentInMap;
+                int myMethods = getTypeInfo().typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .mapToInt(m -> analysisProvider.getMethodAnalysis(m).getMethodProperty(analysisProvider, VariableProperty.INDEPENDENT))
+                        .min().orElse(MultiLevel.INDEPENDENT);
+                int fromSuperTypes = minValueFromInterfacesImplemented(analysisProvider, variableProperty);
+                return Math.min(myMethods, fromSuperTypes);
+            }
+            case IMMUTABLE, CONTAINER -> {
+                boolean noMethods = getTypeInfo().typeInspection.get().onlyHasPrivateMethods();
+                if (noMethods) return variableProperty.best;
+            }
+            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
+                // ensure that we do not throw an exception
+            }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, variableProperty);
-        };
+        }
+        return doNotDelay ? getPropertyFromMapNeverDelay(variableProperty)
+                : getPropertyFromMapDelayWhenAbsent(variableProperty);
     }
 
     /**
@@ -96,10 +112,19 @@ public interface TypeAnalysis extends Analysis {
         return getAspects().containsKey(aspect);
     }
 
-    default int valueFromInterfacesImplemented(AnalyserContext analyserContext, VariableProperty variableProperty) {
+    default int maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream().filter(TypeInfo::isInterface);
-        return implementedInterfaces.map(analyserContext::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty)).max().orElse(Level.DELAY);
+        return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
+                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(analysisProvider, variableProperty))
+                .max().orElse(Level.DELAY);
+    }
+
+    default int minValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
+                .stream().filter(TypeInfo::isInterface);
+        return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
+                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(analysisProvider, variableProperty))
+                .min().orElse(variableProperty.best);
     }
 }
