@@ -716,8 +716,22 @@ public class ParameterizedType {
         return typeInspection.isFunctionalInterface();
     }
 
-    public boolean isUnboundParameterType() {
-        return isTypeParameter() && wildCard == WildCard.NONE;
+    public boolean isUnboundTypeParameter() {
+        return isUnboundTypeParameter(InspectionProvider.DEFAULT);
+    }
+
+    public boolean isUnboundTypeParameter(InspectionProvider inspectionProvider) {
+        if (typeParameter == null || arrays > 0) return false;
+        if (wildCard != WildCard.NONE) return false; // we're in a definition
+        TypeParameter definition;
+        if (typeParameter.getOwner().isLeft()) {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
+            definition = typeInspection.typeParameters().get(typeParameter.getIndex());
+        } else {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
+            definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
+        }
+        return definition.getTypeBounds().isEmpty();
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {
@@ -899,7 +913,7 @@ public class ParameterizedType {
             return typeParameter.getTypeBounds().stream().mapToInt(pt -> pt.defaultImmutable(analysisProvider)).min().orElseThrow();
         }
         TypeInfo bestType = bestTypeInfo();
-        if(bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE; // null constant, return type of void method
+        if (bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE; // null constant, return type of void method
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }

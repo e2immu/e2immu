@@ -212,8 +212,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         /* constructor */
 
         public Builder(TypeInfo owner) {
-            this(Identifier.generate(),owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+            this(Identifier.generate(), owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
         }
+
         public Builder(Identifier identifier, TypeInfo owner) {
             this(identifier, owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
         }
@@ -222,6 +223,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public Builder(TypeInfo owner, String name) {
             this(Identifier.generate(), owner, name, false, false, NOT_A_STATIC_BLOCK);
         }
+
         public Builder(Identifier identifier, TypeInfo owner, String name) {
             this(identifier, owner, name, false, false, NOT_A_STATIC_BLOCK);
         }
@@ -240,7 +242,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         private Builder(Identifier identifier,
-                TypeInfo owner,
+                        TypeInfo owner,
                         String name,
                         boolean isConstructor,
                         boolean isCompact,

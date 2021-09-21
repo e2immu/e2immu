@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,6 +76,8 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.FINALIZER));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.IDENTITY));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
 
         if (typeAnalysis instanceof TypeAnalysisImpl typeAnalysisImpl) {
             assertTrue(typeAnalysisImpl.properties.isEmpty());
@@ -129,6 +132,41 @@ public class TestDefaultAnnotations {
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.FLUENT));
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.FINALIZER));
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.FINAL));
+    }
+
+    @Test
+    public void testListGet() {
+        TypeInfo list = typeContext.getFullyQualified(List.class);
+        MethodInfo get = list.findUniqueMethod("get", 1);
+        MethodAnalysis getAnalysis = get.methodAnalysis.get();
+
+        assertEquals(Level.TRUE, getAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(Level.FALSE, getAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, getAnalysis.getProperty(VariableProperty.IMMUTABLE));
+
+        // an unbound type parameter cannot be DEPENDENT
+        assertEquals(MultiLevel.DEPENDENT_1, getAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.NULLABLE, getAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+    }
+
+    @Test
+    public void testListAdd() {
+        TypeInfo list = typeContext.getFullyQualified(List.class);
+        MethodInfo add = list.findUniqueMethod("add", 1);
+        MethodAnalysis addAnalysis = add.methodAnalysis.get();
+
+        assertEquals(Level.TRUE, addAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, addAnalysis.getProperty(VariableProperty.IMMUTABLE));
+
+        ParameterAnalysis paramAnalysis = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
+
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, paramAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+        // an unbound type parameter cannot be DEPENDENT
+        assertEquals(MultiLevel.DEPENDENT_1, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
     }
 
@@ -196,8 +234,6 @@ public class TestDefaultAnnotations {
     @Test
     public void testField() {
         TypeInfo system = typeContext.getFullyQualified(System.class);
-        assertNotNull(system);
-
         FieldInfo out = system.getFieldByName("out", true);
         FieldAnalysis outAnalysis = out.fieldAnalysis.get();
 
@@ -205,10 +241,29 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.MUTABLE, outAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, outAnalysis.getProperty(VariableProperty.FINAL));
         assertEquals(Level.FALSE, outAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+        assertEquals(MultiLevel.DEPENDENT, outAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         if (outAnalysis instanceof FieldAnalysisImpl outAnalysisImpl) {
-            assertEquals(1, outAnalysisImpl.properties.size()); // FINAL
+            assertEquals(1, outAnalysisImpl.properties.size());
             assertTrue(outAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
+        } else fail();
+    }
+
+    @Test
+    public void testIntField() {
+        TypeInfo integer = typeContext.getFullyQualified(Integer.class);
+        FieldInfo bytes = integer.getFieldByName("BYTES", true);
+        FieldAnalysis bytesAnalysis = bytes.fieldAnalysis.get();
+
+        assertEquals(Level.TRUE, bytesAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, bytesAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, bytesAnalysis.getProperty(VariableProperty.FINAL));
+        assertEquals(Level.FALSE, bytesAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT, bytesAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        if (bytesAnalysis instanceof FieldAnalysisImpl bytesAnalysisImpl) {
+            assertEquals(1, bytesAnalysisImpl.properties.size());
+            assertTrue(bytesAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
         } else fail();
 
     }

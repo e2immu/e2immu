@@ -104,17 +104,22 @@ public class ShallowMethodResolver {
                                       Map<NamedType, ParameterizedType> translationMap) {
         if (!base.name.equals(targetInspection.getMethodInfo().name)) return false;
         MethodInspection baseInspection = inspectionProvider.getMethodInspection(base);
-        return sameParameters(baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
+        return sameParameters(inspectionProvider,
+                baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
     }
 
-    private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,
-                                          List<ParameterInfo> parametersOfTarget,
-                                          Map<NamedType, ParameterizedType> translationMap) {
+    private static boolean sameParameters(
+            InspectionProvider inspectionProvider,
+            List<ParameterInfo> parametersOfMyMethod,
+            List<ParameterInfo> parametersOfTarget,
+            Map<NamedType, ParameterizedType> translationMap) {
         if (parametersOfMyMethod.size() != parametersOfTarget.size()) return false;
         int i = 0;
         for (ParameterInfo parameterInfo : parametersOfMyMethod) {
             ParameterInfo p2 = parametersOfTarget.get(i);
-            if (differentType(parameterInfo.parameterizedType, p2.parameterizedType, translationMap)) return false;
+            if (differentType(inspectionProvider, parameterInfo.parameterizedType, p2.parameterizedType, translationMap)) {
+                return false;
+            }
             i++;
         }
         return true;
@@ -135,9 +140,11 @@ public class ShallowMethodResolver {
      * @param translationMap a map from type parameters in the super type to (more) concrete types in the sub-type
      * @return true if the types are "different"
      */
-    private static boolean differentType(ParameterizedType inSuperType,
-                                         ParameterizedType inSubType,
-                                         Map<NamedType, ParameterizedType> translationMap) {
+    private static boolean differentType(
+            InspectionProvider inspectionProvider,
+            ParameterizedType inSuperType,
+            ParameterizedType inSubType,
+            Map<NamedType, ParameterizedType> translationMap) {
         Objects.requireNonNull(inSuperType);
         Objects.requireNonNull(inSubType);
         if (inSuperType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR && inSubType == inSuperType) return false;
@@ -148,7 +155,7 @@ public class ShallowMethodResolver {
             int i = 0;
             for (ParameterizedType param1 : inSuperType.parameters) {
                 ParameterizedType param2 = inSubType.parameters.get(i);
-                if (differentType(param1, param2, translationMap)) return true;
+                if (differentType(inspectionProvider, param1, param2, translationMap)) return true;
                 i++;
             }
             return false;
@@ -157,7 +164,7 @@ public class ShallowMethodResolver {
             // check if we can go from the parameter to the concrete type
             ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
             if (inMap == null) return true;
-            return differentType(inMap, inSubType, translationMap);
+            return differentType(inspectionProvider, inMap, inSubType, translationMap);
         }
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
         if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;
@@ -165,13 +172,14 @@ public class ShallowMethodResolver {
         ParameterizedType translated =
                 translationMap.get(inSuperType.typeParameter);
         if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
-        if (inSubType.isUnboundParameterType() && inSuperType.isUnboundParameterType()) return false;
+        if (inSubType.isUnboundTypeParameter(inspectionProvider) &&
+                inSuperType.isUnboundTypeParameter(inspectionProvider)) return false;
         List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.getTypeBounds();
         List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.getTypeBounds();
         if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
         int i = 0;
         for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
-            boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
+            boolean different = differentType(inspectionProvider, typeBound, inSuperTypeBounds.get(i), translationMap);
             if (different) return true;
         }
         return false;

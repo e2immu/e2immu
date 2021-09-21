@@ -79,7 +79,6 @@ public interface TypeAnalysis extends Analysis {
 
     default int getTypeProperty(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
             case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, INDEPENDENT,
                     FINALIZER -> getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis()
                     ? getPropertyFromMapNeverDelay(variableProperty)

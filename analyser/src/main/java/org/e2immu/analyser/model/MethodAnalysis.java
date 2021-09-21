@@ -179,8 +179,14 @@ public interface MethodAnalysis extends Analysis {
         }
         int max = Math.max(influencedByType, bestOfOverrides);
 
-        if (max == Level.DELAY && getMethodInfo().isAbstract()) {
+        if (variableProperty == VariableProperty.INDEPENDENT
+                && max < MultiLevel.DEPENDENT_1
+                && getMethodInfo().returnType().isUnboundTypeParameter()
+                && getMethodInfo().isAbstract()) {
+            return MultiLevel.DEPENDENT_1;
+        }
 
+        if (max == Level.DELAY && getMethodInfo().isAbstract()) {
             // unless: abstract methods, not annotated for modification
             if (variableProperty == VariableProperty.MODIFIED_METHOD) {
                 /*

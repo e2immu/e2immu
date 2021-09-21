@@ -41,12 +41,16 @@ public class MultiLevel {
     public static final int NOT_NULL_1 = 1;
     public static final int NOT_NULL_2 = 2;
     public static final int NOT_NULL_3 = 3;
+    public static final int INDEPENDENT_1 = 0; // mutable content level
+    public static final int INDEPENDENT_2 = 1; // immutable content level
 
     // DEPENDENT (only at the first level, nothing to do with eventual)
 
     public static final int DEPENDENT = FALSE; // no need for more
-    public static final int DEPENDENT_1 = EVENTUAL_BEFORE;
-    public static final int INDEPENDENT = EFFECTIVE;
+    // dependent_1 == independent at level 1, but dependent at level 2
+    public static final int DEPENDENT_1 = compose(EFFECTIVE);
+    // independent == independent both at level 1 (mutable content) and level 2 (immutable content)
+    public static final int INDEPENDENT = compose(EFFECTIVE, EFFECTIVE);
 
     // IMMUTABLE
 

@@ -846,7 +846,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private AnalysisStatus methodIsIndependent(SharedState sharedState) {
-        assert methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.DELAY;
+        int currentValue = methodAnalysis.getProperty(INDEPENDENT);
+        if(currentValue != Level.DELAY) {
+            return DONE;
+        }
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         if (!methodInfo.isConstructor) {

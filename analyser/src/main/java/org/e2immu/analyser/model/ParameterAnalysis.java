@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -83,21 +82,13 @@ public interface ParameterAnalysis extends Analysis {
 
         if (max == Level.DELAY) {
             // no information found in the whole hierarchy
-            switch (variableProperty) {
-                case MODIFIED_VARIABLE -> {
-                    if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                        return Level.DELAY;
-                    }
-                    // note: parameters of unbound type are not necessarily unmodified (see accept's parameter in Consumer)
-                    if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
-                        return Level.FALSE;
-                    }
+            if (variableProperty == MODIFIED_VARIABLE) {
+                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    return Level.DELAY;
                 }
-                case INDEPENDENT -> {
-                    if (parameterInfo.isOfUnboundParameterType(InspectionProvider.DEFAULT) ||
-                            parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
-                        return MultiLevel.EFFECTIVE;
-                    }
+                // note: parameters of unbound type are not necessarily unmodified (see accept's parameter in Consumer)
+                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
+                    return Level.FALSE;
                 }
             }
             return variableProperty.valueWhenAbsent();
@@ -119,7 +110,12 @@ public interface ParameterAnalysis extends Analysis {
             case INDEPENDENT:
                 int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT);
                 if (ip != Level.DELAY) return ip;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
+                int value = getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
+                if (value < MultiLevel.DEPENDENT_1 && parameterInfo.parameterizedType.isUnboundTypeParameter()
+                        && parameterInfo.owner.isAbstract()) {
+                    return MultiLevel.DEPENDENT_1;
+                }
+                return value;
 
             case MODIFIED_VARIABLE: {
                 // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified
@@ -196,6 +192,7 @@ public interface ParameterAnalysis extends Analysis {
                 return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
             }
 
+            case IMMUTABLE_BEFORE_CONTRACTED:
             case CONTEXT_IMMUTABLE:
             case EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:

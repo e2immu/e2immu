@@ -61,7 +61,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public ParameterizedType concreteTypeNullWhenDelayed() {
-        if (fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+        if (fieldInfo.type.isUnboundTypeParameter()) return fieldInfo.type;
         if (effectivelyFinalValue != null) {
             return effectivelyFinalValue.returnType();
         }
@@ -141,7 +141,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public ParameterizedType concreteTypeNullWhenDelayed() {
-            if (fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+            if (fieldInfo.type.isUnboundTypeParameter()) return fieldInfo.type;
             if (effectivelyFinalValue.isSet()) {
                 Expression efv = effectivelyFinalValue.get();
                 if (!efv.isUnknown()) {

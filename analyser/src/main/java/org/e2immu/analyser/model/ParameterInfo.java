@@ -253,19 +253,4 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     public String niceClassName() {
         return "Parameter";
     }
-
-    public boolean isOfUnboundParameterType(InspectionProvider inspectionProvider) {
-        if (parameterizedType.typeParameter != null) {
-            Either<TypeInfo, MethodInfo> owner = parameterizedType.typeParameter.getOwner();
-            TypeParameter original;
-            int index = parameterizedType.typeParameter.getIndex();
-            if (owner.isLeft()) {
-                original = inspectionProvider.getTypeInspection(owner.getLeft()).typeParameters().get(index);
-            } else {
-                original = inspectionProvider.getMethodInspection(owner.getRight()).getTypeParameters().get(index);
-            }
-            return original.getTypeBounds().isEmpty();
-        }
-        return false;
-    }
 }

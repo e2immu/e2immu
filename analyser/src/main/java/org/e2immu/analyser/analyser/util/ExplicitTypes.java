@@ -174,7 +174,7 @@ public class ExplicitTypes {
         Objects.requireNonNull(methodInfo);
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
             ParameterizedType formal = parameterInfo.parameterizedType;
-            if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundParameterType()) {
+            if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundTypeParameter()) {
                 add(formal, usedAs);
             }
         }

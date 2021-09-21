@@ -512,7 +512,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<VariableProperty> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
+            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
 
     /*
     assume that all parameters, also those from closures, are already present

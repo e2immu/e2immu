@@ -276,7 +276,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 return true;
 
             boolean explicit = explicitTypesAsSet.contains(type);
-            boolean assignableFrom = !type.isUnboundParameterType() &&
+            boolean assignableFrom = !type.isUnboundTypeParameter() &&
                     explicitTypesAsSet.stream().anyMatch(t -> {
                         try {
                             return type.isAssignableFrom(analyserContext, t);

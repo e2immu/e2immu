@@ -14,11 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.stream.Stream;
 
 public class ImplicitProperties {
 
@@ -41,7 +40,6 @@ public class ImplicitProperties {
         };
     }
 
-    // INDEPENDENT -> DEP1 or INDEPENDENT
     public static int unboundTypeParameterProperties(VariableProperty variableProperty) {
         return switch (variableProperty) {
             case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE;
@@ -53,29 +51,17 @@ public class ImplicitProperties {
 
     public static int fromType(ParameterizedType parameterizedType, VariableProperty variableProperty) {
         if (parameterizedType.arrays > 0) {
-            int arrayProperty = arrayProperties(variableProperty);
-            if (arrayProperty > Level.DELAY) return arrayProperty;
+            int arrayPropertyValue = arrayProperties(variableProperty);
+            if (arrayPropertyValue > Level.DELAY) return arrayPropertyValue;
         }
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            int primitiveProperty = primitiveProperties(variableProperty);
-            if (primitiveProperty > Level.DELAY) return primitiveProperty;
+            int primitivePropertyValue = primitiveProperties(variableProperty);
+            if (primitivePropertyValue > Level.DELAY) return primitivePropertyValue;
+        }
+        if (parameterizedType.isUnboundTypeParameter()) {
+            int unboundPropertyValue = unboundTypeParameterProperties(variableProperty);
+            if (unboundPropertyValue > Level.DELAY) return unboundPropertyValue;
         }
         return Level.DELAY;
-    }
-
-    public static int implicitMethodIndependence(MethodInfo methodInfo,
-                                                 Stream<ParameterAnalysis> parameterAnalysisStream,
-                                                 InspectionProvider inspectionProvider,
-                                                 AnalysisProvider analysisProvider) {
-
-        // if all parameters are annotated @Independent or @Dependent1, and the method is a constructor,
-        // or, a method returning an independent type, then the method is @Independent
-
-        int minParams = parameterAnalysisStream.mapToInt(parameterAnalysis ->
-                parameterAnalysis.getProperty(VariableProperty.INDEPENDENT)).min().orElse(MultiLevel.INDEPENDENT);
-        if (minParams <= MultiLevel.DEPENDENT) return minParams; // Level.DELAY, MultiLevel.DEPENDENT
-
-        if (methodInfo.isConstructor || !methodInfo.hasReturnValue()) return MultiLevel.INDEPENDENT;
-        return Level.DELAY;//methodInfo.returnTypeIsIndependent(inspectionProvider, analysisProvider);
     }
 }
