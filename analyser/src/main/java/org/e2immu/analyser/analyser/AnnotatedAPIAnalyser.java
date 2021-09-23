@@ -93,33 +93,36 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         Map<MethodInfo, MethodAnalyser> methodAnalysers = new HashMap<>();
         for (TypeInfo typeInfo : types) {
-            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
-                    primitives, typeInfo, null);
-            typeAnalyses.put(typeInfo, typeAnalysis);
-            AtomicBoolean hasFinalizers = new AtomicBoolean();
-            typeInfo.typeInspection.get()
-                    .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                    .forEach(methodInfo -> {
-                        try {
-                            if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                analyseIsFact(methodInfo);
-                            } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
-                                analyseIsKnown(methodInfo);
-                            } else {
-                                MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
-                                MethodInspection methodInspection = methodInfo.methodInspection.get();
-                                if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
-                                methodAnalyser.initialize();
-                                methodAnalysers.put(methodInfo, methodAnalyser);
+            if (typeInfo.isPublic()) {
+                TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
+                        primitives, typeInfo, null);
+                typeAnalyses.put(typeInfo, typeAnalysis);
+                AtomicBoolean hasFinalizers = new AtomicBoolean();
+                typeInfo.typeInspection.get()
+                        .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                        .filter(methodInfo -> methodInfo.methodInspection.get().isPublic())
+                        .forEach(methodInfo -> {
+                            try {
+                                if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                    analyseIsFact(methodInfo);
+                                } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                    analyseIsKnown(methodInfo);
+                                } else {
+                                    MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
+                                    MethodInspection methodInspection = methodInfo.methodInspection.get();
+                                    if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
+                                    methodAnalyser.initialize();
+                                    methodAnalysers.put(methodInfo, methodAnalyser);
+                                }
+                            } catch (RuntimeException rte) {
+                                LOGGER.error("Caught runtime exception shallowly analysing method {}",
+                                        methodInfo.fullyQualifiedName);
+                                throw rte;
                             }
-                        } catch (RuntimeException rte) {
-                            LOGGER.error("Caught runtime exception shallowly analysing method {}",
-                                    methodInfo.fullyQualifiedName);
-                            throw rte;
-                        }
-                    });
-            if (hasFinalizers.get()) {
-                typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+                        });
+                if (hasFinalizers.get()) {
+                    typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+                }
             }
         }
         this.methodAnalysers = Map.copyOf(methodAnalysers);
@@ -150,10 +153,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
         });
 
+        LOGGER.info("Finished AnnotatedAPI type and field analysis of {} types; have {} messages of my own",
+                typeAnalyses.size(), messages.size());
+
         Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions = new HashMap<>();
         methodAnalysers.forEach((methodInfo, analyser) -> {
-            if (analyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
-                shallowMethodAnalyser.analyse();
+            if (analyser instanceof ShallowMethodAnalyser) {
+                analyser.analyse(0, null);
                 boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
                 if (hasNoCompanionMethods) {
                     methodInfo.setAnalysis(analyser.getAnalysis().build());
@@ -164,11 +170,42 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 nonShallowOrWithCompanions.put(methodInfo, analyser);
             }
         });
+        LOGGER.info("Finished AnnotatedAPI shallow method analysis on methods without companion methods, {} remaining",
+                nonShallowOrWithCompanions.size());
         if (!nonShallowOrWithCompanions.isEmpty()) {
             iterativeMethodAnalysis(nonShallowOrWithCompanions);
         }
+        validateIndependence();
+
         return Stream.concat(methodAnalysers.values().stream().flatMap(AbstractAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
+    }
+
+    private void validateIndependence() {
+        typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
+            int inMap = typeAnalysis.getPropertyFromMapNeverDelay(VariableProperty.INDEPENDENT);
+            int computed = computeIndependent(typeInfo);
+            if (inMap > computed) {
+                Message message = Message.newMessage(new Location(typeInfo), Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
+                        "Found " + inMap + ", computed maximally " + computed);
+                messages.add(message);
+            }
+        }));
+    }
+
+    private int computeIndependent(TypeInfo typeInfo) {
+        int myMethods = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> m.methodInspection.get().isPublic())
+                .mapToInt(m -> getMethodAnalysis(m).getMethodProperty(this, VariableProperty.INDEPENDENT))
+                .min().orElse(VariableProperty.INDEPENDENT.best);
+        Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
+                .stream();
+        int fromSuperTypes = superTypes
+                .filter(TypeInfo::isPublic)
+                .map(this::getTypeAnalysis)
+                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(VariableProperty.INDEPENDENT))
+                .min().orElse(VariableProperty.INDEPENDENT.best);
+        return Math.min(myMethods, fromSuperTypes);
     }
 
     // dedicated method exactly for this "isFact" method
@@ -279,7 +316,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         AbstractAnalyser analyser = methodAnalysers.get(methodInfo);
         if (analyser != null) return (MethodAnalysis) analyser.getAnalysis();
-        return methodInfo.methodAnalysis.get();
+        return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
     }
 
     @Override
@@ -292,6 +329,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         TypeAnalysis typeAnalysis = typeAnalyses.get(typeInfo);
         if (typeAnalysis != null) return typeAnalysis;
         return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
+    }
+
+    @Override
+    public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeAnalyses.get(typeInfo);
+        if (typeAnalysis != null) return typeAnalysis;
+        return typeInfo.typeAnalysis.isSet() ? typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName) : null;
     }
 
     private void iterativeMethodAnalysis(Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions) {
@@ -385,7 +429,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
         typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser.analyser(fieldInfo, isEnum));
     }
-
 
     @Override
     public boolean inAnnotatedAPIAnalysis() {

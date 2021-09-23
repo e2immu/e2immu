@@ -25,6 +25,10 @@ public interface AnalysisProvider {
 
     ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo);
 
+    default TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+        return getTypeAnalysis(typeInfo);
+    }
+
     TypeAnalysis getTypeAnalysis(TypeInfo typeInfo);
 
     MethodAnalysis getMethodAnalysis(MethodInfo methodInfo);

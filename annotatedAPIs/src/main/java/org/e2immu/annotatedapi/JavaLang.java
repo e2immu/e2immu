@@ -36,9 +36,11 @@ class JavaLang {
         Spliterator<T> spliterator();
     }
 
+    // @Independent implicit because all methods @Independent
     @E2Container
     interface Object$ {
         @NotNull
+        @Independent
         Object clone();
 
         default boolean equals$Value(Object object, boolean retVal) {
@@ -103,6 +105,7 @@ class JavaLang {
     }
 
     @E2Container
+    @Independent // explicit, so subSequence is also @Independent
     interface CharSequence$ {
         char charAt(int index);
 
@@ -116,9 +119,22 @@ class JavaLang {
         int length();
     }
 
+    @Container
+    interface Appendable$ {
+        @Fluent
+        Appendable append(char c);
+
+        @Fluent
+        Appendable append(CharSequence charSequence);
+
+        @Fluent
+        Appendable append(CharSequence charSequence, int start, int end);
+    }
+
     // a class, because we need to annotate the constructor
 
     @E2Container
+    @Independent // explicit, so all methods which return a String are @Independent as well
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {

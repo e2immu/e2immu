@@ -238,7 +238,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isPublic() {
-        return typeInspection.get().modifiers().contains(TypeModifier.PUBLIC);
+        if (!typeInspection.get().modifiers().contains(TypeModifier.PUBLIC)) return false;
+        if (packageNameOrEnclosingType.isRight()) {
+            return packageNameOrEnclosingType.getRight().isPublic();
+        }
+        return true;
     }
 
     public boolean isEnclosedIn(TypeInfo typeInfo) {

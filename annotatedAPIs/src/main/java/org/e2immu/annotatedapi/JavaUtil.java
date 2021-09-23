@@ -27,21 +27,24 @@ import java.util.stream.Stream;
 public class JavaUtil extends AnnotatedAPI {
     final static String PACKAGE_NAME = "java.util";
 
-    static boolean setAddModificationHelper(int i, int j, boolean containsE) {
+    // it is important that these helper methods are 'public', because the shallow
+    // method analyser only considers public methods
+    
+    public static boolean setAddModificationHelper(int i, int j, boolean containsE) {
         return isFact(containsE) ? (containsE ? i == j : i == j + 1) :
                 isKnown(true) ? i == j + 1 : i >= j && i <= j + 1;
     }
 
-    static boolean setAddValueHelper(int size, boolean containsE, boolean retVal) {
+    public static boolean setAddValueHelper(int size, boolean containsE, boolean retVal) {
         return isFact(containsE) ? !containsE : (isKnown(true) || size == 0 || retVal);
     }
 
-    static boolean setRemoveModificationHelper(int i, int j, boolean containsE) {
+    public static boolean setRemoveModificationHelper(int i, int j, boolean containsE) {
         return isFact(containsE) ? (containsE ? i == j - 1 : i == j) :
                 isKnown(true) ? i == j : i >= j - 1 && i <= j;
     }
 
-    static boolean setContainsValueHelper(int size, boolean containsE, boolean retVal) {
+    public static boolean setContainsValueHelper(int size, boolean containsE, boolean retVal) {
         return isFact(containsE) ? containsE : !isKnown(true) && size > 0 && retVal;
     }
 

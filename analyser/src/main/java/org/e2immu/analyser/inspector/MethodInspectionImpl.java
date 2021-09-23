@@ -55,11 +55,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     //@Immutable
     private final List<ParameterizedType> exceptionTypes;
 
-    // if our type implements a number of interfaces, then the method definitions in these interfaces
-    // that this method implements, are represented in this variable
-    // this is used to check inherited annotations on methods
-    //@Immutable
-    private final List<MethodInfo> implementationOf;
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
     private final MethodType methodType;
 
@@ -74,7 +69,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<AnnotationExpression> annotations,
                                  List<TypeParameter> typeParameters,
                                  List<ParameterizedType> exceptionTypes,
-                                 List<MethodInfo> implementationOf,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
         super(annotations, synthetic);
@@ -88,7 +82,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.typeParameters = typeParameters;
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
-        this.implementationOf = implementationOf;
         this.methodType = methodType;
     }
 
@@ -158,11 +151,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     }
 
     @Override
-    public List<MethodInfo> getImplementationOf() {
-        return implementationOf;
-    }
-
-    @Override
     public Map<CompanionMethodName, MethodInfo> getCompanionMethods() {
         return companionMethods;
     }
@@ -178,11 +166,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         return getParameters().get(getParameters().size() - 1).parameterInspection.get().isVarArgs();
     }
 
-    @Override
-    public boolean isPrivate() {
-        return modifiers.contains(MethodModifier.PRIVATE);
-    }
-
     private static final int NOT_A_STATIC_BLOCK = -1;
 
     @Container(builds = MethodInspectionImpl.class)
@@ -190,7 +173,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
         private final Set<MethodModifier> modifiers = new HashSet<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
-        private final List<MethodInfo> implementationsOf = new ArrayList<>();
         public final TypeInfo owner;
         public final String name;
         public final boolean isConstructor;
@@ -398,7 +380,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     getAnnotations(),
                     List.copyOf(typeParameters),
                     List.copyOf(exceptionTypes),
-                    List.copyOf(implementationsOf),
                     Map.copyOf(getCompanionMethods()),
                     inspectedBlock
             );
@@ -484,11 +465,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Override
-        public List<MethodInfo> getImplementationOf() {
-            return implementationsOf;
-        }
-
-        @Override
         public Map<CompanionMethodName, MethodInfo> getCompanionMethods() {
             return companionMethods.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().methodInfo));
         }
@@ -506,11 +482,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public boolean isVarargs() {
             if (parameters.isEmpty()) return false;
             return parameters.get(parameters.size() - 1).isVarArgs();
-        }
-
-        @Override
-        public boolean isPrivate() {
-            return modifiers.contains(MethodModifier.PRIVATE);
         }
 
         @Override

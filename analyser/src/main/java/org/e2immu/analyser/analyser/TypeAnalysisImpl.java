@@ -85,7 +85,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
-        return getTypeProperty(AnalysisProvider.DEFAULT_PROVIDER, variableProperty);
+        return getTypeProperty(variableProperty);
     }
 
     @Override
@@ -242,7 +242,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getTypeProperty(analyserContext, variableProperty);
+            return getTypeProperty(variableProperty);
         }
 
         @Override

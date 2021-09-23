@@ -368,9 +368,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
     }
 
-    private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider,
+                                                 MethodInfo methodInfo,
+                                                 MethodAnalysis methodAnalysis) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
+                    .filter(mi -> !mi.shallowAnalysis() || mi.methodInspection.get().isPublic())
                     .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(mi))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {

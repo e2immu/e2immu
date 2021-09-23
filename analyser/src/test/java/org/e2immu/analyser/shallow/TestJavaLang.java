@@ -26,6 +26,8 @@ import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -33,12 +35,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TestJavaLang {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestJavaLang.class);
 
     private static TypeContext typeContext;
 
@@ -54,13 +57,18 @@ public class TestJavaLang {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
-                .addDebugLogTargets(Stream.of(DELAYED).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets(Stream.of(DELAYED,ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
+        parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
+        parser.preload("java.util");
+        parser.preload("java.util.stream");
+        parser.preload("java.util.concurrent");
+        parser.preload("java.lang.reflect");
         parser.run();
         typeContext = parser.getTypeContext();
-
+        parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
     }
 
     private void testE2ContainerType(TypeAnalysis typeAnalysis) {

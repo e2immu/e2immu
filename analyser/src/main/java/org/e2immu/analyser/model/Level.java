@@ -30,6 +30,7 @@ public class Level {
         throw new UnsupportedOperationException();
     }
 
+    public static final int ILLEGAL_VALUE = -2;
 
     // TERNARY SYSTEM
     public static final int DELAY = -1;

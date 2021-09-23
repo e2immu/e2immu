@@ -913,6 +913,8 @@ public class ParameterizedType {
         return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
+    public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
+
     public int defaultImmutable(AnalysisProvider analysisProvider) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
@@ -922,7 +924,10 @@ public class ParameterizedType {
         }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE; // null constant, return type of void method
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return TYPE_ANALYSIS_NOT_AVAILABLE;
+        }
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }
 

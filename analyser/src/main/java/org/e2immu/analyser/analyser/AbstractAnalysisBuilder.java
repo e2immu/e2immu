@@ -250,9 +250,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked1");
-                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
-                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "@AllowsInterrupt caught earlier on");
-                } else {
+                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() != t) {
+                    // @AllowsInterrupt caught earlier on in the code, can be ignored here
                     throw new UnsupportedOperationException("? " + t.fullyQualifiedName);
                 }
             }

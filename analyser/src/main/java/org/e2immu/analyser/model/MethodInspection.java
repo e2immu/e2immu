@@ -47,12 +47,6 @@ public interface MethodInspection extends Inspection {
     //@Immutable
     List<ParameterizedType> getExceptionTypes();
 
-    // if our type implements a number of interfaces, then the method definitions in these interfaces
-    // that this method implements, are represented in this variable
-    // this is used to check inherited annotations on methods
-    //@Immutable
-    List<MethodInfo> getImplementationOf();
-
     Map<CompanionMethodName, MethodInfo> getCompanionMethods();
 
     boolean isStatic();
@@ -61,7 +55,14 @@ public interface MethodInspection extends Inspection {
 
     boolean isVarargs();
 
-    boolean isPrivate();
+    default boolean isPrivate() {
+        return getModifiers().contains(MethodModifier.PRIVATE);
+    }
+
+    default boolean isPublic() {
+        return getMethodInfo().typeInfo.isPublic() && (
+                getModifiers().contains(MethodModifier.PUBLIC) || getMethodInfo().typeInfo.isInterface());
+    }
 
     boolean isCompactConstructor();
 
@@ -84,5 +85,8 @@ public interface MethodInspection extends Inspection {
                 .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(Finalizer.class.getCanonicalName()));
     }
 
-    default boolean isAbstract() { return getModifiers().contains(MethodModifier.ABSTRACT); }
+    default boolean isAbstract() {
+        return getModifiers().contains(MethodModifier.ABSTRACT);
+    }
+
 }

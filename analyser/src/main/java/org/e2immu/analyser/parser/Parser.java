@@ -280,8 +280,11 @@ public class Parser {
                 getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions());
         messages.addAll(annotatedAPIAnalyser.analyse());
 
-        assert types.stream().allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
+        assert types.stream()
+                .filter(TypeInfo::isPublic)
+                .allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
                 typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                        .filter(m -> m.methodInspection.get().isPublic())
                         .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
     }
 

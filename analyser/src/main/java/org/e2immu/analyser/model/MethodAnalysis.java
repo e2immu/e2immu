@@ -112,36 +112,6 @@ public interface MethodAnalysis extends Analysis {
         ParameterizedType returnType = methodInfo.returnType();
 
         switch (variableProperty) {
-            case INDEPENDENT:
-                int worstOverParameters = methodInfo.methodInspection.get().getParameters().stream()
-                        .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi)
-                                .getParameterProperty(analysisProvider, pi, VariableProperty.INDEPENDENT))
-                        .min().orElse(MultiLevel.INDEPENDENT);
-                int returnValue;
-                if (methodInfo.isConstructor || methodInfo.isVoid()) {
-                    returnValue = MultiLevel.INDEPENDENT;
-                } else {
-                    int immutable = getMethodProperty(analysisProvider, VariableProperty.IMMUTABLE);
-                    if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                        TypeInfo bestType = returnType.bestTypeInfo();
-                        if (bestType != null) {
-                            // no idea yet
-                            int typeIndependent = analysisProvider.getTypeAnalysis(bestType).getTypeProperty(analysisProvider, variableProperty);
-                            if (typeIndependent == MultiLevel.INDEPENDENT) {
-                                return inMethod -> Math.max(inMethod, Math.min(worstOverParameters, MultiLevel.INDEPENDENT));
-                            }
-                            returnValue = Level.DELAY;
-                        } else {
-                            // unbound type parameter
-                            return inMethod -> Math.max(inMethod, Math.min(worstOverParameters, MultiLevel.DEPENDENT_1));
-                        }
-                    } else {
-                        returnValue = Level.DELAY;
-                    }
-                }
-                int worst = Math.min(worstOverParameters, returnValue);
-                if (worst > Level.DELAY) return x -> worstOverParameters;
-                return NO_INFLUENCE;
 
             case MODIFIED_METHOD: {
                 if (methodInfo.isConstructor) return OVERRIDE_TRUE; // by definition

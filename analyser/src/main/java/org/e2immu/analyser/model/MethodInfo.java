@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
@@ -26,7 +25,6 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 
 import java.util.Iterator;
@@ -60,11 +58,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
             return "getClass";
         }
-        return string;
-    }
-
-    public static String dropDollar(String string) {
-        if (string.endsWith("$")) return string.substring(0, string.length() - 1);
         return string;
     }
 
@@ -185,7 +178,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromMethod.isPresent()) return fromMethod;
         if (methodInspection.isSet()) {
-            for (MethodInfo interfaceMethod : methodInspection.get().getImplementationOf()) {
+            for (MethodInfo interfaceMethod : methodResolution.get().overrides()) {
                 Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasInspectedAnnotation(annotationFQN));
                 if (fromInterface.isPresent()) return fromInterface;
             }
@@ -282,28 +275,5 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public String niceClassName() {
         return "Method";
-    }
-
-    public boolean returnTypeIndependent(InspectionProvider inspectionProvider, AnalysisProvider analysisProvider) {
-        ParameterizedType returnType = returnType();
-        TypeInfo bestType;
-        if (returnType.typeParameter != null) {
-            Either<TypeInfo, MethodInfo> owner = returnType.typeParameter.getOwner();
-            TypeParameter original;
-            int index = returnType.typeParameter.getIndex();
-            if (owner.isLeft()) {
-                original = inspectionProvider.getTypeInspection(owner.getLeft()).typeParameters().get(index);
-            } else {
-                original = inspectionProvider.getMethodInspection(owner.getRight()).getTypeParameters().get(index);
-            }
-            //FIXME independent, but is it @Dependent1 ?
-            if (original.getTypeBounds().isEmpty()) return true;
-            bestType = original.getTypeBounds().get(0).typeInfo;
-        } else {
-            bestType = returnType.typeInfo;
-        }
-        assert bestType != null;
-        int independent = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
-        return independent > MultiLevel.DEPENDENT;
     }
 }

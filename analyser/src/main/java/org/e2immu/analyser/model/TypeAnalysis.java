@@ -77,24 +77,15 @@ public interface TypeAnalysis extends Analysis {
      */
     Set<ParameterizedType> getTransparentTypes();
 
-    default int getTypeProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default int getTypeProperty(VariableProperty variableProperty) {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
 
         switch (variableProperty) {
-            case INDEPENDENT -> {
-                int independentInMap = getPropertyFromMapDelayWhenAbsent(variableProperty);
-                if (independentInMap > Level.DELAY) return independentInMap;
-                int myMethods = getTypeInfo().typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .mapToInt(m -> analysisProvider.getMethodAnalysis(m).getMethodProperty(analysisProvider, VariableProperty.INDEPENDENT))
-                        .min().orElse(MultiLevel.INDEPENDENT);
-                int fromSuperTypes = minValueFromInterfacesImplemented(analysisProvider, variableProperty);
-                return Math.min(myMethods, fromSuperTypes);
-            }
             case IMMUTABLE, CONTAINER -> {
                 boolean noMethods = getTypeInfo().typeInspection.get().onlyHasPrivateMethods();
                 if (noMethods) return variableProperty.best;
             }
-            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> {
+            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
                 // ensure that we do not throw an exception
             }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, variableProperty);
@@ -116,15 +107,7 @@ public interface TypeAnalysis extends Analysis {
         Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream().filter(TypeInfo::isInterface);
         return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(analysisProvider, variableProperty))
+                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty))
                 .max().orElse(Level.DELAY);
-    }
-
-    default int minValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
-                .stream().filter(TypeInfo::isInterface);
-        return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(analysisProvider, variableProperty))
-                .min().orElse(variableProperty.best);
     }
 }

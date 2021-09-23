@@ -119,8 +119,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                         parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
                     }
                     // this has to happen before the regular analysers, because there are no delays
-                    if (methodAnalyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
-                        shallowMethodAnalyser.analyse();
+                    if (methodAnalyser instanceof ShallowMethodAnalyser) {
+                        methodAnalyser.analyse(0, null);
                     }
                     methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                     // finalizers are done early, before the first assignments

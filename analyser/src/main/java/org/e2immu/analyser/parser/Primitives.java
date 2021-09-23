@@ -337,6 +337,7 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
             builder.transparentDataTypes.set(Set.of());
             ti.typeAnalysis.set(builder.build());
         }
@@ -353,6 +354,7 @@ public class Primitives {
             ti.typeAnalysis.set(builder);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
