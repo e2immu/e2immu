@@ -144,10 +144,11 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             if (methodInfo.isConstructor || methodInfo.isVoid()) {
                 returnValue = MultiLevel.INDEPENDENT;
             } else {
-                int immutable = methodAnalysis.getMethodProperty(analyserContext, VariableProperty.IMMUTABLE);
-                if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                    TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
-                    if (bestType != null) {
+                TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+                if (bestType != null) {
+                    int immutable = methodAnalysis.getMethodProperty(analyserContext, VariableProperty.IMMUTABLE);
+                    if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+
                         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
                         if (typeAnalysis != null) {
                             returnValue = typeAnalysis.getTypeProperty(VariableProperty.INDEPENDENT);
@@ -156,12 +157,13 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                                     Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
                             returnValue = MultiLevel.DEPENDENT;
                         }
+
                     } else {
-                        // unbound type parameter
-                        returnValue = MultiLevel.DEPENDENT_1;
+                        returnValue = MultiLevel.DEPENDENT;
                     }
                 } else {
-                    returnValue = MultiLevel.DEPENDENT;
+                    // unbound type parameter
+                    returnValue = MultiLevel.DEPENDENT_1;
                 }
             }
             finalValue = Math.min(worstOverParameters, returnValue);
@@ -175,7 +177,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 .mapToInt(ma -> ma.getMethodProperty(analyserContext, VariableProperty.INDEPENDENT))
                 .min().orElse(finalValue);
         if (finalValue < overloads) {
-            messages.add(Message.newMessage(new Location(methodInfo), Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT));
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT, MultiLevel.niceIndependent(finalValue) + " instead of " +
+                            MultiLevel.niceIndependent(overloads)));
         }
     }
 

@@ -98,7 +98,9 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, sizeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         if (sizeAnalysis instanceof MethodAnalysisImpl sizeAnalysisImpl) {
-            assertTrue(sizeAnalysisImpl.properties.isEmpty());
+            assertEquals(2, sizeAnalysisImpl.properties.size());
+            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.INDEPENDENT));
+            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.IMMUTABLE));
         } else fail();
 
         // METHOD 2
@@ -165,7 +167,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-        // an unbound type parameter cannot be DEPENDENT
+        // an unbound type parameter cannot be DEPENDENT, and is not INDEPENDENT by default
         assertEquals(MultiLevel.DEPENDENT_1, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
     }

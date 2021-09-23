@@ -423,11 +423,29 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
         typeAnalysisBuilder.transparentDataTypes.set(typeParametersAsParameterizedTypes);
+
+        simpleComputeIndependent(typeAnalysisBuilder);
+
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
 
         boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
         typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser.analyser(fieldInfo, isEnum));
+    }
+
+    private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
+        int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (inMap == Level.DELAY) {
+            boolean allMethodsOnlyPrimitives =
+                    builder.getTypeInfo().typeInspection.get()
+                            .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                            .filter(m -> m.methodInspection.get().isPublic())
+                            .allMatch(m -> (m.isConstructor || m.isVoid() || Primitives.isPrimitiveExcludingVoid(m.returnType()))
+                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> Primitives.isPrimitiveExcludingVoid(p.parameterizedType)));
+            if (allMethodsOnlyPrimitives) {
+                builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            }
+        }
     }
 
     @Override

@@ -38,6 +38,7 @@ class JavaLang {
 
     // @Independent implicit because all methods @Independent
     @E2Container
+    @Independent
     interface Object$ {
         @NotNull
         @Independent
@@ -93,6 +94,7 @@ class JavaLang {
     }
 
     @E2Container
+    @Independent
     interface Class$ {
         @NotNull
         String getCanonicalName();
@@ -105,7 +107,7 @@ class JavaLang {
     }
 
     @E2Container
-    @Independent // explicit, so subSequence is also @Independent
+    @Independent
     interface CharSequence$ {
         char charAt(int index);
 
@@ -134,7 +136,7 @@ class JavaLang {
     // a class, because we need to annotate the constructor
 
     @E2Container
-    @Independent // explicit, so all methods which return a String are @Independent as well
+    @Independent
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {
@@ -388,6 +390,7 @@ class JavaLang {
     }
 
     @E2Container
+    @Independent
     interface Integer$ {
 
         @NotNull
@@ -395,6 +398,7 @@ class JavaLang {
     }
 
     @E2Container
+    @Independent
     interface Boolean$ {
         boolean parseBoolean(@NotNull String string);
     }
@@ -406,6 +410,7 @@ class JavaLang {
         }
     }
 
+    @UtilityClass
     interface System$ {
         @IgnoreModifications
         @NotNull
@@ -423,6 +428,7 @@ class JavaLang {
     }
 
     @E2Container
+    @Independent
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;

@@ -263,8 +263,10 @@ public class MultiLevel {
         return Math.max(FALSE, value >> SHIFT);
     }
 
-    // DEPENDENT_1, DEPENDENT_2 imply independent
-    public static boolean isIndependent(int value) {
-        return value > MultiLevel.DEPENDENT;
+    public static String niceIndependent(int finalValue) {
+        if (DEPENDENT == finalValue) return "@Dependent";
+        if (DEPENDENT_1 == finalValue) return "@Dependent1";
+        if (INDEPENDENT == finalValue) return "@Independent";
+        return "" + finalValue;
     }
 }

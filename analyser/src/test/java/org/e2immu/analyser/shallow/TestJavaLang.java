@@ -86,6 +86,16 @@ public class TestJavaLang {
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
     }
 
+    // @Independent set by hand, because the class structure is pretty complex and we have not annotated
+    // all these types yet
+    @Test
+    public void testClass() {
+        TypeInfo object = typeContext.getFullyQualified(Class.class);
+        TypeAnalysis objectAnalysis = object.typeAnalysis.get();
+        testE2ContainerType(objectAnalysis);
+        assertEquals(MultiLevel.INDEPENDENT, objectAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
     @Test
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
@@ -114,7 +124,7 @@ public class TestJavaLang {
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(MultiLevel.INDEPENDENT_2, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
