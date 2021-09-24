@@ -19,13 +19,11 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Logger;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,11 +73,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
+    private final TypeMap typeMap;
 
     public AnnotatedAPIAnalyser(List<TypeInfo> types,
                                 Configuration configuration,
                                 Primitives primitives,
-                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                TypeMap typeMap) {
+        this.typeMap = typeMap;
         shallowFieldAnalyser = new ShallowFieldAnalyser(this, e2ImmuAnnotationExpressions);
 
         if (Logger.isLogEnabled(ANALYSER)) {
@@ -91,7 +92,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
-        Map<MethodInfo, MethodAnalyser> methodAnalysers = new HashMap<>();
+        methodAnalysers = new LinkedHashMap<>(); // we keep the order!
         for (TypeInfo typeInfo : types) {
             if (typeInfo.isPublic()) {
                 TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
@@ -125,7 +126,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 }
             }
         }
-        this.methodAnalysers = Map.copyOf(methodAnalysers);
     }
 
     private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
@@ -146,6 +146,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
      */
     public Stream<Message> analyse() {
         log(ANALYSER, "Starting AnnotatedAPI analysis on {} types", typeAnalyses.size());
+
+        TypeInfo annotation = typeMap.get(Annotation.class);
+        if (annotation != null) {
+            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(annotation);
+            typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.E2IMMUTABLE);
+            typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
+        }
 
         // do the types and fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
@@ -186,7 +194,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             int inMap = typeAnalysis.getPropertyFromMapNeverDelay(VariableProperty.INDEPENDENT);
             int computed = computeIndependent(typeInfo);
             if (inMap > computed) {
-                Message message = Message.newMessage(new Location(typeInfo), Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
+                Message message = Message.newMessage(new Location(typeInfo),
+                        Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
                         "Found " + inMap + ", computed maximally " + computed);
                 messages.add(message);
             }
@@ -434,6 +443,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
+        int immutable = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.IMMUTABLE);
         int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
         if (inMap == Level.DELAY) {
             boolean allMethodsOnlyPrimitives =
@@ -444,7 +454,15 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                                     && m.methodInspection.get().getParameters().stream().allMatch(p -> Primitives.isPrimitiveExcludingVoid(p.parameterizedType)));
             if (allMethodsOnlyPrimitives) {
                 builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+                return;
             }
+            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                // minimal value; we'd have an inconsistency otherwise
+                builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+            }
+        } else if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE && inMap == MultiLevel.DEPENDENT) {
+            messages.add(Message.newMessage(new Location(builder.typeInfo),
+                    Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
         }
     }
 

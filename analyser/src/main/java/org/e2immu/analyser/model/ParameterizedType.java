@@ -721,7 +721,7 @@ public class ParameterizedType {
     }
 
     public boolean isUnboundTypeParameter(InspectionProvider inspectionProvider) {
-        return bestTypeInfo(inspectionProvider) == null;
+        return arrays == 0 && bestTypeInfo(inspectionProvider) == null;
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {

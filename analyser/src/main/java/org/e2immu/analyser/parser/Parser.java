@@ -277,7 +277,7 @@ public class Parser {
         });
 
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
-                getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions());
+                getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions(), typeMap);
         messages.addAll(annotatedAPIAnalyser.analyse());
 
         assert types.stream()

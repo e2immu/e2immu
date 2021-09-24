@@ -19,9 +19,12 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +44,7 @@ All property maps are empty at this stage!
 
  */
 public class TestDefaultAnnotations {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDefaultAnnotations.class);
 
     private static TypeContext typeContext;
 
@@ -56,9 +60,20 @@ public class TestDefaultAnnotations {
         Parser parser = new Parser(configuration);
         parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
         parser.preload("java.util");
+        parser.preload("java.util.stream");
         parser.run();
         typeContext = parser.getTypeContext();
+        List<Message> messages = parser.getMessages().toList();
+        for (Message message : messages) {
+            LOGGER.info("Message: {}", message);
+        }
+        LOGGER.info("Have {} messages", messages.size());
 
+        long ownErrors = messages.stream()
+                .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
+                .peek(m -> LOGGER.info("OWN ERROR: {}", m))
+                .count();
+        assertEquals(0L, ownErrors);
     }
 
     @Test
@@ -98,9 +113,10 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, sizeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         if (sizeAnalysis instanceof MethodAnalysisImpl sizeAnalysisImpl) {
-            assertEquals(2, sizeAnalysisImpl.properties.size());
+            assertEquals(3, sizeAnalysisImpl.properties.size());
             assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.INDEPENDENT));
             assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.IMMUTABLE));
+            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.MODIFIED_METHOD));
         } else fail();
 
         // METHOD 2
@@ -111,21 +127,15 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, addAllAnalysis.getProperty(VariableProperty.IDENTITY));
         assertEquals(Level.FALSE, addAllAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
-        if (addAllAnalysis instanceof MethodAnalysisImpl addAllAnalysisImpl) {
-            assertTrue(addAllAnalysisImpl.properties.isEmpty());
-        } else fail();
-
         // PARAMETER 1
 
         ParameterAnalysis addAll0 = addAll.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
-        if (addAll0 instanceof ParameterAnalysisImpl addAll0Impl) {
-            assertTrue(addAll0Impl.properties.isEmpty());
-        } else fail();
 
         assertEquals(Level.TRUE, addAll0.getProperty(VariableProperty.IDENTITY));
         assertEquals(Level.FALSE, addAll0.getProperty(VariableProperty.CONTAINER));
         assertEquals(Level.FALSE, addAll0.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
-        assertEquals(MultiLevel.DEPENDENT, addAll0.getProperty(VariableProperty.INDEPENDENT));
+        // method is non-modifying, so parameter is independent
+        assertEquals(MultiLevel.INDEPENDENT, addAll0.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE, addAll0.getProperty(VariableProperty.IMMUTABLE));
 
         assertThrows(PropertyException.class, () -> addAll0.getProperty(VariableProperty.MODIFIED_METHOD));
@@ -167,9 +177,8 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-        // an unbound type parameter cannot be DEPENDENT, and is not INDEPENDENT by default
-        assertEquals(MultiLevel.DEPENDENT_1, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
-
+        // independent, because the method is @NotModified and returns a boolean
+        assertEquals(MultiLevel.INDEPENDENT, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     // Collection.toArray(T[] array) returns array
@@ -189,6 +198,7 @@ public class TestDefaultAnnotations {
         assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(MultiLevel.NULLABLE, tArrayAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, tArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        // parameters of abstract methods are @Modified by default (unless primitive, E2)
         assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
         MethodAnalysis toArrayAnalysis = toArray.methodAnalysis.get();

@@ -178,6 +178,10 @@ public class Primitives {
         return "java.lang.String".equals(typeInfo.fullyQualifiedName);
     }
 
+    public static boolean isJavaLangString(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null && isJavaLangString(parameterizedType.typeInfo);
+    }
+
     public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
     private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
     public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(),

@@ -58,8 +58,6 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             if (explicitlyEmpty) {
                 builder.setProperty(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
                 builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            } else {
-                computeParameterIndependent(builder);
             }
         });
 
@@ -76,10 +74,25 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         } else {
             computeMethodIndependent();
+            computeMethodModified(); // used in parameter computations
+
+            parameterAnalyses.forEach(parameterAnalysis -> {
+                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                computeParameterIndependent(builder);
+            });
         }
         computeMethodImmutable();
 
         return AnalysisStatus.DONE;
+    }
+
+    private void computeMethodModified() {
+        int inMap = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
+        if (inMap == Level.DELAY) {
+            int computed = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            if (computed != Level.DELAY)
+                methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, computed);
+        }
     }
 
     private void computeMethodImmutable() {
@@ -109,13 +122,18 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 if (modifiedMethod == Level.TRUE) {
                     TypeInfo bestType = type.bestTypeInfo();
                     if (bestType != null) {
-                        int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-                        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                            int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
-                            if (independent == MultiLevel.INDEPENDENT) {
-                                value = MultiLevel.INDEPENDENT;
+                        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+                        if(typeAnalysis != null) {
+                            int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                                int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
+                                if (independent == MultiLevel.INDEPENDENT) {
+                                    value = MultiLevel.INDEPENDENT;
+                                } else {
+                                    value = MultiLevel.DEPENDENT_1;
+                                }
                             } else {
-                                value = MultiLevel.DEPENDENT_1;
+                                value = MultiLevel.DEPENDENT;
                             }
                         } else {
                             value = MultiLevel.DEPENDENT;

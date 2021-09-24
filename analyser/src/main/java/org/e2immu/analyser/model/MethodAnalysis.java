@@ -113,6 +113,15 @@ public interface MethodAnalysis extends Analysis {
 
         switch (variableProperty) {
 
+            case INDEPENDENT: {
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
+                int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                if (typeIndependent > Level.DELAY) {
+                    return inMethod -> Math.max(inMethod, typeIndependent);
+                }
+                return NO_INFLUENCE;
+            }
+
             case MODIFIED_METHOD: {
                 if (methodInfo.isConstructor) return OVERRIDE_TRUE; // by definition
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
@@ -183,9 +192,9 @@ public interface MethodAnalysis extends Analysis {
             return MultiLevel.DEPENDENT_1;
         }
 
-        if (max == Level.DELAY && getMethodInfo().isAbstract()) {
+        if (max == Level.DELAY) {
             // unless: abstract methods, not annotated for modification
-            if (variableProperty == VariableProperty.MODIFIED_METHOD) {
+            if (getMethodInfo().isAbstract() && variableProperty == VariableProperty.MODIFIED_METHOD) {
                 /*
                  In case of a shallow type: if you mark a shallow type as level 2 immutable then its abstract methods are @NotModified by default
                  See Basics_5, Stream is @E2Container so filter, findAny, map etc. must be @NotModified.

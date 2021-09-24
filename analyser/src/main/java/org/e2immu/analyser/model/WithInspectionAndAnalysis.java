@@ -126,6 +126,8 @@ public interface WithInspectionAndAnalysis {
         return perAnnotation.stream();
     }
 
+    TypeInfo getTypeInfo();
+
     default MethodInfo getMethod() {
         return null;
     }

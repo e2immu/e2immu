@@ -103,6 +103,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
+    public TypeInfo getTypeInfo() {
+        return this;
+    }
+
+    @Override
     public Inspection getInspection() {
         return typeInspection.get();
     }

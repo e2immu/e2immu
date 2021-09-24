@@ -57,6 +57,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
+    public TypeInfo getTypeInfo() {
+        return owner;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(name, owner);
     }

@@ -76,6 +76,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
     }
 
+    @Override
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
+    }
+
     public boolean hasBeenInspected() {
         return methodInspection.isSet();
     }
