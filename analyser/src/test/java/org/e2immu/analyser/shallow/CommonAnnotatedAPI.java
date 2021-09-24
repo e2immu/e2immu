@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.parser.Input;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
@@ -60,14 +61,20 @@ public abstract class CommonAnnotatedAPI {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
-        parser.preload("java.util");
-        parser.preload("java.util.stream");
-        parser.preload("java.util.concurrent");
-        parser.preload("java.lang.reflect");
         parser.run();
         typeContext = parser.getTypeContext();
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
+
+        long errors = parser.getMessages()
+                .filter(m -> m.message().severity == Message.Severity.ERROR)
+                .count();
+        LOGGER.info("Have {} error messages", errors);
+
+        long ownErrors = parser.getMessages()
+                .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
+                .peek(m -> LOGGER.info("OWN ERROR: {}", m))
+                .count();
+        assertEquals(0L, ownErrors);
     }
 
     protected void testE2ContainerType(TypeAnalysis typeAnalysis) {

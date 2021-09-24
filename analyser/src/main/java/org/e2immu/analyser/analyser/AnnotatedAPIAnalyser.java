@@ -83,17 +83,28 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.typeMap = typeMap;
         shallowFieldAnalyser = new ShallowFieldAnalyser(this, e2ImmuAnnotationExpressions);
 
-        if (Logger.isLogEnabled(ANALYSER)) {
-            log(ANALYSER, "Order of shallow analysis:");
-            types.forEach(typeInfo -> log(ANALYSER, "  Type " + typeInfo.fullyQualifiedName));
-        }
         this.primitives = primitives;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
+        log(ANALYSER, "Have {} types", types.size());
+        /* Sort according to dependency hierarchy. To placate TimSort, we run twice, first on
+        normal alphabetic order, then on dependency hierarchy. Please give me the correct explanation?
+         */
+        List<TypeInfo> sorted = new ArrayList<>(types);
+        sorted.sort(Comparator.comparing(ti -> ti.fullyQualifiedName));
+        sorted.sort(AnnotatedAPIAnalyser::typeComparator);
+
+        if (Logger.isLogEnabled(ANALYSER)) {
+            log(ANALYSER, "Order of shallow analysis:");
+            sorted.forEach(typeInfo -> log(ANALYSER, "  Type {} {}",
+                    typeInfo.fullyQualifiedName,
+                    typeInfo.typeInspection.get().parentClass() == null ? "NO PARENT" : ""));
+        }
+
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         methodAnalysers = new LinkedHashMap<>(); // we keep the order!
-        for (TypeInfo typeInfo : types) {
+        for (TypeInfo typeInfo : sorted) {
             if (typeInfo.isPublic()) {
                 TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
                         primitives, typeInfo, null);
@@ -128,6 +139,24 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
+    private static int typeComparator(TypeInfo t1, TypeInfo t2) {
+        if (t1.equals(t2)) return 0;
+        if (Primitives.isJavaLangObject(t1)) return -1;
+        if (Primitives.isJavaLangObject(t2)) return 1;
+
+        Set<TypeInfo> super1 = t1.typeResolution.get().superTypesExcludingJavaLangObject();
+        if (super1.contains(t2)) {
+            return 1;
+        }
+        Set<TypeInfo> super2 = t2.typeResolution.get().superTypesExcludingJavaLangObject();
+        if (super2.contains(t1)) {
+            return -1;
+        }
+        int c = t1.fullyQualifiedName.compareTo(t2.fullyQualifiedName);
+        assert c != 0;
+        return c;
+    }
+
     private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         boolean isHelperFunctionOrAnnotationMethod = methodInfo.hasStatements();
         if (isHelperFunctionOrAnnotationMethod) {
@@ -147,13 +176,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public Stream<Message> analyse() {
         log(ANALYSER, "Starting AnnotatedAPI analysis on {} types", typeAnalyses.size());
 
-        TypeInfo annotation = typeMap.get(Annotation.class);
-        if (annotation != null) {
-            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(annotation);
-            typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.E2IMMUTABLE);
-            typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
-        }
+        hardcodedCrucialClasses();
 
         // do the types and fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
@@ -189,11 +212,27 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
     }
 
+    private void hardcodedCrucialClasses() {
+        for (Class<?> clazz : new Class[]{Object.class,  // every class derives from Object
+                Annotation.class, // every annotation derives from Annotation
+                Enum.class, // every enum type derives from Enum
+                String.class, // every toString method
+                // because they cause @Independent issues in java.util.PrimitiveIterator.OfXXX:
+                Double.class, Integer.class, Long.class}) {
+            TypeInfo typeInfo = typeMap.get(clazz);
+            TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
+            typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
+        }
+    }
+
     private void validateIndependence() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             int inMap = typeAnalysis.getPropertyFromMapNeverDelay(VariableProperty.INDEPENDENT);
             int computed = computeIndependent(typeInfo);
-            if (inMap > computed) {
+            // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
+            if (inMap > computed && Primitives.isNotJavaLang(typeInfo)) {
                 Message message = Message.newMessage(new Location(typeInfo),
                         Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
                         "Found " + inMap + ", computed maximally " + computed);
@@ -212,7 +251,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         int fromSuperTypes = superTypes
                 .filter(TypeInfo::isPublic)
                 .map(this::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(VariableProperty.INDEPENDENT))
+                .mapToInt(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.INDEPENDENT))
                 .min().orElse(VariableProperty.INDEPENDENT.best);
         return Math.min(myMethods, fromSuperTypes);
     }
@@ -448,7 +487,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         if (inMap == Level.DELAY) {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
-                            .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                            .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
                             .filter(m -> m.methodInspection.get().isPublic())
                             .allMatch(m -> (m.isConstructor || m.isVoid() || Primitives.isPrimitiveExcludingVoid(m.returnType()))
                                     && m.methodInspection.get().getParameters().stream().allMatch(p -> Primitives.isPrimitiveExcludingVoid(p.parameterizedType)));

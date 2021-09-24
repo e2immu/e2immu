@@ -805,7 +805,9 @@ public class Resolver {
         Stream<TypeInfo> parentStream;
         boolean isJLO = Primitives.isJavaLangObject(typeInfo);
         if (!isJLO) {
-            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
+            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null :
+                    "Type " + typeInfo + " has parentClass " + typeInspection.parentClass();
+
             parentStream = accessibleBySimpleNameTypeInfoStream(inspectionProvider,
                     typeInspection.parentClass().typeInfo, startingPoint, startingPointPackageName, visited);
         } else parentStream = Stream.empty();

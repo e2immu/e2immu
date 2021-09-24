@@ -73,13 +73,14 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         } else {
-            computeMethodIndependent();
             computeMethodModified(); // used in parameter computations
 
             parameterAnalyses.forEach(parameterAnalysis -> {
                 ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
                 computeParameterIndependent(builder);
             });
+
+            computeMethodIndependent();
         }
         computeMethodImmutable();
 
@@ -180,7 +181,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                         returnValue = MultiLevel.DEPENDENT;
                     }
                 } else {
-                    // unbound type parameter
+                    // unbound type parameter T, or unbound with array T[], T[][]
                     returnValue = MultiLevel.DEPENDENT_1;
                 }
             }

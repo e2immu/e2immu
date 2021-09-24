@@ -27,10 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,11 +66,52 @@ public class TestDefaultAnnotations {
         }
         LOGGER.info("Have {} messages", messages.size());
 
+        long infoTypeAnalysisNotAvailable = messages.stream()
+                .filter(m -> m.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE)
+                .count();
+        LOGGER.info("Have {} info messages: type analysis not available", infoTypeAnalysisNotAvailable);
+
+        long errors = messages.stream()
+                .filter(m -> m.message().severity == Message.Severity.ERROR)
+                .count();
+        LOGGER.info("Have {} error messages", errors);
+
         long ownErrors = messages.stream()
                 .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
                 .peek(m -> LOGGER.info("OWN ERROR: {}", m))
                 .count();
         assertEquals(0L, ownErrors);
+    }
+
+    // hardcoded
+    @Test
+    public void testObjectEquals() {
+        TypeInfo object = typeContext.getFullyQualified(Object.class);
+        TypeAnalysis typeAnalysis = object.typeAnalysis.get();
+        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        MethodInfo equals = object.findUniqueMethod("equals", 1);
+        MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+
+    // not hardcoded
+    @Test
+    public void testOptionalEquals() {
+        TypeInfo optional = typeContext.getFullyQualified(Optional.class);
+        TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        MethodInfo equals = optional.findUniqueMethod("equals", 1);
+        MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
@@ -175,13 +213,13 @@ public class TestDefaultAnnotations {
 
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, paramAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.FALSE, paramAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
         // independent, because the method is @NotModified and returns a boolean
         assertEquals(MultiLevel.INDEPENDENT, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
-    // Collection.toArray(T[] array) returns array
+    // Collection.toArray(T[] array) returns T[] array
     @Test
     public void testArrayAsParameterAndReturnType() {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
@@ -192,21 +230,23 @@ public class TestDefaultAnnotations {
                         m.methodInspection.get().getParameters().get(0).parameterizedType.arrays == 1)
                 .findFirst().orElseThrow();
         ParameterInfo tArray = toArray.methodInspection.get().getParameters().get(0);
-        ParameterAnalysis tArrayAnalysis = tArray.parameterAnalysis.get();
+        ParameterAnalysis p0 = tArray.parameterAnalysis.get();
 
-        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.IDENTITY));
-        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.NULLABLE, tArrayAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, tArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.IDENTITY));
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
         // parameters of abstract methods are @Modified by default (unless primitive, E2)
-        assertEquals(Level.TRUE, tArrayAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
 
         MethodAnalysis toArrayAnalysis = toArray.methodAnalysis.get();
         assertEquals(Level.TRUE, toArrayAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(Level.FALSE, toArrayAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
         assertEquals(MultiLevel.NULLABLE, toArrayAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
-
+        assertEquals(MultiLevel.DEPENDENT_1, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
@@ -278,5 +318,36 @@ public class TestDefaultAnnotations {
             assertTrue(bytesAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
         } else fail();
 
+    }
+
+    /**
+     * By default, {@link Throwable} is @Dependent
+     */
+    @Test
+    public void testThrowable() {
+        TypeInfo throwable = typeContext.getFullyQualified(Throwable.class);
+        TypeAnalysis typeAnalysis = throwable.typeAnalysis.get();
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        MethodInfo equals = throwable.findUniqueMethod("getStackTrace", 0);
+        MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+
+    /**
+     * {@link IllegalFormatException} has no methods or constructors of its own, but it does share those of
+     * {@link Throwable} and {@link Object}. As a consequence, it is {@link org.e2immu.annotation.Dependent}.
+     */
+    @Test
+    public void testIllegalFormatException() {
+        TypeInfo illegalFormatException = typeContext.getFullyQualified(IllegalFormatException.class);
+        TypeAnalysis typeAnalysis = illegalFormatException.typeAnalysis.get();
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 }

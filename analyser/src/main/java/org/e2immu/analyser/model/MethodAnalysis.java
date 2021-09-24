@@ -160,11 +160,13 @@ public interface MethodAnalysis extends Analysis {
     The ShallowMethodAnalyser sets explicit values for this case.
      */
     default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        int propertyFromType = ImplicitProperties.fromType(getMethodInfo().returnType(), variableProperty);
-        if (propertyFromType > Level.DELAY) return propertyFromType;
-
         return switch (variableProperty) {
-            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONSTANT, CONTAINER, FINALIZER, IMMUTABLE -> getPropertyCheckOverrides(analysisProvider, variableProperty);
+            case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION -> {
+                int propertyFromType = ImplicitProperties.fromType(getMethodInfo().returnType(), variableProperty);
+                if (propertyFromType > Level.DELAY) yield propertyFromType;
+                yield getPropertyCheckOverrides(analysisProvider, variableProperty);
+            }
+            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyCheckOverrides(analysisProvider, variableProperty);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);
         };
     }

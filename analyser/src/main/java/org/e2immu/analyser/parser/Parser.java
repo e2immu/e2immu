@@ -99,7 +99,7 @@ public class Parser {
                     configuration.annotatedAPIConfiguration().reportWarnings(), true);
         }
 
-        // and the the inspection and resolution of Java sources (Java parser)
+        // and the inspection and resolution of Java sources (Java parser)
         List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
 
         TypeMap typeMap;

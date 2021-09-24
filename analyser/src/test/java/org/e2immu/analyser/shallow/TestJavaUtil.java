@@ -59,11 +59,6 @@ public class TestJavaUtil {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        parser.preload("java.io"); // to compute properties on System.out; java.io.PrintStream
-        parser.preload("java.util");
-        parser.preload("java.util.stream");
-        parser.preload("java.util.concurrent");
-        parser.preload("java.lang.reflect");
         parser.run();
         typeContext = parser.getTypeContext();
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));

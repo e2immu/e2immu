@@ -81,11 +81,7 @@ public interface TypeAnalysis extends Analysis {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
 
         switch (variableProperty) {
-            case IMMUTABLE, CONTAINER -> {
-                boolean noMethods = getTypeInfo().typeInspection.get().onlyHasPrivateMethods();
-                if (noMethods) return variableProperty.best;
-            }
-            case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
+            case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
                 // ensure that we do not throw an exception
             }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, variableProperty);

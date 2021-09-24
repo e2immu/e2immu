@@ -81,18 +81,20 @@ public interface TypeInspection extends Inspection {
 
     enum Methods {
 
-        THIS_TYPE_ONLY(false, null),
-        THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM(false, null),
-        THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM(false, null),
-        INCLUDE_SUBTYPES(true, THIS_TYPE_ONLY);
+        THIS_TYPE_ONLY(false, false, null),
+        THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM(false, false, null),
+        THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM(false, false, null),
+        INCLUDE_SUBTYPES(true, false, THIS_TYPE_ONLY),
+        INCLUDE_SUPERTYPES(false, true, THIS_TYPE_ONLY);
 
-        Methods(boolean recurse, Methods nonRecursiveVariant) {
-            this.recurse = recurse;
+        Methods(boolean recurseIntoSubTypes, boolean recurseIntoSuperTypes, Methods nonRecursiveVariant) {
+            this.recurseIntoSubTypes = recurseIntoSubTypes;
+            this.recurseIntoSuperTypes = recurseIntoSuperTypes;
             this.nonRecursiveVariant = nonRecursiveVariant;
         }
 
-        final boolean recurse;
-
+        final boolean recurseIntoSubTypes;
+        final boolean recurseIntoSuperTypes;
         final Methods nonRecursiveVariant;
     }
 
@@ -101,11 +103,17 @@ public interface TypeInspection extends Inspection {
     }
 
     default Stream<MethodInfo> methodStream(Methods methodsMode) {
-        if (methodsMode.recurse) {
+        if (methodsMode.recurseIntoSubTypes) {
             return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
                     subTypes().stream()
                             .filter(subType -> subType.typeInspection.isSet())
                             .flatMap(subType -> subType.typeInspection.get().methodStream(methodsMode)));
+        }
+        if (methodsMode.recurseIntoSuperTypes) {
+            return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
+                    typeInfo().typeResolution.get().superTypesExcludingJavaLangObject().stream()
+                            .flatMap(superType -> superType.typeInspection.get()
+                                    .nonRecursiveMethodStream(methodsMode.nonRecursiveVariant)));
         }
         return nonRecursiveMethodStream(methodsMode);
     }
@@ -117,10 +125,15 @@ public interface TypeInspection extends Inspection {
     }
 
     default Stream<MethodInfo> constructorStream(Methods methodsMode) {
-        if (methodsMode.recurse) {
+        if (methodsMode.recurseIntoSubTypes) {
             return Stream.concat(constructors().stream(), subTypes().stream()
                     .filter(subType -> subType.typeInspection.isSet())
                     .flatMap(subType -> subType.typeInspection.get(subType.fullyQualifiedName).constructorStream(methodsMode)));
+        }
+        if (methodsMode.recurseIntoSuperTypes) {
+            return Stream.concat(constructors().stream(),
+                    typeInfo().typeResolution.get().superTypesExcludingJavaLangObject().stream()
+                            .flatMap(superType -> superType.typeInspection.get().constructors().stream()));
         }
         return constructors().stream();
     }
