@@ -14,13 +14,17 @@
 
 package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.AllowsInterrupt;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
+
+
+    @E2Container
+    @Independent
+    interface Serializable$ {
+
+    }
 
     @Container
     interface PrintStream$ {

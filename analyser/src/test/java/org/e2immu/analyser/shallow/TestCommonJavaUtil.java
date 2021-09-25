@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.MethodAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,17 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     }
 
     @Test
+    public void testAbstractCollection() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(AbstractCollection.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        // not explicitly marked; no inheritance (we can go down from @Dependent1 to @Dependent)
+        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        assertFalse(errors.stream().anyMatch(m -> m.location().info.getTypeInfo().equals(typeInfo)),
+                "Got: " + errors.stream().filter(m -> m.location().info.getTypeInfo().equals(typeInfo)).toList());
+    }
+
+    @Test
     public void testAbstractCollectionAddAll() {
         TypeInfo typeInfo = typeContext.getFullyQualified(AbstractCollection.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("addAll", 1);
@@ -83,12 +95,22 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
-        // this statement catches the same problem as the DEP_1 on p0
-        assertFalse(errors.stream().anyMatch(m -> m.location().info.getTypeInfo().equals(typeInfo)));
-
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.DEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testAbstractCollectionToArray() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(AbstractCollection.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("toArray", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        // the value should be the one in the map; for speed reasons, we should not be looking at overrides!
+        int inMap = ((MethodAnalysisImpl) methodAnalysis).properties.get(VariableProperty.INDEPENDENT);
+        assertEquals(MultiLevel.DEPENDENT_1, inMap);
     }
 
     @Test

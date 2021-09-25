@@ -27,7 +27,7 @@ class JavaLang {
     final static String PACKAGE_NAME = "java.lang";
 
     interface Iterable$<T> {
-        void forEach(@NotNull1 @Dependent1 Consumer<? super T> action);
+        void forEach(@NotNull @Dependent1 Consumer<? super T> action);
 
         @NotNull
         Iterator<T> iterator();
@@ -436,5 +436,4 @@ class JavaLang {
 
         int compareTo(@NotNull T t);
     }
-
 }

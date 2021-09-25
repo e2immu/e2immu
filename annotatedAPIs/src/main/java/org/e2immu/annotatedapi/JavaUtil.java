@@ -29,7 +29,7 @@ public class JavaUtil extends AnnotatedAPI {
 
     // it is important that these helper methods are 'public', because the shallow
     // method analyser only considers public methods
-    
+
     public static boolean setAddModificationHelper(int i, int j, boolean containsE) {
         return isFact(containsE) ? (containsE ? i == j : i == j + 1) :
                 isKnown(true) ? i == j + 1 : i >= j && i <= j + 1;
@@ -70,6 +70,7 @@ public class JavaUtil extends AnnotatedAPI {
      This is not in line with the JDK, but we will block null keys!
      */
     @Container
+    @Dependent1
     interface Collection$<E> {
 
         default boolean add$Postcondition(E e) {
@@ -211,8 +212,8 @@ public class JavaUtil extends AnnotatedAPI {
             return contains(e);
         }
 
-        @Modified
-        boolean add(@Dependent1 @NotNull E e);
+        // @Modified inherited; we're not (yet) inheriting companion methods
+        boolean add( E e); // @Dependent1, @NotNull inherited
 
         default boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) {
             return i == j + c.size();
@@ -225,7 +226,7 @@ public class JavaUtil extends AnnotatedAPI {
         // IMPROVE causes problems with method resolution
         // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Modified
-        boolean addAll(@Dependent1 @NotNull1 Collection<? extends E> collection);
+        boolean addAll(@Dependent1 Collection<? extends E> collection);
 
         // needed here because it is used by a companion of 'add'.
         default boolean contains$Value$Size(int i, Object o, boolean retVal) {
