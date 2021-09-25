@@ -72,12 +72,7 @@ public interface ParameterAnalysis extends Analysis {
         int mine = getPropertyFromMapDelayWhenAbsent(variableProperty);
         if (!shallow) return mine;
 
-        int bestOfOverrides = Level.DELAY;
-        for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
-            ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
-            int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
-            bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
-        }
+        int bestOfOverrides = bestOfOverrides(analysisProvider, parameterInfo, variableProperty);
         int max = Math.max(mine, bestOfOverrides);
 
         if (max == Level.DELAY) {
@@ -87,6 +82,7 @@ public interface ParameterAnalysis extends Analysis {
                     return Level.DELAY;
                 }
                 // note: parameters of unbound type are not necessarily unmodified (see accept's parameter in Consumer)
+                // TODO require @Independent as well? if @Dependent1, there can be modification
                 if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
                     return Level.FALSE;
                 }
@@ -95,6 +91,16 @@ public interface ParameterAnalysis extends Analysis {
 
         }
         return max;
+    }
+
+    private static int bestOfOverrides(AnalysisProvider analysisProvider, ParameterInfo parameterInfo, VariableProperty variableProperty) {
+        int bestOfOverrides = Level.DELAY;
+        for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
+            ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
+            int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
+            bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
+        }
+        return bestOfOverrides;
     }
 
     default int getParameterProperty(AnalysisProvider analysisProvider,
@@ -221,6 +227,11 @@ public interface ParameterAnalysis extends Analysis {
             case NOT_NULL_PARAMETER:
                 int nnp = getPropertyFromMapDelayWhenAbsent(NOT_NULL_PARAMETER);
                 if (nnp != Level.DELAY) return nnp;
+                if (parameterInfo.owner.shallowAnalysis()) {
+                    int override = bestOfOverrides(analysisProvider, parameterInfo, NOT_NULL_PARAMETER);
+                    if (override != Level.DELAY) return override;
+                    return NOT_NULL_PARAMETER.valueWhenAbsent();
+                }
                 int cnn = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_NOT_NULL);
                 int enn = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
                 if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;

@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,7 +52,8 @@ public class TestDefaultAnnotations {
                 .addClassPath("jmods/java.base.jmod");
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets(Stream.of(DELAYED).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER)
+                        .map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
@@ -167,7 +169,7 @@ public class TestDefaultAnnotations {
 
         // PARAMETER 1
 
-        ParameterAnalysis addAll0 = addAll.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
+        ParameterAnalysis addAll0 = addAll.parameterAnalysis(0);
 
         assertEquals(Level.TRUE, addAll0.getProperty(VariableProperty.IDENTITY));
         assertEquals(Level.FALSE, addAll0.getProperty(VariableProperty.CONTAINER));
@@ -209,7 +211,7 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, addAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
-        ParameterAnalysis paramAnalysis = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
+        ParameterAnalysis paramAnalysis = add.parameterAnalysis(0);
 
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, paramAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
@@ -229,8 +231,7 @@ public class TestDefaultAnnotations {
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
                         m.methodInspection.get().getParameters().get(0).parameterizedType.arrays == 1)
                 .findFirst().orElseThrow();
-        ParameterInfo tArray = toArray.methodInspection.get().getParameters().get(0);
-        ParameterAnalysis p0 = tArray.parameterAnalysis.get();
+        ParameterAnalysis p0 = toArray.parameterAnalysis(0);
 
         assertEquals(Level.TRUE, p0.getProperty(VariableProperty.IDENTITY));
         assertEquals(Level.TRUE, p0.getProperty(VariableProperty.CONTAINER));
@@ -273,8 +274,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, twoAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.TRUE, twoAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
-        ParameterInfo intParam = twoConstructor.methodInspection.get().getParameters().get(0);
-        ParameterAnalysis intAnalysis = intParam.parameterAnalysis.get();
+        ParameterAnalysis intAnalysis = twoConstructor.parameterAnalysis(0);
 
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, intAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, intAnalysis.getProperty(VariableProperty.IMMUTABLE));

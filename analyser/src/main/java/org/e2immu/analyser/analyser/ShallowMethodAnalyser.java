@@ -124,7 +124,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     TypeInfo bestType = type.bestTypeInfo();
                     if (bestType != null) {
                         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-                        if(typeAnalysis != null) {
+                        if (typeAnalysis != null) {
                             int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                             if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                                 int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
@@ -147,7 +147,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     value = MultiLevel.INDEPENDENT;
                 }
             }
-            builder.setProperty(VariableProperty.INDEPENDENT, value);
+            int override = builder.getParameterPropertyCheckOverrides(analyserContext, builder.getParameterInfo(), VariableProperty.INDEPENDENT);
+            int finalValue = Math.max(override, value);
+            builder.setProperty(VariableProperty.INDEPENDENT, finalValue);
         }
     }
 

@@ -87,12 +87,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
+        assert checkOnDuplicates(types);
         log(ANALYSER, "Have {} types", types.size());
         /* Sort according to dependency hierarchy. To placate TimSort, we run twice, first on
         normal alphabetic order, then on dependency hierarchy. Please give me the correct explanation?
          */
         List<TypeInfo> sorted = new ArrayList<>(types);
-        sorted.sort(Comparator.comparing(ti -> ti.fullyQualifiedName));
+        //sorted.sort(Comparator.comparing(ti -> ti.fullyQualifiedName));
         sorted.sort(AnnotatedAPIAnalyser::typeComparator);
 
         if (Logger.isLogEnabled(ANALYSER)) {
@@ -101,6 +102,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     typeInfo.fullyQualifiedName,
                     typeInfo.typeInspection.get().parentClass() == null ? "NO PARENT" : ""));
         }
+        //assert checksOnOrder(sorted);
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         methodAnalysers = new LinkedHashMap<>(); // we keep the order!
@@ -139,21 +141,35 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
     }
 
-    private static int typeComparator(TypeInfo t1, TypeInfo t2) {
-        if (t1.equals(t2)) return 0;
+    private boolean checkOnDuplicates(List<TypeInfo> types) {
+        Set<TypeInfo> set = new HashSet<>(types);
+        return types.size() == set.size();
+    }
+
+    private boolean checksOnOrder(List<TypeInfo> sorted) {
+        int indexOfCollection = sorted.indexOf(typeMap.get(Collection.class));
+        int indexOfAbstractCollection = sorted.indexOf(typeMap.get(AbstractCollection.class));
+        return indexOfCollection < indexOfAbstractCollection;
+    }
+
+    public static int typeComparator(TypeInfo t1, TypeInfo t2) {
+        if (t1 == t2 || t1.equals(t2)) throw new IllegalArgumentException();
         if (Primitives.isJavaLangObject(t1)) return -1;
         if (Primitives.isJavaLangObject(t2)) return 1;
 
-        Set<TypeInfo> super1 = t1.typeResolution.get().superTypesExcludingJavaLangObject();
+        Set<TypeInfo> super1 = t1.typeResolution.get(t1.fullyQualifiedName).superTypesExcludingJavaLangObject();
         if (super1.contains(t2)) {
+            System.out.println(t1.fullyQualifiedName + " => " + t2.fullyQualifiedName);
             return 1;
         }
-        Set<TypeInfo> super2 = t2.typeResolution.get().superTypesExcludingJavaLangObject();
+        Set<TypeInfo> super2 = t2.typeResolution.get(t2.fullyQualifiedName).superTypesExcludingJavaLangObject();
         if (super2.contains(t1)) {
+            System.out.println(t1.fullyQualifiedName + " <= " + t2.fullyQualifiedName);
             return -1;
         }
         int c = t1.fullyQualifiedName.compareTo(t2.fullyQualifiedName);
         assert c != 0;
+        System.out.println(t1.fullyQualifiedName + (c < 0 ? " <- " : " -> ") + t2.fullyQualifiedName);
         return c;
     }
 

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
@@ -23,14 +24,19 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.AbstractCollection;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,14 +44,12 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.parser.CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-public abstract class CommonAnnotatedAPI {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CommonAnnotatedAPI.class);
+public class TestTypeSorting {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeSorting.class);
 
     protected static TypeContext typeContext;
-    protected static List<Message> errors;
 
     @BeforeAll
     public static void beforeClass() throws IOException {
@@ -54,43 +58,32 @@ public abstract class CommonAnnotatedAPI {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
-        AnnotatedAPIConfiguration.Builder annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
-                .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
                 .addDebugLogTargets(Stream.of(DELAYED, ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
+        parser.preload("java.util");
         parser.run();
         typeContext = parser.getTypeContext();
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-
-        errors = parser.getMessages()
-                .filter(m -> m.message().severity == Message.Severity.ERROR)
-                .toList();
-        LOGGER.info("Have {} error messages", errors.size());
-
-        long ownErrors = errors.stream()
-                .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
-                .peek(m -> LOGGER.info("OWN ERROR: {}", m))
-                .count();
-        assertEquals(0L, ownErrors);
     }
 
-    protected void testE2ContainerType(TypeAnalysis typeAnalysis) {
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+    @Test
+    public void test() {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        TypeInfo abstractCollection = typeContext.getFullyQualified(AbstractCollection.class);
+        TypeInfo list = typeContext.getFullyQualified(List.class);
+        TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
+        assertEquals(-1, AnnotatedAPIAnalyser.typeComparator(collection, abstractCollection));
+        assertEquals(-1, AnnotatedAPIAnalyser.typeComparator(collection, list));
+        assertEquals(-1, AnnotatedAPIAnalyser.typeComparator(collection, arrayList));
+        assertEquals(-1, AnnotatedAPIAnalyser.typeComparator(list, arrayList));
 
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.SINGLETON));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.FINALIZER));
-
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.FLUENT));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.IDENTITY));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(1, AnnotatedAPIAnalyser.typeComparator(abstractCollection, collection));
+        assertEquals(1, AnnotatedAPIAnalyser.typeComparator(list, collection));
+        assertEquals(1, AnnotatedAPIAnalyser.typeComparator(arrayList, collection));
+        assertEquals(1, AnnotatedAPIAnalyser.typeComparator(arrayList, list));
     }
 }

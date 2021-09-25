@@ -281,4 +281,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public String niceClassName() {
         return "Method";
     }
+
+    // helper for tests
+    public ParameterAnalysis parameterAnalysis(int index) {
+        return methodInspection.get().getParameters().get(index).parameterAnalysis.get();
+    }
 }
