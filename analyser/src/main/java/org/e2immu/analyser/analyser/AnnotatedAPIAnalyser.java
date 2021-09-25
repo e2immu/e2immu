@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.Logger;
 
 import java.lang.annotation.Annotation;
@@ -87,22 +88,23 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
-        assert checkOnDuplicates(types);
         log(ANALYSER, "Have {} types", types.size());
-        /* Sort according to dependency hierarchy. To placate TimSort, we run twice, first on
-        normal alphabetic order, then on dependency hierarchy. Please give me the correct explanation?
-         */
-        List<TypeInfo> sorted = new ArrayList<>(types);
-        //sorted.sort(Comparator.comparing(ti -> ti.fullyQualifiedName));
-        sorted.sort(AnnotatedAPIAnalyser::typeComparator);
 
+        DependencyGraph<TypeInfo> dependencyGraph = new DependencyGraph<>();
+        for (TypeInfo typeInfo : types) {
+            if (!Primitives.isJavaLangObject(typeInfo)) {
+                dependencyGraph.addNode(typeInfo, typeInfo.typeResolution.get().superTypesExcludingJavaLangObject());
+            }
+        }
+        List<TypeInfo> sorted = dependencyGraph.sorted();
+        sorted.add(0, typeMap.get(Object.class));
         if (Logger.isLogEnabled(ANALYSER)) {
             log(ANALYSER, "Order of shallow analysis:");
             sorted.forEach(typeInfo -> log(ANALYSER, "  Type {} {}",
                     typeInfo.fullyQualifiedName,
                     typeInfo.typeInspection.get().parentClass() == null ? "NO PARENT" : ""));
         }
-        //assert checksOnOrder(sorted);
+        assert checksOnOrder(sorted);
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         methodAnalysers = new LinkedHashMap<>(); // we keep the order!
@@ -139,11 +141,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 }
             }
         }
-    }
-
-    private boolean checkOnDuplicates(List<TypeInfo> types) {
-        Set<TypeInfo> set = new HashSet<>(types);
-        return types.size() == set.size();
     }
 
     private boolean checksOnOrder(List<TypeInfo> sorted) {

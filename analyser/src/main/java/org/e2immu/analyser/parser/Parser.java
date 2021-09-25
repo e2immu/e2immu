@@ -262,7 +262,9 @@ public class Parser {
 
         List<TypeInfo> types = new LinkedList<>();
         annotatedAPITypes.forEach(st -> types.add(st.primaryType()));
-        Set<TypeInfo> alreadyAdded = new HashSet<>();
+        assert checkOnDuplicates(types);
+
+        Set<TypeInfo> alreadyAdded = new HashSet<>(types);
         sourceTypes.forEach(st -> alreadyAdded.add(st.primaryType()));
 
         // all byte-code inspected types and AnnotatedAPI, excluding source types
@@ -276,6 +278,8 @@ public class Parser {
             }
         });
 
+        assert checkOnDuplicates(types);
+
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions(), typeMap);
         messages.addAll(annotatedAPIAnalyser.analyse());
@@ -286,6 +290,11 @@ public class Parser {
                 typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                         .filter(m -> m.methodInspection.get().isPublic())
                         .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
+    }
+
+    private static boolean checkOnDuplicates(List<TypeInfo> types) {
+        Set<TypeInfo> set = new HashSet<>(types);
+        return types.size() == set.size();
     }
 
     public record ComposerData(Collection<TypeInfo> primaryTypes, TypeMap typeMap) {
