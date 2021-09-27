@@ -923,7 +923,10 @@ public class ParameterizedType {
             return typeParameter.getTypeBounds().stream().mapToInt(pt -> pt.defaultImmutable(analysisProvider)).min().orElseThrow();
         }
         TypeInfo bestType = bestTypeInfo();
-        if (bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE; // null constant, return type of void method
+        if (bestType == null) {
+            // unbound type parameter, null constant
+            return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return TYPE_ANALYSIS_NOT_AVAILABLE;
@@ -944,5 +947,9 @@ public class ParameterizedType {
         if (best == null) return false;
         TypeInfo pt = best.primaryType();
         return pt != currentType.primaryType();
+    }
+
+    public static boolean isUnboundTypeParameterOrJLO(TypeInfo bestType) {
+        return bestType == null || Primitives.isJavaLangObject(bestType);
     }
 }

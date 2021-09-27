@@ -138,7 +138,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
-        return getMethodProperty(AnalysisProvider.DEFAULT_PROVIDER, variableProperty);
+        return getMethodProperty(variableProperty);
     }
 
     @Override
@@ -245,7 +245,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getMethodProperty(analysisProvider, variableProperty);
+            return getMethodProperty(variableProperty);
         }
 
         private int formalProperty() {

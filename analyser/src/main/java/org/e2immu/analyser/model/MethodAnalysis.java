@@ -21,7 +21,6 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public interface MethodAnalysis extends Analysis {
@@ -102,120 +101,11 @@ public interface MethodAnalysis extends Analysis {
         return last.methodLevelData;
     }
 
-    Function<Integer, Integer> OVERRIDE_FALSE = x -> Level.FALSE;
-    Function<Integer, Integer> OVERRIDE_TRUE = x -> Level.TRUE;
-    Function<Integer, Integer> OVERRIDE_EFFECTIVELY_NOT_NULL = x -> MultiLevel.EFFECTIVELY_NOT_NULL;
-    Function<Integer, Integer> NO_INFLUENCE = x -> x;
-
-    default Function<Integer, Integer> influenceOfType(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        MethodInfo methodInfo = getMethodInfo();
-        ParameterizedType returnType = methodInfo.returnType();
-
-        switch (variableProperty) {
-
-            case INDEPENDENT: {
-                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
-                int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (typeIndependent > Level.DELAY) {
-                    return inMethod -> Math.max(inMethod, typeIndependent);
-                }
-                return NO_INFLUENCE;
-            }
-
-            case MODIFIED_METHOD: {
-                if (methodInfo.isConstructor) return OVERRIDE_TRUE; // by definition
-                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
-                // keep this isAbstract check! See PropagateModification_1;
-                // a type can be @E2Immutable with an abstract method,
-                // which can still have MODIFIED_METHOD == Level.DELAY rather than Level.FALSE
-                if (!methodInfo.isAbstract() &&
-                        typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                    return OVERRIDE_FALSE;
-                }
-                return NO_INFLUENCE;
-            }
-            case NOT_NULL_EXPRESSION:
-                int fluent = getProperty(VariableProperty.FLUENT);
-                if (fluent == Level.TRUE) return OVERRIDE_EFFECTIVELY_NOT_NULL;
-                return NO_INFLUENCE;
-
-            case CONTAINER:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return NO_INFLUENCE;
-                int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
-                return inMethod -> Math.max(inMethod, container);
-
-            case IMMUTABLE: {
-                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
-                int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                return inMethod -> Math.max(inMethod, immutable);
-            }
-
-            default:
-                return NO_INFLUENCE;
-        }
-    }
-
-    /*
-    Note that we do not have to make a distinction between explicitly empty methods and shallow analysis methods.
-    The ShallowMethodAnalyser sets explicit values for this case.
-     */
-    default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default int getMethodProperty(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION -> {
-                int propertyFromType = ImplicitProperties.fromType(getMethodInfo().returnType(), variableProperty);
-                if (propertyFromType > Level.DELAY) yield propertyFromType;
-                yield getPropertyCheckOverrides(analysisProvider, variableProperty);
-            }
-            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyCheckOverrides(analysisProvider, variableProperty);
+            case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(variableProperty);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);
         };
-    }
-
-    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        boolean shallow = getMethodInfo().shallowAnalysis();
-        int mineAsIs = getPropertyFromMapDelayWhenAbsent(variableProperty);
-        int influencedByType = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
-        if (!shallow) return influencedByType;
-
-        // only for shallow methods now
-
-        int bestOfOverrides = Level.DELAY;
-        for (MethodAnalysis override : getOverrides(analysisProvider)) {
-            int overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(variableProperty);
-            int combinedWithType = override.influenceOfType(analysisProvider, variableProperty).apply(overrideAsIs);
-            bestOfOverrides = Math.max(bestOfOverrides, combinedWithType);
-        }
-        int max = Math.max(influencedByType, bestOfOverrides);
-
-        if (variableProperty == VariableProperty.INDEPENDENT
-                && max < MultiLevel.DEPENDENT_1
-                && getMethodInfo().returnType().isUnboundTypeParameter()
-                && getMethodInfo().isAbstract()) {
-            return MultiLevel.DEPENDENT_1;
-        }
-
-        if (max == Level.DELAY) {
-            // unless: abstract methods, not annotated for modification
-            if (getMethodInfo().isAbstract() && variableProperty == VariableProperty.MODIFIED_METHOD) {
-                /*
-                 In case of a shallow type: if you mark a shallow type as level 2 immutable then its abstract methods are @NotModified by default
-                 See Basics_5, Stream is @E2Container so filter, findAny, map etc. must be @NotModified.
-                 Otherwise, the method is shallow but the type is not. See e.g. PropagateModification_8.
-                 If the type is found to be @E2Immutable, then it makes little sense to mark the method as @Modified,
-                 so we choose @NotModified instead.
-                */
-                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(getMethodInfo().typeInfo);
-                int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                if (immutable == Level.DELAY) {
-                    return Level.DELAY;
-                }
-                if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                    return Level.FALSE;
-                }
-            }
-            return variableProperty.valueWhenAbsent();
-        }
-        return max;
     }
 
     default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {

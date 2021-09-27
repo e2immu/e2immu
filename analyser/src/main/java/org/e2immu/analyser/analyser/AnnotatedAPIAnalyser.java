@@ -257,7 +257,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private int computeIndependent(TypeInfo typeInfo) {
         int myMethods = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().isPublic())
-                .mapToInt(m -> getMethodAnalysis(m).getMethodProperty(this, VariableProperty.INDEPENDENT))
+                .mapToInt(m -> getMethodAnalysis(m).getProperty(VariableProperty.INDEPENDENT))
                 .min().orElse(VariableProperty.INDEPENDENT.best);
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
@@ -284,13 +284,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        builder.setProperty(VariableProperty.FLUENT, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-        builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+        builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
-        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
-        builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+        builder.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new InlinedMethod(Identifier.generate(),
                 methodInfo, new VariableExpression(parameterInfo), Set.of(parameterInfo), false));
@@ -314,13 +315,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        builder.setProperty(VariableProperty.FLUENT, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-        builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+        builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
-        builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        builder.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType, "isKnown return value"));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());

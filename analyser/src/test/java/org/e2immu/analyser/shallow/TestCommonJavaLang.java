@@ -37,13 +37,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         testE2ContainerType(objectAnalysis);
         assertEquals(MultiLevel.INDEPENDENT, objectAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
-        MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces",0);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE,
+                methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
     }
 
     @Test
@@ -147,7 +148,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
 
-        MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo",1);
+        MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
 
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.FLUENT));
@@ -182,7 +183,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Iterable.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("forEach", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE,  methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);

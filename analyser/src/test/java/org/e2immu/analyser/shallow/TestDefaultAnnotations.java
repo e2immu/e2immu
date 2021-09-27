@@ -152,13 +152,6 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, sizeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT, sizeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
-        if (sizeAnalysis instanceof MethodAnalysisImpl sizeAnalysisImpl) {
-            assertEquals(3, sizeAnalysisImpl.properties.size());
-            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.INDEPENDENT));
-            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.IMMUTABLE));
-            assertTrue(sizeAnalysisImpl.properties.containsKey(VariableProperty.MODIFIED_METHOD));
-        } else fail();
-
         // METHOD 2
 
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
@@ -246,7 +239,7 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, toArrayAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         assertEquals(MultiLevel.NULLABLE, toArrayAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_1, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
