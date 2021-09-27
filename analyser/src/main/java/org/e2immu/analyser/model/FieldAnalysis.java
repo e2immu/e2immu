@@ -59,10 +59,13 @@ public interface FieldAnalysis extends Analysis {
 
             case INDEPENDENT:
             case EXTERNAL_NOT_NULL:
+            case EXTERNAL_IMMUTABLE:
+            case EXTERNAL_IMMUTABLE_BREAK_DELAY:
             case CONSTANT:
             case CONTAINER:
             case FINAL:
             case MODIFIED_OUTSIDE_METHOD:
+            case MODIFIED_VARIABLE:
                 break;
 
             default:

@@ -40,7 +40,7 @@ public class CheckFinalNotModified {
         if (Final.class.equals(annotation)) {
             isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE;
         } else if (NotModified.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE;
+            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE;
         } else throw new UnsupportedOperationException();
 
         String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;

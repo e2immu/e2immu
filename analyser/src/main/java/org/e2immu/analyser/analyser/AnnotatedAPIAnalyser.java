@@ -243,30 +243,39 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void validateIndependence() {
         typeAnalyses.forEach(((typeInfo, typeAnalysis) -> {
             int inMap = typeAnalysis.getPropertyFromMapNeverDelay(VariableProperty.INDEPENDENT);
-            int computed = computeIndependent(typeInfo);
+            ValueExplanation computed = computeIndependent(typeInfo);
             // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
-            if (inMap > computed && Primitives.isNotJavaLang(typeInfo)) {
+            if (inMap > computed.value) {
                 Message message = Message.newMessage(new Location(typeInfo),
                         Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
-                        "Found " + inMap + ", computed maximally " + computed);
+                        "Found " + inMap + ", computed maximally " + computed.value
+                                + " in " + computed.explanation);
                 messages.add(message);
             }
         }));
     }
 
-    private int computeIndependent(TypeInfo typeInfo) {
-        int myMethods = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .filter(m -> m.methodInspection.get().isPublic())
-                .mapToInt(m -> getMethodAnalysis(m).getProperty(VariableProperty.INDEPENDENT))
-                .min().orElse(VariableProperty.INDEPENDENT.best);
+    private record ValueExplanation(int value, String explanation) {
+    }
+
+    private ValueExplanation computeIndependent(TypeInfo typeInfo) {
+        ValueExplanation myMethods =
+                typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .filter(m -> m.methodInspection.get().isPublic())
+                        .map(m -> new ValueExplanation(getMethodAnalysis(m).getProperty(VariableProperty.INDEPENDENT),
+                                m.fullyQualifiedName))
+                        .min(Comparator.comparing(p -> p.value))
+                        .orElse(new ValueExplanation(VariableProperty.INDEPENDENT.best, "none"));
         Stream<TypeInfo> superTypes = typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream();
-        int fromSuperTypes = superTypes
+        ValueExplanation fromSuperTypes = superTypes
                 .filter(TypeInfo::isPublic)
                 .map(this::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.INDEPENDENT))
-                .min().orElse(VariableProperty.INDEPENDENT.best);
-        return Math.min(myMethods, fromSuperTypes);
+                .map(ta -> new ValueExplanation(ta.getProperty(VariableProperty.INDEPENDENT),
+                        ta.getTypeInfo().fullyQualifiedName))
+                .min(Comparator.comparing(p -> p.value))
+                .orElse(new ValueExplanation(VariableProperty.INDEPENDENT.best, "none"));
+        return myMethods.value < fromSuperTypes.value ? myMethods : fromSuperTypes;
     }
 
     // dedicated method exactly for this "isFact" method
