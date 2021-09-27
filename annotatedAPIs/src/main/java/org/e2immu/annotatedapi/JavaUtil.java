@@ -166,7 +166,6 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @Dependent1
-        @NotModified // FIXME this should be the default, but fails when removed
         Stream<E> stream();
 
         default int toArray$Transfer$Size(int i) {
@@ -190,7 +189,6 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @Dependent1
-        @NotModified // FIXME
         <T> T[] toArray(@NotNull IntFunction<T[]> generator);
     }
 

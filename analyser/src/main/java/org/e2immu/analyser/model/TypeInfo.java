@@ -280,6 +280,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findAny().orElseThrow();
     }
 
+    public MethodInfo findUniqueMethod(String methodName, TypeInfo typeOfFirstParameter) {
+        return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() > 0)
+                .filter(m -> typeOfFirstParameter.equals(m.methodInspection.get().getParameters().get(0)
+                        .parameterizedType.typeInfo))
+                .findAny().orElseThrow(() -> new IllegalArgumentException(
+                        "Cannot find unique method with first parameter type " + typeOfFirstParameter.fullyQualifiedName
+                                + " in " + fullyQualifiedName));
+    }
+
     public MethodInfo findUniqueMethod(InspectionProvider inspectionProvider, String methodName, int parameters) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         return inspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)

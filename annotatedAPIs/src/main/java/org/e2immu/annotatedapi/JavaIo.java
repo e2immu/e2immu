@@ -26,6 +26,7 @@ public class JavaIo {
 
     }
 
+    @Independent
     @Container
     interface PrintStream$ {
         @Modified
@@ -54,7 +55,7 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void print(@NotModified Object obj);
+        void print(Object obj);
 
         @Modified
         @AllowsInterrupt
@@ -86,7 +87,7 @@ public class JavaIo {
 
         @Modified
         @AllowsInterrupt
-        void println(@NotModified Object obj);
+        void println(Object obj);
     }
 
 }

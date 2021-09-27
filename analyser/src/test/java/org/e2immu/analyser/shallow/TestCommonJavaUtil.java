@@ -22,9 +22,10 @@ import org.junit.jupiter.api.Test;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.function.IntFunction;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
@@ -48,6 +49,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+
+        // as opposed to java.io.PrintStream.print(X x), for example
+        assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }
 
     @Test
@@ -115,6 +119,19 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     }
 
     @Test
+    public void testCollectionToArrayIntFunction() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
+        TypeInfo intFunction = typeContext.getFullyQualified(IntFunction.class);
+        assertNotNull(intFunction);
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("toArray", intFunction);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
     public void testListAdd() {
         TypeInfo typeInfo = typeContext.getFullyQualified(ArrayList.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("add", 1);
@@ -136,4 +153,25 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
     }
 
+    @Test
+    public void testCollectionStream() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("stream", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+    }
+
+    @Test
+    public void testCollections() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Collections.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
+        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER)); // Collections.addAll
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT)); // no data
+    }
 }

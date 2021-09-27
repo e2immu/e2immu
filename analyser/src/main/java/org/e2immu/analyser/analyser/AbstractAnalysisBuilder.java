@@ -164,6 +164,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         int immutable = -1;
         int notNull = -1;
         boolean container = false;
+        int independent = -1;
         Messages messages = new Messages();
 
         AnnotationExpression only = null;
@@ -230,11 +231,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+                    independent = MultiLevel.INDEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
+                    independent = MultiLevel.DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+                    independent = MultiLevel.DEPENDENT_1;
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {
@@ -246,6 +247,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
                     immutable = 1;
+                    independent = MultiLevel.INDEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
@@ -255,6 +257,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     throw new UnsupportedOperationException("? " + t.fullyQualifiedName);
                 }
             }
+        }
+        if (independent >= 0) {
+            setProperty(VariableProperty.INDEPENDENT, independent);
         }
         if (container) {
             setProperty(VariableProperty.CONTAINER, Level.TRUE);
