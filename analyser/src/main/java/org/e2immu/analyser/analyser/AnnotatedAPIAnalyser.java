@@ -230,8 +230,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Annotation.class, // every annotation derives from Annotation
                 Enum.class, // every enum type derives from Enum
                 String.class, // every toString method
-                // because they cause @Independent issues in java.util.PrimitiveIterator.OfXXX:
-                Double.class, Integer.class, Long.class}) {
+                Double.class,
+                Integer.class,
+                Long.class}) {
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);

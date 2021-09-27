@@ -146,9 +146,9 @@ public abstract class CommonTestRunner {
 
 
     protected void testOutputClass(List<String> classes,
-                                 int errorsToExpect,
-                                 int warningsToExpect,
-                                 DebugConfiguration debugConfiguration) throws IOException {
+                                   int errorsToExpect,
+                                   int warningsToExpect,
+                                   DebugConfiguration debugConfiguration) throws IOException {
         testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_OUTPUT,
                 errorsToExpect, warningsToExpect, debugConfiguration);
     }
@@ -217,10 +217,26 @@ public abstract class CommonTestRunner {
             //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
         }
         assertFalse(types.isEmpty());
-        parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-        assertEquals(errorsToExpect, (int) parser.getMessages()
+        List<Message> messages = parser.getMessages().toList();
+        List<Message> filteredMessages;
+
+        // there are some errors thrown by AnnotatedAPIAnalyser.validateIndependence when there are no Annotated API files
+        // as long as they pertain to the JDK, we don't bother
+        if (withAnnotatedAPIs) {
+            filteredMessages = messages;
+        } else {
+            filteredMessages = messages.stream()
+                    .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
+                            !m.location().info.getTypeInfo().packageName().startsWith("java."))
+                    .toList();
+        }
+        filteredMessages
+                .stream()
+                .filter(message -> message.message().severity != Message.Severity.INFO)
+                .forEach(message -> LOGGER.info(message.toString()));
+        assertEquals(errorsToExpect, (int) filteredMessages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");
-        assertEquals(warningsToExpect, (int) parser.getMessages()
+        assertEquals(warningsToExpect, (int) filteredMessages.stream()
                 .filter(m -> m.message().severity == Message.Severity.WARN).count(), "WARNINGS: ");
         return parser.getTypeContext();
     }

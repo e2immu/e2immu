@@ -65,13 +65,11 @@ public abstract class CommonAnnotatedAPI {
         Parser parser = new Parser(configuration);
         parser.run();
         typeContext = parser.getTypeContext();
-        parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-
         errors = parser.getMessages()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
-
+        errors.forEach(e -> LOGGER.info("Error: " + e));
         long ownErrors = errors.stream()
                 .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
                 .peek(m -> LOGGER.info("OWN ERROR: {}", m))

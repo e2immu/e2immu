@@ -16,10 +16,7 @@ package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.*;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -298,6 +295,9 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         boolean removeAll(@NotNull1 Collection<?> c);
 
+        @Dependent1
+        Iterator<E> spliterator();
+
         // @Dependent implicitly!!!
         @NotNull1
         java.util.List<E> subList(int fromIndex, int toIndex);
@@ -420,6 +420,9 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         @Independent
         boolean remove(@NotNull Object object);
+
+        @Dependent1
+        Iterator<E> spliterator();
     }
 
     @Container
@@ -674,5 +677,18 @@ public class JavaUtil extends AnnotatedAPI {
 
         public HashMap$(@NotNull1 @Dependent1 Map<? extends K, ? extends V> map) {
         }
+    }
+
+
+    interface AbstractCollection$<E> {
+
+        @Dependent1
+        Iterator<E> iterator();
+    }
+
+    interface Deque$<E> {
+
+        @Dependent1
+        Iterator<E> iterator();
     }
 }

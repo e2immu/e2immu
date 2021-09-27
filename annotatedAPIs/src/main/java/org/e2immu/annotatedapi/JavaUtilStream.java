@@ -64,6 +64,7 @@ public class JavaUtilStream {
     }
 
     @E2Container
+    @Dependent1
     interface IntStream$ {
         long count();
 
@@ -74,6 +75,7 @@ public class JavaUtilStream {
     }
 
     @E2Container
+    @Dependent1
     interface Stream$<T> {
 
         @NotNull
@@ -116,4 +118,9 @@ public class JavaUtilStream {
         void forEach(@Dependent1 @NotNull Consumer<? super T> action);
     }
 
+    @E2Container
+    @Dependent1
+    interface BaseStream$ {
+
+    }
 }

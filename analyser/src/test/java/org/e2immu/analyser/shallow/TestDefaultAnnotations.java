@@ -78,11 +78,12 @@ public class TestDefaultAnnotations {
                 .count();
         LOGGER.info("Have {} error messages", errors);
 
-        long ownErrors = messages.stream()
-                .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
-                .peek(m -> LOGGER.info("OWN ERROR: {}", m))
+        long javaLangErrors = messages.stream()
+                .filter(m -> m.message().severity == Message.Severity.ERROR)
+                .filter(m -> !m.location().info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
-        assertEquals(0L, ownErrors);
+        LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
+        assertEquals(0L, javaLangErrors);
     }
 
     // hardcoded

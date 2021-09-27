@@ -18,6 +18,7 @@ import org.e2immu.annotation.*;
 
 import java.io.PrintStream;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -26,6 +27,7 @@ class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
+    @Dependent1
     interface Iterable$<T> {
         void forEach(@NotNull @Dependent1 Consumer<? super T> action);
 
@@ -122,6 +124,7 @@ class JavaLang {
     }
 
     @Container
+    @Independent
     interface Appendable$ {
         @Fluent
         Appendable append(char c);
@@ -307,6 +310,7 @@ class JavaLang {
     // a class, because we want to annotate the constructor
 
     @Container
+    @Independent
     static abstract class StringBuilder$ implements CharSequence {
 
         boolean StringBuilder$Modification$Len(int post) {
@@ -389,12 +393,51 @@ class JavaLang {
         }
     }
 
+    @Container
+    @Independent
+    static abstract class StringBuffer$ implements CharSequence {
+
+    }
+
     @E2Container
     @Independent
     interface Integer$ {
 
         @NotNull
         String toString(int i);
+    }
+
+
+    @E2Container
+    @Independent
+    interface Float$ {
+
+        @NotNull
+        String toString(float f);
+    }
+
+    @E2Container
+    @Independent
+    interface Byte$ {
+
+        @NotNull
+        String toString(byte b);
+    }
+
+    @E2Container
+    @Independent
+    interface Character$ {
+
+        @NotNull
+        String toString(char c);
+    }
+
+    @E2Container
+    @Independent
+    interface Short$ {
+
+        @NotNull
+        String toString(short s);
     }
 
     @E2Container
@@ -435,5 +478,15 @@ class JavaLang {
         }
 
         int compareTo(@NotNull T t);
+    }
+
+    @Independent
+    interface Package$ {
+
+    }
+
+    @Independent
+    interface Module$ {
+
     }
 }

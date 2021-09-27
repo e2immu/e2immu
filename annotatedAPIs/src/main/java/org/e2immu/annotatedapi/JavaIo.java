@@ -90,4 +90,15 @@ public class JavaIo {
         void println(Object obj);
     }
 
+    @Independent
+    @Container
+    interface OutputStream$ {
+
+    }
+
+    @Independent
+    @Container
+    interface FilterOutputStream$ {
+
+    }
 }

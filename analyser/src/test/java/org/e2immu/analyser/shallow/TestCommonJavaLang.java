@@ -91,9 +91,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
                     .findFirst().orElseThrow();
             MethodAnalysis methodAnalysis = appendBoolean.methodAnalysis.get();
 
-            // a @Fluent method in a modifiable type is @Dependent (it returns 'this', which is modifiable)
             assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.FLUENT));
-            assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+            assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
             assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
             assertEquals(MultiLevel.MUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
@@ -112,9 +111,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
                     .findFirst().orElseThrow();
             MethodAnalysis methodAnalysis = appendString.methodAnalysis.get();
 
-            // a @Fluent method in a modifiable type is @Dependent (it returns 'this', which is modifiable)
             assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.FLUENT));
-            assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+            assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
             assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
             assertEquals(MultiLevel.MUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
@@ -125,8 +123,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
 
-        // as a consequence, the type is DEPENDENT as well
-        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
     }
@@ -175,7 +172,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testAppendable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Appendable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
