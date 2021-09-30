@@ -279,7 +279,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
                 // we need to wait at least one iteration on transparent types
                 // iteration 1 delayed because of @Modified of goTo
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {

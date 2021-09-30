@@ -55,7 +55,7 @@ public class Test_36_Cast extends CommonTestRunner {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
                         () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
 

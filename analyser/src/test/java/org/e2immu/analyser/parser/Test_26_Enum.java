@@ -60,7 +60,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                 assertEquals(expectExtImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };

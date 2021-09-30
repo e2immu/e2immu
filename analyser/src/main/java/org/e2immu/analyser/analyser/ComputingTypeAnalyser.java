@@ -785,7 +785,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;
             }
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUAL, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.EVENTUALLY_E1IMMUTABLE;
             e1Component = MultiLevel.EVENTUAL;
             eventual = true;
         } else {
@@ -797,7 +797,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         typeInfo.fullyQualifiedName + D_IMMUTABLE);
                 return DELAYS;
             }
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.EFFECTIVELY_E1IMMUTABLE;
             e1Component = MultiLevel.EFFECTIVE;
             // it is possible that all fields are final, yet some field's content is used as the precondition
             eventual = !typeAnalysis.approvedPreconditionsE2IsEmpty();

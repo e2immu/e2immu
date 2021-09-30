@@ -52,7 +52,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
             }
             if ("FunctionalInterface_0".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
@@ -74,7 +74,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
 
                     int expectExtNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectExtNn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                    int expectExtImm = d.iteration() <= 5 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    int expectExtImm = d.iteration() <= 5 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                     assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 }
             }

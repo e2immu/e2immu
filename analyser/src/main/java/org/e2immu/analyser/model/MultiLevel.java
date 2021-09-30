@@ -60,7 +60,7 @@ public class MultiLevel {
     public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, EVENTUAL);
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);
-    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, FALSE);
+    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL);
 
     public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
     public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER);
@@ -71,7 +71,6 @@ public class MultiLevel {
 
     public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, EFFECTIVE);
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE);
-    public static final int EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE = compose(EFFECTIVE, FALSE);
 
     public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
 
@@ -114,7 +113,8 @@ public class MultiLevel {
             int v = (i >> (SHIFT * shift)) & AND;
             if (v <= MultiLevel.FALSE) return MultiLevel.FALSE;
         }
-        return (i >> (SHIFT * level)) & AND;
+        int res = (i >> (SHIFT * level)) & AND;
+        return Math.max(MultiLevel.FALSE, res);
     }
 
     public static int level(int i) {

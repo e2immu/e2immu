@@ -43,7 +43,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE,
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE,
                 methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
     }
 

@@ -51,7 +51,7 @@ public class Test_51_TypeIndependence extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("elements".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE, d.fieldAnalysis()
+                assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, d.fieldAnalysis()
                         .getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 if (d.iteration() == 0) {
                     assertNull(d.fieldAnalysis().isTransparentType());

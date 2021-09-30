@@ -917,7 +917,7 @@ public class ParameterizedType {
 
     public int defaultImmutable(AnalysisProvider analysisProvider) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+        if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
         if (typeParameter != null) {
             if (typeParameter.getTypeBounds().isEmpty()) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             return typeParameter.getTypeBounds().stream().mapToInt(pt -> pt.defaultImmutable(analysisProvider)).min().orElseThrow();

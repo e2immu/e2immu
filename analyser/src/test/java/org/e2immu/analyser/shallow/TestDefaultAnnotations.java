@@ -240,7 +240,7 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, toArrayAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         assertEquals(MultiLevel.NULLABLE, toArrayAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_1, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
