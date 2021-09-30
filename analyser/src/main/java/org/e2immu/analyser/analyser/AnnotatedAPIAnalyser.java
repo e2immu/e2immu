@@ -82,7 +82,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                 TypeMap typeMap) {
         this.typeMap = typeMap;
-        shallowFieldAnalyser = new ShallowFieldAnalyser(this, e2ImmuAnnotationExpressions);
+        shallowFieldAnalyser = new ShallowFieldAnalyser(this, this,
+                e2ImmuAnnotationExpressions);
 
         this.primitives = primitives;
         this.configuration = configuration;
@@ -191,10 +192,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         hardcodedCrucialClasses();
 
-        // do the types and fields
+        // do the types first,
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            // process all types and fields; no need to recurse into sub-types, they're included among the primary types
-            shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+            shallowTypeAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+        });
+
+        // and then the fields
+        typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
+            shallowFieldAnalysis(typeInfo);
         });
 
         LOGGER.info("Finished AnnotatedAPI type and field analysis of {} types; have {} messages of my own",
@@ -482,11 +487,17 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     }
 
-    private void shallowTypeAndFieldAnalysis(TypeInfo typeInfo,
-                                             TypeAnalysisImpl.Builder typeAnalysisBuilder,
-                                             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private void shallowFieldAnalysis(TypeInfo typeInfo) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
-        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
+        boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
+        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser.analyser(fieldInfo, isEnum));
+    }
+
+    private void shallowTypeAnalysis(TypeInfo typeInfo,
+                                     TypeAnalysisImpl.Builder typeAnalysisBuilder,
+                                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        TypeInspection typeInspection = typeInfo.typeInspection.get();
+        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.TYPE,
                 true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         ComputingTypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
@@ -501,9 +512,6 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
-
-        boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
-        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser.analyser(fieldInfo, isEnum));
     }
 
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {

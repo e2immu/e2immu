@@ -27,11 +27,15 @@ import java.util.stream.Stream;
 public class ShallowFieldAnalyser {
 
     private final InspectionProvider inspectionProvider;
+    private final AnalysisProvider analysisProvider;
     private final Messages messages = new Messages();
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
-    public ShallowFieldAnalyser(InspectionProvider inspectionProvider, E2ImmuAnnotationExpressions e2) {
+    public ShallowFieldAnalyser(InspectionProvider inspectionProvider,
+                                AnalysisProvider analysisProvider,
+                                E2ImmuAnnotationExpressions e2) {
         this.inspectionProvider = inspectionProvider;
+        this.analysisProvider = analysisProvider;
         e2ImmuAnnotationExpressions = e2;
     }
 
@@ -47,15 +51,33 @@ public class ShallowFieldAnalyser {
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        if (fieldInfo.isExplicitlyFinal() || enumField) {
-            fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
-        }
+        fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.fromBool(fieldInfo.isExplicitlyFinal() || enumField));
+
         // unless annotated with something heavier, ...
-        if (enumField && fieldAnalysisBuilder.getProperty(VariableProperty.EXTERNAL_NOT_NULL) == Level.DELAY) {
+        if (enumField && !fieldAnalysisBuilder.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
             fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         }
+        if (!fieldAnalysisBuilder.properties.isSet(VariableProperty.CONTAINER)) {
+            int typeIsContainer;
+            if (fieldAnalysisBuilder.bestType == null) {
+                typeIsContainer = Level.TRUE;
+            } else {
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(fieldAnalysisBuilder.bestType);
+                if (typeAnalysis != null) {
+                    typeIsContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
+                } else {
+                    typeIsContainer = VariableProperty.CONTAINER.falseValue;
+                    if(fieldInfo.isPublic()) {
+                        messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
+                                fieldAnalysisBuilder.bestType.fullyQualifiedName));
+                    }
+                }
+            }
+            fieldAnalysisBuilder.setProperty(VariableProperty.CONTAINER, typeIsContainer);
+        }
 
-        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE
+                && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
             Expression value;
             if (initialiser instanceof ConstantExpression<?> constantExpression) {

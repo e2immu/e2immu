@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /*
 Aims to catch problems in assigning properties from the field to the variable in statement 0, setS1.
 The values there are a summary of what happened deeper down, which is different from what is in the field.
-(The field cannot be @NotNull but locally we know s will not be null at that point.)
+(The field cannot be @NotNull, but locally we know s will not be null at that point.)
 
 API annotations are not loaded, so we don't know that System.out is never null.
 
@@ -42,6 +42,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
     private static final String E = VariableInfoContainer.Level.EVALUATION.toString();
     private static final String C = VariableInfoContainer.Level.INITIAL.toString();
     private static final String M = VariableInfoContainer.Level.MERGE.toString();
+    public static final String INSTANCE_PRINT_STREAM = "nullable instance type PrintStream";
 
     // not loading in the AnnotatedAPIs, so System.out will have @Modified=1 after println()
     // this also causes a potential null pointer exception, as we don't know if out will be @NotNull
@@ -67,7 +68,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
                     String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Basics_3.s>" : "true";
-                    // FIXME    assertEquals(expect, d.evaluationResult().value().debugOutput());
+                     assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
@@ -112,7 +113,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             assertTrue(d.currentValueIsDelayed());
                         } else {
-                            assertEquals("instance type PrintStream", d.currentValue().toString());
+                            assertEquals(INSTANCE_PRINT_STREAM, d.currentValue().toString());
                         }
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -122,14 +123,14 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                     } else if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type PrintStream",
+                        assertEquals(INSTANCE_PRINT_STREAM,
                                 d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
-                        String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : "instance type PrintStream";
+                        String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : INSTANCE_PRINT_STREAM;
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
 

@@ -187,4 +187,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.DEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
     }
+
+    @Test
+    public void testSystemOut() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(System.class);
+        FieldInfo out = typeInfo.getFieldByName("out", true);
+        FieldAnalysis fieldAnalysis = out.fieldAnalysis.get();
+        assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+        assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.CONTAINER));
+    }
 }

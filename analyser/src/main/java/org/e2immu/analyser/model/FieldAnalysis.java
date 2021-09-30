@@ -57,13 +57,14 @@ public interface FieldAnalysis extends Analysis {
                         analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
                 return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
-            case INDEPENDENT:
-            case EXTERNAL_NOT_NULL:
-            case EXTERNAL_IMMUTABLE:
-            case EXTERNAL_IMMUTABLE_BREAK_DELAY:
             case CONSTANT:
             case CONTAINER:
+            case EXTERNAL_IMMUTABLE:
+            case EXTERNAL_IMMUTABLE_BREAK_DELAY:
+            case EXTERNAL_NOT_NULL:
             case FINAL:
+            case IGNORE_MODIFICATIONS:
+            case INDEPENDENT:
             case MODIFIED_OUTSIDE_METHOD:
             case MODIFIED_VARIABLE:
                 break;

@@ -158,12 +158,6 @@ public enum VariableProperty {
     UTILITY_CLASS("@UtilityClass"),
     EXTENSION_CLASS("@ExtensionClass");
 
-    /*
-    copy from field, parameter, this/type to variable, once a value has been determined.
-     */
-    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
-
     public final String name;
     public final int best;
     public final int falseValue;

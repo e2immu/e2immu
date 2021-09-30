@@ -127,23 +127,18 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent, boolean isInterface) {
-        if (independent == MultiLevel.DEPENDENT || !isInterface && independent == MultiLevel.DELAY) {
-            annotations.put(e2ImmuAnnotationExpressions.independent, false);
-            annotations.put(e2ImmuAnnotationExpressions.dependent, true);
+        AnnotationExpression expression;
+
+        if (independent == MultiLevel.DEPENDENT) {
+            expression = e2ImmuAnnotationExpressions.dependent;
+        } else if (independent == MultiLevel.INDEPENDENT) {
+            expression = e2ImmuAnnotationExpressions.independent;
+        } else if (independent == MultiLevel.DEPENDENT_1) {
+            expression = e2ImmuAnnotationExpressions.dependent1;
+        } else {
             return;
         }
-        if (independent <= MultiLevel.DEPENDENT) return;
-        annotations.put(e2ImmuAnnotationExpressions.dependent, false);
-        if (independent == MultiLevel.INDEPENDENT) {
-            annotations.put(e2ImmuAnnotationExpressions.independent, true);
-            return;
-        }
-        boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
-        if (!eventual) throw new UnsupportedOperationException("??");
-        String mark = ((TypeAnalysis) this).markLabel();
-        AnnotationExpression ae = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
-                List.of(new MemberValuePair("after", new StringConstant(primitives, mark))));
-        annotations.put(ae, true);
+        annotations.put(expression, true);
     }
 
     /**

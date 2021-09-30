@@ -647,6 +647,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
+    private static final Set<VariableProperty> FROM_FIELD_ANALYSER_TO_PROPERTIES
+            = Set.of(FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
+
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
             VariableInfo eval = vic.best(VariableInfoContainer.Level.EVALUATION);
@@ -656,7 +659,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
                 AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
+                Map<VariableProperty, Integer> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
                 LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference), false);
 
@@ -1235,10 +1238,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         return result;
     }
-
-    // @Container also important, see e.g. FunctionalInterface_0
-    private static final Set<VariableProperty> FROM_FIELD_ANALYSER_TO_PROPERTIES
-            = Set.of(CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE_BREAK_DELAY);
 
     private Map<VariableProperty, Integer> fieldPropertyMap(AnalyserContext analyserContext,
                                                             FieldInfo fieldInfo) {
