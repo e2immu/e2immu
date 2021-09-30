@@ -79,4 +79,11 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+    @Test
+    public void test_19() throws IOException {
+        testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

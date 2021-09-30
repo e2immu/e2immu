@@ -105,9 +105,9 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         };
 
         testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -359,7 +359,12 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
                     assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
-                    int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    int expectContainer;
+                    if ("0.0.0".equals(d.statementId())) {
+                        expectContainer = Level.TRUE;
+                    } else {
+                        expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    }
                     assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
                 }
             }
@@ -387,7 +392,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                     }
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {
-                    if("1".equals(d.statementId())) {
+                    if ("1".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                     }
                     assertEquals(MultiLevel.NULLABLE, enn);
@@ -408,8 +413,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectContainer, p0.getProperty(VariableProperty.CONTAINER));
+                assertEquals(Level.TRUE, p0.getProperty(VariableProperty.CONTAINER));
             }
         };
 

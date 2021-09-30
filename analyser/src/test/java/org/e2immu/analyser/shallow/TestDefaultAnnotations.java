@@ -290,9 +290,9 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.DEPENDENT, outAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         if (outAnalysis instanceof FieldAnalysisImpl outAnalysisImpl) {
-            assertEquals(1, outAnalysisImpl.properties.size());
             assertTrue(outAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
-        } else fail();
+            assertTrue(outAnalysisImpl.properties.containsKey(VariableProperty.CONTAINER));
+        }
     }
 
     @Test
@@ -308,7 +308,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, bytesAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         if (bytesAnalysis instanceof FieldAnalysisImpl bytesAnalysisImpl) {
-            assertEquals(1, bytesAnalysisImpl.properties.size());
+            assertTrue(bytesAnalysisImpl.properties.containsKey(VariableProperty.CONTAINER));
             assertTrue(bytesAnalysisImpl.properties.containsKey(VariableProperty.FINAL));
         } else fail();
 
@@ -343,5 +343,22 @@ public class TestDefaultAnnotations {
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+
+    @Test
+    public void testMapPut() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("put", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        // key
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 }

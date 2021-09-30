@@ -19,10 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.AbstractCollection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
 import java.util.function.IntFunction;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -173,5 +170,22 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER)); // Collections.addAll
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT)); // no data
+    }
+
+
+    @Test
+    public void testMapPut() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("put", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+        // key
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.DEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 }

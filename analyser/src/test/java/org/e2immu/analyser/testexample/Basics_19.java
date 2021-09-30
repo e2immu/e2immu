@@ -15,10 +15,7 @@
 package org.e2immu.analyser.testexample;
 
 /*
-tests default analysis property values for shallowly analysed types, methods, parameters, fields;
-both with and without annotated APIs
-
-Code here is not relevant, so we leave it empty. We should be fine with empty too :-)
+We should be fine with empty too :-)
  */
 public class Basics_19 {
 
