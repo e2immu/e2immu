@@ -286,4 +286,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public ParameterAnalysis parameterAnalysis(int index) {
         return methodInspection.get().getParameters().get(index).parameterAnalysis.get();
     }
+
+    public boolean analysisAccessible(InspectionProvider inspectionProvider) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(this);
+            return methodInspection.isPublic(inspectionProvider);
+        }
+        return true; // by hand, java parsing
+    }
 }

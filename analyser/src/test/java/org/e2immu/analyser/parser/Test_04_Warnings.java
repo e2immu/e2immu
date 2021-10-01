@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -30,6 +27,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -465,8 +463,30 @@ public class Test_04_Warnings extends CommonTestRunner {
 
     @Test
     public void test7() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
+                int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("addToSet".equals(d.methodInfo().name)) {
+                Set<MethodAnalysis> overrides = d.methodAnalysis()
+                        .getOverrides(d.evaluationContext().getAnalyserContext());
+                assertFalse(overrides.isEmpty());
+
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
         // one on the method, one on the type
         testClass("Warnings_7", 2, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -173,7 +173,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 if (d.iteration() >= 1) {
-                    assertEquals("s/*@Immutable,@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("s/*@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 }
@@ -233,8 +233,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     VariableInfo vi = d.getReturnAsVariable();
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-                    assertEquals("s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/",
-                            d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
 
                     // combining both, we obtain:
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
@@ -267,7 +266,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
+                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };

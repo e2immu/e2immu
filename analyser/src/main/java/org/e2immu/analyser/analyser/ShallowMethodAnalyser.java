@@ -19,8 +19,6 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ShallowMethodAnalyser extends MethodAnalyser {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ShallowMethodAnalyser.class);
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
@@ -203,9 +200,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private int computeMethodIndependent() {
-        int worstOverParameters = methodInfo.methodInspection.get().getParameters().stream()
-                .mapToInt(pi -> analyserContext.getParameterAnalysis(pi)
-                        .getParameterProperty(analyserContext, pi, VariableProperty.INDEPENDENT))
+        int worstOverParameters = parameterAnalyses.stream()
+                .mapToInt(pa -> pa.getParameterProperty(analyserContext,
+                        ((ParameterAnalysisImpl.Builder)pa).getParameterInfo(), VariableProperty.INDEPENDENT))
                 .min().orElse(MultiLevel.INDEPENDENT);
         int returnValue;
         if (methodInfo.isConstructor || methodInfo.isVoid()) {

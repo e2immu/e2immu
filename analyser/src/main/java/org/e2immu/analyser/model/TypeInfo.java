@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -578,5 +579,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         return false;
+    }
+
+    public boolean analysisAccessible(InspectionProvider inspectionProvider) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
+        if(typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
+            return isPublic(inspectionProvider);
+        }
+        return true; // by hand, java parsing
     }
 }

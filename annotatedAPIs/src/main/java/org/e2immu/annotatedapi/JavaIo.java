@@ -101,4 +101,10 @@ public class JavaIo {
     interface FilterOutputStream$ {
 
     }
+
+    @Independent
+    @Container
+    interface Writer$ {
+
+    }
 }

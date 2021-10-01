@@ -150,7 +150,8 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(methodInfo, concreteReturnType, methodAnalysis, parameters, linkedVariablesWhenDelayed);
+        Expression identity = computeIdentity(methodInfo, concreteReturnType,
+                methodAnalysis, parameters, linkedVariablesWhenDelayed, evaluationContext);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
@@ -519,7 +520,8 @@ public class EvaluateMethodCall {
                                               ParameterizedType concreteReturnType,
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters,
-                                              List<Variable> linkedVariablesWhenDelayed) {
+                                              List<Variable> linkedVariablesWhenDelayed,
+                                              EvaluationContext evaluationContext) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.isNotContracted()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
@@ -528,12 +530,14 @@ public class EvaluateMethodCall {
         }
         if (identity != Level.TRUE) return null;
 
+        Expression parameter = parameters.get(0);
         Map<VariableProperty, Integer> map = new HashMap<>();
         for (VariableProperty property : PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
             int v = methodAnalysis.getProperty(property);
-            if (v != Level.DELAY) map.put(property, v);
+            int p = evaluationContext.getProperty(parameter, property, true, true);
+            if (v != Level.DELAY && v != p) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(parameters.get(0), map);
+        return PropertyWrapper.propertyWrapper(parameter, map);
     }
 
 }

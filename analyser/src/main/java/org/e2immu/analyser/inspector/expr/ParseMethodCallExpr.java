@@ -239,22 +239,17 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
 
     /*
     StringBuilder.length is in public interface CharSequence and private type AbstractStringBuilder
-    We prioritise the CharSequence version, because that one can be annotated using AAPI.
-    Obviously, methods with code get even higher priority.
+    We prioritise the CharSequence version, because that one can be annotated using annotated APIs.
      */
 
     private void sortRemainingCandidatesByShallowPublic(List<TypeContext.MethodCandidate> methodCandidates,
                                                         InspectionProvider inspectionProvider) {
         Comparator<TypeContext.MethodCandidate> comparator =
                 (m1, m2) -> {
-                    boolean m1Statements = m1.method().methodInspection.hasStatements();
-                    boolean m2Statements = m2.method().methodInspection.hasStatements();
-                    if (m1Statements && !m2Statements) return -1;
-                    if (m2Statements && !m1Statements) return 1;
-                    boolean m1Public = m1.method().methodInspection.isPublic(inspectionProvider);
-                    boolean m2Public = m2.method().methodInspection.isPublic(inspectionProvider);
-                    if (m1Public && !m2Public) return -1;
-                    if (m2Public && !m1Public) return 1;
+                    boolean m1Accessible = m1.method().methodInspection.getMethodInfo().analysisAccessible(inspectionProvider);
+                    boolean m2Accessible = m2.method().methodInspection.getMethodInfo().analysisAccessible(inspectionProvider);
+                    if (m1Accessible && !m2Accessible) return -1;
+                    if (m2Accessible && !m1Accessible) return 1;
                     return 0; // don't know what to prioritize
                 };
         methodCandidates.sort(comparator);

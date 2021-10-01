@@ -14,35 +14,37 @@
 
 package org.e2immu.annotatedapi;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 public class OrgSlf4j {
     public static final String PACKAGE_NAME = "org.slf4j";
 
+    @Container
+    @Independent
     interface Logger$ {
-        /*
-        The reason we want (implicit) @NotModified on the methods, is that these
-        modifications are outside the scope of what we're interested in.
-         */
-        void info(@NotNull String s, @NotModified Object... objects);
+        void info(@NotNull String s, Object... objects);
 
-        void warn(@NotNull String s, @NotModified Object... objects);
+        void warn(@NotNull String s, Object... objects);
 
-        void error(@NotNull String s, @NotModified Object... objects);
+        void error(@NotNull String s, Object... objects);
 
-        void debug(@NotNull String s, @NotModified Object object1, @NotModified Object object2);
+        void debug(@NotNull String s, Object object1, Object object2);
 
-        void debug(@NotNull String s, @NotModified Object... objects);
+        void debug(@NotNull String s, Object... objects);
 
         void debug(@NotNull String s);
     }
 
+    @Container
     interface ILoggerFactory$ {
         @NotNull
         org.slf4j.Logger getLogger(String name);
     }
 
+    @Container
     interface LoggerFactory$ {
         @NotNull
         org.slf4j.Logger getLogger(@NotNull Class<?> clazz);

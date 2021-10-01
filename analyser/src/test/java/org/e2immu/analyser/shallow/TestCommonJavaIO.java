@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
+import java.io.Writer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,4 +67,14 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         assertTrue(methodInfo.methodResolution.get().allowsInterrupts());
     }
 
+    @Test
+    public void testWriterAppendChar() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Writer.class);
+        TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo;
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("append", charTypeInfo);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+
+    }
 }

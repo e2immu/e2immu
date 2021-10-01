@@ -373,7 +373,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                                  MethodAnalysis methodAnalysis) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
-                    .filter(mi -> !mi.shallowAnalysis() || mi.methodInspection.get().isPublic())
+                    .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
                     .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(mi))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
