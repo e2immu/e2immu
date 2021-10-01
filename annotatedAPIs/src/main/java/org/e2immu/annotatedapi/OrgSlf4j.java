@@ -16,7 +16,6 @@ package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 public class OrgSlf4j {

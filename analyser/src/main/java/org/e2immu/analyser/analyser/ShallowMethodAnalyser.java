@@ -200,10 +200,6 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private int computeMethodIndependent() {
-        int worstOverParameters = parameterAnalyses.stream()
-                .mapToInt(pa -> pa.getParameterProperty(analyserContext,
-                        ((ParameterAnalysisImpl.Builder)pa).getParameterInfo(), VariableProperty.INDEPENDENT))
-                .min().orElse(MultiLevel.INDEPENDENT);
         int returnValue;
         if (methodInfo.isConstructor || methodInfo.isVoid()) {
             returnValue = MultiLevel.INDEPENDENT;
@@ -234,10 +230,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 }
             }
         }
-        int computed = Math.min(worstOverParameters, returnValue);
         // typeIndependent is set by hand in AnnotatedAPI files
         int typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.INDEPENDENT);
-        return Math.max(MultiLevel.DEPENDENT, Math.max(computed, typeIndependent));
+        return Math.max(MultiLevel.DEPENDENT, Math.max(returnValue, typeIndependent));
     }
 
     private int computeMethodNotNull() {

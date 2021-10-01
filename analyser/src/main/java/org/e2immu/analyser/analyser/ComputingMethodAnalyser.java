@@ -123,7 +123,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         builder.add(STATEMENT_ANALYSER, statementAnalyser)
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
-                .add(COMPUTE_MODIFIED, (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
+                .add(COMPUTE_MODIFIED, (sharedState) -> computeModified())
                 .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
@@ -712,6 +712,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         VariableProperty variableProperty = isCycle ? VariableProperty.TEMP_MODIFIED_METHOD : VariableProperty.MODIFIED_METHOD;
 
         if (methodAnalysis.getProperty(variableProperty) != Level.DELAY) return DONE;
+        if (methodInfo.isConstructor) {
+            methodAnalysis.setProperty(MODIFIED_METHOD, Level.TRUE);
+            return DONE;
+        }
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         // first step, check (my) field assignments
@@ -847,7 +851,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private AnalysisStatus methodIsIndependent(SharedState sharedState) {
         int currentValue = methodAnalysis.getProperty(INDEPENDENT);
-        if(currentValue != Level.DELAY) {
+        if (currentValue != Level.DELAY) {
             return DONE;
         }
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
@@ -1014,7 +1018,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 .filter(v -> v instanceof FieldReference)
                 .map(v -> analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo))
                 .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE), MultiLevel.E2IMMUTABLE))
-                .min().orElse(MultiLevel.EFFECTIVE);
+                .min().orElse(MultiLevel.INDEPENDENT);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     linkedVariables.variables().stream()

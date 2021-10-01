@@ -677,7 +677,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
 
         log(INDEPENDENCE, "Improve type {} to @Independent", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         return DONE;
     }
 

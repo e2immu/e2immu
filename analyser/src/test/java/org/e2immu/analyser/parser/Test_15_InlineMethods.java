@@ -84,51 +84,10 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     }
 
     @Test
-    public void test_3() throws IOException {
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("plusRandom".equals(d.methodInfo().name)) {
-                if ("1".equals(d.statementId())) {
-                    assertEquals("i+r", d.evaluationResult().value().toString());
-                    assertTrue(d.evaluationResult().value() instanceof Sum);
-                }
-            }
-        };
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("plusRandom".equals(d.methodInfo().name)) {
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("i+r", inlinedMethod.toString());
-                } else {
-                    fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
-            }
-            if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("2+instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
-            }
-            if ("difference11".equals(d.methodInfo().name)) {
-                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
-            }
-        };
-
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo random = typeMap.get(Random.class);
-            MethodInfo nextInt = random.findUniqueMethod("nextInt", 0);
-            MethodAnalysis nextIntAnalysis = nextInt.methodAnalysis.get();
-            assertEquals(Level.TRUE, nextIntAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        };
-
-        testClass("InlineMethods_3", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .build());
-    }
-
-    @Test
     public void test_4() throws IOException {
         testClass("InlineMethods_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
-
 
     @Test
     public void test_5() throws IOException {

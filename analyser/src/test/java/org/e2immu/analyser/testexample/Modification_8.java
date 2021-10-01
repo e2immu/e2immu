@@ -14,11 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Objects;
 import java.util.Set;
@@ -26,7 +22,8 @@ import java.util.stream.Stream;
 
 /**
  * Almost identical to SimpleNotModified1, but now there's a "barrier" of <code>requireNonNull</code>
- * between <code>input</code> and <code>set</code>. The method introduces a {@link PropertyWrapper}
+ * between <code>input</code> and <code>set</code>. The method introduces a
+ * {@link org.e2immu.analyser.model.expression.PropertyWrapper}
  * around the {@link org.e2immu.analyser.model.expression.VariableExpression}, which forces us to use
  * <code>Value.asInstanceOf</code> rather than the <code>instanceof</code> operator.
  * <p>
@@ -38,6 +35,7 @@ import java.util.stream.Stream;
 @E1Immutable
 public class Modification_8 {
 
+    @E2Immutable(absent = true)
     @NotNull
     @Modified
     private final Set<String> set;

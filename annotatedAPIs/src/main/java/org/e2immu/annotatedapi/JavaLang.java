@@ -18,7 +18,6 @@ import org.e2immu.annotation.*;
 
 import java.io.PrintStream;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;

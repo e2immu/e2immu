@@ -881,7 +881,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 7: independent method: no link to object
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-        if (independent == MultiLevel.EFFECTIVE) {
+        if (independent >= MultiLevel.DEPENDENT_1) {
             return LinkedVariables.EMPTY;
         }
         delayed |= independent == Level.DELAY;

@@ -41,8 +41,8 @@ public class MultiLevel {
     public static final int NOT_NULL_1 = 1;
     public static final int NOT_NULL_2 = 2;
     public static final int NOT_NULL_3 = 3;
-    public static final int INDEPENDENT_1 = 0; // mutable content level
-    public static final int INDEPENDENT_2 = 1; // immutable content level
+    //public static final int INDEPENDENT_1 = 0; // mutable content level
+    //public static final int INDEPENDENT_2 = 1; // immutable content level
 
     // DEPENDENT (only at the first level, nothing to do with eventual)
 

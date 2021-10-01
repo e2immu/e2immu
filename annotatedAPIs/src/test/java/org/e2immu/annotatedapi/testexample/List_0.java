@@ -15,8 +15,6 @@
 package org.e2immu.annotatedapi.testexample;
 
 import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotModified;
 
 import java.util.*;
 

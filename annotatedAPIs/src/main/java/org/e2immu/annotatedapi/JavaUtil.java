@@ -313,6 +313,7 @@ public class JavaUtil extends AnnotatedAPI {
 
     // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
 
+    @Dependent1
     @Container
             // this is not in line with the JDK, but we will block null keys!
     interface Set$<E> {
@@ -690,5 +691,13 @@ public class JavaUtil extends AnnotatedAPI {
 
         @Dependent1
         Iterator<E> iterator();
+    }
+
+    @Container
+    @Independent
+    interface Random$ {
+
+        @Modified
+        int nextInt();
     }
 }

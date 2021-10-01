@@ -130,7 +130,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
-        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<E>/*@Dependent2*/).findAny().orElseThrow()";
+        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<E>/*@Dependent1*/).findAny().orElseThrow()";
         final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
@@ -425,22 +425,31 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("Modification_5".equals(d.methodInfo().name) &&
                     "org.e2immu.analyser.testexample.Modification_5.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
-                assertEquals(d.iteration() <= 1 ? Level.DELAY : Level.TRUE, d.getProperty(VariableProperty.FINAL));
+                assertEquals(d.iteration() <= 2 ? Level.DELAY : Level.TRUE, d.getProperty(VariableProperty.FINAL));
                 String expectValue = "new HashSet<>(in5)/*this.size()==in5.size()*/";
                 assertEquals(expectValue, d.currentValue().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
                 ParameterAnalysis in5 = d.parameterAnalyses().get(0);
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, in5.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set5".equals(d.fieldInfo().name)) {
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         testClass("Modification_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

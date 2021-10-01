@@ -421,7 +421,7 @@ public record NewObject(
             delayed = immutable == Level.DELAY;
 
             int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-            if (typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
+            if (typeIndependent >= MultiLevel.DEPENDENT_1) { // RULE 3
                 return LinkedVariables.EMPTY;
             }
             delayed |= typeIndependent == Level.DELAY;
@@ -431,7 +431,7 @@ public record NewObject(
         MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(constructor);
         int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-        if (independent == MultiLevel.EFFECTIVE) { // RULE 3
+        if (independent >= MultiLevel.DEPENDENT_1) { // RULE 3
             return LinkedVariables.EMPTY;
         }
         delayed |= independent == Level.DELAY;

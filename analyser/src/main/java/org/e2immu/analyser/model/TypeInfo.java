@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -353,6 +352,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findFirst().orElseThrow();
     }
 
+    public MethodInfo findConstructor(TypeInfo typeOfFirstParameter) {
+        return typeInspection.get().constructors().stream()
+                .filter(c -> c.methodInspection.get().getParameters().size() > 0)
+                .filter(c -> typeOfFirstParameter.equals(c.methodInspection.get()
+                        .getParameters().get(0).parameterizedType.bestTypeInfo()))
+                .findFirst().orElseThrow();
+    }
 
     public MethodInfo findConstructor(InspectionProvider inspectionProvider, List<Expression> parameterExpressions) {
         return findConstructor(inspectionProvider, parameterExpressions, true);
@@ -583,7 +589,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean analysisAccessible(InspectionProvider inspectionProvider) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
-        if(typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
+        if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
             return isPublic(inspectionProvider);
         }
         return true; // by hand, java parsing
