@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Finalizer;
 
 import java.util.List;
@@ -60,8 +61,13 @@ public interface MethodInspection extends Inspection {
     }
 
     default boolean isPublic() {
-        return getMethodInfo().typeInfo.isPublic() && (
-                getModifiers().contains(MethodModifier.PUBLIC) || getMethodInfo().typeInfo.isInterface());
+        return isPublic(InspectionProvider.DEFAULT);
+    }
+
+    default boolean isPublic(InspectionProvider inspectionProvider) {
+        return getMethodInfo().typeInfo.isPublic(inspectionProvider) &&
+                (getModifiers().contains(MethodModifier.PUBLIC) ||
+                        getMethodInfo().typeInfo.isInterface(inspectionProvider));
     }
 
     boolean isCompactConstructor();
@@ -87,6 +93,10 @@ public interface MethodInspection extends Inspection {
 
     default boolean isAbstract() {
         return getModifiers().contains(MethodModifier.ABSTRACT);
+    }
+
+    default boolean hasStatements() {
+        return getMethodBody() != null && !getMethodBody().isEmpty();
     }
 
 }

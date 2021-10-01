@@ -112,7 +112,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         return new MethodCall(Identifier.from(methodCallExpr),
                 objectIsImplicit, computedScope, methodInfo,
                 mapExpansion.isEmpty() ? method.getConcreteReturnType() :
-                method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions);
+                        method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions);
     }
 
     MethodTypeParameterMap chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,
@@ -177,6 +177,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 trimVarargsVsMethodsWithFewerParameters(methodCandidates);
             }
         }
+        sortRemainingCandidatesByShallowPublic(methodCandidates, inspectionProvider);
         MethodTypeParameterMap method = methodCandidates.get(0).method();
         // now parse the lambda's with our new info
         log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
@@ -234,6 +235,29 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             if (i >= formalParameters.size()) break; // varargs... we have more than there are
         }
         return method;
+    }
+
+    /*
+    StringBuilder.length is in public interface CharSequence and private type AbstractStringBuilder
+    We prioritise the CharSequence version, because that one can be annotated using AAPI.
+    Obviously, methods with code get even higher priority.
+     */
+
+    private void sortRemainingCandidatesByShallowPublic(List<TypeContext.MethodCandidate> methodCandidates,
+                                                        InspectionProvider inspectionProvider) {
+        Comparator<TypeContext.MethodCandidate> comparator =
+                (m1, m2) -> {
+                    boolean m1Statements = m1.method().methodInspection.hasStatements();
+                    boolean m2Statements = m2.method().methodInspection.hasStatements();
+                    if (m1Statements && !m2Statements) return -1;
+                    if (m2Statements && !m1Statements) return 1;
+                    boolean m1Public = m1.method().methodInspection.isPublic(inspectionProvider);
+                    boolean m2Public = m2.method().methodInspection.isPublic(inspectionProvider);
+                    if (m1Public && !m2Public) return -1;
+                    if (m2Public && !m1Public) return 1;
+                    return 0; // don't know what to prioritize
+                };
+        methodCandidates.sort(comparator);
     }
 
     private ParameterizedType commonTypeInCandidatesOnParameter(List<TypeContext.MethodCandidate> methodCandidates, int pos) {

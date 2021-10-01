@@ -243,9 +243,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isPublic() {
-        if (!typeInspection.get().modifiers().contains(TypeModifier.PUBLIC)) return false;
+        return isPublic(InspectionProvider.DEFAULT);
+    }
+
+    public boolean isPublic(InspectionProvider inspectionProvider) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
+        if (!typeInspection.modifiers().contains(TypeModifier.PUBLIC)) return false;
         if (packageNameOrEnclosingType.isRight()) {
-            return packageNameOrEnclosingType.getRight().isPublic();
+            return packageNameOrEnclosingType.getRight().isPublic(inspectionProvider);
         }
         return true;
     }
@@ -267,7 +272,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isInterface() {
-        return typeInspection.get().typeNature() == TypeNature.INTERFACE;
+        return isInterface(InspectionProvider.DEFAULT);
+    }
+
+    public boolean isInterface(InspectionProvider inspectionProvider) {
+        return inspectionProvider.getTypeInspection(this).typeNature() == TypeNature.INTERFACE;
     }
 
     public boolean isEventual() {
@@ -298,12 +307,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findAny().orElseThrow();
     }
 
+    /*
+    we ignore shallowly analysed methods that are not public.
+    This avoids the length() issue in StringBuilder AbstractStringBuilder CharSequence;
+    where the method has been annotated in CharSequence; the implementation in AbstractStringBuilder is
+    unknown, inaccessible and not annotated.
+     */
     public MethodInfo findMethodImplementing(MethodInfo abstractMethodInfo) {
         if (abstractMethodInfo.typeInfo == this) return null;
         MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
-        if (foundHere != null && !foundHere.isAbstract()) return foundHere;
+        if (foundHere != null && !foundHere.isAbstract()
+                && (!foundHere.shallowAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
         TypeInspection inspection = typeInspection.get();
         if (!Primitives.isJavaLangObject(inspection.parentClass())) {
             MethodInfo foundInParent = inspection.parentClass().typeInfo.findMethodImplementing(abstractMethodInfo);

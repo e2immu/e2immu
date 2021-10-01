@@ -21,9 +21,9 @@ import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
+import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
@@ -123,6 +123,20 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
 
+        /*
+         There is no specific "length()" method in StringBuilder, we inherit from CharSequence.
+         If BasicCompanionMethods_3 runs green, we are guaranteed that the CharSequence method
+         is chosen over the one in AbstractStringBuilder (this type is non-public, and cannot be
+         annotated / analysed).
+         */
+        {
+            try {
+                sb.findUniqueMethod("length", 0);
+                fail();
+            } catch (NoSuchElementException noSuchElementException) {
+                // OK
+            }
+        }
         assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));

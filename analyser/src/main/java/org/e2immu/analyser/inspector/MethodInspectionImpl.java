@@ -496,5 +496,14 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public boolean isVoid() {
             return Primitives.isVoidOrJavaLangVoid(returnType);
         }
+
+        /*
+        Copy data from a parent method during the shallow inspection process.
+         */
+        public void copyFrom(MethodInspection parent) {
+            returnType = parent.getReturnType();
+            modifiers.addAll(parent.getModifiers());
+            exceptionTypes.addAll(parent.getExceptionTypes());
+        }
     }
 }

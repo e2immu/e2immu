@@ -104,10 +104,10 @@ public class MethodInspector {
             // not a full inspection, method does not exist. we make a copy, IF the method exists in one of the direct
             // super types. See JavaUtil, forEach in Collection, with different annotations than forEach in Iterable
 
-            MethodInspection parent = allowCopyFromSuperType(inspectionProvider, builder);
+            MethodInspection parent = findInSuperType(inspectionProvider, builder);
             if (parent != null) {
                 log(INSPECTOR, "Create method {} as copy from super type, shallow inspection", distinguishingName);
-                builder.setReturnType(parent.getReturnType());
+                builder.copyFrom(parent);
                 builderOnceFQNIsKnown.set(builder);
                 typeMapBuilder.registerMethodInspection(builder);
                 return builder;
@@ -117,20 +117,20 @@ public class MethodInspector {
         throw new UnsupportedOperationException();
     }
 
-    static MethodInspection allowCopyFromSuperType(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
+    static MethodInspection findInSuperType(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(builder.owner);
-        MethodInspection parent = buildCopyFromSuperType(inspectionProvider, builder, typeInspection.parentClass());
+        MethodInspection parent = findMethodInSuperType(inspectionProvider, builder, typeInspection.parentClass());
         if (parent != null) return parent;
         for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
-            MethodInspection fromSuper = buildCopyFromSuperType(inspectionProvider, builder, interfaceImplemented);
+            MethodInspection fromSuper = findMethodInSuperType(inspectionProvider, builder, interfaceImplemented);
             if (fromSuper != null) return fromSuper;
         }
         return null;
     }
 
-    static MethodInspection buildCopyFromSuperType(InspectionProvider inspectionProvider,
-                                                   MethodInspectionImpl.Builder builder,
-                                                   ParameterizedType superTypeDefinition) {
+    static MethodInspection findMethodInSuperType(InspectionProvider inspectionProvider,
+                                                  MethodInspectionImpl.Builder builder,
+                                                  ParameterizedType superTypeDefinition) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(superTypeDefinition.typeInfo);
         Optional<MethodInfo> candidate;
         if (builder.isConstructor) {
@@ -161,7 +161,7 @@ public class MethodInspector {
         if (ptSub.isType() && ptSuper.isType()) {
             return ptSub.typeInfo == ptSuper.typeInfo;
         }
-        return true; // FIXME need more code here! and this probably exists somewhere?
+        return true; // FIXME need more code here! and this probably exists somewhere? YES in ShallowMethodResolver
     }
 
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods, String mainMethodName) {
