@@ -188,7 +188,7 @@ public class TestDefaultAnnotations {
 
         assertEquals(Level.TRUE, getAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(Level.FALSE, getAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, getAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_INVOLVED, getAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
         // an unbound type parameter cannot be DEPENDENT
         assertEquals(MultiLevel.DEPENDENT_1, getAnalysis.getProperty(VariableProperty.INDEPENDENT));
@@ -198,6 +198,9 @@ public class TestDefaultAnnotations {
     @Test
     public void testListAdd() {
         TypeInfo list = typeContext.getFullyQualified(List.class);
+        TypeAnalysis typeAnalysis  = list.typeAnalysis.get();
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+
         MethodInfo add = list.findUniqueMethod("add", 1);
         MethodAnalysis addAnalysis = add.methodAnalysis.get();
 
@@ -207,9 +210,10 @@ public class TestDefaultAnnotations {
 
         ParameterAnalysis paramAnalysis = add.parameterAnalysis(0);
 
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, paramAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_INVOLVED, paramAnalysis.getProperty(VariableProperty.IMMUTABLE), "In "+add.fullyQualifiedName);
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, paramAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        // not a container!
+        assertEquals(Level.TRUE, paramAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
         // independent, because the method is @NotModified and returns a boolean
         assertEquals(MultiLevel.INDEPENDENT, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
@@ -349,6 +353,9 @@ public class TestDefaultAnnotations {
     @Test
     public void testMapPut() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+
         MethodInfo methodInfo = typeInfo.findUniqueMethod("put", 2);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
@@ -357,8 +364,8 @@ public class TestDefaultAnnotations {
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 }

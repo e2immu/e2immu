@@ -915,17 +915,20 @@ public class ParameterizedType {
 
     public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
 
-    public int defaultImmutable(AnalysisProvider analysisProvider) {
+    public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
         if (typeParameter != null) {
-            if (typeParameter.getTypeBounds().isEmpty()) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            return typeParameter.getTypeBounds().stream().mapToInt(pt -> pt.defaultImmutable(analysisProvider)).min().orElseThrow();
+            // unbound type parameter
+            if (typeParameter.getTypeBounds().isEmpty())
+                return returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            return typeParameter.getTypeBounds().stream()
+                    .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod)).min().orElseThrow();
         }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             // unbound type parameter, null constant
-            return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            return returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {

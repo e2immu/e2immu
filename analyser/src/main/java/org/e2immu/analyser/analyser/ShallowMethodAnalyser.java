@@ -16,19 +16,20 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.IntSupplier;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ShallowMethodAnalyser extends MethodAnalyser {
+
+    private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
@@ -76,7 +77,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
             parameterAnalyses.forEach(parameterAnalysis -> {
                 ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                computeParameterIndependent(builder);
+                computeParameterProperties(builder);
             });
 
             computePropertiesAfterParameters();
@@ -85,6 +86,41 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             checkMethodIndependent();
         }
         return AnalysisStatus.DONE;
+    }
+
+    private void computeParameterProperties(ParameterAnalysisImpl.Builder builder) {
+        computeParameterModified(builder);
+        computeParameterPropertyIfNecessary(builder, VariableProperty.IMMUTABLE, this::computeParameterImmutable);
+        computeParameterPropertyIfNecessary(builder, VariableProperty.INDEPENDENT, this::computeParameterIndependent);
+        computeParameterPropertyIfNecessary(builder, VariableProperty.NOT_NULL_PARAMETER, this::computeNotNullParameter);
+        computeParameterPropertyIfNecessary(builder, VariableProperty.CONTAINER, this::computeContainerParameter);
+        computeParameterPropertyIfNecessary(builder, VariableProperty.IGNORE_MODIFICATIONS,
+                this::computeParameterIgnoreModification);
+    }
+
+    private int computeParameterIgnoreModification(ParameterAnalysisImpl.Builder builder) {
+        TypeInfo bestType = builder.getParameterInfo().parameterizedType.bestTypeInfo();
+        if (bestType != null && bestType.isPrimaryType()
+                && "java.util.function".equals(bestType.packageName())
+                && bestType.isAbstract(analyserContext)) {
+            return Level.TRUE;
+        }
+        return Level.FALSE;
+    }
+
+    private int computeNotNullParameter(ParameterAnalysisImpl.Builder builder) {
+        ParameterizedType pt = builder.getParameterInfo().parameterizedType;
+        if (Primitives.isPrimitiveExcludingVoid(pt)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+        int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.NOT_NULL_PARAMETER);
+        return Math.max(MultiLevel.NULLABLE, override);
+    }
+
+    private int computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
+        TypeInfo bestType = builder.getParameterInfo().parameterizedType.bestTypeInfo(analyserContext);
+        if (bestType == null) return Level.TRUE;
+        if (Primitives.isPrimitiveExcludingVoid(bestType)) return Level.TRUE;
+        int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER);
+        return Math.max(Level.FALSE, override);
     }
 
 
@@ -96,6 +132,28 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         computeMethodPropertyIfNecessary(VariableProperty.IDENTITY, () -> bestOfOverridesOrWorstValue(VariableProperty.IDENTITY));
         computeMethodPropertyIfNecessary(VariableProperty.FINALIZER, () -> bestOfOverridesOrWorstValue(VariableProperty.FINALIZER));
         computeMethodPropertyIfNecessary(VariableProperty.CONSTANT, () -> bestOfOverridesOrWorstValue(VariableProperty.CONSTANT));
+    }
+
+    private void computeMethodPropertyIfNecessary(VariableProperty variableProperty, IntSupplier computer) {
+        int inMap = methodAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
+        if (inMap == Level.DELAY) {
+            int computed = computer.getAsInt();
+            if (computed > Level.DELAY) {
+                methodAnalysis.setProperty(variableProperty, computed);
+            }
+        }
+    }
+
+    private static void computeParameterPropertyIfNecessary(ParameterAnalysisImpl.Builder builder,
+                                                            VariableProperty variableProperty,
+                                                            ToIntFunction<ParameterAnalysisImpl.Builder> computer) {
+        int inMap = builder.getPropertyFromMapDelayWhenAbsent(variableProperty);
+        if (inMap == Level.DELAY) {
+            int computed = computer.applyAsInt(builder);
+            if (computed > Level.DELAY) {
+                builder.setProperty(variableProperty, computed);
+            }
+        }
     }
 
     private int bestOfOverridesOrWorstValue(VariableProperty variableProperty) {
@@ -122,19 +180,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         return Math.max(Level.FALSE, bestOfOverrides(VariableProperty.MODIFIED_METHOD));
     }
 
-    private void computeMethodPropertyIfNecessary(VariableProperty variableProperty, IntSupplier computer) {
-        int inMap = methodAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
-        if (inMap == Level.DELAY) {
-            int computed = computer.getAsInt();
-            if (computed > Level.DELAY) {
-                methodAnalysis.setProperty(variableProperty, computed);
-            }
-        }
-    }
-
     private int computeMethodImmutable() {
         ParameterizedType returnType = methodInspection.getReturnType();
-        int immutable = returnType.defaultImmutable(analyserContext);
+        int immutable = returnType.defaultImmutable(analyserContext, true);
         if (immutable == ParameterizedType.TYPE_ANALYSIS_NOT_AVAILABLE) {
             messages.add(Message.newMessage(new Location(methodInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                     returnType.toString()));
@@ -143,46 +191,89 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         return immutable;
     }
 
-    private void computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
-        int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+
+    private void computeParameterModified(ParameterAnalysisImpl.Builder builder) {
+        int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.MODIFIED_VARIABLE);
+        int typeContainer = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo).getProperty(VariableProperty.CONTAINER);
+
+        int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_VARIABLE);
         if (inMap == Level.DELAY) {
             int value;
-            ParameterizedType type = builder.getParameterInfo().parameterizedType;
-            if (Primitives.isPrimitiveExcludingVoid(type)) {
-                value = MultiLevel.INDEPENDENT;
+            if (typeContainer == Level.TRUE) {
+                value = Level.FALSE;
+            } else if (override != Level.DELAY) {
+                value = override;
             } else {
-                // @Modified needs to be marked explicitly
-                int modifiedMethod = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
-                if (modifiedMethod == Level.TRUE) {
-                    TypeInfo bestType = type.bestTypeInfo();
-                    if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
-                        value = MultiLevel.DEPENDENT_1;
+                ParameterizedType type = builder.getParameterInfo().parameterizedType;
+                if (Primitives.isPrimitiveExcludingVoid(type) || Primitives.isJavaLangString(type)) {
+                    value = Level.FALSE;
+                } else {
+                    int typeImmutable = type.defaultImmutable(analyserContext, true);
+                    if (typeImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                        int typeIndependent = type.defaultIndependent();
+                        if (typeIndependent == MultiLevel.INDEPENDENT) {
+                            value = Level.FALSE;
+                        } else {
+                            value = Level.TRUE;
+                        }
                     } else {
-                        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-                        if (typeAnalysis != null) {
-                            int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                                int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
-                                if (independent == MultiLevel.INDEPENDENT) {
-                                    value = MultiLevel.INDEPENDENT;
-                                } else {
-                                    value = MultiLevel.DEPENDENT_1;
-                                }
+                        value = Level.TRUE;
+                    }
+                }
+            }
+            builder.setProperty(VariableProperty.MODIFIED_VARIABLE, value);
+        } else if (override == Level.FALSE && inMap == Level.TRUE) {
+            messages.add(Message.newMessage(new Location(builder.getParameterInfo()),
+                    Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
+                    "Override was non-modifying, while this parameter is modifying"));
+        } else if (typeContainer == Level.TRUE && inMap == Level.TRUE) {
+            if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
+                messages.add(Message.newMessage(new Location(builder.getParameterInfo()),
+                        Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
+            }
+        }
+    }
+
+    private int computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
+        return builder.getParameterInfo().parameterizedType.defaultImmutable(analyserContext, true);
+    }
+
+    private int computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
+        int value;
+        ParameterizedType type = builder.getParameterInfo().parameterizedType;
+        if (Primitives.isPrimitiveExcludingVoid(type)) {
+            value = MultiLevel.INDEPENDENT;
+        } else {
+            // @Modified needs to be marked explicitly
+            int modifiedMethod = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
+            if (modifiedMethod == Level.TRUE) {
+                TypeInfo bestType = type.bestTypeInfo();
+                if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
+                    value = MultiLevel.DEPENDENT_1;
+                } else {
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+                    if (typeAnalysis != null) {
+                        int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                            int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
+                            if (independent == MultiLevel.INDEPENDENT) {
+                                value = MultiLevel.INDEPENDENT;
                             } else {
-                                value = MultiLevel.DEPENDENT;
+                                value = MultiLevel.DEPENDENT_1;
                             }
                         } else {
                             value = MultiLevel.DEPENDENT;
                         }
+                    } else {
+                        value = MultiLevel.DEPENDENT;
                     }
-                } else {
-                    value = MultiLevel.INDEPENDENT;
                 }
+            } else {
+                value = MultiLevel.INDEPENDENT;
             }
-            int override = builder.getParameterPropertyCheckOverrides(analyserContext, builder.getParameterInfo(), VariableProperty.INDEPENDENT);
-            int finalValue = Math.max(override, value);
-            builder.setProperty(VariableProperty.INDEPENDENT, finalValue);
         }
+        int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.INDEPENDENT);
+        return Math.max(override, value);
     }
 
     private void checkMethodIndependent() {
@@ -201,7 +292,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private int computeMethodIndependent() {
         int returnValue;
-        if (methodInfo.isConstructor || methodInfo.isVoid()) {
+        if (methodInfo.isConstructor || methodInfo.isVoid() || methodInfo.methodInspection.get().isStatic()) {
             returnValue = MultiLevel.INDEPENDENT;
         } else {
             TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
@@ -252,6 +343,16 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
         }
         return bestOfOverrides;
+    }
+
+    private int bestOfParameterOverrides(ParameterInfo parameterInfo, VariableProperty variableProperty) {
+        return methodInfo.methodResolution.get().overrides().stream()
+                .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
+                .mapToInt(mi -> {
+                    ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
+                    ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
+                    return pa.getPropertyFromMapNeverDelay(variableProperty);
+                }).max().orElse(Level.DELAY);
     }
 
     private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations() {

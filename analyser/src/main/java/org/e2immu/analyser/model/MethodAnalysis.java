@@ -103,7 +103,8 @@ public interface MethodAnalysis extends Analysis {
 
     default int getMethodProperty(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(variableProperty);
+            case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
+                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(variableProperty);
             default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);
         };
     }

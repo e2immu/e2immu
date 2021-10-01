@@ -12,17 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.shallow;
+package org.e2immu.analyser.testannotatedapi;
 
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+// should raise an error: @Modified versus @Container
 
-public class TestAnnotatedAPIErrors extends CommonAnnotatedAPI {
+public class JavaUtil_2 {
 
-    @Test
-    public void test() {
-        errors.forEach(System.out::println);
-        assertEquals(0, errors.size());
+    final static String PACKAGE_NAME = "java.util";
+
+    @Container
+    interface Collection$<E> {
+
+        @Modified
+        boolean add(@Modified @NotNull E e);
+
     }
 }
+

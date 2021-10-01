@@ -156,8 +156,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo math = typeMap.get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            // default is TRUE: there are no annotated APIs!
-            assertEquals(Level.TRUE, max.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, max.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

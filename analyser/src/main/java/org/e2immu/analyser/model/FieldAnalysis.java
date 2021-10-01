@@ -61,6 +61,7 @@ public interface FieldAnalysis extends Analysis {
             case CONTAINER:
             case EXTERNAL_IMMUTABLE:
             case EXTERNAL_IMMUTABLE_BREAK_DELAY:
+            case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case FINAL:
             case IGNORE_MODIFICATIONS:

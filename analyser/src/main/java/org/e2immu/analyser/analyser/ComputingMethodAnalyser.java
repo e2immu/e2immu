@@ -600,7 +600,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
                     methodInfo.fullyQualifiedName + D_IMMUTABLE);
 
-            int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
+            int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
             assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
                     methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
                     methodInfo.fullyQualifiedName + D_IMMUTABLE);
@@ -938,7 +938,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         Optional<Variable> immutableNotKnown = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
-                .filter(v -> v.parameterizedType().defaultImmutable(analyserContext) == Level.DELAY)
+                .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) == Level.DELAY)
                 .findFirst();
         if (immutableNotKnown.isPresent()) {
             return Level.DELAY;
@@ -950,7 +950,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         .filter(vi -> isFieldOfTransparentType(vi.variable(), analyserContext))
                         .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
                         .filter(v -> v instanceof ParameterInfo)
-                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext) != MultiLevel.EFFECTIVELY_E2IMMUTABLE)
+                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) != MultiLevel.EFFECTIVELY_E2IMMUTABLE)
                         .map(v -> (ParameterInfo) v)
                         .filter(parameters::contains)
                         .findFirst();

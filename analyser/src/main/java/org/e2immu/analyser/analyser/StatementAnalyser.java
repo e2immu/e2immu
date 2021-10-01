@@ -1566,7 +1566,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
                         NewObject.forCatchOrThis(index(), lvr, statementAnalysis.primitives),
-                        lvr.parameterizedType().defaultImmutable(analyserContext),
+                        lvr.parameterizedType().defaultImmutable(analyserContext, false),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
             }
@@ -1614,7 +1614,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
 
-                    int defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext);
+                    int defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext, false);
                     assert defaultImmutable != Level.DELAY ||
                             translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                                     lvr.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
@@ -2874,7 +2874,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (imm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
                 int extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
                 if (extImm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
-                int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext);
+                int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext, false);
                 return formal >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             }
             return getProperty(value, IMMUTABLE, true, false) >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -2908,7 +2908,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
                 }
                 if (variableProperty == IMMUTABLE) {
-                    int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext());
+                    int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext(), false);
                     if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
                     if (inMap == Level.DELAY) {
                         assert translatedDelay("getProperty",

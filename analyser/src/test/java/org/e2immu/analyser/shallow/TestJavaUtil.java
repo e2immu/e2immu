@@ -19,6 +19,8 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
@@ -86,4 +88,34 @@ public class TestJavaUtil {
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         assertTrue(ms.isEmpty());
     }
+
+
+    // test that there is an error clashing with @Container
+    @Test
+    public void test_2() throws IOException {
+        Set<Message> messages = test("JavaUtil_2");
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        MethodInfo add = collection.findUniqueMethod("add", 1);
+        ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
+        Location location = new Location(p0);
+        List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
+        ms.forEach(m -> LOGGER.info("Error: {}", m));
+        assertEquals(1, ms.size());
+        assertSame(Message.Label.CONTRADICTING_ANNOTATIONS, ms.get(0).message());
+    }
+
+    // test that there is an error clashing with override
+    @Test
+    public void test_3() throws IOException {
+        Set<Message> messages = test("JavaUtil_3");
+        TypeInfo collection = typeContext.getFullyQualified(List.class);
+        MethodInfo add = collection.findUniqueMethod("add", 1);
+        ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
+        Location location = new Location(p0);
+        List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
+        ms.forEach(m -> LOGGER.info("Error: {}", m));
+        assertEquals(1, ms.size());
+        assertSame(Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER, ms.get(0).message());
+    }
+
 }

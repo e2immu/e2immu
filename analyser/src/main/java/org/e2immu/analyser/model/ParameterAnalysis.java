@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Set;
@@ -63,201 +62,68 @@ public interface ParameterAnalysis extends Analysis {
         return true;
     }
 
-    // the reason the following methods sit here, is that they are shared by ParameterAnalysisImpl and ParameterAnalysisImpl.Builder
-
-    default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
-                                                   ParameterInfo parameterInfo,
-                                                   VariableProperty variableProperty) {
-        boolean shallow = parameterInfo.owner.shallowAnalysis();
-        int mine = getPropertyFromMapDelayWhenAbsent(variableProperty);
-        if (!shallow) return mine;
-
-        int bestOfOverrides = bestOfOverrides(analysisProvider, parameterInfo, variableProperty);
-        int max = Math.max(mine, bestOfOverrides);
-
-        if (max == Level.DELAY) {
-            // no information found in the whole hierarchy
-            if (variableProperty == MODIFIED_VARIABLE) {
-                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    return Level.DELAY;
-                }
-                // note: parameters of unbound type are not necessarily unmodified (see accept's parameter in Consumer)
-                // TODO require @Independent as well? if @Dependent1, there can be modification
-                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
-                    return Level.FALSE;
-                }
-            }
-            return variableProperty.valueWhenAbsent();
-
-        }
-        return max;
-    }
-
-    private static int bestOfOverrides(AnalysisProvider analysisProvider, ParameterInfo parameterInfo, VariableProperty variableProperty) {
-        int bestOfOverrides = Level.DELAY;
-        for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
-            ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
-            int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
-            bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
-        }
-        return bestOfOverrides;
-    }
-
     default int getParameterProperty(AnalysisProvider analysisProvider,
                                      ParameterInfo parameterInfo,
                                      VariableProperty variableProperty) {
+
+
+        // some absolutely trivial cases
         int propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, variableProperty);
         if (propertyFromType > Level.DELAY) return propertyFromType;
 
         switch (variableProperty) {
-            case IDENTITY:
-                return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
-
+            case CONTAINER:
             case INDEPENDENT:
-                int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT);
-                if (ip != Level.DELAY) return ip;
-                int value = getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
-                if (value < MultiLevel.DEPENDENT_1 && parameterInfo.parameterizedType.isUnboundTypeParameter()
-                        && parameterInfo.owner.isAbstract()) {
-                    return MultiLevel.DEPENDENT_1;
-                }
-                return value;
-
-            case MODIFIED_VARIABLE: {
-                // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified
-                // if the method is not abstract and @Container is true, then we must have @NotModified
-                // but if the method is abstract, and @Container is to be computed, the default is @Modified
-                if (!parameterInfo.owner.isPrivate()) {
-                    int ownerTypeContainer = analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
-                            .getProperty(VariableProperty.CONTAINER);
-                    if (ownerTypeContainer == Level.TRUE
-                            && (!parameterInfo.owner.isAbstract() || parameterInfo.owner.typeInfo.typePropertiesAreContracted())) {
-                        return Level.FALSE;
-                    }
-                }
-                int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
-                if (mv != Level.DELAY) return mv;
-
-                // unless otherwise contracted, non-private abstract methods have modified parameters
-                if (!parameterInfo.owner.isPrivate() && parameterInfo.owner.isAbstract()) {
-                    return Level.TRUE;
-                }
-                // note that parameters of E2Immutable type need not necessarily be @NotModified!
-                // there can be a modification of the immutable content (see e.g. Modification_23)
-
-                /* TODO replacement code @Dependent1
-                if (parameterInfo.owner.isAbstract()) {
-                    int pm = analysisProvider.getMethodAnalysis(parameterInfo.owner).getMethodProperty(analysisProvider,
-                            PROPAGATE_MODIFICATION);
-                    if (pm == Level.TRUE) {
-                        // the abstract method either has @PropagateModification, or is the abstract method
-                        // in a functional interface
-                        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
-                            return Level.FALSE;
-                        }
-                        // IMPROVE what about delays?
-                        if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
-                            return Level.FALSE;
-                        }
-                        return Level.TRUE; // no decision for this method
-                    }
-                    if (pm == Level.DELAY) return Level.DELAY; // no decision yet
-                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
-                } */
-                int cm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_MODIFIED);
-                int mom = getParameterProperty(analysisProvider, parameterInfo, MODIFIED_OUTSIDE_METHOD);
-                if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
-                return Math.max(cm, mom);
-            }
-
             case CONTEXT_MODIFIED:
-            case MODIFIED_OUTSIDE_METHOD: {
-                if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
-                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                    return Level.FALSE;
-                }
-                // now we rely on the computed value
-                break;
-            }
-
-            /* the only way to have a container is for the type to be a container, or for the user to have
-             contract annotated the parameter with @Container. This latter situation makes most sense
-             for abstract types
-             */
-            case CONTAINER: {
-                Boolean transparent = parameterInfo.parameterizedType.isTransparent(analysisProvider, parameterInfo.owner.typeInfo);
-                if (transparent == Boolean.TRUE) return Level.TRUE;
-                // if implicit is null, we cannot return FALSE, we'll have to wait!
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                int withoutDelay;
-                if (bestType != null) {
-                    withoutDelay = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
-                } else {
-                    withoutDelay = Level.best(getPropertyFromMapNeverDelay(VariableProperty.CONTAINER), Level.FALSE);
-                }
-                return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
-            }
-
+            case MODIFIED_OUTSIDE_METHOD:
             case IMMUTABLE_BEFORE_CONTRACTED:
             case CONTEXT_IMMUTABLE:
             case EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
+            case IGNORE_MODIFICATIONS:
+            case CONTEXT_NOT_NULL:
                 break;
 
-            case IMMUTABLE: {
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                int formalImmutable;
-                if (bestType != null) {
-                    TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-                    formalImmutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                } else {
-                    formalImmutable = MultiLevel.NOT_INVOLVED;
-                }
-                int external = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_IMMUTABLE);
-                int context = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_IMMUTABLE);
-                if (external == variableProperty.best || context == variableProperty.best) return variableProperty.best;
-                if (external == Level.DELAY || context == Level.DELAY) return Level.DELAY;
-
-                return MultiLevel.bestImmutable(formalImmutable, MultiLevel.bestImmutable(external, context));
-            }
+            case IDENTITY:
+                return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE;
 
+            case MODIFIED_VARIABLE: {
+                int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
+                if (mv != Level.DELAY) return mv;
+                int cm = getPropertyFromMapDelayWhenAbsent(CONTEXT_MODIFIED);
+                int mom = getPropertyFromMapDelayWhenAbsent(MODIFIED_OUTSIDE_METHOD);
+                if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
+                return Math.max(cm, mom);
+            }
+
+            case IMMUTABLE: {
+                int imm = getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
+                if (imm != Level.DELAY) return imm;
+                int external = getPropertyFromMapDelayWhenAbsent(EXTERNAL_IMMUTABLE);
+                int context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
+                if (external == variableProperty.best || context == variableProperty.best) return variableProperty.best;
+                int formalImmutable = parameterInfo.parameterizedType.defaultImmutable(analysisProvider, true);
+                if (external == Level.DELAY || context == Level.DELAY || formalImmutable == Level.DELAY)
+                    return Level.DELAY;
+                return MultiLevel.bestImmutable(formalImmutable, MultiLevel.bestImmutable(external, context));
+            }
+
             case NOT_NULL_PARAMETER:
                 int nnp = getPropertyFromMapDelayWhenAbsent(NOT_NULL_PARAMETER);
                 if (nnp != Level.DELAY) return nnp;
-                if (parameterInfo.owner.shallowAnalysis()) {
-                    int override = bestOfOverrides(analysisProvider, parameterInfo, NOT_NULL_PARAMETER);
-                    if (override != Level.DELAY) return override;
-                    return NOT_NULL_PARAMETER.valueWhenAbsent();
-                }
-                int cnn = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_NOT_NULL);
-                int enn = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
+                int cnn = getPropertyFromMapDelayWhenAbsent(CONTEXT_NOT_NULL);
+                int enn = getPropertyFromMapDelayWhenAbsent(EXTERNAL_NOT_NULL);
                 if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;
                 // note that ENN can be MultiLevel.DELAY, but CNN cannot have that value; it must be at least NULLABLE
                 return MultiLevel.bestNotNull(cnn, enn);
 
-            case CONTEXT_NOT_NULL: {
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                break;
-            }
-
-            case IGNORE_MODIFICATIONS: {
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (bestType != null && bestType.isPrimaryType()
-                        && bestType.isAbstract()
-                        && "java.util.function".equals(bestType.packageName())) {
-                    return Level.TRUE;
-                }
-                break;
-            }
-
             default:
                 throw new PropertyException(Analyser.AnalyserIdentification.PARAMETER, variableProperty);
         }
-        return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
+        return getPropertyFromMapDelayWhenAbsent(variableProperty);
     }
 
 

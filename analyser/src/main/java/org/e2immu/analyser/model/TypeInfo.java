@@ -144,7 +144,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isAbstract() {
-        TypeInspection inspection = typeInspection.get();
+        return isAbstract(InspectionProvider.DEFAULT);
+    }
+
+    public boolean isAbstract(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         if (inspection.typeNature() == TypeNature.INTERFACE) return true;
         return inspection.modifiers().contains(TypeModifier.ABSTRACT);
     }

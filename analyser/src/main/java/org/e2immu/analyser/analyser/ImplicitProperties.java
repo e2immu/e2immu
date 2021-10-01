@@ -40,15 +40,6 @@ public class ImplicitProperties {
         };
     }
 
-    public static int unboundTypeParameterProperties(VariableProperty variableProperty) {
-        return switch (variableProperty) {
-            case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            case CONTAINER -> Level.TRUE;
-            default -> Level.DELAY;
-        };
-    }
-
     public static int fromType(ParameterizedType parameterizedType, VariableProperty variableProperty) {
         if (parameterizedType.arrays > 0) {
             int arrayPropertyValue = arrayProperties(variableProperty);
@@ -57,10 +48,6 @@ public class ImplicitProperties {
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
             int primitivePropertyValue = primitiveProperties(variableProperty);
             if (primitivePropertyValue > Level.DELAY) return primitivePropertyValue;
-        }
-        if (parameterizedType.isUnboundTypeParameter()) {
-            int unboundPropertyValue = unboundTypeParameterProperties(variableProperty);
-            if (unboundPropertyValue > Level.DELAY) return unboundPropertyValue;
         }
         return Level.DELAY;
     }

@@ -96,7 +96,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
             // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
             // computed, the property IMMUTABLE is not "contract" anymore
-            int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext);
+            int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
             int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
             int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
             if (contractImmutable != Level.DELAY && formallyImmutable != Level.DELAY

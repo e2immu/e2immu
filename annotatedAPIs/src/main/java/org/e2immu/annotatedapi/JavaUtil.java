@@ -178,7 +178,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @Dependent1
-        <T> T[] toArray(@Dependent1 @NotNull1 T[] a);
+        <T> T[] toArray(@Dependent1 @NotNull1 @Modified T[] a);
 
         default <T> int toArray$Transfer$Size(int i, IntFunction<T[]> g) {
             return i;
@@ -581,6 +581,7 @@ public class JavaUtil extends AnnotatedAPI {
         <T> boolean addAll(@NotNull @Modified Collection<? super T> c, @NotModified T... elements);
     }
 
+    @Dependent1
     @Container
     interface Map$<K, V> {
 

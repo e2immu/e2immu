@@ -574,7 +574,15 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test8() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Modification_8".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
+                    && "set".equals(fr.fieldInfo.name)) {
+                assertEquals("input/*@NotNull*/", d.currentValue().toString());
+                assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("Modification_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -736,7 +744,7 @@ public class Test_16_Modification extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
 
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
             assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));

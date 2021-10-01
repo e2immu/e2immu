@@ -14,15 +14,26 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
+
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestAnnotatedAPIErrors extends CommonAnnotatedAPI {
+public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
     @Test
-    public void test() {
-        errors.forEach(System.out::println);
-        assertEquals(0, errors.size());
+    public void testConsumerApply() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("accept", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
+        // key
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
     }
 }

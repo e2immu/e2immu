@@ -70,6 +70,7 @@ public abstract class CommonAnnotatedAPI {
                 .toList();
         LOGGER.info("Have {} error messages", errors.size());
         errors.forEach(e -> LOGGER.info("Error: " + e));
+        // we do expect some
         long ownErrors = errors.stream()
                 .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
                 .peek(m -> LOGGER.info("OWN ERROR: {}", m))

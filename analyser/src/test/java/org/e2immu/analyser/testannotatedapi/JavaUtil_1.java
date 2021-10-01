@@ -16,8 +16,6 @@ package org.e2immu.analyser.testannotatedapi;
 
 import org.e2immu.annotation.*;
 
-// should raise an error: @Independent versus @Dependent1
-
 public class JavaUtil_1 {
 
     final static String PACKAGE_NAME = "java.util";

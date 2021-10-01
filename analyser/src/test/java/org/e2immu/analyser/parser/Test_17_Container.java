@@ -453,29 +453,7 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo collection = typeMap.get(Collection.class);
-            MethodInfo forEach = collection.findUniqueMethod("forEach", 1);
-            assertSame(typeMap.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
-            ParameterInfo param0ListForEach = forEach.methodInspection.get().getParameters().get(0);
-
-            assertEquals(Level.TRUE, param0ListForEach.parameterAnalysis.get()
-                    .getProperty(VariableProperty.INDEPENDENT));
-
-            TypeInfo hashSet = typeMap.get(HashSet.class);
-            MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
-                    .filter(m -> m.methodInspection.get().getParameters().size() == 1)
-                    .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
-                    .findAny().orElseThrow();
-            ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
-            assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get()
-                    .getProperty(VariableProperty.MODIFIED_VARIABLE));
-
-        };
-
-
         testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

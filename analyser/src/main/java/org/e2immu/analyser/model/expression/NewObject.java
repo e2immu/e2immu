@@ -493,7 +493,7 @@ public record NewObject(
                 return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
             }
             case IMMUTABLE: {
-                int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
+                int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
                 if (constructor != null) {
                     if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
                         return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;

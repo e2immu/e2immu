@@ -550,7 +550,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         assert variable instanceof ParameterInfo;
         int currentImmutable = vi.getProperty(IMMUTABLE);
         if (currentImmutable == Level.DELAY) {
-            int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
+            int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext, false);
             if (formalImmutable != Level.DELAY) {
                 vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
             } else {

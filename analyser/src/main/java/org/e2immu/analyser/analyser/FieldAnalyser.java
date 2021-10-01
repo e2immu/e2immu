@@ -291,7 +291,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
         int typeContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (typeContainer == Level.DELAY) return DELAYS;
-        if (typeContainer == Level.TRUE) return DONE;
+        if (typeContainer == Level.TRUE) {
+            fieldAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
+            return DONE;
+        }
 
         // only worth doing something when the field is statically not a container
         boolean someParameterModificationUnknown = methodsForModification()
@@ -477,7 +480,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        int staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext);
+        int staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
         if (staticallyImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             log(IMMUTABLE_LOG, "Field {} is statically @E2Immutable", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
