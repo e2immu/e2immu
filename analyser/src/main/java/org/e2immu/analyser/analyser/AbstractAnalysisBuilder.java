@@ -126,7 +126,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent, boolean isInterface) {
+    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent) {
         AnnotationExpression expression;
 
         if (independent == MultiLevel.DEPENDENT) {

@@ -302,9 +302,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             // @Independent
             int independent = getProperty(VariableProperty.INDEPENDENT);
-            if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
-                doIndependent(e2ImmuAnnotationExpressions, independent, typeInfo.isInterface());
-            }
+            doIndependent(e2ImmuAnnotationExpressions, independent);
         }
 
         public TypeAnalysis build() {

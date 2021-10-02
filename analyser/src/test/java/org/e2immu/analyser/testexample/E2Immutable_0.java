@@ -15,8 +15,10 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
 
 @E2Container
+@Independent
 public class E2Immutable_0 {
 
     public final int level1;

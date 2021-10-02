@@ -270,7 +270,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (independent == MultiLevel.DEPENDENT_1) {
                 annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
             } else if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
-                doIndependent(e2ImmuAnnotationExpressions, independent, methodInfo.typeInfo.isInterface());
+                doIndependent(e2ImmuAnnotationExpressions, independent);
             }
 
             if (methodInfo.isConstructor) return;

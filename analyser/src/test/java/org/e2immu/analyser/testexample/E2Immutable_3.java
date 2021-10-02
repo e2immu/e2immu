@@ -19,10 +19,12 @@ import org.e2immu.annotation.*;
 import java.util.Set;
 
 @E2Immutable
+@Independent
 public class E2Immutable_3 {
 
     @E2Container
     @NotNull1
+    @Linked1(absent = true)
     public final Set<String> strings4;
 
     @Independent
@@ -33,6 +35,7 @@ public class E2Immutable_3 {
     @E2Container
     @NotNull1
     @Constant(absent = true)
+    @Independent
     public Set<String> getStrings4() {
         return strings4;
     }
@@ -40,7 +43,8 @@ public class E2Immutable_3 {
     @Identity
     @Constant(absent = true)
     @NotNull
-    public Set<String> mingle(@NotNull @Modified Set<String> input4) {
+    @Independent
+    public Set<String> mingle(@NotNull @Modified @Independent Set<String> input4) {
         input4.addAll(strings4);
         return input4;
     }

@@ -106,9 +106,16 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
                 boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE
                         ? value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
+                    String msg;
+                    if (variableProperty == INDEPENDENT) {
+                        msg = "Have " + MultiLevel.niceIndependent(value) + ", expect "
+                                + MultiLevel.niceIndependent(valueFromOverrides);
+                    } else {
+                        msg = variableProperty.name + ", parameter " + parameterInfo.name;
+                    }
                     messages.add(Message.newMessage(parameterAnalysis.location,
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
-                            variableProperty.name + ", parameter " + parameterInfo.name));
+                            msg));
                 }
             }
         }

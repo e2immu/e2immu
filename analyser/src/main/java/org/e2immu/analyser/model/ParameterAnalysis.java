@@ -26,6 +26,7 @@ public interface ParameterAnalysis extends Analysis {
     enum AssignedOrLinked {
         ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_IMMUTABLE)),
         LINKED(Set.of(MODIFIED_OUTSIDE_METHOD)),
+        LINKED1(Set.of()),
         NO(Set.of()),
         DELAYED(null);
 
@@ -38,7 +39,7 @@ public interface ParameterAnalysis extends Analysis {
         }
 
         public boolean isAssignedOrLinked() {
-            return this == ASSIGNED || this == LINKED;
+            return this == ASSIGNED || this == LINKED || this == LINKED1;
         }
 
         public Set<VariableProperty> propertiesToCopy() {

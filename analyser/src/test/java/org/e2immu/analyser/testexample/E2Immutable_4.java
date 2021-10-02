@@ -15,14 +15,18 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Linked;
+import org.e2immu.annotation.Linked1;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @E2Container
+@Independent
 public class E2Immutable_4 {
 
+    @Linked1(absent = true)
     @Linked(absent = true)
     private final Map<String, String> map4;
 
@@ -30,10 +34,12 @@ public class E2Immutable_4 {
         map4 = new HashMap<>(map4Param); // not linked
     }
 
+    @Independent
     public String get4(String input) {
         return map4.get(input);
     }
 
+    @Independent
     @E2Container
     public Map<String, String> getMap4() {
         return Map.copyOf(map4);

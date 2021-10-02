@@ -529,8 +529,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return DONE;
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER);
-        if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
+        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER);
+        if (parentOrEnclosing.status != PROGRESS) return parentOrEnclosing.status;
 
         boolean fieldsReady = myFieldAnalysers.stream().allMatch(
                 fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE ||
@@ -572,15 +572,18 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     /**
-     * 4 different rules to enforce:
+     * Compute:
      * <p>
-     * RULE 1: All constructor parameters linked to fields/fields linked to constructor parameters must be @NotModified
+     * ZERO: the minimal value of parent classes and interfaces.
      * <p>
-     * RULE 2: All fields linking to constructor parameters must be either private or E2Immutable
+     * ONE: The minimum independence value of all return values and parameters of non-private methods or constructors
+     * is computed.
      * <p>
-     * RULE 3: All return values of methods must be independent of the fields linking to constructor parameters
+     * TWO: any non-private field that is not @E2Immutable -> @Dependent
+     * any non-private field that is @E2Immutable, not @Independent -> @Dependent1
+     * otherwise @Independent.
      * <p>
-     * We obviously start by collecting exactly these fields.
+     * Return the minimum value of ZERO, ONE and TWO.
      *
      * @return true if a decision was made
      */
@@ -588,114 +591,75 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return DONE;
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT);
-        if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
+        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT);
+        if (parentOrEnclosing.status != PROGRESS) return parentOrEnclosing.status;
 
-        boolean variablesLinkedNotSet = myFieldAnalysers.stream()
-                .anyMatch(fieldAnalyser -> !fieldAnalyser.fieldAnalysis.linkedVariables.isSet());
-        if (variablesLinkedNotSet) {
-            log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
+        int valueFromFields = myFieldAnalysers.stream()
+                .filter(fa -> !fa.fieldInfo.isPrivate())
+                .mapToInt(fa -> independenceOfField(fa.fieldAnalysis))
+                .min()
+                .orElse(MultiLevel.INDEPENDENT);
+        if (valueFromFields == Level.DELAY) {
+            log(DELAYED, "Independence of type {} delayed, waiting for field independence",
+                    typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        List<FieldAnalyser> fieldsLinkedToParameters =
-                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables().variables()
-                        .stream().filter(v -> v instanceof ParameterInfo)
-                        .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
-
-        // RULE 1
-
-        boolean modificationStatusUnknown = fieldsLinkedToParameters.stream()
-                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis
-                        .getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.DELAY);
-        if (modificationStatusUnknown) {
-            log(DELAYED, "Delay independence of type {}, modification status of linked fields not yet set", typeInfo.fullyQualifiedName);
-            return DELAYS;
-        }
-        boolean someModified = fieldsLinkedToParameters.stream()
-                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis
-                        .getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.TRUE);
-        if (someModified) {
-            log(INDEPENDENCE, "Type {} cannot be @Independent, some fields linked to parameters are modified", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-            return DONE;
-        }
-
-        // RULE 2
-
-        List<FieldAnalyser> fieldsAccessibleFromOutside = fieldsLinkedToParameters.stream().
-                filter(fieldAnalyser -> fieldAnalyser.fieldInfo.isAccessibleOutsideOfPrimaryType()).toList();
-        for (FieldAnalyser nonPrivateField : fieldsAccessibleFromOutside) {
-            int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-            if (immutable == Level.DELAY) {
-                log(DELAYED, "Delay independence of type {}, field {} is not known to be immutable", typeInfo.fullyQualifiedName,
-                        nonPrivateField.fieldInfo.name);
+        int valueFromMethods;
+        if (valueFromFields == MultiLevel.DEPENDENT) {
+            valueFromMethods = MultiLevel.DEPENDENT; // no need to compute anymore, at bottom anyway
+        } else {
+            valueFromMethods = myMethodAndConstructorAnalysersExcludingSAMs.stream()
+                    .filter(ma -> !ma.methodInfo.isPrivate(analyserContext))
+                    .flatMap(ma -> ma.parameterAnalyses.stream())
+                    .mapToInt(pa -> pa.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT))
+                    .min()
+                    .orElse(MultiLevel.INDEPENDENT);
+            if (valueFromMethods == Level.DELAY) {
+                log(DELAYED, "Independence of type {} delayed, waiting for parameter independence",
+                        typeInfo.fullyQualifiedName);
                 return DELAYS;
             }
-            if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
-                log(INDEPENDENCE, "Type {} cannot be @Independent, field {} is accessible to the outside," +
-                        " and not level 2 immutable", typeInfo.fullyQualifiedName, nonPrivateField.fieldInfo.name);
-                typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-                return DONE;
-            }
         }
-
-        // RULE 3
-
-        Set<FieldReference> fieldReferencesLinkedToParameters = fieldsLinkedToParameters.stream()
-                .map(fa -> new FieldReference(analyserContext, fa.fieldInfo))
-                .collect(Collectors.toSet());
-
-        for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser instanceof ComputingMethodAnalyser cma) {
-                Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
-                if (transparentTypes == null) {
-                    log(DELAYED, "Delay independence of type {}, transparent types not yet known",
-                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                    return DELAYS;
-                }
-                if (!typeAnalysis.getTransparentTypes().contains(methodAnalyser.methodInfo.returnType())) {
-                    VariableInfo variableInfo = cma.getReturnAsVariable();
-                    if (variableInfo == null) {
-                        log(DELAYED, "Delay independence of type {}, method {}'s return statement not yet known",
-                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                        return DELAYS;
-                    }
-                    if (variableInfo.getLinkedVariables() == null) {
-                        log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not yet known",
-                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                        return DELAYS;
-                    }
-                    boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldReferencesLinkedToParameters);
-                    if (!safeMethod) {
-                        log(INDEPENDENCE, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
-                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-                        return DONE;
-                    }
-                }
-            }
-        }
-
-        log(INDEPENDENCE, "Improve type {} to @Independent", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+        int finalValue = Math.min(parentOrEnclosing.maxValue, Math.min(valueFromFields, valueFromMethods));
+        log(INDEPENDENCE, "Set independence of type {} to {}", typeInfo.fullyQualifiedName,
+                MultiLevel.niceIndependent(finalValue));
+        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, finalValue);
         return DONE;
     }
 
-    private AnalysisStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
-        List<Integer> propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> typeAnalysis.getProperty(variableProperty))
-                .collect(Collectors.toList());
-        if (propertyValues.stream().anyMatch(level -> level == Level.DELAY)) {
+    private int independenceOfField(FieldAnalysis fieldAnalysis) {
+        int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+        if (immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE) return MultiLevel.DEPENDENT;
+        TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
+        if (bestType == null) {
+            return MultiLevel.DEPENDENT_1;
+        }
+        int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
+        assert independent != MultiLevel.DEPENDENT :
+                "Type " + bestType + " is @Dependent, but field " + fieldAnalysis.getFieldInfo() + " is @E2Immutable?";
+        return independent;
+    }
+
+    private record MaxValueStatus(int maxValue, AnalysisStatus status) {
+    }
+
+    private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
+        int[] propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
+                .mapToInt(typeAnalysis -> typeAnalysis.getProperty(variableProperty))
+                .toArray();
+        if (propertyValues.length == 0) return new MaxValueStatus(variableProperty.best, PROGRESS);
+        int min = Arrays.stream(propertyValues).min().orElseThrow();
+        if (min == Level.DELAY) {
             log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
                     variableProperty, typeInfo.fullyQualifiedName);
-            return DELAYS;
+            return new MaxValueStatus(Level.DELAY, DELAYS);
         }
-        if (propertyValues.stream().anyMatch(level -> level != variableProperty.best)) {
-            log(ANALYSER, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
+        if (min == variableProperty.falseValue) {
+            log(ANALYSER, "{} set to least value for {}, because of parent", typeInfo.fullyQualifiedName, variableProperty);
             typeAnalysis.setProperty(variableProperty, variableProperty.falseValue);
-            return DONE;
+            return new MaxValueStatus(variableProperty.falseValue, DONE);
         }
-        return PROGRESS;
+        return new MaxValueStatus(min, PROGRESS);
     }
 
     private int allMyFieldsFinal() {

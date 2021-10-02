@@ -14,15 +14,13 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @E2Container
+@Independent
 public class E2Immutable_2 {
 
     // 1. all fields are final
@@ -31,15 +29,16 @@ public class E2Immutable_2 {
     // 4. constructor and method are independent
 
     @Linked(absent = true)
+    @Linked1(absent = true)
     @NotModified
     private final Set<String> set3;
 
-    @Independent
-    public E2Immutable_2(Set<String> set3Param) {
+    public E2Immutable_2(@Independent Set<String> set3Param) {
         set3 = new HashSet<>(set3Param); // not linked
     }
 
     @E2Container
+    @Independent
     public Set<String> getSet3() {
         return Set.copyOf(set3);
     }

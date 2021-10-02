@@ -37,19 +37,55 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("E2Immutable_0".equals(d.typeInfo().simpleName)) {
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
+                assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("isAbc".equals(d.methodInfo().name)) {
+                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+            if ("E2Immutable_0".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+
+                ParameterAnalysis p1 = d.parameterAnalyses().get(1);
+                assertEquals(MultiLevel.INDEPENDENT, p1.getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("level1".equals(d.fieldInfo().name)) {
+                assertTrue(d.fieldAnalysis().getLinked1Variables().isEmpty());
+            }
+            if ("value1".equals(d.fieldInfo().name)) {
+                assertTrue(d.fieldAnalysis().getLinked1Variables().isEmpty());
+            }
+        };
+
         testClass("E2Immutable_0", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_1() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.E2Immutable_1";
-        final String LEVEL2 = TYPE + ".level2";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_1".equals(d.methodInfo().name) &&
                     d.methodInfo().methodInspection.get().getParameters().size() == 2) {
-                if (LEVEL2.equals(d.variableName())) {
+                assertTrue(d.methodInfo().isConstructor);
+
+                if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo.name)
+                        && fr.scopeIsThis()) {
                     if ("1".equals(d.statementId())) {
                         // we never know in the first iteration...
                         String expectValue = d.iteration() == 0
@@ -59,11 +95,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
-                    int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
+                    int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
         };
+
         testClass("E2Immutable_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -150,7 +187,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
-        
+
         testClass("E2Immutable_3", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

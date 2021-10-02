@@ -14,27 +14,30 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Linked;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Dependent1
 @E2Container
 public class E2Immutable_5<T> {
 
+    @Linked1(to = "map4Param")
     @Linked(absent = true)
     private final Map<String, T> map5;
 
     public E2Immutable_5(Map<String, T> map5Param) {
-        map5 = new HashMap<>(map5Param); // not linked
+        map5 = new HashMap<>(map5Param); // not linked, but content linked
     }
 
+    @Dependent1
     public T get5(String input) {
         return map5.get(input);
     }
 
     @E2Container
+    @Independent
     public Map<String, T> getMap5() {
         return Map.copyOf(map5);
     }

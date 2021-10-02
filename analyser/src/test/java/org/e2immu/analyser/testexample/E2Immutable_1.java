@@ -14,12 +14,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 
 @E2Container
+@Independent
 public class E2Immutable_1 {
 
     @Nullable

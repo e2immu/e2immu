@@ -150,9 +150,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 changed = true;
             }
 
-            int contractDependent = parameterAnalysis.getProperty(INDEPENDENT);
-            if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                parameterAnalysis.properties.put(INDEPENDENT, contractDependent);
+            int contractIndependent = parameterAnalysis.getProperty(INDEPENDENT);
+            if (contractIndependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                parameterAnalysis.properties.put(INDEPENDENT, contractIndependent);
                 changed = true;
             }
 
@@ -176,8 +176,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
         }
 
-        if (noAssignableFieldsForMethod()) {
-            noFieldsInvolvedSetToMultiLevelDELAY();
+        if (isNoFieldsInvolved()) {
+            noFieldsInvolved();
             return DONE;
         }
 
@@ -216,8 +216,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         boolean notAssignedToField = true;
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
-            Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
-            if (e.getValue() == ASSIGNED) notAssignedToField = false;
+            ParameterAnalysis.AssignedOrLinked assignedOrLinked = e.getValue();
+            Set<VariableProperty> propertiesToCopy = assignedOrLinked.propertiesToCopy();
+            if (assignedOrLinked == ASSIGNED) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
@@ -240,19 +241,29 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     }
                 }
 
-                // @Dependent1
+                if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
 
-                if (!fieldAnalyser.fieldAnalysis.linked1Variables.isSet()) {
-                    log(ANALYSER, "Delaying @Dependent1/2, waiting for linked1variables",
-                            parameterInfo.owner.typeInfo.fullyQualifiedName);
-                    delays = true;
-                } else {
-                    LinkedVariables lv1 = fieldAnalyser.fieldAnalysis.linked1Variables.get();
-                    if (lv1.contains(parameterInfo)) {
-                        if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
-                            log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is part of immutable content",
+                    // @Dependent1
+                    if (assignedOrLinked == LINKED1) {
+                        parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
+                        log(ANALYSER, "Set @Dependent1 on parameter {}: content linked to field {}",
+                                parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                        changed = true;
+                    } else if (assignedOrLinked == LINKED || assignedOrLinked == ASSIGNED) {
+                        TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+                        int typeIndependent;
+                        if (bestType == null) {
+                            typeIndependent = DEPENDENT_1;
+                        } else {
+                            typeIndependent = analyserContext.getTypeAnalysis(bestType).getProperty(INDEPENDENT);
+                        }
+                        if (typeIndependent == Level.DELAY) {
+                            delays = true;
+                        } else {
+                            parameterAnalysis.properties.put(INDEPENDENT, typeIndependent);
+                            log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                            changed = true;
                         }
                     }
                 }
@@ -275,7 +286,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         }
 
         if (!parameterAnalysis.properties.isSet(INDEPENDENT) && !delays) {
-            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.INDEPENDENT);
         }
 
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
@@ -348,21 +359,21 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         throw new UnsupportedOperationException("Should have covered all the bases");
     }
 
-    private boolean noAssignableFieldsForMethod() {
+    private boolean isNoFieldsInvolved() {
         boolean methodIsStatic = parameterInfo.owner.methodInspection.get().isStatic();
         return parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
                 .filter(fieldInfo -> !methodIsStatic || fieldInfo.isStatic())
                 .allMatch(fieldInfo -> fieldInfo.isExplicitlyFinal() && !parameterInfo.owner.isConstructor);
     }
 
-    private void noFieldsInvolvedSetToMultiLevelDELAY() {
+    private void noFieldsInvolved() {
         for (VariableProperty variableProperty : PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
                 parameterAnalysis.setProperty(variableProperty, MultiLevel.NOT_INVOLVED);
             }
         }
         if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.INDEPENDENT);
         }
         parameterAnalysis.freezeAssignedToField();
         parameterAnalysis.resolveFieldDelays();
@@ -418,7 +429,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         if (linked.isDelayed()) {
             return DELAYED;
         }
-        return linked.variables().contains(parameterInfo) ? ParameterAnalysis.AssignedOrLinked.LINKED : NO;
+        if (linked.contains(parameterInfo)) return LINKED;
+
+        LinkedVariables linked1 = fieldAnalysis.getLinked1Variables();
+        if (linked1.isDelayed()) {
+            return DELAYED;
+        }
+        return linked1.contains(parameterInfo) ? LINKED1 : NO;
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
