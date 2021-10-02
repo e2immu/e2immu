@@ -27,6 +27,8 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
+
 public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
@@ -120,7 +122,15 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         if (bestType == null) return Level.TRUE;
         if (Primitives.isPrimitiveExcludingVoid(bestType)) return Level.TRUE;
         int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER);
-        return Math.max(Level.FALSE, override);
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+        int typeContainer;
+        if (typeAnalysis == null) {
+            typeContainer = Level.FALSE;
+            messages.add(Message.newMessage(new Location(bestType), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE));
+        } else {
+            typeContainer = typeAnalysis.getProperty(CONTAINER);
+        }
+        return Math.max(Level.FALSE, Math.max(typeContainer, override));
     }
 
 

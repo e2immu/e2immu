@@ -123,7 +123,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("SubTypes_4", 2, 0, new DebugConfiguration.Builder().build());
+        testClass("SubTypes_4", 3, 0, new DebugConfiguration.Builder().build());
     }
 
     @Test
@@ -133,20 +133,6 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo function = typeMap.get(Function.class);
-            MethodInfo apply = function.findUniqueMethod("apply", 1);
-            ParameterInfo apply0 = apply.methodInspection.get().getParameters().get(0);
-            int modified = apply0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
-            assertEquals(Level.DELAY, modified);
-
-            TypeInfo iterator = typeMap.get(Iterator.class);
-            MethodInfo hasNext = iterator.findUniqueMethod("hasNext", 0);
-            assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
-            MethodInfo next = iterator.findUniqueMethod("next", 0);
-            assertEquals(Level.TRUE, next.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
-        };
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("go".equals(d.methodInfo().name)) {
                 if ("it2".equals(d.variableName())) {
@@ -169,9 +155,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
 
-        // error: we postulate that Function has a @NotModified parameter
         testClass("SubTypes_6", 1, 0, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

@@ -19,16 +19,33 @@ import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
     @Test
-    public void testConsumerApply() {
+    public void testConsumerAccept() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("accept", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
+        // key
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+    }
+
+    @Test
+    public void testFunctionApply() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Function.class);
+        assertTrue(typeInfo.isInterface());
+        assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("apply", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 

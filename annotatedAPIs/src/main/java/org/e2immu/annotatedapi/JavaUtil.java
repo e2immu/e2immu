@@ -46,6 +46,7 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
+    @Container
     interface Iterator$<T> {
         @Modified
         default void forEachRemaining(@NotNull @Dependent1 Consumer<? super T> action) {
@@ -59,8 +60,7 @@ public class JavaUtil extends AnnotatedAPI {
         T next();
 
         @Modified
-        default void remove() {
-        }
+        void remove();
     }
 
     /*
@@ -658,6 +658,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
+    @Dependent1
     @Container
     static class HashMap$<K, V> {
         // content is known
@@ -700,5 +701,37 @@ public class JavaUtil extends AnnotatedAPI {
 
         @Modified
         int nextInt();
+    }
+
+    @Dependent1
+    @Container
+    interface AbstractMap$ {
+
+    }
+
+    @Dependent1
+    @Container
+    interface SortedMap$ {
+
+    }
+
+
+    @Dependent1
+    @Container
+    interface NavigableMap$ {
+
+    }
+
+
+    @Dependent1
+    @Container
+    interface WeakHashMap$ {
+
+    }
+
+    @Dependent1
+    @Container
+    interface LinkedHashMap$ {
+
     }
 }

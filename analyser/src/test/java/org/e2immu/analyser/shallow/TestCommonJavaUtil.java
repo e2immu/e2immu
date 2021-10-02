@@ -248,4 +248,31 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.NOT_INVOLVED, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
     }
+
+    @Test
+    public void testIteratorNextHasNext() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Iterator.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("next", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testIteratorHasNext() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Iterator.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("hasNext", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testIteratorRemove() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Iterator.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("remove", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
 }

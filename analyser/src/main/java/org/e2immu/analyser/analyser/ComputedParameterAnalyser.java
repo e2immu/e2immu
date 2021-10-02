@@ -19,19 +19,23 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -42,6 +46,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     public static final String CHECK_UNUSED_PARAMETER = "checkUnusedParameter";
     public static final String ANALYSE_FIELDS = "analyseFields";
     public static final String ANALYSE_CONTEXT = "analyseContext";
+    public static final String ANALYSE_CONTAINER = "analyseContainer";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
@@ -61,7 +66,46 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
             .add(ANALYSE_FIELDS, this::analyseFields)
             .add(ANALYSE_CONTEXT, this::analyseContext)
+            .add(ANALYSE_CONTAINER, this::analyseContainer)
             .build();
+
+
+    private AnalysisStatus analyseContainer(SharedState sharedState) {
+        int inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
+        if (inMap == Level.DELAY) {
+            int value;
+            TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo(analyserContext);
+            if (bestType == null) {
+                value = Level.TRUE;
+            } else if (Primitives.isPrimitiveExcludingVoid(bestType)) {
+                value = Level.TRUE;
+            } else {
+                int override = bestOfParameterOverrides(parameterInfo, VariableProperty.CONTAINER);
+                if (override == Level.DELAY) {
+                    return DELAYS;
+                }
+                int typeContainer = analyserContext.getTypeAnalysis(bestType).getProperty(CONTAINER);
+                if (typeContainer == Level.DELAY) {
+                    return DELAYS;
+                }
+                value = Math.max(override, typeContainer);
+            }
+            parameterAnalysis.setProperty(CONTAINER, value);
+        }
+        return DONE;
+    }
+
+
+    private int bestOfParameterOverrides(ParameterInfo parameterInfo, VariableProperty variableProperty) {
+        return parameterInfo.owner.methodResolution.get().overrides().stream()
+                .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
+                .mapToInt(mi -> {
+                    ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
+                    ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
+                    return pa.getPropertyFromMapNeverDelay(variableProperty);
+                }).max().orElse(variableProperty.falseValue);
+    }
+
 
     @Override
     protected String where(String componentName) {
@@ -438,8 +482,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
 
-            // @Container
-            parameterAnalysis.setProperty(CONTAINER, Level.FALSE);
+            // @Container: handled separately
 
             // @IgnoreModifications
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.FALSE);
