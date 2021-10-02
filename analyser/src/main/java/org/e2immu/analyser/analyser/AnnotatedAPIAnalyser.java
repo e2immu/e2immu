@@ -179,7 +179,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     false, true, this);
         }
         // shallow method analysis, potentially with companion analysis
-        return MethodAnalyserFactory.createShallowMethodAnalyser(methodInfo, this);
+        return MethodAnalyserFactory.createShallowMethodAnalyser(methodInfo, this, false);
     }
 
     /**

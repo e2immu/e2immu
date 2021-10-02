@@ -179,16 +179,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public Optional<AnnotationExpression> hasInspectedAnnotation(String annotationFQN) {
         if (!hasBeenInspected()) return Optional.empty();
-        Optional<AnnotationExpression> fromMethod = (getInspection().getAnnotations().stream()
+        return (getInspection().getAnnotations().stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))).findFirst();
-        if (fromMethod.isPresent()) return fromMethod;
-        if (methodInspection.isSet()) {
-            for (MethodInfo interfaceMethod : methodResolution.get().overrides()) {
-                Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasInspectedAnnotation(annotationFQN));
-                if (fromInterface.isPresent()) return fromInterface;
-            }
-        }
-        return Optional.empty();
     }
 
     @Override

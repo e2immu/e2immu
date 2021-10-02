@@ -155,10 +155,16 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                {
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                }
+                {
+                    ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                    assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
+                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                }
             }
         };
 

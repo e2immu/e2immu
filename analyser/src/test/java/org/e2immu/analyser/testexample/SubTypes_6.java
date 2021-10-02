@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Identity;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -24,6 +22,9 @@ import java.util.function.Function;
 
 public class SubTypes_6 {
 
+    @NotModified
+    @Final
+    @NotNull
     private static Function<Set<String>, Set<String>> removeElement =
             (@NotNull @Modified Set<String> set1) -> {
                 Iterator<String> it1 = set1.iterator();

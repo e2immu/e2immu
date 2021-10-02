@@ -20,6 +20,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 
 import java.util.*;
 import java.util.function.IntSupplier;
@@ -32,12 +33,15 @@ import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
 public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
+    private final boolean enableVisitors;
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
                                  List<ParameterAnalysis> parameterAnalyses,
-                                 AnalyserContext analyserContext) {
+                                 AnalyserContext analyserContext,
+                                 boolean enableVisitors) {
         super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
+        this.enableVisitors = enableVisitors;
     }
 
     @Override
@@ -73,7 +77,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             int modified = methodInfo.isConstructor ? Level.TRUE : Level.FALSE;
             methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            computePropertiesAfterParameters();
+            computeMethodPropertiesAfterParameters();
         } else {
             computeMethodPropertyIfNecessary(VariableProperty.MODIFIED_METHOD, this::computeModifiedMethod);
 
@@ -82,10 +86,22 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 computeParameterProperties(builder);
             });
 
-            computePropertiesAfterParameters();
+            computeMethodPropertiesAfterParameters();
 
             computeMethodPropertyIfNecessary(VariableProperty.INDEPENDENT, this::computeMethodIndependent);
             checkMethodIndependent();
+        }
+        if (enableVisitors) {
+            List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
+                    .debugConfiguration().afterMethodAnalyserVisitors();
+            if (!visitors.isEmpty()) {
+                for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
+                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
+                            null, methodInfo, methodAnalysis,
+                            parameterAnalyses, Map.of(),
+                            this::getMessageStream));
+                }
+            }
         }
         return AnalysisStatus.DONE;
     }
@@ -134,7 +150,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
 
-    private void computePropertiesAfterParameters() {
+    private void computeMethodPropertiesAfterParameters() {
         computeMethodPropertyIfNecessary(VariableProperty.IMMUTABLE, this::computeMethodImmutable);
         computeMethodPropertyIfNecessary(VariableProperty.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
         computeMethodPropertyIfNecessary(VariableProperty.CONTAINER, this::computeMethodContainer);
@@ -305,28 +321,34 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         if (methodInfo.isConstructor || methodInfo.isVoid() || methodInfo.methodInspection.get().isStatic()) {
             returnValue = MultiLevel.INDEPENDENT;
         } else {
-            TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
-            if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
-                // unbound type parameter T, or unbound with array T[], T[][]
-                returnValue = MultiLevel.DEPENDENT_1;
+            int identity = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.IDENTITY);
+            int modified = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
+            if (identity == Level.TRUE && modified == Level.FALSE) {
+                returnValue = MultiLevel.INDEPENDENT; // @Identity + @NotModified -> must be @Independent
             } else {
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) {
-                    returnValue = MultiLevel.INDEPENDENT;
+                TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+                if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
+                    // unbound type parameter T, or unbound with array T[], T[][]
+                    returnValue = MultiLevel.DEPENDENT_1;
                 } else {
-                    int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                    if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                    if (Primitives.isPrimitiveExcludingVoid(bestType)) {
+                        returnValue = MultiLevel.INDEPENDENT;
+                    } else {
+                        int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
 
-                        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-                        if (typeAnalysis != null) {
-                            returnValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+                            if (typeAnalysis != null) {
+                                returnValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                            } else {
+                                messages.add(Message.newMessage(new Location(methodInfo),
+                                        Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
+                                returnValue = MultiLevel.DEPENDENT;
+                            }
+
                         } else {
-                            messages.add(Message.newMessage(new Location(methodInfo),
-                                    Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
                             returnValue = MultiLevel.DEPENDENT;
                         }
-
-                    } else {
-                        returnValue = MultiLevel.DEPENDENT;
                     }
                 }
             }

@@ -282,11 +282,32 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_3", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addTypeMapVisitor(typeMapVisitor)
-                        .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
     }
 
+    @Test
+    public void test_4() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("log".equals(d.methodInfo().name)) {
+                if ("LogMe".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
+                    assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+
+                    ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                    assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                }
+            }
+        };
+        testClass("Identity_4", 1, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+
+    }
 }

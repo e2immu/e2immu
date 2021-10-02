@@ -148,10 +148,8 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
             }
             check(NotModified.class, e2.notModified);
 
-            // opposites
             check(Modified.class, e2.modified);
         }
-        // opposites
         check(Dependent.class, e2.dependent);
         check(Dependent1.class, e2.dependent1);
 
@@ -168,7 +166,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
     }
 
     private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(VariableProperty.NOT_NULL_EXPRESSION,
-            VariableProperty.MODIFIED_METHOD);
+            VariableProperty.MODIFIED_METHOD, VariableProperty.CONTAINER, VariableProperty.IDENTITY, VariableProperty.FLUENT);
 
     private void checkWorseThanOverriddenMethod() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
