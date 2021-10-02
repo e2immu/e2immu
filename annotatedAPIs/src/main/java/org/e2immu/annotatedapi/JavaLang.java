@@ -26,7 +26,8 @@ class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
-    @Dependent1
+    @Dependent
+    @Container
     interface Iterable$<T> {
         void forEach(@NotNull @Dependent1 Consumer<? super T> action);
 

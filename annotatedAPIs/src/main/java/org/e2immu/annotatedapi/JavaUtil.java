@@ -45,8 +45,18 @@ public class JavaUtil extends AnnotatedAPI {
         return isFact(containsE) ? containsE : !isKnown(true) && size > 0 && retVal;
     }
 
-    // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
+    /*
+     Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName.
+
+     Currently, we cannot make any distinction between the @Modified in remove() which acts on the underlying collection,
+     and the @Modified in hasNext()/next() which acts on the counting system of the iterator.
+     The critical annotation is on the iterator() method in Collection, which is either @Dependent (to allow remove(),
+     but it messes up normal iteration), or @Dependent1, which plays nice with iterating but not with removal.
+     Because iterating without removal can, in many cases, be replaced by a for-each loop or a stream,
+     we believe we can live with this at the moment.
+     */
     @Container
+    @Dependent1
     interface Iterator$<T> {
         @Modified
         default void forEachRemaining(@NotNull @Dependent1 Consumer<? super T> action) {
@@ -65,9 +75,10 @@ public class JavaUtil extends AnnotatedAPI {
 
     /*
      This is not in line with the JDK, but we will block null keys!
+     Dependent because of remove() in iterator.
      */
     @Container
-    @Dependent1
+    @Dependent
     interface Collection$<E> {
 
         default boolean add$Postcondition(E e) {
@@ -105,6 +116,10 @@ public class JavaUtil extends AnnotatedAPI {
 
         boolean isEmpty();
 
+        @NotNull1
+        @Dependent
+        java.util.Iterator<E> iterator();
+
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
         void forEach(@Dependent1 @NotNull1 Consumer<? super E> action);
@@ -132,7 +147,6 @@ public class JavaUtil extends AnnotatedAPI {
             return i != 0 && c.size() != 0 && retVal;
         }
 
-        @Independent
         @Modified
         boolean removeAll(@NotNull1 java.util.Collection<?> c);
 
@@ -144,7 +158,6 @@ public class JavaUtil extends AnnotatedAPI {
             return i != 0 && c.size() != 0 && retVal;
         }
 
-        @Independent
         @Modified
         boolean retainAll(@NotNull1 java.util.Collection<?> c);
 
@@ -170,6 +183,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
+        @Dependent1
         Object[] toArray();
 
         default <T> int toArray$Transfer$Size(int i, T[] a) {
@@ -208,7 +222,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         // @Modified inherited; we're not (yet) inheriting companion methods
-        boolean add( E e); // @Dependent1, @NotNull inherited
+        boolean add(E e); // @Dependent1, @NotNull inherited
 
         default boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) {
             return i == j + c.size();
@@ -234,10 +248,6 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         @Dependent1
         <EE> List<EE> copyOf(@NotNull1 Collection<? extends EE> collection);
-
-        @NotNull1
-        @Dependent1
-        java.util.Iterator<E> iterator();
 
         static boolean get$Precondition$Size(int size, int index) {
             return index < size;
@@ -311,11 +321,14 @@ public class JavaUtil extends AnnotatedAPI {
         <T> T[] toArray(@Dependent1 @NotNull1 T[] a);
     }
 
-    // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
+    /*
+     - IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
+     - Not in line with JDK, but we block null values in the set
+     - @Dependent because of the remove() method in Iterator returned by iterator()
+     */
 
-    @Dependent1
+    @Dependent
     @Container
-            // this is not in line with the JDK, but we will block null keys!
     interface Set$<E> {
 
         // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
@@ -368,10 +381,6 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         boolean isEmpty();
-
-        @NotNull1
-        @Dependent1
-        java.util.Iterator<E> iterator();
 
         default int of$Transfer$Size() {
             return 0;

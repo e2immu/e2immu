@@ -23,9 +23,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -155,8 +153,18 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
+                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+        };
+
         testClass("SubTypes_6", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
