@@ -78,7 +78,7 @@ public class JavaUtil extends AnnotatedAPI {
      Dependent because of remove() in iterator.
      */
     @Container
-    @Dependent
+            // implicitly @Dependent, because one @Dependent method
     interface Collection$<E> {
 
         default boolean add$Postcondition(E e) {
@@ -174,6 +174,9 @@ public class JavaUtil extends AnnotatedAPI {
             return i;
         }
 
+        /*
+        Streams are @E2Container
+         */
         @NotNull1
         @Dependent1
         Stream<E> stream();
@@ -301,7 +304,6 @@ public class JavaUtil extends AnnotatedAPI {
             // but there may be an index exception! TODO add precondition
         E remove(int index);
 
-        @Independent
         @Modified
         boolean removeAll(@NotNull1 Collection<?> c);
 
@@ -327,7 +329,7 @@ public class JavaUtil extends AnnotatedAPI {
      - @Dependent because of the remove() method in Iterator returned by iterator()
      */
 
-    @Dependent
+    // @Dependent implicitly
     @Container
     interface Set$<E> {
 
@@ -428,7 +430,6 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        @Independent
         boolean remove(@NotNull Object object);
 
         @Dependent1
@@ -541,14 +542,14 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     // again this goes against the API, but we want to raise problems when comparing with null
-    @Container
+    @ERContainer
     interface Comparator$<T> {
 
-        default int compare$Value(T o1, T o2, int retVal) {
+        default int compare$Value(@NotNull T o1, @NotNull T o2, int retVal) {
             return o1.equals(o2) || o2.equals(o1) ? 0 : retVal;
         }
 
-        int compare(@NotModified T o1, @NotModified T o2);
+        int compare(@NotNull T o1, @NotNull T o2);
 
         <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor);
     }
@@ -559,18 +560,21 @@ public class JavaUtil extends AnnotatedAPI {
         <T> java.util.Optional<T> empty();
 
         @NotNull
-        <T> java.util.Optional<T> of(@NotNull T t);
+        <T> java.util.Optional<T> of(@NotNull @Dependent1 T t);
 
         @NotNull
-        <T> java.util.Optional<T> ofNullable(T t);
+        <T> java.util.Optional<T> ofNullable(@Dependent1 T t);
 
         @NotNull
+        @Dependent1
         T get();
 
         @NotNull
+        @Dependent1
         T orElseThrow();
 
         @NotNull
+        @Dependent1
         <X extends Throwable> T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier);
 
     }
@@ -578,10 +582,10 @@ public class JavaUtil extends AnnotatedAPI {
     @UtilityClass
     interface Arrays$ {
         @NotNull
-        IntStream stream(@NotNull int[] array);
+        IntStream stream(@NotNull @NotModified @Independent int[] array);
 
         @NotNull
-        <T> Stream<T> stream(@NotNull T[] array);
+        <T> Stream<T> stream(@NotNull @NotModified @Dependent1 T[] array);
     }
 
     @UtilityClass
@@ -712,33 +716,26 @@ public class JavaUtil extends AnnotatedAPI {
         int nextInt();
     }
 
-    @Dependent1
     @Container
     interface AbstractMap$ {
 
     }
 
-    @Dependent1
     @Container
     interface SortedMap$ {
 
     }
 
-
-    @Dependent1
     @Container
     interface NavigableMap$ {
 
     }
 
-
-    @Dependent1
     @Container
     interface WeakHashMap$ {
 
     }
 
-    @Dependent1
     @Container
     interface LinkedHashMap$ {
 

@@ -445,9 +445,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // before that value (before the first eventual call, the precondition system reigns
             int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
             if (currentImmutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
-                if (MultiLevel.isBefore(requiredImmutable) && !MultiLevel.isBefore(currentImmutable)) {
+                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable) && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
                     raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
-                } else if (MultiLevel.isAfter(requiredImmutable) && !MultiLevel.isAfter(currentImmutable)) {
+                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable) && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable)) {
                     raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }

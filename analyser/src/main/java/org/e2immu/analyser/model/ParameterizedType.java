@@ -916,8 +916,12 @@ public class ParameterizedType {
     public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
 
     public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
-        if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+        if (Primitives.isPrimitiveExcludingVoid(this)) {
+            return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+        }
+        if (arrays > 0) {
+            return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+        }
         if (typeParameter != null) {
             // unbound type parameter
             if (typeParameter.getTypeBounds().isEmpty())

@@ -34,8 +34,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testClass() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Class.class);
         TypeAnalysis objectAnalysis = typeInfo.typeAnalysis.get();
-        testE2ContainerType(objectAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, objectAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        testERContainerType(objectAnalysis);
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("getAnnotatedInterfaces", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -51,16 +50,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testObject() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis objectAnalysis = object.typeAnalysis.get();
-        testE2ContainerType(objectAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, objectAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        testERContainerType(objectAnalysis);
     }
 
     @Test
     public void testString() {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testE2ContainerType(typeAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        testERContainerType(typeAnalysis);
     }
 
 
@@ -74,7 +71,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
@@ -104,11 +101,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertThrows(PropertyException.class, () -> p0.getProperty(VariableProperty.MODIFIED_METHOD));
         }
         {
-            MethodInfo appendString = sb.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                    .filter(m -> "append".equals(m.name))
-                    .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
-                            Primitives.isJavaLangString(m.methodInspection.get().getParameters().get(0).parameterizedType))
-                    .findFirst().orElseThrow();
+            MethodInfo appendString = sb.findUniqueMethod("append",
+                    typeContext.getPrimitives().stringTypeInfo);
             MethodAnalysis methodAnalysis = appendString.methodAnalysis.get();
 
             assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.FLUENT));
@@ -117,8 +111,8 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             assertEquals(MultiLevel.MUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
             ParameterAnalysis p0 = appendString.parameterAnalysis(0);
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
             assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
             assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
@@ -146,18 +140,14 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testCharSequence() {
         TypeInfo string = typeContext.getFullyQualified(String.class);
         TypeAnalysis typeAnalysis = string.typeAnalysis.get();
-        testE2ContainerType(typeAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        testERContainerType(typeAnalysis);
     }
 
     @Test
     public void testComparable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Comparable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testE2ContainerType(typeAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        testERContainerType(typeAnalysis);
 
         MethodInfo compareTo = typeInfo.findUniqueMethod("compareTo", 1);
         MethodAnalysis methodAnalysis = compareTo.methodAnalysis.get();
@@ -178,8 +168,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
     public void testSerializable() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Serializable.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        testE2ContainerType(typeAnalysis);
-        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        testERContainerType(typeAnalysis);
     }
 
     @Test

@@ -14,9 +14,7 @@
 
 package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.lang.constant.ConstantDesc;
 import java.lang.invoke.MethodHandles;
@@ -25,17 +23,16 @@ import java.util.Optional;
 class JavaLangConstant {
     final static String PACKAGE_NAME = "java.lang.constant";
 
-    @Independent
-    @Container
+    @ERContainer
     interface ConstantDesc$ {
-        @Independent
+        @NotNull
         Object resolveConstantDesc(MethodHandles.Lookup lookup);
     }
 
-    @Independent
-    @Container
+    @ERContainer
     interface Constable$ {
 
+        // E2Container wrapping an ERContainer, result is ERContainer
         @NotNull
         Optional<? extends ConstantDesc> describeConstable();
     }

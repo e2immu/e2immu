@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
-in a separate class to make this unit testable; there's too many different cases...
+in a separate class to make this unit testable; there's too many cases...
  */
 
 @UtilityClass
@@ -42,51 +42,42 @@ public class GenerateAnnotationsImmutable {
                                                               boolean isType,
                                                               boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
-        Map<Class<?>, Map<String, String>> res = new HashMap<>();
         boolean haveContainer = container == Level.TRUE;
-
-        int e1 = MultiLevel.value(immutable, MultiLevel.E1IMMUTABLE);
-        int e2 = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
+        int effective = MultiLevel.effective(immutable);
+        int level = MultiLevel.level(immutable);
 
         // EVENTUAL
-        if (e1 == MultiLevel.EVENTUAL || e2 == MultiLevel.EVENTUAL) {
-            Class<?> key = e2 == MultiLevel.EVENTUAL ? e2(haveContainer) : e1(haveContainer);
+        if (effective == MultiLevel.EVENTUAL) {
             if (isType) {
-                res.put(key, Map.of("after", mark));
-            } else if (betterThanFormal) {
-                res.put(key, TRUE);
+                return map(level, haveContainer, Map.of("after", mark));
             }
-            return res;
+            if (betterThanFormal) {
+                return map(level, haveContainer, Map.of());
+            }
+            return Map.of();
         }
 
         // BEFORE
-        if (e1 == MultiLevel.EVENTUAL_BEFORE || e2 == MultiLevel.EVENTUAL_BEFORE) {
+        if (effective == MultiLevel.EVENTUAL_BEFORE) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
-            res.put(BeforeMark.class, TRUE);
-            return res;
+            return Map.of(BeforeMark.class, TRUE);
         }
 
         // AFTER
-        if (e2 == MultiLevel.EVENTUAL_AFTER) {
+        if (effective == MultiLevel.EVENTUAL_AFTER) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
-            res.put(e2(haveContainer), TRUE);
-            return res;
-        }
-        if (e1 == MultiLevel.EVENTUAL_AFTER) {
-            if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
-            res.put(e1(haveContainer), TRUE);
-            return res;
+            return map(level, haveContainer, TRUE);
         }
 
         // EFFECTIVE
-        if (e1 == MultiLevel.EFFECTIVE || e2 == MultiLevel.EFFECTIVE) {
-            Class<?> key = e2 == MultiLevel.EFFECTIVE ? e2(haveContainer) : e1(haveContainer);
+        if (effective == MultiLevel.EFFECTIVE) {
             if (isType || betterThanFormal) {
-                res.put(key, TRUE);
+                return map(level, haveContainer, TRUE);
             }
-            return res;
+            return Map.of();
         }
 
+        Map<Class<?>, Map<String, String>> res = new HashMap<>();
         if (isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
@@ -97,11 +88,24 @@ public class GenerateAnnotationsImmutable {
         return res;
     }
 
-    private static Class<?> e1(boolean container) {
-        return container ? E1Container.class : E1Immutable.class;
-    }
-
-    private static Class<?> e2(boolean container) {
-        return container ? E2Container.class : E2Immutable.class;
+    private static Map<Class<?>, Map<String, String>> map(int level, boolean container, Map<String, String> add) {
+        Map<String, String> params = new HashMap<>(add);
+        Class<?> clazz;
+        if (level == MultiLevel.LEVEL_1_IMMUTABLE) {
+            clazz = container ? E1Container.class : E1Immutable.class;
+        } else if (level == MultiLevel.LEVEL_2_IMMUTABLE) {
+            clazz = container ? E2Container.class : E2Immutable.class;
+        } else if (level == MultiLevel.LEVEL_R_IMMUTABLE) {
+            if (container) {
+                clazz = ERContainer.class;
+            } else {
+                params.put("recursive", "true");
+                clazz = E2Immutable.class;
+            }
+        } else {
+            clazz = container ? E2Container.class : E2Immutable.class;
+            params.put("level", Integer.toString(level + 1));
+        }
+        return Map.of(clazz, params);
     }
 }

@@ -524,15 +524,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (formalTypeImmutable == Level.DELAY) {
             return IMMUTABLE_DELAYED;
         }
-        int formalLevel = MultiLevel.level(formalTypeImmutable);
-        int formalValue = MultiLevel.value(formalTypeImmutable, formalLevel);
-        if (formalValue != MultiLevel.EVENTUAL) {
+        int effective = MultiLevel.effective(formalTypeImmutable);
+        if (effective != MultiLevel.EVENTUAL) {
             return NOT_EVENTUAL;
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
         if (eventual == null) {
             return IMMUTABLE_DELAYED;
         }
+
+        int formalLevel = MultiLevel.level(formalTypeImmutable);
         if (eventual.mark()) {
             return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.after(formalLevel));
         }

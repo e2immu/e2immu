@@ -64,7 +64,6 @@ public class JavaUtilStream {
     }
 
     @E2Container
-    @Dependent1
     interface IntStream$ {
         long count();
 
@@ -75,7 +74,6 @@ public class JavaUtilStream {
     }
 
     @E2Container
-    @Dependent1
     interface Stream$<T> {
 
         @NotNull

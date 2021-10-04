@@ -125,7 +125,7 @@ public class ArrayInitializer extends ElementImpl implements Expression {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
             int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
             if (notNull == Level.DELAY) return Level.DELAY;
-            return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
+            return MultiLevel.oneLevelLess(notNull);
         }
         if (VariableProperty.EXTERNAL_IMMUTABLE == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
             // it is an array

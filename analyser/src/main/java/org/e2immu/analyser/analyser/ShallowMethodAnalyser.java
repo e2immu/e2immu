@@ -19,10 +19,12 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -52,22 +54,23 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
-        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations();
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+            List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
             messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
-                    map.getOrDefault(builder.getParameterInfo(), Map.of()).keySet(), e2));
+                    annotations, e2));
             if (explicitlyEmpty) {
                 builder.setProperty(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
                 builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
             }
         });
 
+        List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
         messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
-                true, map.getOrDefault(methodInfo, Map.of()).keySet(), e2));
+                true, annotations, e2));
 
         // IMPROVE reading preconditions from AAPI...
         methodAnalysis.precondition.set(Precondition.empty(analyserContext.getPrimitives()));
@@ -385,28 +388,6 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
                     return pa.getPropertyFromMapNeverDelay(variableProperty);
                 }).max().orElse(Level.DELAY);
-    }
-
-    private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations() {
-        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = new HashMap<>();
-
-        Map<AnnotationExpression, List<MethodInfo>> methodMap = new HashMap<>();
-        map.put(methodInfo, methodMap);
-
-        Stream.concat(Stream.of(methodInfo), methodInfo.methodResolution.get(methodInfo.fullyQualifiedName).overrides().stream()).forEach(mi -> {
-
-            MethodInspection mii = mi.methodInspection.get();
-            mii.getAnnotations().forEach(annotationExpression -> SMapList.add(methodMap, annotationExpression, mi));
-
-            mii.getParameters().forEach(parameterInfo -> {
-                Map<AnnotationExpression, List<MethodInfo>> parameterMap = map.computeIfAbsent(parameterInfo, k -> new HashMap<>());
-                parameterInfo.parameterInspection.get().getAnnotations().forEach(annotationExpression ->
-                        SMapList.add(parameterMap, annotationExpression, mi));
-            });
-        });
-
-        map.forEach(this::checkContradictions);
-        return map;
     }
 
     private void checkContradictions(WithInspectionAndAnalysis where,

@@ -541,7 +541,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
             // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
             // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
-            if (MultiLevel.isBeforeAllowNotEventual(worstOverValuesBreakParameterDelay)) {
+            if (MultiLevel.isBefore(worstOverValuesBreakParameterDelay)) {
                 int bestOverContext = myMethodsAndConstructors.stream()
                         .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
                                 == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)

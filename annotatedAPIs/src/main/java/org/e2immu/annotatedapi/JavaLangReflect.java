@@ -14,21 +14,21 @@
 
 package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.ERContainer;
 
 public class JavaLangReflect {
 
     final static String PACKAGE_NAME = "java.lang.reflect";
 
-    @Independent
+    @ERContainer
     interface GenericDeclaration$ {
     }
 
-    @Independent
+    @ERContainer
     interface AnnotatedElement$ {
     }
 
-    @Independent
+    @ERContainer
     interface Type$ {
     }
 }

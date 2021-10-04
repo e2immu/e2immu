@@ -14,16 +14,17 @@
 
 package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.Independent;
+
+import org.e2immu.annotation.ERContainer;
 
 public class JavaLangInvoke {
 
     final static String PACKAGE_NAME = "java.lang.invoke";
 
-    @Independent
+    @ERContainer
     static class TypeDescriptor$ {
 
-        @Independent
+        @ERContainer
         static class OfField {
 
         }

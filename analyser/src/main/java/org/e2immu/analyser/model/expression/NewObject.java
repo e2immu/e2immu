@@ -663,7 +663,7 @@ public record NewObject(
         }
 
         int immutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        if (MultiLevel.isAfter(immutable)) {
+        if (MultiLevel.isAfterThrowWhenNotEventual(immutable)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();

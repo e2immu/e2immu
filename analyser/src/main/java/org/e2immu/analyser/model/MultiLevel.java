@@ -14,17 +14,20 @@
 
 package org.e2immu.analyser.model;
 
-import java.util.function.IntFunction;
-
+/*
+New encoding 20211004:
+first 3 bits: false, eventual, effective
+rest: level
+ */
 public class MultiLevel {
-
-    // system of 6 values encoded in 3 bits per level
 
     public static final int SHIFT = 3;
     public static final int FACTOR = 1 << SHIFT;
     public static final int AND = FACTOR - 1;
 
-    // different values at level
+    public static final int MAX_LEVEL = 100;
+
+    // different values effective-eventual
 
     public static final int DELAY = 0;
     public static final int FALSE = 1;
@@ -35,153 +38,103 @@ public class MultiLevel {
 
     // different levels
 
-    public static final int E1IMMUTABLE = 0;
-    public static final int E2IMMUTABLE = 1;
+    public static final int LEVEL_1_IMMUTABLE = 0;
+    public static final int LEVEL_2_IMMUTABLE = 1;
+    public static final int LEVEL_3_IMMUTABLE = 2;
+    public static final int LEVEL_R_IMMUTABLE = MAX_LEVEL;
+
+    public static final int LEVEL_1_DEPENDENT = 0;
+    public static final int LEVEL_R_DEPENDENT = MAX_LEVEL;
+
     public static final int NOT_NULL = 0;
     public static final int NOT_NULL_1 = 1;
     public static final int NOT_NULL_2 = 2;
     public static final int NOT_NULL_3 = 3;
-    //public static final int INDEPENDENT_1 = 0; // mutable content level
-    //public static final int INDEPENDENT_2 = 1; // immutable content level
 
     // DEPENDENT (only at the first level, nothing to do with eventual)
 
     public static final int DEPENDENT = FALSE; // no need for more
     // dependent_1 == independent at level 1, but dependent at level 2
-    public static final int DEPENDENT_1 = compose(EFFECTIVE);
+    public static final int DEPENDENT_1 = compose(EFFECTIVE, LEVEL_1_DEPENDENT);
+
     // independent == independent both at level 1 (mutable content) and level 2 (immutable content)
-    public static final int INDEPENDENT = compose(EFFECTIVE, EFFECTIVE);
+    public static final int INDEPENDENT = compose(EFFECTIVE, LEVEL_R_DEPENDENT);
 
     // IMMUTABLE
 
-    public static final int EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
-    public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE);
+    public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_1_IMMUTABLE);
 
-    public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, EVENTUAL);
+    public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, NOT_NULL_1);
 
-    public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);
-    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL);
+    public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, LEVEL_2_IMMUTABLE);
+    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, LEVEL_1_IMMUTABLE);
+    public static final int EVENTUALLY_RECURSIVELY_IMMUTABLE = compose(EVENTUAL, LEVEL_R_IMMUTABLE);
 
-    public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
-    public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER);
+    public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_2_IMMUTABLE);
+    public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_1_IMMUTABLE);
 
-    public static final int EFFECTIVELY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EFFECTIVE, EFFECTIVE);
-    public static final int EFFECTIVELY_CONTENT_NOT_NULL = compose(EFFECTIVE, EFFECTIVE);
-    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE);
+    public static final int EFFECTIVELY_CONTENT2_NOT_NULL = compose(EFFECTIVE, NOT_NULL_2);
+    public static final int EFFECTIVELY_CONTENT_NOT_NULL = compose(EFFECTIVE, NOT_NULL_1);
+    public static final int EFFECTIVELY_NOT_NULL_AFTER = compose(EVENTUAL_AFTER, NOT_NULL);
+    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE, NOT_NULL);
 
-    public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, EFFECTIVE);
-    public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE);
+    public static final int EFFECTIVELY_RECURSIVELY_IMMUTABLE = compose(EFFECTIVE, LEVEL_R_IMMUTABLE);
+    public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, LEVEL_2_IMMUTABLE);
+    public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, LEVEL_1_IMMUTABLE);
+    public static final int EFFECTIVELY_E3IMMUTABLE = compose(EFFECTIVE, LEVEL_3_IMMUTABLE);
 
-    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
+    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
 
     public static final int MUTABLE = FALSE;
     public static final int NULLABLE = FALSE;
     public static final int NOT_INVOLVED = DELAY;
 
     /**
-     * make a value at a given level
+     * Make a value combining effective and level
      *
-     * @param valuesPerLevel a value for each level
+     * @param effective a value for the first three bits
+     * @param level     the level
      * @return the composite value
      */
-    public static int compose(int... valuesPerLevel) {
-        int result = 0;
-        int factor = 1;
-        for (int value : valuesPerLevel) {
-            result += value * factor;
-            factor = factor * FACTOR;
-        }
-        return result;
+    public static int compose(int effective, int level) {
+        assert effective >= 0 && effective <= EFFECTIVE;
+        assert level >= 0 && level <= MAX_LEVEL;
+        assert level == 0 || effective > FALSE;
+        return effective + level * FACTOR;
     }
 
-    /**
-     * return the value (DELAY, FALSE, EVENTUAL... EFFECTIVE) at a given level
-     *
-     * @param i     current value
-     * @param level the level
-     * @return the value restricted to that level
-     */
-    public static int value(int i, int level) {
-        assert level >= 0;
-        // it is possible that Level.DELAY (-1) is sent in here
-        if (i <= MultiLevel.DELAY) return MultiLevel.DELAY;
+    public static int effective(int i) {
+        if (i < 0) return i;
+        return i & AND;
+    }
 
-        // IMPORTANT:
-        //  if the lower levels are DELAY, return DELAY
-        //  if the lower levels are FALSE, return FALSE
-        for (int shift = 0; shift < level; shift++) {
-            int v = (i >> (SHIFT * shift)) & AND;
-            if (v <= MultiLevel.FALSE) return MultiLevel.FALSE;
-        }
-        int res = (i >> (SHIFT * level)) & AND;
-        return Math.max(MultiLevel.FALSE, res);
+    public static int effectiveAtLevel(int i, int minLevel) {
+        if (i < 0) return i;
+        int level = i >> SHIFT;
+        if (level < minLevel) return FALSE;
+        return i & AND;
     }
 
     public static int level(int i) {
-        assert i >= 0;
-        int level = 0;
-        int reduce = i;
-        while (reduce > 0) {
-            level++;
-            reduce = reduce >> SHIFT;
-        }
-        return level - 1;
+        if (i < 0) return i;
+        return i >> SHIFT;
     }
 
-
-    public static int levelBetterThanFalse(int i) {
-        assert i >= 0;
-        int level = 0;
-        int reduce = i;
-        int prevReduce = -1;
-        while (reduce > 0) {
-            level++;
-            prevReduce = reduce;
-            reduce = reduce >> SHIFT;
-        }
-        if (prevReduce == FALSE) return level - 2;
-        return level - 1;
+    public static boolean isEventuallyE1Immutable(int i) {
+        return i == EVENTUALLY_E1IMMUTABLE || i == EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
     }
 
-    public static boolean isEventuallyE1Immutable(int immutable) {
-        int v = value(immutable, 0);
-        return v == EVENTUAL || v == EVENTUAL_BEFORE;
+    public static boolean isEventuallyE2Immutable(int i) {
+        return i == EVENTUALLY_E2IMMUTABLE || i == EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
     }
 
-    public static boolean isEventuallyE2Immutable(int immutable) {
-        int v = value(immutable, 1);
-        return v == EVENTUAL || v == EVENTUAL_BEFORE;
+    public static boolean isAtLeastEventuallyE2Immutable(int i) {
+        return i >= EVENTUALLY_E2IMMUTABLE;
     }
 
-    public static boolean isAtLeastEventuallyE2Immutable(int immutable) {
-        return value(immutable, 1) >= EVENTUAL;
-    }
-
-    public static boolean isAtLeastEventuallyE2ImmutableAfter(int immutable) {
-        return value(immutable, 1) >= EVENTUAL_AFTER;
-    }
-
-    // gets rid of eventual, by adding or subtracting one in each block
-    public static int eventual(int i, boolean conditionsMetForEventual) {
-        return modifyEachComponent(i, c -> eventualComponent(c, conditionsMetForEventual));
-    }
-
-    private static int modifyEachComponent(int i, IntFunction<Integer> intFunction) {
-        int newValue = 0;
-        int j = i;
-        int factor = 1;
-        while (j > 0) {
-            int component = j & AND;
-            int newComponent = intFunction.apply(component);
-            j = j >> SHIFT;
-            newValue += factor * newComponent;
-            factor = factor * FACTOR;
-        }
-        return newValue;
-    }
-
-    private static int delayToFalseKeepRest(int component) {
-        return component == DELAY ? FALSE : component;
+    public static boolean isAtLeastEventuallyE2ImmutableAfter(int i) {
+        return i >= EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
     }
 
     private static int eventualComponent(int component, boolean conditionsMetForEventual) {
@@ -191,18 +144,8 @@ public class MultiLevel {
         return EVENTUAL_BEFORE;
     }
 
-    public static int delayToFalse(int i) {
-        if (i < MultiLevel.FALSE) return MultiLevel.FALSE;
-        return modifyEachComponent(i, MultiLevel::delayToFalseKeepRest);
-    }
-
-    public static int shift(int lowestLevel, int initial) {
-        if (initial == -1) return lowestLevel;
-        return lowestLevel + (initial << SHIFT);
-    }
-
-    public static boolean isEffectivelyNotNull(int notNull) {
-        return value(notNull, 0) >= EVENTUAL_AFTER;
+    public static boolean isEffectivelyNotNull(int i) {
+        return i >= EFFECTIVELY_NOT_NULL_AFTER;
     }
 
     public static int bestNotNull(int nn1, int nn2) {
@@ -217,56 +160,48 @@ public class MultiLevel {
         return immutableDynamic > immutableType;
     }
 
-    public static int before(int formalLevel) {
-        if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
-        if (formalLevel == E2IMMUTABLE) return EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
-        throw new UnsupportedOperationException();
+    public static int before(int level) {
+        return compose(EVENTUAL_BEFORE, level);
     }
 
-    public static int after(int formalLevel) {
-        if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_AFTER_MARK;
-        if (formalLevel == E2IMMUTABLE) return EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
-        throw new UnsupportedOperationException();
+    public static int after(int level) {
+        return compose(EVENTUAL_AFTER, level);
     }
 
-    public static boolean isAfter(int immutable) {
-        if (immutable == Level.DELAY) return false;
-        int level = levelBetterThanFalse(immutable);
-        if (level < 0) throw new UnsupportedOperationException("Not eventual");
-        int value = value(immutable, level);
-        return value == EVENTUAL_AFTER || value == EFFECTIVE;
+    public static boolean isAfterThrowWhenNotEventual(int i) {
+        if (i < 0) return false;
+        int effective = effective(i);
+        if (effective == EVENTUAL_BEFORE) return false;
+        if (effective == EVENTUAL_AFTER || effective == EVENTUAL) return true;
+        throw new UnsupportedOperationException("Not eventual");
     }
 
-    public static boolean isBefore(int immutable) {
-        if (immutable == Level.DELAY) return false;
-        int level = levelBetterThanFalse(immutable);
-        if (level < 0) {
-            throw new UnsupportedOperationException("Not eventual");
-        }
-        int value = value(immutable, level);
-        return value == EVENTUAL_BEFORE || value == EVENTUAL;
+    public static boolean isBeforeThrowWhenNotEventual(int i) {
+        if (i < 0) return false;
+        int effective = effective(i);
+        if (effective == EVENTUAL_AFTER) return false;
+        if (effective == EVENTUAL_BEFORE || effective == EVENTUAL) return true;
+        throw new UnsupportedOperationException("Not eventual");
     }
 
-    public static boolean isBeforeAllowNotEventual(int immutable) {
-        if (immutable == Level.DELAY) return false;
-        int level = levelBetterThanFalse(immutable);
-        if (level < 0) {
-            return false;
-        }
-        int value = value(immutable, level);
-        return value == EVENTUAL_BEFORE || value == EVENTUAL;
+    public static boolean isBefore(int i) {
+        if (i < 0) return false;
+        int effective = effective(i);
+        return effective == EVENTUAL_BEFORE || effective == EVENTUAL;
     }
 
     // E2Container -> E1Container; Content2 NN -> content NN
-    public static int oneLevelLess(int value) {
-        if (value <= NOT_INVOLVED) return value;
-        return Math.max(FALSE, value >> SHIFT);
+    public static int oneLevelLess(int i) {
+        if (i < 0) return i;
+        int level = level(i);
+        if (level == 0) return i;
+        int effective = effective(i);
+        return compose(effective, level - 1);
     }
 
-    public static String niceIndependent(int finalValue) {
-        if (DEPENDENT == finalValue) return "@Dependent";
-        if (DEPENDENT_1 == finalValue) return "@Dependent1";
-        if (INDEPENDENT == finalValue) return "@Independent";
-        return "" + finalValue;
+    public static String niceIndependent(int i) {
+        if (DEPENDENT == i) return "@Dependent";
+        if (INDEPENDENT == i) return "@Independent";
+        return "@Dependent" + (level(i) + 1);
     }
 }

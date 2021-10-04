@@ -15,12 +15,14 @@
 package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
 
 public class JavaUtilConcurrentAtomic {
     final static String PACKAGE_NAME = "java.util.concurrent.atomic";
 
     @Container
+    @Independent
     interface AtomicInteger$ {
 
         @Modified

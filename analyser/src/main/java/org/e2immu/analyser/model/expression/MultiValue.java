@@ -123,7 +123,7 @@ public class MultiValue extends ElementImpl implements Expression {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
             int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
             if (notNull == Level.DELAY) return Level.DELAY;
-            return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
+            return MultiLevel.oneLevelLess(notNull); // default = @NotNull level 0
         }
         // default is to refer to each of the components
         return multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);

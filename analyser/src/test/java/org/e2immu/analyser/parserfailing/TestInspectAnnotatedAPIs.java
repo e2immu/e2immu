@@ -21,7 +21,6 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -84,7 +83,7 @@ public class TestInspectAnnotatedAPIs {
         //parser.runAnnotatedAPIs(List.of(url));
         TypeInfo optional = parser.getTypeContext().typeMapBuilder.get("java.util.Optional");
         assertNotNull(optional);
-        assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
+        assertEquals(Level.TRUE, optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
         LOGGER.info("Source of Optional: " + optional.output().toString());
     }
 

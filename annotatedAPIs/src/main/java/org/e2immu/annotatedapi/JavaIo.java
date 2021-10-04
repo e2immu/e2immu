@@ -20,11 +20,20 @@ public class JavaIo {
     final static String PACKAGE_NAME = "java.io";
 
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Serializable$ {
 
     }
+
+    // throws IOException rather than Exception (in AutoCloseable)
+    @Independent
+    @Container
+    interface Closeable$ {
+
+        @Modified
+        void close();
+    }
+
 
     @Independent
     @Container
@@ -94,6 +103,17 @@ public class JavaIo {
     @Container
     interface OutputStream$ {
 
+        @Modified
+        void write(@Independent @NotNull byte[] b);
+
+        @Modified
+        void write(@Independent @NotNull byte[] b, int off, int len);
+
+        @Modified
+        void flush();
+
+        @Modified
+        void write(int b);
     }
 
     @Independent
@@ -105,6 +125,10 @@ public class JavaIo {
     @Independent
     @Container
     interface Writer$ {
+        @Modified
+        void write(@Independent char[] cbuf);
 
+        @Modified
+        void write(@Independent char[] cbuf, int off, int len);
     }
 }

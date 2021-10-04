@@ -15,15 +15,16 @@
 package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 public class OrgSlf4j {
     public static final String PACKAGE_NAME = "org.slf4j";
 
-    @Container
-    @Independent
+    @ERContainer
     interface Logger$ {
+
         void info(@NotNull String s, Object... objects);
 
         void warn(@NotNull String s, Object... objects);
@@ -38,12 +39,14 @@ public class OrgSlf4j {
     }
 
     @Container
+    @Independent
     interface ILoggerFactory$ {
         @NotNull
         org.slf4j.Logger getLogger(String name);
     }
 
     @Container
+    @Independent
     interface LoggerFactory$ {
         @NotNull
         org.slf4j.Logger getLogger(@NotNull Class<?> clazz);

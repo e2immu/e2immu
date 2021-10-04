@@ -156,10 +156,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             boolean acceptVerifyAsContracted,
             Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        int immutable = -1;
+        int levelImmutable = -1;
         int notNull = -1;
         boolean container = false;
-        int independent = -1;
+        int levelIndependent = -1;
         Messages messages = new Messages();
 
         AnnotationExpression only = null;
@@ -183,17 +183,23 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
                 TypeInfo t = annotationExpression.typeInfo();
                 if (e2ImmuAnnotationExpressions.e1Immutable.typeInfo() == t) {
-                    immutable = Math.max(0, immutable);
+                    levelImmutable = Math.max(MultiLevel.LEVEL_1_IMMUTABLE, levelImmutable);
                 } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.typeInfo() == t) {
-                    immutable = -1;
+                    levelImmutable = -1;
                     container = false;
                 } else if (e2ImmuAnnotationExpressions.e2Immutable.typeInfo() == t) {
-                    immutable = 1;
+                    levelImmutable = Math.max(MultiLevel.LEVEL_2_IMMUTABLE, levelImmutable);
+                    levelIndependent = Math.max(MultiLevel.LEVEL_1_DEPENDENT, levelIndependent);
                 } else if (e2ImmuAnnotationExpressions.e2Container.typeInfo() == t) {
-                    immutable = 1;
+                    levelImmutable = Math.max(MultiLevel.LEVEL_2_IMMUTABLE, levelImmutable);
+                    levelIndependent = Math.max(MultiLevel.LEVEL_1_DEPENDENT, levelIndependent);
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.e1Container.typeInfo() == t) {
-                    immutable = Math.max(0, immutable);
+                    levelImmutable = Math.max(MultiLevel.LEVEL_1_IMMUTABLE, levelImmutable);
+                    container = true;
+                } else if (e2ImmuAnnotationExpressions.eRContainer.typeInfo() == t) {
+                    levelImmutable = MultiLevel.LEVEL_R_IMMUTABLE;
+                    levelIndependent = MultiLevel.LEVEL_R_DEPENDENT;
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.beforeMark.typeInfo() == t) {
                     if (parameters.contract()) setProperty(VariableProperty.IMMUTABLE_BEFORE_CONTRACTED, trueFalse);
@@ -226,11 +232,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    independent = MultiLevel.INDEPENDENT;
+                    levelIndependent = MultiLevel.LEVEL_R_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    independent = MultiLevel.DEPENDENT;
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
-                    independent = MultiLevel.DEPENDENT_1;
+                    levelIndependent = MultiLevel.LEVEL_1_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {
@@ -241,8 +247,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.SINGLETON, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
-                    immutable = 1;
-                    independent = MultiLevel.INDEPENDENT;
+                    levelImmutable = Math.max(MultiLevel.LEVEL_2_IMMUTABLE, levelImmutable);
+                    levelIndependent = Math.max(MultiLevel.LEVEL_1_DEPENDENT, levelIndependent);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
@@ -253,21 +259,18 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 }
             }
         }
-        if (independent >= 0) {
-            setProperty(VariableProperty.INDEPENDENT, independent);
+        if (levelIndependent >= 0) {
+            int value = MultiLevel.compose(MultiLevel.EFFECTIVE, levelIndependent);
+            setProperty(VariableProperty.INDEPENDENT, value);
         }
         if (container) {
             setProperty(VariableProperty.CONTAINER, Level.TRUE);
-            if (immutable == -1) {
+            if (levelImmutable == -1) {
                 setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
             }
         }
-        if (immutable >= 0) {
-            int value = switch (immutable) {
-                case 0 -> MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                case 1 -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                default -> throw new UnsupportedOperationException();
-            };
+        if (levelImmutable >= 0) {
+            int value = MultiLevel.compose(MultiLevel.EFFECTIVE, levelImmutable);
             setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {

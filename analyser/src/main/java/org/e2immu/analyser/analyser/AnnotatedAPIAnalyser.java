@@ -194,12 +194,22 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         // do the types first,
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            shallowTypeAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+            try {
+                shallowTypeAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+            } catch (RuntimeException runtimeException) {
+                LOGGER.error("Caught exception while shallowly analysing type " + typeInfo.fullyQualifiedName);
+                throw runtimeException;
+            }
         });
 
         // and then the fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            shallowFieldAnalysis(typeInfo);
+            try {
+                shallowFieldAnalysis(typeInfo);
+            } catch (RuntimeException runtimeException) {
+                LOGGER.error("Caught exception while shallowly analysing fields of type " + typeInfo.fullyQualifiedName);
+                throw runtimeException;
+            }
         });
 
         LOGGER.info("Finished AnnotatedAPI type and field analysis of {} types; have {} messages of my own",
@@ -208,7 +218,12 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions = new HashMap<>();
         methodAnalysers.forEach((methodInfo, analyser) -> {
             if (analyser instanceof ShallowMethodAnalyser) {
-                analyser.analyse(0, null);
+                try {
+                    analyser.analyse(0, null);
+                } catch (RuntimeException runtimeException) {
+                    LOGGER.error("Caught exception while shallowly analysing method " + methodInfo.fullyQualifiedName);
+                    throw runtimeException;
+                }
                 boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
                 if (hasNoCompanionMethods) {
                     methodInfo.setAnalysis(analyser.getAnalysis().build());
@@ -241,7 +256,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
             typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         }
     }

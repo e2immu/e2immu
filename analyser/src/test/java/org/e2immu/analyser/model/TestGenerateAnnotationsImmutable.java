@@ -86,6 +86,8 @@ public class TestGenerateAnnotationsImmutable {
 
         assertEquals(Map.of(E2Container.class, TRUE),
                 generate(EVENTUALLY_E2IMMUTABLE, 1, false, false, "mark2", true));
+        assertEquals(Map.of(ERContainer.class, TRUE),
+                generate(EVENTUALLY_RECURSIVELY_IMMUTABLE, 1, false, false, "mark2", true));
     }
 
     @Test
@@ -109,7 +111,17 @@ public class TestGenerateAnnotationsImmutable {
         assertEquals(Map.of(E2Immutable.class, TRUE),
                 generate(EFFECTIVELY_E2IMMUTABLE, 0, true));
         assertEquals(Map.of(E2Container.class, TRUE),
-                generate(EFFECTIVELY_E2IMMUTABLE, 1, true, false,  "xxx", true));
+                generate(EFFECTIVELY_E2IMMUTABLE, 1, true, false, "xxx", true));
+
+        assertEquals(Map.of(E2Immutable.class, Map.of("level", "3")),
+                generate(EFFECTIVELY_E3IMMUTABLE, 0, true));
+        assertEquals(Map.of(E2Container.class, Map.of("level", "3")),
+                generate(EFFECTIVELY_E3IMMUTABLE, 1, true, false, "xxx", true));
+
+        assertEquals(Map.of(ERContainer.class, TRUE),
+                generate(EFFECTIVELY_RECURSIVELY_IMMUTABLE, 1, true, false, "xxx", true));
+        assertEquals(Map.of(E2Immutable.class, Map.of("recursive", "true")),
+                generate(EFFECTIVELY_RECURSIVELY_IMMUTABLE, 0, true));
     }
 
     @Test

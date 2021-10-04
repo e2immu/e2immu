@@ -55,7 +55,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     public static final String DETECT_MISSING_STATIC_MODIFIER = "detectMissingStaticModifier";
     public static final String EVENTUAL_PREP_WORK = "eventualPrepWork";
     public static final String ANNOTATE_EVENTUAL = "annotateEventual";
-    public static final String METHOD_IS_INDEPENDENT = "methodIsIndependent";
+    public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
 
     private final TypeAnalysis typeAnalysis;
     public final StatementAnalyser firstStatementAnalyser;
@@ -130,7 +130,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
                 .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
-                .add(METHOD_IS_INDEPENDENT, this::methodIsIndependent);
+                .add(COMPUTE_INDEPENDENT, this::computeIndependent);
 
         analyserComponents = builder.build();
     }
@@ -849,7 +849,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == MultiLevel.DEPENDENT);
     }
 
-    private AnalysisStatus methodIsIndependent(SharedState sharedState) {
+    private AnalysisStatus computeIndependent(SharedState sharedState) {
         int currentValue = methodAnalysis.getProperty(INDEPENDENT);
         if (currentValue != Level.DELAY) {
             return DONE;
@@ -1017,14 +1017,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         int e2ImmutableStatusOfFieldRefs = linkedVariables.variables().stream()
                 .filter(v -> v instanceof FieldReference)
                 .map(v -> analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo))
-                .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE), MultiLevel.E2IMMUTABLE))
-                .min().orElse(MultiLevel.INDEPENDENT);
+                .mapToInt(fa -> MultiLevel.effectiveAtLevel(fa.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE), MultiLevel.LEVEL_2_IMMUTABLE))
+                .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     linkedVariables.variables().stream()
-                            .filter(v -> MultiLevel.value(analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo)
+                            .filter(v -> MultiLevel.effectiveAtLevel(analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo)
                                             .fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE),
-                                    MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
+                                    MultiLevel.LEVEL_2_IMMUTABLE) == MultiLevel.DELAY)
                             .map(Variable::fullyQualifiedName)
                             .collect(Collectors.joining(", ")));
             return Level.DELAY;

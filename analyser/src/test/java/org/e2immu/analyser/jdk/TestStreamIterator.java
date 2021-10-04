@@ -12,17 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.analyser.jdk;
 
-import org.e2immu.annotation.ERContainer;
+import org.junit.jupiter.api.Test;
 
-class JavaLangModule {
-    final static String PACKAGE_NAME = "java.lang.module";
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-    @ERContainer
-    interface Configuration$ {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+public class TestStreamIterator {
+
+    // the iterator of Stream is not modifying
+    @Test
+    public void test1() {
+        List<Integer> list = new ArrayList<>();
+        Collections.addAll(list, 1,2 ,3,4,5);
+        assertEquals(5, list.size());
+        Iterator<Integer> it = list.stream().iterator();
+        assertTrue(it.hasNext());
+        it.remove();
+        assertEquals(4, list.size());
     }
-
 }
-

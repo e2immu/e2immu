@@ -14,6 +14,7 @@
 
 package org.e2immu.annotatedapi;
 
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
@@ -23,11 +24,11 @@ public class JavaUtilFunction {
 
     public static final String PACKAGE_NAME = "java.util.function";
 
+    @Container
     interface Supplier$<T> {
         @Modified
         T get();
     }
-
 
     interface Consumer$<T> {
         @Modified

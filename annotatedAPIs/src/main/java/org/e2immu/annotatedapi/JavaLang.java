@@ -26,24 +26,23 @@ class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
-    @Dependent
+    // implicitly @Dependent
     @Container
     interface Iterable$<T> {
         void forEach(@NotNull @Dependent1 Consumer<? super T> action);
 
+        // implicitly @Dependent, has `remove()`
         @NotNull
         Iterator<T> iterator();
 
         @NotNull
+        @Dependent1
         Spliterator<T> spliterator();
     }
 
-    // @Independent implicit because all methods @Independent
-    @E2Container
-    @Independent
+    @ERContainer
     interface Object$ {
         @NotNull
-        @Independent
         Object clone();
 
         default boolean equals$Value(Object object, boolean retVal) {
@@ -95,8 +94,7 @@ class JavaLang {
         void setStackTrace(@NotNull StackTraceElement[] stackTrace);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Class$ {
         @NotNull
         String getCanonicalName();
@@ -108,8 +106,7 @@ class JavaLang {
         String getSimpleName();
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface CharSequence$ {
         char charAt(int index);
 
@@ -123,8 +120,8 @@ class JavaLang {
         int length();
     }
 
-    @Container
     @Independent
+    @Container
     interface Appendable$ {
         @Fluent
         Appendable append(char c);
@@ -136,10 +133,17 @@ class JavaLang {
         Appendable append(CharSequence charSequence, int start, int end);
     }
 
+    @Independent
+    @Container
+    interface AutoCloseable$ {
+
+        @Modified
+        void close();
+    }
+
     // a class, because we need to annotate the constructor
 
-    @E2Container
-    @Independent
+    @ERContainer
     static abstract class String$ implements CharSequence {
 
         boolean String$Modification$Len(int post) {
@@ -309,8 +313,8 @@ class JavaLang {
 
     // a class, because we want to annotate the constructor
 
-    @Container
     @Independent
+    @Container
     static abstract class StringBuilder$ implements CharSequence {
 
         boolean StringBuilder$Modification$Len(int post) {
@@ -393,14 +397,13 @@ class JavaLang {
         }
     }
 
-    @Container
     @Independent
+    @Container
     static abstract class StringBuffer$ implements CharSequence {
 
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Integer$ {
 
         @NotNull
@@ -408,40 +411,35 @@ class JavaLang {
     }
 
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Float$ {
 
         @NotNull
         String toString(float f);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Byte$ {
 
         @NotNull
         String toString(byte b);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Character$ {
 
         @NotNull
         String toString(char c);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Short$ {
 
         @NotNull
         String toString(short s);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Boolean$ {
         boolean parseBoolean(@NotNull String string);
     }
@@ -470,8 +468,7 @@ class JavaLang {
                        int length);
     }
 
-    @E2Container
-    @Independent
+    @ERContainer
     interface Comparable$<T> {
         default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;
@@ -480,12 +477,12 @@ class JavaLang {
         int compareTo(@NotNull T t);
     }
 
-    @Independent
+    @ERContainer
     interface Package$ {
 
     }
 
-    @Independent
+    @ERContainer
     interface Module$ {
 
     }
