@@ -95,7 +95,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
 
             ParameterAnalysis p0 = appendBoolean.parameterAnalysis(0);
             assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             assertThrows(PropertyException.class, () -> p0.getProperty(VariableProperty.MODIFIED_METHOD));
@@ -155,7 +155,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.FLUENT));
         assertEquals(MultiLevel.INDEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
         ParameterAnalysis p0 = compareTo.parameterAnalysis(0);
         assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));

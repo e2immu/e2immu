@@ -88,14 +88,14 @@ public enum VariableProperty {
 
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
     CONTEXT_IMMUTABLE_DELAY("context immutable delay"),
-    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
+    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
 
-    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
-    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
-    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
+    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
 
     // internal, temporary
-    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
+    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
     /*
     Modification.
 

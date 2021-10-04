@@ -196,7 +196,8 @@ public class MultiLevel {
         int level = level(i);
         if (level == 0) return i;
         int effective = effective(i);
-        return compose(effective, level - 1);
+        int newLevel = level == MAX_LEVEL ? level : level - 1;
+        return compose(effective, newLevel);
     }
 
     public static String niceIndependent(int i) {

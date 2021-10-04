@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.shallow;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.PropertyException;
+import org.e2immu.analyser.analyser.TypeAnalysisImpl;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -92,7 +95,7 @@ public class TestDefaultAnnotations {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
         assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         MethodInfo equals = object.findUniqueMethod("equals", 1);
@@ -150,7 +153,7 @@ public class TestDefaultAnnotations {
 
         // properties of a primitive return type:
         assertEquals(Level.TRUE, sizeAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, sizeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, sizeAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT, sizeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         // METHOD 2
@@ -198,7 +201,7 @@ public class TestDefaultAnnotations {
     @Test
     public void testListAdd() {
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        TypeAnalysis typeAnalysis  = list.typeAnalysis.get();
+        TypeAnalysis typeAnalysis = list.typeAnalysis.get();
         assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
 
         MethodInfo add = list.findUniqueMethod("add", 1);
@@ -206,11 +209,11 @@ public class TestDefaultAnnotations {
 
         assertEquals(Level.TRUE, addAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, addAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, addAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
         ParameterAnalysis paramAnalysis = add.parameterAnalysis(0);
 
-        assertEquals(MultiLevel.NOT_INVOLVED, paramAnalysis.getProperty(VariableProperty.IMMUTABLE), "In "+add.fullyQualifiedName);
+        assertEquals(MultiLevel.NOT_INVOLVED, paramAnalysis.getProperty(VariableProperty.IMMUTABLE), "In " + add.fullyQualifiedName);
         assertEquals(MultiLevel.NULLABLE, paramAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         // not a container!
         assertEquals(Level.TRUE, paramAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
@@ -275,7 +278,7 @@ public class TestDefaultAnnotations {
         ParameterAnalysis intAnalysis = twoConstructor.parameterAnalysis(0);
 
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, intAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, intAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, intAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, intAnalysis.getProperty(VariableProperty.CONTAINER));
         assertEquals(Level.FALSE, intAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
         assertThrows(PropertyException.class, () -> intAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
@@ -306,7 +309,7 @@ public class TestDefaultAnnotations {
         FieldAnalysis bytesAnalysis = bytes.fieldAnalysis.get();
 
         assertEquals(Level.TRUE, bytesAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, bytesAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, bytesAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(Level.TRUE, bytesAnalysis.getProperty(VariableProperty.FINAL));
         assertEquals(Level.FALSE, bytesAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
         assertEquals(MultiLevel.INDEPENDENT, bytesAnalysis.getProperty(VariableProperty.INDEPENDENT));

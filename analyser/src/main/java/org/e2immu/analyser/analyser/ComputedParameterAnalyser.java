@@ -307,52 +307,39 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     private int combineImmutable(int formallyImmutable, int contractImmutable, boolean contractedBefore) {
+        int contractLevel = MultiLevel.level(contractImmutable);
+        int formalLevel = MultiLevel.level(formallyImmutable);
+        int contractEffective = MultiLevel.effective(contractImmutable);
+        int formalEffective = MultiLevel.effective(formallyImmutable);
+
         if (contractedBefore) {
-            if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
-                if (formallyImmutable != EVENTUALLY_E2IMMUTABLE) {
+            if (contractEffective == EFFECTIVE) {
+                if (formalEffective != EVENTUAL || contractLevel != formalLevel) {
                     messages.add(Message.newMessage(parameterAnalysis.location,
-                            Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EE2));
+                            Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
                     return formallyImmutable;
                 }
-                return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
-            }
-            if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
-                if (formallyImmutable != MultiLevel.EVENTUALLY_E1IMMUTABLE) {
-                    messages.add(Message.newMessage(parameterAnalysis.location,
-                            Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EE1));
-                    return formallyImmutable;
-                }
-                return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+                return MultiLevel.compose(EVENTUAL_BEFORE, contractLevel);
             }
             messages.add(Message.newMessage(parameterAnalysis.location,
                     Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
             return formallyImmutable;
         }
 
-        if (contractImmutable == EVENTUALLY_E2IMMUTABLE_AFTER_MARK && formallyImmutable == EVENTUALLY_E2IMMUTABLE) {
+        if (contractEffective == EVENTUAL_AFTER && formalEffective == EVENTUAL && contractLevel == formalLevel) {
             return contractImmutable;
         }
 
-        if (contractImmutable == EVENTUALLY_E1IMMUTABLE_AFTER_MARK && formallyImmutable == EVENTUALLY_E1IMMUTABLE) {
-            return contractImmutable;
+        if (contractEffective == EFFECTIVE) {
+            if (formalEffective != EVENTUAL && formalEffective != EFFECTIVE ||
+                    contractLevel != formalLevel) {
+                messages.add(Message.newMessage(parameterAnalysis.location,
+                        Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
+                return formallyImmutable;
+            }
+            return formalEffective == EVENTUAL ? MultiLevel.compose(EVENTUAL_AFTER, contractLevel) : contractEffective;
         }
 
-        if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
-            if (formallyImmutable != EVENTUALLY_E2IMMUTABLE && formallyImmutable != EFFECTIVELY_E2IMMUTABLE) {
-                messages.add(Message.newMessage(parameterAnalysis.location,
-                        Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER_NOT_EE2));
-                return formallyImmutable;
-            }
-            return formallyImmutable == EVENTUALLY_E2IMMUTABLE ? EVENTUALLY_E2IMMUTABLE_AFTER_MARK : EFFECTIVELY_E2IMMUTABLE;
-        }
-        if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
-            if (formallyImmutable != EVENTUALLY_E1IMMUTABLE && formallyImmutable != EFFECTIVELY_E1IMMUTABLE) {
-                messages.add(Message.newMessage(parameterAnalysis.location,
-                        Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER_NOT_EE1));
-                return formallyImmutable;
-            }
-            return formallyImmutable == EVENTUALLY_E1IMMUTABLE ? EVENTUALLY_E1IMMUTABLE_AFTER_MARK : EFFECTIVELY_E1IMMUTABLE;
-        }
         if (contractImmutable == MUTABLE) {
             return formallyImmutable;
         }

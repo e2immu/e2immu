@@ -618,6 +618,7 @@ public class JavaUtil extends AnnotatedAPI {
         @E2Container
         @NotNull
         @NotModified
+        @Dependent1
         <KK, VV> Map<KK, VV> copyOf(@NotNull Map<? extends KK, ? extends VV> map);
 
         default boolean size$Invariant$Size(int i) {
@@ -640,6 +641,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
+        @Dependent1
         Set<Map.Entry<K, V>> entrySet();
 
         default int keySet$Transfer$Size(int i) {
@@ -647,26 +649,34 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
+        @Dependent1
         Set<K> keySet();
 
         void forEach(@NotNull @Dependent1 BiConsumer<? super K, ? super V> action);
 
+        @Dependent1
         V get(@NotNull Object key);
 
+        @Dependent1
         V getOrDefault(@NotNull Object key, V defaultValue);
 
         @Modified
+        @Dependent1
         V put(@NotNull K key, @NotNull V value);
 
         @NotNull1
+        @Dependent1
         Collection<V> values();
 
         @Container
+        @Dependent1
         interface Entry<K, V> {
             @NotNull
+            @Dependent1
             K getKey();
 
             @NotNull
+            @Dependent1
             V getValue();
         }
     }
@@ -695,14 +705,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
-
     interface AbstractCollection$<E> {
-
-        @Dependent1
-        Iterator<E> iterator();
-    }
-
-    interface Deque$<E> {
 
         @Dependent1
         Iterator<E> iterator();
@@ -717,26 +720,31 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
+    @Dependent1
     interface AbstractMap$ {
 
     }
 
     @Container
+    @Dependent1
     interface SortedMap$ {
 
     }
 
     @Container
+    @Dependent1
     interface NavigableMap$ {
 
     }
 
     @Container
+    @Dependent1
     interface WeakHashMap$ {
 
     }
 
     @Container
+    @Dependent1
     interface LinkedHashMap$ {
 
     }

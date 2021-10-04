@@ -32,7 +32,7 @@ public class ImplicitProperties {
     public static int primitiveProperties(VariableProperty variableProperty) {
         return switch (variableProperty) {
             case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             case CONTAINER -> Level.TRUE;
             case INDEPENDENT -> MultiLevel.INDEPENDENT;
             case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL;
