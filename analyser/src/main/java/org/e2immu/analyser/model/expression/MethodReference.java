@@ -142,7 +142,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
             case CONTAINER -> Level.TRUE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
 
             case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE;
             case INDEPENDENT -> MultiLevel.INDEPENDENT;

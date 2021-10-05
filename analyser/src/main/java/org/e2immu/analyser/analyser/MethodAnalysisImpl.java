@@ -265,14 +265,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 }
             }
 
-            // @Dependent @Independent
-            int independent = getProperty(VariableProperty.INDEPENDENT);
-            if (independent == MultiLevel.DEPENDENT_1) {
-                annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
-            } else if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
-                doIndependent(e2ImmuAnnotationExpressions, independent);
-            }
-
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
@@ -304,11 +296,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        }
 
-        private boolean allowIndependentOnMethod() {
-            return !Primitives.isVoidOrJavaLangVoid(returnType) &&
-                    returnType.isTransparentOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
+            // @Dependent @Independent
+            int independent = getProperty(VariableProperty.INDEPENDENT);
+            doIndependent(e2ImmuAnnotationExpressions, independent, dynamicallyImmutable);
         }
 
         protected void writeEventual(Eventual eventual) {

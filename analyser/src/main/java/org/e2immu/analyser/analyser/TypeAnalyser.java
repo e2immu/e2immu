@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
+import org.e2immu.analyser.analyser.check.CheckImmutable;
+import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -108,17 +109,19 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
 
         check(typeInfo, UtilityClass.class, e2.utilityClass);
         check(typeInfo, ExtensionClass.class, e2.extensionClass);
-        check(typeInfo, Independent.class, e2.independent);
         check(typeInfo, Container.class, e2.container);
         check(typeInfo, Singleton.class, e2.singleton);
 
-        CheckE1E2Immutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
-        CheckE1E2Immutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
-        CheckE1E2Immutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
-        CheckE1E2Immutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
+        check(typeInfo, Independent.class, e2.independent);
+        check(typeInfo, Dependent.class, e2.dependent);
+        CheckIndependent.checkLevel(messages, typeInfo, Dependent1.class, e2.dependent1, typeAnalysis);
 
-        // opposites
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
+        CheckImmutable.checkAfter(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
+        CheckImmutable.checkAfter(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
+        CheckImmutable.checkAfterAndLevel(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
+        CheckImmutable.checkAfterAndLevel(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
+        CheckImmutable.checkAfter(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis);
 
         checkWorseThanSpecifiedInInterfacesImplemented();
     }

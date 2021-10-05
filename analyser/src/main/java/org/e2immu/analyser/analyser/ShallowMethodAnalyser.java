@@ -237,14 +237,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 if (Primitives.isPrimitiveExcludingVoid(type) || Primitives.isJavaLangString(type)) {
                     value = Level.FALSE;
                 } else {
-                    int typeImmutable = type.defaultImmutable(analyserContext, true);
-                    if (typeImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                        int typeIndependent = type.defaultIndependent();
-                        if (typeIndependent == MultiLevel.INDEPENDENT) {
-                            value = Level.FALSE;
-                        } else {
-                            value = Level.TRUE;
-                        }
+                    int typeIndependent = type.defaultIndependent(analyserContext);
+                    if (typeIndependent == MultiLevel.INDEPENDENT) {
+                        value = Level.FALSE;
                     } else {
                         value = Level.TRUE;
                     }
@@ -349,7 +344,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         // typeIndependent is set by hand in AnnotatedAPI files
         int typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.INDEPENDENT);
         int bestOfOverrides = bestOfOverrides(VariableProperty.INDEPENDENT);
-        return Math.max(MultiLevel.DEPENDENT, Math.max(returnValueIndependent,Math.max(bestOfOverrides, typeIndependent)));
+        return Math.max(MultiLevel.DEPENDENT, Math.max(returnValueIndependent, Math.max(bestOfOverrides, typeIndependent)));
     }
 
     private int computeMethodNotNull() {

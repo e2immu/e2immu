@@ -57,7 +57,7 @@ public class StringConcat extends BinaryOperator {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             case CONTAINER -> Level.TRUE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
             case INDEPENDENT -> MultiLevel.INDEPENDENT;
             default -> Level.FALSE;

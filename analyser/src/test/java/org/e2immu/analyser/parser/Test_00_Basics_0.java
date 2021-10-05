@@ -57,7 +57,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
                         VariableProperty.NOT_NULL_EXPRESSION));
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+                        fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
             }
         };
@@ -114,7 +115,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+                    stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
 
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()

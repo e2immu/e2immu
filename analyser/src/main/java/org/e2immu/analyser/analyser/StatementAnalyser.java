@@ -1341,7 +1341,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
             TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
-            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                 return EMPTY_OVERRIDE;
             }
         }

@@ -586,7 +586,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         Expression expression = methodAnalysis.singleReturnValue.get();
         int immutable;
         if (expression.isConstant()) {
-            immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            immutable = MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
         } else {
             VariableInfo variableInfo = getReturnAsVariable();
 
@@ -950,10 +950,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         .filter(vi -> isFieldOfTransparentType(vi.variable(), analyserContext))
                         .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
                         .filter(v -> v instanceof ParameterInfo)
-                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) != MultiLevel.EFFECTIVELY_E2IMMUTABLE)
+                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) < MultiLevel.EFFECTIVELY_E2IMMUTABLE)
                         .map(v -> (ParameterInfo) v)
                         .filter(parameters::contains)
                         .findFirst();
+        // FIXME we do not compute a value for the constructor, rather for each of the parameters.
+        // FIXME we do not assign INDEPENDENT
         return nonImmutableStaticallyAssignedToParameter.isPresent() ? MultiLevel.DEPENDENT : MultiLevel.INDEPENDENT;
     }
 

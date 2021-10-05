@@ -126,15 +126,18 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent) {
+    protected void doIndependent(E2ImmuAnnotationExpressions e2, int independent, int immutable) {
         AnnotationExpression expression;
 
+        if (MultiLevel.level(immutable) >= MultiLevel.LEVEL_2_IMMUTABLE) {
+            return; // no annotation needed, @Immutable series will be there
+        }
         if (independent == MultiLevel.DEPENDENT) {
-            expression = e2ImmuAnnotationExpressions.dependent;
+            expression = e2.dependent;
         } else if (independent == MultiLevel.INDEPENDENT) {
-            expression = e2ImmuAnnotationExpressions.independent;
+            expression = e2.independent;
         } else if (independent == MultiLevel.DEPENDENT_1) {
-            expression = e2ImmuAnnotationExpressions.dependent1;
+            expression = e2.dependent1;
         } else {
             return;
         }

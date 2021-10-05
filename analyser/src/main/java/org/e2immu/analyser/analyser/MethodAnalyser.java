@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.check.CheckConstant;
-import org.e2immu.analyser.analyser.check.CheckEventual;
-import org.e2immu.analyser.analyser.check.CheckPrecondition;
+import org.e2immu.analyser.analyser.check.*;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -128,30 +126,33 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
-        check(Independent.class, e2.independent);
-
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
                 check(NotNull.class, e2.notNull);
                 check(NotNull1.class, e2.notNull1);
                 check(Fluent.class, e2.fluent);
                 check(Identity.class, e2.identity);
+                check(Container.class, e2.container);
+
                 check(E1Immutable.class, e2.e1Immutable);
                 check(E1Container.class, e2.e1Container);
-                check(Container.class, e2.container);
-                check(E2Immutable.class, e2.e2Immutable);
-                check(E2Container.class, e2.e2Container);
+                CheckImmutable.checkLevel(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis);
+                CheckImmutable.checkLevel(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis);
                 check(BeforeMark.class, e2.beforeMark);
+                check(ERContainer.class, e2.eRContainer);
+
                 checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
 
                 check(Nullable.class, e2.nullable);
-            }
-            check(NotModified.class, e2.notModified);
 
+                check(Dependent.class, e2.dependent);
+                check(Independent.class, e2.independent);
+                CheckIndependent.checkLevel(messages, methodInfo, Dependent1.class, e2.dependent1, methodAnalysis);
+            }
+
+            check(NotModified.class, e2.notModified);
             check(Modified.class, e2.modified);
         }
-        check(Dependent.class, e2.dependent);
-        check(Dependent1.class, e2.dependent1);
 
         CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
 

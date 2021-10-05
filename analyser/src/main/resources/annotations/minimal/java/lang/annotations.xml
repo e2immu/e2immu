@@ -15,33 +15,33 @@
 
 <root>
     <item name='java.lang.Object'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.String'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Integer'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Float'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Short'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Long'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Double'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Byte'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Character'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
     <item name='java.lang.Void'>
-        <annotation name='org.e2immu.annotation.E2Container'/>
+        <annotation name='org.e2immu.annotation.ERContainer'/>
     </item>
 </root>

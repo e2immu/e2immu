@@ -81,7 +81,7 @@ public class UnknownExpression extends ElementImpl implements Expression {
     public static int primitiveGetProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             case CONTAINER:
                 return Level.TRUE;
             case NOT_NULL_EXPRESSION:

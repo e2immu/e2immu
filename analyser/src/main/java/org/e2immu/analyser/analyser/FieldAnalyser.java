@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
+import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.inspector.MethodResolution;
@@ -481,10 +482,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         int staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
-        if (staticallyImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-            log(IMMUTABLE_LOG, "Field {} is statically @E2Immutable", fqn);
+        if (staticallyImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            log(IMMUTABLE_LOG, "Field {} is statically @ERImmutable", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
-            return DONE;
+            return DONE; // cannot be improved
         }
 
         Boolean onlyAssignedToParameters = onlyAssignedToParameters();
@@ -867,7 +868,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY, Level.TRUE);
                     return DELAYS;
                 }
-                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable != MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
                     effectivelyFinalValue = newObject.copyAfterModifyingMethodOnConstructor(TRUE);
                 } else {
@@ -1001,7 +1002,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert !fieldAnalysis.linkedVariables.isSet();
 
         int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             fieldAnalysis.linkedVariables.set(LinkedVariables.EMPTY);
             log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");
             // finalizer check at assignment only
@@ -1174,13 +1175,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis, myTypeAnalyser.typeAnalysis);
 
         // dynamic type annotations
-        check(E1Immutable.class, e2.e1Immutable);
-        check(E2Immutable.class, e2.e2Immutable);
         check(Container.class, e2.container);
-        check(E1Container.class, e2.e1Container);
-        check(E2Container.class, e2.e2Container);
 
-        // opposites
+        check(E1Immutable.class, e2.e1Immutable);
+        check(E1Container.class, e2.e1Container);
+        CheckImmutable.checkLevel(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis);
+        CheckImmutable.checkLevel(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis);
+        check(ERContainer.class, e2.eRContainer);
+
         check(org.e2immu.annotation.Variable.class, e2.variableField);
         check(Modified.class, e2.modified);
         check(Nullable.class, e2.nullable);

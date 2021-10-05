@@ -909,8 +909,20 @@ public class ParameterizedType {
         return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE;
     }
 
-    public int defaultIndependent() {
-        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
+    public int defaultIndependent(AnalysisProvider analysisProvider) {
+        if (Primitives.isPrimitiveExcludingVoid(this)) {
+            return MultiLevel.INDEPENDENT;
+        }
+        TypeInfo bestType = bestTypeInfo();
+        if (bestType == null) {
+            // FIXME
+            return MultiLevel.DEPENDENT_1;
+        }
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return TYPE_ANALYSIS_NOT_AVAILABLE;
+        }
+        return typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
     }
 
     public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;

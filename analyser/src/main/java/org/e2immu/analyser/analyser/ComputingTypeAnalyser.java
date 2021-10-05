@@ -703,13 +703,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return DELAYS;
         }
         TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
-        int parentE1;
+        int parentEffective;
         if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            parentE1 = MultiLevel.EFFECTIVE;
+            parentEffective = MultiLevel.EFFECTIVE;
         } else {
             TypeInfo parentType = typeInspection.parentClass().typeInfo;
             int parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(VariableProperty.IMMUTABLE);
-            parentE1 = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.LEVEL_1_IMMUTABLE);
+            parentEffective = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.LEVEL_1_IMMUTABLE);
         }
 
         int fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
@@ -731,10 +731,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return DONE;
         }
 
-        int myWhenE2Fails;
+        int myWhenEXFails;
         int e1Component;
         boolean eventual;
-        if (allMyFieldsFinal == Level.FALSE || parentE1 != MultiLevel.EFFECTIVE) {
+        if (allMyFieldsFinal == Level.FALSE || parentEffective != MultiLevel.EFFECTIVE) {
             if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
@@ -744,12 +744,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 return DELAYS;
             }
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
-            if (!isEventuallyE1 && parentE1 != MultiLevel.EVENTUAL) {
+            if (!isEventuallyE1 && parentEffective != MultiLevel.EVENTUAL) {
                 log(IMMUTABLE_LOG, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;
             }
-            myWhenE2Fails = MultiLevel.EVENTUALLY_E1IMMUTABLE;
+            myWhenEXFails = MultiLevel.EVENTUALLY_E1IMMUTABLE;
             e1Component = MultiLevel.EVENTUAL;
             eventual = true;
         } else {
@@ -761,13 +761,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         typeInfo.fullyQualifiedName + D_IMMUTABLE);
                 return DELAYS;
             }
-            myWhenE2Fails = MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+            myWhenEXFails = MultiLevel.EFFECTIVELY_E1IMMUTABLE;
             e1Component = MultiLevel.EFFECTIVE;
             // it is possible that all fields are final, yet some field's content is used as the precondition
             eventual = !typeAnalysis.approvedPreconditionsE2IsEmpty();
         }
 
-        int whenE2Fails = Math.min(fromParentOrEnclosing, myWhenE2Fails);
+        int whenEXFails = Math.min(fromParentOrEnclosing, myWhenEXFails);
 
         // E2
         // NOTE that we need to check 2x: needed in else of previous statement, but also if we get through if-side.
@@ -779,6 +779,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     typeInfo.fullyQualifiedName + D_IMMUTABLE);
             return DELAYS;
         }
+
+        int minLevel = MultiLevel.LEVEL_R_IMMUTABLE; // can only go down!
 
         boolean haveToEnforcePrivateAndIndependenceRules = false;
         boolean checkThatTheOnlyModifyingMethodsHaveBeenMarked = false;
@@ -799,10 +801,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
-            // this follows automatically if they are primitive or E2Immutable themselves
+            // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
-            boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
-
             int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             int fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.LEVEL_2_IMMUTABLE);
 
@@ -829,6 +829,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
             // NOTE: the 2 values that matter now are EVENTUAL and EFFECTIVE; any other will lead to a field
             // that needs to follow the additional rules
+            boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
 
             if (fieldE2Immutable == MultiLevel.EVENTUAL) {
                 eventual = true;
@@ -855,7 +856,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     } else {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                 }
@@ -866,30 +867,35 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                 } else {
                     log(IMMUTABLE_LOG, "Ignoring private modifier check of {}, self-referencing", fieldFQN);
                 }
+
+                int fieldLevel = MultiLevel.level(fieldImmutable);
+                minLevel = Math.min(minLevel, fieldLevel);
             }
         }
 
         if (haveToEnforcePrivateAndIndependenceRules) {
 
             for (MethodAnalyser constructor : myConstructors) {
-                int independent = constructor.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (independent == Level.DELAY) {
-                    log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
-                            constructor.methodInfo.distinguishingName());
-                    return DELAYS; //not decided
-                }
-                if (independent == MultiLevel.FALSE) {
-                    // TODO break delay if the fields are self-references??
-                    log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is not @Independent",
-                            typeInfo.fullyQualifiedName, constructor.methodInfo.name);
-                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
-                    return DONE;
+                for (ParameterAnalysis parameterAnalysis : constructor.parameterAnalyses) {
+                    int independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                    if (independent == Level.DELAY) {
+                        log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
+                                constructor.methodInfo.distinguishingName());
+                        return DELAYS; //not decided
+                    }
+                    if (independent == MultiLevel.DEPENDENT) {
+                        log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is @Dependent",
+                                typeInfo.fullyQualifiedName, constructor.methodInfo.name);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
+                        return DONE;
+                    }
+                    minLevel = Math.min(minLevel, independent);
                 }
             }
 
@@ -929,17 +935,22 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                                 return DELAYS; //not decided
                             }
                         }
-                        if (independent == MultiLevel.FALSE) {
+                        if (independent == MultiLevel.DEPENDENT) {
                             log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                     typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                             return DONE;
                         }
+                        minLevel = Math.min(minLevel, independent);
                     }
+
+                    // FIXME parameters of functional/abstract type which expose data?
+
                 }
             }
         }
 
+        /*
         // IMPROVE I don't think this bit of code is necessary. provide a test
         if (checkThatTheOnlyModifyingMethodsHaveBeenMarked) {
             for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
@@ -951,16 +962,17 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     if (e.notMarkOrBefore()) {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {} modifies after the precondition",
                                 typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                 }
             }
-        }
+        }*/
 
-        log(IMMUTABLE_LOG, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
-        int e2Component = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
-        int finalValue = Math.min(fromParentOrEnclosing, MultiLevel.compose(e1Component, e2Component));
+        int effective = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
+        int finalValue = Math.min(fromParentOrEnclosing, MultiLevel.compose(effective, minLevel));
+        log(IMMUTABLE_LOG, "Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName,
+                MultiLevel.niceImmutable(finalValue));
         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, finalValue);
         return DONE;
     }

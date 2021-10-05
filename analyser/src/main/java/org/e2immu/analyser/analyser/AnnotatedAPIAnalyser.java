@@ -320,7 +320,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
-        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new InlinedMethod(Identifier.generate(),
@@ -351,7 +351,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
-        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType, "isKnown return value"));
@@ -532,6 +532,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
         int immutable = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.IMMUTABLE);
         int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        int independent = MultiLevel.oneLevelLess(immutable);
         if (inMap == Level.DELAY) {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()
@@ -543,11 +544,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
                 return;
             }
-            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                 // minimal value; we'd have an inconsistency otherwise
-                builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+                builder.setProperty(VariableProperty.INDEPENDENT, independent);
             }
-        } else if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE && inMap == MultiLevel.DEPENDENT) {
+        } else if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE && inMap < independent) {
             messages.add(Message.newMessage(new Location(builder.typeInfo),
                     Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
         }

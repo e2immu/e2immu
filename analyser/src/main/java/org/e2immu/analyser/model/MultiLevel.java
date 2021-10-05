@@ -205,4 +205,22 @@ public class MultiLevel {
         if (INDEPENDENT == i) return "@Independent";
         return "@Dependent" + (level(i) + 1);
     }
+
+    public static String niceImmutable(int i) {
+        if (MUTABLE == i) return "@Mutable";
+        int level = level(i) + 1;
+        int effective = effective(i);
+        String immutable = level == MultiLevel.MAX_LEVEL ? "@ERImmutable" : "@E" + level + "Immutable";
+        return niceEffective(effective) + " " + immutable;
+    }
+
+    public static String niceEffective(int e) {
+        return switch (e) {
+            case EVENTUAL_BEFORE -> "before";
+            case EVENTUAL_AFTER -> "after";
+            case EVENTUAL -> "eventually";
+            case EFFECTIVE -> "effectively";
+            default -> "" + e;
+        };
+    }
 }
