@@ -14,8 +14,13 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ExtensionClass;
+
 import java.util.stream.Stream;
 
+@ERContainer
+@ExtensionClass(of = String.class)
 public class Basics_5 {
 
     public static String add(String input) {

@@ -313,7 +313,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("res$1".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                     }
                 }
                 if ("res".equals(d.variableName())) {

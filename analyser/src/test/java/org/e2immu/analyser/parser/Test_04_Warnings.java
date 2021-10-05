@@ -469,20 +469,32 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addToSet".equals(d.methodInfo().name)) {
-                Set<MethodAnalysis> overrides = d.methodAnalysis()
-                        .getOverrides(d.evaluationContext().getAnalyserContext());
-                assertFalse(overrides.isEmpty());
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                if ("MustBeContainer".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertTrue(d.methodInfo().methodResolution.get().overrides().isEmpty());
 
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                    assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                }
+
+                if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {
+                    Set<MethodAnalysis> overrides = d.methodAnalysis()
+                            .getOverrides(d.evaluationContext().getAnalyserContext());
+                    assertFalse(overrides.isEmpty());
+
+                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+                    // whatever happens, the set remains independent (the int added is independent)
+                    assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                }
             }
         };
+
         // one on the method, one on the type
         testClass("Warnings_7", 2, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

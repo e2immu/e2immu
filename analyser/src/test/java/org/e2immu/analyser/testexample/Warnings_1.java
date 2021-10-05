@@ -16,6 +16,8 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.ExtensionClass;
 
 
 /*
@@ -33,7 +35,8 @@ import org.e2immu.annotation.E2Container;
  ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar
  */
 
-@E2Container
+@ERContainer
+@ExtensionClass(of=boolean.class)
 public class Warnings_1 {
 
     public Warnings_1() {

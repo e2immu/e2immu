@@ -200,6 +200,14 @@ public class MultiLevel {
         return compose(effective, newLevel);
     }
 
+    public static int oneLevelMore(int i) {
+        if (i < 0) return i;
+        int level = level(i);
+        int effective = effective(i);
+        int newLevel = level == MAX_LEVEL ? level : level + 1;
+        return compose(effective, newLevel);
+    }
+
     public static String niceIndependent(int i) {
         if (DEPENDENT == i) return "@Dependent";
         if (INDEPENDENT == i) return "@Independent";

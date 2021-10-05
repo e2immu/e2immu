@@ -243,7 +243,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("values", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
@@ -252,7 +252,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("values", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
