@@ -120,18 +120,18 @@ public class Test_05_Final extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "null==<f:s5>?\"abc\":null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
                         VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
                         VariableInfo viM = d.variableInfoContainer().current();
-                        int expectM = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                        int expectM = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                         assertEquals(expectM, viM.getProperty(VariableProperty.IMMUTABLE));
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().toString());
                         VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                        int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                        int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                         assertEquals(expectImm, viC.getProperty(VariableProperty.IMMUTABLE));
                         VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viE.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, viE.getProperty(VariableProperty.IMMUTABLE));
                     }
                 }
             }
@@ -170,7 +170,7 @@ public class Test_05_Final extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             TypeInfo stringType = d.evaluationContext().getPrimitives().stringTypeInfo;
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
                     stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
             MethodInfo methodInfo = d.methodInfo();
 

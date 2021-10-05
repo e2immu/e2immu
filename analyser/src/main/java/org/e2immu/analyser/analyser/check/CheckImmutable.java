@@ -15,68 +15,61 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
-import org.e2immu.analyser.analyser.TypeAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 public class CheckImmutable {
 
-    /*
-    creation of the @E1Container, @E1Immutable, @E2Container, @E2Immutable annotations is in AbstractAnalysisBuilder
-     */
-    public static void checkAfter(Messages messages,
-                                  TypeInfo typeInfo,
-                                  Class<?> annotation,
-                                  AnnotationExpression annotationExpression,
-                                  TypeAnalysisImpl.Builder typeAnalysis) {
+    public static void check(Messages messages,
+                             WithInspectionAndAnalysis info,
+                             Class<?> annotation,
+                             AnnotationExpression annotationExpression,
+                             AbstractAnalysisBuilder analysis,
+                             boolean after,
+                             boolean level,
+                             boolean recursive) {
+        List<CheckLinks.AnnotationKV> kvs = new ArrayList<>(3);
 
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        String mark = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
+        if (after) {
+            TypeAnalysis typeAnalysis = (TypeAnalysis) analysis;
+            Function<AnnotationExpression, String> extractInspected1 = ae -> ae.extract("after", null);
+            String value1 = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
+            kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1));
+        }
+
+        if (level) {
+            Function<AnnotationExpression, String> extractInspected2 = ae -> ae.extract("level", null);
+            String value2 = CheckIndependent.levelString(analysis, VariableProperty.IMMUTABLE);
+            kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
+        }
+
+        if (recursive) {
+            Function<AnnotationExpression, String> extractInspected3 = ae -> {
+                Boolean b = ae.extract("recursive", null);
+                return b != null && b ? "true" : null;
+            };
+            String value3 = recursive(analysis);
+            kvs.add(new CheckLinks.AnnotationKV(extractInspected3, value3));
+        }
 
         CheckLinks.checkAnnotationWithValue(messages,
-                typeAnalysis,
+                analysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),
-                extractInspected,
-                mark,
-                typeInfo.typeInspection.get().getAnnotations(),
-                new Location(typeInfo));
+                kvs,
+                info.getInspection().getAnnotations(),
+                new Location(info));
     }
 
-
-    public static void checkAfterAndLevel(Messages messages,
-                                          TypeInfo typeInfo,
-                                          Class<?> annotation,
-                                          AnnotationExpression annotationExpression,
-                                          TypeAnalysisImpl.Builder typeAnalysis) {
-
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        String mark = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
-
-        CheckLinks.checkAnnotationWithValue(messages,
-                typeAnalysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
-                extractInspected,
-                mark,
-                typeInfo.typeInspection.get().getAnnotations(),
-                new Location(typeInfo));
-    }
-
-    public static void checkLevel(Messages messages,
-                                  WithInspectionAndAnalysis info,
-                                  Class<?> annotation,
-                                  AnnotationExpression annotationExpression,
-                                  AbstractAnalysisBuilder analysis) {
-        CheckIndependent.checkLevel(messages, VariableProperty.IMMUTABLE, info, annotation,
-                annotationExpression, analysis);
+    private static String recursive(AbstractAnalysisBuilder analysis) {
+        int immutable = analysis.getProperty(VariableProperty.IMMUTABLE);
+        if (MultiLevel.level(immutable) == MultiLevel.MAX_LEVEL) return "true";
+        return null;
     }
 }

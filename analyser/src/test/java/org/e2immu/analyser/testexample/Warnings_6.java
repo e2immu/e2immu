@@ -31,7 +31,7 @@ public class Warnings_6 {
 
     }
 
-    @E2Immutable // still, will cause an error because we had expected @E2Container
+    @E2Immutable(recursive = true) // still, will cause an error because we had expected @ERContainer
     static class IsNotAContainer implements MustBeContainer {
 
         public final int i;

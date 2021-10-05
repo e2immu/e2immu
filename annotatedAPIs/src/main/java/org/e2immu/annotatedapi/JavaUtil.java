@@ -594,7 +594,7 @@ public class JavaUtil extends AnnotatedAPI {
         <T> boolean addAll(@NotNull @Modified Collection<? super T> c, @NotModified T... elements);
     }
 
-    @Dependent1
+    // dependent, because of entrySet, which has an iterator with remove()
     @Container
     interface Map$<K, V> {
 
@@ -641,7 +641,6 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @Dependent1
         Set<Map.Entry<K, V>> entrySet();
 
         default int keySet$Transfer$Size(int i) {
@@ -649,7 +648,6 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @Dependent1
         Set<K> keySet();
 
         void forEach(@NotNull @Dependent1 BiConsumer<? super K, ? super V> action);
@@ -665,7 +663,6 @@ public class JavaUtil extends AnnotatedAPI {
         V put(@NotNull K key, @NotNull V value);
 
         @NotNull1
-        @Dependent1
         Collection<V> values();
 
         @Container
@@ -681,7 +678,6 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
-    @Dependent1
     @Container
     static class HashMap$<K, V> {
         // content is known
@@ -720,31 +716,26 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
-    @Dependent1
     interface AbstractMap$ {
 
     }
 
     @Container
-    @Dependent1
     interface SortedMap$ {
 
     }
 
     @Container
-    @Dependent1
     interface NavigableMap$ {
 
     }
 
     @Container
-    @Dependent1
     interface WeakHashMap$ {
 
     }
 
     @Container
-    @Dependent1
     interface LinkedHashMap$ {
 
     }

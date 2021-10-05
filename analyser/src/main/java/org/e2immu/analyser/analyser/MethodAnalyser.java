@@ -136,8 +136,8 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
 
                 check(E1Immutable.class, e2.e1Immutable);
                 check(E1Container.class, e2.e1Container);
-                CheckImmutable.checkLevel(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis);
-                CheckImmutable.checkLevel(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis);
+                CheckImmutable.check(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true);
+                CheckImmutable.check(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false);
                 check(BeforeMark.class, e2.beforeMark);
                 check(ERContainer.class, e2.eRContainer);
 

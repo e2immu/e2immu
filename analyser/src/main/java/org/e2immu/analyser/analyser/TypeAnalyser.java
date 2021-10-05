@@ -117,11 +117,11 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
         CheckIndependent.checkLevel(messages, typeInfo, Dependent1.class, e2.dependent1, typeAnalysis);
 
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-        CheckImmutable.checkAfter(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
-        CheckImmutable.checkAfter(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
-        CheckImmutable.checkAfterAndLevel(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
-        CheckImmutable.checkAfterAndLevel(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
-        CheckImmutable.checkAfter(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis);
+        CheckImmutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false);
+        CheckImmutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false);
+        CheckImmutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true);
+        CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
+        CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
 
         checkWorseThanSpecifiedInInterfacesImplemented();
     }

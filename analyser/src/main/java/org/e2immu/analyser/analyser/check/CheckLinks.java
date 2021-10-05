@@ -87,7 +87,6 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 new Location(fieldInfo));
     }
 
-    // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
     public static void checkAnnotationWithValue(Messages messages,
                                                 AbstractAnalysisBuilder analysis,
                                                 String annotationFqn,
@@ -95,6 +94,23 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                                                 TypeInfo annotationTypeInfo,
                                                 Function<AnnotationExpression, String> extractInspected,
                                                 String computedValue,
+                                                List<AnnotationExpression> annotations,
+                                                Location where) {
+        checkAnnotationWithValue(messages, analysis, annotationFqn, annotationSimpleName, annotationTypeInfo,
+                List.of(new AnnotationKV(extractInspected, computedValue)), annotations, where);
+    }
+
+    public record AnnotationKV(Function<AnnotationExpression, String> extractInspected,
+                               String computedValue) {
+    }
+
+    // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
+    public static void checkAnnotationWithValue(Messages messages,
+                                                AbstractAnalysisBuilder analysis,
+                                                String annotationFqn,
+                                                String annotationSimpleName,
+                                                TypeInfo annotationTypeInfo,
+                                                List<AnnotationKV> annotationKVs,
                                                 List<AnnotationExpression> annotations,
                                                 Location where) {
         Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.annotations.stream()
@@ -114,7 +130,9 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         boolean verifyAbsent = annotation.e2ImmuAnnotationParameters().isVerifyAbsent();
 
         if (verifyAbsent) {
-            if (computedValue != null || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
+            boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.computedValue != null);
+
+            if (haveComputedValue || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
                 messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
                 assert inAnalysis != null;
                 analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
@@ -135,15 +153,17 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             return;
         }
 
-        String requiredValue = extractInspected.apply(optAnnotationInInspection.get());
-        if ((computedValue == null) != (requiredValue == null) ||
-                computedValue != null && !computedValue.equals(requiredValue)) {
-            messages.add(Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
-                    "Annotation " + annotationSimpleName + ", required " +
-                            requiredValue + ", found " + computedValue));
-            analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);
-        } else {
-            analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.OK);
+        for (AnnotationKV kv : annotationKVs) {
+            String requiredValue = kv.extractInspected.apply(optAnnotationInInspection.get());
+            if ((kv.computedValue == null) != (requiredValue == null) ||
+                    kv.computedValue != null && !kv.computedValue.equals(requiredValue)) {
+                messages.add(Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
+                        "Annotation " + annotationSimpleName + ", required " +
+                                requiredValue + ", found " + kv.computedValue));
+                analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);
+                return;
+            }
         }
+        analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.OK);
     }
 }

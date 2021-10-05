@@ -1189,8 +1189,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         check(E1Immutable.class, e2.e1Immutable);
         check(E1Container.class, e2.e1Container);
-        CheckImmutable.checkLevel(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis);
-        CheckImmutable.checkLevel(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis);
+        CheckImmutable.check(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true);
+        CheckImmutable.check(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false);
         check(ERContainer.class, e2.eRContainer);
 
         check(org.e2immu.annotation.Variable.class, e2.variableField);
