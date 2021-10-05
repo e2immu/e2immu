@@ -43,9 +43,9 @@ public class CheckIndependent {
                            AbstractAnalysisBuilder analysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
         int value = analysis.getProperty(variableProperty);
-        int level = MultiLevel.level(value) + 1;
-        String levelString = level <= 2 || level == MultiLevel.MAX_LEVEL
-                ? null : Integer.toString(level);
+        int level = MultiLevel.level(value) ;
+        String levelString = level <= MultiLevel.LEVEL_2_IMMUTABLE || level == MultiLevel.MAX_LEVEL
+                ? null : Integer.toString(level+1);
 
         CheckLinks.checkAnnotationWithValue(messages,
                 analysis,

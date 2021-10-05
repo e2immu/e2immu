@@ -961,6 +961,16 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseLinked1() {
         assert !fieldAnalysis.linked1Variables.isSet();
 
+        int typeImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
+        if (typeImmutable >= MultiLevel.EFFECTIVELY_E3IMMUTABLE) {
+            fieldAnalysis.linked1Variables.set(LinkedVariables.EMPTY);
+            log(LINKED_VARIABLES, "Setting linked1 variables to empty for field {}, @E3Immutable+ type");
+            // finalizer check at assignment only
+            return DONE;
+        }
+        // no need to look at dynamically immutable (better than formal type's immutable) because
+        // this is reflected in the link1's further on
+
         // we ONLY look at the linked variables of fields that have been assigned to
         Optional<MethodInfo> notDefined = allMethodsAndConstructors(true)
                 .filter(m -> {
