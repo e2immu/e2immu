@@ -134,6 +134,12 @@ public interface VariableInfoContainer {
                   Map<VariableProperty, Integer> propertiesToSet,
                   boolean initialOrEvaluation);
 
+    // writing operations
+    void setInitialValue(Expression value,
+                  boolean valueIsDelayed,
+                  Map<VariableProperty, Integer> propertiesToSet,
+                  boolean initialOrEvaluation);
+
     default void setProperty(VariableProperty variableProperty, int value, Level level) {
         setProperty(variableProperty, value, true, level);
     }
@@ -149,6 +155,8 @@ public interface VariableInfoContainer {
      *                                          otherwise in evaluation
      */
     void setLinkedVariables(LinkedVariables linkedVariables, boolean writeInInitialOtherwiseEvaluation);
+
+    void setLinked1Variables(LinkedVariables linkedVariables, boolean writeInInitialOtherwiseEvaluation);
 
     /*
     copy from one statement to the next.

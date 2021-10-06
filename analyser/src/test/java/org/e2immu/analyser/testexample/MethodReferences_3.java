@@ -15,13 +15,15 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-@E2Container
+@ERContainer
 public class MethodReferences_3 {
 
     @NotModified
@@ -36,6 +38,9 @@ public class MethodReferences_3 {
         input.keySet().forEach(map::get); // will cause potential null ptr exception, get
     }
 
+    @NotNull1
+    @NotModified
+    @E2Container // not level=3, because the entrySet's result is @Dependent @Container
     public Stream<Map.Entry<String, Integer>> stream() {
         return map.entrySet().stream();
     }

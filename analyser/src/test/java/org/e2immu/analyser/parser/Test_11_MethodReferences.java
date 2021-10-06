@@ -16,12 +16,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -41,7 +38,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collection = typeMap.get(Collection.class);
             assertNotNull(collection);
-            MethodInfo stream = collection.findUniqueMethod("stream" ,0);
+            MethodInfo stream = collection.findUniqueMethod("stream", 0);
 
             assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
@@ -75,16 +72,18 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map = typeMap.get(Map.class);
-            MethodInfo put = map.findUniqueMethod("get", 1);
-            assertEquals(Level.FALSE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
-            MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
-        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("print".equals(d.methodInfo().name)) {
+                int expectModified = d.iteration() < 1 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

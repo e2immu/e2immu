@@ -43,6 +43,16 @@ public interface VariableInfo {
         return !getLinkedVariables().isDelayed();
     }
 
+
+    /**
+     * @return null when not yet set
+     */
+    LinkedVariables getLinked1Variables();
+
+    default boolean linked1VariablesIsSet() {
+        return !getLinked1Variables().isDelayed();
+    }
+
     Expression getValue();
 
     default Expression getVariableValue(Variable myself) {

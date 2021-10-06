@@ -39,6 +39,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<FieldInfo> eventuallyImmutableFields;
     private final Set<FieldInfo> visibleFields;
 
+    private final boolean immutableCanBeIncreasedByTypeParameters;
+
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
@@ -47,7 +49,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Set<FieldInfo> eventuallyImmutableFields,
                              Set<ParameterizedType> transparentTypes,
                              Map<String, MethodInfo> aspects,
-                             Set<FieldInfo> visibleFields) {
+                             Set<FieldInfo> visibleFields,
+                             boolean immutableCanBeIncreasedByTypeParameters) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
@@ -56,6 +59,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
         this.visibleFields = visibleFields;
+        this.immutableCanBeIncreasedByTypeParameters = immutableCanBeIncreasedByTypeParameters;
+    }
+
+    @Override
+    public Boolean immutableCanBeIncreasedByTypeParameters() {
+        return immutableCanBeIncreasedByTypeParameters;
     }
 
     @Override
@@ -159,6 +168,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         private final Set<FieldInfo> visibleFields;
         public final AnalysisMode analysisMode;
+
+        public final SetOnce<Boolean> immutableCanBeIncreasedByTypeParameters = new SetOnce<>();
 
         /*
         analyser context can be null for Primitives, ShallowTypeAnalyser
@@ -305,6 +316,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             doIndependent(e2ImmuAnnotationExpressions, independent, immutable);
         }
 
+        @Override
+        public Boolean immutableCanBeIncreasedByTypeParameters() {
+            return immutableCanBeIncreasedByTypeParameters.getOrDefaultNull();
+        }
+
         public TypeAnalysis build() {
             return new TypeAnalysisImpl(typeInfo,
                     properties.toImmutableMap(),
@@ -314,7 +330,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     eventuallyImmutableFields.toImmutableSet(),
                     transparentDataTypes.isSet() ? transparentDataTypes.get() : Set.of(),
                     getAspects(),
-                    visibleFields);
+                    visibleFields,
+                    immutableCanBeIncreasedByTypeParameters.getOrDefault(false));
         }
     }
 }

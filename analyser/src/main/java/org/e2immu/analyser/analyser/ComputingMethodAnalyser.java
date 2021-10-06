@@ -479,9 +479,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
                 methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
                 methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
-                methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.best);
-                methodAnalysis.setProperty(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
-                methodAnalysis.setProperty(VariableProperty.CONTAINER, VariableProperty.CONTAINER.best);
+                methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
+                methodAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+                methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
+                methodAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
                 return DONE;
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),

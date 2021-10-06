@@ -14,18 +14,24 @@
 
 package org.e2immu.analyser.shallow;
 
-import org.e2immu.analyser.analyser.MethodAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
+
+    @Test
+    public void testStream() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT_1, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertTrue(typeAnalysis.immutableCanBeIncreasedByTypeParameters());
+    }
 
     @Test
     public void testStreamMap() {

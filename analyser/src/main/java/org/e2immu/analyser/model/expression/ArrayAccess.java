@@ -171,9 +171,11 @@ public class ArrayAccess extends ElementImpl implements Expression {
                                 dependentVariable);
                         builder.setExpression(newObject);
 
-                        // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables
+                        // NOTE (?): linked variables of generic access to a known array -> links to ALL linked variables
                         // of all elements == serious worst case scenario, but maybe completely relevant
-                        builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
+
+                        // FIXME linked1 should be filled in!
+                        builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
                     }
                 } else {
                     builder.setExpression(new VariableExpression(dependentVariable));

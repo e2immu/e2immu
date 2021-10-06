@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -104,13 +103,29 @@ public interface Expression extends Element, Comparable<Expression> {
         throw new UnsupportedOperationException("For type " + getClass() + ", property " + variableProperty);
     }
 
-    /**
-     * @param evaluationContext to compute properties
-     * @return null in case of delay
-     */
-    @Nullable
-    @NotModified
     default LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+        return LinkedVariables.EMPTY;
+    }
+
+    /*
+    Used for constructor call (a = new X(b, c), a potentially content links to b and or c.)
+    Used for method reference (this::get ~ i->this.get(i), value content links to this) TODO
+    Used for method call (a = b.method(c, d), a potentially content links to b, c and or d.)
+    ... and more situations.
+     */
+    default LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        return LinkedVariables.EMPTY;
+    }
+
+    /*
+    Primarily used for method call a = b.method(c,d), to potentially content link b to c and or d.
+
+    Method reference can do this too: set::add ~ t -> set.add(t), in context list.forEach(set::add)
+    we need a content link from list to set (via the implicit t)
+    TODO how do we implement the implicit parameter?
+    TODO Lambda's
+     */
+    default LinkedVariables linked1VariablesScope(EvaluationContext evaluationContext) {
         return LinkedVariables.EMPTY;
     }
 

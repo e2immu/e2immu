@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @E1Container
+@Independent(absent = true)
 public class MethodReferences_1 {
 
     private final Map<String, Integer> map = new HashMap<>();
@@ -35,7 +36,7 @@ public class MethodReferences_1 {
         map.put("" + i, i);
     }
 
-    @Dependent
+    // @Dependent, implicitly
     public Map<String, Integer> getMap() {
         return map;
     }

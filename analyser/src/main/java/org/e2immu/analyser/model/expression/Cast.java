@@ -79,6 +79,11 @@ public class Cast extends ElementImpl implements Expression {
     }
 
     @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        return evaluationContext.linked1Variables(expression);
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return parameterizedType;
     }

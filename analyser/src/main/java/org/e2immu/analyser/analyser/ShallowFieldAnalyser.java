@@ -42,7 +42,7 @@ public class ShallowFieldAnalyser {
     public void analyser(FieldInfo fieldInfo, boolean typeIsEnum) {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(inspectionProvider.getPrimitives(),
                 AnalysisProvider.DEFAULT_PROVIDER,
-                fieldInfo, fieldInfo.owner.typeAnalysis.get());
+                fieldInfo, analysisProvider.getTypeAnalysis(fieldInfo.owner));
 
         messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.FIELD, true,
                 fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
@@ -67,7 +67,7 @@ public class ShallowFieldAnalyser {
                     typeIsContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
                 } else {
                     typeIsContainer = VariableProperty.CONTAINER.falseValue;
-                    if(fieldInfo.isPublic()) {
+                    if (fieldInfo.isPublic()) {
                         messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                                 fieldAnalysisBuilder.bestType.fullyQualifiedName));
                     }

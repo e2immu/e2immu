@@ -44,16 +44,16 @@ deals with 2 situations:
 1- linked1Variables in ChangeData contain scope, holding variable must be linked to parameter
 2- a variable which has a TEMP_DEPENDENT1 property, becomes dependent1 IF linked to field
  */
-public class Linked1Writer {
+public class StaticallyAssignedVariablesWriter {
     private static final String LINKED1_WRITER = "Linked1Writer";
     private final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
     private final StatementAnalysis statementAnalysis;
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
-    public Linked1Writer(StatementAnalysis statementAnalysis,
-                         EvaluationContext evaluationContext,
-                         Function<VariableInfo, LinkedVariables> connections,
-                         ContextPropertyWriter.LocalCopyData localCopyData) {
+    public StaticallyAssignedVariablesWriter(StatementAnalysis statementAnalysis,
+                                             EvaluationContext evaluationContext,
+                                             Function<VariableInfo, LinkedVariables> connections,
+                                             ContextPropertyWriter.LocalCopyData localCopyData) {
         this.statementAnalysis = statementAnalysis;
         fillDependencyGraph(statementAnalysis, evaluationContext,
                 connections, localCopyData);

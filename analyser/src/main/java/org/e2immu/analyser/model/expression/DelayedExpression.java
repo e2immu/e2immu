@@ -183,6 +183,11 @@ public record DelayedExpression(String msg,
     }
 
     @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        return new LinkedVariables(Set.copyOf(variables), true);
+    }
+
+    @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT; // not important in final equality
     }

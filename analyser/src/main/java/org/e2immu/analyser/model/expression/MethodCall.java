@@ -36,9 +36,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_IMMUTABLE;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
 import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
 import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -798,7 +795,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     /*
     In general, the method result a, in a = b.method(c, d), can link to b, c and/or d.
-    Independence and level 2 immutability restrict the ability to link.
+    Independence and level 2+ immutability restrict the ability to link.
 
     The current implementation is heavily focused on understanding links towards the fields of a type,
     i.e., in sub = list.subList(0, 10), we want to link sub to list.
@@ -815,22 +812,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     3/ In case that a == this, we're calling methods of our own type.
        If they are non-modifying, the method result can be substituted, sometimes in terms of fields.
        In our implementation, linking to 'this' is not needed, we catch modifying methods on this directly
-    4/ if the return type of the method is level 2 immutable, there is no linking.
+    4/ if the return type of the method is dependent1 or higher, there is no linking.
     5/ if the return type of the method is transparent in the type, there is no linking.
-       (there may be a @Dependent1, but that's not relevant here)
-    6/ if a (the object) is @E2Immutable, the method must be @Independent, so it cannot link
-    7/ if the method is @Independent, then it does not link to the fields -> empty.
-       Note that in the *current* implementation, all modifying methods are @Dependent
-       (independence is implemented only to compute level 2 immutability)
 
      */
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-
         // RULE 1: void method cannot link
-        ParameterizedType returnType = methodInfo.returnType();
-        if (Primitives.isVoidOrJavaLangVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
+        if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 
@@ -845,6 +835,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return LinkedVariables.EMPTY;
         }
 
+        // RULE 4: if the return type is @Dependent1 or higher, there is no linking
+        int independent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (independent >= MultiLevel.DEPENDENT_1) {
+            return LinkedVariables.EMPTY;
+        }
+        delayed |= independent == Level.DELAY;
+
         // RULE 5: neither can transparent types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
@@ -852,40 +849,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return LinkedVariables.EMPTY;
         }
         delayed |= transparentTypes == null;
-
-        // RULE 4: if the return type is @E2Immutable, then no links at all
-
-        if (returnType.applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
-                evaluationContext.getCurrentType())) {
-            int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-            if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
-                return LinkedVariables.EMPTY;
-            }
-            if (immutable == Level.DELAY) {
-                assert evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE,
-                        "EXPRESSION " + this + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES);
-
-                delayed = true;
-            }
-        }
-
-        // RULE 6: level 2 immutable object cannot link
-        if (object.returnType().applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
-                evaluationContext.getCurrentType())) {
-            int objectImmutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
-            if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(objectImmutable)) {
-                return LinkedVariables.EMPTY;
-            }
-            delayed |= objectImmutable == Level.DELAY;
-        }
-
-        // RULE 7: independent method: no link to object
-        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-        if (independent >= MultiLevel.DEPENDENT_1) {
-            return LinkedVariables.EMPTY;
-        }
-        delayed |= independent == Level.DELAY;
 
         // link to the object, and all the variables linked to object
         return evaluationContext.linkedVariables(object).merge(new LinkedVariables(Set.of(), delayed));
@@ -895,6 +858,77 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         VariableExpression ve;
         if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
         return object instanceof TypeExpression; // static
+    }
+
+    /*
+    In general, the method result a, in a = b.method(c, d), can content link to b, c and/or d.
+    Independence and immutability restrict the ability to link.
+
+    This method is not concerned with links between b and c,d (see linked1VariablesScope) nor
+    between c and d (not implemented).
+
+    Content links from the parameters to the result (from c to a, from d to a) have currently only
+    been implemented for @Identity methods (i.e., between a and c).
+
+    So we implement
+    1/ void methods cannot content link
+    2/ if the method is @Identity, the result is content linked to the 1st parameter c
+
+    all other rules now determine whether we return an empty set, or the set {a}.
+
+    3/ Contrary to linking, we allow content linking to 'this' (e.g. in T t = get(index),
+       we allow t to be content linked).
+    4/ if the return type of the method is dependent, or independent, there is no content linking.
+    5/ if the return type of the method is transparent in the type, there is content linking.
+
+    CHAINING:
+    T t = list.get(0) will content link t to list.
+    T t = list.subList(0, 1).get(0) should also link t to list. Note that list.subList(0, 1) is linked to list.
+    T t = new ArrayList(list).get(0) should also link t to list. Note that new ArrayList(list) is content linked to list.
+    */
+
+    @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        // RULE 1: void method cannot content link
+        if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
+
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+
+        // RULE 2: @Identity content links to the 1st parameter
+        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.TRUE) return evaluationContext.linked1Variables(parameterExpressions.get(0));
+        boolean delayed = identity == Level.DELAY;
+
+        // RULE 3: not implemented
+
+        // RULE 4: if the return type is @Dependent, or @Independent, there is no content linking
+        // we do INDEPENDENT first
+        int independent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (independent == MultiLevel.INDEPENDENT) {
+            return LinkedVariables.EMPTY;
+        }
+        delayed |= independent == Level.DELAY;
+
+        // RULE 5: neither can transparent types
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
+        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
+        boolean isNotTransparent = transparentTypes != null && !transparentTypes.contains(methodInfo.returnType());
+        delayed |= transparentTypes == null;
+
+        if (isNotTransparent && independent == MultiLevel.DEPENDENT) {
+            return LinkedVariables.EMPTY;
+        }
+
+        // content link to the object, and all the variables content+non-content linked to object
+        return evaluationContext.linked1Variables(object)
+                .merge(evaluationContext.linkedVariables(object))
+                .merge(new LinkedVariables(Set.of(), delayed));
+    }
+
+    @Override
+    public LinkedVariables linked1VariablesScope(EvaluationContext evaluationContext) {
+        return NewObject.linkedVariablesFromParameters(parameterExpressions,
+                methodInfo.methodInspection.get(), evaluationContext);
     }
 
     @Override

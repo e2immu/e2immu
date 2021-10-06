@@ -16,6 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotNull;
 
 
@@ -29,7 +30,7 @@ import org.e2immu.annotation.NotNull;
 
  The errors involving b in method3 are not really wrong
  */
-@E2Container
+@ERContainer
 public class EvaluatesToConstant {
 
     @NotNull

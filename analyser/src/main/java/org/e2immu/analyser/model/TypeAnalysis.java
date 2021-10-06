@@ -106,4 +106,10 @@ public interface TypeAnalysis extends Analysis {
                 .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty))
                 .max().orElse(Level.DELAY);
     }
+
+    /*
+    Optional<T> is @E2Immutable. In general T can be mutable; it is part of the immutable content of Optional.
+    Optional<Integer> is @ERImmutable, because Integer is so.
+     */
+    Boolean immutableCanBeIncreasedByTypeParameters();
 }

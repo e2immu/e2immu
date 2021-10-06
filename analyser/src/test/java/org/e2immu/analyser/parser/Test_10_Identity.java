@@ -53,19 +53,17 @@ public class Test_10_Identity extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals(d.iteration() > 0,
-                        d.statementAnalysis().methodAnalysis.methodLevelData().linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodAnalysis.methodLevelData().linksHaveBeenEstablished.isSet());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 if ("0".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertTrue(d.variableInfo().isRead());
                     if (d.iteration() > 0) {
-                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                         assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
 
                         // there is an explicit @NotNull on the first parameter of debug
@@ -78,8 +76,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
 
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -155,8 +152,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 if (d.iteration() > 0) {
@@ -168,8 +164,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 assertEquals(expectParamNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 if (d.iteration() >= 1) {
@@ -199,11 +194,10 @@ public class Test_10_Identity extends CommonTestRunner {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
@@ -225,7 +219,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
-            if (d.iteration() > 2) {
+            if (d.iteration() >= 1) {
                 if ("idem3".equals(d.methodInfo().name)) {
                     assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
                     assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
@@ -242,12 +236,12 @@ public class Test_10_Identity extends CommonTestRunner {
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("idem".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
@@ -274,8 +268,7 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem4".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             }

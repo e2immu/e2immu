@@ -34,8 +34,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES_SET;
+import static org.e2immu.analyser.analyser.util.DelayDebugger.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -285,6 +284,12 @@ public class Assignment extends ElementImpl implements Expression {
                         "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
                         at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
 
+        LinkedVariables linked1Variables = evaluationContext.linked1Variables(resultOfExpression);
+        assert !linked1Variables.isDelayed() ||
+                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES,
+                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES_SET);
+
         // there are no delays on staticallyAssignedVariables
         LinkedVariables staticallyAssignedVariables;
         if (value instanceof IsVariableExpression variableExpression) {
@@ -292,8 +297,8 @@ public class Assignment extends ElementImpl implements Expression {
         } else {
             staticallyAssignedVariables = LinkedVariables.EMPTY;
         }
-        builder.assignment(at, resultOfExpression, linkedVariables, staticallyAssignedVariables);
 
+        builder.assignment(at, resultOfExpression, staticallyAssignedVariables, linkedVariables, linked1Variables);
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {

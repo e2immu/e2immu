@@ -12,29 +12,42 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.jdk;
+package org.e2immu.analyser.testexample;
 
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Dependent1;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+// tests Linked1Variables on ArrayAccess
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public class DependentVariables_1 {
 
-public class TestStreamIterator {
+    @Container
+    static class X {
+        private int i;
 
-    // the iterator of Stream is not modifying
-    @Test
-    public void test1() {
-        List<Integer> list = new ArrayList<>();
-        Collections.addAll(list, 1,2 ,3,4,5);
-        assertEquals(5, list.size());
-        Iterator<Integer> it = list.stream().iterator();
-        assertTrue(it.hasNext());
-        it.remove();
-        assertEquals(4, list.size());
+        public void setI(int i) {
+            this.i = i;
+        }
+
+        public int getI() {
+            return i;
+        }
+    }
+
+    @E2Container
+    static class XS {
+        private final X[] xs;
+
+        public XS(@Independent X[] xs) {
+            this.xs = new X[xs.length];
+            System.arraycopy(xs, 0, this.xs, 0, xs.length);
+        }
+
+        @Dependent1
+        public X getX(int index) {
+            return xs[index];
+        }
     }
 }

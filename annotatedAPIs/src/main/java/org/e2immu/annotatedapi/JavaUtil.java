@@ -77,8 +77,7 @@ public class JavaUtil extends AnnotatedAPI {
      This is not in line with the JDK, but we will block null keys!
      Dependent because of remove() in iterator.
      */
-    @Container
-            // implicitly @Dependent, because one @Dependent method
+    @Container // implicitly @Dependent, because one @Dependent method
     interface Collection$<E> {
 
         default boolean add$Postcondition(E e) {

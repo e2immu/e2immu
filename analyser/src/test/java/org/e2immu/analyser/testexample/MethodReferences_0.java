@@ -24,7 +24,7 @@ public class MethodReferences_0 {
 
     private List<C> strings;
 
-    @E2Container
+    @ERContainer
     static class C {
         final String s;
 
@@ -46,7 +46,6 @@ public class MethodReferences_0 {
         return strings.remove(0).s;
     }
 
-    @Dependent
     public List<C> getStrings() {
         return strings;
     }

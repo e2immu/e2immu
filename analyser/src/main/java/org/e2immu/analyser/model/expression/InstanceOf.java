@@ -124,11 +124,22 @@ public class InstanceOf extends ElementImpl implements Expression {
         return minimalOutput();
     }
 
+    // makes sense if there is a patternVariable, and we continue with that patternVariable
+
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             return evaluationContext.linkedVariables(ve.variable());
+        }
+        return LinkedVariables.EMPTY;
+    }
+
+    @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+            return evaluationContext.linked1Variables(ve.variable());
         }
         return LinkedVariables.EMPTY;
     }

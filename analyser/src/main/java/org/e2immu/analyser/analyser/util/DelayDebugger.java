@@ -46,6 +46,7 @@ public interface DelayDebugger {
 
     // variable info
     String D_LINKED_VARIABLES_SET = ".linkedVariablesSet";
+    String D_LINKED1_VARIABLES_SET = ".linked1VariablesSet";
 
     // field analyser
     String D_VALUES = ".values";
@@ -77,5 +78,6 @@ public interface DelayDebugger {
     String D_EVALUATION_RESULT = ".evaluationResult";
 
     String D_LINKED_VARIABLES = ".linkedVariables";
+    String D_LINKED1_VARIABLES = ".linkedVariables";
 }
 

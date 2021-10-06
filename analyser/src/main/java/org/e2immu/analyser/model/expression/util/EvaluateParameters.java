@@ -73,7 +73,7 @@ public class EvaluateParameters {
                     if (evaluationContext.getCurrentMethod() != null &&
                             evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
                         map = new HashMap<>(RECURSIVE_CALL);
-                        independent = MultiLevel.FALSE;
+                        independent = MultiLevel.DEPENDENT;
                     } else {
                         // copy from parameter into map used for forwarding
                         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
@@ -88,19 +88,20 @@ public class EvaluateParameters {
                     throw e;
                 }
 
-                /* TODO replacement code @Dependent1
-                {
-                    int propagate = map.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.DELAY);
-                    if (propagate == Level.DELAY) {
+                // propagating modifications? a functional interface-type parameter, with @Dependent1
+                if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
+                    if (independent == Level.DELAY) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
                             map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
                         } else {
                             map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
                         }
+                    } else if (independent == MultiLevel.DEPENDENT_1) {
+                        map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE);
                     }
                 }
-                 */
+
                 {
                     int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                     if (contextModified == Level.DELAY) {

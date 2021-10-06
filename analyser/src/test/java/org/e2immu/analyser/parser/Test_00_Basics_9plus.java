@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -34,7 +35,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_9plus extends CommonTestRunner {
 
@@ -53,6 +55,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                                 VariableProperty.NOT_NULL_EXPRESSION, false, false));
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isFact".equals(d.methodInfo().name) || "isKnown".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -61,53 +64,47 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER),
                         "Method: " + d.methodInfo().name);
             }
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
-                            d.methodAnalysis().getSingleReturnValue().toString());
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
-                            "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
+                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
+                        "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
             }
             if ("test1".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
-                            d.methodAnalysis().getSingleReturnValue().toString());
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
-                            "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
+
+                assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
+                        "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
+
                 ParameterAnalysis contains = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.NOT_INVOLVED, contains.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
                 }
             }
         };
 
         testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

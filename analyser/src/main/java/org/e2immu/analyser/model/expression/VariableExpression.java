@@ -291,6 +291,12 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        throw new UnsupportedOperationException("For context " + evaluationContext.getClass());
+        // should be caught be evaluation context
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return variable.parameterizedType();
     }

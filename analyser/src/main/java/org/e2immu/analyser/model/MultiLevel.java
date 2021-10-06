@@ -231,4 +231,13 @@ public class MultiLevel {
             default -> "" + e;
         };
     }
+
+    // ImmutableSet<T>. If T is E2, then combination is E3
+    // ImmutableSet<Integer> -> MAX
+    public static int sumImmutableLevels(int base, int parameters) {
+        int levelBase = level(base);
+        int levelParams = level(parameters);
+        if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return compose(effective(base), MAX_LEVEL);
+        return compose(effective(base), levelBase + levelParams);
+    }
 }

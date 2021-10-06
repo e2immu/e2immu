@@ -142,6 +142,11 @@ public record DelayedVariableExpression(String msg, String debug,
     }
 
     @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        return new LinkedVariables(Set.of(variable), true);
+    }
+
+    @Override
     public List<Variable> variables() {
         return List.of(variable);
     }

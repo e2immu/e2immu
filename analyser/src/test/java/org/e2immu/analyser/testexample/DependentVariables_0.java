@@ -16,7 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 
-public class DependentVariables {
+public class DependentVariables_0 {
 
     @Constant("56")
     static int method1(int a) {

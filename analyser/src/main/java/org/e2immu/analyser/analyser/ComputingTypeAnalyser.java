@@ -604,23 +604,39 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        int valueFromMethods;
+        int valueFromMethodParameters;
         if (valueFromFields == MultiLevel.DEPENDENT) {
-            valueFromMethods = MultiLevel.DEPENDENT; // no need to compute anymore, at bottom anyway
+            valueFromMethodParameters = MultiLevel.DEPENDENT; // no need to compute anymore, at bottom anyway
         } else {
-            valueFromMethods = myMethodAndConstructorAnalysersExcludingSAMs.stream()
+            valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                     .filter(ma -> !ma.methodInfo.isPrivate(analyserContext))
                     .flatMap(ma -> ma.parameterAnalyses.stream())
                     .mapToInt(pa -> pa.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT))
                     .min()
                     .orElse(MultiLevel.INDEPENDENT);
-            if (valueFromMethods == Level.DELAY) {
+            if (valueFromMethodParameters == Level.DELAY) {
                 log(DELAYED, "Independence of type {} delayed, waiting for parameter independence",
                         typeInfo.fullyQualifiedName);
                 return DELAYS;
             }
         }
-        int finalValue = Math.min(parentOrEnclosing.maxValue, Math.min(valueFromFields, valueFromMethods));
+        int valueFromMethodReturnValue;
+        if (valueFromMethodParameters == MultiLevel.DEPENDENT) {
+            valueFromMethodReturnValue = MultiLevel.DEPENDENT;
+        } else {
+            valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
+                    .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodInfo.hasReturnValue())
+                    .mapToInt(ma -> ma.methodAnalysis.getProperty(VariableProperty.INDEPENDENT))
+                    .min()
+                    .orElse(MultiLevel.INDEPENDENT);
+            if(valueFromMethodReturnValue == Level.DELAY) {
+                log(DELAYED, "Independence of type {} delayed, waiting for method independence",
+                        typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+        }
+        int finalValue = Math.min(parentOrEnclosing.maxValue, Math.min(valueFromMethodReturnValue,
+                Math.min(valueFromFields, valueFromMethodParameters)));
         log(INDEPENDENCE, "Set independence of type {} to {}", typeInfo.fullyQualifiedName,
                 MultiLevel.niceIndependent(finalValue));
         typeAnalysis.setProperty(VariableProperty.INDEPENDENT, finalValue);

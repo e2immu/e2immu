@@ -390,57 +390,65 @@ public record NewObject(
         return minimalOutput();
     }
 
-    /*
-     * Rules, assuming the notation a = new B(c, d)
-     *
-     * 1. no explicit constructor, no parameters: independent (static or not, doesn't matter)
-     * 2. constructor is @Independent: independent
-     * 3. B is @E2Immutable: independent
-     *
-     * the default case is a dependence on c and d
-     */
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        // RULE 1
+        // instance, no constructor parameter expressions
         if (constructor == null) return LinkedVariables.EMPTY;
+
+        // quick shortcut
         if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
         }
 
-        // RULE 2, 3
-
-        TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext()
-                .getTypeAnalysis(constructor.typeInfo);
         boolean delayed = false;
-        if (parameterizedType().applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
-                evaluationContext.getCurrentType())) {
-            int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
-            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) { // RULE 3
-                return LinkedVariables.EMPTY;
+        Set<Variable> result = new HashSet<>();
+        int i = 0;
+        for (Expression value : parameterExpressions) {
+            ParameterInfo parameterInfo = constructor.methodInspection.get().getParameters().get(i);
+            int independent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+            if (independent == Level.DELAY) {
+                delayed = true;
+            } else if (independent == MultiLevel.DEPENDENT) {
+                LinkedVariables sub = evaluationContext.linkedVariables(value);
+                delayed |= sub.isDelayed();
+                result.addAll(sub.variables());
             }
-            delayed = immutable == Level.DELAY;
-
-            int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-            if (typeIndependent >= MultiLevel.DEPENDENT_1) { // RULE 3
-                return LinkedVariables.EMPTY;
-            }
-            delayed |= typeIndependent == Level.DELAY;
+            i++;
         }
+        return new LinkedVariables(result, delayed);
+    }
 
+    @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        // instance, no constructor parameter expressions
+        if (constructor == null) return LinkedVariables.EMPTY;
 
-        MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
-                .getMethodAnalysis(constructor);
-        int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-        if (independent >= MultiLevel.DEPENDENT_1) { // RULE 3
+        return linkedVariablesFromParameters(parameterExpressions, constructor.methodInspection.get(), evaluationContext);
+    }
+
+    // also used by MethodCall
+    static LinkedVariables linkedVariablesFromParameters(List<Expression> parameterExpressions,
+                                                         MethodInspection methodInspection,
+                                                         EvaluationContext evaluationContext) {
+        // quick shortcut
+        if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
         }
-        delayed |= independent == Level.DELAY;
 
+        boolean delayed = false;
         Set<Variable> result = new HashSet<>();
+        int i = 0;
         for (Expression value : parameterExpressions) {
-            LinkedVariables sub = evaluationContext.linkedVariables(value);
-            delayed |= sub.isDelayed();
-            result.addAll(sub.variables());
+            ParameterInfo parameterInfo = methodInspection.getParameters().get(i);
+            int independent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+            if (independent == Level.DELAY) {
+                delayed = true;
+            } else if (independent >= MultiLevel.DEPENDENT_1 && independent < MultiLevel.INDEPENDENT) {
+                LinkedVariables sub = evaluationContext.linked1Variables(value);
+                delayed |= sub.isDelayed();
+                result.addAll(sub.variables());
+            }
+            i++;
         }
         return new LinkedVariables(result, delayed);
     }

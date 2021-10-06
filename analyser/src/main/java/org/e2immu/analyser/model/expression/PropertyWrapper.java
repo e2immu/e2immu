@@ -159,6 +159,11 @@ public record PropertyWrapper(Expression expression,
     }
 
     @Override
+    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        return evaluationContext.linked1Variables(expression);
+    }
+
+    @Override
     public List<Variable> variables() {
         return expression.variables();
     }

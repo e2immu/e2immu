@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -133,13 +134,16 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             return; // no annotation needed, @Immutable series will be there
         }
         if (independent == MultiLevel.DEPENDENT) {
-            expression = e2.dependent;
-        } else if (independent == MultiLevel.INDEPENDENT) {
+            return; // default value
+        }
+        if (independent == MultiLevel.INDEPENDENT) {
             expression = e2.independent;
         } else if (independent == MultiLevel.DEPENDENT_1) {
             expression = e2.dependent1;
         } else {
-            return;
+            int level = MultiLevel.level(independent) + 1;
+            expression = new AnnotationExpressionImpl(e2.dependent1.typeInfo(),
+                    List.of(new MemberValuePair("level", new IntConstant(primitives, level))));
         }
         annotations.put(expression, true);
     }

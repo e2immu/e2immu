@@ -617,10 +617,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // copy into initial
         VariableInfo viInitial = vic.best(INITIAL);
-        vic.setValue(initialValue.expression, initialValue.expressionIsDelayed, LinkedVariables.EMPTY, combined, true);
-
-        vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-
+        vic.setInitialValue(initialValue.expression, initialValue.expressionIsDelayed, combined, true);
 
         /* copy into evaluation, but only if there is no assignment and no reading
 
@@ -643,6 +640,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // if the variable has not been read, it is not present in EVAL, so we set a value
             if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet()) {
                 vic.setLinkedVariables(LinkedVariables.EMPTY, false);
+                vic.setLinked1Variables(LinkedVariables.EMPTY, false);
             }
         }
     }
@@ -686,6 +684,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         lvrVic.setValue(initialValue, initialValueIsDelayed, assignedToOriginal, combined, true);
                         if (!initialValueIsDelayed) {
                             lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
+                            lvrVic.setLinked1Variables(LinkedVariables.EMPTY, true);
                         }
                     }
                 }
@@ -1129,17 +1128,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
             int defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
-            vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
-                    LinkedVariables.EMPTY, Map.of(CONTEXT_NOT_NULL, defaultNotNull,
-                            CONTEXT_MODIFIED, Level.FALSE), true);
-            // assignment will be at LEVEL 3
-            vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-
+            vic.setInitialValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
+                    Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
         } else if (variable instanceof This) {
-            vic.setValue(NewObject.forCatchOrThis(index, variable, primitives),
-                    false, LinkedVariables.EMPTY, typePropertyMap(analyserContext,
-                            methodAnalysis.getMethodInfo().typeInfo, true), true);
-            vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+            vic.setInitialValue(NewObject.forCatchOrThis(index, variable, primitives), false,
+                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true),
+                    true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
             vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
@@ -1147,9 +1141,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
-            vic.setValue(initial, false, LinkedVariables.EMPTY,
+            vic.setInitialValue(initial, false,
                     parameterPropertyMap(analyserContext, parameterInfo), true);
-            vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
             vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
@@ -1166,12 +1159,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // IDENTITY, IMMUTABLE,CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initialValue.expression);
 
-            vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
-                    LinkedVariables.EMPTY, propertyMap, true);
+            vic.setInitialValue(initialValue.expression, initialValue.expressionIsDelayed, propertyMap, true);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
-
-            vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-
         }
         return vic;
     }

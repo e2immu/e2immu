@@ -343,6 +343,7 @@ public class Primitives {
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
             builder.transparentDataTypes.set(Set.of());
+            builder.immutableCanBeIncreasedByTypeParameters.set(false);
             ti.typeAnalysis.set(builder.build());
         }
     }
@@ -364,6 +365,7 @@ public class Primitives {
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.transparentDataTypes.set(Set.of());
+            builder.immutableCanBeIncreasedByTypeParameters.set(false);
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,

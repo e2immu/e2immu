@@ -53,6 +53,7 @@ class VariableInfoImpl implements VariableInfo {
     private final VariableProperties properties = new VariableProperties();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
     private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
+    private final EventuallyFinal<LinkedVariables> linked1Variables = new EventuallyFinal<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
     private final SetOnce<LinkedVariables> staticallyAssignedVariables = new SetOnce<>();
@@ -70,6 +71,7 @@ class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Set.of();
         value.setVariable(DelayedVariableExpression.forVariable(variable));
         linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
+        linked1Variables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     // normal one for creating an initial or evaluation
@@ -88,6 +90,7 @@ class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable) : delayedValue);
         linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
+        linked1Variables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     @Override
@@ -128,6 +131,11 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public LinkedVariables getLinkedVariables() {
         return linkedVariables.get();
+    }
+
+    @Override
+    public LinkedVariables getLinked1Variables() {
+        return linked1Variables.get();
     }
 
     @Override
@@ -213,6 +221,15 @@ class VariableInfoImpl implements VariableInfo {
             this.linkedVariables.setVariable(linkedVariables);
         } else if (!linkedVariablesIsSet() || !getLinkedVariables().equals(linkedVariables)) {
             this.linkedVariables.setFinal(linkedVariables);
+        }
+    }
+
+    void setLinked1Variables(LinkedVariables linkedVariables) {
+        assert linkedVariables != null;
+        if (linkedVariables.isDelayed()) {
+            this.linked1Variables.setVariable(linkedVariables);
+        } else if (!linked1VariablesIsSet() || !getLinked1Variables().equals(linkedVariables)) {
+            this.linked1Variables.setFinal(linkedVariables);
         }
     }
 

@@ -909,37 +909,37 @@ public class ParameterizedType {
         return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE;
     }
 
+    public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
+
     public int defaultIndependent(AnalysisProvider analysisProvider) {
-        if (Primitives.isPrimitiveExcludingVoid(this)) {
-            return MultiLevel.INDEPENDENT;
-        }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
-            // FIXME
+            // unbound type parameter, null constant
             return MultiLevel.DEPENDENT_1;
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
             return TYPE_ANALYSIS_NOT_AVAILABLE;
         }
-        return typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+        int baseValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+        if (baseValue == Level.DELAY) return Level.DELAY;
+        if (MultiLevel.level(baseValue) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
+            Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            if (doSum == Boolean.TRUE) {
+                int paramValue = parameters.stream()
+                        .mapToInt(pt -> pt.defaultIndependent(analysisProvider))
+                        .min().orElseThrow();
+                if (paramValue == Level.DELAY) return Level.DELAY;
+                return MultiLevel.sumImmutableLevels(baseValue, paramValue);
+            }
+            if (doSum == null) return Level.DELAY;
+        }
+        return baseValue;
     }
 
-    public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
-
     public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
-        if (Primitives.isPrimitiveExcludingVoid(this)) {
-            return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-        }
         if (arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-        }
-        if (typeParameter != null) {
-            // unbound type parameter
-            if (typeParameter.getTypeBounds().isEmpty())
-                return returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            return typeParameter.getTypeBounds().stream()
-                    .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod)).min().orElseThrow();
         }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
@@ -950,7 +950,20 @@ public class ParameterizedType {
         if (typeAnalysis == null) {
             return TYPE_ANALYSIS_NOT_AVAILABLE;
         }
-        return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        int baseValue = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (baseValue == Level.DELAY) return Level.DELAY;
+        if (MultiLevel.level(baseValue) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
+            Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            if (doSum == Boolean.TRUE) {
+                int paramValue = parameters.stream()
+                        .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
+                        .min().orElseThrow();
+                if (paramValue == Level.DELAY) return Level.DELAY;
+                return MultiLevel.sumImmutableLevels(baseValue, paramValue);
+            }
+            if (doSum == null) return Level.DELAY;
+        }
+        return baseValue;
     }
 
     // for delay debugging

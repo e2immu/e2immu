@@ -16,7 +16,10 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -531,8 +534,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Builder assignment(Variable assignmentTarget,
                                   Expression resultOfExpression,
+                                  LinkedVariables staticallyAssignedVariables,
                                   LinkedVariables linkedVariables,
-                                  LinkedVariables staticallyAssignedVariables) {
+                                  LinkedVariables linked1Variables) {
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isStateDelayedOrPreconditionDelayed();
             boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
@@ -552,7 +556,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
                 newEcd = new ChangeData(value, stateIsDelayed, markAssignment, Set.of(), linkedVariables,
-                        staticallyAssignedVariables, LinkedVariables.EMPTY, Map.of());
+                        staticallyAssignedVariables, linked1Variables, Map.of());
             } else {
                 newEcd = new ChangeData(value, stateIsDelayed, ecd.markAssignment || markAssignment,
                         ecd.readAtStatementTime, linkedVariables, staticallyAssignedVariables,
@@ -681,9 +685,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                 markRead(variable, false);
                             }
                             if (variableInfo.isAssigned()) {
-                                // FIXME clean up LV, Stat Ass Vars, Value
-                                assignment(variable, variableInfo.getValue(), variableInfo.getLinkedVariables(),
-                                        variableInfo.getStaticallyAssignedVariables());
+                                assignment(variable, variableInfo.getValue(), variableInfo.getStaticallyAssignedVariables(),
+                                        variableInfo.getLinkedVariables(), variableInfo.getLinked1Variables());
                             }
                         }
                     });
