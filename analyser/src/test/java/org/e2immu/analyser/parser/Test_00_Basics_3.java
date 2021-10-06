@@ -89,7 +89,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (THIS.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-
+                        assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
                         assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
@@ -98,6 +98,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             assertEquals("instance type Basics_3", d.currentValue().toString());
                         }
+                        assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         assertTrue(d.variableInfo().getAssignmentIds().hasNotYetBeenAssigned());
@@ -105,6 +106,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         if (d.iteration() > 0) {
                             assertEquals("instance type Basics_3", d.currentValue().toString());
                         }
+                        assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
                     }
                 }
                 if (OUT.equals(d.variableName())) {

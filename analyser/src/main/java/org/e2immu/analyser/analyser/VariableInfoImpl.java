@@ -405,6 +405,7 @@ class VariableInfoImpl implements VariableInfo {
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
+        mergeLinked1Variables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
@@ -483,6 +484,22 @@ class VariableInfoImpl implements VariableInfo {
             lv = lv.merge(vi.getLinkedVariables());
         }
         setLinkedVariables(lv);
+    }
+
+    void mergeLinked1Variables(boolean existingValuesWillBeOverwritten,
+                              VariableInfo existing,
+                              List<StatementAnalysis.ConditionAndVariableInfo> merge) {
+        LinkedVariables lv;
+        if (!existingValuesWillBeOverwritten) {
+            lv = existing.getLinked1Variables();
+        } else {
+            lv = LinkedVariables.EMPTY;
+        }
+        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
+            VariableInfo vi = cav.variableInfo();
+            lv = lv.merge(vi.getLinked1Variables());
+        }
+        setLinked1Variables(lv);
     }
 
 
