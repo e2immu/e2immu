@@ -101,4 +101,29 @@ public class Test_40_Dependent1 extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("Dependent1_3", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
+    }
+    @Test
+    public void test_4() throws IOException {
+        testClass("Dependent1_4", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
+    }
+    @Test
+    public void test_5() throws IOException {
+        testClass("Dependent1_5", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
+    }
+    @Test
+    public void test_6() throws IOException {
+        testClass("Dependent1_6", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
+    }
 }

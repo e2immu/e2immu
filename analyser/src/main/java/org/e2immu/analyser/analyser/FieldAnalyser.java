@@ -55,6 +55,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_FINAL = "analyseFinal";
     public static final String ANALYSE_FINAL_VALUE = "analyseFinalValue";
     public static final String ANALYSE_IMMUTABLE = "analyseImmutable";
+    public static final String ANALYSE_INDEPENDENT = "analyseIndependent";
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_CONTAINER = "analyseContainer";
@@ -121,6 +122,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
+                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
                 .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
@@ -463,10 +465,50 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     /*
+    Similarly to dynamically level 2+ immutable, a field can be dynamically higher level independent!
+
+    If the type of the field is Set<String>, the static independence value is DEPENDENT (there is the iterator.remove())
+    But when this field is final and only constructed with Set.copyOf or Set.of, for example, the type will become
+    recursively immutable, and therefore also independent.
+     */
+    private AnalysisStatus analyseIndependent(SharedState sharedState) {
+        if (fieldAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) return DONE;
+
+        int staticallyIndependent = fieldInfo.type.defaultIndependent(analyserContext);
+        if (staticallyIndependent == MultiLevel.INDEPENDENT) {
+            log(INDEPENDENCE, "Field {} set to @Independent: static type",
+                    fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            return DONE;
+        }
+
+        int immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.EXTERNAL_IMMUTABLE);
+        if (immutable == Level.DELAY) {
+            log(DELAYED, "Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
+        int immutableLevel = MultiLevel.level(immutable);
+        if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+            int independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
+            log(INDEPENDENCE, "Field {} set to {}, direct correspondence to (dynamically) immutable",
+                    fieldInfo.fullyQualifiedName(), MultiLevel.niceIndependent(independent));
+            fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
+            return DONE;
+        }
+
+        if (staticallyIndependent == Level.DELAY) {
+            log(DELAYED, "Field {} independent delayed: wait for type independence of {}",
+                    fieldInfo.fullyQualifiedName(), fieldInfo.type);
+            return DELAYS;
+        }
+        fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, staticallyIndependent);
+        return DONE;
+    }
+
+    /*
     method modelled to that of analyseNotNull.
      */
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
-        // not an assert, because the value is not directly determined by the actual property
         if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);

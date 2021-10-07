@@ -536,11 +536,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public Boolean isCurrentlyLinkedToField(Expression objectValue) {
-            return evaluationContext.isCurrentlyLinkedToField(objectValue);
-        }
-
-        @Override
         public boolean cannotBeModified(Expression value) {
             return evaluationContext.cannotBeModified(value);
         }

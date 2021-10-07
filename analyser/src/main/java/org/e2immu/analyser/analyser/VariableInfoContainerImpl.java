@@ -87,6 +87,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (!outside.getLinkedVariables().isDelayed()) initial.setLinkedVariables(outside.getLinkedVariables());
+        if (!outside.getLinked1Variables().isDelayed()) initial.setLinked1Variables(outside.getLinked1Variables());
+
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
@@ -159,7 +161,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         initial.setProperty(VariableProperty.IDENTITY, org.e2immu.analyser.model.Level.FALSE);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
-
+        initial.setLinked1Variables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -200,6 +202,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         initial.setStaticallyAssignedVariables(staticallyAssignedVariables);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
+        initial.setLinked1Variables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(lvr.variable.nature(),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -309,7 +312,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         try {
             variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to set statically assigned variables to {}, already have {}",
+            LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
                     variableInfo.variable().fullyQualifiedName(),
                     staticallyAssignedVariables, variableInfo.getStaticallyAssignedVariables());
             throw ise;
@@ -324,7 +327,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         try {
             variableInfo.setLinkedVariables(linkedVariables);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to overwrite linked variables to {}, already have {}",
+            LOGGER.error("Variable {}: try to overwrite linked variables to '{}', already have '{}'",
                     variableInfo.variable().fullyQualifiedName(),
                     linkedVariables, variableInfo.getLinkedVariables());
             throw ise;
@@ -339,9 +342,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         try {
             variableInfo.setLinked1Variables(linkedVariables);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to overwrite linked1 variables to {}, already have {}",
+            LOGGER.error("Variable {}: try to overwrite linked1 variables to '{}', already have '{}'",
                     variableInfo.variable().fullyQualifiedName(),
-                    linkedVariables, variableInfo.getLinkedVariables());
+                    linkedVariables, variableInfo.getLinked1Variables());
             throw ise;
         }
     }

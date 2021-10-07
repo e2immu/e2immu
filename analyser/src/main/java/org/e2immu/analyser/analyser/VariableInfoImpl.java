@@ -224,12 +224,12 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    void setLinked1Variables(LinkedVariables linkedVariables) {
-        assert linkedVariables != null;
-        if (linkedVariables.isDelayed()) {
-            this.linked1Variables.setVariable(linkedVariables);
-        } else if (!linked1VariablesIsSet() || !getLinked1Variables().equals(linkedVariables)) {
-            this.linked1Variables.setFinal(linkedVariables);
+    void setLinked1Variables(LinkedVariables linked1Variables) {
+        assert linked1Variables != null;
+        if (linked1Variables.isDelayed()) {
+            this.linked1Variables.setVariable(linked1Variables);
+        } else if (!linked1VariablesIsSet() || !getLinked1Variables().equals(linked1Variables)) {
+            this.linked1Variables.setFinal(linked1Variables);
         }
     }
 

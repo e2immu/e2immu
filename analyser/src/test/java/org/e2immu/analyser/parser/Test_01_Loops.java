@@ -299,6 +299,7 @@ public class Test_01_Loops extends CommonTestRunner {
                             assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         }
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
                     }
                 }
                 if ("s$1".equals(d.variableName())) {
@@ -308,6 +309,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals("s", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
                     }
                 }
                 if ("res$1".equals(d.variableName())) {
@@ -321,6 +323,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";

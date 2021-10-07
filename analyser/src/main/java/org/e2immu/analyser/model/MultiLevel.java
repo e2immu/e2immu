@@ -240,4 +240,15 @@ public class MultiLevel {
         if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return compose(effective(base), MAX_LEVEL);
         return compose(effective(base), levelBase + levelParams);
     }
+
+    public static int independentCorrespondingToImmutableLevel(int immutableLevel) {
+        assert immutableLevel >= LEVEL_2_IMMUTABLE;
+        int level;
+        if (immutableLevel == MAX_LEVEL) {
+            level = immutableLevel;
+        } else {
+            level = immutableLevel - 1;
+        }
+        return compose(EFFECTIVE, level);
+    }
 }

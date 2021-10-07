@@ -316,10 +316,6 @@ public interface EvaluationContext extends DelayDebugger {
         return new This(getAnalyserContext(), getCurrentType());
     }
 
-    default Boolean isCurrentlyLinkedToField(Expression objectValue) {
-        return false;
-    }
-
     default boolean cannotBeModified(Expression value) {
         return false;
     }

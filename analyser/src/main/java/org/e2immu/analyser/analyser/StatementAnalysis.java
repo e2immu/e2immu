@@ -952,7 +952,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // then, per cluster of variables
 
         ContextPropertyWriter.LocalCopyData localCopyData =
-                ContextPropertyWriter.localCopyPreferences(groupPropertyValues.allVariables());
+                ContextPropertyWriter.localCopyReferences(groupPropertyValues.allVariables());
 
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus ennStatus = contextPropertyWriter.write(this, evaluationContext,

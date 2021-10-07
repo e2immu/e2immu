@@ -690,6 +690,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean linked1Delays = false;
         boolean linkedDelays = false;
         AnalysisStatus immutableAtAssignment = DONE;
+        Map<Variable, LinkedVariables> linked1 = new HashMap<>();
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
@@ -827,7 +828,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             {
                 LinkedVariables mergedLinked1Variables = writeMergedLinked1Variables(changeData, variable, vi, vi1);
                 if (!mergedLinked1Variables.isDelayed() && vi.isNotDelayed() || mergedLinked1Variables == EMPTY_OVERRIDE) {
-                    vic.setLinked1Variables(mergedLinked1Variables, false);
+                    linked1.put(variable, mergedLinked1Variables);
                 } else if (vi.getLinked1Variables().isDelayed()) {
                     status = DELAYS;
                     linked1Delays = true;
@@ -896,13 +897,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
 
         ContextPropertyWriter.LocalCopyData localCopyData =
-                ContextPropertyWriter.localCopyPreferences(groupPropertyValues.allVariables());
+                ContextPropertyWriter.localCopyReferences(groupPropertyValues.allVariables());
 
         if (statement() instanceof ForEachStatement) {
+            Variable loopVar = obtainLoopVar();
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
                     groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
                     groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
-                    evaluationResult.someValueWasDelayed());
+                    evaluationResult.someValueWasDelayed(), loopVar);
         }
 
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
@@ -954,11 +956,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         status = cmStatus.combine(status);
 
+        if (statement() instanceof ForEachStatement) {
+            Variable loopVar = obtainLoopVar();
+            computeLinked1ForEach(loopVar, evaluationResult.getExpression(), sharedState.evaluationContext);
+        }
 
         if (!linked1Delays && !linkedDelays) {
-            AnalysisStatus sav = new StaticallyAssignedVariablesWriter(statementAnalysis, sharedState.evaluationContext,
-                    VariableInfo::getStaticallyAssignedVariables, localCopyData)
-                    .write(evaluationResult.changeData());
+            AnalysisStatus sav = new Linked1VariablesWriter(statementAnalysis, sharedState.evaluationContext)
+                    .write(linked1, localCopyData);
             status = status.combine(sav);
         }
 
@@ -1008,6 +1013,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
                 .combine(cImmStatus.combine(immutableAtAssignment))));
+    }
+
+    private Variable obtainLoopVar() {
+        Structure structure = statementAnalysis.statement.getStructure();
+        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+        return lvc.localVariableReference;
+    }
+
+    private void computeLinked1ForEach(Variable loopVar,
+                                       Expression evaluatedIterable,
+                                       EvaluationContext evaluationContext) {
+        VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
+        VariableInfo vi = vic.best(EVALUATION);
+        if (vi.linked1VariablesIsSet()) return; // already decided, most likely because the loopVar is independent
+
+        int independentIterable = evaluationContext.getProperty(evaluatedIterable, INDEPENDENT, true, true);
+        LinkedVariables linked1;
+        if (independentIterable <= MultiLevel.DEPENDENT_1) {
+            List<Variable> vars = evaluatedIterable.variables();
+            linked1 = new LinkedVariables(new HashSet<>(vars), independentIterable == Level.DELAY);
+        } else {
+            linked1 = LinkedVariables.EMPTY;
+        }
+        vic.setLinked1Variables(linked1, false);
     }
 
     private boolean assignmentToNonCopy(VariableInfoContainer vic, EvaluationResult evaluationResult) {
@@ -1121,12 +1150,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                  Map<Variable, Integer> externalNotNull,
                                                                  Map<Variable, Integer> contextNotNull,
                                                                  Expression value,
-                                                                 boolean someValueWasDelayed) {
-        Structure structure = statementAnalysis.statement.getStructure();
-        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        Variable loopVar = lvc.localVariableReference;
+                                                                 boolean someValueWasDelayed,
+                                                                 Variable loopVar) {
         assert contextNotNull.containsKey(loopVar); // must be present!
-
         if (someValueWasDelayed) {
             // we want to avoid a particular value on EVAL for the loop variable
             contextNotNull.put(loopVar, Level.DELAY);
@@ -1363,7 +1389,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             log(DELAYED, "Apply of statement {}, {} is delayed because of variable field delay",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return LinkedVariables.DELAYED_EMPTY; // FIXME check, was error?
+            return LinkedVariables.DELAYED_EMPTY;
         }
 
         // no assignment, we need to copy, potentially add to previous value
@@ -1404,12 +1430,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                         Variable variable,
                                                         VariableInfo vi,
                                                         VariableInfo vi1) {
-        // regardless of what's being delayed or not, if the type is not at least level 2 immutable, there cannot be links
+        // regardless of what's being delayed or not, if the type is not at least level 2 immutable,
+        // or not independent, there cannot be content links
 
         if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
             TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
-            if (immutable <= MultiLevel.EFFECTIVELY_E1IMMUTABLE) {
+            int independent = analyserContext.getTypeAnalysis(bestType).getProperty(INDEPENDENT);
+            if (independent == MultiLevel.DEPENDENT || independent == MultiLevel.INDEPENDENT) {
                 return EMPTY_OVERRIDE;
             }
         }
@@ -1678,7 +1705,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     initialiserToEvaluate = lvc.expression;
                     // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
                     // otherwise we'll get delays
-                    // especially in the case of forEach, the lvc.expression is empty, anyway
+                    // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
                     // an assignment may be difficult. The value is never used, only local copies are
 
                     int defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext, false);
@@ -1697,15 +1724,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull, statementAnalysis.primitives),
                             false, LinkedVariables.EMPTY, properties, true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-                    LinkedVariables linked1;
-                    if (statement() instanceof ForEachStatement) {
-                        // FIXME prob wrong
-                        int independent = lvc.expression.getProperty(sharedState.evaluationContext, INDEPENDENT, true);
-                        linked1 = independent <= MultiLevel.DEPENDENT_1 ? new LinkedVariables(Set.of(), false) : LinkedVariables.EMPTY;
-                    } else {
-                        linked1 = lvc.expression.linkedVariables(sharedState.evaluationContext);
-                    }
-                    vic.setLinked1Variables(linked1, true);
+                    // the content linking can only be done after evaluating the expression over which we iterate
+                    vic.setLinked1Variables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                     if (newVariable) {
@@ -3245,17 +3265,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean variableIsDelayed(Variable variable) {
             VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
             return vi == null || vi.isDelayed();
-        }
-
-        @Override
-        public Boolean isCurrentlyLinkedToField(Expression expression) {
-            VariableExpression ve;
-            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) {
-                return true;
-            }
-            StaticallyAssignedVariablesWriter linked1Writer = new StaticallyAssignedVariablesWriter(statementAnalysis, this,
-                    VariableInfo::getStaticallyAssignedVariables, ContextPropertyWriter.LocalCopyData.EMPTY);
-            return linked1Writer.isLinkedToField(expression);
         }
 
         @Override

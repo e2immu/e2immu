@@ -73,7 +73,7 @@ public class ContextPropertyWriter {
         }
     }
 
-    public static LocalCopyData localCopyPreferences(Collection<Variable> variables) {
+    public static LocalCopyData localCopyReferences(Collection<Variable> variables) {
         Map<FieldReference, List<LocalCopy>> map = new HashMap<>();
         for (Variable variable : variables) {
             if (variable instanceof LocalVariableReference lvr
