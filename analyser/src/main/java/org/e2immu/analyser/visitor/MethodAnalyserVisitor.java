@@ -58,6 +58,10 @@ public interface MethodAnalyserVisitor {
                     .findFirst()
                     .orElse(null);
         }
+
+        public int falseFrom2() {
+            return iteration <= 1 ? Level.DELAY: Level.FALSE;
+        }
     }
 
 }

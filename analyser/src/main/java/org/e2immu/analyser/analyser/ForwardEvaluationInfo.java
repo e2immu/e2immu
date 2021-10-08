@@ -46,6 +46,10 @@ public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties,
         return notAssignmentTarget;
     }
 
+    public boolean isAssignmentTarget() {
+        return !notAssignmentTarget;
+    }
+
     public String toString() {
         return new StringJoiner(", ", ForwardEvaluationInfo.class.getSimpleName() + "[", "]")
                 .add("notAssignmentTarget=" + notAssignmentTarget)

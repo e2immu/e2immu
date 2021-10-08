@@ -22,10 +22,7 @@ import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
@@ -65,14 +62,18 @@ public record Linked1VariablesWriter(StatementAnalysis statementAnalysis, Evalua
             VariableInfoContainer vic = statementAnalysis.findForWriting(variable);
 
             Set<Variable> linked1FromDependencyGraph = dependencyGraph.dependencies(variable);
-            linked1FromDependencyGraph.remove(variable);
-            LinkedVariables linked1Variables = new LinkedVariables(linked1FromDependencyGraph, false);
-            try {
-                vic.setLinked1Variables(linked1Variables, false);
-            } catch (IllegalStateException ise) {
-                LOGGER.error("Caught IllegalStateException in statement {}, variable {}",
-                        statementAnalysis.index, variable.fullyQualifiedName());
-                throw ise;
+            if(!Collections.disjoint(linked1FromDependencyGraph, involvedInLinked1)) {
+                linked1FromDependencyGraph.remove(variable);
+                LinkedVariables linked1Variables = new LinkedVariables(linked1FromDependencyGraph, false);
+                try {
+                    vic.setLinked1Variables(linked1Variables, false);
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Caught IllegalStateException in statement {}, variable {}",
+                            statementAnalysis.index, variable.fullyQualifiedName());
+                    throw ise;
+                }
+            } else {
+                vic.setLinked1Variables(LinkedVariables.EMPTY, false);
             }
         }
 

@@ -1419,7 +1419,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         // note that the null here is actual presence or absence in a map...
         LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linkedVariables());
-        log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
+        log(ANALYSER, "Set linked variables of {} to '{}' in {}, {}",
                 variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
 
         assert !mergedValue.isDelayed();
@@ -1478,7 +1478,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         // note that the null here is actual presence or absence in a map...
         LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linked1Variables());
-        log(ANALYSER, "Set linked1 variables of {} to {} in {}, {}",
+        log(ANALYSER, "Set linked1 variables of {} to '{}' in {}, {}",
                 variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
 
         assert !mergedValue.isDelayed();

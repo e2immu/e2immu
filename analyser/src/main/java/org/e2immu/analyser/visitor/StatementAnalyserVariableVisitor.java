@@ -49,6 +49,10 @@ public interface StatementAnalyserVariableVisitor {
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
             return evaluationContext.getProperty(currentValue, variableProperty, false, false);
         }
+
+        public int falseFrom1() {
+            return iteration == 0 ? Level.DELAY: Level.FALSE;
+        }
     }
 
     void visit(Data data);

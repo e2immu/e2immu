@@ -81,7 +81,7 @@ public class Assignment extends ElementImpl implements Expression {
         if ((ve = target.asInstanceOf(VariableExpression.class)) != null) {
             variableTarget = ve.variable();
         } else if (target instanceof ArrayAccess arrayAccess) {
-            variableTarget = arrayAccess.variableTarget;
+            variableTarget = arrayAccess.dependentVariable;
         } else {
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
             variableTarget = new DependentVariable(name, null, target.returnType(), value.variables(), null);
@@ -197,8 +197,8 @@ public class Assignment extends ElementImpl implements Expression {
 
 
         // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
-        VariableExpression variableValue;
-        Variable newVariableTarget = (variableValue = targetResult.value().asInstanceOf(VariableExpression.class)) != null &&
+        IsVariableExpression variableValue;
+        Variable newVariableTarget = (variableValue = targetResult.value().asInstanceOf(IsVariableExpression.class)) != null &&
                 variableValue.variable() instanceof DependentVariable
                 ? variableValue.variable() : variableTarget;
 

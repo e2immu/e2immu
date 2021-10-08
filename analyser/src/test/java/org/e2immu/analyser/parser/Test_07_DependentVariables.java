@@ -16,7 +16,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -32,7 +37,6 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        final String A2 = "org.e2immu.analyser.testexample.DependentVariables.method2(int):0:a";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
@@ -67,8 +71,11 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
-                if (A2.equals(d.variableName())) {
+                if (d.variable() instanceof ParameterInfo) {
                     assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
                 }
                 if ("b".equals(d.variableName())) {
                     assertEquals("a", d.variableInfo().getValue().toString());
@@ -80,7 +87,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     if ("array[b]".equals(d.variableName())) {
                         fail("This variable should not be produced");
                     }
-                    if (("array[" + A2 + "]").equals(d.variableName())) {
+                    if (("array[org.e2immu.analyser.testexample.DependentVariables.method2(int):0:a]").equals(d.variableName())) {
                         assertEquals("12", d.variableInfo().getValue().toString());
                     }
                 }
@@ -98,16 +105,51 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertEquals("12", d.evaluationResult().value().toString());
+
+                }
+            }
+        };
+
         // unused parameter in method1
         testClass("DependentVariables_0", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
     @Test
     public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("getX".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    int vars = d.iteration() == 0 ? 4 : 5;
+                    assertEquals(vars, d.evaluationResult().changeData().keySet().size());
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getX".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() == 0
+                            ? "<v:<f:xs>[org.e2immu.analyser.testexample.DependentVariables_1.XS.getX(int):0:index]>"
+                            : "instance type X";
+                    assertEquals(expectValue, d.currentValue().toString());
+                }
+                if (d.variable() instanceof ParameterInfo) {
+                    assertEquals(d.falseFrom1(), d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

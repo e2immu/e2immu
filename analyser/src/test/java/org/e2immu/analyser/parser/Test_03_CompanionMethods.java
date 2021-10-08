@@ -321,7 +321,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                                 d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                        assertEquals(d.falseFrom1(), d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
             }
@@ -333,7 +334,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                         param.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals(Level.FALSE, param.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(d.falseFrom2(), param.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };

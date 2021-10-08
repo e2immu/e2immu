@@ -26,15 +26,12 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Only not evaluated. Replaced by VariableExpression
- */
 @E2Container
 public class ArrayAccess extends ElementImpl implements Expression {
 
     public final Expression expression;
     public final Expression index;
-    public final DependentVariable variableTarget; // can be null
+    public final DependentVariable dependentVariable;
     public final ParameterizedType returnType;
 
     public ArrayAccess(@NotNull Expression expression, @NotNull Expression index) {
@@ -42,10 +39,12 @@ public class ArrayAccess extends ElementImpl implements Expression {
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();
-        variableTarget = arrayAccessVariableTarget(expression, index, returnType);
+        dependentVariable = computeDependentVariable(expression, index, returnType);
     }
 
-    private static DependentVariable arrayAccessVariableTarget(Expression expression, Expression index, ParameterizedType returnType) {
+    private static DependentVariable computeDependentVariable(Expression expression,
+                                                              Expression index,
+                                                              ParameterizedType returnType) {
         Variable arrayVariable = singleVariable(expression);
         Variable indexVariable = singleVariable(index);
         String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
@@ -133,53 +132,28 @@ public class ArrayAccess extends ElementImpl implements Expression {
             builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
         } else {
             boolean delayed = array.value().isDelayed(evaluationContext) || indexValue.value().isDelayed(evaluationContext);
+            DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(), returnType);
 
-            // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
-            Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
-            VariableExpression evaluatedArrayValue;
-            if ((evaluatedArrayValue = array.value().asInstanceOf(VariableExpression.class)) != null) {
-                arrayVariable = evaluatedArrayValue.variable();
-            }
-            Variable indexVariable = singleVariable(indexValue.value());
-            String index = indexVariable == null ? indexValue.value().minimalOutput() : indexVariable.fullyQualifiedName();
-
-            String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value().toString()) + "[" + index + "]";
-            DependentVariable dependentVariable = new DependentVariable(name,
-                    arrayVariable == null ? null : arrayVariable.getOwningType(),
-                    returnType(),
-                    variableTarget != null ? variableTarget.dependencies : List.of(), arrayVariable);
-
-            // dependentVariable is our best effort at evaluation of the individual components
-            if (delayed) {
-                builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
+            // evaluatedDependentVariable is our best effort at evaluation of the individual components
+            if (delayed || forwardEvaluationInfo.isAssignmentTarget()) {
+                builder.setExpression(DelayedVariableExpression.forVariable(evaluatedDependentVariable));
             } else {
-                if (dependentVariable.arrayVariable != null) {
-                    builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
+                if (evaluatedDependentVariable.arrayVariable != null) {
+                    builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, array.value(),
+                            MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
-                if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                    builder.markRead(variableTarget);
-                    if (evaluationContext.isPresent(dependentVariable)) {
-                        Expression variableValue = builder.currentExpression(dependentVariable, ForwardEvaluationInfo.DEFAULT);
-                        if (variableValue == null) {
-                            builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
-                        } else {
-                            builder.setExpression(variableValue);
-                        }
-                    } else {
-                        // the result is not known, lets return an unknown instance
-                        Expression newObject = NewObject.genericArrayAccess(identifier, evaluationContext, array.value(),
-                                dependentVariable);
-                        builder.setExpression(newObject);
-
-                        // NOTE (?): linked variables of generic access to a known array -> links to ALL linked variables
-                        // of all elements == serious worst case scenario, but maybe completely relevant
-
-                        // FIXME linked1 should be filled in!
-                        builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
-                    }
+                Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
+                if (currentValue.isDelayed(evaluationContext)) {
+                    // we have no value yet
+                    Expression newObject = NewObject.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
+                            evaluatedDependentVariable);
+                    builder.assignment(evaluatedDependentVariable, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY,
+                            LinkedVariables.EMPTY);
+                    builder.setExpression(newObject);
                 } else {
-                    builder.setExpression(new VariableExpression(dependentVariable));
+                    builder.setExpression(currentValue);
                 }
+                builder.markRead(evaluatedDependentVariable);
             }
         }
 

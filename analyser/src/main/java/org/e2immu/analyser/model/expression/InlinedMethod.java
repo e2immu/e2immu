@@ -245,7 +245,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
                             if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
                                 Expression value = evaluationContext.currentInstance(ve.variable(),
                                         evaluationContext.getInitialStatementTime());
-                                newObject = value.asInstanceOf(NewObject.class);
+                                if(value != null) {
+                                    newObject = value.asInstanceOf(NewObject.class);
+                                } // else, see Loops_19
                             }
                             if (newObject != null && newObject.constructor() != null) {
                                 // only now we can start to take a look at the parameters
