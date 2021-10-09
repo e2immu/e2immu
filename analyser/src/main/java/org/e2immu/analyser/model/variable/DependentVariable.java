@@ -37,10 +37,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
     public final TypeInfo owningType;
     public final String name;
+    public final String simpleName;
     public final Variable arrayVariable;
     public final List<Variable> dependencies; // idea: a change to these will invalidate the variable
 
     public DependentVariable(String name,
+                             String simpleName,
                              TypeInfo owningType,
                              @NotNull ParameterizedType parameterizedType,  // the formal type
                              @NotNull1 List<Variable> dependencies,         // all variables on which this one depends
@@ -48,6 +50,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         super(parameterizedType);
         this.parameterizedType = parameterizedType;
         this.name = name;
+        this.simpleName = simpleName;
         this.arrayVariable = arrayVariable;
         this.dependencies = dependencies;
         this.owningType = owningType;
@@ -88,7 +91,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     @Override
     public String simpleName() {
-        return name;
+        return simpleName;
     }
 
     @Override

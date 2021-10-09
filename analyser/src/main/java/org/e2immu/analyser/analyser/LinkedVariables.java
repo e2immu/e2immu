@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -56,6 +57,13 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
                 .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
     }
 
+    public String toSimpleString() {
+        if (this == EMPTY) return "";
+        return (isDelayed ? "*" : "") + variables.stream().map(Variable::simpleName)
+                .sorted()
+                .collect(Collectors.joining(","));
+    }
+
     public String toDetailedString() {
         if (this == EMPTY) return "";
 
@@ -91,4 +99,11 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
     public List<Variable> variablesAsList() {
         return List.copyOf(variables);
     }
+
+    public LinkedVariables translate(TranslationMap translationMap) {
+        if (isEmpty()) return this;
+        var translatedVariables = variables.stream().map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
+        return new LinkedVariables(translatedVariables, isDelayed);
+    }
+
 }

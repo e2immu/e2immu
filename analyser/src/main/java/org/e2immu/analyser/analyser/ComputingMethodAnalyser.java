@@ -851,201 +851,84 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private AnalysisStatus computeIndependent(SharedState sharedState) {
-        int currentValue = methodAnalysis.getProperty(INDEPENDENT);
-        if (currentValue != Level.DELAY) {
+        if (methodAnalysis.getProperty(INDEPENDENT) != Level.DELAY) {
             return DONE;
         }
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+        int independentParameters = computeIndependentParameters(sharedState);
+        if (independentParameters == Level.DELAY) return DELAYS;
 
-        if (!methodInfo.isConstructor) {
-            // we only compute @Independent/@Dependent on methods when the method is @NotModified
-            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-            if (modified == Level.DELAY) return DELAYS;
-            if (modified == Level.TRUE) {
-                methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
-                return DONE;
-            }
-        } // else: for constructors, we assume @Modified so that rule is not that useful
+        if (methodInfo.noReturnValue() || independentParameters == MultiLevel.DEPENDENT) {
+            methodAnalysis.setProperty(INDEPENDENT, independentParameters);
+            return DONE;
+        }
+        // here, we compute the independence of the return value
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        if (lastStatement == null) {
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
+            return DONE;
+        }
 
-        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
-            log(DELAYED, "Delaying @Independent on {}, links not yet computed", methodInfo.fullyQualifiedName());
+        VariableInfo variableInfo = getReturnAsVariable();
+        LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
+        if (linkedVariables.isDelayed()) {
             return DELAYS;
         }
 
-        // PART 1: check the return object, if it is there
-
-        // support data types are not set for types that have not been defined; there, we rely on annotations
-        int returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo, methodLevelData);
-        if (returnObjectIsIndependent == Level.DELAY) {
+        LinkedVariables linked1Variables = variableInfo.getLinked1Variables();
+        if (linked1Variables.isDelayed()) {
             return DELAYS;
         }
 
-        // CONSTRUCTOR ...
-        int parametersIndependentOfFields;
-        if (methodInfo.isConstructor) {
-            // TODO check ExplicitConstructorInvocations
+        if (linkedVariables.isEmpty() && linked1Variables.isEmpty()) {
+            // no linking with fields, no content linking with fields ->
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
+            return DONE;
+        }
 
-            // PART 2: check parameters, but remove those that are recursively of my own type
-            Set<ParameterInfo> parameters = new HashSet<>(methodInfo.methodInspection.get().getParameters());
-            parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
+        boolean linkedContainsField = linkedVariables.variables().stream()
+                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis());
+        if(linkedContainsField) {
+            // the
+        }
+        boolean linked1ContainsField = linked1Variables.variables().stream()
+                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis());
 
-            int independentViaLinkedVariables = computeConstructorIndependenceViaLinkedVariables(parameters);
-            int independentViaStaticallyAssignedVariables = computeConstructorIndependenceViaStaticallyAssignedVariables(parameters);
+        //combination of statically immutable (type) and dynamically immutable (value property)
+        int immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
+        if (immutable == Level.DELAY) return DELAYS;
+        if (immutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
+            return DONE;
+        }
 
-            if (independentViaLinkedVariables == MultiLevel.DEPENDENT || independentViaStaticallyAssignedVariables == MultiLevel.DEPENDENT) {
-                parametersIndependentOfFields = MultiLevel.DEPENDENT; // do not care about delays on the other one
+        int immutableLevel = MultiLevel.level(immutable);
+        if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+
+        }
+
+
+        if (linked1Variables.isEmpty()) {
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
+            return DONE;
+        }
+
+
+        int independent;
+        if (containsField) {
+            if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+                independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
             } else {
-                if (independentViaLinkedVariables == Level.DELAY || independentViaStaticallyAssignedVariables == Level.DELAY) {
-                    if (independentViaLinkedVariables == Level.DELAY) {
-                        log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
-                    }
-                    if (independentViaStaticallyAssignedVariables == Level.DELAY) {
-                        log(DELAYED, "Delaying @Independent on {}, statically assigned variables not yet fully known for all field references", methodInfo.distinguishingName());
-                    }
-                    return DELAYS;
-                }
-                parametersIndependentOfFields = MultiLevel.INDEPENDENT;
+                // type is @Mutable or @E1Immutable;
+                independent = MultiLevel.DEPENDENT;
             }
         } else {
-            parametersIndependentOfFields = MultiLevel.INDEPENDENT;
+            independent = MultiLevel.INDEPENDENT;
         }
-
-        // conclusion
-
-        int independent = Math.min(parametersIndependentOfFields, returnObjectIsIndependent);
-        methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
-        log(INDEPENDENCE, "Mark method/constructor {} @Independent {}",
-                methodInfo.fullyQualifiedName(), independent);
+        methodAnalysis.setProperty(INDEPENDENT, independent);
         return DONE;
     }
 
-    private int computeConstructorIndependenceViaStaticallyAssignedVariables(Set<ParameterInfo> parameters) {
-        Optional<VariableInfo> staticallyAssignedDelayed = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .filter(vi -> vi.getStaticallyAssignedVariables().isDelayed())
-                .findFirst();
-        if (staticallyAssignedDelayed.isPresent()) {
-            return Level.DELAY;
-        }
-
-        Optional<VariableInfo> transparentNotSet = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .filter(vi -> delayOnTransparentTypeOfVariable(vi.variable(), analyserContext))
-                .findFirst();
-        if (transparentNotSet.isPresent()) {
-            return Level.DELAY;
-        }
-
-        Optional<Variable> immutableNotKnown = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
-                .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) == Level.DELAY)
-                .findFirst();
-        if (immutableNotKnown.isPresent()) {
-            return Level.DELAY;
-        }
-
-        Optional<ParameterInfo> nonImmutableStaticallyAssignedToParameter =
-                methodAnalysis.getLastStatement().variableStream()
-                        .filter(vi -> vi.variable() instanceof FieldReference)
-                        .filter(vi -> isFieldOfTransparentType(vi.variable(), analyserContext))
-                        .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
-                        .filter(v -> v instanceof ParameterInfo)
-                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext, true) < MultiLevel.EFFECTIVELY_E2IMMUTABLE)
-                        .map(v -> (ParameterInfo) v)
-                        .filter(parameters::contains)
-                        .findFirst();
-        // FIXME we do not compute a value for the constructor, rather for each of the parameters.
-        // FIXME we do not assign INDEPENDENT
-        return nonImmutableStaticallyAssignedToParameter.isPresent() ? MultiLevel.DEPENDENT : MultiLevel.INDEPENDENT;
-    }
-
-    private int computeConstructorIndependenceViaLinkedVariables(Set<ParameterInfo> parameters) {
-        boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .noneMatch(vi -> vi.getLinkedVariables().isDelayed());
-        if (!allLinkedVariablesSet) {
-            return Level.DELAY;
-        }
-
-        boolean independentViaLinkingToParameter = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .flatMap(vi -> vi.getLinkedVariables().variables().stream())
-                .filter(v -> v instanceof ParameterInfo)
-                .map(v -> (ParameterInfo) v)
-                .noneMatch(parameters::contains);
-
-        return independentViaLinkingToParameter ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
-    }
-
-    private int independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
-        if (methodInfo.noReturnValue()) return MultiLevel.INDEPENDENT;
-
-        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
-            log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
-                    methodInfo.fullyQualifiedName());
-            return Level.DELAY;
-        }
-        // method does not return a transparent type
-        VariableInfo returnVariable = getReturnAsVariable();
-
-        // @Dependent1
-
-        LinkedVariables staticallyAssigned = returnVariable.getStaticallyAssignedVariables();
-        boolean transparentDelayed = staticallyAssigned.isDelayed() ||
-                staticallyAssigned.variables().stream().anyMatch(v -> delayOnTransparentTypeOfVariable(v, analyserContext));
-        if (transparentDelayed) {
-            log(DELAYED, "Delaying @Independent on {}, transparent type status not yet known for assigned field",
-                    methodInfo.fullyQualifiedName);
-            return Level.DELAY;
-        }
-        boolean returnValueLinkedToFieldOfTransparentType = staticallyAssigned.variables().stream()
-                .anyMatch(v -> isFieldOfTransparentType(v, analyserContext));
-        if (returnValueLinkedToFieldOfTransparentType) {
-            return MultiLevel.DEPENDENT_1;
-        }
-        int independent = returnVariable.getProperty(VariableProperty.INDEPENDENT);
-        if (independent == MultiLevel.DEPENDENT_1) {
-            return independent;
-        }
-
-        // @Independent
-
-        LinkedVariables linkedVariables = returnVariable.getLinkedVariables();
-        if (linkedVariables.isDelayed()) {
-            log(DELAYED, "Delaying @Independent on {}, transparent status not known for all field references",
-                    methodInfo.fullyQualifiedName);
-            return Level.DELAY;
-        }
-        int e2ImmutableStatusOfFieldRefs = linkedVariables.variables().stream()
-                .filter(v -> v instanceof FieldReference)
-                .map(v -> analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo))
-                .mapToInt(fa -> MultiLevel.effectiveAtLevel(fa.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE), MultiLevel.LEVEL_2_IMMUTABLE))
-                .min().orElse(MultiLevel.EFFECTIVE);
-        if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
-            log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
-                    linkedVariables.variables().stream()
-                            .filter(v -> MultiLevel.effectiveAtLevel(analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo)
-                                            .fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE),
-                                    MultiLevel.LEVEL_2_IMMUTABLE) == MultiLevel.DELAY)
-                            .map(Variable::fullyQualifiedName)
-                            .collect(Collectors.joining(", ")));
-            return Level.DELAY;
-        }
-
-        if (e2ImmutableStatusOfFieldRefs >= MultiLevel.EVENTUAL_AFTER) return MultiLevel.INDEPENDENT;
-        int immutable = methodAnalysis.getProperty(IMMUTABLE);
-        ParameterizedType returnType = methodInfo.returnType();
-        boolean myOwnType = returnType.isAssignableFromTo(analyserContext, methodInfo.typeInfo.asParameterizedType(analyserContext));
-        if (immutable == MultiLevel.DELAY && !myOwnType) {
-            log(DELAYED, "Delaying @Independent of {}, waiting for @Immutable", methodInfo.fullyQualifiedName);
-            return Level.DELAY;
-        }
-        if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
-            log(INDEPENDENCE, "Method {} is independent, formal return type is E2Immutable", methodInfo.distinguishingName());
-            return MultiLevel.INDEPENDENT;
-        }
-        return myOwnType ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
+    private int computeIndependentParameters(SharedState sharedState) {
     }
 
     public static boolean delayOnTransparentTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {

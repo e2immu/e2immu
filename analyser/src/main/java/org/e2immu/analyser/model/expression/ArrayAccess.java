@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @E2Container
 public class ArrayAccess extends ElementImpl implements Expression {
@@ -49,7 +50,9 @@ public class ArrayAccess extends ElementImpl implements Expression {
         Variable indexVariable = singleVariable(index);
         String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
                 + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.fullyQualifiedName()) + "]";
-        return new DependentVariable(name,
+        String simpleName = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.simpleName())
+                + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.simpleName()) + "]";
+        return new DependentVariable(name, simpleName,
                 arrayVariable == null ? null : arrayVariable.getOwningType(),
                 returnType, indexVariable == null ? List.of() : List.of(indexVariable), arrayVariable);
     }
@@ -147,9 +150,12 @@ public class ArrayAccess extends ElementImpl implements Expression {
                     // we have no value yet
                     Expression newObject = NewObject.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
                             evaluatedDependentVariable);
+                    LinkedVariables linked1Variables = array.value() instanceof VariableExpression ve ?
+                            new LinkedVariables(Set.of(ve.variable()), false) : LinkedVariables.EMPTY;
                     builder.assignment(evaluatedDependentVariable, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY,
-                            LinkedVariables.EMPTY);
-                    builder.setExpression(newObject);
+                            linked1Variables);
+                    Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linked1Variables);
+                    builder.setExpression(wrappedObject);
                 } else {
                     builder.setExpression(currentValue);
                 }

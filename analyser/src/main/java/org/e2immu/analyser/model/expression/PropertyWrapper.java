@@ -29,11 +29,13 @@ import java.util.stream.Collectors;
 
 public record PropertyWrapper(Expression expression,
                               Map<VariableProperty, Integer> properties,
+                              LinkedVariables linked1Variables,
                               ParameterizedType castType) implements Expression, ExpressionWrapper {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new PropertyWrapper(expression.translate(translationMap), properties,
+                linked1Variables == null ? null : linked1Variables.translate(translationMap),
                 castType == null ? null : translationMap.translateType(castType));
     }
 
@@ -80,12 +82,17 @@ public record PropertyWrapper(Expression expression,
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
         assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties, null);
+        return new PropertyWrapper(value, properties, null, null);
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ParameterizedType castType) {
         assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties, castType);
+        return new PropertyWrapper(value, properties, null, castType);
+    }
+
+    public static Expression propertyWrapper(Expression value, LinkedVariables linked1Variables) {
+        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
+        return new PropertyWrapper(value, Map.of(), linked1Variables, null);
     }
 
     @Override
@@ -113,9 +120,17 @@ public record PropertyWrapper(Expression expression,
         String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
-        if (!propertyString.isBlank()) {
-            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
-                    .add(new Text(propertyString));
+        boolean haveSomeValue = !propertyString.isBlank() || castType != null || linked1Variables != null;
+        if (haveSomeValue) {
+            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT);
+            if (!propertyString.isBlank()) outputBuilder.add(new Text(propertyString));
+            if (linked1Variables != null) {
+                String header = linked1Variables.isDelayed() ? "{DL1 ": "{L1 ";
+                outputBuilder.add(new Text(header))
+                        .add(linked1Variables.variables().stream().map(v -> v.output(qualification))
+                                .collect(OutputBuilder.joining(Symbol.COMMA)))
+                        .add(new Text("}"));
+            }
             if (castType != null) {
                 outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                         .add(castType.output(qualification))
@@ -160,6 +175,7 @@ public record PropertyWrapper(Expression expression,
 
     @Override
     public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
+        if (linked1Variables != null) return linked1Variables;
         return evaluationContext.linked1Variables(expression);
     }
 

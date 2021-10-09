@@ -717,5 +717,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 causesOfContextModificationDelays.merge(methodInfo, delay, (orig, val) -> orig || val);
             }
         }
+
+        public LinkedVariables linked1Variables(Expression expression) {
+            if(expression instanceof VariableExpression ve) {
+                ChangeData cd = valueChanges.get(ve.variable());
+                if(cd != null) {
+                    return cd.linked1Variables;
+                }
+            }
+            return evaluationContext.linked1Variables(expression);
+        }
     }
 }

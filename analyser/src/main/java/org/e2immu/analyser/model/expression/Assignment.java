@@ -84,7 +84,7 @@ public class Assignment extends ElementImpl implements Expression {
             variableTarget = arrayAccess.dependentVariable;
         } else {
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
-            variableTarget = new DependentVariable(name, null, target.returnType(), value.variables(), null);
+            variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(), null);
         }
     }
 
@@ -278,18 +278,6 @@ public class Assignment extends ElementImpl implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        LinkedVariables linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
-        assert !linkedVariables.isDelayed() ||
-                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
-                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
-
-        LinkedVariables linked1Variables = evaluationContext.linked1Variables(resultOfExpression);
-        assert !linked1Variables.isDelayed() ||
-                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES,
-                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES_SET);
-
         // there are no delays on staticallyAssignedVariables
         LinkedVariables staticallyAssignedVariables;
         if (value instanceof IsVariableExpression variableExpression) {
@@ -297,6 +285,20 @@ public class Assignment extends ElementImpl implements Expression {
         } else {
             staticallyAssignedVariables = LinkedVariables.EMPTY;
         }
+
+        LinkedVariables linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
+        assert !linkedVariables.isDelayed() ||
+                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
+                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
+
+        // go via builder, there may have been a link1 generated on resultOfExpression
+        LinkedVariables linked1Variables = builder.linked1Variables(resultOfExpression);
+        assert !linked1Variables.isDelayed() ||
+                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES,
+                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES_SET);
+
 
         builder.assignment(at, resultOfExpression, staticallyAssignedVariables, linkedVariables, linked1Variables);
     }

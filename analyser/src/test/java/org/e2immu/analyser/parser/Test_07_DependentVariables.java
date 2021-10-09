@@ -19,9 +19,11 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -126,20 +128,18 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    int vars = d.iteration() == 0 ? 4 : 5;
-                    assertEquals(vars, d.evaluationResult().changeData().keySet().size());
-                }
+                int vars = d.iteration() == 0 ? 4 : 5;
+                assertEquals(vars, d.evaluationResult().changeData().keySet().size());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0
-                            ? "<v:<f:xs>[org.e2immu.analyser.testexample.DependentVariables_1.XS.getX(int):0:index]>"
-                            : "instance type X";
+                    String expectValue = d.iteration() == 0 ? "<v:<f:xs>[index]>" : "instance type X/*{L1 xs}*/";
                     assertEquals(expectValue, d.currentValue().toString());
+                    String expectLv1 = d.iteration() == 0 ? "*" : "xs,xs[index]";
+                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toSimpleString());
                 }
                 if (d.variable() instanceof ParameterInfo) {
                     assertEquals(d.falseFrom1(), d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -147,9 +147,17 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getX".equals(d.methodInfo().name)) {
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
+
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }
