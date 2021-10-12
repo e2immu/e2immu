@@ -25,7 +25,7 @@ public class JavaUtil_1 {
     interface Collection$<E> {
 
         @Modified
-        boolean add(@Dependent1 @NotNull E e);
+        boolean add(@Independent1 @NotNull E e);
 
     }
 }

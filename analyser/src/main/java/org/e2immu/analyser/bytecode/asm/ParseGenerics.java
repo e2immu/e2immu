@@ -54,7 +54,7 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo,
                 iterativeParsing = iterativelyParseGenerics(signature,
                         iterativeParsing,
                         name -> {
-                            TypeParameterImpl typeParameter = new TypeParameterImpl(typeInfo, name, index.getAndIncrement());
+                            TypeParameterImpl typeParameter = new TypeParameterImpl(typeInfo, name, index.getAndIncrement(), false);
                             typeContext.addToContext(typeParameter);
                             typeInspectionBuilder.addTypeParameter(typeParameter);
                             return typeParameter;

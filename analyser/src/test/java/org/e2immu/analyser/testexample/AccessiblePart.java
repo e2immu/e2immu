@@ -14,42 +14,41 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Independent;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-// tests Linked1Variables on ArrayAccess
+public class AccessiblePart {
+    interface Counter {
+        void increment();
 
-public class DependentVariables_1 {
+        int getValue();
 
-    @Container
-    static class X {
-        private int i;
-
-        public void setI(int i) {
-            this.i = i;
-        }
-
-        public int getI() {
-            return i;
-        }
+        String getName();
     }
 
-    @E2Container
-    static class XS {
-        private final X[] xs;
+    static class Counters {
+        private final Map<String, Counter> counters;
 
-        public XS(@Independent X[] xs) {
-            this.xs = new X[xs.length];
-            System.arraycopy(xs, 0, this.xs, 0, xs.length);
+        public Counters(Collection<Counter> counters) {
+            this.counters = counters.stream().collect
+                    (Collectors.toUnmodifiableMap(Counter::getName, c -> c));
         }
 
-        //@Independent1 implicitly
-        @Independent(absent = true)
-        @Dependent(absent = true)
-        public X getX(int index) {
-            return xs[index];
+        public Counter getCounter(String name) {
+            return counters.get(name);
+        }
+
+        public int getValue(String name) {
+            return getCounter(name).getValue();
+        }
+
+        public void increment(String name) {
+            getCounter(name).increment();
+        }
+
+        public void incrementAll() {
+            counters.values().forEach(Counter::increment);
         }
     }
 }

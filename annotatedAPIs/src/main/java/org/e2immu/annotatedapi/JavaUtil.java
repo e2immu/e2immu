@@ -56,17 +56,17 @@ public class JavaUtil extends AnnotatedAPI {
      we believe we can live with this at the moment.
      */
     @Container
-    @Dependent1
+    @Independent1
     interface Iterator$<T> {
         @Modified
-        default void forEachRemaining(@NotNull @Dependent1 Consumer<? super T> action) {
+        default void forEachRemaining(@NotNull @Independent1 Consumer<? super T> action) {
         }
 
         @Modified
         boolean hasNext();
 
         @Modified
-        @Dependent1
+        // implicitly @Independent1
         T next();
 
         @Modified
@@ -85,10 +85,10 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        boolean add(@Dependent1 @NotNull E e);
+        boolean add(@NotNull E e);
 
         @Modified
-        boolean addAll(@Dependent1 @NotNull1 java.util.Collection<? extends E> collection);
+        boolean addAll(@Independent1 @NotNull1 java.util.Collection<? extends E> collection);
 
         default boolean clear$Clear$Size(int i) {
             return i == 0;
@@ -101,13 +101,13 @@ public class JavaUtil extends AnnotatedAPI {
             return i != 0 && retVal;
         }
 
-        boolean contains(@NotNull Object object);
+        boolean contains(@NotNull @Independent1 Object object);
 
         default boolean containsAll$Value$Size(int i, java.util.Collection<?> c, boolean retVal) {
             return i != 0 && retVal;
         }
 
-        boolean containsAll(@NotNull1 java.util.Collection<?> c);
+        boolean containsAll(@NotNull1 @Independent1 java.util.Collection<?> c);
 
         default boolean isEmpty$Value$Size(int i, boolean retVal) {
             return i == 0;
@@ -116,12 +116,12 @@ public class JavaUtil extends AnnotatedAPI {
         boolean isEmpty();
 
         @NotNull1
-        @Dependent
+        // implicitly @Dependent
         java.util.Iterator<E> iterator();
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        void forEach(@Dependent1 @NotNull1 Consumer<? super E> action);
+        void forEach(@Independent1 @NotNull1 Consumer<? super E> action);
 
         default boolean remove$Modification$Size(int i, int j) {
             return i <= j && i >= j - 1;
@@ -136,7 +136,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        boolean remove(@NotNull Object object);
+        boolean remove(@NotNull @Independent Object object);
 
         default boolean removeAll$Modification$Size(int i, int j, java.util.Collection<?> c) {
             return i >= j - c.size() && i <= j;
@@ -147,7 +147,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        boolean removeAll(@NotNull1 java.util.Collection<?> c);
+        boolean removeAll(@NotNull1 @Independent java.util.Collection<?> c);
 
         default boolean retainAll$Modification$Size(int i, int j, java.util.Collection<?> c) {
             return i <= c.size() && i <= j;
@@ -158,7 +158,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
-        boolean retainAll(@NotNull1 java.util.Collection<?> c);
+        boolean retainAll(@NotNull1 @Independent java.util.Collection<?> c);
 
         default boolean size$Invariant$Size(int i) {
             return i >= 0;
@@ -177,7 +177,7 @@ public class JavaUtil extends AnnotatedAPI {
         Streams are @E2Container
          */
         @NotNull1
-        @Dependent1
+        @Independent1
         Stream<E> stream();
 
         default int toArray$Transfer$Size(int i) {
@@ -185,7 +185,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @Dependent1
+        @Independent1
         Object[] toArray();
 
         default <T> int toArray$Transfer$Size(int i, T[] a) {
@@ -193,15 +193,15 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @Dependent1
-        <T> T[] toArray(@Dependent1 @NotNull1 @Modified T[] a);
+        @Independent1
+        <T> T[] toArray(@Independent1 @NotNull1 @Modified T[] a);
 
         default <T> int toArray$Transfer$Size(int i, IntFunction<T[]> g) {
             return i;
         }
 
         @NotNull1
-        @Dependent1
+        @Independent1
         <T> T[] toArray(@NotNull IntFunction<T[]> generator);
     }
 
@@ -224,7 +224,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         // @Modified inherited; we're not (yet) inheriting companion methods
-        boolean add(E e); // @Dependent1, @NotNull inherited
+        boolean add(E e); // @Independent1, @NotNull inherited
 
         default boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) {
             return i == j + c.size();
@@ -236,8 +236,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         // IMPROVE causes problems with method resolution
         // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
-        @Modified
-        boolean addAll(@Dependent1 Collection<? extends E> collection);
+        //@Modified inherited
+        boolean addAll(Collection<? extends E> collection); // @Independent1, @NotNull1 inherited
 
         // needed here because it is used by a companion of 'add'.
         default boolean contains$Value$Size(int i, Object o, boolean retVal) {
@@ -248,15 +248,15 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull1
-        @Dependent1
-        <EE> List<EE> copyOf(@NotNull1 Collection<? extends EE> collection);
+        @Independent1
+        <EE> List<EE> copyOf(@NotNull1 @Independent1 Collection<? extends EE> collection);
 
         static boolean get$Precondition$Size(int size, int index) {
             return index < size;
         }
 
         @NotNull
-        @Dependent1
+        // @Independent1 by default
         E get(int index);
 
         default int of$Transfer$Size() {
@@ -264,7 +264,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull1
-        @E2Container
+        @ERContainer
         <EE> java.util.List<EE> of();
 
         default <F> int of$Transfer$Size(F e1) {
@@ -277,7 +277,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @E2Container
-        <F> java.util.List<F> of(@Dependent1 @NotNull F e1);
+        @Independent1 // links to parameters, because of() is a static method
+        <F> java.util.List<F> of(@NotNull F e1);
 
         default <F> int of$Transfer$Size(F f1, F f2) {
             return 2;
@@ -285,6 +286,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @E2Container
+        @Independent1
         <G> java.util.List<G> of(@NotNull G e1, @NotNull G e2);
 
         default <F> int of$Transfer$Size(F f1, F f2, F f3) {
@@ -293,10 +295,11 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @E2Container
+        @Independent1
         <H> java.util.List<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
         @Modified
-        boolean remove(@NotNull Object object);
+        boolean remove(@NotNull @Independent Object object);
 
         @Modified
         @NotNull
@@ -304,9 +307,9 @@ public class JavaUtil extends AnnotatedAPI {
         E remove(int index);
 
         @Modified
-        boolean removeAll(@NotNull1 Collection<?> c);
+        boolean removeAll(@NotNull1 @Independent Collection<?> c);
 
-        @Dependent1
+        @Independent1
         Iterator<E> spliterator();
 
         // @Dependent implicitly!!!
@@ -314,12 +317,12 @@ public class JavaUtil extends AnnotatedAPI {
         java.util.List<E> subList(int fromIndex, int toIndex);
 
         @NotNull1
-        @Dependent1
+        @Independent1
         Object[] toArray();
 
         @NotNull1
-        @Dependent1
-        <T> T[] toArray(@Dependent1 @NotNull1 T[] a);
+        @Independent1
+        <T> T[] toArray(@Independent1 @NotNull1 T[] a);
     }
 
     /*
@@ -350,15 +353,14 @@ public class JavaUtil extends AnnotatedAPI {
             return contains(e);
         }
 
-        @Modified
-        boolean add(@NotNull E e);
+        // @Modified on method, @NotNull, @Independent1 on parameter inherited
+        boolean add(E e);
 
         default boolean addAll$Clear$Size(int i, Collection<? extends E> c) {
             return i >= c.size();
         } // do NOT add isKnown()
 
-        @Modified
-        boolean addAll(@NotNull1 @Dependent1 java.util.Collection<? extends E> collection);
+        boolean addAll(java.util.Collection<? extends E> collection);
 
         default boolean clear$Clear$Size(int i) {
             return i == 0 && org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false);
@@ -371,11 +373,13 @@ public class JavaUtil extends AnnotatedAPI {
             return org.e2immu.annotatedapi.JavaUtil.setContainsValueHelper(i, contains(o), retVal);
         }
 
-        boolean contains(@NotNull Object object);
+        // @NotModified on method, @NotNull, @Independent on parameter inherited
+        boolean contains(Object object);
 
         @E2Container
         @NotNull1
-        <EE> Set<EE> copyOf(@NotNull1 Collection<? extends EE> collection);
+        @Independent1
+        <EE> Set<EE> copyOf(@NotNull1 @Independent1 Collection<? extends EE> collection);
 
         default boolean isEmpty$Value$Size(int i, boolean retVal) {
             return i == 0;
@@ -401,16 +405,19 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull1
         @E2Container
-        <F> java.util.Set<F> of(@NotNull @Dependent1 F e1);
+        @Independent1
+        <F> java.util.Set<F> of(@NotNull F e1);
 
         // IMPROVE advanced <F> int of$Postcondition$Size(F f1, F f2, java.util.Set<F> retVal) { return isFact(f1.equals(f2)) ? (f1.equals(f2) ? 1: 2): retVal.size(); }
         @NotNull1
         @E2Container
-        <G> java.util.Set<G> of(@NotNull @Dependent1 G e1, @Dependent1 @NotNull G e2);
+        @Independent1
+        <G> java.util.Set<G> of(@NotNull G e1, @NotNull G e2);
 
         @NotNull1
         @E2Container
-        <H> java.util.Set<H> of(@NotNull @Dependent1 H e1, @NotNull @Dependent1 H e2, @Dependent1 @NotNull H e3);
+        @Independent1
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
         default boolean remove$Modification$Size(int i, int j, Object o) {
             return org.e2immu.annotatedapi.JavaUtil.setRemoveModificationHelper(i, j, contains(o));
@@ -428,10 +435,9 @@ public class JavaUtil extends AnnotatedAPI {
             return !contains(object);
         }
 
-        @Modified
-        boolean remove(@NotNull Object object);
+        boolean remove(Object object);
 
-        @Dependent1
+        @Independent1
         Iterator<E> spliterator();
     }
 
@@ -453,7 +459,7 @@ public class JavaUtil extends AnnotatedAPI {
         ArrayList$(int size) {
         }
 
-        ArrayList$(@NotNull1 @NotModified @Dependent1 Collection<? extends E> collection) {
+        ArrayList$(@NotNull1 @Independent1 Collection<? extends E> collection) {
         }
     }
 
@@ -472,7 +478,7 @@ public class JavaUtil extends AnnotatedAPI {
             return post == c.size();
         }
 
-        LinkedList$(@NotNull1 @Dependent1 Collection<? extends E> c) {
+        LinkedList$(@NotNull1 @Independent1 Collection<? extends E> c) {
         }
     }
 
@@ -490,7 +496,7 @@ public class JavaUtil extends AnnotatedAPI {
             return post == c.size();
         }
 
-        Stack$(@NotNull1 @Dependent1 Collection<? extends E> c) {
+        Stack$(@NotNull1 @Independent1 Collection<? extends E> c) {
         }
     }
 
@@ -514,7 +520,7 @@ public class JavaUtil extends AnnotatedAPI {
             return post == c.size();
         }
 
-        HashSet$(@NotNull1 @Dependent1 Collection<? extends E> c) {
+        HashSet$(@NotNull1 @Independent1 Collection<? extends E> c) {
         }
     }
 
@@ -548,6 +554,7 @@ public class JavaUtil extends AnnotatedAPI {
             return o1.equals(o2) || o2.equals(o1) ? 0 : retVal;
         }
 
+        // @Independent by default (@NotModified method, non-abstract type)
         int compare(@NotNull T o1, @NotNull T o2);
 
         <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor);
@@ -559,21 +566,18 @@ public class JavaUtil extends AnnotatedAPI {
         <T> java.util.Optional<T> empty();
 
         @NotNull
-        <T> java.util.Optional<T> of(@NotNull @Dependent1 T t);
+        <T> java.util.Optional<T> of(@NotNull T t);
 
         @NotNull
-        <T> java.util.Optional<T> ofNullable(@Dependent1 T t);
+        <T> java.util.Optional<T> ofNullable(T t);
 
         @NotNull
-        @Dependent1
         T get();
 
         @NotNull
-        @Dependent1
         T orElseThrow();
 
         @NotNull
-        @Dependent1
         <X extends Throwable> T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier);
 
     }
@@ -584,7 +588,8 @@ public class JavaUtil extends AnnotatedAPI {
         IntStream stream(@NotNull @NotModified @Independent int[] array);
 
         @NotNull
-        <T> Stream<T> stream(@NotNull @NotModified @Dependent1 T[] array);
+        @Independent1
+        <T> Stream<T> stream(@NotNull @NotModified @Independent1 T[] array);
     }
 
     @UtilityClass
@@ -606,7 +611,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         @Modified
-        V computeIfAbsent(@NotNull K key, @Dependent1 @NotNull1 Function<? super K, ? extends V> mappingFunction);
+        V computeIfAbsent(@NotNull K key, @Independent1 @NotNull1 Function<? super K, ? extends V> mappingFunction);
 
         default boolean containsKey$Value$Size(int i, Object key, boolean retVal) {
             return i != 0 && retVal;
@@ -617,8 +622,8 @@ public class JavaUtil extends AnnotatedAPI {
         @E2Container
         @NotNull
         @NotModified
-        @Dependent1
-        <KK, VV> Map<KK, VV> copyOf(@NotNull Map<? extends KK, ? extends VV> map);
+        @Independent1
+        <KK, VV> Map<KK, VV> copyOf(@NotNull @Independent1 Map<? extends KK, ? extends VV> map);
 
         default boolean size$Invariant$Size(int i) {
             return i >= 0;
@@ -639,6 +644,7 @@ public class JavaUtil extends AnnotatedAPI {
             return i;
         }
 
+        // @Dependent!
         @NotNull1
         Set<Map.Entry<K, V>> entrySet();
 
@@ -649,30 +655,25 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         Set<K> keySet();
 
-        void forEach(@NotNull @Dependent1 BiConsumer<? super K, ? super V> action);
+        void forEach(@NotNull @Independent1 BiConsumer<? super K, ? super V> action);
 
-        @Dependent1
         V get(@NotNull Object key);
 
-        @Dependent1
         V getOrDefault(@NotNull Object key, V defaultValue);
 
         @Modified
-        @Dependent1
         V put(@NotNull K key, @NotNull V value);
 
         @NotNull1
         Collection<V> values();
 
         @Container
-        @Dependent1
+        @Independent1
         interface Entry<K, V> {
             @NotNull
-            @Dependent1
             K getKey();
 
             @NotNull
-            @Dependent1
             V getValue();
         }
     }
@@ -696,13 +697,12 @@ public class JavaUtil extends AnnotatedAPI {
             return post == map.size();
         }
 
-        public HashMap$(@NotNull1 @Dependent1 Map<? extends K, ? extends V> map) {
+        public HashMap$(@NotNull1 @Independent1 Map<? extends K, ? extends V> map) {
         }
     }
 
     interface AbstractCollection$<E> {
 
-        @Dependent1
         Iterator<E> iterator();
     }
 

@@ -51,4 +51,5 @@ public interface TypeParameter extends NamedType {
 
     boolean isMethodTypeParameter();
 
+    boolean isAnnotatedWithIndependent();
 }

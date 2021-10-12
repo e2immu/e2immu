@@ -648,7 +648,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         if (immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE) return MultiLevel.DEPENDENT;
         TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
         if (bestType == null) {
-            return MultiLevel.DEPENDENT_1;
+            return MultiLevel.INDEPENDENT_1;
         }
         int independent = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.INDEPENDENT);
         assert independent != MultiLevel.DEPENDENT :

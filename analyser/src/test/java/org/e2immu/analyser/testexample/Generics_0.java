@@ -49,12 +49,12 @@ public class Generics_0 {
         @E2Container
         private final List<X> list;
 
-        public XSTransparent(@Dependent1 Collection<X> collection) {
+        public XSTransparent(@Independent Collection<X> collection) {
             list = List.copyOf(collection);
         }
 
         @E2Container
-        @Dependent1
+        @Independent1
         public List<X> getList() {
             return list;
         }

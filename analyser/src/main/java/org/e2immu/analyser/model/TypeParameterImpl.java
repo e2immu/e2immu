@@ -36,19 +36,26 @@ public class TypeParameterImpl implements TypeParameter {
 
     public final String name;
     public final int index;
+    public final boolean annotatedWithIndependent;
 
     // typeInfo can be set straight away, but methodInfo has to wait until
     // method building is sufficiently far
     private final SetOnce<Either<TypeInfo, MethodInfo>> owner = new SetOnce<>();
     private final SetOnce<List<ParameterizedType>> typeBounds = new SetOnce<>();
 
+
     public TypeParameterImpl(String name, int index) {
-        this.name = name;
-        this.index = index;
+        this(name, index, false);
     }
 
-    public TypeParameterImpl(TypeInfo typeInfo, String name, int index) {
-        this(name, index);
+    private TypeParameterImpl(String name, int index, boolean annotatedWithIndependent) {
+        this.name = name;
+        this.index = index;
+        this.annotatedWithIndependent = annotatedWithIndependent;
+    }
+
+    public TypeParameterImpl(TypeInfo typeInfo, String name, int index, boolean annotatedWithIndependent) {
+        this(name, index, annotatedWithIndependent);
         owner.set(Either.left(typeInfo));
     }
 
@@ -138,5 +145,10 @@ public class TypeParameterImpl implements TypeParameter {
     @Override
     public boolean isMethodTypeParameter() {
         return !owner.isSet() || owner.get().isRight();
+    }
+
+    @Override
+    public boolean isAnnotatedWithIndependent() {
+        return annotatedWithIndependent;
     }
 }

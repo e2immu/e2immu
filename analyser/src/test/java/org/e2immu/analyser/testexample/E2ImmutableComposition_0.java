@@ -26,7 +26,7 @@ public class E2ImmutableComposition_0 {
      * This is an @E2Immutable abstract type, hiding its content.
      * Equivalent to unbound parameter type, or java.lang.Object.
      */
-    @E2Container
+    @ERContainer
     interface Marker {
     }
 
@@ -34,7 +34,7 @@ public class E2ImmutableComposition_0 {
      * This as an @E2Immutable abstract type.
      * If semantically used correctly, then hiding its content completely, and only showing an aspect.
      */
-    @E2Container
+    @ERContainer
     interface HasSize {
 
         @NotModified
@@ -95,9 +95,6 @@ public class E2ImmutableComposition_0 {
     /**
      * One is an assignment-based implementation of {@link NonEmptyList}.
      * <p>
-     * There are no {@link Dependent1} annotations, because the type is not {@link E2Immutable},
-     * and therefore cannot have immutable content.
-     * <p>
      * Fields: {@link Variable}
      *
      * @param <T>
@@ -123,7 +120,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void visit(Consumer<T> consumer) {
+        public void visit(@Independent1 Consumer<T> consumer) {
             consumer.accept(t);
         }
     }
@@ -203,7 +200,7 @@ public class E2ImmutableComposition_0 {
     static class ImmutableOne<T> implements NonEmptyImmutableList<T> {
         private final T t;
 
-        public ImmutableOne(@Dependent1 T t) {
+        public ImmutableOne(T t) {
             this.t = t;
         }
 
@@ -212,14 +209,13 @@ public class E2ImmutableComposition_0 {
             return 1;
         }
 
-        @Dependent1
         @Override
         public T first() {
             return t;
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<T> consumer) {
+        public void visit(@Independent1 Consumer<T> consumer) {
             consumer.accept(t);
         }
     }
@@ -244,7 +240,7 @@ public class E2ImmutableComposition_0 {
         private final One<Integer>[] ones;
 
         @SuppressWarnings("unchecked")
-        public ImmutableArrayOfTransparentOnes(int size, @Dependent1 Supplier<One<Integer>> generator) {
+        public ImmutableArrayOfTransparentOnes(int size, @Independent1 Supplier<One<Integer>> generator) {
             ones = new One[size];
             Arrays.setAll(ones, i -> generator.get());
         }
@@ -255,19 +251,19 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Dependent1
+        @Independent1
         public One<Integer> first() {
             return ones[0];
         }
 
         @NotModified
-        @Dependent1
+        @Independent1
         public One<Integer> get(int index) {
             return ones[index];
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<One<Integer>> consumer) {
+        public void visit(@Independent1 Consumer<One<Integer>> consumer) {
             for (One<Integer> one : ones) consumer.accept(one);
         }
     }
@@ -290,7 +286,7 @@ public class E2ImmutableComposition_0 {
         private final T[] ts;
 
         @SuppressWarnings("unchecked")
-        public ImmutableArrayOfT(int size, @Dependent1 Supplier<T> generator) {
+        public ImmutableArrayOfT(int size, @Independent1 Supplier<T> generator) {
             ts = (T[]) new Object[size];
             Arrays.setAll(ts, i -> generator.get());
         }
@@ -301,19 +297,17 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Dependent1
         public T first() {
             return ts[0];
         }
 
         @NotModified
-        @Dependent1
         public T get(int index) {
             return ts[index];
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<T> consumer) {
+        public void visit(@Independent1 Consumer<T> consumer) {
             for (T t : ts) consumer.accept(t);
         }
     }
@@ -333,7 +327,7 @@ public class E2ImmutableComposition_0 {
 
         private final Marker[] markers;
 
-        public ImmutableArrayOfMarker(int size, @Dependent1 Supplier<Marker> generator) {
+        public ImmutableArrayOfMarker(int size, @Independent1 Supplier<Marker> generator) {
             markers = new Marker[size];
             Arrays.setAll(markers, i -> generator.get());
         }
@@ -344,19 +338,17 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Dependent1
         public Marker first() {
             return markers[0];
         }
 
         @NotModified
-        @Dependent1
         public Marker get(int index) {
             return markers[index];
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<Marker> consumer) {
+        public void visit(@Independent1 Consumer<Marker> consumer) {
             for (Marker marker : markers) consumer.accept(marker);
         }
     }
@@ -369,15 +361,15 @@ public class E2ImmutableComposition_0 {
      * <p>
      * Note that we still have to use a generator to obtain sensible values for the {@link HasSize} objects.
      * <p>
-     * Field composition: Modifiable data containing E2Immutable data.
-     * The E2Immutable data is as close as possible to inaccessible data, but is accessible nevertheless.
+     * Field composition: Modifiable data containing ERImmutable data.
+     * The ERImmutable data is as close as possible to inaccessible data, but is accessible nevertheless.
      */
-    @E2Container
+    @ERContainer
     static class ImmutableArrayOfHasSize implements NonEmptyImmutableList<HasSize> {
 
         private final HasSize[] elements;
 
-        public ImmutableArrayOfHasSize(int size, @Dependent1 Supplier<HasSize> generator) {
+        public ImmutableArrayOfHasSize(int size, @Independent Supplier<HasSize> generator) {
             elements = new HasSize[size];
             Arrays.setAll(elements, i -> generator.get());
         }
@@ -388,7 +380,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Dependent1
+        @Independent
         public HasSize first() {
             return elements[0];
         }
@@ -399,7 +391,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<HasSize> consumer) {
+        public void visit(@Independent Consumer<HasSize> consumer) {
             for (HasSize element : elements) consumer.accept(element);
         }
     }
@@ -539,16 +531,16 @@ public class E2ImmutableComposition_0 {
      * <p>
      * Building on {@link ImmutableArrayOfHasSize}.
      * <p>
-     * Field composition: E2Immutable data containing modifiable data containing E2Immutable data.
-     * For the (in)dependent computation, this boils down to modifiable data containing E2Immutable data:
-     * only the {@link HasSize} elements are immutable content warranting {@link Dependent1}.
+     * Field composition: E2Immutable data containing modifiable data containing ERImmutable data.
+     * For the (in)dependent computation, this boils down to modifiable data containing ERImmutable data.
+     * No hidden content.
      */
-    @E2Container
+    @ERContainer
     static class EncapsulatedImmutableArrayOfHasSize implements NonEmptyImmutableList<HasSize> {
 
         private final ImmutableOne<HasSize[]> one;
 
-        public EncapsulatedImmutableArrayOfHasSize(int size, @Dependent1 Supplier<HasSize> generator) {
+        public EncapsulatedImmutableArrayOfHasSize(int size, @Independent Supplier<HasSize> generator) {
             HasSize[] elements = new HasSize[size];
             Arrays.setAll(elements, i -> generator.get());
             one = new ImmutableOne<>(elements);
@@ -560,7 +552,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        @Dependent1
+        @Independent
         public HasSize first() {
             return one.first()[0];
         }
@@ -571,7 +563,7 @@ public class E2ImmutableComposition_0 {
         }
 
         @Override
-        public void visit(@Dependent1 Consumer<HasSize> consumer) {
+        public void visit(@Independent Consumer<HasSize> consumer) {
             for (HasSize element : one.first()) consumer.accept(element);
         }
     }
@@ -582,10 +574,8 @@ public class E2ImmutableComposition_0 {
      * Building on {@link ImmutableArrayOfHasSize}.
      * <p>
      * Field composition: Modifiable data containing constant data.
-     * We do not regard the latter as immutable content warranting {@link Dependent1}, whence the absence
-     * of {@link Dependent1} on <code>consumer</code> in <code>visit</code>.
      */
-    @E2Container
+    @ERContainer
     static class ArrayOfConstants implements NonEmptyImmutableList<String> {
 
         private final String[] strings = {"a", "b", "c"};

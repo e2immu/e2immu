@@ -28,18 +28,18 @@ public class Consumer_0<S> {
     // of unbound parameter type
     private final S s;
 
-    public Consumer_0(@Dependent1 S in) {
+    public Consumer_0(S in) {
         this.s = in;
     }
 
     // Note that @IgnoreModifications is ALWAYS contracted!
     @NotModified
-    public void forEach(@IgnoreModifications @Dependent1 MyConsumer<S> myConsumer) {
+    public void forEach(@IgnoreModifications @Independent1 MyConsumer<S> myConsumer) {
         myConsumer.accept(s);
     }
 
     @NotModified
-    public void visit(@NotModified @Dependent1 MyConsumer<S> myConsumer) {
+    public void visit(@NotModified @Independent1 MyConsumer<S> myConsumer) {
         forEach(myConsumer);
     }
 }

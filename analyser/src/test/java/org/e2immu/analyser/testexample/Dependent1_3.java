@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Independent1;
 import org.e2immu.annotation.NotModified;
 
 /*
@@ -32,7 +32,7 @@ public class Dependent1_3<T> {
     @E2Container // contracted, implies that get is @NotModified, @Independent
     interface MySupplier<T> {
         // we go a little further here, and stipulate that T is content-linked to the fields of the supplier
-        @Dependent1
+        // @Independent1 implicitly
         T get();
     }
 
@@ -42,7 +42,7 @@ public class Dependent1_3<T> {
     }
 
     @NotModified
-    @Dependent1 // because returns immutable content of a field, using a method
+    @Independent1 // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

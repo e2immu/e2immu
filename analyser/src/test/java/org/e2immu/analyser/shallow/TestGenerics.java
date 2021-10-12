@@ -35,7 +35,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
     public void testStreamInteger() {
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis streamAnalysis = stream.typeAnalysis.get();
-        assertEquals(MultiLevel.DEPENDENT_1, streamAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, streamAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, streamAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertTrue(streamAnalysis.immutableCanBeIncreasedByTypeParameters());
 
@@ -59,7 +59,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis optionalAnalysis = optional.typeAnalysis.get();
-        assertEquals(MultiLevel.DEPENDENT_1, optionalAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, optionalAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, optionalAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertTrue(optionalAnalysis.immutableCanBeIncreasedByTypeParameters());
 
@@ -76,8 +76,8 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
     /*
      Stream is E2Immutable.
-     Entry is E2Immutable when the result from floorEntry in TreeMap, but not when returned as Set<Entry<...>> in entrySet
-     map.entrySet() is Set<Entry<>> is @Dependent/@Container, therefore increasing doesn't work
+     Entry is E2Immutable when the result from floorEntry in TreeMap, but not when returned as Set<Entry<...>> in Map.entrySet.
+     Map.entrySet() is Set<Entry<>> is @Dependent/@Container, therefore increasing doesn't work
      */
 
     @Test
@@ -88,9 +88,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo entry = typeContext.getFullyQualified(Map.Entry.class);
         TypeAnalysis entryAnalysis = entry.typeAnalysis.get();
-        assertEquals(MultiLevel.DEPENDENT_1, entryAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, entryAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE, entryAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertFalse(entryAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertTrue(entryAnalysis.immutableCanBeIncreasedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
         ParameterizedType stringPt = new ParameterizedType(string, 0);

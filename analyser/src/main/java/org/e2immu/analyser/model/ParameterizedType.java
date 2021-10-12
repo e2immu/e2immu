@@ -915,7 +915,7 @@ public class ParameterizedType {
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             // unbound type parameter, null constant
-            return MultiLevel.DEPENDENT_1;
+            return MultiLevel.INDEPENDENT_1;
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -954,14 +954,18 @@ public class ParameterizedType {
         if (baseValue == Level.DELAY) return Level.DELAY;
         if (MultiLevel.level(baseValue) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
             Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            if (doSum == Boolean.TRUE) {
+            if (doSum == null) {
+                assert typeAnalysis.isNotContracted();
+                return Level.DELAY;
+            }
+            if (doSum) {
                 int paramValue = parameters.stream()
                         .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
+                        .map(v -> v == TYPE_ANALYSIS_NOT_AVAILABLE ? MultiLevel.MUTABLE : v)
                         .min().orElseThrow();
                 if (paramValue == Level.DELAY) return Level.DELAY;
                 return MultiLevel.sumImmutableLevels(baseValue, paramValue);
             }
-            if (doSum == null) return Level.DELAY;
         }
         return baseValue;
     }

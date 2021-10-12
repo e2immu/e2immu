@@ -164,7 +164,9 @@ public class ShallowMethodResolver {
             // check if we can go from the parameter to the concrete type
             ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
             if (inMap == null) return true;
-            return differentType(inspectionProvider, inMap, inSubType, translationMap);
+            if(inMap.typeParameter != inSuperType.typeParameter) {
+                return differentType(inspectionProvider, inMap, inSubType, translationMap);
+            } // else: the map doesn't point us to some other place
         }
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
         if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;

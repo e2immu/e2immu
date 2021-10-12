@@ -42,7 +42,7 @@ public class Consumer_8 {
         }
 
         @NotModified
-        public void forEach(@Container @Dependent1 MyConsumer<X> consumer) {
+        public void forEach(@Container @Independent1 MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 

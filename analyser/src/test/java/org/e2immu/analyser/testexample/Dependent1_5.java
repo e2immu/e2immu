@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Dependent;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Independent1;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -22,7 +25,7 @@ import java.util.Set;
 
 public class Dependent1_5<T> {
 
-    private final Set<T> set ;
+    private final Set<T> set;
 
     @Independent
     public Dependent1_5(Collection<? extends T> collection) {
@@ -31,18 +34,18 @@ public class Dependent1_5<T> {
 
     @Dependent
     public Dependent1_5(Set<T> set) {
-       this.set = set;
+        this.set = set;
     }
 
-    public void add(@Dependent1 T t) {
+    public void add(T t) {
         set.add(t); // trivial propagation
     }
 
-    public void addAll(@Dependent1 Collection<? extends T> ts) {
+    public void addAll(@Independent1 Collection<? extends T> ts) {
         this.set.addAll(ts); // trivial propagation
     }
 
-    public void addAll2(@Dependent1 Collection<? extends T> ts) {
+    public void addAll2(@Independent1 Collection<? extends T> ts) {
         for (T t : ts) add(t); // other type of propagation
     }
 
@@ -51,13 +54,12 @@ public class Dependent1_5<T> {
         return set;
     }
 
-    @Dependent1 // implying @Independent
+    @Independent1
     @E2Container
     public Set<T> getCopy() {
         return Set.copyOf(set);
     }
 
-    @Dependent1
     public T getSomeT() {
         return set.stream().findFirst().orElse(null);
     }

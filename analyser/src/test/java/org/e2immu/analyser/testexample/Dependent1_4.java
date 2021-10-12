@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Independent1;
 import org.e2immu.annotation.Modified;
 
 /*
@@ -37,7 +37,7 @@ public class Dependent1_4<T> {
     interface MySupplier<T> {
         // we mark that get is @Modified, and returns content linked to the fields of the implementation
         @Modified
-        @Dependent1
+        // @Independent1, implicitly
         T get();
     }
 
@@ -50,7 +50,7 @@ public class Dependent1_4<T> {
 
     // modified because get() is a modifying method
     @Modified
-    @Dependent1 // because returns immutable content of a field, using a method
+    @Independent1 // because returns immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

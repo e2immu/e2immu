@@ -138,11 +138,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (independent == MultiLevel.INDEPENDENT) {
             expression = e2.independent;
-        } else if (independent == MultiLevel.DEPENDENT_1) {
-            expression = e2.dependent1;
+        } else if (independent == MultiLevel.INDEPENDENT_1) {
+            expression = e2.independent1;
         } else {
             int level = MultiLevel.level(independent) + 1;
-            expression = new AnnotationExpressionImpl(e2.dependent1.typeInfo(),
+            expression = new AnnotationExpressionImpl(e2.independent1.typeInfo(),
                     List.of(new MemberValuePair("level", new IntConstant(primitives, level))));
         }
         annotations.put(expression, true);
@@ -242,7 +242,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     levelIndependent = MultiLevel.LEVEL_R_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
                     setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
-                } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
+                } else if (e2ImmuAnnotationExpressions.independent1.typeInfo() == t) {
                     levelIndependent = MultiLevel.LEVEL_1_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;

@@ -147,7 +147,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
 
                 check(Dependent.class, e2.dependent);
                 check(Independent.class, e2.independent);
-                CheckIndependent.checkLevel(messages, methodInfo, Dependent1.class, e2.dependent1, methodAnalysis);
+                CheckIndependent.checkLevel(messages, methodInfo, Independent1.class, e2.independent1, methodAnalysis);
             }
 
             check(NotModified.class, e2.notModified);

@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 /*
 Exact copy of ForEachMethod_0, but with other names.
@@ -30,13 +33,13 @@ public class Consumer_5<S> {
 
     private final S s;
 
-    public Consumer_5(@Dependent1 S in) {
+    public Consumer_5(S in) {
         this.s = in;
     }
 
     // set is @Modified, the normal way of working.
     @NotModified
-    public void addToSet(@Modified @Dependent1 Set<S> set) {
+    public void addToSet(@Modified @Independent1 Set<S> set) {
         set.add(s);
     }
 

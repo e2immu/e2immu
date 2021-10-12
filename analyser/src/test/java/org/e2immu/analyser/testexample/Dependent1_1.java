@@ -15,7 +15,8 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.Dependent1;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Independent1;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,11 +33,11 @@ public class Dependent1_1<T> {
         list = new ArrayList<>(collection);
     }
 
-    public void add(@Dependent1 T t) {
+    public void add(@Independent1 T t) {
         list.add(t); // trivial propagation
     }
 
-    public void add2(@Dependent1 T t) {
+    public void add2(@Independent1 T t) {
         List<T> theList = list;
         T theT = t;
 
@@ -48,7 +49,9 @@ public class Dependent1_1<T> {
         return list;
     }
 
-    @Dependent1
+    // implicitly @Independent1
+    @Independent(absent = true)
+    @Dependent(absent = true)
     public T getFirst() {
         return list.get(0);
     }

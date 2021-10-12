@@ -12,29 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testannotatedapi;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
-/*
-first test, direct assignment to fields
- */
-public class Dependent1_0<T> {
+// testing immutableCanBeIncreasedByTypeParameters == Boolean.false
 
-    // and not @Linked, because T is unbound in this type
-    @Linked1(to = {"Dependent1_0:t"})
-    @Final
-    private T t;
+public class JavaUtil_4 {
 
-    // @Independent1 implicitly on t
-    public Dependent1_0(T t) {
-        this.t = t;
+    final static String PACKAGE_NAME = "java.util";
+
+    @Container
+    interface Collection$<@Independent E> {
+
+        @Modified
+        boolean add(@NotNull E e);
+
     }
 
-    //@Independent1 implicitly
-    @Independent(absent = true)
-    @Dependent(absent = true)
-    public T getT() {
-        return t;
+    interface List$<E> {
+
     }
 }
+

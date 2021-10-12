@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent1;
+import org.e2immu.annotation.Independent1;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull1;
@@ -38,7 +38,7 @@ public class Consumer_4<S> {
 
         // not contracted
         @NotModified
-        default void acceptAll(@NotModified @NotNull1 @Dependent1 Collection<? extends T> collection) {
+        default void acceptAll(@NotModified @NotNull1 @Independent1 Collection<? extends T> collection) {
             collection.forEach(this::accept);
         }
     }
@@ -46,12 +46,12 @@ public class Consumer_4<S> {
     @NotNull1
     private final Collection<S> strings;
 
-    public Consumer_4(@NotNull1 Collection<S> in) {
+    public Consumer_4(@NotNull1 @Independent1 Collection<S> in) {
         this.strings = in;
     }
 
     @NotModified
-    public void forEach(@NotModified @Dependent1 MyConsumer<S> myConsumer) {
+    public void forEach(@NotModified @Independent1 MyConsumer<S> myConsumer) {
         myConsumer.acceptAll(strings);
     }
 }

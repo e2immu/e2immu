@@ -43,7 +43,7 @@ public class Consumer_10 {
         }
 
         @NotModified
-        @Dependent1
+        @ERContainer
         public Stream<Map.Entry<String, String>> stream() {
             return map.entrySet().stream();
         }

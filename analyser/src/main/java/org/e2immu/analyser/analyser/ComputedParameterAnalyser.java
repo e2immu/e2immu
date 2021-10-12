@@ -295,7 +295,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                     int typeIndependent;
                     if (bestType == null) {
-                        typeIndependent = DEPENDENT_1;
+                        typeIndependent = INDEPENDENT_1;
                     } else {
                         typeIndependent = analyserContext.getTypeAnalysis(bestType).getProperty(INDEPENDENT);
                     }

@@ -70,7 +70,7 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
         check(NotModified.class, e2.notModified);
         check(NotNull.class, e2.notNull);
         check(NotNull1.class, e2.notNull1);
-        check(Dependent1.class, e2.dependent1);
+        check(Independent1.class, e2.independent1);
 
         check(BeforeMark.class, e2.beforeMark);
         check(E1Immutable.class, e2.e1Immutable);

@@ -18,10 +18,7 @@ import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -118,4 +115,13 @@ public class TestJavaUtil {
         assertSame(Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER, ms.get(0).message());
     }
 
+    // test @Independent on type parameter
+    @Test
+    public void test_4() throws IOException {
+        Set<Message> messages = test("JavaUtil_4");
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        assertFalse(collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        TypeInfo list = typeContext.getFullyQualified(List.class);
+        assertTrue(list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+    }
 }

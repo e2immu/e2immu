@@ -194,7 +194,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.NOT_INVOLVED, getAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
         // an unbound type parameter cannot be DEPENDENT
-        assertEquals(MultiLevel.DEPENDENT_1, getAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, getAnalysis.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.NULLABLE, getAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     }
 
@@ -248,7 +248,7 @@ public class TestDefaultAnnotations {
 
         assertEquals(MultiLevel.NULLABLE, toArrayAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE, toArrayAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(MultiLevel.DEPENDENT_1, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, toArrayAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
     @Test
@@ -362,7 +362,7 @@ public class TestDefaultAnnotations {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("put", 2);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.DEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);

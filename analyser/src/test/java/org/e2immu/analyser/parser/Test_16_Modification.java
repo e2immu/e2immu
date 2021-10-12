@@ -665,7 +665,7 @@ public class Test_16_Modification extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
             ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
-            assertEquals(MultiLevel.DEPENDENT_1, p0Add.parameterAnalysis.get()
+            assertEquals(MultiLevel.INDEPENDENT_1, p0Add.parameterAnalysis.get()
                     .getProperty(VariableProperty.INDEPENDENT));
         };
 

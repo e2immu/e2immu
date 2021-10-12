@@ -97,7 +97,7 @@ public class EvaluateParameters {
                         } else {
                             map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
                         }
-                    } else if (independent == MultiLevel.DEPENDENT_1) {
+                    } else if (independent == MultiLevel.INDEPENDENT_1) {
                         map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE);
                     }
                 }
@@ -136,7 +136,7 @@ public class EvaluateParameters {
                 if (parameterValue instanceof IsVariableExpression veArg && scopeObject instanceof IsVariableExpression veScope) {
                     if (independent == Level.DELAY) {
                         builder.link1(veArg.variable(), null); // null indicates a delay
-                    } else if (independent == MultiLevel.DEPENDENT_1) {
+                    } else if (independent == MultiLevel.INDEPENDENT_1) {
                         builder.link1(veArg.variable(), veScope.variable());
                     }
                 }

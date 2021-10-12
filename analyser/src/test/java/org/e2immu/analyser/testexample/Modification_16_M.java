@@ -15,7 +15,6 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -51,8 +50,9 @@ public class Modification_16_M {
         @NotModified
         List<ErrorMessage> getErrors();
 
+        // parameter ErrorMessage @Dependent implicitly
         @Modified
-        void addError(@NotModified @Dependent1 ErrorMessage errorMessage);
+        void addError(@NotModified ErrorMessage errorMessage);
     }
 
     static class FaultyImplementation implements ErrorRegistry {

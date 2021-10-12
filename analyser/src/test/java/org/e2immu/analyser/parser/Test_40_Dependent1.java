@@ -62,13 +62,13 @@ public class Test_40_Dependent1 extends CommonTestRunner {
             assertEquals(MultiLevel.DEPENDENT, methodIndependent);
             int paramIndependent = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get()
                     .getProperty(VariableProperty.INDEPENDENT);
-            assertEquals(MultiLevel.DEPENDENT_1, paramIndependent);
+            assertEquals(MultiLevel.INDEPENDENT_1, paramIndependent);
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add2".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
             }
         };
@@ -86,12 +86,12 @@ public class Test_40_Dependent1 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
             }
             if ("addWithMessage".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 2 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                int expectIndependent = d.iteration() <= 2 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
             }
         };

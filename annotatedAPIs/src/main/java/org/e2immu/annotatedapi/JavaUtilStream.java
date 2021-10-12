@@ -77,6 +77,7 @@ public class JavaUtilStream {
     interface Stream$<T> {
 
         @NotNull
+        @ERContainer
         <TT> Stream<TT> empty();
 
         @NotNull
@@ -86,22 +87,22 @@ public class JavaUtilStream {
         <TT> Stream<TT> of(@NotNull TT... t);
 
         @NotNull
-        <R> Stream<R> map(@Dependent1 @NotNull Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@Independent1 @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@Dependent1 @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        <R> Stream<R> flatMap(@Independent1 @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R, A> R collect(@Dependent1 @NotNull Collector<? super T, A, R> collector);
+        <R, A> R collect(@Independent1 @NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        Stream<T> filter(@Dependent1 @NotNull Predicate<? super T> predicate);
+        Stream<T> filter(@Independent1 @NotNull Predicate<? super T> predicate);
 
         @NotNull
-        IntStream mapToInt(@Dependent1 @NotNull ToIntFunction<? super T> mapper);
+        IntStream mapToInt(@Independent1 @NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Optional<T> min(@Dependent1 @NotNull Comparator<? super T> comparator);
+        Optional<T> min(@Independent1 @NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -113,11 +114,10 @@ public class JavaUtilStream {
         Optional<T> findFirst();
 
         @NotNull
-        void forEach(@Dependent1 @NotNull Consumer<? super T> action);
+        void forEach(@Independent1 @NotNull Consumer<? super T> action);
     }
 
     @E2Container
-    @Dependent1
     interface BaseStream$ {
 
     }

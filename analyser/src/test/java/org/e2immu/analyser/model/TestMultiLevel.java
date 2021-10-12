@@ -25,7 +25,7 @@ public class TestMultiLevel {
     public void testLookup() {
         assertEquals(1, DEPENDENT);
         assertEquals(5, EFFECTIVELY_E1IMMUTABLE);
-        assertEquals(5, DEPENDENT_1);
+        assertEquals(5, INDEPENDENT_1);
 
         assertEquals(10, EVENTUALLY_E2IMMUTABLE);
         assertEquals(11, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);

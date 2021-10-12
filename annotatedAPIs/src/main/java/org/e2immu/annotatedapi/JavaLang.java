@@ -29,14 +29,14 @@ class JavaLang {
     // implicitly @Dependent
     @Container
     interface Iterable$<T> {
-        void forEach(@NotNull @Dependent1 Consumer<? super T> action);
+        void forEach(@NotNull @Independent1 Consumer<? super T> action);
 
         // implicitly @Dependent, has `remove()`
         @NotNull
         Iterator<T> iterator();
 
         @NotNull
-        @Dependent1
+        @Independent1
         Spliterator<T> spliterator();
     }
 

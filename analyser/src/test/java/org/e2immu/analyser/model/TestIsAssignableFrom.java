@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
@@ -42,7 +44,13 @@ public class TestIsAssignableFrom {
     public static void beforeClass() throws IOException {
         org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR,
                 Logger.LogTarget.BYTECODE_INSPECTOR);
-        Parser parser = new Parser();
+        InputConfiguration inputConfiguration = new InputConfiguration.Builder()
+                .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                .build();
+        Configuration configuration = new Configuration.Builder()
+                .setInputConfiguration(inputConfiguration)
+                .build();
+        Parser parser = new Parser(configuration);
         typeContext = parser.getTypeContext();
         primitives = typeContext.getPrimitives();
         parser.getByteCodeInspector().inspectFromPath("java/util/List");
@@ -129,7 +137,8 @@ public class TestIsAssignableFrom {
     }
 
     private ParameterizedType type(String name) {
-        return Objects.requireNonNull(typeContext.typeMapBuilder.get(name).asParameterizedType(typeContext));
+        TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMapBuilder.get(name), "Cannot find " + name);
+        return Objects.requireNonNull(typeInfo.asParameterizedType(typeContext));
     }
 
     @Test

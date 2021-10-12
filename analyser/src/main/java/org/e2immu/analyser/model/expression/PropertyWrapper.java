@@ -142,7 +142,7 @@ public record PropertyWrapper(Expression expression,
     }
 
     private static String stringValue(Map.Entry<VariableProperty, Integer> e) {
-        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue() == MultiLevel.DEPENDENT_1) return "@Dependent1";
+        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue() == MultiLevel.INDEPENDENT_1) return "@Dependent1";
         return e.getKey().toString();
     }
 

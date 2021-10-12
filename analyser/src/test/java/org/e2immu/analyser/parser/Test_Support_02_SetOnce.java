@@ -75,7 +75,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 int expectIdentity = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectIdentity, d.fieldAnalysis().getProperty(VariableProperty.IDENTITY));
 
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.fieldAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
         };
@@ -165,7 +165,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         int expectIdentity = d.iteration() <= 1 ? Level.DELAY : Level.FALSE; // calling the get method without params
                         assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
 
-                        int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                        int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                         assertEquals(expectIndependent, d.getProperty(VariableProperty.INDEPENDENT));
                     }
                 }
@@ -270,7 +270,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 int expectIdentity = d.iteration() == 0 && hasParameter ? Level.DELAY : Level.FALSE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
 
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();

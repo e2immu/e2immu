@@ -55,7 +55,7 @@ public class Consumer_2<S> {
     }
 
     @NotModified
-    public void forEach(@Modified @Dependent1 ClassWithConsumer<S> myConsumer) {
+    public void forEach(@Modified @Independent1 ClassWithConsumer<S> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
         if (myConsumer.increment() % 2 == 0) {
             myConsumer.accept(s);

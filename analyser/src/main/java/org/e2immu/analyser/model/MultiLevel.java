@@ -55,7 +55,7 @@ public class MultiLevel {
 
     public static final int DEPENDENT = FALSE; // no need for more
     // dependent_1 == independent at level 1, but dependent at level 2
-    public static final int DEPENDENT_1 = compose(EFFECTIVE, LEVEL_1_DEPENDENT);
+    public static final int INDEPENDENT_1 = compose(EFFECTIVE, LEVEL_1_DEPENDENT);
 
     // independent == independent both at level 1 (mutable content) and level 2 (immutable content)
     public static final int INDEPENDENT = compose(EFFECTIVE, LEVEL_R_DEPENDENT);

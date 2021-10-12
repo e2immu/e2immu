@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,31 +34,31 @@ public class Dependent1_6<T> {
         list = new ArrayList<>(in);
     }
 
-    @Dependent1
+    @Independent(absent = true)
     public T get1(int index) {
         return list.get(index);
     }
 
-    @Dependent1
+    @Independent(absent = true)
     public T get2(int index) {
         List<T> list1 = list;
         return list1.get(index);
     }
 
-    @Dependent1
+    @Independent(absent = true)
     public T get3(int index) {
         T s = list.get(index);
         T t = s;
         return t;
     }
 
-    @Dependent1
+    @Independent(absent = true)
     public T get4(int index) {
         List<T> list1 = list.subList(0, index + 1);
         return list1.get(index);
     }
 
-    @Dependent1
+    @Independent(absent = true)
     public T get5(int index) {
         List<T> list1 = list.subList(0, index + 1);
         List<T> list2 = list1;

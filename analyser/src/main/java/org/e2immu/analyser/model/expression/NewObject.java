@@ -443,7 +443,7 @@ public record NewObject(
             int independent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
             if (independent == Level.DELAY) {
                 delayed = true;
-            } else if (independent >= MultiLevel.DEPENDENT_1 && independent < MultiLevel.INDEPENDENT) {
+            } else if (independent >= MultiLevel.INDEPENDENT_1 && independent < MultiLevel.INDEPENDENT) {
                 LinkedVariables sub = evaluationContext.linked1Variables(value);
                 delayed |= sub.isDelayed();
                 result.addAll(sub.variables());

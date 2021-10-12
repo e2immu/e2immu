@@ -14,18 +14,19 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
-
-import java.util.stream.Stream;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Independent1;
+import org.e2immu.annotation.Linked1;
+import org.e2immu.annotation.Modified;
 
 /*
 Third test, from Road to immutability
  */
 public class Dependent1_2<T> {
 
-    @Linked1(to = { "Dependent1_2.x", "add:t" })
+    @Linked1(to = {"Dependent1_2.x", "add:t"})
     private T x;
-    @Linked1(to = { "Dependent1_2.y", "add:t" })
+    @Linked1(to = {"Dependent1_2.y", "add:t"})
     private T y;
     private boolean next;
 
@@ -33,7 +34,7 @@ public class Dependent1_2<T> {
     }
 
     @Independent
-    public Dependent1_2(@Dependent1 Dependent1_2<T> c) {
+    public Dependent1_2(@Independent1 Dependent1_2<T> c) {
         x = c.x;
         y = c.y;
         next = c.next;
@@ -52,7 +53,7 @@ public class Dependent1_2<T> {
      */
 
     @Modified
-    public void add(@Dependent1 T t) {
+    public void add(T t) {
         if (next) {
             this.y = t;
         } else {
@@ -61,17 +62,15 @@ public class Dependent1_2<T> {
         next = !next;
     }
 
-    @Dependent1
     public T getX() {
         return x;
     }
 
-    @Dependent1
     public T getY() {
         return y;
     }
 
-    public void addWithMessage(@Dependent1 T t, String msg) {
+    public void addWithMessage(T t, String msg) {
         System.out.println(msg);
         add(t);
     }

@@ -24,8 +24,8 @@ public class TestTypeParameterImpl {
     public void test() {
         TypeInfo typeInfo = new TypeInfo("java.lang", "Class");
 
-        TypeParameter t0 = new TypeParameterImpl(typeInfo, "T", 0);
-        TypeParameter t1 = new TypeParameterImpl(typeInfo, "T", 0);
+        TypeParameter t0 = new TypeParameterImpl(typeInfo, "T", 0, false);
+        TypeParameter t1 = new TypeParameterImpl(typeInfo, "T", 0, false);
         assertEquals(t0, t1);
     }
 }

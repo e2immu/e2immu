@@ -83,10 +83,17 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             assertFalse(of.methodInspection.get().isDefault());
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                assertFalse(d.methodInfo().isNotOverridingAnyOtherMethod());
+            }
+        };
+
         testClass("Basics_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

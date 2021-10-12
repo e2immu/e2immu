@@ -914,7 +914,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
 
         int independent;
-        if (containsField) {
+        if (false) { // FIXME
             if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
                 independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
             } else {
@@ -929,6 +929,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private int computeIndependentParameters(SharedState sharedState) {
+        return 0; // FIXME
     }
 
     public static boolean delayOnTransparentTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {

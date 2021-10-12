@@ -21,6 +21,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
@@ -190,7 +191,8 @@ public class TypeInspector {
             // of the type parameters
             int tpIndex = 0;
             for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
-                TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
+                boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
+                TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++, annotatedWithIndependent);
                 expressionContext.typeContext.addToContext(tp);
                 tp.inspect(expressionContext.typeContext, typeParameter);
             }
@@ -266,11 +268,19 @@ public class TypeInspector {
     private void doTypeParameters(ExpressionContext expressionContext, NodeWithTypeParameters<?> node) {
         int tpIndex = 0;
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : node.getTypeParameters()) {
-            TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
+            boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
+            TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++, annotatedWithIndependent);
             expressionContext.typeContext.addToContext(tp);
             tp.inspect(expressionContext.typeContext, typeParameter);
             builder.addTypeParameter(tp);
         }
+    }
+
+    private boolean isAnnotatedWithIndependent(TypeParameter typeParameter, ExpressionContext expressionContext) {
+        return typeParameter.getAnnotations().stream()
+                .map(ae -> AnnotationInspector.inspect(expressionContext, ae))
+                .anyMatch(ae -> ae.equals(
+                        expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions().independent));
     }
 
     private void doImplementedTypes(ExpressionContext expressionContext,

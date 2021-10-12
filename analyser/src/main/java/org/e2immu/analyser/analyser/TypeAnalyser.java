@@ -114,7 +114,7 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
 
         check(typeInfo, Independent.class, e2.independent);
         check(typeInfo, Dependent.class, e2.dependent);
-        CheckIndependent.checkLevel(messages, typeInfo, Dependent1.class, e2.dependent1, typeAnalysis);
+        CheckIndependent.checkLevel(messages, typeInfo, Independent1.class, e2.independent1, typeAnalysis);
 
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
         CheckImmutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false);

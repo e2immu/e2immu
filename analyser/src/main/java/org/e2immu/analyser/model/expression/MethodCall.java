@@ -827,7 +827,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 4: if the return type is @Dependent1 or higher, there is no linking
         int independent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        if (independent >= MultiLevel.DEPENDENT_1) {
+        if (independent >= MultiLevel.INDEPENDENT_1) {
             return LinkedVariables.EMPTY;
         }
         delayed |= independent == Level.DELAY;

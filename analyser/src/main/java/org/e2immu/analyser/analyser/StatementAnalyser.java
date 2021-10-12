@@ -1030,7 +1030,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         int independentIterable = evaluationContext.getProperty(evaluatedIterable, INDEPENDENT, true, true);
         LinkedVariables linked1;
-        if (independentIterable <= MultiLevel.DEPENDENT_1) {
+        if (independentIterable <= MultiLevel.INDEPENDENT_1) {
             List<Variable> vars = evaluatedIterable.variables();
             linked1 = new LinkedVariables(new HashSet<>(vars), independentIterable == Level.DELAY);
         } else {

@@ -25,7 +25,7 @@ myFunction sits somewhere in between
 @E1Container
 public class PropagateModification_5<T, S> {
 
-    @Dependent1
+    @Independent1
     private final MyFunction<T, S> myFunction;
     @Linked(to = {"PropagateModification:0:ts"})
     private final T[] ts;
@@ -35,7 +35,7 @@ public class PropagateModification_5<T, S> {
     }
 
     @Dependent // because of ts
-    public PropagateModification_5(T[] ts, @Dependent1 MyFunction<T, S> myFunction) {
+    public PropagateModification_5(T[] ts, @Independent1 MyFunction<T, S> myFunction) {
         this.myFunction = myFunction;
         this.ts = ts;
     }
@@ -46,7 +46,6 @@ public class PropagateModification_5<T, S> {
         return myFunction.apply(ts[i]); // feeding in actual T elements -> @Dependent1 on myFunction
     }
 
-    @Dependent1
     public T getT(int i) {
         return ts[i];
     }

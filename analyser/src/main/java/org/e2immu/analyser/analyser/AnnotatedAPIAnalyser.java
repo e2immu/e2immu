@@ -241,40 +241,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         validateIndependence();
 
-        // do some final calculations, and store the types
-        typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            try {
-                endOfTypeAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis);
-            } catch (RuntimeException runtimeException) {
-                LOGGER.error("Caught exception while shallowly analysing fields of type " + typeInfo.fullyQualifiedName);
-                throw runtimeException;
-            }
-        });
-
         return Stream.concat(methodAnalysers.values().stream().flatMap(AbstractAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
-    }
-
-    private void endOfTypeAnalysis(TypeInfo typeInfo, TypeAnalysisImpl.Builder typeAnalysisBuilder) {
-        if (!typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.isSet()) {
-            boolean immutableCanBeIncreasedByTypeParameters;
-            if (typeInfo.typeInspection.get().typeParameters().isEmpty()) {
-                immutableCanBeIncreasedByTypeParameters = false;
-            } else {
-                int levelImmutable = MultiLevel.level(typeAnalysisBuilder.getProperty(VariableProperty.IMMUTABLE));
-                if (levelImmutable < MultiLevel.LEVEL_2_IMMUTABLE || levelImmutable == MultiLevel.MAX_LEVEL) {
-                    immutableCanBeIncreasedByTypeParameters = false;
-                } else {
-                    // we have type parameters, the type is E2 E3 ... En < ER immutable
-                    // FIXME need more code here
-                    immutableCanBeIncreasedByTypeParameters = true;
-                }
-            }
-            typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.set(immutableCanBeIncreasedByTypeParameters);
-        }
-
-        TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
-        typeInfo.typeAnalysis.set(typeAnalysis);
     }
 
     private void hardcodedCrucialClasses() {
@@ -557,6 +525,20 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         typeAnalysisBuilder.transparentDataTypes.set(typeParametersAsParameterizedTypes);
 
         simpleComputeIndependent(typeAnalysisBuilder);
+
+        determineImmutableCanBeIncreasedByTypeParameters(typeInspection, typeAnalysisBuilder);
+
+        // and close!
+        TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
+        typeInfo.typeAnalysis.set(typeAnalysis);
+    }
+
+    private void determineImmutableCanBeIncreasedByTypeParameters(TypeInspection typeInspection,
+                                                                  TypeAnalysisImpl.Builder typeAnalysisBuilder) {
+        if (!typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.isSet()) {
+            boolean res = typeInspection.typeParameters().stream().anyMatch(tp -> !tp.isAnnotatedWithIndependent());
+            typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.set(res);
+        }
     }
 
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {

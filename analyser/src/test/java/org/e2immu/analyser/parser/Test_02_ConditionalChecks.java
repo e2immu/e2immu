@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==o.i";
+    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/.i";
 
     public Test_02_ConditionalChecks() {
         super(false);
@@ -329,7 +329,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
-                        assertEquals("o", d.currentValue().toString());
+                        assertEquals("o/*(ConditionalChecks_4)*/", d.currentValue().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if (O5.equals(d.variableName())) {
@@ -344,7 +344,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
-                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this" :
+                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this" :
                                 RETURN_VALUE;
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
@@ -403,12 +403,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));
                     assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
-                    assertEquals("o", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
-                    assertEquals("o", d.evaluationResult().value().toString());
+                    assertEquals("o/*(ConditionalChecks_4)*/", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
+                    assertEquals("o/*(ConditionalChecks_4)*/", d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
                     String expectValueString = d.iteration() == 0
-                            ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
+                            ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
                             : RETURN_VALUE;
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
                     assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());

@@ -273,7 +273,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             if (modifiedMethod == Level.TRUE) {
                 TypeInfo bestType = type.bestTypeInfo();
                 if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
-                    value = MultiLevel.DEPENDENT_1;
+                    value = MultiLevel.INDEPENDENT_1;
                 } else {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
                     if (typeAnalysis != null) {
@@ -317,7 +317,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
                 if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
                     // unbound type parameter T, or unbound with array T[], T[][]
-                    returnValueIndependent = MultiLevel.DEPENDENT_1;
+                    returnValueIndependent = MultiLevel.INDEPENDENT_1;
                 } else {
                     if (Primitives.isPrimitiveExcludingVoid(bestType)) {
                         returnValueIndependent = MultiLevel.INDEPENDENT;
