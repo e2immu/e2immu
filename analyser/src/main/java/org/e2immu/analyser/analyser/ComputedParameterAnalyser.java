@@ -128,10 +128,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         /*
          Because INDEPENDENT has not been set by ANALYSE_FIELD_ASSIGNMENTS, it cannot have been assigned to a field.
          We can still encounter the following situations:
-         - immutable content leaks out if this parameter is of the correct type (e.g., @FunctionalInterface) and
+         - hidden content leaks out if this parameter is of the correct type (e.g., @FunctionalInterface) and
            a modifying method of the parameter has been called. We take the parameter as variable in the last statement
            of the method, and look at the linked1variables. If not empty, we can assign something lower than INDEPENDENT.
-         - the method is modifying (constructor, explicitly computed): same situation, look at linked1
+         - the method is modifying (constructor, explicitly computed): again, look at linked1
          */
 
         StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
@@ -148,19 +148,25 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         .filter(v -> v instanceof FieldReference)
                         .map(v -> (FieldReference) v).toList();
                 if (!fields.isEmpty()) {
-                    int minFieldsIndependent = fields.stream().mapToInt(fr -> {
-                        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
-                        return fieldAnalysis.getProperty(INDEPENDENT);
-                    }).min().orElseThrow();
-                    if (minFieldsIndependent == Level.DELAY) {
+                    // so we know the parameter is content linked to some fields
+                    // now the value of independence (from 1 to infinity) is determined by the size of the
+                    // hidden content component inside the field
+
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
+                    int minHiddenContentImmutable = fields.stream()
+                            .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
+                            .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
+                            .min().orElseThrow();
+                    if (minHiddenContentImmutable == Level.DELAY) {
                         log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                                 "Delay independent in parameter {}, waiting for independent of fields {}",
                                 parameterInfo.fullyQualifiedName(), fields);
                         return DELAYS;
                     }
-                    log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(minFieldsIndependent),
+                    int independent = minHiddenContentImmutable <= 1 ? 0 : minHiddenContentImmutable - 1;
+                    log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(independent),
                             parameterInfo.fullyQualifiedName());
-                    parameterAnalysis.setProperty(INDEPENDENT, minFieldsIndependent);
+                    parameterAnalysis.setProperty(INDEPENDENT, independent);
                     return DONE;
                 }
             }

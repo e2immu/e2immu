@@ -24,6 +24,7 @@ import org.e2immu.annotation.Independent;
 public class DependentVariables_1 {
 
     @Container
+    @Independent
     static class X {
         private int i;
 

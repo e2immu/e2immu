@@ -36,26 +36,23 @@ public class TypeParameterImpl implements TypeParameter {
 
     public final String name;
     public final int index;
-    public final boolean annotatedWithIndependent;
 
     // typeInfo can be set straight away, but methodInfo has to wait until
     // method building is sufficiently far
     private final SetOnce<Either<TypeInfo, MethodInfo>> owner = new SetOnce<>();
     private final SetOnce<List<ParameterizedType>> typeBounds = new SetOnce<>();
+    // type parameter can be created using byte code analysis; this flag can
+    // then be set during AnnotatedAPI shallow analysis
+    private final SetOnce<Boolean> annotatedWithIndependent = new SetOnce<>();
 
 
     public TypeParameterImpl(String name, int index) {
-        this(name, index, false);
-    }
-
-    private TypeParameterImpl(String name, int index, boolean annotatedWithIndependent) {
         this.name = name;
         this.index = index;
-        this.annotatedWithIndependent = annotatedWithIndependent;
     }
 
-    public TypeParameterImpl(TypeInfo typeInfo, String name, int index, boolean annotatedWithIndependent) {
-        this(name, index, annotatedWithIndependent);
+    public TypeParameterImpl(TypeInfo typeInfo, String name, int index) {
+        this(name, index);
         owner.set(Either.left(typeInfo));
     }
 
@@ -148,7 +145,11 @@ public class TypeParameterImpl implements TypeParameter {
     }
 
     @Override
-    public boolean isAnnotatedWithIndependent() {
-        return annotatedWithIndependent;
+    public Boolean isAnnotatedWithIndependent() {
+        return annotatedWithIndependent.getOrDefaultNull();
+    }
+
+    public void setAnnotatedWithIndependent(boolean b) {
+        annotatedWithIndependent.set(b);
     }
 }

@@ -81,7 +81,7 @@ public class TestIsAssignableFromGenerics {
 
         myComparable = new TypeInfo(PACKAGE, "MyComparable");
         {
-            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0, false);
+            TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0);
 
             TypeInspectionImpl.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
                     .noParent(primitives)
@@ -122,7 +122,7 @@ public class TestIsAssignableFromGenerics {
         // interface MyList1<T extends Node> extends MyComparable<MyList1<T>>
         myList1 = new TypeInfo(PACKAGE, "MyList1");
         {
-            TypeParameterImpl t = new TypeParameterImpl(myList1, "T", 0, false);
+            TypeParameterImpl t = new TypeParameterImpl(myList1, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList1, BY_HAND)
@@ -146,7 +146,7 @@ public class TestIsAssignableFromGenerics {
         // interface MyList2<T extends Node> extends MyComparable<MyList2<? super T>>
         myList2 = new TypeInfo(PACKAGE, "MyList2");
         {
-            TypeParameterImpl t = new TypeParameterImpl(myList2, "T", 0, false);
+            TypeParameterImpl t = new TypeParameterImpl(myList2, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList2, BY_HAND)
@@ -162,7 +162,7 @@ public class TestIsAssignableFromGenerics {
         // interface MyList3<T extends Node> extends MyComparable<MyList3<? extends T>>
         myList3 = new TypeInfo(PACKAGE, "MyList3");
         {
-            TypeParameterImpl t = new TypeParameterImpl(myList3, "T", 0, false);
+            TypeParameterImpl t = new TypeParameterImpl(myList3, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList3, BY_HAND)

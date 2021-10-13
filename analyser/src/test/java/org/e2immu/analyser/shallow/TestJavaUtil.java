@@ -118,8 +118,12 @@ public class TestJavaUtil {
     // test @Independent on type parameter
     @Test
     public void test_4() throws IOException {
-        Set<Message> messages = test("JavaUtil_4");
+        test("JavaUtil_4");
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        TypeInspection typeInspection = collection.typeInspection.get();
+        TypeParameter e = typeInspection.typeParameters().get(0);
+        assertEquals("E", e.getName());
+        assertTrue(e.isAnnotatedWithIndependent());
         assertFalse(collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
         TypeInfo list = typeContext.getFullyQualified(List.class);
         assertTrue(list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());

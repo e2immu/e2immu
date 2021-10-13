@@ -191,10 +191,15 @@ public class TypeInspector {
             // of the type parameters
             int tpIndex = 0;
             for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
-                boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
-                TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++, annotatedWithIndependent);
+                TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex);
                 expressionContext.typeContext.addToContext(tp);
                 tp.inspect(expressionContext.typeContext, typeParameter);
+
+                boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
+                tp.setAnnotatedWithIndependent(annotatedWithIndependent);
+                TypeParameterImpl original = (TypeParameterImpl) builder.typeParameters().get(tpIndex);
+                if (original.isAnnotatedWithIndependent() == null) original.setAnnotatedWithIndependent(annotatedWithIndependent);
+                tpIndex++;
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
@@ -268,11 +273,12 @@ public class TypeInspector {
     private void doTypeParameters(ExpressionContext expressionContext, NodeWithTypeParameters<?> node) {
         int tpIndex = 0;
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : node.getTypeParameters()) {
-            boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
-            TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++, annotatedWithIndependent);
+            TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
             expressionContext.typeContext.addToContext(tp);
             tp.inspect(expressionContext.typeContext, typeParameter);
             builder.addTypeParameter(tp);
+            boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
+            if (tp.isAnnotatedWithIndependent() == null) tp.setAnnotatedWithIndependent(annotatedWithIndependent);
         }
     }
 

@@ -257,7 +257,7 @@ public record NewObject(
             return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
                     ListUtil.concatImmutable(List.of(variable), array.variables()));
         }
-        int notNullOfElement = MultiLevel.oneLevelLess(notNull);
+        int notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
                 false, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true));

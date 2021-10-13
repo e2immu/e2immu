@@ -71,8 +71,8 @@ public class TestParameterizedTypeStreamer {
     public void testClazzTSSub() {
         Primitives primitives = new Primitives();
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
-        TypeParameter t = new TypeParameterImpl(clazz, "T", 0, false);
-        TypeParameter s = new TypeParameterImpl(clazz, "S", 1, false);
+        TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
+        TypeParameter s = new TypeParameterImpl(clazz, "S", 1);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(t)
@@ -98,7 +98,7 @@ public class TestParameterizedTypeStreamer {
     public void testClazzTSubS() {
         Primitives primitives = new Primitives();
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
-        TypeParameter t = new TypeParameterImpl(clazz, "T", 0, false);
+        TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(t);
@@ -107,7 +107,7 @@ public class TestParameterizedTypeStreamer {
         assertEquals("a.b.Clazz<T>", clazzT.detailedString());
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
-        TypeParameter s = new TypeParameterImpl(sub, "S", 0, false);
+        TypeParameter s = new TypeParameterImpl(sub, "S", 0);
         TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(s);

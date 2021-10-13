@@ -191,7 +191,7 @@ public class MultiLevel {
     }
 
     // E2Container -> E1Container; Content2 NN -> content NN
-    public static int oneLevelLess(int i) {
+    public static int composeOneLevelLess(int i) {
         if (i < 0) return i;
         int level = level(i);
         if (level == 0) return i;
@@ -200,12 +200,19 @@ public class MultiLevel {
         return compose(effective, newLevel);
     }
 
-    public static int oneLevelMore(int i) {
+    public static int composeOneLevelMore(int i) {
         if (i < 0) return i;
         int level = level(i);
         int effective = effective(i);
         int newLevel = level == MAX_LEVEL ? level : level + 1;
         return compose(effective, newLevel);
+    }
+
+
+    public static int oneLevelMoreFromValue(int i) {
+        if (i < 0) return i;
+        int level = level(i);
+        return level == MAX_LEVEL ? MAX_LEVEL : level + 1;
     }
 
     public static String niceIndependent(int i) {

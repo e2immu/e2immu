@@ -536,7 +536,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void determineImmutableCanBeIncreasedByTypeParameters(TypeInspection typeInspection,
                                                                   TypeAnalysisImpl.Builder typeAnalysisBuilder) {
         if (!typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.isSet()) {
-            boolean res = typeInspection.typeParameters().stream().anyMatch(tp -> !tp.isAnnotatedWithIndependent());
+            boolean res = typeInspection.typeParameters().stream()
+                    .anyMatch(tp -> Boolean.TRUE != tp.isAnnotatedWithIndependent());
             typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.set(res);
         }
     }
@@ -544,7 +545,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
         int immutable = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.IMMUTABLE);
         int inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        int independent = MultiLevel.oneLevelLess(immutable);
+        int independent = MultiLevel.composeOneLevelLess(immutable);
         if (inMap == Level.DELAY) {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()

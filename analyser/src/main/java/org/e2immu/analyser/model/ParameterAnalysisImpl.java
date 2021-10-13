@@ -114,9 +114,12 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
 
-            // @Dependent1; @Independent, @Dependent not shown
+            // @Independent1; @Independent, @Dependent not shown
+            int independentType = parameterInfo.parameterizedType.defaultIndependent(analysisProvider);
             int independent = getProperty(VariableProperty.INDEPENDENT);
-            if (independent == MultiLevel.INDEPENDENT_1) {
+            if (independent == MultiLevel.INDEPENDENT && independentType < MultiLevel.INDEPENDENT) {
+                annotations.put(e2ImmuAnnotationExpressions.independent, true);
+            } else if (independent == MultiLevel.INDEPENDENT_1 && independentType < MultiLevel.INDEPENDENT_1) {
                 annotations.put(e2ImmuAnnotationExpressions.independent1, true);
             }
         }

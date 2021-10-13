@@ -112,4 +112,17 @@ public interface TypeAnalysis extends Analysis {
     Optional<Integer> is @ERImmutable, because Integer is so.
      */
     Boolean immutableCanBeIncreasedByTypeParameters();
+
+    /*
+    too simple an implementation, we should do real bookkeeping: which fields hold which types?
+     */
+    default Set<ParameterizedType> hiddenContentLinkedTo(FieldInfo fieldInfo) {
+        ParameterizedType type = fieldInfo.type;
+        TypeInfo bestType = type.bestTypeInfo();
+        if (bestType == null || getTransparentTypes().contains(type)) {
+            // unbound type parameter, or transparent type
+            return Set.of(fieldInfo.type);
+        }
+        return Set.of();
+    }
 }

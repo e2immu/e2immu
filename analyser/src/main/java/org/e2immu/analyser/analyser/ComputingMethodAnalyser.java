@@ -854,82 +854,75 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (methodAnalysis.getProperty(INDEPENDENT) != Level.DELAY) {
             return DONE;
         }
-        int independentParameters = computeIndependentParameters(sharedState);
-        if (independentParameters == Level.DELAY) return DELAYS;
 
-        if (methodInfo.noReturnValue() || independentParameters == MultiLevel.DEPENDENT) {
-            methodAnalysis.setProperty(INDEPENDENT, independentParameters);
+        if (methodInfo.noReturnValue()) {
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
             return DONE;
         }
         // here, we compute the independence of the return value
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         if (lastStatement == null) {
+            // the method always throws an exception
             methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
             return DONE;
         }
 
-        VariableInfo variableInfo = getReturnAsVariable();
-        LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
-        if (linkedVariables.isDelayed()) {
-            return DELAYS;
-        }
-
-        LinkedVariables linked1Variables = variableInfo.getLinked1Variables();
-        if (linked1Variables.isDelayed()) {
-            return DELAYS;
-        }
-
-        if (linkedVariables.isEmpty() && linked1Variables.isEmpty()) {
-            // no linking with fields, no content linking with fields ->
-            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
-            return DONE;
-        }
-
-        boolean linkedContainsField = linkedVariables.variables().stream()
-                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis());
-        if(linkedContainsField) {
-            // the
-        }
-        boolean linked1ContainsField = linked1Variables.variables().stream()
-                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis());
-
-        //combination of statically immutable (type) and dynamically immutable (value property)
         int immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
-        if (immutable == Level.DELAY) return DELAYS;
-        if (immutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
-            return DONE;
-        }
-
-        int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
-
-        }
-
-
-        if (linked1Variables.isEmpty()) {
-            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT);
-            return DONE;
-        }
-
-
-        int independent;
-        if (false) { // FIXME
-            if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
-                independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
-            } else {
-                // type is @Mutable or @E1Immutable;
-                independent = MultiLevel.DEPENDENT;
-            }
-        } else {
-            independent = MultiLevel.INDEPENDENT;
-        }
+        VariableInfo variableInfo = getReturnAsVariable();
+        ParameterizedType type = methodInspection.getReturnType();
+        int independent = computeIndependent(variableInfo, immutable, type, analyserContext);
+        if (independent == Level.DELAY) return DELAYS;
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return DONE;
     }
 
-    private int computeIndependentParameters(SharedState sharedState) {
-        return 0; // FIXME
+    static int computeIndependent(VariableInfo variableInfo, int immutable,
+                                  ParameterizedType type, AnalysisProvider analysisProvider) {
+        LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
+        if (linkedVariables.isDelayed()) {
+            return Level.DELAY;
+        }
+        LinkedVariables linked1Variables = variableInfo.getLinked1Variables();
+        if (linked1Variables.isDelayed()) {
+            return Level.DELAY;
+        }
+
+        if (linkedVariables.isEmpty() && linked1Variables.isEmpty()) {
+            // no linking with fields, no content linking with fields ->
+            return MultiLevel.INDEPENDENT;
+        }
+
+        boolean linkedContainsField = linkedVariables.variables().stream()
+                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis());
+        if (linkedContainsField) {
+            // the method is @Dependent
+            return MultiLevel.DEPENDENT;
+        }
+        boolean linked1ContainsField = linked1Variables.variables().stream()
+                .anyMatch(v -> v instanceof FieldReference fr && fr.scopeIsThis() || v instanceof This);
+        if (linked1ContainsField) {
+            // the method is @Independent1
+            return MultiLevel.INDEPENDENT_1;
+        }
+
+        //combination of statically immutable (type) and dynamically immutable (value property)
+
+        if (immutable == Level.DELAY) return Level.DELAY;
+
+        int immutableLevel = MultiLevel.level(immutable);
+        int independent;
+        // see https://www.e2immu.org/docs/road-to-immutability.html#independent-type
+        if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+            // on the diagonal of the table
+            independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
+        } else {
+            // on the first column of the table (return type of method, parameter.type)
+
+            // TODO for now, we assume the hidden content to be hidden in both "this" (the method's owner) and
+            // the return type / parameter type
+            independent = type.defaultIndependent(analysisProvider);
+        }
+        return independent;
     }
 
     public static boolean delayOnTransparentTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {

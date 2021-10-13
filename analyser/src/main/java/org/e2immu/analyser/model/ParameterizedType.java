@@ -913,6 +913,10 @@ public class ParameterizedType {
 
     public int defaultIndependent(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
+        if (arrays > 0) {
+            // because the "fields" of the array, i.e. the cells, can be mutated
+            return MultiLevel.DEPENDENT;
+        }
         if (bestType == null) {
             // unbound type parameter, null constant
             return MultiLevel.INDEPENDENT_1;

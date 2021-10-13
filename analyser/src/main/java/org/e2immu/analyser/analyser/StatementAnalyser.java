@@ -1161,7 +1161,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
             boolean variableNotNull = nne >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
             if (variableNotNull) {
-                int oneLevelLess = MultiLevel.oneLevelLess(nne);
+                int oneLevelLess = MultiLevel.composeOneLevelLess(nne);
 
                 contextNotNull.put(loopVar, oneLevelLess);
                 externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);

@@ -629,7 +629,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     .mapToInt(ma -> ma.methodAnalysis.getProperty(VariableProperty.INDEPENDENT))
                     .min()
                     .orElse(MultiLevel.INDEPENDENT);
-            if(valueFromMethodReturnValue == Level.DELAY) {
+            if (valueFromMethodReturnValue == Level.DELAY) {
                 log(DELAYED, "Independence of type {} delayed, waiting for method independence",
                         typeInfo.fullyQualifiedName);
                 return DELAYS;
@@ -890,7 +890,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     log(IMMUTABLE_LOG, "Ignoring private modifier check of {}, self-referencing", fieldFQN);
                 }
 
-                int fieldLevel = MultiLevel.level(fieldImmutable);
+                // we need to know the immutability level of the hidden content of the field
+                Set<ParameterizedType> hiddenContent = typeAnalysis.hiddenContentLinkedTo(fieldInfo);
+                int minHiddenContentImmutable = hiddenContent.stream()
+                        .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
+                        .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+                int fieldLevel = MultiLevel.level(minHiddenContentImmutable);
                 minLevel = Math.min(minLevel, fieldLevel);
             }
         }
@@ -911,7 +916,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
-                    minLevel = Math.min(minLevel, independent);
+                    int independentLevel = MultiLevel.oneLevelMoreFromValue(independent);
+                    minLevel = Math.min(minLevel, independentLevel);
                 }
             }
 
@@ -957,7 +963,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                             return DONE;
                         }
-                        minLevel = Math.min(minLevel, independent);
+                        int independentLevel = MultiLevel.oneLevelMoreFromValue(independent);
+                        minLevel = Math.min(minLevel, independentLevel);
                     }
 
                     // FIXME parameters of functional/abstract type which expose data?
