@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -112,15 +113,15 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
-        Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, isInterface,
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, isInterface,
                 eventualFieldNames, betterThanFormal);
-        for (Map.Entry<Class<?>, Map<String, String>> entry : map.entrySet()) {
+        for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             List<Expression> list;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
                 list = List.of();
             } else {
                 list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
-                        new StringConstant(primitives, e.getValue()))).collect(Collectors.toList());
+                        ConstantExpression.create(primitives, e.getValue()))).collect(Collectors.toList());
             }
             AnnotationExpression expression = new AnnotationExpressionImpl(e2.immutableAnnotation(entry.getKey()), list);
             annotations.put(expression, true);

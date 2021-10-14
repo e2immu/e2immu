@@ -19,14 +19,8 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Set;
 
-@E2Container
-@Independent
+@ERContainer
 public class E2Immutable_2 {
-
-    // 1. all fields are final
-    // 2. all fields are not modified
-    // 3. fields are private
-    // 4. constructor and method are independent
 
     @Linked(absent = true)
     @Linked1(absent = true)
@@ -37,9 +31,9 @@ public class E2Immutable_2 {
         set3 = new HashSet<>(set3Param); // not linked
     }
 
-    @E2Container
-    @Independent
-    public Set<String> getSet3() {
+    @NotNull1
+    @ERContainer
+    public Set<String> copy() {
         return Set.copyOf(set3);
     }
 }

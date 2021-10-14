@@ -361,7 +361,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             LinkedVariables linkedVariables = evaluationContext.linkedVariables(objectValue);
             LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
             LinkedVariables combined = linkedVariables.merge(linked1Scope);
-            for(Variable variable: linkedVariables.variables()) {
+            for (Variable variable : linkedVariables.variables()) {
                 builder.registerLinked1(variable, combined);
             }
         }
@@ -811,9 +811,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // see E2Immutable_11
                 MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
                 if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                    int minParams = parameterExpressions.stream()
-                            .mapToInt(pe -> evaluationContext.getProperty(pe, VariableProperty.IMMUTABLE, true, true))
-                            .min().orElseThrow();
+                    int minParams = Integer.MAX_VALUE;
+                    int index = 0;
+                    for (Expression expression : parameterExpressions) {
+                        ParameterizedType formalType = methodInspection.formalParameterType(index);
+                        List<? extends Expression> concreteHiddenTypes = evaluationContext.extractHiddenContent(formalType, expression);
+                        int immutable = concreteHiddenTypes.stream()
+                                .mapToInt(pe -> evaluationContext.getProperty(pe, VariableProperty.IMMUTABLE, true, true))
+                                .min().orElseThrow();
+                        minParams = Math.min(minParams, immutable);
+                        index++;
+                    }
+
                     if (minParams == Level.DELAY) return Level.DELAY;
                     return MultiLevel.sumImmutableLevels(formal, minParams);
                 }

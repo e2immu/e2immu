@@ -83,6 +83,13 @@ public interface ConstantExpression<T> extends Expression {
         return NullConstant.NULL_CONSTANT;
     }
 
+    static Expression create(Primitives primitives, Object object) {
+        if (object instanceof String string) return new StringConstant(primitives, string);
+        if (object instanceof Boolean bool) return new BooleanConstant(primitives, bool);
+        if (object instanceof Integer integer) return new IntConstant(primitives, integer);
+        throw new UnsupportedOperationException();
+    }
+
     static Expression equalsExpression(Primitives primitives, ConstantExpression<?> l, ConstantExpression<?> r) {
         if (l instanceof NullConstant || r instanceof NullConstant)
             throw new UnsupportedOperationException("Not for me");

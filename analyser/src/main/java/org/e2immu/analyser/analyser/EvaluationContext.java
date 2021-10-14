@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -338,5 +335,28 @@ public interface EvaluationContext extends DelayDebugger {
 
     default boolean hasBeenAssigned(Variable variable) {
         return false;
+    }
+
+    /*
+    if the formal type is T (hidden content), then the expression is returned is List.of(expression).
+    It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
+    e.g., as a result of another method call.
+
+    if the formal type is Collection<T>, we'll have to go and search for the concrete type represented by T.
+    We then return a list of the concrete type parameters, as TypeExpression.
+    This again allows us to compute immutability values better than formal.
+     */
+    default List<? extends Expression> extractHiddenContent(ParameterizedType formalType, Expression expression) {
+        TypeInfo bestFormal = formalType.bestTypeInfo(getAnalyserContext());
+        if (bestFormal == null) {
+            return List.of(expression);
+        }
+        // hidden content is more complex
+        TypeInspection bestFormalInspection = getAnalyserContext().getTypeInspection(bestFormal);
+        if (!bestFormalInspection.typeParameters().isEmpty()) {
+            ParameterizedType concreteType = expression.returnType();
+            return concreteType.parameters.stream().map(pt -> new TypeExpression(pt, Diamond.SHOW_ALL)).toList();
+        }
+        throw new UnsupportedOperationException("Implement!");
     }
 }

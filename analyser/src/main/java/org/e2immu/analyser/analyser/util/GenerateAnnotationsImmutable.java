@@ -27,18 +27,18 @@ in a separate class to make this unit testable; there's too many cases...
 
 @UtilityClass
 public class GenerateAnnotationsImmutable {
-    public static final Map<String, String> TRUE = Map.of();
+    public static final Map<String, Object> TRUE = Map.of();
 
     private GenerateAnnotationsImmutable() {
         throw new UnsupportedOperationException();
     }
 
     // for testing
-    public static Map<Class<?>, Map<String, String>> generate(int immutable, int container, boolean isType) {
+    public static Map<Class<?>, Map<String, Object>> generate(int immutable, int container, boolean isType) {
         return generate(immutable, container, isType, false, "abc", false);
     }
 
-    public static Map<Class<?>, Map<String, String>> generate(int immutable, int container,
+    public static Map<Class<?>, Map<String, Object>> generate(int immutable, int container,
                                                               boolean isType,
                                                               boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
@@ -77,7 +77,7 @@ public class GenerateAnnotationsImmutable {
             return Map.of();
         }
 
-        Map<Class<?>, Map<String, String>> res = new HashMap<>();
+        Map<Class<?>, Map<String, Object>> res = new HashMap<>();
         if (isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
@@ -88,8 +88,8 @@ public class GenerateAnnotationsImmutable {
         return res;
     }
 
-    private static Map<Class<?>, Map<String, String>> map(int level, boolean container, Map<String, String> add) {
-        Map<String, String> params = new HashMap<>(add);
+    private static Map<Class<?>, Map<String, Object>> map(int level, boolean container, Map<String, Object> add) {
+        Map<String, Object> params = new HashMap<>(add);
         Class<?> clazz;
         if (level == MultiLevel.LEVEL_1_IMMUTABLE) {
             clazz = container ? E1Container.class : E1Immutable.class;
@@ -99,7 +99,7 @@ public class GenerateAnnotationsImmutable {
             if (container) {
                 clazz = ERContainer.class;
             } else {
-                params.put("recursive", "true");
+                params.put("recursive", true);
                 clazz = E2Immutable.class;
             }
         } else {

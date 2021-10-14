@@ -14,14 +14,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ExtensionClass;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.*;
 
 @UtilityClass
 @ExtensionClass(of = String.class)
-@E2Container
+@ERContainer
 public class UtilityClass_0 {
 
     @NotModified

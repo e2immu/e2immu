@@ -99,6 +99,10 @@ public class TypeExpression implements Expression {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;
+        if (variableProperty == VariableProperty.IMMUTABLE) {
+            // used by EvaluationContext.extractHiddenContent
+            return parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+        }
         return variableProperty.falseValue;
     }
 

@@ -578,44 +578,53 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private AnalysisStatus computeImmutable() {
+        if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE) != Level.DELAY) return DONE;
+        int immutable = computeImmutableValue();
+        if (immutable == Level.DELAY) return DELAYS;
+        methodAnalysis.setProperty(IMMUTABLE, immutable);
+        log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
+        return DONE;
+    }
+
+    private int computeImmutableValue() {
+        int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
+        if (formalImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            return formalImmutable;
+        }
+
         if (!methodAnalysis.singleReturnValue.isSet()) {
             assert translatedDelay(COMPUTE_IMMUTABLE, methodInfo.fullyQualifiedName + D_METHOD_RETURN_VALUE,
                     methodInfo.fullyQualifiedName + D_IMMUTABLE);
             log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
-            return DELAYS;
+            return Level.DELAY;
         }
         Expression expression = methodAnalysis.singleReturnValue.get();
-        int immutable;
         if (expression.isConstant()) {
-            immutable = MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-        } else {
-            VariableInfo variableInfo = getReturnAsVariable();
-
-            int dynamic = variableInfo.getProperty(IMMUTABLE);
-            assert dynamic != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                    variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_IMMUTABLE,
-                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
-
-            int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-            assert dynamicExt != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                    variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
-                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
-
-            int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
-            assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                    methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
-                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
-
-            immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
-                    Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
+            return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
         }
+        VariableInfo variableInfo = getReturnAsVariable();
+
+        int dynamic = variableInfo.getProperty(IMMUTABLE);
+        assert dynamic != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_IMMUTABLE,
+                methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
+        int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+        assert dynamicExt != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
+                methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
+        assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
+                methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
+        int immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
+                Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
+
         if (immutable == Level.DELAY) {
             log(DELAYED, "Delaying @Immutable on {}", methodInfo.fullyQualifiedName);
-            return DELAYS;
         }
-        methodAnalysis.setProperty(IMMUTABLE, immutable);
-        log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
-        return DONE;
+        return immutable;
     }
 
     /*
@@ -878,6 +887,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     static int computeIndependent(VariableInfo variableInfo, int immutable,
                                   ParameterizedType type, AnalysisProvider analysisProvider) {
+        if (immutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            return MultiLevel.INDEPENDENT;
+        }
+
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
         if (linkedVariables.isDelayed()) {
             return Level.DELAY;
@@ -917,10 +930,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             independent = MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
         } else {
             // on the first column of the table (return type of method, parameter.type)
-
-            // TODO for now, we assume the hidden content to be hidden in both "this" (the method's owner) and
-            // the return type / parameter type
-            independent = type.defaultIndependent(analysisProvider);
+            // however, there is no link to a field, so we must return INDEPENDENT!
+            independent = MultiLevel.INDEPENDENT;
         }
         return independent;
     }

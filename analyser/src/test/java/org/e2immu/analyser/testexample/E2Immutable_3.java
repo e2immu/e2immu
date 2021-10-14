@@ -18,24 +18,21 @@ import org.e2immu.annotation.*;
 
 import java.util.Set;
 
-@E2Immutable
-@Independent
+@E2Immutable(recursive = true)
 public class E2Immutable_3 {
 
-    @E2Container
+    @ERContainer
     @NotNull1
     @Linked1(absent = true)
     public final Set<String> strings4;
 
-    @Independent
     public E2Immutable_3(@NotNull1 @NotModified Set<String> input4) {
         strings4 = Set.copyOf(input4);
     }
 
-    @E2Container
+    @ERContainer
     @NotNull1
     @Constant(absent = true)
-    @Independent
     public Set<String> getStrings4() {
         return strings4;
     }
@@ -43,7 +40,7 @@ public class E2Immutable_3 {
     @Identity
     @Constant(absent = true)
     @NotNull
-    @Independent
+    @Independent // not dependent on strings4!
     public Set<String> mingle(@NotNull @Modified @Independent Set<String> input4) {
         input4.addAll(strings4);
         return input4;

@@ -863,12 +863,14 @@ public class ParameterizedType {
         return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
     }
 
-    public Boolean isE2Immutable(AnalysisProvider analysisProvider) {
+    public Boolean canBeModifiedInThisClass(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) return false;
         int immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         if (immutable == Level.DELAY) return null;
-        return immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE; // exactly
+        int level = MultiLevel.level(immutable);
+        int effective = MultiLevel.effective(immutable);
+        return level >= MultiLevel.LEVEL_2_IMMUTABLE && effective >= MultiLevel.EVENTUAL_AFTER;
     }
 
     public TypeInfo toBoxed(Primitives primitives) {
