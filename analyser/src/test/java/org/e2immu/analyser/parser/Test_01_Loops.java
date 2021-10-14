@@ -892,8 +892,8 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "(instance type Set<Entry<K,V>>).isEmpty()?3:<merge:int>"
-                                : "(instance type Set<Entry<K,V>>).isEmpty()?3:instance type int";
+                        String expected = d.iteration() == 0 ? "(instance type Set<Entry<String,Integer>>).isEmpty()?3:<merge:int>"
+                                : "(instance type Set<Entry<String,Integer>>).isEmpty()?3:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -911,7 +911,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:entrySet>.isEmpty()?3:<merge:int>"
-                                : "(instance type Set<Entry<K,V>>).isEmpty()?3:instance type int";
+                                : "(instance type Set<Entry<String,Integer>>).isEmpty()?3:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -932,7 +932,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<m:entrySet>.isEmpty()||<m:contains>||0==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
-                                : "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                                : "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
                         String expectVars = d.iteration() == 0 ? "[kvStore, org.e2immu.analyser.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, container.read, result]" : "[]";
                         assertEquals(expectVars, d.currentValue().variables().toString());
@@ -956,8 +956,8 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>";
-                            case 1 -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
-                            default -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                            case 1 -> "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
+                            default -> "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
 

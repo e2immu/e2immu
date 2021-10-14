@@ -20,7 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
 
@@ -47,5 +48,32 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
+    }
+
+
+    /*
+    static Stream<T> of(T)
+
+    T is minimally @Independent1, as an unbound type parameter.
+    Stream<T> is minimally @Independent1, as it is formally @E2Container.
+    The parameter should be @Independent if there is no content link between the parameter and the method result.
+     */
+    @Test
+    public void testStreamOf() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 1);
+        assertTrue(methodInfo.methodInspection.get().isStatic());
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT),
+                methodInfo.fullyQualifiedName);
+
+        // T
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 }

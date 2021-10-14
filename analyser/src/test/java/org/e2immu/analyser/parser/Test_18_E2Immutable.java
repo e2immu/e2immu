@@ -338,4 +338,33 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+    // variant on MethodReference_3
+    @Test
+    public void test_11() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                Expression v = d.evaluationResult().value();
+                String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
+                assertEquals(expectValue, v.toString());
+                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.map";
+                assertEquals(expectLinked1, d.evaluationResult().evaluationContext().linked1Variables(v).toString());
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E3IMMUTABLE;
+                assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
+                        .getProperty(v, VariableProperty.IMMUTABLE, true, true));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E3IMMUTABLE;
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        testClass("E2Immutable_11", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
 }

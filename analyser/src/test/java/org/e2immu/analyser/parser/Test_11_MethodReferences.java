@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
@@ -69,21 +70,35 @@ public class Test_11_MethodReferences extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                String expectValue = d.iteration() == 0 ? "<m:stream>" : "instance type Stream<Entry<String,Integer>>";
+                assertEquals(expectValue, d.evaluationResult().value().toString());
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+
+                assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
+                        .getProperty(d.evaluationResult().value(), VariableProperty.IMMUTABLE, true, true));
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() < 1 ? Level.DELAY : Level.FALSE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

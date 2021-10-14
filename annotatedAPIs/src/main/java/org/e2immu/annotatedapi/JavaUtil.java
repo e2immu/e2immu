@@ -701,6 +701,35 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
+
+    @Container
+    static class TreeMap$<K, V> {
+        // content is known
+        boolean TreeMap$Modification$Size(int post) {
+            return post == 0;
+        }
+
+        boolean TreeMap$Postcondition() {
+            return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false);
+        }
+
+        public TreeMap$() {
+        }
+
+        // content is not known
+        boolean TreeMap$Modification$Size(int post, Map<? extends K, ? extends V> map) {
+            return post == map.size();
+        }
+
+        public TreeMap$(@NotNull1 @Independent1 Map<? extends K, ? extends V> map) {
+        }
+
+        // Entry does not support modification!
+        // returns null when the map is empty TODO add correct companions
+        @E2Container
+        Map.Entry<K, V> firstEntry() { return null; }
+    }
+
     interface AbstractCollection$<E> {
 
         Iterator<E> iterator();

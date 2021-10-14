@@ -773,14 +773,46 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (recursiveCall) {
             return variableProperty.best;
         }
-        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
-            int fluent = evaluationContext.getAnalyserContext()
-                    .getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
-            if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
-                            .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+        // return the formal value
+        int formal = methodAnalysis.getProperty(variableProperty);
+        // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
+        if (VariableProperty.IMMUTABLE == variableProperty) {
+            int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+            if (identity == Level.DELAY) return Level.DELAY;
+            if (identity == Level.TRUE) {
+                return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE, true, true);
+            }
+
+            if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
+                // the independence of the result, and the immutable level of the hidden content, will determine the result
+                int methodIndependent = methodAnalysis.getProperty(variableProperty);
+                if (methodIndependent == Level.DELAY) return Level.DELAY;
+                assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
+                        "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
+
+                // we know the method is formally @Independent1+ < @Independent;
+                // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
+                // in the case of factory methods or indeed identity
+                // see E2Immutable_11
+                MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+                if(methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+                    int minParams = parameterExpressions.stream()
+                            .mapToInt(pe -> evaluationContext.getProperty(pe, VariableProperty.IMMUTABLE, true, true))
+                            .min().orElseThrow();
+                    if(minParams == Level.DELAY) return Level.DELAY;
+                    return MultiLevel.sumImmutableLevels(formal, minParams);
+                }
+
+                LinkedVariables linked1 = linked1VariablesValue(evaluationContext);
+                int linked1Immutable = linked1.variables().stream()
+                        .mapToInt(v -> evaluationContext.getProperty(v, VariableProperty.IMMUTABLE))
+                        .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+                if (linked1Immutable == Level.DELAY) return Level.DELAY;
+                return MultiLevel.sumImmutableLevels(formal, linked1Immutable);
+            }
         }
-        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
+        return formal;
     }
 
     /*
@@ -907,6 +939,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         if (isNotTransparent && independent == MultiLevel.DEPENDENT) {
             return LinkedVariables.EMPTY;
+        }
+
+        MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+        if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+            // content link to the parameters, and all variables normally linked to them
+            Set<Variable> fromParams = parameterExpressions.stream()
+                    .flatMap(pe -> Stream.concat(evaluationContext.linked1Variables(pe).variables().stream(),
+                            evaluationContext.linkedVariables(pe).variables().stream()))
+                    .collect(Collectors.toUnmodifiableSet());
+            return new LinkedVariables(fromParams, delayed);
         }
 
         // content link to the object, and all the variables content+non-content linked to object

@@ -258,4 +258,13 @@ public class MultiLevel {
         }
         return compose(EFFECTIVE, level);
     }
+
+    public static boolean independentConsistentWithImmutable(int independent, int immutable) {
+        assert independent >= 0;
+        assert immutable >= 0;
+        int levelIndependent = MultiLevel.level(independent);
+        int levelImmutable = MultiLevel.level(immutable);
+        if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
+        return levelImmutable == levelIndependent;
+    }
 }

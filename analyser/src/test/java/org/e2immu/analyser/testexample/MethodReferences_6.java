@@ -14,18 +14,26 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
-@ERContainer
-@ExtensionClass(of = String.class, absent = true) // because 1st parameter is @Nullable
-public class IfStatement_0 {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-    @NotNull
-    @Identity(absent = true)
-    public static String method1(String a) {
-        if (a == null) return "b";
-        return a;
+public class MethodReferences_6 {
+
+    private final Map<String, Integer> map = new HashMap<>();
+
+    public MethodReferences_6(int i) {
+        map.put("" + i, i);
     }
 
+    @NotNull
+    @NotModified
+    public Function<String, Integer> getFunction() {
+        return map::get;
+    }
 }
-

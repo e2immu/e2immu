@@ -16,7 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-@E2Container
+@ERContainer
 public class IfStatement_1 {
 
     @NotNull

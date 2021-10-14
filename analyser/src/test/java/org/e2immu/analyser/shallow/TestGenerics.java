@@ -72,6 +72,8 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
                 streamOfOptionalIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, false));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+                streamOfOptionalIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, true));
     }
 
     /*

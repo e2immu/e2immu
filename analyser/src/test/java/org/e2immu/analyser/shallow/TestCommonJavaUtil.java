@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -258,6 +259,38 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testMapEntrySet() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("entrySet", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.CONTAINER));
+    }
+
+    @Test
+    public void testTreeMapFirstEntry() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(TreeMap.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("firstEntry", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.CONTAINER));
+    }
+
+
+    @Test
+    public void testMapEntry() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Map.Entry.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(MultiLevel.MUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
     }
 
     @Test

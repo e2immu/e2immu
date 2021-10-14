@@ -798,8 +798,8 @@ public class ParameterizedType {
 
         if (equals(other)) return this;
 
-        TypeInfo bestType = bestTypeInfo();
-        TypeInfo otherBestType = other.bestTypeInfo();
+        TypeInfo bestType = bestTypeInfo(inspectionProvider);
+        TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
 
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this);
         boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other);

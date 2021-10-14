@@ -270,7 +270,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         } else {
             // @Modified needs to be marked explicitly
             int modifiedMethod = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
-            if (modifiedMethod == Level.TRUE) {
+            if (modifiedMethod == Level.TRUE || methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
                 TypeInfo bestType = type.bestTypeInfo();
                 if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
                     value = MultiLevel.INDEPENDENT_1;
@@ -305,46 +305,47 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private int computeMethodIndependent() {
-        int returnValueIndependent;
-        if (methodInfo.isConstructor || methodInfo.isVoid() || methodInfo.methodInspection.get().isStatic()) {
-            returnValueIndependent = MultiLevel.INDEPENDENT;
-        } else {
-            int identity = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.IDENTITY);
-            int modified = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
-            if (identity == Level.TRUE && modified == Level.FALSE) {
-                returnValueIndependent = MultiLevel.INDEPENDENT; // @Identity + @NotModified -> must be @Independent
-            } else {
-                TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
-                if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
-                    // unbound type parameter T, or unbound with array T[], T[][]
-                    returnValueIndependent = MultiLevel.INDEPENDENT_1;
-                } else {
-                    if (Primitives.isPrimitiveExcludingVoid(bestType)) {
-                        returnValueIndependent = MultiLevel.INDEPENDENT;
-                    } else {
-                        int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                        if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        int returnValueIndependent = computeMethodIndependentReturnValue();
 
-                            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-                            if (typeAnalysis != null) {
-                                returnValueIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                            } else {
-                                messages.add(Message.newMessage(new Location(methodInfo),
-                                        Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
-                                returnValueIndependent = MultiLevel.DEPENDENT;
-                            }
-
-                        } else {
-                            returnValueIndependent = MultiLevel.DEPENDENT;
-                        }
-                    }
-                }
-            }
-        }
         // typeIndependent is set by hand in AnnotatedAPI files
         int typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.INDEPENDENT);
         int bestOfOverrides = bestOfOverrides(VariableProperty.INDEPENDENT);
         return Math.max(MultiLevel.DEPENDENT, Math.max(returnValueIndependent, Math.max(bestOfOverrides, typeIndependent)));
+    }
+
+    private int computeMethodIndependentReturnValue() {
+        if (methodInfo.isConstructor || methodInfo.isVoid()) {
+            return MultiLevel.INDEPENDENT;
+        }
+        if (methodInfo.methodInspection.get().isStatic() && !methodInspection.isFactoryMethod()) {
+            // if factory method, we link return value to parameters, otherwise independent by default
+            return MultiLevel.INDEPENDENT;
+        }
+        int identity = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.IDENTITY);
+        int modified = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.MODIFIED_METHOD);
+        if (identity == Level.TRUE && modified == Level.FALSE) {
+            return MultiLevel.INDEPENDENT; // @Identity + @NotModified -> must be @Independent
+        }
+        TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+        if (ParameterizedType.isUnboundTypeParameterOrJLO(bestType)) {
+            // unbound type parameter T, or unbound with array T[], T[][]
+            return MultiLevel.INDEPENDENT_1;
+        }
+        if (Primitives.isPrimitiveExcludingVoid(bestType)) {
+            return MultiLevel.INDEPENDENT;
+        }
+        int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
+            if (typeAnalysis != null) {
+                return typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            }
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
+            return MultiLevel.DEPENDENT;
+        }
+        return MultiLevel.DEPENDENT;
     }
 
     private int computeMethodNotNull() {

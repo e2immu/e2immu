@@ -40,7 +40,7 @@ public class MethodReferences_3 {
 
     @NotNull1
     @NotModified
-    @E2Container // not level=3, because the entrySet's result is @Dependent @Container
+    @E2Container(absent = true)  // because stream IS level 2, it is not needed. Not level=3, because the entrySet's result is @Dependent @Container
     public Stream<Map.Entry<String, Integer>> stream() {
         return map.entrySet().stream();
     }

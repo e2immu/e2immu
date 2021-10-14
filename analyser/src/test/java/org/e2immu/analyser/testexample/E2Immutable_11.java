@@ -16,16 +16,32 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-@ERContainer
-@ExtensionClass(of = String.class, absent = true) // because 1st parameter is @Nullable
-public class IfStatement_0 {
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
-    @NotNull
-    @Identity(absent = true)
-    public static String method1(String a) {
-        if (a == null) return "b";
-        return a;
+// variant on MethodReference_3, to test E2Immutable properties of Stream result
+
+@ERContainer
+public class E2Immutable_11 {
+
+    @NotModified
+    private final TreeMap<String, Integer> map = new TreeMap<>();
+
+    public E2Immutable_11(int i) {
+        map.put("" + i, i);
     }
 
-}
+    @NotModified
+    public void print(Map<String, Integer> input) {
+        input.keySet().forEach(map::get); // will cause potential null ptr exception, get
+    }
 
+    @NotNull
+    @NotModified
+    @E2Container(level = 3)
+    // The firstEntry result is @Independent1
+    public Stream<Map.Entry<String, Integer>> stream() {
+        return Stream.of(map.firstEntry());
+    }
+}

@@ -43,7 +43,10 @@ public class CheckImmutable {
         }
 
         if (level) {
-            Function<AnnotationExpression, String> extractInspected2 = ae -> ae.extract("level", null);
+            Function<AnnotationExpression, String> extractInspected2 = ae -> {
+                Integer i = ae.extract("level", null);
+                return i == null ? null : Integer.toString(i);
+            };
             String value2 = CheckIndependent.levelString(analysis, VariableProperty.IMMUTABLE);
             kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
         }

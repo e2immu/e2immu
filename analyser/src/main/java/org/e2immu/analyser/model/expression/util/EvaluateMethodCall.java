@@ -133,7 +133,7 @@ public class EvaluateMethodCall {
             if (!analyserContext.inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
                 Expression newInstance = newInstanceWithTransferCompanion(builder, objectValue, methodInfo,
-                        methodAnalysis, parameters);
+                        methodAnalysis, parameters, concreteReturnType);
                 if (newInstance != null) {
                     return builder.setExpression(newInstance).build();
                 }
@@ -415,9 +415,11 @@ public class EvaluateMethodCall {
 
     // IMPROVE add parameters
     private Expression newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
-                                                        Expression objectValue, MethodInfo methodInfo,
+                                                        Expression objectValue,
+                                                        MethodInfo methodInfo,
                                                         MethodAnalysis methodAnalysis,
-                                                        List<Expression> parameterValues) {
+                                                        List<Expression> parameterValues,
+                                                        ParameterizedType concreteReturnType) {
         NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
@@ -448,7 +450,7 @@ public class EvaluateMethodCall {
         Expression newState = instance.state().reEvaluate(evaluationContext, translationMap).value();
         // TODO object flow
         int notNull = Math.max(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
-        return NewObject.forGetInstance(identifier, methodInfo.returnType(), newState, notNull);
+        return NewObject.forGetInstance(identifier, concreteReturnType, newState, notNull);
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()

@@ -99,4 +99,9 @@ public interface MethodInspection extends Inspection {
         return getMethodBody() != null && !getMethodBody().isEmpty();
     }
 
+    default boolean isFactoryMethod() {
+        assert isStatic();
+        if (getParameters().isEmpty()) return false;
+        return getReturnType().typeInfo != null && getReturnType().typeInfo == getMethodInfo().typeInfo;
+    }
 }
