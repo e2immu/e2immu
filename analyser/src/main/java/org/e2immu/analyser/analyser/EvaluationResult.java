@@ -605,11 +605,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         we use a null value for inScope to indicate a delay
          */
-        public void link1(Variable inArgument, Variable inScope) {
+        public void link1(Variable inArgument, Variable inScope, boolean delayed) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(inArgument);
             LinkedVariables linked1 = inScope == null ? LinkedVariables.DELAYED_EMPTY :
-                    new LinkedVariables(Set.of(inScope), false);
+                    new LinkedVariables(Set.of(inScope), delayed);
             if (ecd == null) {
                 newEcd = new ChangeData(null, false, false, Set.of(), LinkedVariables.EMPTY,
                         LinkedVariables.EMPTY, linked1, Map.of());
@@ -719,13 +719,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public LinkedVariables linked1Variables(Expression expression) {
-            if(expression instanceof VariableExpression ve) {
+            if (expression instanceof VariableExpression ve) {
                 ChangeData cd = valueChanges.get(ve.variable());
-                if(cd != null) {
+                if (cd != null) {
                     return cd.linked1Variables;
                 }
             }
             return evaluationContext.linked1Variables(expression);
+        }
+
+        public void registerLinked1(Variable variable, LinkedVariables linked1Scope) {
+            for (Variable linked : linked1Scope.variables()) {
+                link1(variable, linked, linked1Scope.isDelayed());
+            }
         }
     }
 }

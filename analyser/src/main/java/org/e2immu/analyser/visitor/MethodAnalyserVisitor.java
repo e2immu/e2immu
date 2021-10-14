@@ -58,7 +58,9 @@ public interface MethodAnalyserVisitor {
                     .findFirst()
                     .orElse(null);
         }
-
+        public int falseFrom1() {
+            return iteration == 0 ? Level.DELAY: Level.FALSE;
+        }
         public int falseFrom2() {
             return iteration <= 1 ? Level.DELAY: Level.FALSE;
         }

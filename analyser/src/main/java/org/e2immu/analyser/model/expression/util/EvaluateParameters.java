@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.Pair;
@@ -134,10 +135,11 @@ public class EvaluateParameters {
 
                 // @Dependent1 collection.add(t) t==parameterValue, collection=scopeObject
                 if (parameterValue instanceof IsVariableExpression veArg && scopeObject instanceof IsVariableExpression veScope) {
+                    boolean delay = veArg instanceof DelayedVariableExpression || scopeObject instanceof DelayedVariableExpression;
                     if (independent == Level.DELAY) {
-                        builder.link1(veArg.variable(), null); // null indicates a delay
+                        builder.link1(veArg.variable(), null, delay); // null indicates a delay
                     } else if (independent == MultiLevel.INDEPENDENT_1) {
-                        builder.link1(veArg.variable(), veScope.variable());
+                        builder.link1(veArg.variable(), veScope.variable(), delay);
                     }
                 }
 

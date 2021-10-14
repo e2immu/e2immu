@@ -352,6 +352,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // precondition
         EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
 
+        // linked1 towards the scope
+        IsVariableExpression scopeVariable;
+        if ((scopeVariable = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
+            LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
+            builder.registerLinked1(scopeVariable.variable(), linked1Scope);
+        } else {
+            LinkedVariables linkedVariables = evaluationContext.linkedVariables(objectValue);
+            LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
+            LinkedVariables combined = linkedVariables.merge(linked1Scope);
+            for(Variable variable: linkedVariables.variables()) {
+                builder.registerLinked1(variable, combined);
+            }
+        }
+
         // before we return, increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
             boolean increment;
@@ -796,11 +810,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // in the case of factory methods or indeed identity
                 // see E2Immutable_11
                 MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
-                if(methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+                if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
                     int minParams = parameterExpressions.stream()
                             .mapToInt(pe -> evaluationContext.getProperty(pe, VariableProperty.IMMUTABLE, true, true))
                             .min().orElseThrow();
-                    if(minParams == Level.DELAY) return Level.DELAY;
+                    if (minParams == Level.DELAY) return Level.DELAY;
                     return MultiLevel.sumImmutableLevels(formal, minParams);
                 }
 

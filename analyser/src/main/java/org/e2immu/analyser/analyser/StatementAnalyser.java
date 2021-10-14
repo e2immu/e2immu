@@ -965,6 +965,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             AnalysisStatus sav = new Linked1VariablesWriter(statementAnalysis, sharedState.evaluationContext)
                     .write(linked1, localCopyData);
             status = status.combine(sav);
+            statementAnalysis.ensureLinkedVariables1();
         }
 
         // odds and ends
@@ -1857,6 +1858,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return res;
     }
 
+    /*
+    We cannot yet set Linked1Variables in VIC.copy(), because the dependency graph is involved so
+    "notReadInThisStatement" is not accurate. But unless an actual "delay" is set, there really is
+    no involvement.
+     */
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate = initializersAndUpdaters(sharedState);
@@ -1872,6 +1878,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         Structure structure = statementAnalysis.statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
+            statementAnalysis.ensureLinkedVariables1();
             // try-statement has no main expression, and it may not have initialisers; break; continue; ...
             if (statementAnalysis.stateData.valueOfExpression.isVariable()) {
                 setFinalAllowEquals(statementAnalysis.stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);

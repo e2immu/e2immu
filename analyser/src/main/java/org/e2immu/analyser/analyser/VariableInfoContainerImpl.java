@@ -491,9 +491,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
             }
-            if (previous.linked1VariablesIsSet()) {
-                evaluation.setLinked1Variables(previous.getLinked1Variables());
+            /* linked1 cannot be decided here, must be in apply() because of dependency graph
+               see example Modification_3.
+             */
+            if(!evaluation.linked1VariablesIsSet()) {
+                evaluation.setLinked1Variables(LinkedVariables.NOT_INVOLVED_DELAYED_EMPTY);
             }
+
             // can have been modified by a remapping after assignments in StatementAnalyser.apply
             if (!evaluation.staticallyAssignedVariablesIsSet()) {
                 evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());

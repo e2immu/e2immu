@@ -37,6 +37,10 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
 
     public static final LinkedVariables EMPTY = new LinkedVariables(Set.of(), false);
     public static final LinkedVariables DELAYED_EMPTY = new LinkedVariables(Set.of(), true);
+
+    // different object from DELAYED_EMPTY, used to ensure that EMPTY is set when there is no "normal" delay
+    public static final LinkedVariables NOT_INVOLVED_DELAYED_EMPTY = new LinkedVariables(Set.of(), true);
+
     public static final String DELAY_STRING = "<delay>";
 
     public LinkedVariables merge(LinkedVariables other) {

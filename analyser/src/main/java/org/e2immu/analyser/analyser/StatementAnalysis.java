@@ -768,6 +768,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new LocalVariableReference(localVariable);
     }
 
+    public void ensureLinkedVariables1() {
+        variables.stream()
+                .map(Map.Entry::getValue)
+                .filter(VariableInfoContainer::hasEvaluation)
+                .forEach(vic -> {
+                    VariableInfo vi = vic.best(EVALUATION);
+                    if (vi.getLinked1Variables() == LinkedVariables.NOT_INVOLVED_DELAYED_EMPTY) {
+                        vic.setLinked1Variables(vic.getPreviousOrInitial().getLinked1Variables(), false);
+                    }
+                });
+    }
+
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,

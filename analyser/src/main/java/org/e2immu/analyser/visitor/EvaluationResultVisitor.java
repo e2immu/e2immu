@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,7 +61,11 @@ public interface EvaluationResultVisitor {
 
         public EvaluationResult.ChangeData findValueChangeByToString(String variableName) {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().toString().equals(variableName))
-                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchElementException("The keys are: " +
+                            evaluationResult.getExpressionChangeStream().map(
+                                    e -> e.getKey().toString()).collect(Collectors.toUnmodifiableSet())));
         }
     }
 }

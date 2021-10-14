@@ -130,7 +130,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
-        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<E>/*@Dependent1*/).findAny().orElseThrow()";
+        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<String>).findAny().orElseThrow()";
         final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
@@ -185,6 +185,10 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     assertTrue(d.evaluationResult().someValueWasDelayed());
+                    EvaluationResult.ChangeData cdLocal3 = d.findValueChange("local3");
+                    assertEquals(LinkedVariables.EMPTY, cdLocal3.linked1Variables());
+                    EvaluationResult.ChangeData cdSet = d.findValueChangeByToString("set3");
+                    assertEquals(LinkedVariables.EMPTY, cdSet.linked1Variables());
                 } else {
                     assertEquals("instance type boolean", d.evaluationResult().value().toString());
                     int v = d.evaluationResult().changeData().entrySet().stream()
@@ -246,10 +250,12 @@ public class Test_16_Modification extends CommonTestRunner {
                         assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
                         assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
+                    String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.set3";
+                    assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                 }
             }
-            if ("add3".equals(d.methodInfo().name) &&
-                    "org.e2immu.analyser.testexample.Modification_3.set3".equals(d.variableName())) {
+            if ("add3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
+                assertEquals("org.e2immu.analyser.testexample.Modification_3.set3", d.variableName());
                 if ("0".equals(d.statementId())) {
                     String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -264,6 +270,9 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectValue, d.variableInfo().getValue().toString());
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                    String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "local3";
+                    assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                 }
             }
         };
@@ -1339,8 +1348,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                // is a constructor:
+                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
 
                 ParameterAnalysis setC = d.parameterAnalyses().get(0);
                 int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;

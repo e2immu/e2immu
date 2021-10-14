@@ -405,7 +405,8 @@ public record NewObject(
         int i = 0;
         for (Expression value : parameterExpressions) {
             ParameterInfo parameterInfo = constructor.methodInspection.get().getParameters().get(i);
-            int independent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+            ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+            int independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
             if (independent == Level.DELAY) {
                 delayed = true;
             } else if (independent == MultiLevel.DEPENDENT) {
