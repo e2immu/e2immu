@@ -16,11 +16,15 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -346,17 +350,38 @@ public interface EvaluationContext extends DelayDebugger {
     We then return a list of the concrete type parameters, as TypeExpression.
     This again allows us to compute immutability values better than formal.
      */
-    default List<? extends Expression> extractHiddenContent(ParameterizedType formalType, Expression expression) {
-        TypeInfo bestFormal = formalType.bestTypeInfo(getAnalyserContext());
-        if (bestFormal == null) {
-            return List.of(expression);
+
+    record HiddenContent(List<ParameterizedType> hiddenTypes, boolean delay) {
+        public HiddenContent {
+            assert hiddenTypes != null;
         }
+
+        public HiddenContent merge(HiddenContent other) {
+            return new HiddenContent(ListUtil.concatImmutable(hiddenTypes, other.hiddenTypes), delay || other.delay);
+        }
+    }
+
+    HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), false);
+    HiddenContent HIDDEN_CONTENT_DELAYED = new HiddenContent(List.of(), true);
+
+    default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, HiddenContentTypes hiddenContentTypes) {
+        if (hiddenContentTypes == null) return HIDDEN_CONTENT_DELAYED;
+        if (hiddenContentTypes.contains(concreteType)) {
+            return new HiddenContent(List.of(concreteType), false);
+        }
+        TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
+        if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
+        int immutable = concreteType.defaultImmutable(getAnalyserContext(), false);
+        if (immutable == MultiLevel.INDEPENDENT) return NO_HIDDEN_CONTENT;
+        if (immutable <= Level.DELAY) return HIDDEN_CONTENT_DELAYED; // and type analysis not available
+
         // hidden content is more complex
-        TypeInspection bestFormalInspection = getAnalyserContext().getTypeInspection(bestFormal);
-        if (!bestFormalInspection.typeParameters().isEmpty()) {
-            ParameterizedType concreteType = expression.returnType();
-            return concreteType.parameters.stream().map(pt -> new TypeExpression(pt, Diamond.SHOW_ALL)).toList();
+        TypeInspection bestInspection = getAnalyserContext().getTypeInspection(bestType);
+        if (!bestInspection.typeParameters().isEmpty()) {
+            return concreteType.parameters.stream()
+                    .reduce(NO_HIDDEN_CONTENT, (hc, pt) -> extractHiddenContentTypes(pt, hiddenContentTypes),
+                            HiddenContent::merge);
         }
-        throw new UnsupportedOperationException("Implement!");
+        return NO_HIDDEN_CONTENT;
     }
 }

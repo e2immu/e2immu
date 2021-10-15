@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.PropertyException;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 
 import java.util.HashSet;
@@ -73,9 +70,31 @@ public interface TypeAnalysis extends Analysis {
     }
 
     /**
+     * Returns the hidden content types
+     *
      * @return null when not yet set
      */
-    Set<ParameterizedType> getTransparentTypes();
+    HiddenContentTypes getTransparentTypes();
+
+    /**
+     * Hidden content types, concretely (type parameters are substituted)
+     * <p>
+     * IMPROVE probably too simplistic
+     *
+     * @param concreteType the concrete type used to substitute
+     * @return a set of concrete hidden content types
+     */
+    default HiddenContentTypes getTransparentTypes(ParameterizedType concreteType) {
+        HiddenContentTypes transparentTypes = getTransparentTypes();
+        if (transparentTypes == null) return null;
+        return new HiddenContentTypes(transparentTypes.types().stream()
+                .map(pt -> {
+                    if (pt.typeParameter != null) {
+                        return concreteType.parameters.get(pt.typeParameter.getIndex());
+                    }
+                    return pt;
+                }).collect(Collectors.toUnmodifiableSet()));
+    }
 
     default int getTypeProperty(VariableProperty variableProperty) {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();

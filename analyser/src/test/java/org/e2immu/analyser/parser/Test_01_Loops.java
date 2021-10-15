@@ -299,7 +299,8 @@ public class Test_01_Loops extends CommonTestRunner {
                             assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         }
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                     }
                 }
                 if ("s$1".equals(d.variableName())) {
@@ -323,7 +324,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";

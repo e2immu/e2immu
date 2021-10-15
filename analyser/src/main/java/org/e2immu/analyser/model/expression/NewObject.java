@@ -441,10 +441,14 @@ public record NewObject(
         int i = 0;
         for (Expression value : parameterExpressions) {
             ParameterInfo parameterInfo = methodInspection.getParameters().get(i);
-            int independent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+            ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+            int independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            int independent = computeIndependent(evaluationContext.getAnalyserContext(),
+                    value.returnType(), independentOnParameter);
+
             if (independent == Level.DELAY) {
                 delayed = true;
-            } else if (independent >= MultiLevel.INDEPENDENT_1 && independent < MultiLevel.INDEPENDENT) {
+            } else if (independent < MultiLevel.INDEPENDENT) {
                 LinkedVariables sub = evaluationContext.linked1Variables(value);
                 delayed |= sub.isDelayed();
                 result.addAll(sub.variables());
@@ -452,6 +456,24 @@ public record NewObject(
             i++;
         }
         return new LinkedVariables(result, delayed);
+    }
+
+    // also used on normal method call
+    static int computeIndependent(AnalyserContext analyserContext,
+                                  ParameterizedType concreteType,
+                                  int independentOnParameter) {
+        // if the user annotated @Independent, so be it.
+        if (independentOnParameter == MultiLevel.INDEPENDENT) return MultiLevel.INDEPENDENT;
+        // if the user annotated @Independent1+, we look at the hidden content
+        if (independentOnParameter >= MultiLevel.INDEPENDENT_1) {
+            int immutable = concreteType.immutableOfHiddenContent(analyserContext, true);
+            if (immutable == ParameterizedType.TYPE_ANALYSIS_NOT_AVAILABLE) return Level.DELAY;
+            if (MultiLevel.level(immutable) >= MultiLevel.LEVEL_2_IMMUTABLE) {
+                return MultiLevel.independentCorrespondingToImmutableLevel(MultiLevel.level(immutable));
+            }
+        }
+        // otherwise, there is dependence;
+        return MultiLevel.DEPENDENT;
     }
 
     @Override

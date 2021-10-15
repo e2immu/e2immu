@@ -40,17 +40,16 @@ public class E2Immutable_7 {
     @NotModified
     private final Map<String, SimpleContainer> map7;
 
-    @Independent
     public E2Immutable_7(Map<String, SimpleContainer> map7Param) {
         map7 = new HashMap<>(map7Param); // not linked
     }
 
-    @Independent
+    @Independent1
     public SimpleContainer get7(String input) {
         return map7.get(input);
     }
 
-    @Independent
+    @Independent1
     public Map<String, SimpleContainer> getMap7() {
         Map<String, SimpleContainer> incremented = new HashMap<>(map7);
         incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));

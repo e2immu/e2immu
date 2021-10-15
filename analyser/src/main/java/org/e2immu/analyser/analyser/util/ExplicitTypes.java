@@ -20,6 +20,7 @@ import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -36,7 +37,8 @@ Extra: abstract types on which ONLY abstract methods without modification status
 public class ExplicitTypes {
 
     public enum UsedAs {
-        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF
+        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF,
+        EXPLICIT_RETURN_TYPE
     }
 
     private final AnalysisProvider analysisProvider;
@@ -106,6 +108,19 @@ public class ExplicitTypes {
             // x = new Y() -> the type of x cannot be replaced by an unbound type parameter
             if (element instanceof Assignment assignment && assignment.value.isInstanceOf(NewObject.class)) {
                 add(assignment.target.returnType(), UsedAs.ASSIGN_TO_NEW_OBJECT);
+            }
+
+            if (element instanceof ReturnStatement returnStatement) {
+                boolean ok;
+                if (returnStatement.expression instanceof MethodCall methodCall) {
+                    ok = methodCall.returnType().typeInfo != null;
+                } else {
+                    ok = false;
+                }
+                if (ok) {
+                    ParameterizedType returnType = returnStatement.expression.returnType();
+                    add(returnType, UsedAs.EXPLICIT_RETURN_TYPE);
+                }
             }
 
             // a.b -> type of a == owner of b cannot be replaced by unbound type parameter

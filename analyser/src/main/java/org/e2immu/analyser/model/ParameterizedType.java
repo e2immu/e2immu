@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -150,6 +151,11 @@ public class ParameterizedType {
     public ParameterizedType copyWithOneFewerArrays() {
         if (arrays == 0) throw new UnsupportedOperationException();
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
+    }
+
+    public ParameterizedType copyWithoutArrays() {
+        if (arrays == 0) throw new UnsupportedOperationException();
+        return new ParameterizedType(this.typeInfo, 0, wildCard, parameters, typeParameter);
     }
 
     public OutputBuilder output(Qualification qualification) {
@@ -851,8 +857,8 @@ public class ParameterizedType {
 
     public Boolean isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
-        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
-        return transparentTypes == null ? null : transparentTypes.contains(this);
+        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+        return hiddenContentTypes == null ? null : hiddenContentTypes.contains(this);
     }
 
     public Boolean isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
@@ -943,14 +949,43 @@ public class ParameterizedType {
         return baseValue;
     }
 
+    public int immutableOfHiddenContent(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
+        TypeInfo bestType = bestTypeInfo();
+        if (arrays > 0) {
+            ParameterizedType withoutArrays = copyWithoutArrays();
+            return withoutArrays.defaultImmutable(analysisProvider, returnValueOfMethod);
+        }
+        if (bestType == null) {
+            return returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        }
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return TYPE_ANALYSIS_NOT_AVAILABLE;
+        }
+        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(this);
+        if(hiddenContentTypes == null) return Level.DELAY;
+        return hiddenContentTypes.types().stream()
+                .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
+                .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+    }
+
     public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
+        return defaultImmutable(analysisProvider, returnValueOfMethod, MultiLevel.NOT_INVOLVED);
+    }
+
+    /*
+    Why dynamic value? firstEntry() returns a Map.Entry, which formally is MUTABLE, but has E2IMMUTABLE assigned
+    Once a type is E2IMMUTABLE, we have to look at the immutability of the hidden content, to potentially upgrade
+    to a higher version. See e.g., E2Immutable_11,12
+     */
+    public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod, int dynamicValue) {
         if (arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
         }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             // unbound type parameter, null constant
-            return returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            return Math.max(dynamicValue, returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE);
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -958,7 +993,8 @@ public class ParameterizedType {
         }
         int baseValue = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         if (baseValue == Level.DELAY) return Level.DELAY;
-        if (MultiLevel.level(baseValue) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
+        int dynamicBaseValue = Math.max(dynamicValue, baseValue);
+        if (MultiLevel.level(dynamicBaseValue) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
             Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
             if (doSum == null) {
                 assert typeAnalysis.isNotContracted();
@@ -966,14 +1002,14 @@ public class ParameterizedType {
             }
             if (doSum) {
                 int paramValue = parameters.stream()
-                        .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
+                        .mapToInt(pt -> pt.defaultImmutable(analysisProvider, false))
                         .map(v -> v == TYPE_ANALYSIS_NOT_AVAILABLE ? MultiLevel.MUTABLE : v)
                         .min().orElseThrow();
                 if (paramValue == Level.DELAY) return Level.DELAY;
-                return MultiLevel.sumImmutableLevels(baseValue, paramValue);
+                return MultiLevel.sumImmutableLevels(dynamicBaseValue, paramValue);
             }
         }
-        return baseValue;
+        return dynamicBaseValue;
     }
 
     // for delay debugging

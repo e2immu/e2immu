@@ -19,14 +19,16 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,8 +106,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
             assertEquals("Type java.util.function.Supplier<T>,Type param T",
-                    d.typeAnalysis().getTransparentTypes()
-                            .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(",")));
+                    d.typeAnalysis().getTransparentTypes().toString());
         }
     };
 

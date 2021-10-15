@@ -660,8 +660,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             // we cannot break a delay for our own type
             return Level.DELAY;
         }
-        List<Variable> variables = proxy.getValue().variables();
-        if (!variables.isEmpty() && variables.stream().allMatch(v -> v instanceof ParameterInfo)) {
+        //
+        LinkedVariables variables = proxy.getLinkedVariables();
+        if (!variables.isEmpty() && variables.variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.MUTABLE;
         }
         return Level.DELAY;
@@ -704,6 +705,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                         @Override
                         public boolean isDelayedValue() {
                             return vi.isDelayed();
+                        }
+
+                        @Override
+                        public LinkedVariables getLinkedVariables() {
+                            return vi.getLinkedVariables();
                         }
                     });
                     if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor) {
@@ -749,6 +755,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
 
                         @Override
+                        public LinkedVariables getLinkedVariables() {
+                            return vi.getLinkedVariables();
+                        }
+
+                        @Override
                         public boolean isDelayedValue() {
                             return vi.isDelayed();
                         }
@@ -784,6 +795,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 @Override
                 public boolean isDelayedValue() {
                     return fieldAnalysis.initialValue.isVariable();
+                }
+
+                @Override
+                public LinkedVariables getLinkedVariables() {
+                    return fieldAnalysis.getLinkedVariables();
                 }
 
                 @Override
@@ -835,6 +851,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 @Override
                 public boolean isDelayedValue() {
                     return false;
+                }
+
+                @Override
+                public LinkedVariables getLinkedVariables() {
+                    return LinkedVariables.EMPTY;
                 }
 
                 @Override
@@ -1004,9 +1025,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert !fieldAnalysis.linked1Variables.isSet();
 
         int typeImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
-        if (typeImmutable >= MultiLevel.EFFECTIVELY_E3IMMUTABLE) {
+        if (typeImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
             fieldAnalysis.linked1Variables.set(LinkedVariables.EMPTY);
-            log(LINKED_VARIABLES, "Setting linked1 variables to empty for field {}, @E3Immutable+ type");
+            log(LINKED_VARIABLES, "Setting linked1 variables to empty for field {}, @ERImmutable type");
             // finalizer check at assignment only
             return DONE;
         }
@@ -1034,10 +1055,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         Set<Variable> linked1Variables = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
-                .filter(vi -> vi.valueIsSet() && vi.getValue().isInstanceOf(VariableExpression.class))
-                .map(vi -> vi.getValue().asInstanceOf(VariableExpression.class).variable())
-                .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
-                .filter(v -> myTypeAnalyser.typeAnalysis.getTransparentTypes().contains(v.parameterizedType()))
+                .flatMap(vi -> vi.getLinked1Variables().variables().stream())
+                .filter(v -> v instanceof ParameterInfo)
                 .collect(Collectors.toSet());
         fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables, false));
         log(LINKED_VARIABLES, "FA: Set link1s of {} to [{}]", fqn,

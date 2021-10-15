@@ -70,8 +70,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                     param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
-            assertEquals("E", d.typeAnalysis().getTransparentTypes()
-                    .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
+            assertEquals("E", d.typeAnalysis().getTransparentTypes().toString());
         }
         if ("MyIteratorImpl".equals(typeInfo.simpleName)) {
             int container = d.typeAnalysis().getProperty(VariableProperty.CONTAINER);

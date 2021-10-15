@@ -24,19 +24,16 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /*
- variant on MethodReference_3, to test E2Immutable properties of Stream result.
- here, Map.Entry is not transparent!
-
- See also test 12, 13
+ Variant on 11, to check that Map.Entry<String, Integer> is not transparent
  */
 
 @ERContainer
-public class E2Immutable_11 {
+public class E2Immutable_13 {
 
     @NotModified
     private final TreeMap<String, Integer> map = new TreeMap<>();
 
-    public E2Immutable_11(int i) {
+    public E2Immutable_13(int i) {
         map.put("" + i, i);
     }
 
@@ -45,10 +42,6 @@ public class E2Immutable_11 {
     @Nullable
     public Map.Entry<String, Integer> firstEntry() {
         return map.firstEntry();
-    }
-
-    public Integer get() {
-        return map.firstEntry().getValue();
     }
 
     @NotNull

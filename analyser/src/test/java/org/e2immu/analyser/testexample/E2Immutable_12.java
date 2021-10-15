@@ -14,49 +14,42 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-/*
- variant on MethodReference_3, to test E2Immutable properties of Stream result.
- here, Map.Entry is not transparent!
+// variant on MethodReference_3, to test E2Immutable properties of Stream result
+// Map.Entry is not meant to be transparent here
 
- See also test 12, 13
- */
-
-@ERContainer
-public class E2Immutable_11 {
+@E2Container
+public class E2Immutable_12<T> {
 
     @NotModified
-    private final TreeMap<String, Integer> map = new TreeMap<>();
+    private final TreeMap<String, T> map = new TreeMap<>();
 
-    public E2Immutable_11(int i) {
-        map.put("" + i, i);
+    public E2Immutable_12(String key, T t) {
+        map.put(key, t);
     }
 
-
-    @ERContainer
-    @Nullable
-    public Map.Entry<String, Integer> firstEntry() {
-        return map.firstEntry();
+    @NotModified
+    public void print(Map<String, T> input) {
+        input.keySet().forEach(map::get); // will cause potential null ptr exception, get
     }
 
-    public Integer get() {
+    public T get() {
         return map.firstEntry().getValue();
     }
 
     @NotNull
     @NotModified
-    @ERContainer
-    // The firstEntry result is @E2Container; given the dynamic type String, Integer, it is @ERContainer
-    // E2Container<ERContainer> = ERContainer
-    public Stream<Map.Entry<String, Integer>> stream() {
+    @E2Container(level = 3)
+    // The firstEntry result is @Independent1
+    public Stream<Map.Entry<String, T>> stream() {
         return Stream.of(map.firstEntry());
     }
 }

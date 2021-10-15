@@ -89,7 +89,7 @@ public class EvaluateParameters {
                     throw e;
                 }
 
-                // propagating modifications? a functional interface-type parameter, with @Dependent1
+                // propagating modifications? a functional interface-type parameter, with @Independent1
                 if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
                     if (independent == Level.DELAY) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
@@ -132,17 +132,6 @@ public class EvaluateParameters {
                         forwardEvaluationInfo.assignmentTarget());
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterValue = parameterResult.value();
-
-                // @Dependent1 collection.add(t) t==parameterValue, collection=scopeObject
-                if (parameterValue instanceof IsVariableExpression veArg && scopeObject instanceof IsVariableExpression veScope) {
-                    boolean delay = veArg instanceof DelayedVariableExpression || scopeObject instanceof DelayedVariableExpression;
-                    if (independent == Level.DELAY) {
-                        builder.link1(veArg.variable(), null, delay); // null indicates a delay
-                    } else if (independent == MultiLevel.INDEPENDENT_1) {
-                        builder.link1(veArg.variable(), veScope.variable(), delay);
-                    }
-                }
-
             } else {
                 parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 parameterValue = parameterResult.value();

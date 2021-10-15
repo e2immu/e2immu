@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analyser.TypeAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
@@ -342,7 +343,7 @@ public class Primitives {
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            builder.transparentDataTypes.set(Set.of());
+            builder.hiddenContentTypes.set(HiddenContentTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
             ti.typeAnalysis.set(builder.build());
         }
@@ -364,7 +365,7 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            builder.transparentDataTypes.set(Set.of());
+            builder.hiddenContentTypes.set(HiddenContentTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
         }
 

@@ -792,48 +792,67 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int formal = methodAnalysis.getProperty(variableProperty);
         // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
         if (VariableProperty.IMMUTABLE == variableProperty) {
-            int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-            if (identity == Level.DELAY) return Level.DELAY;
-            if (identity == Level.TRUE) {
-                return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE, true, true);
+            // FIXME but, the formal value could already have been "upgraded" from the immutability of the type (firstEntry() is @E2Container instead of @Container)
+            return dynamicImmutable(formal, methodAnalysis, evaluationContext);
+        }
+        if (VariableProperty.INDEPENDENT == variableProperty) {
+            int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE, duringEvaluation);
+            if (immutable == Level.DELAY) return Level.DELAY;
+            int immutableLevel = MultiLevel.level(immutable);
+            if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+                return MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
             }
+        }
+        return formal;
+    }
 
-            if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
-                // the independence of the result, and the immutable level of the hidden content, will determine the result
-                int methodIndependent = methodAnalysis.getProperty(variableProperty);
-                if (methodIndependent == Level.DELAY) return Level.DELAY;
-                assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
-                        "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
+    private int dynamicImmutable(int formal, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
+        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.DELAY) return Level.DELAY;
+        if (identity == Level.TRUE) {
+            return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE, true, true);
+        }
 
-                // we know the method is formally @Independent1+ < @Independent;
-                // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
-                // in the case of factory methods or indeed identity
-                // see E2Immutable_11
-                MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
-                if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                    int minParams = Integer.MAX_VALUE;
-                    int index = 0;
-                    for (Expression expression : parameterExpressions) {
-                        ParameterizedType formalType = methodInspection.formalParameterType(index);
-                        List<? extends Expression> concreteHiddenTypes = evaluationContext.extractHiddenContent(formalType, expression);
-                        int immutable = concreteHiddenTypes.stream()
-                                .mapToInt(pe -> evaluationContext.getProperty(pe, VariableProperty.IMMUTABLE, true, true))
-                                .min().orElseThrow();
-                        minParams = Math.min(minParams, immutable);
-                        index++;
+        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
+            // the independence of the result, and the immutable level of the hidden content, will determine the result
+            int methodIndependent = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            if (methodIndependent == Level.DELAY) return Level.DELAY;
+            assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
+                    "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
+
+            // we know the method is formally @Independent1+ < @Independent;
+            // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
+            // in the case of factory methods or indeed identity
+            // see E2Immutable_11
+            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
+           HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+            MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+            if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+                int minParams = Integer.MAX_VALUE;
+                for (Expression expression : parameterExpressions) {
+                    ParameterizedType concreteType = expression.returnType();
+                    EvaluationContext.HiddenContent concreteHiddenTypes = evaluationContext
+                            .extractHiddenContentTypes(concreteType, hiddenContentTypes);
+                    if (concreteHiddenTypes.delay()) {
+                        minParams = Level.DELAY;
+                    } else {
+                        int hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
+                                .mapToInt(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
+                                .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+                        minParams = Math.min(minParams, hiddenImmutable);
                     }
-
-                    if (minParams == Level.DELAY) return Level.DELAY;
-                    return MultiLevel.sumImmutableLevels(formal, minParams);
                 }
 
-                LinkedVariables linked1 = linked1VariablesValue(evaluationContext);
-                int linked1Immutable = linked1.variables().stream()
-                        .mapToInt(v -> evaluationContext.getProperty(v, VariableProperty.IMMUTABLE))
-                        .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-                if (linked1Immutable == Level.DELAY) return Level.DELAY;
-                return MultiLevel.sumImmutableLevels(formal, linked1Immutable);
+                if (minParams == Level.DELAY) return Level.DELAY;
+                return MultiLevel.sumImmutableLevels(formal, minParams);
             }
+
+            LinkedVariables linked1 = linked1VariablesValue(evaluationContext);
+            int linked1Immutable = linked1.variables().stream()
+                    .mapToInt(v -> evaluationContext.getProperty(v, VariableProperty.IMMUTABLE))
+                    .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+            if (linked1Immutable == Level.DELAY) return Level.DELAY;
+            return MultiLevel.sumImmutableLevels(formal, linked1Immutable);
         }
         return formal;
     }
@@ -889,11 +908,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 5: neither can transparent types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
-        if (transparentTypes != null && transparentTypes.contains(methodInfo.returnType())) {
+        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+        if (hiddenContentTypes != null && hiddenContentTypes.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
-        delayed |= transparentTypes == null;
+        delayed |= hiddenContentTypes == null;
 
         // link to the object, and all the variables linked to object
         return evaluationContext.linkedVariables(object).merge(new LinkedVariables(Set.of(), delayed));
@@ -956,9 +975,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 5: neither can transparent types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        Set<ParameterizedType> transparentTypes = typeAnalysis.getTransparentTypes();
-        boolean isNotTransparent = transparentTypes != null && !transparentTypes.contains(methodInfo.returnType());
-        delayed |= transparentTypes == null;
+        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+
+        boolean isNotTransparent = hiddenContentTypes != null && !hiddenContentTypes.contains(methodInfo.returnType());
+        delayed |= hiddenContentTypes == null;
 
         if (isNotTransparent && independent == MultiLevel.DEPENDENT) {
             return LinkedVariables.EMPTY;
@@ -967,12 +987,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
         if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
             // content link to the parameters, and all variables normally linked to them
-            Set<Variable> fromParams = parameterExpressions.stream()
-                    .flatMap(pe -> Stream.concat(evaluationContext.linked1Variables(pe).variables().stream(),
-                            evaluationContext.linkedVariables(pe).variables().stream()))
-                    .collect(Collectors.toUnmodifiableSet());
-            return new LinkedVariables(fromParams, delayed);
+            return NewObject.linkedVariablesFromParameters(parameterExpressions, methodInspection, evaluationContext);
         }
+
+        // map.firstEntry() is E2Container, with 2x ERContainer type parameters -> ERContainer, independent -> EMPTY
+        // however, we must take into account the immutable value on the method as well (@E2Container instead of the normal @Container)
+        int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        delayed |= immutable == Level.DELAY;
+        int concreteImmutable = returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, immutable);
+        if (concreteImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
 
         // content link to the object, and all the variables content+non-content linked to object
         return evaluationContext.linked1Variables(object)

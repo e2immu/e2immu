@@ -245,7 +245,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     the field's type by an unbound parameter type.
      */
     private AnalysisStatus analyseTransparentTypes() {
-        if (typeAnalysis.transparentDataTypes.isSet()) return DONE;
+        if (typeAnalysis.hiddenContentTypes.isSet()) return DONE;
         assert typeInfo.isPrimaryType();
 
         log(IMMUTABLE_LOG, "Computing transparent types for primary type {}", typeInfo.fullyQualifiedName);
@@ -310,7 +310,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         });
 
-        typeAnalysis.transparentDataTypes.set(Set.copyOf(typesOfFields));
+        typeAnalysis.hiddenContentTypes.set(new HiddenContentTypes(typesOfFields));
         log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
         return DONE;
     }

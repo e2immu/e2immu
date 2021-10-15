@@ -16,6 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.Independent;
 
 import java.util.HashMap;
@@ -50,7 +51,7 @@ public class E2Immutable_6 {
         return map6.get(input);
     }
 
-    @E2Container
+    @ERContainer // because simpleContainer is transparent, and result of copyOf is E2Immutable
     public Map<String, SimpleContainer> getMap6() {
         return Map.copyOf(map6);
     }

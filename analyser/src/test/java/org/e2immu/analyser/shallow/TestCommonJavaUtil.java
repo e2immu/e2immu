@@ -313,6 +313,19 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
     }
 
+
+    @Test
+    public void testHashMapConstructor1() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(HashMap.class);
+        TypeInfo map = typeContext.getFullyQualified(Map.class);
+
+        MethodInfo constructor = typeInfo.findConstructor(map);
+        ParameterAnalysis p0 = constructor.parameterAnalysis(0);
+        assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+    }
+
+
     @Test
     public void testObjectsRequireNonNull() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Objects.class);

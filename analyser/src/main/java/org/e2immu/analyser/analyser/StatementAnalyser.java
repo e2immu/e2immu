@@ -826,7 +826,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             {
-                LinkedVariables mergedLinked1Variables = writeMergedLinked1Variables(changeData, variable, vi, vi1);
+                LinkedVariables mergedLinked1Variables = writeMergedLinked1Variables(sharedState.evaluationContext,
+                        changeData, variable, vi, vi1);
                 if (!mergedLinked1Variables.isDelayed() && vi.isNotDelayed() || mergedLinked1Variables == EMPTY_OVERRIDE) {
                     linked1.put(variable, mergedLinked1Variables);
                 } else if (vi.getLinked1Variables().isDelayed()) {
@@ -1427,17 +1428,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return mergedValue;
     }
 
-    private LinkedVariables writeMergedLinked1Variables(EvaluationResult.ChangeData changeData,
-                                                        Variable variable,
-                                                        VariableInfo vi,
-                                                        VariableInfo vi1) {
-        // regardless of what's being delayed or not, if the type is not at least level 2 immutable,
-        // or not independent, there cannot be content links
+    private LinkedVariables writeMergedLinked1Variables(
+            EvaluationContext evaluationContext,
+            EvaluationResult.ChangeData changeData,
+            Variable variable,
+            VariableInfo vi,
+            VariableInfo vi1) {
 
-        if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
-            TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-            int independent = analyserContext.getTypeAnalysis(bestType).getProperty(INDEPENDENT);
-            if (independent == MultiLevel.DEPENDENT || independent == MultiLevel.INDEPENDENT) {
+        // regardless of what's being delayed or not, if the type is dynamically independent, there cannot be content links
+        if (vi.valueIsSet() &&
+                variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
+            int independent = vi.getValue().returnType().defaultIndependent(analyserContext);
+            if (independent == MultiLevel.INDEPENDENT) {
                 return EMPTY_OVERRIDE;
             }
         }

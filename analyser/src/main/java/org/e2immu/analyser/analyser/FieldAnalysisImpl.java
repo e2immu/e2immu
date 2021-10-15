@@ -110,6 +110,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         int getProperty(VariableProperty variableProperty);
 
+        LinkedVariables getLinkedVariables();
+
         Comparator<ValueAndPropertyProxy> COMPARATOR = (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
     }
 

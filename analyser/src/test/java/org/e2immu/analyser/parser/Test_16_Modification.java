@@ -682,7 +682,7 @@ public class Test_16_Modification extends CommonTestRunner {
         // can never be @Dependent1 (even if it weren't of immutable type String)
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_9".equals(d.typeInfo().simpleName)) {
-                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -1429,7 +1429,7 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() == 0) assertNull(d.typeAnalysis().getTransparentTypes());
-                else assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
+                else assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -1450,11 +1450,11 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.typeAnalysis().getTransparentTypes());
                 } else {
-                    assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
+                    assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
                 }
             }
             if ("Modification_21".equals(d.typeInfo().simpleName)) {
-                assertEquals("[]", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 

@@ -156,7 +156,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     int minHiddenContentImmutable = fields.stream()
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
                             .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
-                            .min().orElseThrow();
+                            .min().orElse(MultiLevel.INDEPENDENT);
                     if (minHiddenContentImmutable == Level.DELAY) {
                         log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                                 "Delay independent in parameter {}, waiting for independent of fields {}",
