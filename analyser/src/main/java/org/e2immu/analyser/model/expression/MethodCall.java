@@ -354,13 +354,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // linked1 towards the scope
         IsVariableExpression scopeVariable;
+        boolean objectIsDelayed = evaluationContext.isDelayed(objectValue);
         if ((scopeVariable = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
-            builder.registerLinked1(scopeVariable.variable(), linked1Scope);
+            builder.registerLinked1(scopeVariable.variable(), linked1Scope.delay(objectIsDelayed));
         } else {
             LinkedVariables linkedVariables = evaluationContext.linkedVariables(objectValue);
             LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
-            LinkedVariables combined = linkedVariables.merge(linked1Scope);
+            LinkedVariables combined = linkedVariables.merge(linked1Scope).delay(objectIsDelayed);
             for (Variable variable : linkedVariables.variables()) {
                 builder.registerLinked1(variable, combined);
             }

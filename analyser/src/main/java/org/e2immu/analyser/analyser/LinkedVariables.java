@@ -58,6 +58,7 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
         if (isDelayed) return DELAY_STRING;
 
         return variables.stream().map(v -> v.output(Qualification.EMPTY))
+                .sorted()
                 .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
     }
 
@@ -110,4 +111,7 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
         return new LinkedVariables(translatedVariables, isDelayed);
     }
 
+    public LinkedVariables delay(boolean objectIsDelayed) {
+        return new LinkedVariables(variables, isDelayed || objectIsDelayed);
+    }
 }

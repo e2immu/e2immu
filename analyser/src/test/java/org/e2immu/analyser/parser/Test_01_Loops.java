@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -926,8 +927,17 @@ public class Test_01_Loops extends CommonTestRunner {
 
 
     // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
+    // 20211015: there's a 3rd linked1Variables value for 1.0.1.0.0: empty
     @Test
     public void test_18() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("1.0.1.0.0".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry$1.getValue()";
+                assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
@@ -940,10 +950,32 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
+                if ("entry".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "kvStore";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
+                    }
+                    if ("1.0.1.0.0".equals(d.statementId())) {
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "entry$1,container";
+                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
+                    }
+                }
             }
         };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Container".equals(d.typeInfo().simpleName)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
         testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

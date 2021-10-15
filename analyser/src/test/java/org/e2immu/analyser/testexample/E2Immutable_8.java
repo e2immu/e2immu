@@ -21,7 +21,6 @@ import java.util.Map;
 
 // Constructor is dependent
 @E1Container
-@Independent
 public class E2Immutable_8 {
 
     @Independent
@@ -39,19 +38,19 @@ public class E2Immutable_8 {
     }
 
     @NotModified
+    @Linked(to = { "E2Immutable_8:map8Param" })
     private final Map<String, SimpleContainer> map8;
 
-    @Dependent
     public E2Immutable_8(Map<String, SimpleContainer> map8Param) {
         map8 = map8Param; // linked
     }
 
-    @Independent
+    @Independent1
     public SimpleContainer get8(String input) {
         return map8.get(input);
     }
 
-    @Independent
+    @Independent1
     public Map<String, SimpleContainer> getMap8() {
         Map<String, SimpleContainer> incremented = new HashMap<>(map8);
         incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));
