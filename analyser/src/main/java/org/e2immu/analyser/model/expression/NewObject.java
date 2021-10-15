@@ -505,8 +505,8 @@ public record NewObject(
             case IGNORE_MODIFICATIONS:
                 return Level.FALSE;
 
-            case INDEPENDENT: // meant for DEP1, DEP2
-                return Level.DELAY;
+            case INDEPENDENT:
+                return parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
 
             case CONTAINER: { // must be pretty similar to the code in ParameterAnalysis, because every parameter will be of this type
                 Boolean transparent = parameterizedType.isTransparent(evaluationContext.getAnalyserContext(),

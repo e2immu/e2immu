@@ -869,6 +869,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
+        if (statement() instanceof ForEachStatement) {
+            Variable loopVar = obtainLoopVar();
+            computeLinked1ForEach(loopVar, evaluationResult.getExpression(), sharedState.evaluationContext);
+        }
+
         // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
         // This should not happen when due to an assignment, the loop copy also gets a new value. See loop above,
         // where we remove the loop copy from existingVarsNotVisited. Example in Loops_2, 9, 10
@@ -957,11 +962,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         status = cmStatus.combine(status);
 
-        if (statement() instanceof ForEachStatement) {
-            Variable loopVar = obtainLoopVar();
-            computeLinked1ForEach(loopVar, evaluationResult.getExpression(), sharedState.evaluationContext);
-        }
-
         if (!linked1Delays && !linkedDelays) {
             AnalysisStatus sav = new Linked1VariablesWriter(statementAnalysis, sharedState.evaluationContext)
                     .write(linked1, localCopyData);
@@ -1026,18 +1026,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private void computeLinked1ForEach(Variable loopVar,
                                        Expression evaluatedIterable,
                                        EvaluationContext evaluationContext) {
-        VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
-        VariableInfo vi = vic.best(EVALUATION);
-        if (vi.linked1VariablesIsSet()) return; // already decided, most likely because the loopVar is independent
-
         int independentIterable = evaluationContext.getProperty(evaluatedIterable, INDEPENDENT, true, true);
+        boolean delay = independentIterable == Level.DELAY;
+
         LinkedVariables linked1;
         if (independentIterable <= MultiLevel.INDEPENDENT_1) {
-            List<Variable> vars = evaluatedIterable.variables();
-            linked1 = new LinkedVariables(new HashSet<>(vars), independentIterable == Level.DELAY);
+            linked1 = evaluatedIterable.linked1VariablesValue(evaluationContext).delay(delay);
         } else {
             linked1 = LinkedVariables.EMPTY;
         }
+
+        LinkedVariables linked;
+        if (independentIterable == MultiLevel.DEPENDENT) {
+            linked = evaluatedIterable.linkedVariables(evaluationContext).delay(delay);
+        } else {
+            linked = delay ? LinkedVariables.DELAYED_EMPTY : LinkedVariables.EMPTY;
+        }
+
+        VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
+        vic.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+                statementAnalysis.statementTime(EVALUATION), Set.of());
+        vic.setLinkedVariables(linked, false);
         vic.setLinked1Variables(linked1, false);
     }
 
@@ -1726,8 +1735,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull, statementAnalysis.primitives),
                             false, LinkedVariables.EMPTY, properties, true);
+                    // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-                    // the content linking can only be done after evaluating the expression over which we iterate
                     vic.setLinked1Variables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression

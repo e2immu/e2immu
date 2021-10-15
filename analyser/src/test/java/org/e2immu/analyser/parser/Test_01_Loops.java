@@ -932,6 +932,10 @@ public class Test_01_Loops extends CommonTestRunner {
     public void test_18() throws IOException {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("1".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "instance type Set<Entry<String,Container>>";
+                assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
             if ("1.0.1.0.0".equals(d.statementId())) {
                 String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry$1.getValue()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());

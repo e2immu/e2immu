@@ -448,9 +448,13 @@ public class EvaluateMethodCall {
 
         if (translationMap.isEmpty()) return null;
         Expression newState = instance.state().reEvaluate(evaluationContext, translationMap).value();
-        // TODO object flow
+
         int notNull = Math.max(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
         return NewObject.forGetInstance(identifier, concreteReturnType, newState, notNull);
+
+        // FIXME the problem is that the new instance has some extras which the method call doesn't have,
+        // (the newState), but the method call has exact linked, linked1, independent, immutable values which instance doesn't have
+        // -> has to go into PropertyWrapper?
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
