@@ -16,6 +16,7 @@ package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,13 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         testERContainerType(typeAnalysis);
     }
 
+    @Test
+    public void testStringToLowerCase() {
+        TypeInfo string = typeContext.getFullyQualified(String.class);
+        MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
+        MethodResolution methodResolution = toLowerCase.methodResolution.get();
+        assertFalse(methodResolution.allowsInterrupts());
+    }
 
     @Test
     public void testObjectToString() {

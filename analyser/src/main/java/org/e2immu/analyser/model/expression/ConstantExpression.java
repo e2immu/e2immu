@@ -113,4 +113,9 @@ public interface ConstantExpression<T> extends Expression {
     default Expression translate(TranslationMap translationMap) {
         return this;
     }
+
+    @Override
+    default boolean cannotHaveState() {
+        return true;
+    }
 }

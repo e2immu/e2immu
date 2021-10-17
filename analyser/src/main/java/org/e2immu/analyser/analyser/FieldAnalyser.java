@@ -242,8 +242,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 Expression initializer;
                 if (fieldInitialiser.initialiser() instanceof MethodReference) {
-                    initializer = NewObject.instanceFromSam(fieldAnalysis.primitives,
-                            fieldInitialiser.implementationOfSingleAbstractMethod(), fieldInfo.type);
+                    initializer = NewObject.instanceFromSam(fieldInitialiser.implementationOfSingleAbstractMethod(),
+                            fieldInfo.type);
                 } else {
                     initializer = fieldInitialiser.initialiser();
                 }
@@ -914,7 +914,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (set.size() == 1) {
             Expression expression = values.get(0).getValue();
-            BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
             NewObject newObject;
             if ((newObject = expression.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
@@ -933,9 +932,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
-                    effectivelyFinalValue = newObject.copyAfterModifyingMethodOnConstructor(TRUE);
+                    effectivelyFinalValue = newObject.removeConstructor();
                 } else {
-                    effectivelyFinalValue = newObject.copyWithNewState(TRUE);
+                    effectivelyFinalValue = newObject;
                 }
             } else {
                 effectivelyFinalValue = expression;

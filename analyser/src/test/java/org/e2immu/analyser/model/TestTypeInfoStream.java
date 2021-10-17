@@ -132,7 +132,7 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
-        Expression creationExpression = NewObject.objectCreation(Identifier.generate(), primitives, hashMapConstructor,
+        Expression creationExpression = NewObject.objectCreation(Identifier.generate(), hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(Identifier.generate(), typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")

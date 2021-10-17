@@ -171,12 +171,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
         return methodInfo;
     }
 
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationContext) {
-        // TODO verify this
-        return expression.getInstance(evaluationContext);
-    }
-
     public Expression expression() {
         return expression;
     }
@@ -243,9 +237,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
                             NewObject newObject = scope.asInstanceOf(NewObject.class);
                             VariableExpression ve;
                             if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-                                Expression value = evaluationContext.currentInstance(ve.variable(),
+                                Expression value = evaluationContext.currentValue(ve.variable(),
                                         evaluationContext.getInitialStatementTime());
-                                if(value != null) {
+                                if (value != null) {
                                     newObject = value.asInstanceOf(NewObject.class);
                                 } // else, see Loops_19
                             }
@@ -276,8 +270,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             if (replace) {
                 if (replacement == null) {
                     replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
-                                    Identifier.variable(variable))),
-                            inspectionProvider.getPrimitives(), variable.parameterizedType());
+                            Identifier.variable(variable))), variable.parameterizedType());
                 }
 
                 builder.put(new VariableExpression(variable), replacement);
@@ -433,9 +426,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         @Override
         public boolean notNullAccordingToConditionManager(Variable variable) {
-            return notNullAccordingToConditionManager(variable, fr -> {
-                throw new UnsupportedOperationException("there should be no local copies of field references!");
-            });
+            return notNullAccordingToConditionManager(variable, fr -> evaluationContext.findOrThrow(fr));
         }
 
         @Override
@@ -456,10 +447,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         // FIXME nullable
         @Override
-        public NewObject currentInstance(Variable variable, int statementTime) {
+        public NewObject currentValue(Variable variable, int statementTime) {
             ensureVariableIsKnown(variable);
-            return NewObject.forInlinedMethod(identifier, evaluationContext.getPrimitives(),
-                    variable.parameterizedType(), MultiLevel.NULLABLE);
+            return NewObject.forInlinedMethod(identifier, variable.parameterizedType(), MultiLevel.NULLABLE);
         }
 
         @Override
@@ -580,6 +570,16 @@ public class InlinedMethod extends ElementImpl implements Expression {
         @Override
         public Stream<DelayDebugNode> streamNodes() {
             return Stream.of();
+        }
+
+        @Override
+        public boolean hasState(Expression expression) {
+            return evaluationContext.hasState(expression);
+        }
+
+        @Override
+        public Expression state(Expression expression) {
+            return evaluationContext.state(expression);
         }
     }
 }

@@ -233,6 +233,7 @@ public abstract class CommonTestRunner {
         filteredMessages
                 .stream()
                 .filter(message -> message.message().severity != Message.Severity.INFO)
+                .sorted(Message::SORT)
                 .forEach(message -> LOGGER.info(message.toString()));
         assertEquals(errorsToExpect, (int) filteredMessages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");

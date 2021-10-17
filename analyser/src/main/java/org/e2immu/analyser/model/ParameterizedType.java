@@ -978,14 +978,14 @@ public class ParameterizedType {
     Once a type is E2IMMUTABLE, we have to look at the immutability of the hidden content, to potentially upgrade
     to a higher version. See e.g., E2Immutable_11,12
      */
-    public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod, int dynamicValue) {
+    public int defaultImmutable(AnalysisProvider analysisProvider, boolean unboundIsMutable, int dynamicValue) {
         if (arrays > 0) {
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
         }
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             // unbound type parameter, null constant
-            return Math.max(dynamicValue, returnValueOfMethod ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            return Math.max(dynamicValue, unboundIsMutable ? MultiLevel.NOT_INVOLVED : MultiLevel.EFFECTIVELY_E2IMMUTABLE);
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -1002,7 +1002,7 @@ public class ParameterizedType {
             }
             if (doSum) {
                 int paramValue = parameters.stream()
-                        .mapToInt(pt -> pt.defaultImmutable(analysisProvider, false))
+                        .mapToInt(pt -> pt.defaultImmutable(analysisProvider, true))
                         .map(v -> v == TYPE_ANALYSIS_NOT_AVAILABLE ? MultiLevel.MUTABLE : v)
                         .min().orElseThrow();
                 if (paramValue == Level.DELAY) return Level.DELAY;

@@ -672,7 +672,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Expression initialValue = statementTime == initial.getStatementTime() &&
                                 initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
-                                NewObject.localCopyOfVariableField(index, fieldReference, primitives);
+                                NewObject.localCopyOfVariableField(index, fieldReference);
                         boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
@@ -819,8 +819,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(), variables);
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-            return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), lastStatement.primitives,
-                    notNull);
+            return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
         }
     }
 
@@ -1143,7 +1142,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setInitialValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
                     Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
         } else if (variable instanceof This) {
-            vic.setInitialValue(NewObject.forCatchOrThis(index, variable, primitives), false,
+            vic.setInitialValue(NewObject.forCatchOrThis(index, variable), false,
                     typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true),
                     true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
@@ -1181,8 +1180,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
         int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
-        Expression state = new BooleanConstant(primitives, true);
-        return NewObject.initialValueOfParameter(parameterInfo, state, notNull, parameterInfo.index == 0);
+        return NewObject.initialValueOfParameter(parameterInfo, notNull, parameterInfo.index == 0);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -1314,8 +1312,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
-        NewObject newObject = NewObject.initialValueOfExternalVariableField(fieldReference, index,
-                primitives, notNull);
+        NewObject newObject = NewObject.initialValueOfExternalVariableField(fieldReference, index, notNull);
         return new ExpressionAndDelay(newObject, false);
     }
 
@@ -1436,6 +1433,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
         if (vic == null) return null;
         return vic.best(level);
+    }
+
+    public VariableInfoContainer findOrNull(@NotNull Variable variable) {
+        String fqn = variable.fullyQualifiedName();
+        return variables.getOrDefaultNull(fqn);
     }
 
     /**

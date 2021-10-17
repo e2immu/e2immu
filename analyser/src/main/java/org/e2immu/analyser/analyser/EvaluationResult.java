@@ -394,23 +394,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return currentExpression.value;
         }
 
-        /*
-        Used by MethodCall and EvaluateMethodCall
-         */
-        public NewObject currentInstance(Variable variable) {
-            ChangeData currentExpression = valueChanges.get(variable);
-            NewObject newObject;
-            if (currentExpression != null && currentExpression.value != null &&
-                    (newObject = currentExpression.value.asInstanceOf(NewObject.class)) != null)
-                return newObject;
-            assert evaluationContext != null;
-
-            return evaluationContext.currentInstance(variable, statementTime);
-        }
-
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
         // an instance yet. Not called upon assignment.
-        private void assignInstanceToVariable(Variable variable, NewObject instance, LinkedVariables
+        private void assignInstanceToVariable(Variable variable, Expression instance, LinkedVariables
                 linkedVariables) {
             ChangeData current = valueChanges.get(variable);
             ChangeData newVcd;
@@ -629,7 +615,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void modifyingMethodAccess(Variable variable, NewObject newInstance, LinkedVariables linkedVariables) {
+        public void modifyingMethodAccess(Variable variable, Expression newInstance, LinkedVariables linkedVariables) {
             assignInstanceToVariable(variable, newInstance, linkedVariables);
         }
 

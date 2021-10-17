@@ -79,12 +79,6 @@ public class StringConcat extends BinaryOperator {
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
-    }
-
-
-    @Override
     public Expression removeAllReturnValueParts() {
         boolean removeLhs = lhs.isReturnValue();
         boolean removeRhs = rhs.isReturnValue();

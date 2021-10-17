@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -54,9 +53,8 @@ public class MethodCallIncompatibleWithPrecondition {
                         fieldInfo.name, methodAnalyser.methodInfo.fullyQualifiedName);
                 return null;
             }
-            NewObject newObject;
-            if ((newObject = variableInfo.getValue().asInstanceOf(NewObject.class)) != null) {
-                Expression state = newObject.stateTranslateThisTo(fieldReference);
+            if (evaluationContext.hasState(variableInfo.getValue())) {
+                Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);
 

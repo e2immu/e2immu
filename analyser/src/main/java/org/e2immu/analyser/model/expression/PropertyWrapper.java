@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
@@ -28,13 +29,20 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public record PropertyWrapper(Expression expression,
+                              Expression state,
                               Map<VariableProperty, Integer> properties,
                               LinkedVariables linked1Variables,
                               ParameterizedType castType) implements Expression, ExpressionWrapper {
 
+    public PropertyWrapper {
+        assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
+    }
+
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new PropertyWrapper(expression.translate(translationMap), properties,
+        return new PropertyWrapper(expression.translate(translationMap),
+                state == null ? null : state.translate(translationMap),
+                properties,
                 linked1Variables == null ? null : linked1Variables.translate(translationMap),
                 castType == null ? null : translationMap.translateType(castType));
     }
@@ -81,18 +89,25 @@ public record PropertyWrapper(Expression expression,
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
-        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties, null, null);
+        return new PropertyWrapper(value, null, properties, null, null);
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ParameterizedType castType) {
-        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties, null, castType);
+        return new PropertyWrapper(value, null, properties, null, castType);
     }
 
     public static Expression propertyWrapper(Expression value, LinkedVariables linked1Variables) {
-        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, Map.of(), linked1Variables, null);
+        return new PropertyWrapper(value, null, Map.of(), linked1Variables, null);
+    }
+
+    public static Expression addState(Expression expression, Expression state) {
+        assert state != null;
+        return new PropertyWrapper(expression, state, Map.of(), null, null);
+    }
+
+    public static Expression addState(Expression expression, Expression state, Map<VariableProperty, Integer> properties) {
+        assert state != null;
+        return new PropertyWrapper(expression, state, properties, null, null);
     }
 
     @Override
@@ -120,21 +135,39 @@ public record PropertyWrapper(Expression expression,
         String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
-        boolean haveSomeValue = !propertyString.isBlank() || castType != null || linked1Variables != null;
-        if (haveSomeValue) {
+        boolean haveComment = !propertyString.isBlank() || castType != null || linked1Variables != null || state != null;
+        if (haveComment) {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT);
-            if (!propertyString.isBlank()) outputBuilder.add(new Text(propertyString));
+            boolean added = false;
+            if (!propertyString.isBlank()) {
+                outputBuilder.add(new Text(propertyString));
+                added = true;
+            }
             if (linked1Variables != null) {
-                String header = linked1Variables.isDelayed() ? "{DL1 ": "{L1 ";
+                if (added) {
+                    outputBuilder.add(Space.ONE);
+                }
+                added = true;
+                String header = linked1Variables.isDelayed() ? "{DL1 " : "{L1 ";
                 outputBuilder.add(new Text(header))
                         .add(linked1Variables.variables().stream().map(v -> v.output(qualification))
                                 .collect(OutputBuilder.joining(Symbol.COMMA)))
                         .add(new Text("}"));
             }
             if (castType != null) {
+                if (added) {
+                    outputBuilder.add(Space.ONE);
+                }
+                added = true;
                 outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                         .add(castType.output(qualification))
                         .add(Symbol.RIGHT_PARENTHESIS);
+            }
+            if (state != null) {
+                if (added) {
+                    outputBuilder.add(Space.ONE);
+                }
+                outputBuilder.add(state.output(qualification));
             }
             outputBuilder.add(Symbol.RIGHT_BLOCK_COMMENT);
         }
@@ -142,7 +175,8 @@ public record PropertyWrapper(Expression expression,
     }
 
     private static String stringValue(Map.Entry<VariableProperty, Integer> e) {
-        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue() == MultiLevel.INDEPENDENT_1) return "@Dependent1";
+        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue() == MultiLevel.INDEPENDENT_1)
+            return "@Dependent1";
         return e.getKey().toString();
     }
 
@@ -202,11 +236,6 @@ public record PropertyWrapper(Expression expression,
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        return expression.getInstance(evaluationResult);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Expression oUnboxed)) return false;
@@ -228,5 +257,21 @@ public record PropertyWrapper(Expression expression,
     @Override
     public Identifier getIdentifier() {
         return expression.getIdentifier();
+    }
+
+    @Override
+    public boolean hasState() {
+        return state != null && !(state instanceof BooleanConstant bc && bc.constant());
+    }
+
+    @Override
+    public Expression state() {
+        return state;
+    }
+
+    @Override
+    public Expression removeState() {
+        if (state != null) return expression;
+        return this;
     }
 }

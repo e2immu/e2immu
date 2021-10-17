@@ -353,8 +353,8 @@ public class Test_01_Loops extends CommonTestRunner {
         // overwrite assignment, because loop is guaranteed to be executed, and assignment is guaranteed to be
         // executed inside the block
         testClass("Loops_2", 1, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -933,7 +933,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "instance type Set<Entry<String,Container>>";
+                String expectValue = d.iteration() == 0 ? "<m:entrySet>" : "kvStore$0.entrySet()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1.0.0".equals(d.statementId())) {

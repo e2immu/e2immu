@@ -205,20 +205,13 @@ public class Lambda extends ElementImpl implements Expression {
                     result = DelayedExpression.forMethod(methodInfo, implementation, List.of());
                 }
             } else {
-                result = NewObject.forGetInstance(identifier, parameterizedType,
-                        new BooleanConstant(evaluationContext.getPrimitives(), true),
-                        MultiLevel.EFFECTIVELY_NOT_NULL);
+                result = NewObject.forGetInstance(identifier, parameterizedType);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }
 
         builder.setExpression(result);
         return builder.build();
-    }
-
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override

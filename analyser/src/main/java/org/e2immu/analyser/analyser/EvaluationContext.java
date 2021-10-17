@@ -210,10 +210,10 @@ public interface EvaluationContext extends DelayDebugger {
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).
      */
-    default NewObject currentInstance(Variable variable, int statementTime) {
+    default Expression currentValue(Variable variable, int statementTime) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
-        // always a new one with empty state -- we cannot be bothered here.
-        return NewObject.forTesting(getPrimitives(), variable.parameterizedType());
+        // a new one with empty state -- we cannot be bothered here.
+        return NewObject.forTesting(variable.parameterizedType());
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
@@ -383,5 +383,37 @@ public interface EvaluationContext extends DelayDebugger {
                             HiddenContent::merge);
         }
         return NO_HIDDEN_CONTENT;
+    }
+
+    // meant for computing method analyser, computing field analyser
+
+    default boolean hasState(Expression expression) {
+        if (expression.cannotHaveState()) return false;
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+            if (ve.variable() instanceof FieldReference fr) {
+                FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+                return fa.getEffectivelyFinalValue() != null &&
+                        fa.getEffectivelyFinalValue().hasState();
+            }
+            return false; // no way we have this info here
+        }
+        return expression.hasState();
+    }
+
+    default Expression state(Expression expression) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+            if (ve.variable() instanceof FieldReference fr) {
+                FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+                return fa.getEffectivelyFinalValue().state();
+            }
+            throw new UnsupportedOperationException();
+        }
+        return expression.state();
+    }
+
+    default VariableInfo findOrThrow(Variable variable) {
+        throw new UnsupportedOperationException();
     }
 }

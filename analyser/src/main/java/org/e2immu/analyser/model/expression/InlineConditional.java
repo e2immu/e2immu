@@ -149,12 +149,6 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
-    }
-
-    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             condition.visit(predicate);

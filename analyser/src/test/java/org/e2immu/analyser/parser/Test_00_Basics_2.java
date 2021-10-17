@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -78,7 +79,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals("<p:collection>", d.currentValue().toString());
                     assertTrue(d.currentValueIsDelayed());
                 } else {
-                    assertEquals("instance type Collection<String>/*this.contains(" + STRING_0 + ")*//*@Identity*/",
+                    assertTrue(d.currentValue() instanceof PropertyWrapper);
+                    assertEquals("instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
                             d.currentValue().toString());
                 }
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));

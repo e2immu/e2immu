@@ -423,9 +423,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -491,7 +491,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.map";
                 assertEquals(expectLinked1, d.evaluationResult().evaluationContext().linked1Variables(v).toString());
                 assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>", v.returnType().toString());
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E3IMMUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
                         .getProperty(v, VariableProperty.IMMUTABLE, true, true));
             }
@@ -499,7 +499,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E3IMMUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };

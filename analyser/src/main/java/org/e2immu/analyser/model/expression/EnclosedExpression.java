@@ -59,11 +59,6 @@ public class EnclosedExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationContext) {
-        return inner.getInstance(evaluationContext);
-    }
-
-    @Override
     public ParameterizedType returnType() {
         return inner.returnType();
     }

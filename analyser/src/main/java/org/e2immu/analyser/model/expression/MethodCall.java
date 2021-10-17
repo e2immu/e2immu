@@ -93,12 +93,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
-    }
-
-    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             object.visit(predicate);
@@ -221,7 +215,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         int modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
-        EvaluationResult mv = new EvaluateMethodCall(identifier, evaluationContext).methodValue(modified, methodInfo,
+        EvaluationResult mv = new EvaluateMethodCall(evaluationContext, this).methodValue(modified,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
                 reParamValues);
@@ -403,9 +397,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // companion methods
-        NewObject modifiedInstance;
+        Expression modifiedInstance;
         if (modified == Level.TRUE) {
-            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
+            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, this, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
         } else {
             modifiedInstance = null;
@@ -417,7 +411,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            EvaluationResult mv = new EvaluateMethodCall(identifier, evaluationContext).methodValue(modified, methodInfo,
+            EvaluationResult mv = new EvaluateMethodCall(evaluationContext, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value().isInstanceOf(NewObject.class) && modifiedInstance != null) {
@@ -548,35 +542,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return NOT_EVENTUAL;
     }
 
-    static NewObject checkCompanionMethodsModifying(
+    static Expression checkCompanionMethodsModifying(
             EvaluationResult.Builder builder,
             EvaluationContext evaluationContext,
+            Expression currentCall,
             MethodInfo methodInfo,
             MethodAnalysis methodAnalysis,
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues) {
         if (evaluationContext.isDelayed(objectValue)) return null; // don't even try
+        if (objectValue.cannotHaveState()) return null; // ditto
 
-        NewObject newObject;
-        VariableExpression variableExpression;
-        if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
-            newObject = builder.currentInstance(variableExpression.variable());
-            if (newObject == null) return null; // DELAY
-        } else if (objectValue instanceof TypeExpression) {
-            assert methodInfo.methodInspection.get().isStatic();
-            return null; // static method
-        } else if (objectValue instanceof NullConstant || objectValue instanceof ClassExpression) {
-            return null; // has already caused an error earlier on
+        Expression state;
+        if (evaluationContext.hasState(objectValue)) {
+            state = evaluationContext.state(objectValue);
+            if (evaluationContext.isDelayed(state)) return null; // DELAY
         } else {
-            newObject = objectValue.getInstance(builder.build());
+            state = new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
-        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass()
-                + " call to " + methodInfo.name);
 
-        if (evaluationContext.isDelayed(newObject.state())) return null; // DELAY
-
-        AtomicReference<Expression> newState = new AtomicReference<>(newObject.state());
+        AtomicReference<Expression> newState = new AtomicReference<>(state);
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()
@@ -627,9 +613,32 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (containsEmptyExpression(newState.get())) {
             newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
         }
-        NewObject modifiedInstance = methodInfo.isConstructor ? newObject.copyWithNewState(newState.get()) :
-                // we clear the constructor and its arguments after calling a modifying method on the object
-                newObject.copyAfterModifyingMethodOnConstructor(newState.get());
+        Expression newInstance;
+
+        IsVariableExpression ive;
+        if (currentCall instanceof NewObject) {
+            newInstance = currentCall;
+        } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
+            Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
+            if (current instanceof NewObject newObject) {
+                if(newObject.minimalNotNull() == MultiLevel.NULLABLE) {
+                    newInstance = newObject.removeConstructor();
+                } else {
+                    newInstance = current;
+                }
+            } else {
+                newInstance = NewObject.forGetInstance(current.getIdentifier(), current.returnType());
+            }
+        } else {
+            newInstance = NewObject.forGetInstance(currentCall.getIdentifier(), currentCall.returnType());
+        }
+
+        Expression modifiedInstance;
+        if (newState.get().isBoolValueTrue()) {
+            modifiedInstance = newInstance;
+        } else {
+            modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
+        }
 
         LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
         VariableExpression ve;
@@ -793,7 +802,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int formal = methodAnalysis.getProperty(variableProperty);
         // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
         if (VariableProperty.IMMUTABLE == variableProperty) {
-            // FIXME but, the formal value could already have been "upgraded" from the immutability of the type (firstEntry() is @E2Container instead of @Container)
+            // IMPROVE but, the formal value could already have been "upgraded" from the immutability of the type (firstEntry() is @E2Container instead of @Container)
             return dynamicImmutable(formal, methodAnalysis, evaluationContext);
         }
         if (VariableProperty.INDEPENDENT == variableProperty) {
@@ -826,7 +835,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // in the case of factory methods or indeed identity
             // see E2Immutable_11
             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
-           HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+            HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
             MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
                 int minParams = Integer.MAX_VALUE;

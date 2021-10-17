@@ -47,8 +47,6 @@ public class E2Immutable_12<T> {
 
     @NotNull
     @NotModified
-    @E2Container(level = 3)
-    // The firstEntry result is @Independent1
     public Stream<Map.Entry<String, T>> stream() {
         return Stream.of(map.firstEntry());
     }

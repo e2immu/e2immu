@@ -17,7 +17,9 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -26,6 +28,7 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 @E2Container
@@ -170,13 +173,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
     }
 
-    /*
-    Construct an initial instance whose state can be enriched by companion methods.
-     */
-    default NewObject getInstance(EvaluationResult evaluationResult) {
-        return null;
-    }
-
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
@@ -208,5 +204,43 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default Expression removeAllReturnValueParts() {
         throw new UnsupportedOperationException("Implement! " + getClass());
+    }
+
+    default boolean hasState() {
+        return false;
+    }
+
+    default Expression state() {
+        throw new UnsupportedOperationException("Guarded by haveState();");
+    }
+
+    default boolean cannotHaveState() {
+        return false;
+    }
+
+
+    default Expression stateTranslateThisTo(FieldReference fieldReference) {
+        Expression state = state();
+        if (state.isBooleanConstant()) return state;
+        // the "this" in the state can belong to the type of the object, or any of its super types
+        This thisVar = findThis();
+        return state.translate(new TranslationMapImpl.Builder().put(thisVar, fieldReference).build());
+    }
+
+    private This findThis() {
+        AtomicReference<This> thisVar = new AtomicReference<>();
+        state().visit(e -> {
+            VariableExpression ve;
+            if ((ve = e.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This tv) {
+                thisVar.set(tv);
+                return false;
+            }
+            return true;
+        });
+        return thisVar.get();
+    }
+
+    default Expression removeState() {
+        return this;
     }
 }

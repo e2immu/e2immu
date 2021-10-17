@@ -130,7 +130,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
-        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<String>).findAny().orElseThrow()";
+        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":set2ter.stream().findAny().orElseThrow()";
         final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {

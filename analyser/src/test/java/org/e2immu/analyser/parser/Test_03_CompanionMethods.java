@@ -164,15 +164,17 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     @Test
     public void test2() throws IOException {
 
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
-                        d.currentValue().toString());
-            }
-            if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
-                assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
-                        d.currentValue().toString());
+            if ("test".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
+                            d.currentValue().toString());
+                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if ("2".equals(d.statementId())) {
+                    assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
+                            d.currentValue().toString());
+                }
             }
         };
 
@@ -291,7 +293,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 }
                 if (Set.of("01", "04").contains(d.statementId())) {
                     assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&AnnotatedAPI.isKnown(true)&&1==this.size()*/",
-                            d.currentValue().toString());
+                            d.currentValue().toString(), "statement " + d.statementId());
                 }
                 if ("07".equals(d.statementId())) {
                     assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&this.contains(\"b\")&&AnnotatedAPI.isKnown(true)&&2==this.size()*/",

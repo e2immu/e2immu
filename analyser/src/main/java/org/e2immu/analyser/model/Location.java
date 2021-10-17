@@ -16,7 +16,7 @@ package org.e2immu.analyser.model;
 
 import java.util.Objects;
 
-public class Location {
+public class Location implements Comparable<Location> {
     public final WithInspectionAndAnalysis info;
     public final String statementIndexInMethod;
     public final Identifier identifier;
@@ -70,5 +70,18 @@ public class Location {
         } else if (info instanceof ParameterInfo) type = "Parameter";
         else throw new UnsupportedOperationException();
         return type + " " + info.fullyQualifiedName() + (statementIndexInMethod == null ? "" : ", statement " + statementIndexInMethod);
+    }
+
+    public int compareTo(Location other) {
+        int c = info.getTypeInfo().primaryType().fullyQualifiedName
+                .compareTo(other.info.getTypeInfo().primaryType().fullyQualifiedName);
+        if (c != 0) return c;
+        if (identifier != null && other.identifier != null) {
+            return identifier.compareTo(other.identifier);
+        }
+        if (statementIndexInMethod != null && other.statementIndexInMethod != null) {
+            return statementIndexInMethod.compareTo(other.statementIndexInMethod);
+        }
+        return 0;
     }
 }

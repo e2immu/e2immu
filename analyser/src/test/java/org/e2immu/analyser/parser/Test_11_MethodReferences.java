@@ -74,10 +74,10 @@ public class Test_11_MethodReferences extends CommonTestRunner {
     public void test_3() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() == 0 ? "<m:stream>" : "instance type Stream<Entry<String,Integer>>";
+                String expectValue = d.iteration() == 0 ? "<m:stream>" : "map.entrySet().stream()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
 
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
                         .getProperty(d.evaluationResult().value(), VariableProperty.IMMUTABLE, true, true));
             }

@@ -1031,14 +1031,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         LinkedVariables linked1;
         if (independentIterable <= MultiLevel.INDEPENDENT_1) {
-            linked1 = evaluatedIterable.linked1VariablesValue(evaluationContext).delay(delay);
+            linked1 = evaluationContext.linked1Variables(evaluatedIterable).delay(delay);
         } else {
             linked1 = LinkedVariables.EMPTY;
         }
 
         LinkedVariables linked;
         if (independentIterable == MultiLevel.DEPENDENT) {
-            linked = evaluatedIterable.linkedVariables(evaluationContext).delay(delay);
+            linked = evaluationContext.linkedVariables(evaluatedIterable).delay(delay);
         } else {
             linked = delay ? LinkedVariables.DELAYED_EMPTY : LinkedVariables.EMPTY;
         }
@@ -1125,15 +1125,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Variable variable = e.getKey();
             EvaluationResult.ChangeData changeData = e.getValue();
             if (changeData.getProperty(IN_NOT_NULL_CONTEXT) == Level.TRUE) {
-                VariableInfo vi = statementAnalysis.findOrNull(variable, EVALUATION);
+                VariableInfoContainer vic = statementAnalysis.findOrNull(variable);
+                VariableInfo vi = vic.best(EVALUATION);
                 if (vi != null && !(vi.variable() instanceof ParameterInfo)) {
                     int externalNotNull = vi.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
                     int notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
-                    if (vi.valueIsSet() && externalNotNull == MultiLevel.NULLABLE
-                            && notNullExpression == MultiLevel.NULLABLE) {
+                    if (vi.valueIsSet() && externalNotNull == MultiLevel.NULLABLE && notNullExpression == MultiLevel.NULLABLE) {
+                        Variable primary = Objects.requireNonNullElse(vic.variableNature().localCopyOf(), variable);
                         statementAnalysis.ensure(Message.newMessage(getLocation(),
                                 Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Variable: " + variable.simpleName()));
+                                "Variable: " + primary.simpleName()));
                     }
                 }
             }
@@ -1671,7 +1672,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!statementAnalysis.variables.isSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
-                        NewObject.forCatchOrThis(index(), lvr, statementAnalysis.primitives),
+                        NewObject.forCatchOrThis(index(), lvr),
                         lvr.parameterizedType().defaultImmutable(analyserContext, false),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
@@ -1733,7 +1734,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
 
-                    vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull, statementAnalysis.primitives),
+                    vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull),
                             false, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
@@ -1848,7 +1849,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String loopCopyFqn = loopCopy.fullyQualifiedName();
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;
-                Expression newValue = NewObject.localVariableInLoop(index(), vi.variable(), statementAnalysis.primitives);
+                Expression newValue = NewObject.localVariableInLoop(index(), vi.variable());
                 Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
                         read,
@@ -3106,7 +3107,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public NewObject currentInstance(Variable variable, int statementTime) {
+        public Expression currentValue(Variable variable, int statementTime) {
             VariableInfo variableInfo = findForReading(variable, statementTime, true);
             Expression value = variableInfo.getValue();
 
@@ -3115,11 +3116,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                 assert ve.variable() != variable :
                         "Variable " + variable.fullyQualifiedName() + " has been assigned a VariableValue value pointing to itself";
-                return currentInstance(ve.variable(), statementTime);
+                return currentValue(ve.variable(), statementTime);
             }
-            NewObject newObject;
-            if ((newObject = value.asInstanceOf(NewObject.class)) != null) return newObject;
-            return null;
+            return value;
         }
 
         @Override
@@ -3215,8 +3214,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             Variable variable = eval.variable();
                             int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true, false);
                             if (nne != Level.DELAY) {
-                                Expression newObject = NewObject.genericMergeResult(index(), e.getValue().current(), getPrimitives(),
-                                        nne);
+                                Expression newObject = NewObject.genericMergeResult(index(), e.getValue().current(), nne);
                                 translationMap.put(new VariableExpression(variable), newObject);
                             }
 
@@ -3323,6 +3321,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public Stream<DelayDebugNode> streamNodes() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasState(Expression expression) {
+            VariableExpression ve;
+            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+                VariableInfo vi = findForReading(ve.variable(), statementAnalysis.statementTime(INITIAL), true);
+                return vi.getValue() != null && vi.getValue().hasState();
+            }
+            return expression.hasState();
+        }
+
+        @Override
+        public Expression state(Expression expression) {
+            VariableExpression ve;
+            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+                VariableInfo vi = findForReading(ve.variable(), statementAnalysis.statementTime(INITIAL), true);
+                return vi.getValue().state();
+            }
+            return expression.state();
+        }
+
+        @Override
+        public VariableInfo findOrThrow(Variable variable) {
+            return statementAnalysis.findOrThrow(variable);
         }
     }
 

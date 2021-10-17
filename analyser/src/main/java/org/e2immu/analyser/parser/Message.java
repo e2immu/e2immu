@@ -24,6 +24,12 @@ public record Message(Location location,
                       org.e2immu.analyser.parser.Message.Label message,
                       String extra) {
 
+    public static int SORT(Message m1, Message m2) {
+        int c = m1.location.compareTo(m2.location);
+        if (c != 0) return c;
+        return m1.message.compareTo(m2.message);
+    }
+
     public enum Severity {
         INFO,
         WARN,

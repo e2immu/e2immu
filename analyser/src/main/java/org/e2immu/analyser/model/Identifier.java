@@ -30,7 +30,9 @@ At the same time, we may need location information (line, pos) to report errors.
 We'll allow for multiple types of identifiers, because we also generate code (a lot of it for internal purposes,
 never seen by the user); in this situation, it's easier to work with unique integers.
  */
-public interface Identifier {
+public interface Identifier extends Comparable<Identifier> {
+
+    int identifierOrder();
 
     Identifier CONSTANT = new IncrementalIdentifier();
 
@@ -70,22 +72,22 @@ public interface Identifier {
         return new ListOfIdentifiers(identifiers);
     }
 
-    record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
-    }
-
-    record LoopConditionIdentifier(String index) implements Identifier {
-    }
-
-    record CatchConditionIdentifier(String index) implements Identifier {
-    }
-
-    record VariableIdentifier(Variable variable, String index) implements Identifier {
-    }
-
-    record StringConstantIdentifier(String constant) implements Identifier {
-    }
 
     record PositionalIdentifier(int line, int pos) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof PositionalIdentifier pi) {
+                int c = line - pi.line;
+                if (c != 0) return c;
+                return pos - pi.pos;
+            }
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 0;
+        }
     }
 
     class IncrementalIdentifier implements Identifier {
@@ -107,6 +109,84 @@ public interface Identifier {
         @Override
         public int hashCode() {
             return Objects.hash(identifier);
+        }
+
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof IncrementalIdentifier ii) return identifier - ii.identifier;
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 1;
+        }
+    }
+
+    record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof ListOfIdentifiers loi) {
+                throw new UnsupportedOperationException("TODO");
+            }
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 2;
+        }
+    }
+
+    record LoopConditionIdentifier(String index) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 3;
+        }
+    }
+
+    record CatchConditionIdentifier(String index) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 4;
+        }
+    }
+
+    record VariableIdentifier(Variable variable, String index) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof VariableIdentifier vi) {
+                return variable.fullyQualifiedName().compareTo(vi.variable.fullyQualifiedName());
+            }
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 5;
+        }
+    }
+
+    record StringConstantIdentifier(String constant) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            if (o instanceof StringConstantIdentifier sci) return constant.compareTo(sci.constant);
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 6;
         }
     }
 }

@@ -18,7 +18,6 @@ import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
@@ -39,8 +38,7 @@ public class ParseArrayCreationExpr {
                         .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());
         return NewObject.withArrayInitialiser(
                 createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
-                parameterizedType, indexExpressions, arrayInitializer,
-                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true));
+                parameterizedType, indexExpressions, arrayInitializer);
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type

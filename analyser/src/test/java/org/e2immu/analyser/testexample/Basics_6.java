@@ -39,7 +39,7 @@ public class Basics_6 {
 
     public String test3() {
         String v1 = field;
-        String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4
+        String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4 IMPROVE currently on v1 and field!!!
         String v2 = field;
         assert v1.equals(v2); // always true... nothing "interrupting"; 5
         return v3;
@@ -54,8 +54,8 @@ public class Basics_6 {
 
     public void test5() {
         String v1 = field.toLowerCase(); // ; + potential null ptr exception 7
-        String v2 = field.toLowerCase(); // ; ditto 8
-        assert v1.equals(v2); // most likely true... semantics of toLowerCase  -- NO warning anymore for null ptr
+        String v2 = field.toLowerCase(); // toLowerCase does not allow interrupts, see TestCommonJavaLang
+        assert v1.equals(v2); // always true (different from IntelliJ!)
     }
 
     public List<String> test6() {

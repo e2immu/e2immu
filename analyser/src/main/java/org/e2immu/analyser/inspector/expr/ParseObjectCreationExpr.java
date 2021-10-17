@@ -61,7 +61,7 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType, diamond);
+            return NewObject.withAnonymousClass(parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
@@ -96,8 +96,8 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return NewObject.objectCreation(Identifier.generate(), typeContext.getPrimitives(),
-                method.methodInspection.getMethodInfo(), finalParameterizedType, diamond, newParameterExpressions);
+        return NewObject.objectCreation(Identifier.generate(), method.methodInspection.getMethodInfo(),
+                finalParameterizedType, diamond, newParameterExpressions);
     }
 
     private static ParameterizedType tryToResolveTypeParameters(InspectionProvider inspectionProvider,

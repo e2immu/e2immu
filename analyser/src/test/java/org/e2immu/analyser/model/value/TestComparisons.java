@@ -321,7 +321,7 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testLoops7() {
-        NewObject i1 = NewObject.forLoopVariable("0", vi, MultiLevel.EFFECTIVELY_NOT_NULL, PRIMITIVES);
+        NewObject i1 = NewObject.forLoopVariable("0", vi, MultiLevel.EFFECTIVELY_NOT_NULL);
         Expression iGtI1 = GreaterThanZero.greater(minimalEvaluationContext, i, i1, false);
         assertEquals("i>instance type int", iGtI1.toString());
         Expression iLeI2 = GreaterThanZero.less(minimalEvaluationContext, i, i1, true);

@@ -153,9 +153,4 @@ public class MultiValue extends ElementImpl implements Expression {
             multiExpression.stream().forEach(v -> v.visit(predicate));
         }
     }
-
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(identifier, inspectionProvider.getPrimitives(), returnType());
-    }
 }

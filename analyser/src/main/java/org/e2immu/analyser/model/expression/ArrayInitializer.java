@@ -159,9 +159,4 @@ public class ArrayInitializer extends ElementImpl implements Expression {
             multiExpression.stream().forEach(v -> v.visit(predicate));
         }
     }
-
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationContext) {
-        return NewObject.forGetInstance(identifier, inspectionProvider.getPrimitives(), returnType());
-    }
 }

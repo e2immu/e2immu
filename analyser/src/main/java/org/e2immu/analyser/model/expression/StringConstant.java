@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -24,7 +23,6 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
 import java.util.Objects;
 
 @E2Container
@@ -78,20 +76,5 @@ public record StringConstant(Primitives primitives,
     @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT;
-    }
-
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        // TODO apply code from method call to produce a decent state
-        return NewObject.objectCreation(Identifier.stringConstant(constant),
-                primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO, List.of(this));
-    }
-
-    private MethodInfo oneParameterConstructor() {
-        return primitives.stringTypeInfo.typeInspection.get().methods().stream()
-                .filter(mi -> mi.isConstructor && mi.methodInspection.get().getParameters().size() == 1 &&
-                        mi.methodInspection.get().getParameters().get(0).parameterizedType().typeInfo ==
-                                primitives.stringTypeInfo)
-                .findFirst().orElse(null);
     }
 }

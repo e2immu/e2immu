@@ -91,7 +91,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
-        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(viX.variable().parameterizedType());
         viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -128,7 +128,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
-        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(viX.variable().parameterizedType());
         viX.setValue(x, false);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -168,7 +168,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(IDENTITY, Level.FALSE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(viX.variable().parameterizedType());
         viX.setValue(x, false);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -236,7 +236,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c = a; if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(NewObject.forTesting(primitives, viA.variable().parameterizedType()), false);
+        viC.setValue(NewObject.forTesting(viA.variable().parameterizedType()), false);
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
         List<StatementAnalysis.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(unknown, viB));
@@ -257,7 +257,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
-        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(viX.variable().parameterizedType());
         viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -285,7 +285,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
-        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(viX.variable().parameterizedType());
         viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));

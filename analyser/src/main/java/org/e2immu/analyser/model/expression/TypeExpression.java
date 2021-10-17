@@ -110,4 +110,9 @@ public class TypeExpression implements Expression {
     public Identifier getIdentifier() {
         return Identifier.CONSTANT;
     }
+
+    @Override
+    public boolean cannotHaveState() {
+        return true;
+    }
 }

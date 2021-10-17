@@ -104,11 +104,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return Primitives.isNumeric(typeInfo);
     }
 
-    @Override
-    public NewObject getInstance(EvaluationResult evaluationResult) {
-        return evaluationResult.evaluationContext().currentInstance(variable, evaluationResult.statementTime());
-    }
-
     /*
     the purpose of having this extra "markRead" here (as compared to the default implementation in Expression),
     is to ensure that fields exist when they are encountered -- reEvaluate is called from the single return value of
@@ -328,6 +323,11 @@ public record VariableExpression(Variable variable, String name) implements Expr
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return variable.typesReferenced(false);
+    }
+
+    @Override
+    public boolean hasState() {
+        throw new UnsupportedOperationException("Use evaluationContext.hasState()");
     }
 
     @Override
