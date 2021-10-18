@@ -23,7 +23,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @E1Container
-public class OutputBuilder {
+public class OutputBuilder implements Comparable<OutputBuilder> {
     final List<OutputElement> list = new LinkedList<>();
 
     public OutputBuilder addIfNotNull(OutputBuilder outputBuilder) {
@@ -149,5 +149,11 @@ public class OutputBuilder {
 
     public TypeName findTypeName() {
         return (TypeName) list.stream().filter(oe -> oe instanceof TypeName).findFirst().orElseThrow();
+    }
+
+    // expensive operation, and always sorts on toString!
+    @Override
+    public int compareTo(OutputBuilder o) {
+        return toString().compareTo(o.toString());
     }
 }

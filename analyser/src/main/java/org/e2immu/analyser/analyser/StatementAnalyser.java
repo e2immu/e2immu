@@ -826,8 +826,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             {
-                LinkedVariables mergedLinked1Variables = writeMergedLinked1Variables(sharedState.evaluationContext,
-                        changeData, variable, vi, vi1);
+                LinkedVariables mergedLinked1Variables = writeMergedLinked1Variables(changeData, variable, vi, vi1);
                 if (!mergedLinked1Variables.isDelayed() && vi.isNotDelayed() || mergedLinked1Variables == EMPTY_OVERRIDE) {
                     linked1.put(variable, mergedLinked1Variables);
                 } else if (vi.getLinked1Variables().isDelayed()) {
@@ -869,9 +868,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
+        /*
+        The loop variable has been created in the initialisation phase. Evaluation has to wait until
+        the expression of the forEach statement has been evaluated. For this reason, we need to handle
+        this separately.
+         */
         if (statement() instanceof ForEachStatement) {
             Variable loopVar = obtainLoopVar();
-            computeLinked1ForEach(loopVar, evaluationResult.getExpression(), sharedState.evaluationContext);
+            evaluationOfForEachVariable(loopVar, evaluationResult.getExpression(),
+                    evaluationResult.someValueWasDelayed(), sharedState.evaluationContext);
         }
 
         // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
@@ -1023,9 +1028,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return lvc.localVariableReference;
     }
 
-    private void computeLinked1ForEach(Variable loopVar,
-                                       Expression evaluatedIterable,
-                                       EvaluationContext evaluationContext) {
+    private void evaluationOfForEachVariable(Variable loopVar,
+                                             Expression evaluatedIterable,
+                                             boolean someValueWasDelayed,
+                                             EvaluationContext evaluationContext) {
         int independentIterable = evaluationContext.getProperty(evaluatedIterable, INDEPENDENT, true, true);
         boolean delay = independentIterable == Level.DELAY;
 
@@ -1046,6 +1052,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
         vic.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 statementAnalysis.statementTime(EVALUATION), Set.of());
+        Expression instance = NewObject.forLoopVariable(index(), loopVar, MultiLevel.NULLABLE);
+        vic.setValue(instance, someValueWasDelayed, LinkedVariables.EMPTY, Map.of(), false);
         vic.setLinkedVariables(linked, false);
         vic.setLinked1Variables(linked1, false);
     }
@@ -1438,19 +1446,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return mergedValue;
     }
 
-    private LinkedVariables writeMergedLinked1Variables(
-            EvaluationContext evaluationContext,
-            EvaluationResult.ChangeData changeData,
-            Variable variable,
-            VariableInfo vi,
-            VariableInfo vi1) {
+    private LinkedVariables writeMergedLinked1Variables(EvaluationResult.ChangeData changeData,
+                                                        Variable variable,
+                                                        VariableInfo vi,
+                                                        VariableInfo vi1) {
+        if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
+            // regardless of what's being delayed or not, if the type is statically independent, there cannot be content links
 
-        // regardless of what's being delayed or not, if the type is dynamically independent, there cannot be content links
-        if (vi.valueIsSet() &&
-                variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
-            int independent = vi.getValue().returnType().defaultIndependent(analyserContext);
-            if (independent == MultiLevel.INDEPENDENT) {
+            int staticallyIndependent = variable.parameterizedType().defaultIndependent(analyserContext);
+            if (staticallyIndependent == MultiLevel.INDEPENDENT) {
                 return EMPTY_OVERRIDE;
+            }
+
+            // regardless of what's being delayed or not, if the type is dynamically independent, there cannot be content links
+            if (vi.valueIsSet()) {
+                int dynamicallyIndependent = vi.getValue().returnType().defaultIndependent(analyserContext);
+                if (dynamicallyIndependent == MultiLevel.INDEPENDENT) {
+                    return EMPTY_OVERRIDE;
+                }
             }
         }
         if (changeData.linked1Variables().isDelayed()) {

@@ -288,20 +288,27 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("s".equals(d.variableName())) {
-                    if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("java.lang.String", d.variableInfo().variable()
-                                .parameterizedType().typeInfo.fullyQualifiedName);
-                        if (d.iteration() == 0) {
-                            assertEquals("<v:s>", d.currentValue().toString());
-                            assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        } else {
-                            assertEquals("nullable instance type String", d.currentValue().toString());
-                            int expectNne = d.iteration() == 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                            assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        }
+                    assertEquals("java.lang.String", d.variableInfo().variable()
+                            .parameterizedType().typeInfo.fullyQualifiedName);
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = "nullable instance type String";
+                        assertEquals(expectValue, d.currentValue().toString());
+
+                        int expectCnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
+                        assertEquals(expectValue, d.currentValue().toString());
+
+                        int expectCnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
                     }
                 }
                 if ("s$1".equals(d.variableName())) {
@@ -325,8 +332,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
+                        assertEquals("", d.variableInfo().getLinked1Variables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
@@ -353,8 +359,8 @@ public class Test_01_Loops extends CommonTestRunner {
         // overwrite assignment, because loop is guaranteed to be executed, and assignment is guaranteed to be
         // executed inside the block
         testClass("Loops_2", 1, 0, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -895,8 +901,8 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "(instance type Set<Entry<String,Integer>>).isEmpty()?3:<merge:int>"
-                                : "(instance type Set<Entry<String,Integer>>).isEmpty()?3:instance type int";
+                        String expected = d.iteration() == 0 ? "map.entrySet().isEmpty()?3:<merge:int>"
+                                : "map.entrySet().isEmpty()?3:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -914,7 +920,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<m:entrySet>.isEmpty()?3:<merge:int>"
-                                : "(instance type Set<Entry<String,Integer>>).isEmpty()?3:instance type int";
+                                : "map$0.entrySet().isEmpty()?3:instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -956,7 +962,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "kvStore";
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "kvStore$0";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
@@ -994,17 +1000,10 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>";
-                            case 1 -> "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
-                            default -> "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
+                            default -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
-
-                        String expectVars = switch (d.iteration()) {
-                            case 0 -> "[kvStore, org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, container.read, container.read, container.read, result]";
-                            case 1 -> "[org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, result]";
-                            default -> "[]";
-                        }; // without the special code in  <merge:Map<String,String>> contains a lot of entry$1, which is a CopyOfVarInLoop, which should not be auto-generated outside the loop
-                        assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
             }
