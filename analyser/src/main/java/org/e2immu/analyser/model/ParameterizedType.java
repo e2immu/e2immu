@@ -16,7 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.HiddenContentTypes;
+import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ParameterizedType {
     public static final ParameterizedType NULL_CONSTANT = new ParameterizedType(WildCard.NONE);
@@ -857,7 +858,7 @@ public class ParameterizedType {
 
     public Boolean isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
-        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
         return hiddenContentTypes == null ? null : hiddenContentTypes.contains(this);
     }
 
@@ -962,8 +963,8 @@ public class ParameterizedType {
         if (typeAnalysis == null) {
             return TYPE_ANALYSIS_NOT_AVAILABLE;
         }
-        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(this);
-        if(hiddenContentTypes == null) return Level.DELAY;
+        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(this);
+        if (hiddenContentTypes == null) return Level.DELAY;
         return hiddenContentTypes.types().stream()
                 .mapToInt(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
                 .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
@@ -1030,4 +1031,28 @@ public class ParameterizedType {
     public static boolean isUnboundTypeParameterOrJLO(TypeInfo bestType) {
         return bestType == null || Primitives.isJavaLangObject(bestType);
     }
+
+    // if we arrive here with Set<String>, we need Collection<String>, Iterable<String>, JLO in the result
+    public Stream<ParameterizedType> concreteSuperTypes(InspectionProvider inspectionProvider) {
+        TypeInfo bestType = bestTypeInfo(inspectionProvider);
+        if (bestType == null || Primitives.isJavaLangObject(bestType)) return Stream.of();
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(bestType);
+        Stream<ParameterizedType> recursiveFromParent;
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            ParameterizedType concreteParentType = concreteSuperType(inspectionProvider, typeInspection.parentClass());
+            recursiveFromParent = Stream.concat(Stream.of(concreteParentType),
+                    concreteParentType.concreteSuperTypes(inspectionProvider));
+        } else {
+            ParameterizedType concreteParentType = inspectionProvider.getPrimitives().objectParameterizedType;
+            recursiveFromParent = Stream.of(concreteParentType);
+        }
+        Stream<ParameterizedType> concreteInterfaceTypes = Stream.of();
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
+            ParameterizedType concreteInterfaceType = concreteSuperType(inspectionProvider, interfaceType);
+            concreteInterfaceTypes = Stream.concat(Stream.of(concreteInterfaceType),
+                    concreteInterfaceType.concreteSuperTypes(inspectionProvider));
+        }
+        return Stream.concat(recursiveFromParent, concreteInterfaceTypes);
+    }
+
 }

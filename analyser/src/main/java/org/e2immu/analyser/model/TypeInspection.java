@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -219,25 +218,21 @@ public interface TypeInspection extends Inspection {
     }
 
 
-    default Set<ParameterizedType> typesOfFieldsMethodsConstructors(AnalyserContext analyserContext) {
+    default Set<ParameterizedType> typesOfFieldsMethodsConstructors(InspectionProvider inspectionProvider) {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.addAll(typesOfMethodsAndConstructors());
-
-        // recursively all subtypes
-        subTypes().stream().map(st -> analyserContext.getTypeInspection(st).typesOfFieldsMethodsConstructors(analyserContext))
-                .forEach(typesOfFields::addAll);
+        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider));
         return typesOfFields;
     }
 
-    default Set<ParameterizedType> typesOfMethodsAndConstructors() {
+    default Set<ParameterizedType> typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
                 result.add(methodInfo.returnType());
             }
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
+            for (ParameterInfo parameterInfo : inspectionProvider.getMethodInspection(methodInfo).getParameters()) {
                 result.add(parameterInfo.parameterizedType);
             }
         }

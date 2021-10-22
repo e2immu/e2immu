@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -38,7 +37,7 @@ Extra: abstract types on which ONLY abstract methods without modification status
 public class ExplicitTypes {
 
     public enum UsedAs {
-        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF,
+        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST, CAST_DELAY, CAST_SELF,
         EXPLICIT_RETURN_TYPE, CATCH,
     }
 
@@ -154,19 +153,12 @@ public class ExplicitTypes {
                     if (bestType == typeBeingAnalysed) {
                         add(expressionType, UsedAs.CAST_SELF);
                     } else {
-                        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-                        int immu = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                        if (immu == Level.DELAY) {
-                            add(expressionType, UsedAs.CAST_DELAY);
-                        } else if (MultiLevel.isAtLeastEventuallyE2Immutable(immu)) {
-                            add(expressionType, UsedAs.CAST_TO_E2IMMU);
-                        } else {
-                            add(expressionType, UsedAs.CAST);
-                        }
+                        add(expressionType, UsedAs.CAST);
                     }
                 } else {
                     add(expressionType, UsedAs.CAST);
                 }
+                add(castType, UsedAs.CAST);
             }
         };
         start.visit(visitor);

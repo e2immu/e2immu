@@ -19,11 +19,11 @@ import org.e2immu.analyser.model.ParameterizedType;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record HiddenContentTypes(Set<ParameterizedType> types) {
+public record SetOfTypes(Set<ParameterizedType> types) {
 
-    public static final HiddenContentTypes EMPTY = new HiddenContentTypes(Set.of());
+    public static final SetOfTypes EMPTY = new SetOfTypes(Set.of());
 
-    public HiddenContentTypes(Set<ParameterizedType> types) {
+    public SetOfTypes(Set<ParameterizedType> types) {
         this.types = Set.copyOf(types);
     }
 

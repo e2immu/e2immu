@@ -364,7 +364,7 @@ public interface EvaluationContext extends DelayDebugger {
     HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), false);
     HiddenContent HIDDEN_CONTENT_DELAYED = new HiddenContent(List.of(), true);
 
-    default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, HiddenContentTypes hiddenContentTypes) {
+    default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
         if (hiddenContentTypes == null) return HIDDEN_CONTENT_DELAYED;
         if (hiddenContentTypes.contains(concreteType)) {
             return new HiddenContent(List.of(concreteType), false);

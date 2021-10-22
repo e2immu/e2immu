@@ -607,6 +607,25 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(inArgument, newEcd);
         }
 
+        /*
+      we use a null value for inScope to indicate a delay
+       */
+        public void link(Variable inArgument, Variable inScope, boolean delayed) {
+            ChangeData newEcd;
+            ChangeData ecd = valueChanges.get(inArgument);
+            LinkedVariables linked = inScope == null ? LinkedVariables.DELAYED_EMPTY :
+                    new LinkedVariables(Set.of(inScope), delayed);
+            if (ecd == null) {
+                newEcd = new ChangeData(null, false, false, Set.of(), linked,
+                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
+            } else {
+                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                        ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.staticallyAssignedVariables,
+                        ecd.linked1Variables, ecd.properties);
+            }
+            valueChanges.put(inArgument, newEcd);
+        }
+
         public void addPrecondition(Precondition newPrecondition) {
             if (precondition == null) {
                 precondition = newPrecondition;

@@ -152,18 +152,22 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     // now the value of independence (from 1 to infinity) is determined by the size of the
                     // hidden content component inside the field
 
+                    // FIXME
+
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
                     int minHiddenContentImmutable = fields.stream()
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
                             .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
-                            .min().orElse(MultiLevel.INDEPENDENT);
+                            .min().orElse(EFFECTIVELY_RECURSIVELY_IMMUTABLE);
                     if (minHiddenContentImmutable == Level.DELAY) {
                         log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                                 "Delay independent in parameter {}, waiting for independent of fields {}",
                                 parameterInfo.fullyQualifiedName(), fields);
                         return DELAYS;
                     }
-                    int independent = minHiddenContentImmutable <= 1 ? 0 : minHiddenContentImmutable - 1;
+                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
+                    int independent = immutableLevel <= LEVEL_2_IMMUTABLE ? INDEPENDENT_1 :
+                            MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
                     log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(independent),
                             parameterInfo.fullyQualifiedName());
                     parameterAnalysis.setProperty(INDEPENDENT, independent);
@@ -297,17 +301,20 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     }
                 }
 
+                // FIXME check this code!
+
                 if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (assignedOrLinked.isAssignedOrLinked())) {
-                    TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                    int typeIndependent;
-                    if (bestType == null) {
-                        typeIndependent = INDEPENDENT_1;
-                    } else {
-                        typeIndependent = analyserContext.getTypeAnalysis(bestType).getProperty(INDEPENDENT);
-                    }
-                    if (typeIndependent == Level.DELAY) {
+                    int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, true);
+                    if (immutable == Level.DELAY) {
                         delays = true;
                     } else {
+                        int levelImmutable = MultiLevel.level(immutable);
+                        int typeIndependent;
+                        if (levelImmutable < 2) {
+                            typeIndependent = DEPENDENT;
+                        } else {
+                            typeIndependent = MultiLevel.independentCorrespondingToImmutableLevel(levelImmutable);
+                        }
                         parameterAnalysis.properties.put(INDEPENDENT, typeIndependent);
                         log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
                                 parameterInfo.fullyQualifiedName(), fieldInfo.name);

@@ -972,7 +972,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
 
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "entry$1,this.kvStore,kvStore$0";
+                        String expectL1 = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "entry$1,this.kvStore,kvStore$0";
                         assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                     }
                 }

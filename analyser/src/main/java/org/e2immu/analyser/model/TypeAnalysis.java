@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -74,7 +75,7 @@ public interface TypeAnalysis extends Analysis {
      *
      * @return null when not yet set
      */
-    HiddenContentTypes getTransparentTypes();
+    SetOfTypes getTransparentTypes();
 
     /**
      * Hidden content types, concretely (type parameters are substituted)
@@ -84,10 +85,10 @@ public interface TypeAnalysis extends Analysis {
      * @param concreteType the concrete type used to substitute
      * @return a set of concrete hidden content types
      */
-    default HiddenContentTypes getTransparentTypes(ParameterizedType concreteType) {
-        HiddenContentTypes transparentTypes = getTransparentTypes();
+    default SetOfTypes getTransparentTypes(ParameterizedType concreteType) {
+        SetOfTypes transparentTypes = getTransparentTypes();
         if (transparentTypes == null) return null;
-        return new HiddenContentTypes(transparentTypes.types().stream()
+        return new SetOfTypes(transparentTypes.types().stream()
                 .map(pt -> {
                     if (pt.typeParameter != null) {
                         return concreteType.parameters.get(pt.typeParameter.getIndex());
@@ -136,12 +137,8 @@ public interface TypeAnalysis extends Analysis {
     too simple an implementation, we should do real bookkeeping: which fields hold which types?
      */
     default Set<ParameterizedType> hiddenContentLinkedTo(FieldInfo fieldInfo) {
-        ParameterizedType type = fieldInfo.type;
-        TypeInfo bestType = type.bestTypeInfo();
-        if (bestType == null || getTransparentTypes().contains(type)) {
-            // unbound type parameter, or transparent type
-            return Set.of(fieldInfo.type);
-        }
-        return Set.of();
+        return getTransparentTypes().types();
     }
+
+    Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
 }

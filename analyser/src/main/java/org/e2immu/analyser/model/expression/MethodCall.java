@@ -361,6 +361,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
+        // FIXME HACK
+        IsVariableExpression ve0, ve2;
+        if ("arraycopy".equals(methodInfo.name)
+                && (ve0 = parameterExpressions.get(0).asInstanceOf(IsVariableExpression.class)) != null
+                && (ve2 = parameterExpressions.get(2).asInstanceOf(IsVariableExpression.class)) != null) {
+            ParameterizedType pt = ve0.returnType().copyWithOneFewerArrays();
+            SetOfTypes transparentTypes = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType()).getTransparentTypes();
+            boolean isDelayed = ve0 instanceof DelayedVariableExpression || ve2 instanceof DelayedVariableExpression || transparentTypes == null;
+            if (transparentTypes == null || transparentTypes.contains(pt)) {
+                builder.link1(ve2.variable(), ve0.variable(), isDelayed);
+            }
+            if(transparentTypes == null || !transparentTypes.contains(pt)) {
+                builder.link(ve2.variable(), ve0.variable(), isDelayed);
+            }
+        }
+
+
         // before we return, increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
             boolean increment;
@@ -621,7 +638,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
             if (current instanceof NewObject newObject) {
-                if(newObject.minimalNotNull() == MultiLevel.NULLABLE) {
+                if (newObject.minimalNotNull() == MultiLevel.NULLABLE) {
                     newInstance = newObject.removeConstructor();
                 } else {
                     newInstance = current;
@@ -835,7 +852,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // in the case of factory methods or indeed identity
             // see E2Immutable_11
             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
-            HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+            SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
             MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
                 int minParams = Integer.MAX_VALUE;
@@ -918,7 +935,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 5: neither can transparent types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
         if (hiddenContentTypes != null && hiddenContentTypes.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
@@ -977,20 +994,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 4: if the return type is @Dependent, or @Independent, there is no content linking
         // we do INDEPENDENT first
-        int independent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        if (independent == MultiLevel.INDEPENDENT) {
+        int methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (methodIndependent == MultiLevel.INDEPENDENT) {
             return LinkedVariables.EMPTY;
         }
-        delayed |= independent == Level.DELAY;
+        delayed |= methodIndependent == Level.DELAY;
 
         // RULE 5: neither can transparent types
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        HiddenContentTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
+        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
 
-        boolean isNotTransparent = hiddenContentTypes != null && !hiddenContentTypes.contains(methodInfo.returnType());
+        ParameterizedType concreteReturnType = returnType();
+        boolean isNotTransparent = hiddenContentTypes != null && !hiddenContentTypes.contains(concreteReturnType);
         delayed |= hiddenContentTypes == null;
 
-        if (isNotTransparent && independent == MultiLevel.DEPENDENT) {
+        if (isNotTransparent && methodIndependent == MultiLevel.DEPENDENT) {
             return LinkedVariables.EMPTY;
         }
 
@@ -1004,8 +1022,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // however, we must take into account the immutable value on the method as well (@E2Container instead of the normal @Container)
         int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
         delayed |= immutable == Level.DELAY;
-        int concreteImmutable = returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, immutable);
+
+        int concreteImmutable = concreteReturnType.defaultImmutable(evaluationContext.getAnalyserContext(), true, immutable);
         if (concreteImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
+        delayed |= concreteImmutable == Level.DELAY;
 
         // content link to the object, and all the variables content+non-content linked to object
         return evaluationContext.linked1Variables(object)

@@ -194,7 +194,7 @@ public class MultiLevel {
     public static int composeOneLevelLess(int i) {
         if (i < 0) return i;
         int level = level(i);
-        if (level == 0) return i;
+        if (level == 0) return FALSE;
         int effective = effective(i);
         int newLevel = level == MAX_LEVEL ? level : level - 1;
         return compose(effective, newLevel);

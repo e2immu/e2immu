@@ -522,7 +522,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        typeAnalysisBuilder.hiddenContentTypes.set(new HiddenContentTypes(typeParametersAsParameterizedTypes));
+        typeAnalysisBuilder.hiddenContentTypes.set(new SetOfTypes(typeParametersAsParameterizedTypes));
+        Set<ParameterizedType> explicit = typeInspection.typesOfFieldsMethodsConstructors(InspectionProvider.DEFAULT);
+        typeAnalysisBuilder.explicitTypes.set(new SetOfTypes(explicit));
 
         simpleComputeIndependent(typeAnalysisBuilder);
 

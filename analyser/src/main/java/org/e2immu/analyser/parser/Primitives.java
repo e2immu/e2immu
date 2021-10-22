@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.HiddenContentTypes;
+import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analyser.TypeAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
@@ -343,7 +343,7 @@ public class Primitives {
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
-            builder.hiddenContentTypes.set(HiddenContentTypes.EMPTY);
+            builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
             ti.typeAnalysis.set(builder.build());
         }
@@ -365,7 +365,7 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            builder.hiddenContentTypes.set(HiddenContentTypes.EMPTY);
+            builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
         }
 
@@ -541,5 +541,9 @@ public class Primitives {
                 isByte(typeInfo) || isBoxedByte(typeInfo) ||
                 isFloat(typeInfo) || isBoxedFloat(typeInfo) ||
                 isDouble(typeInfo) || isBoxedDouble(typeInfo);
+    }
+
+    public Set<ParameterizedType> explicitTypesOfJLO() {
+        return Set.of(stringParameterizedType, objectParameterizedType, classTypeInfo.asSimpleParameterizedType());
     }
 }

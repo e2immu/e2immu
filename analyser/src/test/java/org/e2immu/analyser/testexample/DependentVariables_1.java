@@ -38,9 +38,9 @@ public class DependentVariables_1 {
     static class XS {
         private final X[] xs;
 
-        public XS(@Independent1 X[] xs) {
-            this.xs = new X[xs.length];
-            System.arraycopy(xs, 0, this.xs, 0, xs.length);
+        public XS(@Independent1 X[] p) {
+            this.xs = new X[p.length];
+            System.arraycopy(p, 0, this.xs, 0, p.length);
         }
 
         @Independent1

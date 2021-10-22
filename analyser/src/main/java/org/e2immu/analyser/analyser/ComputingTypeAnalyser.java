@@ -92,10 +92,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         assert createDelay(fqn, fqn + D_ASPECTS);
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(FIND_ASPECTS, iteration -> findAspects());
-        if (typeInfo.isPrimaryType()) {
-            builder.add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes());
-        }
+                .add(FIND_ASPECTS, iteration -> findAspects())
+                .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes());
+
         if (!typeInfo.isInterface()) {
             builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, this::computeApprovedPreconditionsE1)
                     .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2)
@@ -241,77 +240,107 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     /*
-    this computation is a crude approximation of what it means to be a field of transparent type: you can replace
-    the field's type by an unbound parameter type.
+
      */
     private AnalysisStatus analyseTransparentTypes() {
         if (typeAnalysis.hiddenContentTypes.isSet()) return DONE;
-        assert typeInfo.isPrimaryType();
 
-        log(IMMUTABLE_LOG, "Computing transparent types for primary type {}", typeInfo.fullyQualifiedName);
+        // STEP 1: wait for others
 
-        // first, determine the types of fields, methods and constructors of my type and all sub-types
+        if (!typeInspection.isStatic()) {
+            TypeInfo staticEnclosing = typeInfo;
+            while (!staticEnclosing.isStatic()) {
+                staticEnclosing = typeInfo.packageNameOrEnclosingType.getRight();
+            }
+            TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
+            if (typeAnalysisStaticEnclosing.hiddenContentTypes.isSet()) {
+                typeAnalysis.hiddenContentTypes.copy(typeAnalysisStaticEnclosing.hiddenContentTypes);
+                typeAnalysis.explicitTypes.copy(typeAnalysisStaticEnclosing.explicitTypes);
+            } else {
+                log(DELAYED, "Hidden content of inner class {} computed together with that of enclosing class {}",
+                        typeInfo.simpleName, staticEnclosing.fullyQualifiedName);
+                return DELAYS;
+            }
+            return DONE;
+        }
+        if (!typeInspection.subTypes().isEmpty()) {
+            // wait until all static subtypes have hidden content computed
+            Optional<TypeInfo> opt = typeInspection.subTypes().stream()
+                    .filter(TypeInfo::isStatic)
+                    .filter(st -> {
+                        TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
+                        return !stAna.hiddenContentTypes.isSet();
+                    })
+                    .findFirst();
+            if (opt.isPresent()) {
+                log(DELAYED, "Hidden content of static nested class {} needs to be computed before that of enclosing class {}",
+                        opt.get().simpleName, typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+        }
 
-        Set<ParameterizedType> typesOfFields = typeInspection.typesOfFieldsMethodsConstructors(analyserContext);
+        // STEP 2: Get types from others
+
+        log(IMMUTABLE_LOG, "Computing transparent types for type {}", typeInfo.fullyQualifiedName);
+
+        // collect from sub/nested types
+
+        Set<ParameterizedType> explicitTypesFromSubTypes = typeInspection.subTypes().stream()
+                .filter(TypeInfo::isStatic)
+                .flatMap(st -> {
+                    TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
+                    return stAna.explicitTypes.get().types().stream();
+                }).collect(Collectors.toUnmodifiableSet());
+
+        // collect from super-types
+
+        Set<ParameterizedType> explicitTypesFromParent;
+        if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
+        } else {
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInspection.parentClass().typeInfo);
+            explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
+        }
+        Set<ParameterizedType> explicitTypesFromInterfaces = typeInspection.interfacesImplemented()
+                .stream().flatMap(i -> {
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
+                    return typeAnalysis.getExplicitTypes(analyserContext).stream();
+                })
+                .collect(Collectors.toUnmodifiableSet());
+
+        // STEP 3: start computation
+
+        // first, determine the types of fields, methods and constructors
+
+        // FIXME ensure we have all methods, constructors and fields of inner (non-static) nested classes
+        Set<ParameterizedType> allTypes = typeInspection.typesOfFieldsMethodsConstructors(analyserContext);
+
         // add all type parameters of these types
-        typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
-        log(IMMUTABLE_LOG, "Types of fields, methods and constructors: {}", typesOfFields);
+        allTypes.addAll(allTypes.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
+        log(IMMUTABLE_LOG, "Types of fields, methods and constructors: {}", allTypes);
 
         // then, compute the explicit types
         Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
                 new ExplicitTypes(analyserContext, analyserContext, typeInfo).go(typeInspection).getResult();
-        Set<ParameterizedType> explicitTypesAsSet = explicitTypes.entrySet().stream()
-                .filter(e -> !e.getValue().equals(Set.of(ExplicitTypes.UsedAs.CAST_TO_E2IMMU)))
-                .map(Map.Entry::getKey).collect(Collectors.toSet());
 
-        log(IMMUTABLE_LOG, "Explicit types: {}", explicitTypes);
+        Set<ParameterizedType> allExplicitTypes = new HashSet<>(explicitTypes.keySet());
+        allExplicitTypes.addAll(explicitTypesFromInterfaces);
+        allExplicitTypes.addAll(explicitTypesFromParent);
+        allExplicitTypes.addAll(explicitTypesFromSubTypes);
 
-        typesOfFields.removeIf(type -> {
-            if (type.arrays > 0) return true;
+        log(IMMUTABLE_LOG, "All explicit types: {}", explicitTypes);
 
-            // exclude all types declared inside the primary type
-            // (this may be too crude but we'll live with that for now)
-            boolean self = type.typeInfo != null && type.typeInfo.primaryType() == typeInfo.primaryType();
-            if (self || Primitives.isPrimitiveExcludingVoid(type) || Primitives.isBoxedExcludingVoid(type))
-                return true;
+        Set<ParameterizedType> superTypesOfExplicitTypes = allExplicitTypes.stream()
+                .flatMap(pt -> pt.concreteSuperTypes(analyserContext))
+                .collect(Collectors.toUnmodifiableSet());
+        allExplicitTypes.addAll(superTypesOfExplicitTypes);
 
-            boolean explicit = explicitTypesAsSet.contains(type);
-            boolean assignableFrom = !type.isUnboundTypeParameter() &&
-                    explicitTypesAsSet.stream().anyMatch(t -> {
-                        try {
-                            return type.isAssignableFrom(analyserContext, t);
-                        } catch (IllegalStateException illegalStateException) {
-                            LOGGER.warn("Cannot determine if {} is assignable from {}", type, t);
-                            // this is a type which is implicitly present somewhere, but not directly in the hierarchy
-                            return false;
-                        }
-                    });
-            return explicit || assignableFrom;
-        });
+        allTypes.removeAll(allExplicitTypes);
+        allTypes.removeIf(Primitives::isPrimitiveExcludingVoid);
 
-        // level 2 immutable is more work, we need to check delays
-        Optional<ParameterizedType> immutableDelay = typesOfFields.stream().filter(type -> {
-            TypeInfo bestType = type.bestTypeInfo();
-            if (bestType == null) return false;
-            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isNotContracted();
-        }).findFirst();
-        if (immutableDelay.isPresent()) {
-            log(DELAYED, "Delaying computation of transparent types on {} because of immutable", typeInfo.fullyQualifiedName);
-            assert translatedDelay(ANALYSE_TRANSPARENT_TYPES,
-                    immutableDelay.get().typeInfo.fullyQualifiedName + D_IMMUTABLE,
-                    typeInfo.fullyQualifiedName + D_TRANSPARENT_TYPE);
-            return DELAYS;
-        }
-        typesOfFields.removeIf(type -> {
-            TypeInfo bestType = type.bestTypeInfo();
-            if (bestType == null) return false;
-            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
-        });
-
-        typeAnalysis.hiddenContentTypes.set(new HiddenContentTypes(typesOfFields));
-        log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
+        typeAnalysis.explicitTypes.set(new SetOfTypes(allExplicitTypes));
+        typeAnalysis.hiddenContentTypes.set(new SetOfTypes(allTypes));
+        log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);
         return DONE;
     }
 
@@ -893,8 +922,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 int minHiddenContentImmutable = hiddenContent.stream()
                         .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
                         .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-                int fieldLevel = MultiLevel.level(minHiddenContentImmutable);
-                minLevel = Math.min(minLevel, fieldLevel);
+                int immutableLevel = MultiLevel.oneLevelMoreFromValue(minHiddenContentImmutable);
+                minLevel = Math.min(minLevel, immutableLevel);
             }
         }
 

@@ -14,13 +14,17 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -132,14 +136,49 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "<v:<f:xs>[index]>" : "instance type X/*{L1 xs}*/";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    String expectValue = d.iteration() == 0 ? "<v:<f:xs>[index]>" :
+                            "nullable instance type X/*{L } {L1 xs}*/";
+
+                    assertEquals(expectValue, d.currentValue().minimalOutput());
+                    String expectLv = d.iteration() == 0 ? "*" : "";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toSimpleString());
                     String expectLv1 = d.iteration() == 0 ? "*" : "xs,xs[index]";
                     assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toSimpleString());
+
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof ParameterInfo) {
                     assertEquals(d.falseFrom1(), d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                if (d.variable() instanceof DependentVariable dv) {
+                    assertEquals("xs[index]", dv.simpleName);
+                    assertTrue(d.iteration() > 0);
+                    assertEquals("nullable instance type X", d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getX,this.xs", d.variableInfo().getLinked1Variables().toString());
+
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
+            if ("XS".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        String expectLv1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
+                        assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
+                    }
                 }
             }
         };
@@ -149,15 +188,27 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
+            if ("XS".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("XS".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.typeAnalysis().getTransparentTypes());
-                } else {
-                    assertEquals("X", d.typeAnalysis().getTransparentTypes().toString());
-                }
+                assertEquals("Type org.e2immu.analyser.testexample.DependentVariables_1.X",
+                        d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("xs".equals(d.fieldInfo().name)) {
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
+                assertEquals(expectLinked1, d.fieldAnalysis().getLinked1Variables().toString());
             }
         };
 
@@ -166,6 +217,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -173,18 +225,55 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("XS".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "xs";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("getX".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.xs";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("xs".equals(d.fieldInfo().name)) {
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "xs";
+                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("XS".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.typeAnalysis().getTransparentTypes());
-                } else {
-                    assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-                }
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getX".equals(d.methodInfo().name)) {
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
+                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+            if ("XS".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
             }
         };
 
         testClass("DependentVariables_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

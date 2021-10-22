@@ -38,12 +38,11 @@ public class DependentVariables_2 {
     static class XS {
         private final X[] xs;
 
-        public XS(@Dependent X[] xs) {
+        public XS(X[] xs) {
             this.xs = new X[xs.length];
             System.arraycopy(xs, 0, this.xs, 0, xs.length);
         }
 
-        @Dependent
         public X getX(int index) {
             return xs[index];
         }
