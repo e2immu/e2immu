@@ -954,9 +954,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<m:entrySet>.isEmpty()||<m:contains>||0==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
-                                : "(instance type Set<Entry<String,Container>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                                : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectVars = d.iteration() == 0 ? "[kvStore, org.e2immu.analyser.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, container.read, result]" : "[]";
+                        String expectVars = d.iteration() == 0
+                                ? "[kvStore, org.e2immu.analyser.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, container.read, result]"
+                                : "[kvStore$0]";
                         assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
@@ -965,20 +967,23 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "kvStore$0";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "entry$1,this.kvStore,kvStore$0";
                         assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                     }
+
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "entry$1,container";
+                        String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "entry$1,this.kvStore,kvStore$0";
                         assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                     }
                 }
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.INDEPENDENT, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
         };
 
@@ -996,11 +1001,33 @@ public class Test_01_Loops extends CommonTestRunner {
     public void test_19() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+
+                if ("container".equals(d.variableName())) {
+                    if ("1.0.1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:getValue>" : "entry$1.getValue()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertFalse(d.variableInfoContainer().hasMerge());
+                    }
+                    if ("1.0.1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 2 ? "<m:getValue>" : "entry$1.getValue()";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                    }
+                }
+
+                if ("org.e2immu.analyser.testexample.Loops_19.Date.time#entry$1.getValue().read".equals(d.variableName())) {
+                    assertTrue(d.iteration() >= 2);
+                    String expected = d.iteration() == 2 ? "<f:time>" : "instance type long";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>";
-                            case 1 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
+                            case 1, 2 -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
                             default -> "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());

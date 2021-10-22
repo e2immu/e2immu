@@ -16,9 +16,9 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-// tests Linked1Variables on ArrayAccess
+// variant on DependentVariables_1; now X is accessible in XS
 
-public class DependentVariables_1 {
+public class DependentVariables_2 {
 
     @Container
     @Independent
@@ -34,18 +34,20 @@ public class DependentVariables_1 {
         }
     }
 
-    @E2Container
+    @E1Container
     static class XS {
         private final X[] xs;
 
-        public XS(@Independent1 X[] xs) {
+        public XS(@Dependent X[] xs) {
             this.xs = new X[xs.length];
             System.arraycopy(xs, 0, this.xs, 0, xs.length);
         }
 
-        @Independent1
+        @Dependent
         public X getX(int index) {
             return xs[index];
         }
+
+        public int getI(int index) { return xs[index].i; }
     }
 }

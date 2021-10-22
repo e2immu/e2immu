@@ -128,9 +128,13 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doIndependent(E2ImmuAnnotationExpressions e2, int independent, int immutable) {
+    protected void doIndependent(E2ImmuAnnotationExpressions e2, int independent, int formallyIndependent, int immutable) {
         AnnotationExpression expression;
 
+        if(independent == formallyIndependent) {
+            // no annotation needed
+            return;
+        }
         if (MultiLevel.level(immutable) >= MultiLevel.LEVEL_2_IMMUTABLE) {
             return; // no annotation needed, @Immutable series will be there
         }

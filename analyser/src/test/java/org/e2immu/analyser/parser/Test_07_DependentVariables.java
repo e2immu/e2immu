@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -154,10 +151,40 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("XS".equals(d.typeInfo().simpleName)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.typeAnalysis().getTransparentTypes());
+                } else {
+                    assertEquals("X", d.typeAnalysis().getTransparentTypes().toString());
+                }
+            }
+        };
+
         testClass("DependentVariables_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("XS".equals(d.typeInfo().simpleName)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.typeAnalysis().getTransparentTypes());
+                } else {
+                    assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                }
+            }
+        };
+
+        testClass("DependentVariables_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

@@ -1450,22 +1450,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                         Variable variable,
                                                         VariableInfo vi,
                                                         VariableInfo vi1) {
-        if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
-            // regardless of what's being delayed or not, if the type is statically independent, there cannot be content links
 
-            int staticallyIndependent = variable.parameterizedType().defaultIndependent(analyserContext);
-            if (staticallyIndependent == MultiLevel.INDEPENDENT) {
+        // regardless of what's being delayed or not, if the type is statically recursively immutable, there cannot be content links
+        int staticallyImmutable = variable.parameterizedType().defaultImmutable(analyserContext, true);
+        if (staticallyImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            return EMPTY_OVERRIDE;
+        }
+
+        // regardless of what's being delayed or not, if the type is dynamically recursively immutable, there cannot be content links
+        if (vi.valueIsSet()) {
+            int dynamicallyImmutable = vi.getValue().returnType().defaultImmutable(analyserContext, true);
+            if (dynamicallyImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
                 return EMPTY_OVERRIDE;
             }
-
-            // regardless of what's being delayed or not, if the type is dynamically independent, there cannot be content links
-            if (vi.valueIsSet()) {
-                int dynamicallyIndependent = vi.getValue().returnType().defaultIndependent(analyserContext);
-                if (dynamicallyIndependent == MultiLevel.INDEPENDENT) {
-                    return EMPTY_OVERRIDE;
-                }
-            }
         }
+
         if (changeData.linked1Variables().isDelayed()) {
             log(DELAYED, "Apply of {}, {} is delayed because of linked1 variables of {}",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName,

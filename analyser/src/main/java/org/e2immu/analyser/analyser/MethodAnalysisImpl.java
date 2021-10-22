@@ -299,7 +299,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Dependent @Independent
             int independent = getProperty(VariableProperty.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent, dynamicallyImmutable);
+            int formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
+            doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
         }
 
         protected void writeEventual(Eventual eventual) {
