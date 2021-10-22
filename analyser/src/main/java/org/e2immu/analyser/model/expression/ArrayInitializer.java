@@ -122,6 +122,15 @@ public class ArrayInitializer extends ElementImpl implements Expression {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if(multiExpression.isEmpty()) {
+            return switch (variableProperty) {
+                case EXTERNAL_IMMUTABLE, IMMUTABLE ->  MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                case INDEPENDENT -> MultiLevel.INDEPENDENT;
+                case CONSTANT, CONTAINER -> Level.TRUE;
+                case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                default -> throw new UnsupportedOperationException("Property "+variableProperty);
+            };
+        }
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
             int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
             if (notNull == Level.DELAY) return Level.DELAY;

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
+import org.e2immu.analyser.model.statement.TryStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -38,7 +39,7 @@ public class ExplicitTypes {
 
     public enum UsedAs {
         METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF,
-        EXPLICIT_RETURN_TYPE
+        EXPLICIT_RETURN_TYPE, CATCH,
     }
 
     private final AnalysisProvider analysisProvider;
@@ -90,9 +91,7 @@ public class ExplicitTypes {
              */
             MethodCall mc;
             if ((mc = element.asInstanceOf(MethodCall.class)) != null) {
-                if (notAbstractNoModificationStatus(mc.methodInfo)) {
-                    add(mc.object.returnType(), UsedAs.METHOD);
-                }
+                add(mc.object.returnType(), UsedAs.METHOD);
                 addTypesFromParameters(mc.methodInfo, UsedAs.METHOD);
             }
 
@@ -139,6 +138,11 @@ public class ExplicitTypes {
                 add(switchStatement.expression.returnType(), UsedAs.SWITCH);
             }
 
+            // catch(E e)
+            if (element instanceof TryStatement.CatchParameter catchParameter) {
+                add(catchParameter.returnType(), UsedAs.CATCH);
+            }
+
             // add the subject of the cast, i.e., if T t is unbound, then
             // (String)t forces T to become explicit
             Cast cast;
@@ -166,14 +170,6 @@ public class ExplicitTypes {
             }
         };
         start.visit(visitor);
-    }
-
-    private boolean notAbstractNoModificationStatus(MethodInfo methodInfo) {
-        if (methodInfo.isAbstract()) {
-            int modified = analysisProvider.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
-            return modified != Level.DELAY;
-        }
-        return true;
     }
 
     private void add(ParameterizedType type, UsedAs usedAs) {

@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -45,7 +44,8 @@ public record MultiExpression(Expression... expressions) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
                 .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
-                .min().orElse(Level.DELAY);
+                .min()
+                .orElseThrow(() -> new RuntimeException("Implement the empty situation for propery " + variableProperty));
     }
 
     public Stream<Expression> stream() {
@@ -59,5 +59,9 @@ public record MultiExpression(Expression... expressions) {
     @Override
     public String toString() {
         return "[" + Arrays.stream(expressions).map(Object::toString).collect(Collectors.joining(",")) + "]";
+    }
+
+    public boolean isEmpty() {
+        return expressions.length == 0;
     }
 }
