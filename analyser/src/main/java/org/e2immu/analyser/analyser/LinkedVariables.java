@@ -14,38 +14,62 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.output.Text;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
+public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelayed) {
 
-    public LinkedVariables(Set<Variable> variables, boolean isDelayed) {
-        assert variables != null;
-        this.variables = Set.copyOf(variables);
-        this.isDelayed = isDelayed;
+
+    public LinkedVariables(Map<Variable, Integer> variables) {
+        this(variables, variables.values().stream().anyMatch(v -> v == DELAYED_VALUE));
     }
 
-    public static final LinkedVariables EMPTY = new LinkedVariables(Set.of(), false);
-    public static final LinkedVariables DELAYED_EMPTY = new LinkedVariables(Set.of(), true);
+    public LinkedVariables(Map<Variable, Integer> variables, boolean isDelayed) {
+        assert variables != null;
+        this.variables = Map.copyOf(variables);
+        this.isDelayed = isDelayed;
+        assert variables.isEmpty() || variables.values().stream().anyMatch(v -> v == DELAYED_VALUE) == isDelayed;
+    }
+
+    public static final int DELAYED_VALUE = -1;
+    public static final int ASSIGNED = 0;
+    public static final int DEPENDENT = 1;
+    public static final int INDEPENDENT1 = 2;
+    public static final int NO_LINKING = MultiLevel.MAX_LEVEL;
+
+    public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), false);
+    public static final LinkedVariables DELAYED_EMPTY = new LinkedVariables(Map.of(), true);
 
     // different object from DELAYED_EMPTY, used to ensure that EMPTY is set when there is no "normal" delay
-    public static final LinkedVariables NOT_INVOLVED_DELAYED_EMPTY = new LinkedVariables(Set.of(), true);
+    public static final LinkedVariables NOT_INVOLVED_DELAYED_EMPTY = new LinkedVariables(Map.of(), true);
 
     public static final String DELAY_STRING = "<delay>";
 
     public LinkedVariables merge(LinkedVariables other) {
-        return new LinkedVariables(SetUtil.immutableUnion(variables, other.variables),
-                isDelayed || other.isDelayed);
+        HashMap<Variable, Integer> map = new HashMap<>(variables);
+        other.variables.forEach((v, i) -> {
+            Integer inMap = map.get(v);
+            if (inMap == null) {
+                map.put(v, i);
+            } else {
+                // once 0, always 0 (we do not accept delays on 0!)
+                int merged = inMap == ASSIGNED ? ASSIGNED : Math.min(i, inMap);
+                map.put(v, merged);
+            }
+        });
+        return new LinkedVariables(map);
     }
 
     public boolean isEmpty() {
@@ -57,14 +81,16 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
         if (this == EMPTY) return "";
         if (isDelayed) return DELAY_STRING;
 
-        return variables.stream().map(v -> v.output(Qualification.EMPTY))
+        return variables.entrySet().stream().map(e ->
+                        e.getKey().output(Qualification.EMPTY).add(Symbol.COLON).add(new Text(e.getValue() + "")))
                 .sorted()
                 .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
     }
 
     public String toSimpleString() {
         if (this == EMPTY) return "";
-        return (isDelayed ? "*" : "") + variables.stream().map(Variable::simpleName)
+        return (isDelayed ? "*" : "") + variables.entrySet().stream()
+                .map(e -> e.getKey().simpleName() + ":" + e.getValue())
                 .sorted()
                 .collect(Collectors.joining(","));
     }
@@ -72,7 +98,9 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
     public String toDetailedString() {
         if (this == EMPTY) return "";
 
-        return (isDelayed ? "*" : "") + variables.stream().map(v -> v.output(Qualification.EMPTY))
+        return (isDelayed ? "*" : "") + variables.entrySet().stream().map(e ->
+                        e.getKey().output(Qualification.EMPTY).add(Symbol.COLON).add(new Text(e.getValue() + "")))
+                .sorted()
                 .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
     }
 
@@ -90,28 +118,29 @@ public record LinkedVariables(Set<Variable> variables, boolean isDelayed) {
     }
 
     public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {
-        if (this == EMPTY) return EMPTY;
-        Set<Variable> remaining = variables.stream().filter(v -> v instanceof LocalVariableReference lvr &&
-                variable.equals(lvr.variable.nature().localCopyOf())).collect(Collectors.toSet());
-        if (remaining.isEmpty()) return EMPTY;
+        if (isEmpty()) return this;
+        Map<Variable, Integer> remaining = variables.entrySet().stream()
+                .filter(e -> e.getKey() instanceof LocalVariableReference lvr &&
+                        variable.equals(lvr.variable.nature().localCopyOf()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new LinkedVariables(remaining, isDelayed);
     }
 
     public boolean contains(Variable variable) {
-        return variables.contains(variable);
+        return variables.containsKey(variable);
     }
 
-    public List<Variable> variablesAsList() {
-        return List.copyOf(variables);
+    public List<Variable> variablesAsList(int maxLevel) {
+        return variables.entrySet().stream()
+                .filter(e -> e.getValue() <= maxLevel)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     public LinkedVariables translate(TranslationMap translationMap) {
         if (isEmpty()) return this;
-        var translatedVariables = variables.stream().map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
+        var translatedVariables = variables.entrySet().stream()
+                .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue));
         return new LinkedVariables(translatedVariables, isDelayed);
-    }
-
-    public LinkedVariables delay(boolean objectIsDelayed) {
-        return new LinkedVariables(variables, isDelayed || objectIsDelayed);
     }
 }

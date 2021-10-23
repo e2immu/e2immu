@@ -286,18 +286,12 @@ public class Assignment extends ElementImpl implements Expression {
             staticallyAssignedVariables = LinkedVariables.EMPTY;
         }
 
+        // may already be linked to others
         LinkedVariables linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
         assert !linkedVariables.isDelayed() ||
                 evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                         "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
                         at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
-
-        // go via builder, there may have been a link1 generated on resultOfExpression
-        LinkedVariables linked1Variables = builder.linked1Variables(resultOfExpression);
-        assert !linked1Variables.isDelayed() ||
-                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES,
-                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED1_VARIABLES_SET);
 
 
         builder.assignment(at, resultOfExpression, staticallyAssignedVariables, linkedVariables, linked1Variables);

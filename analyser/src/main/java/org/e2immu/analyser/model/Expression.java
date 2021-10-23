@@ -111,16 +111,6 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     /*
-    Used for constructor call (a = new X(b, c), a potentially content links to b and or c.)
-    Used for method reference (this::get ~ i->this.get(i), value content links to this) TODO
-    Used for method call (a = b.method(c, d), a potentially content links to b, c and or d.)
-    ... and more situations.
-     */
-    default LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        return LinkedVariables.EMPTY;
-    }
-
-    /*
     Primarily used for method call a = b.method(c,d), to potentially content link b to c and or d.
 
     Method reference can do this too: set::add ~ t -> set.add(t), in context list.forEach(set::add)

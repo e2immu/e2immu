@@ -87,7 +87,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (!outside.getLinkedVariables().isDelayed()) initial.setLinkedVariables(outside.getLinkedVariables());
-        if (!outside.getLinked1Variables().isDelayed()) initial.setLinked1Variables(outside.getLinked1Variables());
 
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
@@ -161,7 +160,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         initial.setProperty(VariableProperty.IDENTITY, org.e2immu.analyser.model.Level.FALSE);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
-        initial.setLinked1Variables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -174,7 +172,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             String readId,
                                                             Expression value,
                                                             Map<VariableProperty, Integer> properties,
-                                                            LinkedVariables staticallyAssignedVariables,
+                                                            LinkedVariables linkedVariables,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(assignedId), readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
@@ -200,9 +198,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (cImm == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
         }
-        initial.setStaticallyAssignedVariables(staticallyAssignedVariables);
-        initial.setLinkedVariables(LinkedVariables.EMPTY);
-        initial.setLinked1Variables(LinkedVariables.EMPTY);
+        initial.setLinkedVariables(linkedVariables);
         return new VariableInfoContainerImpl(lvr.variable.nature(),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -237,8 +233,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert !hasEvaluation();
         assert isInitial();
         ((VariableInfoImpl) getPreviousOrInitial()).newVariable(false);
-        setLinkedVariables(LinkedVariables.EMPTY, true);
-        setLinked1Variables(LinkedVariables.EMPTY, true);
     }
 
     @Override
@@ -284,14 +278,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void setInitialValue(Expression value, boolean valueIsDelayed, Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation) {
         setValue(value, valueIsDelayed, LinkedVariables.EMPTY, propertiesToSet, initialOrEvaluation);
-        setLinkedVariables(LinkedVariables.EMPTY, initialOrEvaluation);
-        setLinked1Variables(LinkedVariables.EMPTY, initialOrEvaluation);
     }
 
     @Override
-    public void setValue(Expression value,
-                         boolean valueIsDelayed,
-                         LinkedVariables staticallyAssignedVariables,
+    public void setValue(Expression value, boolean valueIsDelayed, LinkedVariables linkedVariables,
                          Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
@@ -310,51 +300,22 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
         });
         try {
-            variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
-        } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
-                    variableInfo.variable().fullyQualifiedName(),
-                    staticallyAssignedVariables, variableInfo.getStaticallyAssignedVariables());
-            throw ise;
-        }
-    }
-
-    @Override
-    public void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation) {
-        ensureNotFrozen();
-        Objects.requireNonNull(linkedVariables);
-        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        try {
             variableInfo.setLinkedVariables(linkedVariables);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to overwrite linked variables to '{}', already have '{}'",
+            LOGGER.error("Variable {}: try to set statically assigned variables to '{}', already have '{}'",
                     variableInfo.variable().fullyQualifiedName(),
                     linkedVariables, variableInfo.getLinkedVariables());
             throw ise;
         }
     }
 
+
     @Override
-    public void setLinked1Variables(LinkedVariables linkedVariables, boolean initialOrEvaluation) {
+    public void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        try {
-            variableInfo.setLinked1Variables(linkedVariables);
-        } catch (IllegalStateException ise) {
-            LOGGER.error("Variable {}: try to overwrite linked1 variables to '{}', already have '{}'",
-                    variableInfo.variable().fullyQualifiedName(),
-                    linkedVariables, variableInfo.getLinked1Variables());
-            throw ise;
-        }
-    }
-
-    @Override
-    public void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation) {
-        ensureNotFrozen();
-        Objects.requireNonNull(staticallyAssignedVariables);
-        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
+        variableInfo.setLinkedVariables(linkedVariables);
     }
 
     @Override
@@ -412,14 +373,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void writeStaticallyAssignedVariablesToEvaluation(LinkedVariables staticallyAssignedVariables) {
+    public void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables) {
         VariableInfo vi1 = getPreviousOrInitial();
         VariableInfoImpl write;
         if (!evaluation.isSet()) {
             write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getStatementTime(),
                     vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
-            if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
-            if (vi1.linked1VariablesIsSet()) write.setLinked1Variables(vi1.getLinked1Variables());
             if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
             vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                     .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
@@ -427,7 +386,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         } else {
             write = evaluation.get();
         }
-        write.setStaticallyAssignedVariables(staticallyAssignedVariables);
+        write.setLinkedVariables(linkedVariables);
     }
 
     @Override
@@ -454,10 +413,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
-        if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
-        if (vi1.linked1VariablesIsSet()) write.setLinked1Variables(vi1.getLinked1Variables());
         if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
-        write.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables());
+        write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                 .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
         return write;
@@ -488,20 +445,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.valueIsSet()) {
                 evaluation.setValue(previous.getValue(), previous.isDelayed());
             }
-            if (previous.linkedVariablesIsSet()) {
-                evaluation.setLinkedVariables(previous.getLinkedVariables());
-            }
-            /* linked1 cannot be decided here, must be in apply() because of dependency graph
-               see example Modification_3.
-             */
-            if(!evaluation.linked1VariablesIsSet()) {
-                evaluation.setLinked1Variables(LinkedVariables.NOT_INVOLVED_DELAYED_EMPTY);
-            }
-
-            // can have been modified by a remapping after assignments in StatementAnalyser.apply
-            if (!evaluation.staticallyAssignedVariablesIsSet()) {
-                evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());
-            }
+            evaluation.setLinkedVariables(previous.getLinkedVariables());
         }
         if (previous.statementTimeIsSet()) {
             boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;
@@ -519,12 +463,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue(), eval.isDelayed());
-        if (eval.linkedVariablesIsSet()) {
-            mergeImpl.setLinkedVariables(eval.getLinkedVariables());
-        }
-        if (eval.linked1VariablesIsSet()) {
-            mergeImpl.setLinked1Variables(eval.getLinked1Variables());
-        }
+        mergeImpl.setLinkedVariables(eval.getLinkedVariables());
+
         eval.propertyStream()
                 .forEach(e -> {
                     VariableProperty vp = e.getKey();

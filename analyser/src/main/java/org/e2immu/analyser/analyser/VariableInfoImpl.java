@@ -52,11 +52,10 @@ class VariableInfoImpl implements VariableInfo {
 
     private final VariableProperties properties = new VariableProperties();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
-    private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
-    private final EventuallyFinal<LinkedVariables> linked1Variables = new EventuallyFinal<>();
-    private final SetOnce<Integer> statementTime = new SetOnce<>();
 
-    private final SetOnce<LinkedVariables> staticallyAssignedVariables = new SetOnce<>();
+    // 20211023 needs to be frozen explicitly
+    private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
+    private final SetOnce<Integer> statementTime = new SetOnce<>();
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
@@ -71,7 +70,6 @@ class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Set.of();
         value.setVariable(DelayedVariableExpression.forVariable(variable));
         linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
-        linked1Variables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     // normal one for creating an initial or evaluation
@@ -90,7 +88,6 @@ class VariableInfoImpl implements VariableInfo {
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable) : delayedValue);
         linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
-        linked1Variables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     @Override
@@ -131,11 +128,6 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public LinkedVariables getLinkedVariables() {
         return linkedVariables.get();
-    }
-
-    @Override
-    public LinkedVariables getLinked1Variables() {
-        return linked1Variables.get();
     }
 
     @Override
@@ -182,15 +174,6 @@ class VariableInfoImpl implements VariableInfo {
         return readAtStatementTimes;
     }
 
-    @Override
-    public LinkedVariables getStaticallyAssignedVariables() {
-        return staticallyAssignedVariables.getOrDefault(LinkedVariables.EMPTY);
-    }
-
-    public boolean staticallyAssignedVariablesIsSet() {
-        return staticallyAssignedVariables.isSet();
-    }
-
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     void setProperty(VariableProperty variableProperty, int value) {
@@ -217,20 +200,7 @@ class VariableInfoImpl implements VariableInfo {
 
     void setLinkedVariables(LinkedVariables linkedVariables) {
         assert linkedVariables != null;
-        if (linkedVariables.isDelayed()) {
-            this.linkedVariables.setVariable(linkedVariables);
-        } else if (!linkedVariablesIsSet() || !getLinkedVariables().equals(linkedVariables)) {
-            this.linkedVariables.setFinal(linkedVariables);
-        }
-    }
-
-    void setLinked1Variables(LinkedVariables linked1Variables) {
-        assert linked1Variables != null;
-        if (linked1Variables.isDelayed()) {
-            this.linked1Variables.setVariable(linked1Variables);
-        } else if (!linked1VariablesIsSet() || !getLinked1Variables().equals(linked1Variables)) {
-            this.linked1Variables.setFinal(linked1Variables);
-        }
+        this.linkedVariables.setVariable(linkedVariables);
     }
 
     void setValue(Expression value, boolean valueIsDelayed) {
@@ -251,14 +221,6 @@ class VariableInfoImpl implements VariableInfo {
             assert !(value.isInstanceOf(DelayedVariableExpression.class));
 
             setFinalAllowEquals(this.value, value);
-        }
-    }
-
-    void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables) {
-        assert !staticallyAssignedVariables.variables().contains(this.variable);
-        if (!this.staticallyAssignedVariables.isSet() ||
-                !this.staticallyAssignedVariables.get().equals(staticallyAssignedVariables)) {
-            this.staticallyAssignedVariables.set(staticallyAssignedVariables);
         }
     }
 
@@ -405,8 +367,6 @@ class VariableInfoImpl implements VariableInfo {
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
-        mergeLinked1Variables(atLeastOneBlockExecuted, previous, mergeSources);
-        mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
@@ -484,40 +444,6 @@ class VariableInfoImpl implements VariableInfo {
             lv = lv.merge(vi.getLinkedVariables());
         }
         setLinkedVariables(lv);
-    }
-
-    void mergeLinked1Variables(boolean existingValuesWillBeOverwritten,
-                              VariableInfo existing,
-                              List<StatementAnalysis.ConditionAndVariableInfo> merge) {
-        LinkedVariables lv;
-        if (!existingValuesWillBeOverwritten) {
-            lv = existing.getLinked1Variables();
-        } else {
-            lv = LinkedVariables.EMPTY;
-        }
-        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
-            VariableInfo vi = cav.variableInfo();
-            lv = lv.merge(vi.getLinked1Variables());
-        }
-        setLinked1Variables(lv);
-    }
-
-
-    /*
-    Compute and set statically assigned variables: has NO delay!
-     */
-    void mergeStaticallyAssignedVariables(boolean existingValuesWillBeOverwritten,
-                                          VariableInfo existing,
-                                          List<StatementAnalysis.ConditionAndVariableInfo> merge) {
-        Set<Variable> merged = new HashSet<>();
-        if (!existingValuesWillBeOverwritten) {
-            merged.addAll(existing.getStaticallyAssignedVariables().variables());
-        }
-        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
-            VariableInfo vi = cav.variableInfo();
-            merged.addAll(vi.getStaticallyAssignedVariables().variables());
-        }
-        setStaticallyAssignedVariables(new LinkedVariables(merged, false));
     }
 
     /*

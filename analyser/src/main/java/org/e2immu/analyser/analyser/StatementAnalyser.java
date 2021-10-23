@@ -798,7 +798,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     } else {
                         // delayed situation; do not copy the value properties
                         // not an assignment, so we must copy the statically assigned variables!
-                        vic.setStaticallyAssignedVariables(sav, false);
+                        vic.setLinkedVariables(sav, false);
                         Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
                                 changeData.properties(), groupPropertyValues, false);
                         merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
@@ -862,7 +862,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         && !vi1.isConfirmedVariableField()) {
                     LinkedVariables lv = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
                     if (!lv.equals(vi1.getStaticallyAssignedVariables())) {
-                        vic.writeStaticallyAssignedVariablesToEvaluation(lv);
+                        vic.writeLinkedVariablesEnsureEvaluation(lv);
                     }
                 }
             }

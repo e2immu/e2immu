@@ -57,7 +57,7 @@ public interface VariableInfoContainer {
         return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
     }
 
-    void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation);
+    void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation);
 
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
@@ -67,7 +67,7 @@ public interface VariableInfoContainer {
      everything stays the same, except that we will write statically assigned variables,
      and a bit later CONTEXT_NOT_NULL, CONTEXT_MODIFIED
      */
-    void writeStaticallyAssignedVariablesToEvaluation(LinkedVariables staticallyAssignedVariables);
+    void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables);
 
     /*
     everything stays the same, except that we will write CONTEXT_NOT_NULL, CONTEXT_MODIFIED
@@ -130,7 +130,7 @@ public interface VariableInfoContainer {
     // writing operations
     void setValue(Expression value,
                   boolean valueIsDelayed,
-                  LinkedVariables staticallyAssignedVariables,
+                  LinkedVariables linkedVariables,
                   Map<VariableProperty, Integer> propertiesToSet,
                   boolean initialOrEvaluation);
 
@@ -145,18 +145,6 @@ public interface VariableInfoContainer {
     }
 
     void setProperty(VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue, Level level);
-
-
-    /**
-     * set linked variables
-     *
-     * @param linkedVariables                   must not be null, must not be delay
-     * @param writeInInitialOtherwiseEvaluation true then written in initial (when the linked variables come from the analyser),
-     *                                          otherwise in evaluation
-     */
-    void setLinkedVariables(LinkedVariables linkedVariables, boolean writeInInitialOtherwiseEvaluation);
-
-    void setLinked1Variables(LinkedVariables linkedVariables, boolean writeInInitialOtherwiseEvaluation);
 
     /*
     copy from one statement to the next.

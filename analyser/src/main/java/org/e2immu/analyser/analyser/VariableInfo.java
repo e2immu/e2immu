@@ -43,16 +43,6 @@ public interface VariableInfo {
         return !getLinkedVariables().isDelayed();
     }
 
-
-    /**
-     * @return null when not yet set
-     */
-    LinkedVariables getLinked1Variables();
-
-    default boolean linked1VariablesIsSet() {
-        return !getLinked1Variables().isDelayed();
-    }
-
     Expression getValue();
 
     default Expression getVariableValue(Variable myself) {
@@ -93,20 +83,6 @@ public interface VariableInfo {
     boolean hasProperty(VariableProperty variableProperty);
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
-
-    /*
-    After the assignment a = b, the variable 'b' is statically assigned to 'a'.
-    Statically indicates that the assignment is taken at the level of statements, rather than the level of values:
-    if b == 3, then a == 3, and the relation between a and b is immediately lost.
-    Similarly, if b == c, then at value level a == c, while at 'static level', a == b == c.
-
-    This notion was introduced to speed up the decision on context-not-null, which is crucial for obtaining a value of a field:
-    If b is a field, then its value is delayed in the first iteration; but if a comes in a non-null context, we can add that
-    non-null value to b as well; see Modification_3.
-
-    This static assignment system is the non-null equivalent for linked variables and modification.
-     */
-    LinkedVariables getStaticallyAssignedVariables();
 
     /*
     if statement time < 0, this means that statement time is irrelevant for this variable.
@@ -157,8 +133,6 @@ public interface VariableInfo {
                 && (!isRead() || getReadId().compareTo(latest) < 0)
                 && StringUtil.inSameBlock(latest, index);
     }
-
-    boolean staticallyAssignedVariablesIsSet();
 
     default boolean isNotConditionalInitialization() {
         return !(variable() instanceof LocalVariableReference lvr) ||

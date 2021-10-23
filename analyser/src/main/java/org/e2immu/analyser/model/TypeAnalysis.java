@@ -143,4 +143,11 @@ public interface TypeAnalysis extends Analysis {
     Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
 
     boolean haveTransparentTypes();
+
+    default Boolean isPartOfHiddenContent(ParameterizedType type) {
+        if (haveTransparentTypes()) {
+            return getTransparentTypes().contains(type);
+        }
+        return null;
+    }
 }

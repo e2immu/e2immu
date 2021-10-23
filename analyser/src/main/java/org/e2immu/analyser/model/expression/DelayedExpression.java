@@ -25,7 +25,6 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
 
@@ -33,59 +32,59 @@ import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
 public record DelayedExpression(String msg,
                                 String debug,
                                 ParameterizedType parameterizedType,
-                                List<Variable> variables) implements Expression {
+                                LinkedVariables linkedVariables) implements Expression {
 
     public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType,
-                                              List<Variable> variables) {
+                                              LinkedVariables linkedVariables) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
-                "<method:" + methodInfo.fullyQualifiedName + ">", concreteReturnType, variables);
+                "<method:" + methodInfo.fullyQualifiedName + ">", concreteReturnType, linkedVariables);
     }
 
     /*
     expression with delayed state
      */
-    public static Expression forState(ParameterizedType parameterizedType, List<Variable> variables) {
+    public static Expression forState(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
         return new DelayedExpression("<s:" + parameterizedType.printSimple() + ">",
-                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, variables);
+                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType, int notNull, List<Variable> variables) {
+    public static Expression forNewObject(ParameterizedType parameterizedType, int notNull, LinkedVariables linkedVariables) {
         assert notNull >= EFFECTIVELY_NOT_NULL;
         return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
-                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, variables);
+                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }
 
-    public static Expression forReplacementObject(ParameterizedType parameterizedType, List<Variable> variables) {
+    public static Expression forReplacementObject(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
         return new DelayedExpression("<replace:" + parameterizedType.printSimple() + ">",
-                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, variables);
+                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }
 
     public static Expression forArrayLength(Primitives primitives) {
         return new DelayedExpression("<delayed array length>",
-                "<delayed array length>", primitives.intParameterizedType, List.of());
+                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.EMPTY);
         // result is an int, so no linked variables
     }
 
     public static Expression forPrecondition(Primitives primitives) {
         return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
-                List.of()); // no need for linked variables
+                LinkedVariables.EMPTY); // no need for linked variables
     }
 
     public static Expression forInstanceOf(Primitives primitives, ParameterizedType parameterizedType,
-                                           List<Variable> variables) {
+                                           LinkedVariables linkedVariables) {
         return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
                 "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType,
-                variables);
+                linkedVariables);
     }
 
-    public static Expression forMerge(ParameterizedType parameterizedType, List<Variable> variables) {
+    public static Expression forMerge(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
         return new DelayedExpression("<merge:" + parameterizedType.printSimple() + ">",
-                "<merge:" + parameterizedType.detailedString() + ">", parameterizedType, variables);
+                "<merge:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }
 
-    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, List<Variable> variables) {
+    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, LinkedVariables linkedVariables) {
         String name = "<loopIsNotEmptyCondition>";
-        return new DelayedExpression(name, name, booleanParameterizedType, variables);
+        return new DelayedExpression(name, name, booleanParameterizedType, linkedVariables);
     }
 
     /*
@@ -159,11 +158,11 @@ public record DelayedExpression(String msg,
                 variables.stream()
                         .map(v -> {
                             Variable translated = translationMap.translateVariable(v);
-                            if(translated != v) return translated;
+                            if (translated != v) return translated;
                             // the variable has not been translated. Check variable expressions
                             VariableExpression ve = new VariableExpression(v);
                             Expression translatedVe = translationMap.translateExpression(ve);
-                            if(!translatedVe.variables().contains(v)) {
+                            if (!translatedVe.variables().contains(v)) {
                                 return null; // this one can disappear, replaced by NewObject
                             }
                             return v; // no effect
@@ -174,17 +173,12 @@ public record DelayedExpression(String msg,
 
     @Override
     public List<Variable> variables() {
-        return variables;
+        return List.copyOf(linkedVariables.variables().keySet());
     }
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Set.copyOf(variables), true);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Set.copyOf(variables), true);
+        return linkedVariables;
     }
 
     @Override
