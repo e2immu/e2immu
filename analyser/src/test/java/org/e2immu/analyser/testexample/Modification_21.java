@@ -21,8 +21,7 @@ import java.util.Set;
 
 /*
 Infinite loop is broken, but too harshly.
-Note that 'set' is not of transparent type, as of 20210618 these types are computed over the primary type,
-and there is the c.addAll(d) as operation on Set<String>, and the assignment of a new set
+Note that 'set' is transparent in C1, but obviously not in Mod21.
  */
 public class Modification_21 {
 

@@ -245,12 +245,35 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private AnalysisStatus analyseTransparentTypes() {
         if (typeAnalysis.hiddenContentTypes.isSet()) return DONE;
 
-        // STEP 1: wait for others
+        // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
+
+        if (!typeInspection.subTypes().isEmpty()) {
+            // wait until all static subtypes have hidden content computed
+            Optional<TypeInfo> opt = typeInspection.subTypes().stream()
+                    .filter(TypeInfo::isStatic)
+                    .filter(st -> {
+                        TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
+                        if (!stAna.hiddenContentTypes.isSet()) {
+                            ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
+                            typeAnalyser.analyseTransparentTypes();
+                        }
+                        return !stAna.hiddenContentTypes.isSet();
+                    })
+                    .findFirst();
+            if (opt.isPresent()) {
+                log(DELAYED, "Hidden content of static nested class {} needs to be computed before that of enclosing class {}",
+                        opt.get().simpleName, typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+        }
+
+        // STEP 2: if I'm a non-static nested type (an inner class) then my enclosing class will take care of me.
+        // because I have identical hidden content types.
 
         if (!typeInspection.isStatic()) {
             TypeInfo staticEnclosing = typeInfo;
             while (!staticEnclosing.isStatic()) {
-                staticEnclosing = typeInfo.packageNameOrEnclosingType.getRight();
+                staticEnclosing = staticEnclosing.packageNameOrEnclosingType.getRight();
             }
             TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
             if (typeAnalysisStaticEnclosing.hiddenContentTypes.isSet()) {
@@ -263,27 +286,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
             return DONE;
         }
-        if (!typeInspection.subTypes().isEmpty()) {
-            // wait until all static subtypes have hidden content computed
-            Optional<TypeInfo> opt = typeInspection.subTypes().stream()
-                    .filter(TypeInfo::isStatic)
-                    .filter(st -> {
-                        TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                        return !stAna.hiddenContentTypes.isSet();
-                    })
-                    .findFirst();
-            if (opt.isPresent()) {
-                log(DELAYED, "Hidden content of static nested class {} needs to be computed before that of enclosing class {}",
-                        opt.get().simpleName, typeInfo.fullyQualifiedName);
-                return DELAYS;
-            }
-        }
-
-        // STEP 2: Get types from others
 
         log(IMMUTABLE_LOG, "Computing transparent types for type {}", typeInfo.fullyQualifiedName);
 
-        // collect from sub/nested types
+        // STEP 3: collect from static nested types; we have ensured their presence
 
         Set<ParameterizedType> explicitTypesFromSubTypes = typeInspection.subTypes().stream()
                 .filter(TypeInfo::isStatic)
@@ -292,14 +298,45 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     return stAna.explicitTypes.get().types().stream();
                 }).collect(Collectors.toUnmodifiableSet());
 
-        // collect from super-types
+        // STEP 5: ensure + collect from parent
 
         Set<ParameterizedType> explicitTypesFromParent;
-        if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
-        } else {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInspection.parentClass().typeInfo);
-            explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
+        {
+            TypeInfo parentClass = typeInspection.parentClass().typeInfo;
+            if (Primitives.isJavaLangObject(parentClass)) {
+                explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
+            } else {
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
+                if (!typeAnalysis.haveTransparentTypes() && typeInfo.primaryType() == parentClass.primaryType()) {
+                    ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(parentClass);
+                    typeAnalyser.analyseTransparentTypes();
+                }
+                if (typeAnalysis.haveTransparentTypes()) {
+                    explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
+                } else {
+                    log(DELAYED, "Wait for hidden content types to arrive {}, parent {}", typeInfo.fullyQualifiedName,
+                            parentClass.simpleName);
+                    return DELAYS;
+                }
+            }
+        }
+
+        // STEP 6: ensure + collect interface types
+
+        {
+            for (ParameterizedType ifType : typeInspection.interfacesImplemented()) {
+                TypeInfo ifTypeInfo = ifType.typeInfo;
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
+                if (!typeAnalysis.haveTransparentTypes() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
+                    ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
+                    typeAnalyser.analyseTransparentTypes();
+                }
+                if (!typeAnalysis.haveTransparentTypes()) {
+                    log(DELAYED, "Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
+                            ifTypeInfo.simpleName);
+                    return DELAYS;
+                }
+            }
         }
         Set<ParameterizedType> explicitTypesFromInterfaces = typeInspection.interfacesImplemented()
                 .stream().flatMap(i -> {
@@ -308,7 +345,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 })
                 .collect(Collectors.toUnmodifiableSet());
 
-        // STEP 3: start computation
+        // STEP 7: start computation
 
         // first, determine the types of fields, methods and constructors
 

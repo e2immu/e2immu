@@ -41,7 +41,7 @@ public class EnumMethods {
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        var e2Container = E2ImmuAnnotationExpressions.createContract(primitives, e2.e2Container);
+        var eRContainer = E2ImmuAnnotationExpressions.createContract(primitives, e2.eRContainer);
 
         // name()
 
@@ -51,7 +51,7 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addModifier(MethodModifier.ABSTRACT) // no code -> shallow method analyser
                 .addAnnotation(notNullContract)
-                .addAnnotation(e2Container)
+                .addAnnotation(eRContainer)
                 .addAnnotation(notModifiedContract);
         nameBuilder.readyToComputeFQN(expressionContext.typeContext);
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(nameBuilder);
@@ -89,7 +89,7 @@ public class EnumMethods {
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = new ParameterInspectionImpl.Builder(Identifier.generate(),
                 primitives.stringParameterizedType, "name", 0)
-                .addAnnotation(e2Container)
+                .addAnnotation(eRContainer)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
@@ -99,7 +99,7 @@ public class EnumMethods {
                     nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
             valueOfBuilder.setInspectedBlock(codeBlock);
         } else {
-            valueOfBuilder.addAnnotation(e2Container);
+            // we have no idea what the immutability will be!
             valueOfBuilder.addModifier(MethodModifier.ABSTRACT); // no code
         }
 

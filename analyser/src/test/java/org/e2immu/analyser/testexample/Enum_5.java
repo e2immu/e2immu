@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 
-@E2Container
+@ERContainer
 public enum Enum_5 {
     ONE(1), TWO(2), THREE(3);
 
@@ -30,7 +30,7 @@ public enum Enum_5 {
         return cnt;
     }
 
-    //@E2Container only write the annotation when better; test verifies
+    @ERContainer(absent = true) // don't write when the same value
     public static Enum_5 returnTwo() {
         return Enum_5.valueOf("TWO");
     }

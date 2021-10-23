@@ -85,7 +85,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
@@ -94,7 +94,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             // predicate depends on name and values, but comes earlier (we look at class only, not primary type)
             // valueOf depends on predicate
             if ("name".equals(d.methodInfo().name)) {
-                fail("Shallow method analyser! name() has no code");
+                // shallow method analyser, does not have an evaluation context; no code in name()
+                assertNull(d.evaluationContext());
             }
 
             if ("test".equals(d.methodInfo().name)) {
@@ -111,7 +112,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("values".equals(d.methodInfo().name)) {
@@ -134,7 +135,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
@@ -194,7 +195,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_4(1)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
@@ -220,7 +221,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };

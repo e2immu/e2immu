@@ -1304,6 +1304,20 @@ public class Test_16_Modification extends CommonTestRunner {
 
         // infinite loop
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("C1".equals(d.methodInfo().name)) {
+                assertTrue(d.methodInfo().isConstructor);
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    assertEquals("setC", d.currentValue().toString());
+
+                    // FIXME ??
+                    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                    String expectLv1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
+                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
+                }
+            }
+
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
@@ -1367,10 +1381,12 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
-                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+
+                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
                 assertEquals(expectLinked1, d.fieldAnalysis().getLinked1Variables().toString());
+
                 assertEquals(d.iteration() > 0,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished.isSet());
 
@@ -1428,8 +1444,10 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) assertNull(d.typeAnalysis().getTransparentTypes());
-                else assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type java.util.Set<java.lang.String>", d.typeAnalysis().getTransparentTypes().toString());
+            }
+            if ("Modification_20".equals(d.typeInfo().simpleName)) {
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 
@@ -1447,11 +1465,7 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test21() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("C1".equals(d.typeInfo().simpleName)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.typeAnalysis().getTransparentTypes());
-                } else {
-                    assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-                }
+                assertEquals("Type java.util.Set<java.lang.String>", d.typeAnalysis().getTransparentTypes().toString());
             }
             if ("Modification_21".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());

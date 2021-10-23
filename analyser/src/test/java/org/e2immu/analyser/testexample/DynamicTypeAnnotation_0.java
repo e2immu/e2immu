@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 
 import java.util.Set;
 
@@ -23,14 +23,14 @@ public class DynamicTypeAnnotation_0 {
     //boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
     public DynamicTypeAnnotation_0() {}
     
-    @E2Container
+    @ERContainer
     private final Set<String> set1 = Set.of("a", "b");
 
     public void modifySet1() {
         set1.add("b"); // ERROR
     }
 
-    @E2Container
+    @ERContainer
     public static Set<String> createSet(String a) {
         return Set.of(a);
     }

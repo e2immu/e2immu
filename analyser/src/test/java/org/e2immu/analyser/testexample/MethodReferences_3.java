@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-@ERContainer
+// and not ERContainer, because the entries in the stream have a set method
+@E2Container
 public class MethodReferences_3 {
 
     @NotModified

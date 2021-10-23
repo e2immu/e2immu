@@ -141,4 +141,6 @@ public interface TypeAnalysis extends Analysis {
     }
 
     Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
+
+    boolean haveTransparentTypes();
 }

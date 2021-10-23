@@ -14,31 +14,39 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
 
-@ERContainer
-public enum Enum_4 {
-    ONE(1), TWO(2), THREE(3);
+import org.e2immu.annotation.Container;
+import org.junit.jupiter.api.Test;
 
-    public final int cnt;
+import static org.e2immu.analyser.testexample.Enum_9.Writable.ONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    Enum_4(int cnt) {
-        this.cnt = cnt;
+public class Enum_9 {
+
+    @Container
+    enum Writable {
+
+        ONE(1), TWO(2), THREE(3);
+
+        private int cnt;
+
+        Writable(int cnt) {
+            this.cnt = cnt;
+        }
+
+        public int getCnt() {
+            return cnt;
+        }
+
+        public void setCnt(int cnt) {
+            this.cnt = cnt;
+        }
     }
 
-    public int getCnt() {
-        return cnt;
+    @Test
+    public void test() {
+        assertEquals(1, ONE.cnt);
+        ONE.setCnt(3);
+        assertEquals(3, ONE.cnt);
     }
-
-    @Constant("THREE")
-    public static Enum_4 highest() {
-        assert 1 == ONE.getCnt(); // warning: always true
-        assert 2 == TWO.cnt;      // warning: always true
-        return THREE;
-    }
-
-
 }

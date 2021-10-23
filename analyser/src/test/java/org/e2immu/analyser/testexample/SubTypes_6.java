@@ -20,6 +20,12 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 
+/*
+There is no hidden content, since Function<> and RemoveOne, the types of the fields, are created as lambdas.
+
+SubTypes_6 is E1Container because removeOne is not private.
+ */
+@E1Container
 public class SubTypes_6 {
 
     @NotModified
@@ -40,6 +46,7 @@ public class SubTypes_6 {
         Set<String> go(@NotNull @Modified Set<String> in);
     }
 
+    @NotModified
     final static RemoveOne removeOne = set2 -> {
         Iterator<String> it2 = set2.iterator();
         if (it2.hasNext()) it2.remove();

@@ -144,6 +144,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
     }
 
+    @Override
+    public boolean haveTransparentTypes() {
+        return true;
+    }
+
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
         public final FlipSwitch modified = new FlipSwitch();
@@ -322,6 +327,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
             return explicitTypes.get(typeInfo.fullyQualifiedName).types();
+        }
+
+        @Override
+        public boolean haveTransparentTypes() {
+            return hiddenContentTypes.isSet();
         }
 
         @Override

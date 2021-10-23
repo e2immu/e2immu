@@ -38,7 +38,7 @@ public class ExplicitTypes {
 
     public enum UsedAs {
         METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST, CAST_DELAY, CAST_SELF,
-        EXPLICIT_RETURN_TYPE, CATCH,
+        EXPLICIT_RETURN_TYPE, CATCH, LAMBDA,
     }
 
     private final AnalysisProvider analysisProvider;
@@ -159,6 +159,11 @@ public class ExplicitTypes {
                     add(expressionType, UsedAs.CAST);
                 }
                 add(castType, UsedAs.CAST);
+            }
+
+            // lambda == new InterfaceType() { .. }
+            if(element instanceof Lambda lambda) {
+                add(lambda.abstractFunctionalType, UsedAs.LAMBDA);
             }
         };
         start.visit(visitor);

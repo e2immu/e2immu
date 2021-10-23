@@ -16,9 +16,10 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.annotation.NotModified;
 
-@E2Container
+@ERContainer
 public enum Enum_3 {
     ONE(1), TWO(2), THREE(3);
 

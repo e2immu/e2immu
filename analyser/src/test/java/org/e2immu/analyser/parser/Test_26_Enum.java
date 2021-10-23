@@ -70,14 +70,14 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectExtImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
@@ -95,7 +95,7 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1==this";
+                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L } {L1 }*/==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -132,7 +132,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type Enum_1==this?1+i$0:<return value>";
+                                : "instance type Enum_1/*{L } {L1 }*/==this?1+i$0:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
@@ -215,7 +215,6 @@ public class Test_26_Enum extends CommonTestRunner {
             if (THREE.equals(d.variableName())) {
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
                     assertEquals("new Enum_3(3)", d.currentValue().toString());
-                    //      assertTrue(d.iteration() >= 3);
                 }
             }
             if ("i$2".equals(d.variableName())) {
@@ -240,12 +239,11 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "this==<v:array[<v:i>]>" : "instance type Enum_3==this";
+                    String expectCondition = d.iteration() == 0 ? "this==<v:<v:array>[<v:i>]>" : "instance type Enum_3/*{L } {L1 }*/==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet("array[i]"));
                     String expectCondition = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$2<=2";
                     assertEquals(expectCondition, d.condition().toString());
                 }
@@ -281,7 +279,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         };
 
@@ -329,7 +327,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     // the result of the hard-coded method call valueOf
                     assertEquals("instance type Enum_5", d.currentValue().toString());
-                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
@@ -337,7 +335,8 @@ public class Test_26_Enum extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name)) {
                 // immediate, because no Annotated API so hard-coded
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+               // assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+                //        d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()
@@ -377,6 +376,13 @@ public class Test_26_Enum extends CommonTestRunner {
     public void test8() throws IOException {
         // private field not read outside constructors
         testClass("Enum_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test9() throws IOException {
+        // container, nothing immutable about it!
+        testClass("Enum_9", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

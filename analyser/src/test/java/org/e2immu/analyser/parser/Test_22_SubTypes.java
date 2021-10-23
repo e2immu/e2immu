@@ -156,21 +156,28 @@ public class Test_22_SubTypes extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 {
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 }
                 {
                     ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                     assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    int expectModified = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
             }
         };
 
-        testClass("SubTypes_6", 1, 0, new DebugConfiguration.Builder()
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("SubTypes_6".equals(d.typeInfo().simpleName)) {
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+
+        testClass("SubTypes_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
