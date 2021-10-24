@@ -28,14 +28,16 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -208,7 +210,8 @@ public record NewObject(
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull == Level.DELAY) {
             return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
-                    ListUtil.concatImmutable(List.of(variable), array.variables()));
+                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()),
+                            LinkedVariables.DELAYED_VALUE));
         }
         int notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
@@ -331,85 +334,33 @@ public record NewObject(
         // instance, no constructor parameter expressions
         if (constructor == null) return LinkedVariables.EMPTY;
 
-        // quick shortcut
-        if (parameterExpressions.isEmpty()) {
-            return LinkedVariables.EMPTY;
-        }
-
-        boolean delayed = false;
-        Set<Variable> result = new HashSet<>();
-        int i = 0;
-        for (Expression value : parameterExpressions) {
-            ParameterInfo parameterInfo = constructor.methodInspection.get().getParameters().get(i);
-            ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-            int independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
-            if (independent == Level.DELAY) {
-                delayed = true;
-            } else if (independent == MultiLevel.DEPENDENT) {
-                LinkedVariables sub = evaluationContext.linkedVariables(value);
-                delayed |= sub.isDelayed();
-                result.addAll(sub.variables());
-            }
-            i++;
-        }
-        return new LinkedVariables(result, delayed);
+        return linkedVariablesFromParameters(evaluationContext, constructor.methodInspection.get(),
+                parameterExpressions);
     }
 
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        // instance, no constructor parameter expressions
-        if (constructor == null) return LinkedVariables.EMPTY;
-
-        return linkedVariablesFromParameters(parameterExpressions, constructor.methodInspection.get(), evaluationContext);
-    }
-
-    // also used by MethodCall
-    static LinkedVariables linkedVariablesFromParameters(List<Expression> parameterExpressions,
+    static LinkedVariables linkedVariablesFromParameters(EvaluationContext evaluationContext,
                                                          MethodInspection methodInspection,
-                                                         EvaluationContext evaluationContext) {
+                                                         List<Expression> parameterExpressions) {
         // quick shortcut
         if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
         }
 
-        boolean delayed = false;
-        Set<Variable> result = new HashSet<>();
+        LinkedVariables result = LinkedVariables.EMPTY;
         int i = 0;
         for (Expression value : parameterExpressions) {
             ParameterInfo parameterInfo = methodInspection.getParameters().get(i);
             ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
             int independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
-            int independent = computeIndependent(evaluationContext.getAnalyserContext(),
-                    value.returnType(), independentOnParameter);
-
-            if (independent == Level.DELAY) {
-                delayed = true;
-            } else if (independent < MultiLevel.INDEPENDENT) {
-                LinkedVariables sub = evaluationContext.linked1Variables(value);
-                delayed |= sub.isDelayed();
-                result.addAll(sub.variables());
+            LinkedVariables sub = value.linkedVariables(evaluationContext);
+            if (independentOnParameter == Level.DELAY) {
+                result = result.mergeDelay(sub);
+            } else if (independentOnParameter >= MultiLevel.DEPENDENT && independentOnParameter < MultiLevel.INDEPENDENT) {
+                result = result.merge(sub, MultiLevel.fromIndependentToLinkedVariableLevel(independentOnParameter));
             }
             i++;
         }
-        return new LinkedVariables(result, delayed);
-    }
-
-    // also used on normal method call
-    static int computeIndependent(AnalyserContext analyserContext,
-                                  ParameterizedType concreteType,
-                                  int independentOnParameter) {
-        // if the user annotated @Independent, so be it.
-        if (independentOnParameter == MultiLevel.INDEPENDENT) return MultiLevel.INDEPENDENT;
-        // if the user annotated @Independent1+, we look at the hidden content
-        if (independentOnParameter >= MultiLevel.INDEPENDENT_1) {
-            int immutable = concreteType.immutableOfHiddenContent(analyserContext, true);
-            if (immutable == ParameterizedType.TYPE_ANALYSIS_NOT_AVAILABLE) return Level.DELAY;
-            if (MultiLevel.level(immutable) >= MultiLevel.LEVEL_2_IMMUTABLE) {
-                return MultiLevel.independentCorrespondingToImmutableLevel(MultiLevel.level(immutable));
-            }
-        }
-        // otherwise, there is dependence;
-        return MultiLevel.DEPENDENT;
+        return result;
     }
 
     @Override
@@ -603,7 +554,7 @@ public record NewObject(
             Expression no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, this,
                     constructor, constructorAnalysis, null, initialInstance, res.v);
             instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    evaluationContext.linkedVariables(initialInstance).variablesAsList()) : no;
+                    initialInstance.linkedVariables(evaluationContext)) : no;
         } else {
             instance = initialInstance;
         }

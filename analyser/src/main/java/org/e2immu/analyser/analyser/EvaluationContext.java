@@ -158,32 +158,7 @@ public interface EvaluationContext extends DelayDebugger {
         return true;
     }
 
-    default LinkedVariables linkedVariables(Expression value) {
-        assert value != null;
-        VariableExpression ve;
-        if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-            return linkedVariables(ve.variable());
-        }
-        return value.linkedVariables(this);
-    }
-
-    default LinkedVariables linked1Variables(Expression value) {
-        assert value != null;
-        VariableExpression ve;
-        if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-            return linked1Variables(ve.variable());
-        }
-        return value.linked1VariablesValue(this);
-    }
-
-    /*
-    assumes that currentValue has been queried before!
-     */
     default LinkedVariables linkedVariables(Variable variable) {
-        return LinkedVariables.EMPTY;
-    }
-
-    default LinkedVariables linked1Variables(Variable variable) {
         return LinkedVariables.EMPTY;
     }
 

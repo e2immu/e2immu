@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class InequalityHelper {
 
@@ -29,11 +28,11 @@ public class InequalityHelper {
     public static Inequality extract(GreaterThanZero gt0) {
         List<Term> terms = new ArrayList<>();
         if (!recursivelyCollectTerms(gt0.expression(), terms)) return null;
-        List<Term> withoutVariable = terms.stream().filter(t -> t.v == null).collect(Collectors.toUnmodifiableList());
+        List<Term> withoutVariable = terms.stream().filter(t -> t.v == null).toList();
         if (withoutVariable.size() > 1) return null;
         double c = withoutVariable.isEmpty() ? 0.0 : withoutVariable.get(0).a;
 
-        List<Term> withVariable = terms.stream().filter(t -> t.v != null).collect(Collectors.toUnmodifiableList());
+        List<Term> withVariable = terms.stream().filter(t -> t.v != null).toList();
         if (withVariable.size() == 1) {
             Term t1 = withVariable.get(0);
             return new LinearInequalityInOneVariable(t1.a, t1.v, c, gt0.allowEquals());

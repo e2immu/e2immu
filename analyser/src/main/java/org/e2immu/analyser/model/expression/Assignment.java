@@ -30,7 +30,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
@@ -278,23 +277,15 @@ public class Assignment extends ElementImpl implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        // there are no delays on staticallyAssignedVariables
-        LinkedVariables staticallyAssignedVariables;
-        if (value instanceof IsVariableExpression variableExpression) {
-            staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()), false);
-        } else {
-            staticallyAssignedVariables = LinkedVariables.EMPTY;
-        }
-
         // may already be linked to others
-        LinkedVariables linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
+        LinkedVariables linkedVariables = resultOfExpression.linkedVariables(evaluationContext);
         assert !linkedVariables.isDelayed() ||
                 evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                         "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
                         at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
 
 
-        builder.assignment(at, resultOfExpression, staticallyAssignedVariables, linkedVariables, linked1Variables);
+        builder.assignment(at, resultOfExpression, linkedVariables);
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {

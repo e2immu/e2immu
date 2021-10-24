@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -193,7 +190,7 @@ public class Lambda extends ElementImpl implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo, implementation, List.of());
+            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.EMPTY);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
@@ -202,7 +199,7 @@ public class Lambda extends ElementImpl implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo, implementation, List.of());
+                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.EMPTY);
                 }
             } else {
                 result = NewObject.forGetInstance(identifier, parameterizedType);

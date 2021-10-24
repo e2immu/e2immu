@@ -178,7 +178,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             assertEquals("string", expressionChange.value().debugOutput());
 
             // link to empty set, because String is E2Immutable
-            assertTrue(d.haveLinkVariable(STRING_FIELD, Set.of()));
+            EvaluationResult.ChangeData cd = d.findValueChange(STRING_FIELD);
+            assertEquals("", cd.linkedVariables().toString());
             assertEquals("string", d.evaluationResult().value().debugOutput());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {

@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -109,7 +108,7 @@ public class ContextPropertyWriter {
 
     private AnalysisStatus fillDependencyGraph(StatementAnalysis statementAnalysis,
                                                EvaluationContext evaluationContext,
-                                               Function<VariableInfo, LinkedVariables> connections,
+                                               int maxLevel,
                                                VariableInfoContainer.Level level,
                                                String variablePropertyNameForDebugging,
                                                LocalCopyData localCopyData,
@@ -119,7 +118,7 @@ public class ContextPropertyWriter {
         statementAnalysis.variableStream(level)
                 .filter(VariableInfo::isNotConditionalInitialization)
                 .forEach(variableInfo -> {
-                    LinkedVariables linkedVariables = connections.apply(variableInfo);
+                    LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
                     boolean externalImmutableBreak;
                     if (onlyDoSetsWithBreak != null) {
                         externalImmutableBreak = variableInfo.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) == Level.TRUE;
@@ -141,7 +140,9 @@ public class ContextPropertyWriter {
 
                     AugmentedVariable from = new AugmentedVariable(variableInfo.variable(),
                             linkedVariables.isDelayed(), externalImmutableBreak);
-                    List<AugmentedVariable> to = linkedVariables.variables().stream()
+                    List<AugmentedVariable> to = linkedVariables.variables().entrySet().stream()
+                            .filter(e -> e.getValue() > LinkedVariables.DELAYED_VALUE && e.getValue() <= maxLevel)
+                            .map(Map.Entry::getKey)
                             .filter(t -> localCopyData.accept(from.variable, t))
                             .filter(t -> statementAnalysis.variables.isSet(t.fullyQualifiedName()))
                             .map(AugmentedVariable::new)
@@ -162,13 +163,13 @@ public class ContextPropertyWriter {
      *
      * @param statementAnalysis the statement
      * @param evaluationContext the eval context, used for creating EVAL level if needed
-     * @param connections       either getLinkedVariables, or getStaticallyAssignedVariables
+     * @param maxLevel       either assignments only, or assignments+dependent variables
      * @return status
      */
 
     public AnalysisStatus write(StatementAnalysis statementAnalysis,
                                 EvaluationContext evaluationContext,
-                                Function<VariableInfo, LinkedVariables> connections,
+                                int maxLevel,
                                 VariableProperty variableProperty,
                                 Map<Variable, Integer> propertyValues,
                                 VariableInfoContainer.Level level,
@@ -176,7 +177,7 @@ public class ContextPropertyWriter {
                                 LocalCopyData localCopyData) {
         final AtomicBoolean onlyDoSetsWithBreak = variableProperty == VariableProperty.CONTEXT_MODIFIED ? new AtomicBoolean() : null;
 
-        AnalysisStatus graphStatus = fillDependencyGraph(statementAnalysis, evaluationContext, connections, level,
+        AnalysisStatus graphStatus = fillDependencyGraph(statementAnalysis, evaluationContext, maxLevel, level,
                 variableProperty.name(), localCopyData, onlyDoSetsWithBreak);
 
         if (graphStatus == DELAYS && (onlyDoSetsWithBreak == null || !onlyDoSetsWithBreak.get()))

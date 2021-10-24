@@ -25,7 +25,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @E2Container
 public class ArrayAccess extends ElementImpl implements Expression {
@@ -150,27 +149,9 @@ public class ArrayAccess extends ElementImpl implements Expression {
                     // we have no value yet
                     Expression newObject = NewObject.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
                             evaluatedDependentVariable);
-                    Boolean partOfHiddenContent = returnType.isTransparent(evaluationContext.getAnalyserContext(),
-                            evaluationContext.getCurrentType());
-                    LinkedVariables lvs = array.value() instanceof VariableExpression ve ?
-                            new LinkedVariables(Set.of(ve.variable()), partOfHiddenContent == null) :
-                            partOfHiddenContent == null ? LinkedVariables.DELAYED_EMPTY : LinkedVariables.EMPTY;
-                    LinkedVariables linkedVariables;
-                    LinkedVariables linked1Variables;
-
-                    if (partOfHiddenContent == null) {
-                        linkedVariables = lvs;
-                        linked1Variables = lvs;
-                    } else if (partOfHiddenContent) {
-                        linked1Variables = lvs;
-                        linkedVariables = LinkedVariables.EMPTY;
-                    } else {
-                        linkedVariables = lvs;
-                        linked1Variables = LinkedVariables.EMPTY;
-                    }
-                    builder.assignment(evaluatedDependentVariable, newObject, linkedVariables, LinkedVariables.EMPTY,
-                            linked1Variables);
-                    Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables, linked1Variables);
+                    LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext);
+                    builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
+                    Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
                     builder.setExpression(wrappedObject);
                 } else {
                     builder.setExpression(currentValue);

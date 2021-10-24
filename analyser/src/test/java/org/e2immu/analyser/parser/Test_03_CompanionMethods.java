@@ -116,8 +116,9 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 assertTrue(d.haveValueChange("list")); // because of a modification
-                assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").value().toString());
-                assertTrue(d.haveLinkVariable("list", Set.of()));
+                EvaluationResult.ChangeData cd = d.findValueChange("list");
+                assertEquals(INSTANCE_SIZE_1_CONTAINS, cd.value().toString());
+                assertEquals("", cd.linkedVariables().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 assertTrue(d.haveValueChange("b"));

@@ -131,15 +131,8 @@ public class InlineConditional extends ElementImpl implements Expression {
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        LinkedVariables linkedVariablesTrue = evaluationContext.linkedVariables(ifTrue);
-        LinkedVariables linkedVariablesFalse = evaluationContext.linkedVariables(ifFalse);
-        return linkedVariablesTrue.merge(linkedVariablesFalse);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        LinkedVariables linkedVariablesTrue = evaluationContext.linked1Variables(ifTrue);
-        LinkedVariables linkedVariablesFalse = evaluationContext.linked1Variables(ifFalse);
+        LinkedVariables linkedVariablesTrue = ifTrue.linkedVariables(evaluationContext);
+        LinkedVariables linkedVariablesFalse = ifFalse.linkedVariables(evaluationContext);
         return linkedVariablesTrue.merge(linkedVariablesFalse);
     }
 

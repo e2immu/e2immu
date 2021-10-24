@@ -635,12 +635,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 // end of the apply phase, even for variables that aren't read
                 combined.keySet().removeAll(GroupPropertyValues.PROPERTIES);
                 vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
-                        viInitial.getStaticallyAssignedVariables(), combined, false);
-            }
-            // if the variable has not been read, it is not present in EVAL, so we set a value
-            if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet()) {
-                vic.setLinkedVariables(LinkedVariables.EMPTY, false);
-                vic.setLinked1Variables(LinkedVariables.EMPTY, false);
+                        viInitial.getLinkedVariables(), combined, false);
             }
         }
     }
@@ -659,7 +654,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Map<VariableProperty, Integer> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-                LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference), false);
+                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.ASSIGNED);
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
                     LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
@@ -682,10 +677,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED : vp.falseValue);
                         }
                         lvrVic.setValue(initialValue, initialValueIsDelayed, assignedToOriginal, combined, true);
-                        if (!initialValueIsDelayed) {
-                            lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
-                            lvrVic.setLinked1Variables(LinkedVariables.EMPTY, true);
-                        }
                     }
                 }
             }
@@ -768,18 +759,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new LocalVariableReference(localVariable);
     }
 
-    public void ensureLinkedVariables1() {
-        variables.stream()
-                .map(Map.Entry::getValue)
-                .filter(VariableInfoContainer::hasEvaluation)
-                .forEach(vic -> {
-                    VariableInfo vi = vic.best(EVALUATION);
-                    if (vi.getLinked1Variables() == LinkedVariables.NOT_INVOLVED_DELAYED_EMPTY) {
-                        vic.setLinked1Variables(vic.getPreviousOrInitial().getLinked1Variables(), false);
-                    }
-                });
-    }
-
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
@@ -803,6 +782,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         public Expression value() {
             Expression value = variableInfo.getVariableValue(myself);
+            /*
+            TODO do not understand the reason for this code anymore
+            improve documentation!
+
             List<Variable> variables = value.variables();
             if (variables.isEmpty()) return value;
             Map<Variable, Expression> replacements = new HashMap<>();
@@ -815,8 +798,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
             if (replacements.isEmpty()) return value;
+
+             */
             if (evaluationContext.isDelayed(value)) {
-                return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(), variables);
+                return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
+                        variableInfo.getLinkedVariables());
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
@@ -967,23 +953,23 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus ennStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, EXTERNAL_NOT_NULL,
+                LinkedVariables.ASSIGNED, EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cnnStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL,
+                LinkedVariables.ASSIGNED, CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus extImmStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, EXTERNAL_IMMUTABLE,
+                LinkedVariables.ASSIGNED, EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cImmStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, CONTEXT_IMMUTABLE,
+                LinkedVariables.ASSIGNED, CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getLinkedVariables, CONTEXT_MODIFIED,
+                LinkedVariables.DEPENDENT, CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite, localCopyData);
 
         return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
@@ -1078,7 +1064,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
         } else {
             VariableInfoContainer vic = variables.get(fqn);
-            vic.setValue(variableInfo.getValue(), variableInfo.isDelayed(), variableInfo.getStaticallyAssignedVariables(),
+            vic.setValue(variableInfo.getValue(), variableInfo.isDelayed(), variableInfo.getLinkedVariables(),
                     valueProperties, true);
         }
     }

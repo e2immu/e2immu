@@ -116,7 +116,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_ASSIGNMENTS, sharedState -> allAssignmentsHaveBeenSet())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
-                .add(ANALYSE_LINKED_1, sharedState -> analyseLinked1())
                 .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, sharedState -> allLinksHaveBeenEstablished())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
@@ -644,7 +643,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .anyMatch(ma -> {
                     if (ma.methodInfo.hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
-                        if (linkedVariables.variables().contains(me)) return true;
+                        if (linkedVariables.value(me) == LinkedVariables.DEPENDENT) return true;
                     }
                     return ma.methodAnalysis.getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
@@ -662,7 +661,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         //
         LinkedVariables variables = proxy.getLinkedVariables();
-        if (!variables.isEmpty() && variables.variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
+        if (!variables.isEmpty() && variables.variablesWithLevel(LinkedVariables.DEPENDENT)
+                .allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.MUTABLE;
         }
         return Level.DELAY;
@@ -872,7 +872,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus allLinksHaveBeenEstablished() {
         assert !fieldAnalysis.allLinksHaveBeenEstablished.isSet();
-        if (fieldAnalysis.linked1Variables.isSet() && fieldAnalysis.linkedVariables.isSet()) {
+        if (fieldAnalysis.linkedVariables.isSet()) {
             fieldAnalysis.allLinksHaveBeenEstablished.set();
             return DONE;
         }
@@ -1020,54 +1020,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    private AnalysisStatus analyseLinked1() {
-        assert !fieldAnalysis.linked1Variables.isSet();
-
-        int typeImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
-        if (typeImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-            fieldAnalysis.linked1Variables.set(LinkedVariables.EMPTY);
-            log(LINKED_VARIABLES, "Setting linked1 variables to empty for field {}, @ERImmutable type");
-            // finalizer check at assignment only
-            return DONE;
-        }
-        // no need to look at dynamically immutable (better than formal type's immutable) because
-        // this is reflected in the link1's further on
-
-        // we ONLY look at the linked variables of fields that have been assigned to
-        Optional<MethodInfo> notDefined = allMethodsAndConstructors(true)
-                .filter(m -> {
-                    List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
-                    return !variableInfoList.isEmpty() &&
-                            variableInfoList.stream().anyMatch(VariableInfo::isAssigned) &&
-                            !variableInfoList.stream().allMatch(VariableInfo::staticallyAssignedVariablesIsSet);
-                }).map(ma -> ma.methodInfo).findFirst();
-        if (notDefined.isPresent()) {
-            log(DELAYED, "Linked1Variables not yet set for {} in method (findFirst): {}",
-                    notDefined.get().fullyQualifiedName);
-            return DELAYS;
-        }
-
-        if (myTypeAnalyser.typeAnalysis.getTransparentTypes() == null) {
-            log(DELAYED, "Linked1Variables not yet set for {}, waiting for transparent types", fqn);
-            return DELAYS;
-        }
-
-        Set<Variable> linked1Variables = allMethodsAndConstructors(true)
-                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
-                .flatMap(vi -> vi.getLinked1Variables().variables().stream())
-                .filter(v -> v instanceof ParameterInfo)
-                .collect(Collectors.toSet());
-        fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables, false));
-        log(LINKED_VARIABLES, "FA: Set link1s of {} to [{}]", fqn,
-                Variable.fullyQualifiedName(linked1Variables));
-
-        // explicitly adding the annotation here; it will not be inspected.
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression link1Annotation = checkLinks.createLinkAnnotation(e2.linked1.typeInfo(), linked1Variables);
-        fieldAnalysis.annotations.put(link1Annotation, !linked1Variables.isEmpty());
-        return DONE;
-    }
-
     private AnalysisStatus analyseLinked() {
         assert !fieldAnalysis.linkedVariables.isSet();
 
@@ -1093,19 +1045,27 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        Set<Variable> linkedVariables = allMethodsAndConstructors(true)
+        Map<Variable, Integer> map = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(VariableInfo::linkedVariablesIsSet)
-                .flatMap(vi -> vi.getLinkedVariables().variables().stream())
-                .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
-                .collect(Collectors.toSet());
-        fieldAnalysis.linkedVariables.set(new LinkedVariables(linkedVariables, false));
-        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fqn, Variable.fullyQualifiedName(linkedVariables));
+                .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
+                .filter(e -> !(e.getKey() instanceof LocalVariableReference)) // especially local variable copies of the field itself
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, LinkedVariables::mergeValues));
+        LinkedVariables linkedVariables = new LinkedVariables(map);
+        fieldAnalysis.linkedVariables.set(linkedVariables);
+        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fqn, linkedVariables);
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), linkedVariables);
-        fieldAnalysis.annotations.put(linkAnnotation, !linkedVariables.isEmpty());
+        Set<Variable> dependent = linkedVariables.variablesWithLevel(LinkedVariables.DEPENDENT)
+                .collect(Collectors.toUnmodifiableSet());
+        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(),
+                dependent);
+        fieldAnalysis.annotations.put(linkAnnotation, !dependent.isEmpty());
+
+        Set<Variable> independent1 = linkedVariables.independent1Variables().collect(Collectors.toUnmodifiableSet());
+        AnnotationExpression link1Annotation = checkLinks.createLinkAnnotation(e2.linked1.typeInfo(), independent1);
+        fieldAnalysis.annotations.put(link1Annotation, !independent1.isEmpty());
 
         return DONE;
     }

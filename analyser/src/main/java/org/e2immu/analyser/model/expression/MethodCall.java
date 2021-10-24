@@ -366,15 +366,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if ("arraycopy".equals(methodInfo.name)
                 && (ve0 = parameterExpressions.get(0).asInstanceOf(IsVariableExpression.class)) != null
                 && (ve2 = parameterExpressions.get(2).asInstanceOf(IsVariableExpression.class)) != null) {
-            ParameterizedType pt = ve0.returnType().copyWithOneFewerArrays();
-            SetOfTypes transparentTypes = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType()).getTransparentTypes();
-            boolean isDelayed = ve0 instanceof DelayedVariableExpression || ve2 instanceof DelayedVariableExpression || transparentTypes == null;
-            if (transparentTypes == null || transparentTypes.contains(pt)) {
-                builder.link1(ve2.variable(), ve0.variable(), isDelayed);
-            }
-            if(transparentTypes == null || !transparentTypes.contains(pt)) {
-                builder.link(ve2.variable(), ve0.variable(), isDelayed);
-            }
+            boolean isDelayed = ve0 instanceof DelayedVariableExpression || ve2 instanceof DelayedVariableExpression;
+            builder.link(ve2.variable(), ve0.variable(), LinkedVariables.INDEPENDENT1, isDelayed);
         }
 
 
@@ -468,7 +461,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     // we'll have to come back, we need to know the linked variables
                     return true;
                 }
-                return linked.variables().stream().anyMatch(v -> raiseErrorForFinalizer(evaluationContext, builder, v));
+                return linked.variables()
+                        .keySet()
+                        .stream().anyMatch(v -> raiseErrorForFinalizer(evaluationContext, builder, v));
             }
         }
         return false;
@@ -497,7 +492,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                evaluationContext.linkedVariables(objectValue).variablesAsList()));
+                objectValue.linkedVariables(evaluationContext)));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
@@ -874,9 +869,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return MultiLevel.sumImmutableLevels(formal, minParams);
             }
 
-            LinkedVariables linked1 = linked1VariablesValue(evaluationContext);
-            int linked1Immutable = linked1.variables().stream()
-                    .mapToInt(v -> evaluationContext.getProperty(v, VariableProperty.IMMUTABLE))
+            LinkedVariables linked = linkedVariables(evaluationContext);
+            int linked1Immutable = linked.variables().entrySet().stream()
+                    .filter(e -> e.getValue() > LinkedVariables.DEPENDENT)
+                    .mapToInt(e -> evaluationContext.getProperty(e.getKey(), VariableProperty.IMMUTABLE))
                     .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
             if (linked1Immutable == Level.DELAY) return Level.DELAY;
             return MultiLevel.sumImmutableLevels(formal, linked1Immutable);
@@ -917,126 +913,34 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 2: @Identity links to the 1st parameter
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
+        if (identity == Level.TRUE) {
+            return parameterExpressions.get(0).linkedVariables(evaluationContext);
+        }
         boolean delayed = identity == Level.DELAY;
 
-        // RULE 3: the current implementation doesn't link to "this" as object.
-        // see the method for other restrictions
-        if (ignoreLinkingBecauseOfScope()) {
-            return LinkedVariables.EMPTY;
-        }
-
-        // RULE 4: if the return type is @Dependent1 or higher, there is no linking
-        int independent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        if (independent >= MultiLevel.INDEPENDENT_1) {
-            return LinkedVariables.EMPTY;
-        }
-        delayed |= independent == Level.DELAY;
-
-        // RULE 5: neither can transparent types
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes != null && hiddenContentTypes.contains(methodInfo.returnType())) {
-            return LinkedVariables.EMPTY;
-        }
-        delayed |= hiddenContentTypes == null;
-
-        // link to the object, and all the variables linked to object
-        return evaluationContext.linkedVariables(object).merge(new LinkedVariables(Set.of(), delayed));
-    }
-
-    private boolean ignoreLinkingBecauseOfScope() {
-        VariableExpression ve;
-        if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
-        return object instanceof TypeExpression; // static
-    }
-
-    /*
-    In general, the method result a, in a = b.method(c, d), can content link to b, c and/or d.
-    Independence and immutability restrict the ability to link.
-
-    This method is not concerned with links between b and c,d (see linked1VariablesScope) nor
-    between c and d (not implemented).
-
-    Content links from the parameters to the result (from c to a, from d to a) have currently only
-    been implemented for @Identity methods (i.e., between a and c).
-
-    So we implement
-    1/ void methods cannot content link
-    2/ if the method is @Identity, the result is content linked to the 1st parameter c
-
-    all other rules now determine whether we return an empty set, or the set {a}.
-
-    3/ Contrary to linking, we allow content linking to 'this' (e.g. in T t = get(index),
-       we allow t to be content linked).
-    4/ if the return type of the method is dependent, or independent, there is no content linking.
-    5/ if the return type of the method is transparent in the type, there is content linking.
-
-    CHAINING:
-    T t = list.get(0) will content link t to list.
-    T t = list.subList(0, 1).get(0) should also link t to list. Note that list.subList(0, 1) is linked to list.
-    T t = new ArrayList(list).get(0) should also link t to list. Note that new ArrayList(list) is content linked to list.
-    */
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        // RULE 1: void method cannot content link
-        if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
-
-        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-
-        // RULE 2: @Identity content links to the 1st parameter
-        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.TRUE) return evaluationContext.linked1Variables(parameterExpressions.get(0));
-        boolean delayed = identity == Level.DELAY;
-
-        // RULE 3: not implemented
-
-        // RULE 4: if the return type is @Dependent, or @Independent, there is no content linking
-        // we do INDEPENDENT first
-        int methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        if (methodIndependent == MultiLevel.INDEPENDENT) {
-            return LinkedVariables.EMPTY;
-        }
-        delayed |= methodIndependent == Level.DELAY;
-
-        // RULE 5: neither can transparent types
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-
-        ParameterizedType concreteReturnType = returnType();
-        boolean isNotTransparent = hiddenContentTypes != null && !hiddenContentTypes.contains(concreteReturnType);
-        delayed |= hiddenContentTypes == null;
-
-        if (isNotTransparent && methodIndependent == MultiLevel.DEPENDENT) {
-            return LinkedVariables.EMPTY;
-        }
-
+        // RULE 3: in a factory method, the result links to the parameters, directly
         MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
         if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
             // content link to the parameters, and all variables normally linked to them
-            return NewObject.linkedVariablesFromParameters(parameterExpressions, methodInspection, evaluationContext);
+            return NewObject.linkedVariablesFromParameters(evaluationContext, methodInspection, parameterExpressions);
         }
 
-        // map.firstEntry() is E2Container, with 2x ERContainer type parameters -> ERContainer, independent -> EMPTY
-        // however, we must take into account the immutable value on the method as well (@E2Container instead of the normal @Container)
-        int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        delayed |= immutable == Level.DELAY;
+        // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
+        LinkedVariables linkedVariablesOfScope = object.linkedVariables(evaluationContext);
 
-        int concreteImmutable = concreteReturnType.defaultImmutable(evaluationContext.getAnalyserContext(), true, immutable);
-        if (concreteImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
-        delayed |= concreteImmutable == Level.DELAY;
-
-        // content link to the object, and all the variables content+non-content linked to object
-        return evaluationContext.linked1Variables(object)
-                .merge(evaluationContext.linkedVariables(object))
-                .merge(new LinkedVariables(Set.of(), delayed));
+        int methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (methodIndependent == Level.DELAY) {
+            return linkedVariablesOfScope.changeToDelay();
+        }
+        if (methodIndependent == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
+        int level = MultiLevel.fromIndependentToLinkedVariableLevel(methodIndependent);
+        return LinkedVariables.EMPTY.merge(linkedVariablesOfScope, level);
     }
 
     @Override
     public LinkedVariables linked1VariablesScope(EvaluationContext evaluationContext) {
-        return NewObject.linkedVariablesFromParameters(parameterExpressions,
-                methodInfo.methodInspection.get(), evaluationContext);
+        return NewObject.linkedVariablesFromParameters(evaluationContext,
+                methodInfo.methodInspection.get(), parameterExpressions);
     }
 
     @Override

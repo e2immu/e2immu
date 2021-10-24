@@ -32,7 +32,6 @@ public record PropertyWrapper(Expression expression,
                               Expression state,
                               Map<VariableProperty, Integer> properties,
                               LinkedVariables linkedVariables,
-                              LinkedVariables linked1Variables,
                               ParameterizedType castType) implements Expression, ExpressionWrapper {
 
     public PropertyWrapper {
@@ -45,7 +44,6 @@ public record PropertyWrapper(Expression expression,
                 state == null ? null : state.translate(translationMap),
                 properties,
                 linkedVariables == null ? null : linkedVariables.translate(translationMap),
-                linked1Variables == null ? null : linked1Variables.translate(translationMap),
                 castType == null ? null : translationMap.translateType(castType));
     }
 
@@ -91,25 +89,25 @@ public record PropertyWrapper(Expression expression,
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
-        return new PropertyWrapper(value, null, properties, null, null, null);
+        return new PropertyWrapper(value, null, properties, null, null);
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ParameterizedType castType) {
-        return new PropertyWrapper(value, null, properties, null, null, castType);
+        return new PropertyWrapper(value, null, properties, null, castType);
     }
 
-    public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables, LinkedVariables linked1Variables) {
-        return new PropertyWrapper(value, null, Map.of(), linkedVariables, linked1Variables, null);
+    public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables) {
+        return new PropertyWrapper(value, null, Map.of(), linkedVariables, null);
     }
 
     public static Expression addState(Expression expression, Expression state) {
         assert state != null;
-        return new PropertyWrapper(expression, state, Map.of(), null, null, null);
+        return new PropertyWrapper(expression, state, Map.of(), null, null);
     }
 
     public static Expression addState(Expression expression, Expression state, Map<VariableProperty, Integer> properties) {
         assert state != null;
-        return new PropertyWrapper(expression, state, properties, null, null, null);
+        return new PropertyWrapper(expression, state, properties, null, null);
     }
 
     @Override
@@ -137,7 +135,7 @@ public record PropertyWrapper(Expression expression,
         String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
-        boolean haveComment = !propertyString.isBlank() || castType != null || linked1Variables != null || state != null;
+        boolean haveComment = !propertyString.isBlank() || castType != null || linkedVariables != null || state != null;
         if (haveComment) {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT);
             boolean added = false;
@@ -152,18 +150,10 @@ public record PropertyWrapper(Expression expression,
                 added = true;
                 String header = linkedVariables.isDelayed() ? "{DL " : "{L ";
                 outputBuilder.add(new Text(header))
-                        .add(linkedVariables.variables().stream().map(v -> v.output(qualification))
-                                .collect(OutputBuilder.joining(Symbol.COMMA)))
-                        .add(new Text("}"));
-            }
-            if (linked1Variables != null) {
-                if (added) {
-                    outputBuilder.add(Space.ONE);
-                }
-                added = true;
-                String header = linked1Variables.isDelayed() ? "{DL1 " : "{L1 ";
-                outputBuilder.add(new Text(header))
-                        .add(linked1Variables.variables().stream().map(v -> v.output(qualification))
+                        .add(linkedVariables.variables().entrySet().stream()
+                                .map(e -> e.getKey().output(qualification)
+                                        .add(Symbol.COLON)
+                                        .add(new Text(e.getValue().toString())))
                                 .collect(OutputBuilder.joining(Symbol.COMMA)))
                         .add(new Text("}"));
             }
@@ -218,13 +208,7 @@ public record PropertyWrapper(Expression expression,
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         if (linkedVariables != null) return linkedVariables;
-        return evaluationContext.linkedVariables(expression);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        if (linked1Variables != null) return linked1Variables;
-        return evaluationContext.linked1Variables(expression);
+        return expression.linkedVariables(evaluationContext);
     }
 
     @Override

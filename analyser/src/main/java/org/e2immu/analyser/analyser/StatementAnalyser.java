@@ -3151,51 +3151,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         /*
-        1/ variables of transparent type cannot link.
-        2/ level 2 immutable types cannot link.
+        The linkedVariables of a VariableExpression redirect to this method, because we have
+        access to a lot more information about the variable.
 
-         */
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            Boolean transparent = variable.parameterizedType()
-                    .isTransparent(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
-            if (transparent == Boolean.TRUE) {
-                return LinkedVariables.EMPTY;
-            }
-            boolean delayed = transparent == null;
-
-            if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, getCurrentType())) {
+            Boolean hidden = variable.parameterizedType().isTransparent(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            int value;
+            if (hidden == null) {
+                value = LinkedVariables.DELAYED_VALUE;
+            } else if (hidden) {
                 VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(IMMUTABLE);
-                if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
-                    return LinkedVariables.EMPTY;
-                }
-                if (immutable == Level.DELAY) delayed = true;
+                int level = MultiLevel.level(immutable);
+                value = MultiLevel.independentCorrespondingToImmutableLevel(level);
+                if (value == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
+            } else {
+                // accessible, like an assignment to the variable
+                value = LinkedVariables.ASSIGNED;
             }
-            return new LinkedVariables(Set.of(variable), delayed);
+            return new LinkedVariables(Map.of(variable, value), value == LinkedVariables.DELAYED_VALUE);
         }
-
-
-        @Override
-        public LinkedVariables linked1Variables(Variable variable) {
-            Boolean transparent = variable.parameterizedType()
-                    .isTransparent(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
-            if (transparent == Boolean.TRUE) {
-                return new LinkedVariables(Set.of(variable), false);
-            }
-            boolean delayed = transparent == null;
-
-            if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, getCurrentType())) {
-                VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
-                int immutable = variableInfo.getProperty(IMMUTABLE);
-                if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
-                    // FIXME
-                    return LinkedVariables.EMPTY;
-                }
-                if (immutable == Level.DELAY) delayed = true;
-            }
-            return new LinkedVariables(Set.of(variable), delayed);
-        }
+        */
 
         @Override
         public int getInitialStatementTime() {

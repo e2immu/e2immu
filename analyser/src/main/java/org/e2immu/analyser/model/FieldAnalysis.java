@@ -32,8 +32,6 @@ public interface FieldAnalysis extends Analysis {
     // or parameters
     LinkedVariables getLinkedVariables();
 
-    LinkedVariables getLinked1Variables();
-
     Boolean isTransparentType();
 
     FieldInfo getFieldInfo();

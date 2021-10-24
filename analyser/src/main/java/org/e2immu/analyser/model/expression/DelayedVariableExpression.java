@@ -25,8 +25,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 @E2Container
 public record DelayedVariableExpression(String msg, String debug,
@@ -138,12 +138,7 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Set.of(variable), true);
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Set.of(variable), true);
+        return new LinkedVariables(Map.of(variable, LinkedVariables.ASSIGNED));
     }
 
     @Override

@@ -38,13 +38,6 @@ public interface EvaluationResultVisitor {
                     && e.getValue().properties().containsKey(variableProperty));
         }
 
-        public boolean haveLinkVariable(String fromName, Set<String> toNames) {
-            return evaluationResult().getExpressionChangeStream()
-                    .anyMatch(e -> fromName.equals(e.getKey().fullyQualifiedName()) &&
-                            toNames.equals(e.getValue().linkedVariables().variables()
-                                    .stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
-        }
-
         public boolean haveMarkRead(String variableName) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName) &&
                     !e.getValue().readAtStatementTime().isEmpty());

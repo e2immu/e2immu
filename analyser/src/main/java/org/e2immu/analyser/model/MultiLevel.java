@@ -249,7 +249,8 @@ public class MultiLevel {
     }
 
     public static int independentCorrespondingToImmutableLevel(int immutableLevel) {
-        assert immutableLevel >= LEVEL_2_IMMUTABLE;
+        if (immutableLevel < 0) return immutableLevel;
+        if (immutableLevel == 0) return 0;
         int level;
         if (immutableLevel == MAX_LEVEL) {
             level = immutableLevel;
@@ -266,5 +267,9 @@ public class MultiLevel {
         int levelImmutable = MultiLevel.level(immutable);
         if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
         return levelImmutable == levelIndependent;
+    }
+
+    public static int fromIndependentToLinkedVariableLevel(int independent) {
+        return level(independent) + 1;
     }
 }

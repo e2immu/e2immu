@@ -170,6 +170,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression delayedConclusion() {
-        return DelayedExpression.forMerge(vi.variable().parameterizedType(), List.copyOf(vi.getLinkedVariables().variables()));
+        return DelayedExpression.forMerge(vi.variable().parameterizedType(), vi.getLinkedVariables());
     }
 }

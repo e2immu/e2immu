@@ -33,14 +33,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     private final FieldInfo fieldInfo;
     public final boolean isOfTransparentType;
     public final LinkedVariables variablesLinkedToMe;
-    public final LinkedVariables variablesLinked1ToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfTransparentType,
                               LinkedVariables variablesLinkedToMe,
-                              LinkedVariables variablesLinked1ToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
                               Map<VariableProperty, Integer> properties,
@@ -51,7 +49,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
-        this.variablesLinked1ToMe = variablesLinked1ToMe;
     }
 
     @Override
@@ -71,11 +68,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
-    }
-
-    @Override
-    public LinkedVariables getLinked1Variables() {
-        return variablesLinked1ToMe;
     }
 
     @Override
@@ -180,7 +172,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // the values are either other fields (in which case these other fields are not linked to parameters)
         // or parameters
         public final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
-        public final SetOnce<LinkedVariables> linked1Variables = new SetOnce<>();
 
         private final SetOnce<Boolean> isOfTransparentType = new SetOnce<>();
 
@@ -210,11 +201,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public LinkedVariables getLinked1Variables() {
-            return linked1Variables.getOrDefault(LinkedVariables.DELAYED_EMPTY);
-        }
-
-        @Override
         public Boolean isTransparentType() {
             return isOfTransparentType.getOrDefaultNull();
         }
@@ -224,7 +210,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             return new FieldAnalysisImpl(fieldInfo,
                     isOfTransparentType.getOrDefault(false),
                     linkedVariables.getOrDefault(LinkedVariables.EMPTY),
-                    linked1Variables.getOrDefault(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
                     properties.toImmutableMap(),

@@ -258,11 +258,6 @@ public class CompanionAnalyser implements DelayDebugger {
         }
 
         @Override
-        public LinkedVariables linkedVariables(Expression value) {
-            return LinkedVariables.EMPTY; // not interested
-        }
-
-        @Override
         public boolean hasState(Expression expression) {
             if(expression instanceof VariableExpression) return false;
             return expression.hasState();

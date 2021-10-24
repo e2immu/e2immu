@@ -63,10 +63,11 @@ public class EvaluateMethodCall {
             return builder.setExpression(methodValue).build();
         }
 
+        LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
+
         // no value (method call on field that does not have effective value yet)
         if (evaluationContext.isDelayed(objectValue)) {
-            List<Variable> linkedVariablesWhenDelayed = evaluationContext.linkedVariables(objectValue).variablesAsList();
-            return delay(builder, methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+            return delay(builder, methodInfo, concreteReturnType, linkedVariables);
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
@@ -82,9 +83,6 @@ public class EvaluateMethodCall {
                     parameters, objectValue, evaluationContext.getCurrentType(), identifier);
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
-
-        List<Variable> linkedVariablesWhenDelayed = evaluationContext.linkedVariables(objectValue).variablesAsList();
-
 
         if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !analyserContext.inAnnotatedAPIAnalysis() &&
@@ -119,7 +117,7 @@ public class EvaluateMethodCall {
         }
 
         Expression evaluationOfEquals = computeEvaluationOfEquals(methodInfo, concreteReturnType, objectValue,
-                linkedVariablesWhenDelayed, parameters);
+                linkedVariables, parameters);
         if (evaluationOfEquals != null) {
             return builder.setExpression(evaluationOfEquals).build();
         }
@@ -154,14 +152,14 @@ public class EvaluateMethodCall {
 
         // @Identity as method annotation
         Expression identity = computeIdentity(methodInfo, concreteReturnType,
-                methodAnalysis, parameters, linkedVariablesWhenDelayed, evaluationContext);
+                methodAnalysis, parameters, linkedVariables, evaluationContext);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(methodInfo, concreteReturnType, methodAnalysis, objectValue, linkedVariablesWhenDelayed);
+        Expression fluent = computeFluent(methodInfo, concreteReturnType, methodAnalysis, objectValue, linkedVariables);
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
@@ -189,7 +187,7 @@ public class EvaluateMethodCall {
             } else {
                 // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
                 log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+                return delay(builder, methodInfo, concreteReturnType, linkedVariables);
             }
         }
 
@@ -199,14 +197,14 @@ public class EvaluateMethodCall {
             case Level.TRUE -> {
                 int notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
                 if (notNull == Level.DELAY) {
-                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
                 }
                 yield NewObject.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
                         concreteReturnType, notNull);
             }
-            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
         };
         return builder.setExpression(methodValue).build();
     }
@@ -214,9 +212,9 @@ public class EvaluateMethodCall {
     private static EvaluationResult delay(EvaluationResult.Builder builder,
                                           MethodInfo methodInfo,
                                           ParameterizedType concreteReturnType,
-                                          List<Variable> linkedVariablesWhenDelayed) {
-        return builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                linkedVariablesWhenDelayed)).build();
+                                          LinkedVariables linkedVariables) {
+        return builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables))
+                .build();
     }
 
     /*
@@ -257,7 +255,7 @@ public class EvaluateMethodCall {
     */
     private EvaluationResult tryEvaluationShortCut(EvaluationResult.Builder builder,
                                                    Expression objectValue,
-                                                   List<Variable> linkedVariablesWhenDelayed,
+                                                   LinkedVariables linkedVariables,
                                                    InlinedMethod iv) {
         NewObject newObject;
         VariableExpression varEx;
@@ -289,7 +287,7 @@ public class EvaluateMethodCall {
                     for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
-                                    iv.expression().returnType(), linkedVariablesWhenDelayed)).build();
+                                    iv.expression().returnType(), linkedVariables)).build();
                         }
                         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
                         ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
@@ -307,7 +305,7 @@ public class EvaluateMethodCall {
     private Expression computeEvaluationOfEquals(MethodInfo methodInfo,
                                                  ParameterizedType concreteReturnType,
                                                  Expression objectValue,
-                                                 List<Variable> linkedVariablesWhenDelayed,
+                                                 LinkedVariables linkedVariables,
                                                  List<Expression> parameters) {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
@@ -315,7 +313,7 @@ public class EvaluateMethodCall {
             if (nonModifying == null) {
                 log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+                return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
             }
             if (paramValue.equals(objectValue) && nonModifying) {
                 return new BooleanConstant(primitives, true);
@@ -474,12 +472,12 @@ public class EvaluateMethodCall {
                                             ParameterizedType concreteReturnType,
                                             MethodAnalysis methodAnalysis,
                                             Expression scope,
-                                            List<Variable> linkedVariablesWhenDelayed) {
+                                            LinkedVariables linkedVariables) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent == Level.DELAY && methodAnalysis.isNotContracted()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Fluent delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
         }
         if (fluent != Level.TRUE) return null;
         return scope;
@@ -492,13 +490,13 @@ public class EvaluateMethodCall {
                                               ParameterizedType concreteReturnType,
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters,
-                                              List<Variable> linkedVariablesWhenDelayed,
+                                              LinkedVariables linkedVariables,
                                               EvaluationContext evaluationContext) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.isNotContracted()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
         }
         if (identity != Level.TRUE) return null;
 

@@ -128,20 +128,7 @@ public class InstanceOf extends ElementImpl implements Expression {
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            return evaluationContext.linkedVariables(ve.variable());
-        }
-        return LinkedVariables.EMPTY;
-    }
-
-    @Override
-    public LinkedVariables linked1VariablesValue(EvaluationContext evaluationContext) {
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            return evaluationContext.linked1Variables(ve.variable());
-        }
-        return LinkedVariables.EMPTY;
+        return expression.linkedVariables(evaluationContext);
     }
 
     @Override
@@ -163,8 +150,9 @@ public class InstanceOf extends ElementImpl implements Expression {
             return builder.setExpression(value).build();
         }
         if (value.isDelayed(evaluationContext)) {
+            LinkedVariables linkedVariables = value.linkedVariables(evaluationContext);
             return builder.setExpression(DelayedExpression
-                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType, value.variables())).build();
+                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType, linkedVariables)).build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();

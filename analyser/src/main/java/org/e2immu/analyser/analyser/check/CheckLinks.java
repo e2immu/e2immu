@@ -50,7 +50,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
         };
         LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
-        String computedString = linkedVariables.isEmpty() ? null : linkedVariables.variables().stream()
+        String computedString = linkedVariables.variablesWithLevel(LinkedVariables.DEPENDENT)
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 
@@ -71,8 +71,8 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
         };
-        LinkedVariables linkedVariables = fieldAnalysis.getLinked1Variables();
-        String computedString = linkedVariables.isEmpty() ? null : linkedVariables.variables().stream()
+        LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
+        String computedString = linkedVariables.independent1Variables()
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 

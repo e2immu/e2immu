@@ -24,13 +24,18 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/*
+Convention for spotting delays:
+
+1. at assignment level: no delays, never
+2. at dependent, independent1 level: add the variable, with DELAYED_VALUE
+ */
 public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelayed) {
-
 
     public LinkedVariables(Map<Variable, Integer> variables) {
         this(variables, variables.values().stream().anyMatch(v -> v == DELAYED_VALUE));
@@ -57,19 +62,63 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public static final String DELAY_STRING = "<delay>";
 
-    public LinkedVariables merge(LinkedVariables other) {
+    public static LinkedVariables sameValue(Stream<Variable> variables, int value) {
+        return new LinkedVariables(variables.collect(Collectors.toMap(v -> v, v -> value)));
+    }
+
+    public static LinkedVariables of(Variable variable, int value) {
+        return new LinkedVariables(Map.of(variable, value), value == DELAYED_VALUE);
+    }
+
+    public LinkedVariables mergeDelay(LinkedVariables other) {
         HashMap<Variable, Integer> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
             Integer inMap = map.get(v);
             if (inMap == null) {
-                map.put(v, i);
+                map.put(v, DELAYED_VALUE);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = inMap == ASSIGNED ? ASSIGNED : Math.min(i, inMap);
+                int merged = inMap == ASSIGNED ? ASSIGNED : DELAYED_VALUE;
                 map.put(v, merged);
             }
         });
         return new LinkedVariables(map);
+    }
+
+    /*
+    goal of the 'minimum' parameter:
+
+    x = new X(b); expression b has linked variables b,0 when b is a variable expression
+    the variable independent gives the independence of the first parameter of the constructor X(b)
+
+    if DEPENDENT, then x is linked in an accessible way to b (maybe it stores b); max(0,0)=0
+    if INDEPENDENT_1, then changes to b may imply changes to the hidden content of x; max(0,1)=1
+
+    if the expression is e.g. c,1, as in new B(c)
+
+    if DEPENDENT, then x is linked in an accessible way to an object b which is content linked to c
+    changes to c have an impact on the hidden content of b, which is linked in an accessible way
+    (leaving the hidden content hidden?) to x  max(1,0)=1
+    if INDEPENDENT_1, then x is hidden content linked to b is hidden content linked to c, max(1,1)=1
+     */
+    public LinkedVariables merge(LinkedVariables other, int minimum) {
+        HashMap<Variable, Integer> map = new HashMap<>(variables);
+        other.variables.forEach((v, i) -> {
+            int newValue = Math.max(i, minimum);
+            Integer inMap = map.get(v);
+            if (inMap == null) {
+                map.put(v, newValue);
+            } else {
+                // once 0, always 0 (we do not accept delays on 0!)
+                int merged = inMap == ASSIGNED ? ASSIGNED : Math.min(newValue, inMap);
+                map.put(v, merged);
+            }
+        });
+        return new LinkedVariables(map);
+    }
+
+    public LinkedVariables merge(LinkedVariables other) {
+        return merge(other, Integer.MIN_VALUE); // no effect
     }
 
     public boolean isEmpty() {
@@ -130,11 +179,16 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return variables.containsKey(variable);
     }
 
-    public List<Variable> variablesAsList(int maxLevel) {
+    public Stream<Variable> variablesWithLevel(int level) {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue() <= maxLevel)
-                .map(Map.Entry::getKey)
-                .toList();
+                .filter(e -> e.getValue() == level)
+                .map(Map.Entry::getKey);
+    }
+
+    public Stream<Variable> independent1Variables() {
+        return variables.entrySet().stream()
+                .filter(e -> e.getValue() > DEPENDENT)
+                .map(Map.Entry::getKey);
     }
 
     public LinkedVariables translate(TranslationMap translationMap) {
@@ -142,5 +196,21 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         var translatedVariables = variables.entrySet().stream()
                 .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue));
         return new LinkedVariables(translatedVariables, isDelayed);
+    }
+
+    public LinkedVariables changeToDelay() {
+        Map<Variable, Integer> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == ASSIGNED ? ASSIGNED : DELAYED_VALUE));
+        return new LinkedVariables(map);
+    }
+
+    public Integer value(Variable variable) {
+        return variables.get(variable);
+    }
+
+    public static int mergeValues(int v1, int v2) {
+        assert v1 > DELAYED_VALUE;
+        assert v2 > DELAYED_VALUE;
+        return Math.min(v1, v2);
     }
 }

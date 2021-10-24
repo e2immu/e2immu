@@ -521,7 +521,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     && !resultOfExpressionIsDelayed
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
-                    evaluationContext.linkedVariables(resultOfExpression)) : resultOfExpression;
+                    resultOfExpression.linkedVariables(evaluationContext)) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
@@ -680,22 +680,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void causeOfContextModificationDelay(MethodInfo methodInfo, boolean delay) {
             if (methodInfo != null) {
                 causesOfContextModificationDelays.merge(methodInfo, delay, (orig, val) -> orig || val);
-            }
-        }
-
-        public LinkedVariables linked1Variables(Expression expression) {
-            if (expression instanceof VariableExpression ve) {
-                ChangeData cd = valueChanges.get(ve.variable());
-                if (cd != null) {
-                    return cd.linked1Variables;
-                }
-            }
-            return evaluationContext.linked1Variables(expression);
-        }
-
-        public void registerLinked1(Variable variable, LinkedVariables linked1Scope) {
-            for (Variable linked : linked1Scope.variables()) {
-                link1(variable, linked, linked1Scope.isDelayed());
             }
         }
     }
