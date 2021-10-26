@@ -16,10 +16,11 @@
 package org.e2immu.analyser.parserfailing;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -61,7 +62,7 @@ public class TestModificationGraph extends CommonTestRunner {
         if ("C2".equals(name)) {
             ParameterInfo c1 = d.methodInfo().methodInspection.get().getParameters().get(1);
             if (d.iteration() > 0) {
-                Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> entry = c1.parameterAnalysis.get()
+                Map.Entry<FieldInfo, Integer> entry = c1.parameterAnalysis.get()
                         .getAssignedToField().entrySet().stream().findFirst().orElseThrow();
                 assertEquals("c1", entry.getKey().name);
                 assertEquals("c1", entry.getKey().name);

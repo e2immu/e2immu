@@ -289,9 +289,9 @@ public class EvaluateMethodCall {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
                                     iv.expression().returnType(), linkedVariables)).build();
                         }
-                        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-                        ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
-                        if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                        Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
+                        Integer assignedOrLinked = assigned.get(fieldInfo);
+                        if (assignedOrLinked == LinkedVariables.ASSIGNED) {
                             return builder.setExpression(newObject.getParameterExpressions().get(i)).build();
                         }
                         i++;

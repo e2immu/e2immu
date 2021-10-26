@@ -257,6 +257,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return currentExcludingMerge();
     }
 
+    private VariableInfoImpl getToWrite(Level level) {
+        return switch (level) {
+            case INITIAL -> previousOrInitial.getRight();
+            case EVALUATION -> evaluation.get();
+            case MERGE -> merge.get();
+        };
+    }
+
     private VariableInfoImpl currentExcludingMerge() {
         if (evaluation.isSet()) return evaluation.get();
         if (previousOrInitial.isLeft()) return (VariableInfoImpl) previousOrInitial.getLeft().best(levelForPrevious);
@@ -311,10 +319,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
 
     @Override
-    public void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation) {
+    public void setLinkedVariables(LinkedVariables linkedVariables, Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
-        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
+        VariableInfoImpl variableInfo = getToWrite(level);
         variableInfo.setLinkedVariables(linkedVariables);
     }
 
@@ -408,6 +416,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public boolean isPrevious() {
         return previousOrInitial.isLeft();
+    }
+
+    @Override
+    public boolean has(Level level) {
+        return switch (level) {
+            case INITIAL -> true;
+            case EVALUATION -> evaluation.isSet();
+            case MERGE -> merge.isSet();
+        };
     }
 
     private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {

@@ -23,29 +23,6 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 public interface ParameterAnalysis extends Analysis {
 
-    enum AssignedOrLinked {
-        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_IMMUTABLE)),
-        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD)),
-        NO(Set.of()),
-        DELAYED(null);
-
-        public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-                EXTERNAL_IMMUTABLE);
-        private final Set<VariableProperty> propertiesToCopy;
-
-        AssignedOrLinked(Set<VariableProperty> propertiesToCopy) {
-            this.propertiesToCopy = propertiesToCopy;
-        }
-
-        public boolean isAssignedOrLinked() {
-            return this == ASSIGNED || this == LINKED;
-        }
-
-        public Set<VariableProperty> propertiesToCopy() {
-            return propertiesToCopy;
-        }
-    }
-
     /**
      * The map is valid when isAssignedToFieldDelaysResolved() is true.
      *
@@ -54,7 +31,7 @@ public interface ParameterAnalysis extends Analysis {
      * If a parameter is linked to one or more fields (implying the parameter is variable), the map contains pairs (fieldInfo, LINKED).
      * At any time, the map can contain (fieldInfo, NO) tuples.
      */
-    default Map<FieldInfo, AssignedOrLinked> getAssignedToField() {
+    default Map<FieldInfo, Integer> getAssignedToField() {
         return null;
     }
 

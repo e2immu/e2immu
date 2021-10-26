@@ -15,6 +15,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
 
@@ -44,18 +47,20 @@ public class ComputeLinkedVariables {
     private final List<List<Variable>> clustersAssigned;
     private final List<List<Variable>> clustersDependent;
     public final boolean delaysInClustering;
+    private final WeightedGraph<Variable> weightedGraph;
 
-    // public for testing
-    public ComputeLinkedVariables(StatementAnalysis statementAnalysis,
-                                  VariableInfoContainer.Level level,
-                                  List<List<Variable>> clustersAssigned,
-                                  List<List<Variable>> clustersDependent,
-                                  boolean delaysInClustering) {
+    private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
+                                   VariableInfoContainer.Level level,
+                                   WeightedGraph<Variable> weightedGraph,
+                                   List<List<Variable>> clustersAssigned,
+                                   List<List<Variable>> clustersDependent,
+                                   boolean delaysInClustering) {
         this.level = level;
         this.statementAnalysis = statementAnalysis;
         this.clustersAssigned = clustersAssigned;
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
+        this.weightedGraph = weightedGraph;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
@@ -71,12 +76,14 @@ public class ComputeLinkedVariables {
             VariableInfo vi = vic.best(level);
             Variable variable = vi.variable();
             variables.add(variable);
-            int immutable = variable.parameterizedType().defaultImmutable(analysisProvider, true);
+            boolean isRetVarOrThis = variable instanceof This || variable instanceof ReturnVariable;
+            int immutable = isRetVarOrThis ? MultiLevel.NOT_INVOLVED :
+                    variable.parameterizedType().defaultImmutable(analysisProvider, true);
             if (immutable == Level.DELAY) delaysInClustering.set(true);
 
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(variable);
 
-            LinkedVariables inCd = changeData.linkedVariables();
+            LinkedVariables inCd = changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
             LinkedVariables inVi = vi.getLinkedVariables();
             LinkedVariables combined = inCd.merge(inVi);
             LinkedVariables curated = combined.removeIncompatibleWithImmutable(immutable);
@@ -87,7 +94,7 @@ public class ComputeLinkedVariables {
 
         List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables, LinkedVariables.ASSIGNED);
         List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables, LinkedVariables.DEPENDENT);
-        return new ComputeLinkedVariables(statementAnalysis, level, clustersAssigned,
+        return new ComputeLinkedVariables(statementAnalysis, level, weightedGraph, clustersAssigned,
                 clustersDependent, delaysInClustering.get());
     }
 
@@ -127,7 +134,6 @@ public class ComputeLinkedVariables {
                                          VariableProperty variableProperty,
                                          Map<Variable, Integer> propertyValues) {
         AnalysisStatus analysisStatus = AnalysisStatus.DONE;
-        int counter = 0;
         for (List<Variable> cluster : clusters) {
             int summary = computeSummary(cluster, propertyValues);
             if (summary == Level.DELAY) {
@@ -135,17 +141,37 @@ public class ComputeLinkedVariables {
             } else {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
+                    if (level.equals(VariableInfoContainer.Level.EVALUATION)) {
+                        if (!vic.hasMerge() && !vic.hasEvaluation()) {
+                            vic.prepareEvaluationForWritingContextProperties();
+                        }
+                    } else if (!vic.hasMerge()) {
+                        vic.prepareMergeForWritingContextProperties();
+                    }
+
                     vic.setProperty(variableProperty, summary, level);
-                    counter++;
                 }
             }
         }
-        assert counter == propertyValues.keySet().size();
-
         return analysisStatus;
     }
 
+    // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
     private int computeSummary(List<Variable> cluster, Map<Variable, Integer> propertyValues) {
-        return cluster.stream().mapToInt(propertyValues::get).reduce(Level.DELAY, Math::max);
+        return cluster.stream().mapToInt(propertyValues::get).reduce(0, Level.OR);
+    }
+
+    public void writeLinkedVariables() {
+        statementAnalysis.variables.stream().forEach(e -> {
+            VariableInfoContainer vic = e.getValue();
+
+            Variable variable = vic.current().variable();
+            Map<Variable, Integer> map = weightedGraph.links(variable);
+            LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
+
+            if (vic.has(level)) {
+                vic.setLinkedVariables(linkedVariables, level);
+            }
+        });
     }
 }

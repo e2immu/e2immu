@@ -861,6 +861,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
                 evaluationResult, sharedState.evaluationContext.getAnalyserContext());
+        computeLinkedVariables.writeLinkedVariables();
 
         // 1
         AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
@@ -983,7 +984,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.statementTime(EVALUATION), Set.of());
         Expression instance = NewObject.forLoopVariable(index(), loopVar, MultiLevel.NULLABLE);
         vic.setValue(instance, someValueWasDelayed, LinkedVariables.EMPTY, Map.of(), false);
-        vic.setLinkedVariables(linked, false);
+        vic.setLinkedVariables(linked, EVALUATION);
     }
 
     private boolean assignmentToNonCopy(VariableInfoContainer vic, EvaluationResult evaluationResult) {
@@ -1614,7 +1615,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull),
                             false, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
-                    vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+                    vic.setLinkedVariables(LinkedVariables.EMPTY, INITIAL);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                     if (newVariable) {

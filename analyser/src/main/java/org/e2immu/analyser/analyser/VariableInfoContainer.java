@@ -57,7 +57,7 @@ public interface VariableInfoContainer {
         return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
     }
 
-    void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation);
+    void setLinkedVariables(LinkedVariables linkedVariables, Level level);
 
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
@@ -77,6 +77,8 @@ public interface VariableInfoContainer {
     void prepareMergeForWritingContextProperties();
 
     boolean isPrevious();
+
+    boolean has(Level level);
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {

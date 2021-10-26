@@ -31,10 +31,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
-import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -238,6 +238,16 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         }
     }
 
+    private static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
+            EXTERNAL_IMMUTABLE);
+
+    private static Set<VariableProperty> propertiesToCopy(int assignedOrLinked) {
+        if (assignedOrLinked == ASSIGNED) return PROPERTIES;
+        if (assignedOrLinked == LinkedVariables.DEPENDENT) return Set.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked == NO_LINKING) return Set.of();
+        throw new UnsupportedOperationException();
+    }
+
     private AnalysisStatus analyseFieldAssignments(SharedState sharedState) {
         boolean changed = false;
         boolean delays = false;
@@ -256,11 +266,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
-            if (assignedOrLinked == DELAYED) {
+            int assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
+            if (assignedOrLinked == DELAYED_VALUE) {
                 delays = true;
             } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
-                changed |= assignedOrLinked.isAssignedOrLinked();
+                changed |= LinkedVariables.isAssignedOrLinked(assignedOrLinked);
             }
         }
 
@@ -271,14 +281,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             parameterAnalysis.freezeAssignedToField();
         }
 
-        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
+        Map<FieldInfo, Integer> map = parameterAnalysis.getAssignedToField();
 
         Set<VariableProperty> propertiesDelayed = new HashSet<>();
         boolean notAssignedToField = true;
-        for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
+        for (Map.Entry<FieldInfo, Integer> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
-            ParameterAnalysis.AssignedOrLinked assignedOrLinked = e.getValue();
-            Set<VariableProperty> propertiesToCopy = assignedOrLinked.propertiesToCopy();
+            int assignedOrLinked = e.getValue();
+            Set<VariableProperty> propertiesToCopy = propertiesToCopy(assignedOrLinked);
             if (assignedOrLinked == ASSIGNED) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
@@ -304,7 +314,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
                 // FIXME check this code!
 
-                if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (assignedOrLinked.isAssignedOrLinked())) {
+                if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isAssignedOrLinked(assignedOrLinked))) {
                     int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, true);
                     if (immutable == Level.DELAY) {
                         delays = true;
@@ -312,7 +322,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         int levelImmutable = MultiLevel.level(immutable);
                         int typeIndependent;
                         if (levelImmutable < 2) {
-                            typeIndependent = DEPENDENT;
+                            typeIndependent = MultiLevel.DEPENDENT;
                         } else {
                             typeIndependent = MultiLevel.independentCorrespondingToImmutableLevel(levelImmutable);
                         }
@@ -421,15 +431,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return vi != null && vi.isAssigned();
     }
 
-    private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
+    private int determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
         int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effFinal == Level.DELAY) {
-            return DELAYED;
+            return DELAYED_VALUE;
         }
         if (effFinal == Level.TRUE) {
             Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
             if (effectivelyFinal == null) {
-                return DELAYED;
+                return DELAYED_VALUE;
             }
             VariableExpression ve;
 
@@ -462,10 +472,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        if (linked.isDelayed()) {
-            return DELAYED;
-        }
-        return linked.contains(parameterInfo) ? LINKED : NO;
+        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.NO_LINKING);
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,

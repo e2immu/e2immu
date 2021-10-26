@@ -28,12 +28,12 @@ import java.util.Map;
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
 
     private final ParameterInfo parameterInfo;
-    public final Map<FieldInfo, AssignedOrLinked> assignedToField;
+    public final Map<FieldInfo, Integer> assignedToField;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<VariableProperty, Integer> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
-                                  Map<FieldInfo, AssignedOrLinked> assignedToField) {
+                                  Map<FieldInfo, Integer> assignedToField) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
@@ -51,7 +51,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
-        private final SetOnceMap<FieldInfo, AssignedOrLinked> assignedToField = new SetOnceMap<>();
+        private final SetOnceMap<FieldInfo, Integer> assignedToField = new SetOnceMap<>();
         private final FlipSwitch delaysOnFieldsResolved = new FlipSwitch();
         public final Location location;
         private final AnalysisProvider analysisProvider;
@@ -87,7 +87,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public Map<FieldInfo, AssignedOrLinked> getAssignedToField() {
+        public Map<FieldInfo, Integer> getAssignedToField() {
             return assignedToField.toImmutableMap();
         }
 
@@ -124,7 +124,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
         }
 
-        public boolean addAssignedToField(FieldInfo fieldInfo, AssignedOrLinked assignedOrLinked) {
+        public boolean addAssignedToField(FieldInfo fieldInfo, Integer assignedOrLinked) {
             if (!assignedToField.isSet(fieldInfo)) {
                 assignedToField.put(fieldInfo, assignedOrLinked);
                 return true;

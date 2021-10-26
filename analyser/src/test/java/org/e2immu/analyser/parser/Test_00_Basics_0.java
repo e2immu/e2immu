@@ -16,12 +16,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -94,26 +95,32 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     return;
                 }
                 // the return value
-                assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
-                String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
-                assertEquals(expectReturn, d.currentValue().toString());
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
+                    String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
+                    assertEquals(expectReturn, d.currentValue().toString());
 
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    String expected = d.iteration() == 0 ? "this.explicitlyFinal:0,return getExplicitlyFinal:0" :
+                            "return getExplicitlyFinal:0";
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
 
-                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-                assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-
-                return;
+                    /*
+                    not involved, because in iteration 1, not linked to the field anymore !
+                     */
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    return;
+                }
             }
             fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +
                     ", statement id " + d.statementId());
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            // check that the XML annotations have been read properly, and copied into the correct place
+            // quick check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
             assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
                     stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));

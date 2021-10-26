@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -355,9 +354,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
         List<ParameterAnalysis> parameterAnalyses = evaluationContext
                 .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-            Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-            ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
-            if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+            Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
+            Integer assignedOrLinked = assigned.get(fieldInfo);
+            if (assignedOrLinked == LinkedVariables.ASSIGNED) {
                 return newObject.getParameterExpressions().get(i);
             }
             i++;

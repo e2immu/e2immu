@@ -449,7 +449,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
          the first statements may already be DONE, so the code doesn't reach here!
          */
         if (parent == null) {
-            init1PlusStartOfMethodDoParametersAndThis(evaluationContext.getAnalyserContext());
+            init1PlusStartOfMethodDoParameters(evaluationContext.getAnalyserContext());
         }
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
@@ -517,7 +517,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     /*
     assume that all parameters, also those from closures, are already present
      */
-    private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext) {
+    private void init1PlusStartOfMethodDoParameters(AnalyserContext analyserContext) {
         variables.stream().map(Map.Entry::getValue)
                 .filter(vic -> vic.getPreviousOrInitial().variable() instanceof ParameterInfo)
                 .forEach(vic -> {

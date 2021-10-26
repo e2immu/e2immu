@@ -23,10 +23,8 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -64,7 +62,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_ASSIGNMENTS = "allAssignmentsHaveBeenSet";
     public static final String ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED = "allLinksHaveBeenEstablished";
     public static final String ANALYSE_CONSTANT = "analyseConstant";
-    public static final String ANALYSE_LINKED_1 = "analyseLinked1";
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -1049,18 +1046,19 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
-                .filter(e -> !(e.getKey() instanceof LocalVariableReference)) // especially local variable copies of the field itself
+                .filter(e -> !(e.getKey() instanceof LocalVariableReference)
+                        && !(e.getKey() instanceof ReturnVariable)
+                        && !(e.getKey() instanceof FieldReference fr && fr.scopeIsThis() && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, LinkedVariables::bestValue));
+
         LinkedVariables linkedVariables = new LinkedVariables(map);
         fieldAnalysis.linkedVariables.set(linkedVariables);
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fqn, linkedVariables);
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        Set<Variable> dependent = linkedVariables.variablesWithLevel(LinkedVariables.DEPENDENT)
-                .collect(Collectors.toUnmodifiableSet());
-        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(),
-                dependent);
+        Set<Variable> dependent = linkedVariables.variablesAssignedOrDependent().collect(Collectors.toUnmodifiableSet());
+        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), dependent);
         fieldAnalysis.annotations.put(linkAnnotation, !dependent.isEmpty());
 
         Set<Variable> independent1 = linkedVariables.independent1Variables().collect(Collectors.toUnmodifiableSet());

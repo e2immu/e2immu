@@ -290,9 +290,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
             if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                 return -2; // delays
             }
-            Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-            ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
-            if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+            Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
+            Integer assignedOrLinked = assigned.get(fieldInfo);
+            if (assignedOrLinked == LinkedVariables.ASSIGNED) {
                 return i;
             }
             i++;

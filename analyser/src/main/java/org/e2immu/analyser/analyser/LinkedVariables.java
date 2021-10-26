@@ -179,6 +179,12 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return variables.containsKey(variable);
     }
 
+    public Stream<Variable> variablesAssignedOrDependent() {
+        return variables.entrySet().stream()
+                .filter(e -> isAssignedOrLinked(e.getValue()))
+                .map(Map.Entry::getKey);
+    }
+
     public Stream<Variable> variablesWithLevel(int level) {
         return variables.entrySet().stream()
                 .filter(e -> e.getValue() == level)
@@ -229,5 +235,9 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
             return new LinkedVariables(map);
         }
         return this;
+    }
+
+    public static boolean isAssignedOrLinked(int dependent) {
+        return dependent == ASSIGNED || dependent == DEPENDENT;
     }
 }
