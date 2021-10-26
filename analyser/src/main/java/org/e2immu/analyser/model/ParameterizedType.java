@@ -970,8 +970,8 @@ public class ParameterizedType {
                 .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
     }
 
-    public int defaultImmutable(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
-        return defaultImmutable(analysisProvider, returnValueOfMethod, MultiLevel.NOT_INVOLVED);
+    public int defaultImmutable(AnalysisProvider analysisProvider, boolean unboundIsMutable) {
+        return defaultImmutable(analysisProvider, unboundIsMutable, MultiLevel.NOT_INVOLVED);
     }
 
     /*

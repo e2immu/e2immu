@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -782,9 +783,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         public Expression value() {
             Expression value = variableInfo.getVariableValue(myself);
-            /*
-            TODO do not understand the reason for this code anymore
-            improve documentation!
 
             List<Variable> variables = value.variables();
             if (variables.isEmpty()) return value;
@@ -799,7 +797,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             if (replacements.isEmpty()) return value;
 
-             */
             if (evaluationContext.isDelayed(value)) {
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
                         variableInfo.getLinkedVariables());
@@ -836,6 +833,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         List<AcceptForMerging> variableStream = makeVariableStream(lastStatements).toList();
         Set<String> merged = new HashSet<>();
         Set<Variable> doNotWrite = new HashSet<>();
+        Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
+
         for (AcceptForMerging e : variableStream) {
             VariableInfoContainer vic = e.vic();
             VariableInfo current = vic.current();
@@ -884,6 +883,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         try {
                             Expression resultingValue = destination.merge(evaluationContext,
                                     stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge, groupPropertyValues);
+
+                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo.getLinked1Variables())
+                                    .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+                            linkedVariablesMap.put(variable, linkedVariables);
 
                             /*
                             criteria for creating a ConditionalInitialization copy of a field:
@@ -947,30 +950,30 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         // then, per cluster of variables
+        Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
+                v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
+        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
+                linkedVariablesMap::containsKey,
+                linkedVariablesFromBlocks, evaluationContext.getAnalyserContext());
+        computeLinkedVariables.writeLinkedVariables();
 
-        ContextPropertyWriter.LocalCopyData localCopyData =
-                ContextPropertyWriter.localCopyReferences(groupPropertyValues.allVariables());
+        // ContextPropertyWriter.LocalCopyData localCopyData =
+        //        ContextPropertyWriter.localCopyReferences(groupPropertyValues.allVariables());
 
-        ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
-        AnalysisStatus ennStatus = contextPropertyWriter.write(this, evaluationContext,
-                LinkedVariables.ASSIGNED, EXTERNAL_NOT_NULL,
-                groupPropertyValues.getMap(EXTERNAL_NOT_NULL), MERGE, doNotWrite, localCopyData);
+        AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
+                groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
-        AnalysisStatus cnnStatus = contextPropertyWriter.write(this, evaluationContext,
-                LinkedVariables.ASSIGNED, CONTEXT_NOT_NULL,
-                groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite, localCopyData);
+        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
+                groupPropertyValues.getMap(CONTEXT_NOT_NULL));
 
-        AnalysisStatus extImmStatus = contextPropertyWriter.write(this, evaluationContext,
-                LinkedVariables.ASSIGNED, EXTERNAL_IMMUTABLE,
-                groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), MERGE, doNotWrite, localCopyData);
+        AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
+                groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        AnalysisStatus cImmStatus = contextPropertyWriter.write(this, evaluationContext,
-                LinkedVariables.ASSIGNED, CONTEXT_IMMUTABLE,
-                groupPropertyValues.getMap(CONTEXT_IMMUTABLE), MERGE, doNotWrite, localCopyData);
+        AnalysisStatus cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
+                groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
-        AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
-                LinkedVariables.DEPENDENT, CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite, localCopyData);
+        AnalysisStatus cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
+                groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
         return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
     }

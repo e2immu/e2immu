@@ -16,13 +16,14 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /*
 Goal:
@@ -48,9 +49,11 @@ public class ComputeLinkedVariables {
     private final List<List<Variable>> clustersDependent;
     public final boolean delaysInClustering;
     private final WeightedGraph<Variable> weightedGraph;
+    private final Predicate<Variable> ensureLevel;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    VariableInfoContainer.Level level,
+                                   Predicate<Variable> ensureLevel,
                                    WeightedGraph<Variable> weightedGraph,
                                    List<List<Variable>> clustersAssigned,
                                    List<List<Variable>> clustersDependent,
@@ -61,11 +64,13 @@ public class ComputeLinkedVariables {
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
         this.weightedGraph = weightedGraph;
+        this.ensureLevel = ensureLevel;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 VariableInfoContainer.Level level,
-                                                EvaluationResult evaluationResult,
+                                                Predicate<Variable> ensureLevel,
+                                                Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 AnalysisProvider analysisProvider) {
         WeightedGraph<Variable> weightedGraph = new WeightedGraph<>();
         AtomicBoolean delaysInClustering = new AtomicBoolean();
@@ -76,17 +81,15 @@ public class ComputeLinkedVariables {
             VariableInfo vi = vic.best(level);
             Variable variable = vi.variable();
             variables.add(variable);
-            boolean isRetVarOrThis = variable instanceof This || variable instanceof ReturnVariable;
-            int immutable = isRetVarOrThis ? MultiLevel.NOT_INVOLVED :
-                    variable.parameterizedType().defaultImmutable(analysisProvider, true);
-            if (immutable == Level.DELAY) delaysInClustering.set(true);
 
-            EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(variable);
+            Function<Variable, Integer> computeImmutable = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
+                    v.parameterizedType().defaultImmutable(analysisProvider, false);
+            int sourceImmutable = computeImmutable.apply(variable);
 
-            LinkedVariables inCd = changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
+            LinkedVariables external = externalLinkedVariables.apply(variable);
             LinkedVariables inVi = vi.getLinkedVariables();
-            LinkedVariables combined = inCd.merge(inVi);
-            LinkedVariables curated = combined.removeIncompatibleWithImmutable(immutable);
+            LinkedVariables combined = external.merge(inVi);
+            LinkedVariables curated = combined.removeIncompatibleWithImmutable(sourceImmutable, computeImmutable);
 
             weightedGraph.addNode(variable, curated.variables(), true);
             if (curated.isDelayed()) delaysInClustering.set(true);
@@ -94,7 +97,7 @@ public class ComputeLinkedVariables {
 
         List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables, LinkedVariables.ASSIGNED);
         List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables, LinkedVariables.DEPENDENT);
-        return new ComputeLinkedVariables(statementAnalysis, level, weightedGraph, clustersAssigned,
+        return new ComputeLinkedVariables(statementAnalysis, level, ensureLevel, weightedGraph, clustersAssigned,
                 clustersDependent, delaysInClustering.get());
     }
 
@@ -117,12 +120,6 @@ public class ComputeLinkedVariables {
         return result;
     }
 
-    public AnalysisStatus writeProperties(GroupPropertyValues groupPropertyValues) {
-        return GroupPropertyValues.PROPERTIES.stream()
-                .map(vp -> write(vp, groupPropertyValues.getMap(vp)))
-                .reduce(AnalysisStatus.DONE, AnalysisStatus::combine);
-    }
-
     public AnalysisStatus write(VariableProperty property, Map<Variable, Integer> propertyValues) {
         if (VariableProperty.CONTEXT_MODIFIED == property) {
             return writeProperty(clustersDependent, property, propertyValues);
@@ -141,19 +138,24 @@ public class ComputeLinkedVariables {
             } else {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
-                    if (level.equals(VariableInfoContainer.Level.EVALUATION)) {
-                        if (!vic.hasMerge() && !vic.hasEvaluation()) {
-                            vic.prepareEvaluationForWritingContextProperties();
-                        }
-                    } else if (!vic.hasMerge()) {
-                        vic.prepareMergeForWritingContextProperties();
+                    if (allowWriteEnsureLevel(variable, vic)) {
+                        vic.setProperty(variableProperty, summary, level);
                     }
-
-                    vic.setProperty(variableProperty, summary, level);
                 }
             }
         }
         return analysisStatus;
+    }
+
+    private boolean allowWriteEnsureLevel(Variable variable, VariableInfoContainer vic) {
+        if (vic.has(level)) {
+            return true;
+        }
+        if (ensureLevel.test(variable)) {
+          //  vic.ensureEvaluation();
+            return true;
+        }
+        return false;
     }
 
     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
@@ -169,7 +171,7 @@ public class ComputeLinkedVariables {
             Map<Variable, Integer> map = weightedGraph.links(variable);
             LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-            if (vic.has(level)) {
+            if (allowWriteEnsureLevel(variable, vic)) {
                 vic.setLinkedVariables(linkedVariables, level);
             }
         });

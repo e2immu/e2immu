@@ -366,7 +366,6 @@ class VariableInfoImpl implements VariableInfo {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
-        mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
@@ -424,26 +423,6 @@ class VariableInfoImpl implements VariableInfo {
                     NOT_A_VARIABLE_FIELD : evaluationContext.getFinalStatementTime();
             setStatementTime(statementTimeToSet);
         }
-    }
-
-
-    /*
-    Compute and set the linked variables
-     */
-    void mergeLinkedVariables(boolean existingValuesWillBeOverwritten,
-                              VariableInfo existing,
-                              List<StatementAnalysis.ConditionAndVariableInfo> merge) {
-        LinkedVariables lv;
-        if (!existingValuesWillBeOverwritten) {
-            lv = existing.getLinkedVariables();
-        } else {
-            lv = LinkedVariables.EMPTY;
-        }
-        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
-            VariableInfo vi = cav.variableInfo();
-            lv = lv.merge(vi.getLinkedVariables());
-        }
-        setLinkedVariables(lv);
     }
 
     /*

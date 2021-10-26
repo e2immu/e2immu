@@ -65,6 +65,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if ("string".equals(d.fieldInfo().name)) {
             assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+            assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
         }
     };
 
@@ -84,16 +86,17 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                // cannot be content linked to string, because string is recursively immutable
+                assertEquals("collection:0", d.variableInfo().getLinkedVariables().toString());
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
                 assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -163,8 +166,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
                 int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectCnn, parameterAnalysis.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                int expectMethodModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMethodModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         }
     };
@@ -177,9 +179,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             EvaluationResult.ChangeData expressionChange = d.findValueChange(STRING_FIELD);
             assertEquals("string", expressionChange.value().debugOutput());
 
-            // link to empty set, because String is E2Immutable
             EvaluationResult.ChangeData cd = d.findValueChange(STRING_FIELD);
-            assertEquals("", cd.linkedVariables().toString());
+            assertEquals("string:0", cd.linkedVariables().toString());
             assertEquals("string", d.evaluationResult().value().debugOutput());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {

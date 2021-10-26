@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.output.Text;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -225,16 +227,37 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return Math.max(v1, v2);
     }
 
-    public LinkedVariables removeIncompatibleWithImmutable(int immutable) {
-        if (immutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
-        if (!variables.isEmpty() && immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+    /*
+    we prune a linked variables map, based on immutable values.
+    if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
+     */
+    public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable, Function<Variable, Integer> computeImmutable) {
+        if (sourceImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
+        if (sourceImmutable == Level.DELAY) {
+            return changeToDelay();
+        }
+
+        Map<Variable, Integer> adjustedSource;
+        if (!variables.isEmpty() && sourceImmutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             // level 2+ -> remove all @Dependent
-            Map<Variable, Integer> map = variables.entrySet().stream()
+            adjustedSource = variables.entrySet().stream()
                     .filter(e -> e.getValue() != LinkedVariables.DEPENDENT)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            return new LinkedVariables(map);
+        } else {
+            adjustedSource = variables;
         }
-        return this;
+        Map<Variable, Integer> result = new HashMap<>();
+        for (Map.Entry<Variable, Integer> entry : adjustedSource.entrySet()) {
+            int targetImmutable = computeImmutable.apply(entry.getKey());
+            if (targetImmutable == Level.DELAY) {
+                result.put(entry.getKey(), DELAYED_VALUE);
+            } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                if (targetImmutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE || entry.getValue() != DEPENDENT) {
+                    result.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return new LinkedVariables(result);
     }
 
     public static boolean isAssignedOrLinked(int dependent) {

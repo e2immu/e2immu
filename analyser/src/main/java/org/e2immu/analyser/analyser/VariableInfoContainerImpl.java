@@ -259,7 +259,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl getToWrite(Level level) {
         return switch (level) {
-            case INITIAL -> previousOrInitial.getRight();
+            case INITIAL -> {
+                assert previousOrInitial.isRight() : "Have previous for " + current().variable().fullyQualifiedName();
+                yield previousOrInitial.getRight();
+            }
             case EVALUATION -> evaluation.get();
             case MERGE -> merge.get();
         };
@@ -275,7 +278,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public VariableInfo best(Level level) {
         if (level == Level.MERGE && merge != null && merge.isSet()) return merge.get();
         if ((level == Level.MERGE || level == Level.EVALUATION) && evaluation.isSet()) return evaluation.get();
-        return previousOrInitial.isLeft() ? previousOrInitial.getLeft().best(levelForPrevious) : previousOrInitial.getRight();
+        return getPreviousOrInitial();
     }
 
     @Override
@@ -333,11 +336,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
-        VariableInfoImpl variableInfo = switch (level) {
-            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();
-            case EVALUATION -> evaluation.get();
-            case MERGE -> this.merge == null || !this.merge.isSet() ? evaluation.get() : this.merge.get();
-        };
+
+        if(Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
+            // not writing on a previous
+            return;
+        }
+        VariableInfoImpl variableInfo = getToWrite(level);
 
         int current = variableInfo.getProperty(variableProperty);
         if (current == org.e2immu.analyser.model.Level.DELAY) {

@@ -859,8 +859,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     evaluationResult.someValueWasDelayed(), loopVar);
         }
 
+        Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
+            EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
+            return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
+        };
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                evaluationResult, sharedState.evaluationContext.getAnalyserContext());
+                v -> evaluationResult.changeData().containsKey(v),
+                linkedVariablesFromChangeData, sharedState.evaluationContext.getAnalyserContext());
         computeLinkedVariables.writeLinkedVariables();
 
         // 1

@@ -95,7 +95,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (d.variable() instanceof This) {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().isInitial());
-                    assertTrue(d.variableInfoContainer().hasEvaluation());
+                    assertFalse(d.variableInfoContainer().hasEvaluation());
                     assertFalse(d.variableInfoContainer().hasMerge());
                     int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));

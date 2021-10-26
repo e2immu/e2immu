@@ -100,18 +100,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
                     assertEquals(expectReturn, d.currentValue().toString());
 
-                    String expected = d.iteration() == 0 ? "this.explicitlyFinal:0,return getExplicitlyFinal:0" :
-                            "return getExplicitlyFinal:0";
-                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
+                    // self ref only
+                    assertEquals("return getExplicitlyFinal:0", d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-
-                    /*
-                    not involved, because in iteration 1, not linked to the field anymore !
-                     */
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     return;
                 }
             }
