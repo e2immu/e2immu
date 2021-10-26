@@ -24,6 +24,7 @@ import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
@@ -38,6 +39,20 @@ public interface VariableInfo {
      * @return null when not yet set
      */
     LinkedVariables getLinkedVariables();
+
+    // for testing only
+    default LinkedVariables getLinked1Variables() {
+        return new LinkedVariables(getLinkedVariables().variables().entrySet().stream()
+                .filter(e -> e.getValue() >= LinkedVariables.INDEPENDENT1)
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    // for testing only
+    default LinkedVariables getStaticallyAssignedVariables() {
+        return new LinkedVariables(getLinkedVariables().variables().entrySet().stream()
+                .filter(e -> e.getValue() == LinkedVariables.ASSIGNED)
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
 
     default boolean linkedVariablesIsSet() {
         return !getLinkedVariables().isDelayed();

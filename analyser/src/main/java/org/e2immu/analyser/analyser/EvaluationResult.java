@@ -573,11 +573,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
       we use a null value for inScope to indicate a delay
        */
-        public void link(Variable inArgument, Variable inScope, int level, boolean delayed) {
+        public void link(Variable inArgument, Variable inScope, int level) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(inArgument);
             LinkedVariables linked = inScope == null ? LinkedVariables.DELAYED_EMPTY :
-                    new LinkedVariables(Map.of(inScope, level), delayed);
+                    new LinkedVariables(Map.of(inScope, level));
             if (ecd == null) {
                 newEcd = new ChangeData(null, false, false, Set.of(), linked, Map.of());
             } else {

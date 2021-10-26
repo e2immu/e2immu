@@ -595,7 +595,7 @@ public class JavaUtil extends AnnotatedAPI {
     @UtilityClass
     interface Collections$ {
 
-        <T> boolean addAll(@NotNull @Modified Collection<? super T> c, @NotModified T... elements);
+        <T> boolean addAll(@NotNull @Modified @Independent1(parameters = {1}) Collection<? super T> c, @NotModified T... elements);
     }
 
     // dependent, because of entrySet, which has an iterator with remove()

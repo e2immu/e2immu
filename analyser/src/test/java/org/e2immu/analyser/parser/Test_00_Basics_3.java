@@ -105,8 +105,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                             assertEquals("instance type Basics_3", d.currentValue().toString());
                         }
                     }
-                    LinkedVariables expectedLinked1 = d.iteration() == 0 ? LinkedVariables.DELAYED_EMPTY : LinkedVariables.EMPTY;
-                    assertEquals(expectedLinked1, d.variableInfo().getLinked1Variables());
+                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                 }
                 if (OUT.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
@@ -150,7 +149,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         } else {
                             assertEquals(1, d.variableInfo().getStatementTime());
                         }
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
@@ -196,7 +195,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
@@ -224,7 +223,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
                     assertEquals(expectS, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -233,7 +230,7 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void testReturnType() {
-        Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType, List.of());
+        Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType, LinkedVariables.EMPTY);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo.asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = new UnknownExpression(boxed, "return value");
         Expression inline = inline(c, a, b);

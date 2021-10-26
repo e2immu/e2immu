@@ -83,7 +83,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                     assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial().getProperty(VariableProperty.IMMUTABLE));
-                    assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
+                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
                     int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;

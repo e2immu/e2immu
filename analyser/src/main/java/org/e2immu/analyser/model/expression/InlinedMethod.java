@@ -503,11 +503,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
-            return evaluationContext.getStaticallyAssignedVariables(variable, statementTime);
-        }
-
-        @Override
         public boolean variableIsDelayed(Variable variable) {
             return false; // nothing can be delayed here
         }

@@ -222,6 +222,22 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
     }
 
+    @Test
+    public void testArrayListAddIndex() {
+        TypeInfo list = typeContext.getFullyQualified(ArrayList.class);
+        TypeAnalysis typeAnalysis = list.typeAnalysis.get();
+
+        MethodInfo add = list.findUniqueMethod("add", 2);
+        MethodAnalysis addAnalysis = add.methodAnalysis.get();
+
+        assertEquals(Level.FALSE, addAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+
+        ParameterAnalysis paramAnalysis = add.parameterAnalysis(1);
+
+        // independent, because the method is @NotModified
+        assertEquals(MultiLevel.INDEPENDENT, paramAnalysis.getProperty(VariableProperty.INDEPENDENT));
+    }
+
     // Collection.toArray(T[] array) returns T[] array
     @Test
     public void testArrayAsParameterAndReturnType() {

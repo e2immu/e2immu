@@ -29,7 +29,7 @@ import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,7 +67,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 assertEquals(1, tv.getLinkedVariables().variables().size());
             }
             if (iteration > 1) {
-                Set<Variable> variables = d.getReturnAsVariable().getLinkedVariables().variables();
+                Map<Variable, Integer> variables = d.getReturnAsVariable().getLinkedVariables().variables();
                 assertEquals(1, variables.size());
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 assertEquals(MultiLevel.FALSE, independent);

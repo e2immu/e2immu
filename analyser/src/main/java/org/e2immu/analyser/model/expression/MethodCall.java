@@ -346,30 +346,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // precondition
         EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
 
-        // linked1 towards the scope
-        IsVariableExpression scopeVariable;
+
         boolean objectIsDelayed = evaluationContext.isDelayed(objectValue);
-        if ((scopeVariable = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
-            LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
-            builder.registerLinked1(scopeVariable.variable(), linked1Scope.delay(objectIsDelayed));
-        } else {
-            LinkedVariables linkedVariables = evaluationContext.linkedVariables(objectValue);
-            LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
-            LinkedVariables combined = linkedVariables.merge(linked1Scope).delay(objectIsDelayed);
-            for (Variable variable : linkedVariables.variables()) {
-                builder.registerLinked1(variable, combined);
-            }
-        }
+        LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
+        LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
 
-        // FIXME HACK
-        IsVariableExpression ve0, ve2;
-        if ("arraycopy".equals(methodInfo.name)
-                && (ve0 = parameterExpressions.get(0).asInstanceOf(IsVariableExpression.class)) != null
-                && (ve2 = parameterExpressions.get(2).asInstanceOf(IsVariableExpression.class)) != null) {
-            boolean isDelayed = ve0 instanceof DelayedVariableExpression || ve2 instanceof DelayedVariableExpression;
-            builder.link(ve2.variable(), ve0.variable(), LinkedVariables.INDEPENDENT1, isDelayed);
-        }
+        linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
+            int combined = objectIsDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, level2);
+            builder.link(v, v2, combined);
+        }));
 
+        linksBetweenParameters(builder, evaluationContext);
 
         // before we return, increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
@@ -446,6 +433,43 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
+    }
+
+    /*
+    not computed, only contracted!
+     */
+    public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationContext evaluationContext) {
+        // key is dependent on values, but only if all of them are variable expressions
+        Map<Integer, Map<Integer, Integer>> crossLinks = methodInfo.crossLinks(evaluationContext.getAnalyserContext());
+        if (crossLinks != null) {
+            MethodInspection methodInspection = methodInfo.methodInspection.get();
+            crossLinks.forEach((source, v) -> v.forEach((target, level) -> {
+                IsVariableExpression vSource = parameterExpressions.get(source).asInstanceOf(IsVariableExpression.class);
+                if (vSource != null) {
+                    boolean targetIsVarArgs = target == methodInspection.getParameters().size() - 1 &&
+                            methodInspection.getParameters().get(target).parameterInspection.get().isVarArgs();
+                    linksBetweenParameters(builder, evaluationContext, vSource, target, level);
+                    if (targetIsVarArgs) {
+                        for (int i = target + 1; i < parameterExpressions.size(); i++) {
+                            linksBetweenParameters(builder, evaluationContext, vSource, i, level);
+                        }
+                    }
+                }
+            }));
+        }
+    }
+
+    private void linksBetweenParameters(EvaluationResult.Builder builder,
+                                        EvaluationContext evaluationContext,
+                                        IsVariableExpression source,
+                                        int target,
+                                        int level) {
+        Expression expression = parameterExpressions.get(target);
+        LinkedVariables targetLinks = expression.linkedVariables(evaluationContext);
+        boolean isDelayed = source.isDelayed(evaluationContext) || expression.isDelayed(evaluationContext);
+        targetLinks.variables().forEach((v, l) ->
+                builder.link(source.variable(), v,
+                        isDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, l)));
     }
 
     private boolean checkFinalizer(EvaluationContext evaluationContext,
@@ -652,7 +676,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
         }
 
-        LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
+        LinkedVariables linkedVariables = currentCall.linked1VariablesScope(evaluationContext);
         VariableExpression ve;
         if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
@@ -693,35 +717,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value();
-    }
-
-    /*
-    Modifying method, b.method(c,d)
-
-    After this operation, the generic instance b can be linked to c and d, but only when the parameters are @Modified
-
-    Null value means delays, as per convention.
-     */
-    private static LinkedVariables variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext,
-                                                                                   MethodInfo methodInfo,
-                                                                                   List<Expression> parameterValues) {
-        Set<Variable> result = new HashSet<>();
-        int i = 0;
-        int n = methodInfo.methodInspection.get().getParameters().size();
-        boolean delayed = false;
-        for (Expression p : parameterValues) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(Math.min(n - 1, i));
-            int modified = evaluationContext.getAnalyserContext()
-                    .getParameterAnalysis(parameterInfo).getProperty(VariableProperty.MODIFIED_VARIABLE);
-            if (modified != Level.FALSE) {
-                if (modified == Level.DELAY) delayed = true;
-                LinkedVariables cd = evaluationContext.linkedVariables(p);
-                if (cd.isDelayed()) delayed = true;
-                result.addAll(cd.variables());
-            }
-            i++;
-        }
-        return new LinkedVariables(result, delayed);
     }
 
     private int notNullRequirementOnScope(int notNullRequirement) {
@@ -916,7 +911,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity == Level.TRUE) {
             return parameterExpressions.get(0).linkedVariables(evaluationContext);
         }
-        boolean delayed = identity == Level.DELAY;
 
         // RULE 3: in a factory method, the result links to the parameters, directly
         MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);

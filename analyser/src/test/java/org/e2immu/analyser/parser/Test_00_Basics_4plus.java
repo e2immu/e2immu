@@ -553,7 +553,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     }
                 }
             }

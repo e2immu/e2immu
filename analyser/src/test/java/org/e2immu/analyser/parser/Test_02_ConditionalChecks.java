@@ -313,7 +313,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (O5.equals(d.variableName())) {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                         assertEquals("nullable instance type Object/*@Identity*/", d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -397,7 +397,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     assertTrue(d.haveMarkRead(O5));
                     Variable o5 = d.evaluationResult().changeData().keySet().stream().filter(v -> v.simpleName().equals("o")).findFirst().orElseThrow();
-                    assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).staticallyAssignedVariables());
+                    assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).linkedVariables());
                 }
                 if ("2".equals(d.statementId())) {
                     assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));

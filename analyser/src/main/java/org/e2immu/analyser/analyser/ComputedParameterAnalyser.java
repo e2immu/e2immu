@@ -138,15 +138,16 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         if (lastStatement != null) {
             VariableInfo vi = lastStatement.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
             if (vi != null) {
-                if (!vi.linked1VariablesIsSet()) {
+                if (!vi.linkedVariablesIsSet()) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index);
                     return DELAYS;
                 }
-                List<FieldReference> fields = vi.getLinked1Variables().variables().stream()
+                List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(v -> v instanceof FieldReference)
                         .map(v -> (FieldReference) v).toList();
+                // FIXME check at least INDEP_1
                 if (!fields.isEmpty()) {
                     // so we know the parameter is content linked to some fields
                     // now the value of independence (from 1 to infinity) is determined by the size of the

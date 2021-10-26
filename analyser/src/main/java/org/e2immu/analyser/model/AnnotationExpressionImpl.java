@@ -97,6 +97,21 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
+    public int[] extractIntArray(String fieldName) {
+        for (Expression expression : expressions) {
+            if (expression instanceof MemberValuePair mvp) {
+                if (mvp.name().equals(fieldName)) {
+                    if (mvp.value() instanceof ArrayInitializer ai) {
+                        return Arrays.stream(ai.multiExpression.expressions())
+                                .mapToInt(e -> ((IntConstant) e).constant()).toArray();
+                    } else throw new UnsupportedOperationException();
+                }
+            }
+        }
+        return new int[0];
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T extract(String fieldName, T defaultValue) {
         for (Expression expression : expressions) {

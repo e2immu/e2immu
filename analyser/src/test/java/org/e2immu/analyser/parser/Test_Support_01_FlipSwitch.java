@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
@@ -59,15 +60,15 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     }
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     }
                 }
             }

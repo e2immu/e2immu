@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+
 /*
 New encoding 20211004:
 first 3 bits: false, eventual, effective
@@ -270,6 +272,9 @@ public class MultiLevel {
     }
 
     public static int fromIndependentToLinkedVariableLevel(int independent) {
-        return level(independent) + 1;
+        assert independent < MultiLevel.INDEPENDENT; // cannot be linked
+        if(independent == MultiLevel.DEPENDENT) return LinkedVariables.DEPENDENT;
+        if(independent == MultiLevel.INDEPENDENT_1) return LinkedVariables.INDEPENDENT1;
+        return level(independent) + 2;
     }
 }

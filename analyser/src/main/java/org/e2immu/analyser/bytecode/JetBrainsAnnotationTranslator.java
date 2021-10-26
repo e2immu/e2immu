@@ -15,16 +15,20 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.model.Annotation;
+import org.e2immu.analyser.annotationxml.model.Value;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class JetBrainsAnnotationTranslator {
@@ -58,6 +62,29 @@ public class JetBrainsAnnotationTranslator {
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
         TypeInfo typeInfo = e2ImmuAnnotationExpressions.get(annotation.name());
         MemberValuePair contractExpression = new MemberValuePair("contract", new BooleanConstant(primitives, true));
-        return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
+        if (annotation.values().isEmpty()) {
+            return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
+        }
+        List<Expression> expressions = new ArrayList<>();
+        expressions.add(contractExpression);
+        for (Value value : annotation.values()) {
+            expressions.add(new MemberValuePair(value.name, convert(value.val)));
+        }
+        return new AnnotationExpressionImpl(typeInfo, expressions);
+    }
+
+    private Expression convert(String string) {
+        if ("true".equals(string)) return new BooleanConstant(primitives, true);
+        if ("false".equals(string)) return new BooleanConstant(primitives, false);
+        if (string.length() > 2 && string.charAt(0) == '{' && string.charAt(string.length() - 1) == '}') {
+            String[] splitComma = string.substring(1, string.length() - 1).split(",");
+            return new ArrayInitializer(InspectionProvider.DEFAULT, Arrays.stream(splitComma).map(this::convert).toList());
+        }
+        try {
+            return new IntConstant(primitives, Integer.parseInt(string));
+        } catch (NumberFormatException nfe) {
+            // that's ok
+        }
+        return new StringConstant(primitives, string);
     }
 }

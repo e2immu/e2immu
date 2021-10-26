@@ -32,6 +32,9 @@ public interface FieldAnalysis extends Analysis {
     // or parameters
     LinkedVariables getLinkedVariables();
 
+    // for testing only
+    default LinkedVariables getLinked1Variables() { throw new UnsupportedOperationException(); }
+
     Boolean isTransparentType();
 
     FieldInfo getFieldInfo();

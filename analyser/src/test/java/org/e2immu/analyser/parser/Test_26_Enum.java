@@ -220,7 +220,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("i$2".equals(d.variableName())) {
                 if ("2.0.0.0.0".equals(d.statementId())) {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                 }
             }
             if ("i$2$2-E".equals(d.variableName())) {

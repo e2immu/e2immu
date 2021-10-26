@@ -41,6 +41,13 @@ public class ArrayInitializer extends ElementImpl implements Expression {
     private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
+    public ArrayInitializer(InspectionProvider inspectionProvider, List<Expression> values) {
+        super(Identifier.generate());
+        this.multiExpression = MultiExpression.create(values);
+        this.commonType = multiExpression.commonType(inspectionProvider);
+        this.inspectionProvider = inspectionProvider;
+    }
+
     public ArrayInitializer(InspectionProvider inspectionProvider,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
@@ -122,13 +129,13 @@ public class ArrayInitializer extends ElementImpl implements Expression {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if(multiExpression.isEmpty()) {
+        if (multiExpression.isEmpty()) {
             return switch (variableProperty) {
-                case EXTERNAL_IMMUTABLE, IMMUTABLE ->  MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT;
                 case CONSTANT, CONTAINER -> Level.TRUE;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                default -> throw new UnsupportedOperationException("Property "+variableProperty);
+                default -> throw new UnsupportedOperationException("Property " + variableProperty);
             };
         }
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {

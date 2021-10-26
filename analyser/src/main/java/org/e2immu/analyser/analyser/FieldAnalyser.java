@@ -1050,7 +1050,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)) // especially local variable copies of the field itself
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, LinkedVariables::mergeValues));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, LinkedVariables::bestValue));
         LinkedVariables linkedVariables = new LinkedVariables(map);
         fieldAnalysis.linkedVariables.set(linkedVariables);
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fqn, linkedVariables);

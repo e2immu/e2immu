@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -96,7 +95,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinked1Variables());
+                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                 }
             }
         };

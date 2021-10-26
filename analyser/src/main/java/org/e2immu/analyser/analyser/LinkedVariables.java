@@ -208,9 +208,26 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return variables.get(variable);
     }
 
-    public static int mergeValues(int v1, int v2) {
+    public static int bestValue(int v1, int v2) {
         assert v1 > DELAYED_VALUE;
         assert v2 > DELAYED_VALUE;
         return Math.min(v1, v2);
+    }
+
+    public static int worstValue(int v1, int v2) {
+        if (v1 == DELAYED_VALUE || v2 == DELAYED_VALUE) return DELAYED_VALUE;
+        return Math.max(v1, v2);
+    }
+
+    public LinkedVariables removeIncompatibleWithImmutable(int immutable) {
+        if (immutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
+        if (!variables.isEmpty() && immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            // level 2+ -> remove all @Dependent
+            Map<Variable, Integer> map = variables.entrySet().stream()
+                    .filter(e -> e.getValue() != LinkedVariables.DEPENDENT)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            return new LinkedVariables(map);
+        }
+        return this;
     }
 }

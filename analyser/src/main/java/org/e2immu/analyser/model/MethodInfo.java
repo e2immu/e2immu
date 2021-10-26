@@ -16,21 +16,17 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 import org.e2immu.support.SetOnce;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -286,5 +282,33 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             return methodInspection.isPublic(inspectionProvider);
         }
         return true; // by hand, java parsing
+    }
+
+    /*
+     The one method dealing with the parameters={} parameter in @Independent1, @Dependent on parameters
+     */
+    public Map<Integer, Map<Integer, Integer>> crossLinks(InspectionProvider inspectionProvider) {
+        List<ParameterInfo> parameters = inspectionProvider.getMethodInspection(this).getParameters();
+        if (parameters.size() == 0) return Map.of();
+        Map<Integer, Map<Integer, Integer>> map = new HashMap<>();
+        for (ParameterInfo parameterInfo : parameters) {
+            ParameterInspection pi = parameterInfo.parameterInspection.get();
+            Optional<AnnotationExpression> opt = pi.getAnnotations().stream()
+                    .filter(a -> Independent1.class.getCanonicalName().equals(a.typeInfo().fullyQualifiedName) ||
+                            Dependent.class.getCanonicalName().equals(a.typeInfo().fullyQualifiedName))
+                    .findFirst();
+            if (opt.isPresent()) {
+                AnnotationExpression ae = opt.get();
+                int[] refs = ae.extractIntArray("parameters");
+                if (refs.length > 0) {
+                    int value = ae.typeInfo().simpleName.equals("Dependent") ? LinkedVariables.DEPENDENT : LinkedVariables.INDEPENDENT1;
+                    for (int r : refs) {
+                        Map<Integer, Integer> subMap = map.computeIfAbsent(parameterInfo.index, i -> new HashMap<>());
+                        subMap.put(r, value);
+                    }
+                }
+            }
+        }
+        return map;
     }
 }

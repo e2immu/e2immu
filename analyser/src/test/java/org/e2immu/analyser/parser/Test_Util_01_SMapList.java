@@ -16,13 +16,11 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -166,7 +164,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             if ("change$1".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     assertEquals("true", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                 }
             }
         }

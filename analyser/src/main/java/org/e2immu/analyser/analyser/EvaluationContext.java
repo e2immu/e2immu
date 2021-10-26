@@ -240,10 +240,6 @@ public interface EvaluationContext extends DelayDebugger {
         return getAnalyserContext().getMethodAnalysis(methodInfo);
     }
 
-    default LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
-        return null;
-    }
-
     default boolean variableIsDelayed(Variable variable) {
         return false;
     }

@@ -33,6 +33,8 @@ public interface AnnotationExpression {
 
     <T> T extract(String fieldName, T defaultValue);
 
+    int[] extractIntArray(String parameters);
+
     AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
 
     UpgradableBooleanMap<TypeInfo> typesReferenced();
