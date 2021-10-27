@@ -293,7 +293,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-            if (notNullValue < notNullRequired) { // also do delayed values
+          //  if (notNullValue < notNullRequired) { // also do delayed values
                 // so intrinsically we can have null.
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
@@ -301,7 +301,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE); // so we can raise an error
                 }
                 setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-            }
+          //  }
 
         }
 

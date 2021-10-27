@@ -15,16 +15,20 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_20 extends CommonTestRunner {
     public Test_00_Basics_20() {
@@ -33,7 +37,96 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     @Test
     public void test_20() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("getFirstC1".equals(d.methodInfo().name)) {
+                EvaluationResult.ChangeData cd = d.findValueChangeByToString("list");
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cd.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
+                String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:2";
+                assertEquals(expectedLv, cdFirst.linkedVariables().toString());
+            }
+            if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+                EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
+                String expectedLv = d.iteration() == 0 ? "list:-1" : "list:1";
+                assertEquals(expectedLv, ci.linkedVariables().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getFirstC1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:list>" : "instance type List<T>";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    String expectLv = d.iteration() == 0 ? "this.list:0" : "this.list:0,return getFirstC1:2";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0" : "this.list:2,return getFirstC1:0";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("test1".equals(d.methodInfo().name)) {
+                if ("list".equals(d.variableName()) && "3".equals(d.statementId())) {
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
+                    assertEquals("new C1<>(list)", d.currentValue().toString());
+
+                    // delay in iteration 1 because we need to know ci's IMMUTABLE property
+                    String expectLv = d.iteration() <= 1 ? "ci:0" : "ci:0,i:2,list:1";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
+                    assertEquals("new C1<>(new ArrayList<>(list))", d.currentValue().toString());
+
+                    String expectLv = d.iteration() <= 1 ? "ci2:0" : "ci2:0,ci:2,i:2,list:2";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("list".equals(d.fieldInfo().name) && "C1".equals(d.fieldInfo().owner.simpleName)) {
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("C1".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
+            if ("C2".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("C1".equals(d.typeInfo().simpleName)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
         testClass("Basics_20", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

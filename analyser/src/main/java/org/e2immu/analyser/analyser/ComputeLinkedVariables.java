@@ -19,6 +19,8 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,6 +44,7 @@ Hold:
 
  */
 public class ComputeLinkedVariables {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinkedVariables.class);
 
     private final VariableInfoContainer.Level level;
     private final StatementAnalysis statementAnalysis;
@@ -90,8 +93,9 @@ public class ComputeLinkedVariables {
             LinkedVariables inVi = vi.getLinkedVariables();
             LinkedVariables combined = external.merge(inVi);
             LinkedVariables curated = combined.removeIncompatibleWithImmutable(sourceImmutable, computeImmutable);
+            LinkedVariables withoutDelays = curated.removeDelays();
 
-            weightedGraph.addNode(variable, curated.variables(), true);
+            weightedGraph.addNode(variable, withoutDelays.variables(), true);
             if (curated.isDelayed()) delaysInClustering.set(true);
         });
 
@@ -122,8 +126,10 @@ public class ComputeLinkedVariables {
 
     public AnalysisStatus write(VariableProperty property, Map<Variable, Integer> propertyValues) {
         if (VariableProperty.CONTEXT_MODIFIED == property) {
+            if (delaysInClustering) return AnalysisStatus.DELAYS;
             return writeProperty(clustersDependent, property, propertyValues);
         }
+        // there cannot be a delay on assignments
         return writeProperty(clustersAssigned, property, propertyValues);
     }
 
@@ -139,7 +145,12 @@ public class ComputeLinkedVariables {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
                     if (allowWriteEnsureLevel(variable, vic)) {
-                        vic.setProperty(variableProperty, summary, level);
+                        try {
+                            vic.setProperty(variableProperty, summary, level);
+                        } catch (IllegalStateException ise) {
+                            LOGGER.error("Current cluster: {}", cluster);
+                            throw ise;
+                        }
                     }
                 }
             }
@@ -152,8 +163,7 @@ public class ComputeLinkedVariables {
             return true;
         }
         if (ensureLevel.test(variable)) {
-          //  vic.ensureEvaluation();
-            return true;
+            throw new UnsupportedOperationException("Implement!");
         }
         return false;
     }

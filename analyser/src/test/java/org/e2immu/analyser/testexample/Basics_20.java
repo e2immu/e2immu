@@ -52,7 +52,7 @@ public class Basics_20 {
             return list;
         }
 
-        public T getFirst() {
+        public T getFirstC1() {
             return list.get(0);
         }
     }
@@ -65,6 +65,7 @@ public class Basics_20 {
         C1<I> ci = new C1<>(list); // ci linked0 to list
         C1<I> ci2 = new C1<>(new ArrayList<>(list));
         // ci2 linked0 to nAL, nAL linked1 to list -> ci2 linked1 to list
+        System.out.println(ci + ", " + ci2);
     }
 
     // T is transparent, but List<T> is not
@@ -82,7 +83,7 @@ public class Basics_20 {
         }
 
         @Independent1
-        public T getFirst() {
+        public T getFirstC2() {
             return list.get(0);
         }
     }
@@ -94,5 +95,6 @@ public class Basics_20 {
         list.add(i);
         C2<I> ci = new C2<>(list); // ci linked1 to list
         C2<I> ci2 = new C2<>(new C1<>(list).getList()); // linked1, linked0 -> linked1
+        System.out.println(ci + ", " + ci2);
     }
 }

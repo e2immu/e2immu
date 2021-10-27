@@ -72,6 +72,10 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return new LinkedVariables(Map.of(variable, value), value == DELAYED_VALUE);
     }
 
+    public static boolean isNotIndependent(int assignedOrLinked) {
+        return assignedOrLinked >= 0 && assignedOrLinked < NO_LINKING;
+    }
+
     public LinkedVariables mergeDelay(LinkedVariables other) {
         HashMap<Variable, Integer> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
@@ -130,8 +134,6 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     @Override
     public String toString() {
         if (this == EMPTY) return "";
-        if (isDelayed) return DELAY_STRING;
-
         return variables.entrySet().stream().map(e ->
                         e.getKey().output(Qualification.EMPTY).add(Symbol.COLON).add(new Text(e.getValue() + "")))
                 .sorted()
@@ -140,19 +142,14 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public String toSimpleString() {
         if (this == EMPTY) return "";
-        return (isDelayed ? "*" : "") + variables.entrySet().stream()
+        return variables.entrySet().stream()
                 .map(e -> e.getKey().simpleName() + ":" + e.getValue())
                 .sorted()
                 .collect(Collectors.joining(","));
     }
 
     public String toDetailedString() {
-        if (this == EMPTY) return "";
-
-        return (isDelayed ? "*" : "") + variables.entrySet().stream().map(e ->
-                        e.getKey().output(Qualification.EMPTY).add(Symbol.COLON).add(new Text(e.getValue() + "")))
-                .sorted()
-                .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
+        return toString();
     }
 
     @Override
@@ -179,6 +176,12 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public boolean contains(Variable variable) {
         return variables.containsKey(variable);
+    }
+
+    public LinkedVariables removeDelays() {
+        return new LinkedVariables(variables.entrySet().stream()
+                .filter(e -> e.getValue() >= 0)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     public Stream<Variable> variablesAssignedOrDependent() {
@@ -212,6 +215,12 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return new LinkedVariables(map);
     }
 
+    public LinkedVariables changeAllToDelay() {
+        Map<Variable, Integer> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> DELAYED_VALUE));
+        return new LinkedVariables(map);
+    }
+
     public Integer value(Variable variable) {
         return variables.get(variable);
     }
@@ -232,16 +241,17 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
     public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable, Function<Variable, Integer> computeImmutable) {
-        if (sourceImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) return LinkedVariables.EMPTY;
         if (sourceImmutable == Level.DELAY) {
-            return changeToDelay();
+            return changeToDelay(); // but keep the 0
         }
 
         Map<Variable, Integer> adjustedSource;
         if (!variables.isEmpty() && sourceImmutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             // level 2+ -> remove all @Dependent
+            boolean recursivelyImmutable = sourceImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             adjustedSource = variables.entrySet().stream()
-                    .filter(e -> e.getValue() != LinkedVariables.DEPENDENT)
+                    .filter(e -> recursivelyImmutable ? e.getValue() == ASSIGNED :
+                            e.getValue() != DEPENDENT)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } else {
             adjustedSource = variables;
@@ -254,6 +264,11 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
             } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
                 if (targetImmutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE || entry.getValue() != DEPENDENT) {
                     result.put(entry.getKey(), entry.getValue());
+                }
+            } else {
+                // targetImmutable is @ERImmutable
+                if (entry.getValue() == ASSIGNED) {
+                    result.put(entry.getKey(), ASSIGNED);
                 }
             }
         }

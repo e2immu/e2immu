@@ -101,11 +101,13 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     assertEquals(expectReturn, d.currentValue().toString());
 
                     // self ref only
-                    assertEquals("return getExplicitlyFinal:0", d.variableInfo().getLinkedVariables().toString());
+                    String expected = d.iteration() == 0 ? "this.explicitlyFinal:0,return getExplicitlyFinal:0" : "return getExplicitlyFinal:0";
+                    assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     return;
                 }
             }

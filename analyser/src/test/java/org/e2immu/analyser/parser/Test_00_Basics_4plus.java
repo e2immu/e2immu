@@ -174,9 +174,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test3".equals(d.methodInfo().name)) {
                 if ("v1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("this.field", d.variableInfo().getStaticallyAssignedVariables().toString());
                         String expectValue = d.iteration() == 0 ? "<f:field>" : FIELD_0;
                         assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("this.field:0,v1:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {

@@ -63,11 +63,11 @@ public class EvaluateMethodCall {
             return builder.setExpression(methodValue).build();
         }
 
-        LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
+        LinkedVariables linkedVariablesForDelay = objectValue.linkedVariables(evaluationContext).changeAllToDelay();
 
         // no value (method call on field that does not have effective value yet)
         if (evaluationContext.isDelayed(objectValue)) {
-            return delay(builder, methodInfo, concreteReturnType, linkedVariables);
+            return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay);
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
@@ -117,7 +117,7 @@ public class EvaluateMethodCall {
         }
 
         Expression evaluationOfEquals = computeEvaluationOfEquals(methodInfo, concreteReturnType, objectValue,
-                linkedVariables, parameters);
+                linkedVariablesForDelay, parameters);
         if (evaluationOfEquals != null) {
             return builder.setExpression(evaluationOfEquals).build();
         }
@@ -152,14 +152,14 @@ public class EvaluateMethodCall {
 
         // @Identity as method annotation
         Expression identity = computeIdentity(methodInfo, concreteReturnType,
-                methodAnalysis, parameters, linkedVariables, evaluationContext);
+                methodAnalysis, parameters, linkedVariablesForDelay, evaluationContext);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(methodInfo, concreteReturnType, methodAnalysis, objectValue, linkedVariables);
+        Expression fluent = computeFluent(methodInfo, concreteReturnType, methodAnalysis, objectValue, linkedVariablesForDelay);
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
@@ -187,7 +187,7 @@ public class EvaluateMethodCall {
             } else {
                 // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
                 log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, linkedVariables);
+                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay);
             }
         }
 
@@ -197,14 +197,14 @@ public class EvaluateMethodCall {
             case Level.TRUE -> {
                 int notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
                 if (notNull == Level.DELAY) {
-                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
+                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay);
                 }
                 yield NewObject.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
                         concreteReturnType, notNull);
             }
-            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables);
+            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay);
         };
         return builder.setExpression(methodValue).build();
     }

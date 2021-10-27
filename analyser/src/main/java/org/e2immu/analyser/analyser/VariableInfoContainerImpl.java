@@ -347,7 +347,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (current == org.e2immu.analyser.model.Level.DELAY) {
             if (value != org.e2immu.analyser.model.Level.DELAY) variableInfo.setProperty(variableProperty, value);
         } else if (current != value && (current < value || failWhenTryingToWriteALowerValue)) {
-            throw new UnsupportedOperationException("Trying to write a different value " + value +
+            throw new IllegalStateException("Trying to write a different value " + value +
                     ", already have " + current + ", property " + variableProperty +
                     ", variable " + current().variable().fullyQualifiedName());
         }

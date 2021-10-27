@@ -516,7 +516,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                objectValue.linkedVariables(evaluationContext)));
+                objectValue.linkedVariables(evaluationContext).changeAllToDelay()));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();

@@ -244,8 +244,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private static Set<VariableProperty> propertiesToCopy(int assignedOrLinked) {
         if (assignedOrLinked == ASSIGNED) return PROPERTIES;
         if (assignedOrLinked == LinkedVariables.DEPENDENT) return Set.of(MODIFIED_OUTSIDE_METHOD);
-        if (assignedOrLinked == NO_LINKING) return Set.of();
-        throw new UnsupportedOperationException();
+        return Set.of();
     }
 
     private AnalysisStatus analyseFieldAssignments(SharedState sharedState) {
@@ -314,15 +313,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
                 // FIXME check this code!
 
-                if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isAssignedOrLinked(assignedOrLinked))) {
+                if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
                     int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, true);
                     if (immutable == Level.DELAY) {
                         delays = true;
                     } else {
                         int levelImmutable = MultiLevel.level(immutable);
                         int typeIndependent;
-                        if (levelImmutable < 2) {
-                            typeIndependent = MultiLevel.DEPENDENT;
+                        if (levelImmutable <= LEVEL_1_IMMUTABLE) {
+                            if(assignedOrLinked <= LinkedVariables.DEPENDENT) {
+                                typeIndependent = MultiLevel.DEPENDENT;
+                            } else {
+                                typeIndependent = INDEPENDENT_1;
+                            }
                         } else {
                             typeIndependent = MultiLevel.independentCorrespondingToImmutableLevel(levelImmutable);
                         }

@@ -210,7 +210,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
                     assertEquals("input2", d.currentValue().toString());
-                    assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input2:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -220,7 +220,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
                     assertEquals(expectS, d.currentValue().toString());
-                     assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getS:0,s$0,this.s:0", d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -318,7 +318,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
