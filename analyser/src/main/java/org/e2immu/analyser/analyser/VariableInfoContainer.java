@@ -63,22 +63,11 @@ public interface VariableInfoContainer {
 
     void newVariableWithoutValue();
 
-    /*
-     everything stays the same, except that we will write statically assigned variables,
-     and a bit later CONTEXT_NOT_NULL, CONTEXT_MODIFIED
-     */
-    void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables);
-
-    /*
-    everything stays the same, except that we will write CONTEXT_NOT_NULL, CONTEXT_MODIFIED
-     */
-    void prepareEvaluationForWritingContextProperties();
-
-    void prepareMergeForWritingContextProperties();
-
     boolean isPrevious();
 
     boolean has(Level level);
+
+    void ensureLevelForPropertiesLinkedVariables(Level level);
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {

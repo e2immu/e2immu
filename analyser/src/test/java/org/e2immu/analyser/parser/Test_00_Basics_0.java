@@ -101,7 +101,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     assertEquals(expectReturn, d.currentValue().toString());
 
                     // self ref only
-                    String expected = d.iteration() == 0 ? "this.explicitlyFinal:0,return getExplicitlyFinal:0" : "return getExplicitlyFinal:0";
+                    String expected = d.iteration() == 0 ? "return getExplicitlyFinal:0,this.explicitlyFinal:0" : "return getExplicitlyFinal:0";
                     assertEquals(expected, d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;

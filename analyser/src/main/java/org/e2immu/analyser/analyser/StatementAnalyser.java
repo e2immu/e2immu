@@ -863,8 +863,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
         };
+        Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
+                .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                v -> evaluationResult.changeData().containsKey(v),
+                v -> true,
+                reassigned,
                 linkedVariablesFromChangeData, sharedState.evaluationContext.getAnalyserContext());
         computeLinkedVariables.writeLinkedVariables();
 

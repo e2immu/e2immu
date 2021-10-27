@@ -60,7 +60,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (FIELD1.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
-                    assertEquals("this.f1:0,p0:0,s1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("p0:0,s1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
                 }
@@ -95,7 +95,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (d.variable() instanceof This) {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().isInitial());
-                    assertFalse(d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertFalse(d.variableInfoContainer().hasMerge());
                     int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
@@ -113,7 +113,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (FIELD1.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isRead());
 
-                assertEquals("this.f1:0,return getF1:0", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("return getF1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString());
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expectValue, d.currentValue().toString());
@@ -129,7 +129,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (GET_F1_RETURN.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isAssigned());
 
-                assertEquals("this.f1:0,return getF1:0", d.variableInfo().getLinkedVariables().toString()); // without p0
+                assertEquals("return getF1:0,this.f1:0", d.variableInfo().getLinkedVariables().toString()); // without p0
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());

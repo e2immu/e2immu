@@ -221,7 +221,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
-                        assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
+                        assertEquals("*", d.variableInfo().getLinkedVariables().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
                 }
@@ -247,7 +247,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
-                        assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
+                        assertEquals("*", d.variableInfo().getLinkedVariables().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
                     String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.set3";
@@ -628,7 +628,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                     if (d.iteration() == 0) {
                         assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                        assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
+                        assertEquals("*", d.variableInfo().getLinkedVariables().toString());
                     } else {
                         assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
                     }

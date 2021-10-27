@@ -953,7 +953,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                linkedVariablesMap::containsKey,
+                v -> true,
+                Set.of(),
                 linkedVariablesFromBlocks, evaluationContext.getAnalyserContext());
         computeLinkedVariables.writeLinkedVariables();
 

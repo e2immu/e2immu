@@ -219,7 +219,7 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         if (d.iteration() == 0) {
                             assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                            assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
+                            assertEquals("*", d.variableInfo().getLinkedVariables().toString());
                         } else {
                             assertEquals("s$0",
                                     d.variableInfo().getLinkedVariables().toString());

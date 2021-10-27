@@ -337,7 +337,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
 
-        if(Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
+        if (Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
             // not writing on a previous
             return;
         }
@@ -383,9 +383,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             evaluation.get().setStatementTime(statementTime);
         }
     }
-
-    @Override
-    public void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables) {
+    /*
+    private void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables) {
         VariableInfo vi1 = getPreviousOrInitial();
         VariableInfoImpl write;
         if (!evaluation.isSet()) {
@@ -400,18 +399,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         write.setLinkedVariables(linkedVariables);
     }
-
+*/
     @Override
-    public void prepareEvaluationForWritingContextProperties() {
-        if (!evaluation.isSet()) {
+    public void ensureLevelForPropertiesLinkedVariables(Level level) {
+        if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
             VariableInfo vi1 = getPreviousOrInitial();
             evaluation.set(prepareForWritingContextProperties(vi1));
-        }
-    }
-
-    @Override
-    public void prepareMergeForWritingContextProperties() {
-        if (!merge.isSet()) {
+        } else if (level.equals(Level.MERGE) && !merge.isSet()) {
             VariableInfo vi1 = best(Level.EVALUATION);
             merge.set(prepareForWritingContextProperties(vi1));
         }

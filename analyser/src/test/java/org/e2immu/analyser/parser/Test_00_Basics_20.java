@@ -68,13 +68,13 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:list>" : "instance type List<T>";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "this.list:0,return getFirstC1:-1" : "this.list:0,return getFirstC1:2";
+                    String expectLv = d.iteration() == 0 ? "return getFirstC1:-1,this.list:0" : "return getFirstC1:2,this.list:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "this.list:-1,return getFirstC1:0" : "this.list:2,return getFirstC1:0";
+                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0,this.list:-1" : "return getFirstC1:0,this.list:2";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -82,8 +82,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv =  "this.list:2,return getListC2:0";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getListC2:0,this.list:2", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("test1".equals(d.methodInfo().name)) {

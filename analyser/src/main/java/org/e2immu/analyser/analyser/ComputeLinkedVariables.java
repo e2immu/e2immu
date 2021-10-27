@@ -73,6 +73,7 @@ public class ComputeLinkedVariables {
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 VariableInfoContainer.Level level,
                                                 Predicate<Variable> ensureLevel,
+                                                Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 AnalysisProvider analysisProvider) {
         WeightedGraph<Variable> weightedGraph = new WeightedGraph<>();
@@ -88,9 +89,11 @@ public class ComputeLinkedVariables {
             Function<Variable, Integer> computeImmutable = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
                     v.parameterizedType().defaultImmutable(analysisProvider, false);
             int sourceImmutable = computeImmutable.apply(variable);
+            boolean isBeingReassigned = reassigned.contains(variable);
 
             LinkedVariables external = externalLinkedVariables.apply(variable);
-            LinkedVariables inVi = vi.getLinkedVariables();
+            LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
+                    : vi.getLinkedVariables().remove(reassigned);
             LinkedVariables combined = external.merge(inVi);
             LinkedVariables curated = combined.removeIncompatibleWithImmutable(sourceImmutable, computeImmutable);
 
@@ -162,7 +165,8 @@ public class ComputeLinkedVariables {
             return true;
         }
         if (ensureLevel.test(variable)) {
-            throw new UnsupportedOperationException("Implement!");
+            vic.ensureLevelForPropertiesLinkedVariables(level);
+            return true;
         }
         return false;
     }

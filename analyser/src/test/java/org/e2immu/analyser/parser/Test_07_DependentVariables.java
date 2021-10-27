@@ -146,9 +146,9 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
                     assertEquals(expectValue, d.currentValue().minimalOutput());
                     String expectLv = d.iteration() == 0 ? "*" : "";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toSimpleString());
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     String expectLv1 = d.iteration() == 0 ? "*" : "xs,xs[index]";
-                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toSimpleString());
+                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
 
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 

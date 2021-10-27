@@ -667,7 +667,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                             || "4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("this.i", staticallyAssigned);
+                        assertEquals("j:0,this.i:0", staticallyAssigned, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
                             "4.0.0.0.3".equals(d.statementId()) || "4.0.0.0.4".equals(d.statementId()) ||

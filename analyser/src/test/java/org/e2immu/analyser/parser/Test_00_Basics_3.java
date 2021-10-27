@@ -149,7 +149,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         } else {
                             assertEquals(1, d.variableInfo().getStatementTime());
                         }
-                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectLv = d.iteration() == 0 ? "this.s:0" : "s$1:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals("\"xyz\"", d.currentValue().debugOutput());
@@ -220,7 +221,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
                     assertEquals(expectS, d.currentValue().toString());
-                    assertEquals("return getS:0,s$0,this.s:0", d.variableInfo().getLinkedVariables().toString());
+                    String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0" : "return getS:0,s$0:0,this.s:0";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));

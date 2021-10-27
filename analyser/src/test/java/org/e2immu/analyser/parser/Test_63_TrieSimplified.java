@@ -153,7 +153,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLinked = d.iteration() == 0 ? "*" : "";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toDetailedString());
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                         VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
@@ -175,7 +175,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
 
                         String expectLv = d.iteration() <= 2 ? "*" : "";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toDetailedString());
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         int expectBreak = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectBreak, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));

@@ -16,17 +16,14 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -134,22 +131,11 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     @Override
     public String toString() {
         if (this == EMPTY) return "";
-        return variables.entrySet().stream().map(e ->
-                        e.getKey().output(Qualification.EMPTY).add(Symbol.COLON).add(new Text(e.getValue() + "")))
-                .sorted()
-                .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
-    }
-
-    public String toSimpleString() {
-        if (this == EMPTY) return "";
         return variables.entrySet().stream()
-                .map(e -> e.getKey().simpleName() + ":" + e.getValue())
+                .map(e -> e.getKey().debug() + ":" + e.getValue())
                 .sorted()
                 .collect(Collectors.joining(","));
-    }
 
-    public String toDetailedString() {
-        return toString();
     }
 
     @Override
@@ -212,6 +198,13 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     public LinkedVariables changeToDelay() {
         Map<Variable, Integer> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == ASSIGNED ? ASSIGNED : DELAYED_VALUE));
+        return new LinkedVariables(map);
+    }
+
+    public LinkedVariables remove(Set<Variable> reassigned) {
+        Map<Variable, Integer> map = variables.entrySet().stream()
+                .filter(e -> !reassigned.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new LinkedVariables(map);
     }
 
@@ -278,4 +271,5 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     public static boolean isAssignedOrLinked(int dependent) {
         return dependent == ASSIGNED || dependent == DEPENDENT;
     }
+
 }

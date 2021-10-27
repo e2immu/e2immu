@@ -66,7 +66,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-            assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
+            assertEquals("string:0", d.fieldAnalysis().getLinkedVariables().toString());
         }
     };
 
@@ -113,6 +113,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if ("setString".equals(d.methodInfo().name)) {
             if (STRING_FIELD.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isAssigned());
+                assertEquals("string:0,this.string:0", d.variableInfo().getLinkedVariables().toString());
             }
         }
         if ("getString".equals(d.methodInfo().name)) {

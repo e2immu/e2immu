@@ -14,12 +14,14 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
 public class Basics_13 {
 
     @Nullable
+    @Identity
     public static String test(@Nullable String in1, @NotNull String in2) {
         String a = in1;
         String b = a;

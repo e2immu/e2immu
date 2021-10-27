@@ -221,7 +221,6 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 int cm = d.getProperty(VariableProperty.CONTEXT_MODIFIED);
                 String value = d.currentValue().toString();
                 String linkedVariables = d.variableInfo().getLinkedVariables().toString();
-                String staticallyAssignedVariables = d.variableInfo().getStaticallyAssignedVariables().toString();
 
                 if (d.variable() instanceof ParameterInfo in1 && "in1".equals(in1.name)) {
                     if ("0".equals(d.statementId())) {
@@ -231,12 +230,12 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
                         assertEquals("nullable instance type String/*@Identity*/", value);
-                        assertEquals("", linkedVariables);
+                        assertEquals("a:0,in1:0", linkedVariables); // symmetrical!
                     }
                     if ("4".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
+                        assertEquals("b:0,in1:0,return test:0", linkedVariables);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo in2 && "in2".equals(in2.name)) {
@@ -245,95 +244,87 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
+                        assertEquals("in2:0", linkedVariables);
                         assertEquals("nullable instance type String", value);
                     }
                     if ("4".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
+                        assertEquals("a:0,in2:0", linkedVariables);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("<return value>", value);
-                        assertEquals("", staticallyAssignedVariables);
+                        assertEquals("return test:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
                         assertEquals("in1", value);
-                        assertEquals("b", staticallyAssignedVariables);
+                        assertEquals("b:0,in1:0,return test:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                     }
                 }
                 if ("a".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("in1", value);
                         assertTrue(d.variableInfo().valueIsSet());
-                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals("a:0,in1:0", linkedVariables);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("in2", staticallyAssignedVariables);
+                        assertEquals("a:0,in2:0", linkedVariables);
                         assertTrue(d.variableInfo().valueIsSet());
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                     }
                     if ("3".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("in2", staticallyAssignedVariables);
+                        assertEquals("a:0,in2:0", linkedVariables);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        assertEquals("in2", staticallyAssignedVariables);
-                        assertEquals("", linkedVariables);
+                        assertEquals("a:0,in2:0", linkedVariables);
                     }
                 }
                 if ("b".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("a", staticallyAssignedVariables);
+                        assertEquals("a:0,b:0,in1:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                         assertTrue(d.variableInfo().valueIsSet());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals("b:0,in1:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                         assertTrue(d.variableInfo().valueIsSet());
                     }
                     if ("3".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals("b:0,in1:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
                         assertEquals("in1", value);
-                        assertEquals("", linkedVariables);
+                        assertEquals("b:0,in1:0,return test:0", linkedVariables);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                     }
                 }
