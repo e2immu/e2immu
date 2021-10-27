@@ -60,15 +60,15 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
             }

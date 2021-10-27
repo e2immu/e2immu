@@ -884,7 +884,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             Expression resultingValue = destination.merge(evaluationContext,
                                     stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge, groupPropertyValues);
 
-                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo.getLinked1Variables())
+                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo.getLinkedVariables())
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                             linkedVariablesMap.put(variable, linkedVariables);
 

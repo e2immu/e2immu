@@ -105,7 +105,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                             assertEquals("instance type Basics_3", d.currentValue().toString());
                         }
                     }
-                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
+                    assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (OUT.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
@@ -195,7 +195,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";
                         assertEquals(expected, d.currentValue().toString());
 
-                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectedLv = d.iteration() == 0 ? "this.s:0" : "s$2$0:M:0,this.s:0";
+                        assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
                         assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -228,15 +229,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                }
-                if (S_0.equals(d.variableName())) {
-                    assert d.iteration() > 0;
-                    assertEquals("nullable instance type String", d.currentValue().toString());
-                    assertEquals("this.s", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
-
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());

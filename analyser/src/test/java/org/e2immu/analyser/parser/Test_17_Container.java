@@ -269,7 +269,7 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if (S_0.equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
-                    assertEquals("this.s", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("this.s", d.variableInfo().getLinkedVariables().toString());
                     if ("0".equals(d.statementId())) {
                         assertEquals("nullable instance type Set<String>", d.currentValue().toString());
                     } else if ("1.0.0".equals(d.statementId())) {

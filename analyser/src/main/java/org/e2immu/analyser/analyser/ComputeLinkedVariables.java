@@ -82,8 +82,8 @@ public class ComputeLinkedVariables {
 
         statementAnalysis.variables.stream().forEach(e -> {
             VariableInfoContainer vic = e.getValue();
-            VariableInfo vi = vic.best(level);
-            Variable variable = vi.variable();
+            VariableInfo vi1 = vic.getPreviousOrInitial();
+            Variable variable = vi1.variable();
             variables.add(variable);
 
             Function<Variable, Integer> computeImmutable = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
@@ -93,7 +93,7 @@ public class ComputeLinkedVariables {
 
             LinkedVariables external = externalLinkedVariables.apply(variable);
             LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
-                    : vi.getLinkedVariables().remove(reassigned);
+                    : vi1.getLinkedVariables().remove(reassigned);
             LinkedVariables combined = external.merge(inVi);
             LinkedVariables curated = combined.removeIncompatibleWithImmutable(sourceImmutable, computeImmutable);
 

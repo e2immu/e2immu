@@ -317,7 +317,6 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        assertEquals("s", d.variableInfo().getStaticallyAssignedVariables().toString());
                         assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                     }
                 }

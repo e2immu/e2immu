@@ -72,7 +72,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
                 if ("f".equals(d.variableName())) {
@@ -121,7 +121,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
             }

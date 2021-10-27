@@ -405,8 +405,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
             VariableInfo vi1 = getPreviousOrInitial();
             evaluation.set(prepareForWritingContextProperties(vi1));
-        } else if (level.equals(Level.MERGE) && !merge.isSet()) {
+        } else if (level.equals(Level.MERGE) && !has(Level.MERGE)) {
             VariableInfo vi1 = best(Level.EVALUATION);
+            if(merge == null) {
+                throw new UnsupportedOperationException("Cannot have a merge on "+vi1.variable().fullyQualifiedName());
+            }
             merge.set(prepareForWritingContextProperties(vi1));
         }
     }
@@ -421,7 +424,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return switch (level) {
             case INITIAL -> true;
             case EVALUATION -> evaluation.isSet();
-            case MERGE -> merge.isSet();
+            case MERGE -> merge != null && merge.isSet();
         };
     }
 

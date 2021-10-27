@@ -208,7 +208,6 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
                     assertFalse(d.variableInfo().isRead());
-                    assertEquals("this.set3", d.variableInfo().getStaticallyAssignedVariables().toString());
 
                     if (d.iteration() == 0) {
                         assertTrue(d.currentValueIsDelayed());
@@ -229,7 +228,6 @@ public class Test_16_Modification extends CommonTestRunner {
                     //  the READ is written at level 1
                     assertTrue(d.variableInfo().isAssigned());
                     assertTrue(d.variableInfo().isRead());
-                    assertEquals("this.set3", d.variableInfo().getStaticallyAssignedVariables().toString());
 
                     assertTrue(d.variableInfo().getReadId()
                             .compareTo(d.variableInfo().getAssignmentIds().getLatestAssignment()) > 0);
@@ -250,8 +248,6 @@ public class Test_16_Modification extends CommonTestRunner {
                         assertEquals("*", d.variableInfo().getLinkedVariables().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
-                    String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.set3";
-                    assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                 }
             }
             if ("add3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
@@ -795,7 +791,6 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (SET_IN_C1.equals(d.variableName())) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     // not a direct assignment!
-                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -832,7 +827,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (S2.equals(d.variableName()) && "0".equals(d.statementId())) {
                     int expectCnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                     assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {

@@ -47,13 +47,6 @@ public interface VariableInfo {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
-    // for testing only
-    default LinkedVariables getStaticallyAssignedVariables() {
-        return new LinkedVariables(getLinkedVariables().variables().entrySet().stream()
-                .filter(e -> e.getValue() == LinkedVariables.ASSIGNED)
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
-    }
-
     default boolean linkedVariablesIsSet() {
         return !getLinkedVariables().isDelayed();
     }

@@ -115,7 +115,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setField".equals(d.methodInfo().name) && d.variableInfo().variable() instanceof ParameterInfo) {
                 assertSame(LinkedVariables.EMPTY, d.variableInfoContainer().getPreviousOrInitial().getLinkedVariables());
-                assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinkedVariables());
+                assertEquals("field:0,this.field:0", d.variableInfo().getLinkedVariables().toString());
             }
 
             if ("test1".equals(d.methodInfo().name)) {
@@ -157,14 +157,38 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
+                    if ("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
+                                : "field$0:0,this.field:0,v1:0,v2:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
+                                : "field$0:0,this.field:0,v1:0,v2:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if ("v2".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
+                                : "field$0:0,this.field:0,v1:0,v2:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
                 }
                 if (FIELD_0_FQN.equals(d.variableName())) {
                     assert d.iteration() > 0;
                     if ("0".equals(d.statementId())) {
-                        assertEquals("this.field", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertEquals("field$0:0,this.field:0,v1:0",
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals("field$0:0,this.field:0,v1:0,v2:0",
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -176,7 +200,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:field>" : FIELD_0;
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals("this.field:0,v1:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectedLv = d.iteration() == 0 ? "this.field:0,v1:0" : "field$0:0,this.field:0,v1:0";
+                        assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
@@ -498,7 +523,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if (I0_FQN.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        assertEquals("this.i", d.variableInfo().getLinkedVariables().toString());
 
                         assertTrue(d.iteration() > 0); // does not exist earlier!
                         assertEquals("instance type int", d.currentValue().toString());
@@ -510,10 +535,10 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals("instance type int", d.currentValue().toString());
                     String expectStaticallyAssigned = d.statementId().equals("1.0.0") ? "this.i" : "";
                     // after the assignment, i becomes a different value
-                    assertEquals(expectStaticallyAssigned, d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals(expectStaticallyAssigned, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (I101_FQN.equals(d.variableName())) {
-                    assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("this.i", d.variableInfo().getLinkedVariables().toString());
 
                     // is primitive
                     if ("1.0.1".equals(d.statementId())) {
@@ -553,7 +578,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
                     }
                 }
             }
@@ -661,7 +685,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
             if ("test4".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
-                    String staticallyAssigned = d.variableInfo().getStaticallyAssignedVariables().toString();
+                    String staticallyAssigned = d.variableInfo().getLinkedVariables().toString();
                     if ("0".equals(d.statementId()) || "2".equals(d.statementId())
                             || "3".equals(d.statementId()) || "4.0.0.0.0".equals(d.statementId())
                             || "4".equals(d.statementId())) {

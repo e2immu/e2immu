@@ -250,8 +250,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<f:forwardInfo>" :
                                 "(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expect, d.currentValue().toString());
-                        assertEquals("(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_9.GuideOnStack>()).peek().forwardInfo",
-                                d.variableInfo().getStaticallyAssignedVariables().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
                         String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING

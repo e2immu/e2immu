@@ -164,7 +164,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             if ("change$1".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     assertEquals("true", d.currentValue().toString());
-                    assertTrue(d.variableInfo().getStaticallyAssignedVariables().isEmpty());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
         }
