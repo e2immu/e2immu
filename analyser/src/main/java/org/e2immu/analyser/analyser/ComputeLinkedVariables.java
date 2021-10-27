@@ -93,9 +93,8 @@ public class ComputeLinkedVariables {
             LinkedVariables inVi = vi.getLinkedVariables();
             LinkedVariables combined = external.merge(inVi);
             LinkedVariables curated = combined.removeIncompatibleWithImmutable(sourceImmutable, computeImmutable);
-            LinkedVariables withoutDelays = curated.removeDelays();
 
-            weightedGraph.addNode(variable, withoutDelays.variables(), true);
+            weightedGraph.addNode(variable, curated.variables(), true);
             if (curated.isDelayed()) delaysInClustering.set(true);
         });
 
@@ -113,7 +112,7 @@ public class ComputeLinkedVariables {
 
         for (Variable variable : variables) {
             if (!done.contains(variable)) {
-                Map<Variable, Integer> map = weightedGraph.links(variable);
+                Map<Variable, Integer> map = weightedGraph.links(variable, false);
                 List<Variable> reachable = map.entrySet().stream()
                         .filter(e -> e.getValue() > LinkedVariables.DELAYED_VALUE && e.getValue() <= dependent)
                         .map(Map.Entry::getKey).toList();
@@ -178,7 +177,7 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = e.getValue();
 
             Variable variable = vic.current().variable();
-            Map<Variable, Integer> map = weightedGraph.links(variable);
+            Map<Variable, Integer> map = weightedGraph.links(variable, true);
             LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
             if (allowWriteEnsureLevel(variable, vic)) {

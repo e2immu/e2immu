@@ -68,13 +68,13 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:list>" : "instance type List<T>";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "this.list:0" : "this.list:0,return getFirstC1:2";
+                    String expectLv = d.iteration() == 0 ? "this.list:0,return getFirstC1:-1" : "this.list:0,return getFirstC1:2";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0" : "this.list:2,return getFirstC1:0";
+                    String expectLv = d.iteration() == 0 ? "this.list:-1,return getFirstC1:0" : "this.list:2,return getFirstC1:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -95,7 +95,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals("new C1<>(list)", d.currentValue().toString());
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
-                    String expectLv = d.iteration() <= 1 ? "ci:0" : "ci:0,i:2,list:1";
+                    String expectLv = d.iteration() <= 1 ? "ci:0,i:-1,list:-1" : "ci:0,i:2,list:1";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
@@ -104,7 +104,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
                     assertEquals("new C1<>(new ArrayList<>(list))", d.currentValue().toString());
 
-                    String expectLv = d.iteration() <= 1 ? "ci2:0" : "ci2:0,ci:2,i:2,list:2";
+                    String expectLv = d.iteration() <= 1 ? "ci2:0,ci:-1,i:-1,list:-1" : "ci2:0,ci:2,i:2,list:2";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;

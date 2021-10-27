@@ -51,19 +51,16 @@ public class WeightedGraph<T> extends Freezable {
         return nodeMap.isEmpty();
     }
 
-
     @Independent
-    public Map<T, Integer> links(@NotNull T t) {
+    public Map<T, Integer> links(@NotNull T t, boolean followDelayed) {
         Map<T, Integer> result = new HashMap<>();
         result.put(t, 0);
-        recursivelyComputeLinks(t, result);
+        recursivelyComputeLinks(t, result, followDelayed);
         return result;
     }
 
     @NotModified
-    private void recursivelyComputeLinks(
-            @NotNull T t,
-            @NotNull Map<T, Integer> distanceToStartingPoint) {
+    private void recursivelyComputeLinks(@NotNull T t, @NotNull Map<T, Integer> distanceToStartingPoint, boolean followDelayed) {
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
 
@@ -75,16 +72,18 @@ public class WeightedGraph<T> extends Freezable {
 
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
-                int distanceToN = Math.max(currentDistanceToT, d);
-                Integer currentDistanceToN = distanceToStartingPoint.get(n);
-                if (currentDistanceToN == null) {
-                    // we've not been at N before
-                    distanceToStartingPoint.put(n, distanceToN);
-                    recursivelyComputeLinks(n, distanceToStartingPoint);
-                } else {
-                    int newDistanceToN = Math.min(distanceToN, currentDistanceToN);
-                    distanceToStartingPoint.put(n, newDistanceToN);
-                }
+                if (followDelayed || d >= 0) {
+                    int distanceToN = d < 0 ? d : Math.max(currentDistanceToT, d);
+                    Integer currentDistanceToN = distanceToStartingPoint.get(n);
+                    if (currentDistanceToN == null) {
+                        // we've not been at N before
+                        distanceToStartingPoint.put(n, distanceToN);
+                        recursivelyComputeLinks(n, distanceToStartingPoint, followDelayed);
+                    } else {
+                        int newDistanceToN = currentDistanceToN == 0 ? 0 : Math.min(distanceToN, currentDistanceToN);
+                        distanceToStartingPoint.put(n, newDistanceToN);
+                    }
+                } // else: ignore delayed links!
             });
         }
     }
