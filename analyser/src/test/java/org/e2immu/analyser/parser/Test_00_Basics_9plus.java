@@ -288,7 +288,6 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals("a:0,in2:0", linkedVariables);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                         assertEquals(MultiLevel.NOT_INVOLVED, enn);
@@ -315,7 +314,6 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         assertTrue(d.variableInfo().valueIsSet());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals("b:0,in1:0", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);

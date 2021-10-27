@@ -832,8 +832,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // we copy to a list, because we may be adding variables (ConditionalInitialization copies)
         List<AcceptForMerging> variableStream = makeVariableStream(lastStatements).toList();
         Set<String> merged = new HashSet<>();
-        Set<Variable> doNotWrite = new HashSet<>();
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
+        Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
         for (AcceptForMerging e : variableStream) {
             VariableInfoContainer vic = e.vic();
@@ -888,6 +888,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                             linkedVariablesMap.put(variable, linkedVariables);
 
+                            if(ignoreCurrent) variablesWhereMergeOverwrites.add(variable);
+
                             /*
                             criteria for creating a ConditionalInitialization copy of a field:
                             1- assignment in exactly this sub-block
@@ -930,7 +932,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 // the !merged check here is because some variables appear 2x, once with a positive accept,
                 // and the second time from inside the block with a negative one
-                if (!merged.contains(fqn)) doNotWrite.add(variable);
+               // if (!merged.contains(fqn)) doNotWrite.add(variable);
             }
 
             // CNN_FOR_PARENT overwrite
@@ -953,13 +955,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                v -> true,
-                Set.of(),
+                v -> !linkedVariablesMap.containsKey(v),
+                variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext.getAnalyserContext());
         computeLinkedVariables.writeLinkedVariables();
-
-        // ContextPropertyWriter.LocalCopyData localCopyData =
-        //        ContextPropertyWriter.localCopyReferences(groupPropertyValues.allVariables());
 
         AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));

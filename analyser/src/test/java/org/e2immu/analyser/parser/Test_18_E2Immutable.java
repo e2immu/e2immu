@@ -120,7 +120,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
                     assertEquals("new HashSet<>(set3Param)/*this.size()==set3Param.size()*/", d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
         };
@@ -213,7 +213,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
                 assertEquals(expectIndependent, d.getProperty(VariableProperty.INDEPENDENT));
 
-                assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
+                assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             }
 
             if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
@@ -221,7 +221,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
 
-                assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
+                assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
@@ -229,16 +229,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     // in iteration 1, there is no dependence on the field!
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "input4";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "input4".equals(pi.name) && "0".equals(d.statementId())) {
                     // in iteration 1, there is no dependence on the field!
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
                 }
                 if (d.variable() instanceof FieldReference fr && "strings4".equals(fr.fieldInfo.name) && "0".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().getLinked1Variables().isEmpty());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
         };
@@ -278,8 +276,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "map5".equals(fr.fieldInfo.name)) {
                     assertEquals("new HashMap<>(map5Param)/*this.size()==map5Param.size()*/", d.currentValue().toString());
 
-                    String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "map5Param";
-                    assertEquals(expectLinked1, d.variableInfo().getLinked1Variables().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "map5Param";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

@@ -149,8 +149,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         } else {
                             assertEquals(1, d.variableInfo().getStatementTime());
                         }
-                        String expectLv = d.iteration() == 0 ? "this.s:0" : "s$1:0,this.s:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals("\"xyz\"", d.currentValue().debugOutput());
@@ -195,8 +194,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";
                         assertEquals(expected, d.currentValue().toString());
 
-                        String expectedLv = d.iteration() == 0 ? "this.s:0" : "s$2$0:M:0,this.s:0";
-                        assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
                         assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -222,7 +220,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
                     assertEquals(expectS, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0" : "return getS:0,s$0:0,this.s:0";
+                    String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
+                            : "this.s:0"; // and not return getS:0,s$0:0, as the link is unidirectional
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;

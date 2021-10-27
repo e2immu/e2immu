@@ -40,13 +40,6 @@ public interface VariableInfo {
      */
     LinkedVariables getLinkedVariables();
 
-    // for testing only
-    default LinkedVariables getLinked1Variables() {
-        return new LinkedVariables(getLinkedVariables().variables().entrySet().stream()
-                .filter(e -> e.getValue() >= LinkedVariables.INDEPENDENT1)
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
-    }
-
     default boolean linkedVariablesIsSet() {
         return !getLinkedVariables().isDelayed();
     }

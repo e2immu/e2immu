@@ -866,7 +866,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                v -> true,
+                v -> false,
                 reassigned,
                 linkedVariablesFromChangeData, sharedState.evaluationContext.getAnalyserContext());
         computeLinkedVariables.writeLinkedVariables();
@@ -901,7 +901,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // 5
         importContextModifiedValuesForThisFromSubTypes(groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        // we add the linked variables on top of the statically assigned variables
         AnalysisStatus cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 

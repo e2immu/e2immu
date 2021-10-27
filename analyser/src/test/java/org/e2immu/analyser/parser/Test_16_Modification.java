@@ -266,9 +266,6 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectValue, d.variableInfo().getValue().toString());
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-
-                    String expectL1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "local3";
-                    assertEquals(expectL1, d.variableInfo().getLinked1Variables().toString());
                 }
             }
         };
@@ -1302,13 +1299,8 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertEquals("setC", d.currentValue().toString());
-
-                    // FIXME ??
                     String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                    String expectLv1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
-                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
                 }
             }
 

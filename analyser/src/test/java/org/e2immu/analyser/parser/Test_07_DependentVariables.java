@@ -147,8 +147,6 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().minimalOutput());
                     String expectLv = d.iteration() == 0 ? "*" : "";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    String expectLv1 = d.iteration() == 0 ? "*" : "xs,xs[index]";
-                    assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
 
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
@@ -163,7 +161,6 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertTrue(d.iteration() > 0);
                     assertEquals("nullable instance type X", d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals("return getX,this.xs", d.variableInfo().getLinked1Variables().toString());
 
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -175,9 +172,6 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                        String expectLv1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
-                        assertEquals(expectLv1, d.variableInfo().getLinked1Variables().toString());
                     }
                 }
             }

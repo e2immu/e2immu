@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -208,6 +209,13 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return new LinkedVariables(map);
     }
 
+    public LinkedVariables remove(Predicate<Variable> remove) {
+        Map<Variable, Integer> map = variables.entrySet().stream()
+                .filter(e -> !remove.test(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new LinkedVariables(map);
+    }
+
     public LinkedVariables changeAllToDelay() {
         Map<Variable, Integer> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> DELAYED_VALUE));
@@ -233,7 +241,8 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     we prune a linked variables map, based on immutable values.
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
-    public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable, Function<Variable, Integer> computeImmutable) {
+    public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable,
+                                                           Function<Variable, Integer> computeImmutable) {
         if (sourceImmutable == Level.DELAY) {
             return changeToDelay(); // but keep the 0
         }
