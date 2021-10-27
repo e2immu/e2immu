@@ -48,10 +48,11 @@ public class Basics_20 {
         }
 
         // implicitly @Dependent
-        public List<T> getList() {
+        public List<T> getListC1() {
             return list;
         }
 
+        // implicitly @Independent1
         public T getFirstC1() {
             return list.get(0);
         }
@@ -78,11 +79,11 @@ public class Basics_20 {
         }
 
         @Independent1
-        public List<T> getList() {
+        public List<T> getListC2() {
             return new ArrayList<>(list);
         }
 
-        @Independent1
+        // implicitly @Independent1
         public T getFirstC2() {
             return list.get(0);
         }
@@ -94,7 +95,7 @@ public class Basics_20 {
         List<I> list = new ArrayList<>();
         list.add(i);
         C2<I> ci = new C2<>(list); // ci linked1 to list
-        C2<I> ci2 = new C2<>(new C1<>(list).getList()); // linked1, linked0 -> linked1
+        C2<I> ci2 = new C2<>(new C1<>(list).getListC1()); // linked1, linked0 -> linked1
         System.out.println(ci + ", " + ci2);
     }
 }

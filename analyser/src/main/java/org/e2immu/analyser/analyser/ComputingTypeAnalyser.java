@@ -62,6 +62,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
 
     public static final String ANALYSE_TRANSPARENT_TYPES = "analyseTransparentTypes";
+    public static final String ANALYSE_IMMUTABLE_CAN_BE_INCREASED = "analyseImmutableCanBeIncreased";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_E1 = "computeApprovedPreconditionsE1";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_E2 = "computeApprovedPreconditionsE2";
@@ -93,7 +94,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes());
+                .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes())
+                .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableCanBeIncreasedByTypeParameters());
 
         if (!typeInfo.isInterface()) {
             builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, this::computeApprovedPreconditionsE1)
@@ -237,6 +239,18 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             log(COMPANION, "Found aspects {} in {}, {}", typeAnalysis.aspects.stream().map(Map.Entry::getKey).collect(Collectors.joining(",")),
                     typeAnalysis.typeInfo.fullyQualifiedName, mainMethod.fullyQualifiedName);
         }
+    }
+
+    private AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
+        if (typeAnalysis.immutableCanBeIncreasedByTypeParameters.isSet()) return DONE;
+        if (!typeAnalysis.hiddenContentTypes.isSet()) return DELAYS;
+
+        boolean res = typeAnalysis.hiddenContentTypes.get().types()
+                .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
+
+        log(IMMUTABLE_LOG, "Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
+        typeAnalysis.immutableCanBeIncreasedByTypeParameters.set(res);
+        return DONE;
     }
 
     /*

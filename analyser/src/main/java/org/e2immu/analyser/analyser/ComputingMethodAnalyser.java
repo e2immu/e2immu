@@ -895,6 +895,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             return MultiLevel.INDEPENDENT;
         }
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
+        if (linkedVariables.isDelayed()) return Level.DELAY;
         int minFields = linkedVariables.variables().entrySet().stream()
                 .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
                 .mapToInt(Map.Entry::getValue)
@@ -905,8 +906,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         Boolean typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
         if (typeHidden == null) return Level.DELAY;
-        if (!typeHidden) {
-            // we link to the fields, in an accessible way
+        if (!typeHidden && minFields <= MultiLevel.DEPENDENT) {
             return MultiLevel.DEPENDENT;
         }
         // on the sliding scale now
