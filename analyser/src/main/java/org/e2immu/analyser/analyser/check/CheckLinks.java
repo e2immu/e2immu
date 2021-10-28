@@ -50,7 +50,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
         };
         LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
-        String computedString = linkedVariables.variablesWithLevel(LinkedVariables.DEPENDENT)
+        String computedString = linkedVariables.variablesAssignedOrDependent()
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 

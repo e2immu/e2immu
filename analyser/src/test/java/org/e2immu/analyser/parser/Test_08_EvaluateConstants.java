@@ -47,11 +47,11 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     assertEquals("in", in.name);
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("in:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     assertEquals("in", in.name);
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("in:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -182,8 +182,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("e".equals(d.fieldInfo().name)) {
-                assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
-
+                assertEquals("e:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

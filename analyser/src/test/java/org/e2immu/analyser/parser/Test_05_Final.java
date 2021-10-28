@@ -54,12 +54,12 @@ public class Test_05_Final extends CommonTestRunner {
                 if (S4.equals(d.variableName())) {
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals("s4", d.currentValue().debugOutput());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("s4:0,this.s4:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertFalse(d.hasProperty(VariableProperty.MODIFIED_VARIABLE)); // no method was called on parameter s4
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("s4:0,this.s4:0", d.variableInfo().getLinkedVariables().toString());
 
                         // p4 never came in a not-null context
                         assertTrue(d.variableInfo().isRead());
@@ -110,6 +110,7 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
                     }
+                    assertEquals("this.s1:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (S5.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
@@ -191,7 +192,7 @@ public class Test_05_Final extends CommonTestRunner {
                 } else {
                     assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
                 }
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("s1:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
@@ -200,7 +201,7 @@ public class Test_05_Final extends CommonTestRunner {
                     assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                     assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
                 }
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("s2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s4".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));

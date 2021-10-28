@@ -16,7 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-// tests Linked1Variables on ArrayAccess
+// tests Linked1Variables on ArrayAccess; X is hidden in XS
 
 public class DependentVariables_1 {
 

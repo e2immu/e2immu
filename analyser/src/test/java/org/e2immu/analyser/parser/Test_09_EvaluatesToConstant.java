@@ -83,7 +83,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals("null==param?\"x\":param", d.currentValue().toString());
                 int nne = d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nne);
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("b:0,param:0", d.variableInfo().getLinkedVariables().toString());
             }
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
                 int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -110,7 +110,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
@@ -127,12 +127,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }

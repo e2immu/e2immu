@@ -132,14 +132,14 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if ("integers".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("{1,2,3}", d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("integers:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // so that we know that integers.iterator() has been called
                         assertEquals("1" + E, d.variableInfo().getReadId());
 
                         // in iteration 0 we don't know if integers will be assigned to
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("integers:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -189,14 +189,14 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("5", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("6", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("a:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -465,7 +465,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test7() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
-                int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
             }
         };
@@ -486,7 +486,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                     // whatever happens, the set remains independent (the int added is independent)

@@ -80,7 +80,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return idem:0,s:0", d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNullExpression = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNullExpression, d.getProperty(VariableProperty.NOT_NULL_PARAMETER));
@@ -97,7 +97,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("LOGGER".equals(d.fieldInfo().name) && "Identity_0".equals(d.fieldInfo().owner.simpleName)) {
-                assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
+                assertEquals("LOGGER:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

@@ -133,7 +133,8 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return this;
+        Expression replace =  translationMap.directExpression(this);
+        return replace != null && replace != this ? replace: this;
     }
 
     @Override

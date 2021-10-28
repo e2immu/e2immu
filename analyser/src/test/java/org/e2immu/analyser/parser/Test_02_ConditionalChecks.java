@@ -314,7 +314,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         assertEquals("nullable instance type Object/*@Identity*/", d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("o:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
                         assertEquals("<return value>||o==this", d.currentValue().toString());

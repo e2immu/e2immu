@@ -968,24 +968,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                              Expression evaluatedIterable,
                                              boolean someValueWasDelayed,
                                              EvaluationContext evaluationContext) {
-        int independentIterable = evaluationContext.getProperty(evaluatedIterable, INDEPENDENT, true, true);
-        boolean delay = independentIterable == Level.DELAY;
-
-        LinkedVariables linked1;
-        if (independentIterable <= MultiLevel.INDEPENDENT_1) {
-            //        linked1 = evaluationContext.linkedVariables(evaluatedIterable).delay(delay);
-        } else {
-            linked1 = LinkedVariables.EMPTY;
-        }
-
-        LinkedVariables linked;
-        if (independentIterable == MultiLevel.DEPENDENT) {
-            //linked = evaluationContext.linkedVariables(evaluatedIterable).delay(delay);
-            throw new UnsupportedOperationException();
-        } else {
-            linked = delay ? LinkedVariables.DELAYED_EMPTY : LinkedVariables.EMPTY;
-        }
-
+        LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
         VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
         vic.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 statementAnalysis.statementTime(EVALUATION), Set.of());
@@ -3080,9 +3063,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             }
 
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                    eval.getLinkedVariables());
-                            translationMap.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()),
-                                    delayed);
+                                    eval.getLinkedVariables().remove(v -> v.equals(variable)));
+                            translationMap.put(DelayedVariableExpression.forVariable(variable), delayed);
                         });
                 return mergeValue.translate(translationMap.build());
             }

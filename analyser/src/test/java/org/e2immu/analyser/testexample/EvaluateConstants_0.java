@@ -20,7 +20,7 @@ public class EvaluateConstants_0 {
 
     @NotNull
     @Final
-    @Linked(absent = true)
+    @Linked(to = { "EvaluateConstants_0:in" }) // assigned
     private String effectivelyFinal;
 
     @NotNull
