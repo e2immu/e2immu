@@ -525,7 +525,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     && !resultOfExpressionIsDelayed
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
-                    resultOfExpression.linkedVariables(evaluationContext)) : resultOfExpression;
+                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay()) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);

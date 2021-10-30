@@ -554,7 +554,7 @@ public record NewObject(
             Expression no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, this,
                     constructor, constructorAnalysis, null, initialInstance, res.v);
             instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    initialInstance.linkedVariables(evaluationContext)) : no;
+                    initialInstance.linkedVariables(evaluationContext).changeAllToDelay()) : no;
         } else {
             instance = initialInstance;
         }

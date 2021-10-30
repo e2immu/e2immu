@@ -151,8 +151,9 @@ public class InstanceOf extends ElementImpl implements Expression {
         }
         if (value.isDelayed(evaluationContext)) {
             LinkedVariables linkedVariables = value.linkedVariables(evaluationContext);
-            return builder.setExpression(DelayedExpression
-                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType, linkedVariables)).build();
+            return builder.setExpression(DelayedExpression.forInstanceOf(evaluationContext.getPrimitives(),
+                            parameterizedType, linkedVariables.changeAllToDelay()))
+                    .build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();

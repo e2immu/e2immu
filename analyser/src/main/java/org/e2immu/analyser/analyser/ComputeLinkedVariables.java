@@ -61,13 +61,13 @@ public class ComputeLinkedVariables {
                                    List<List<Variable>> clustersAssigned,
                                    List<List<Variable>> clustersDependent,
                                    boolean delaysInClustering) {
-        this.level = level;
-        this.statementAnalysis = statementAnalysis;
         this.clustersAssigned = clustersAssigned;
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
-        this.weightedGraph = weightedGraph;
         this.ignore = ignore;
+        this.level = level;
+        this.statementAnalysis = statementAnalysis;
+        this.weightedGraph = weightedGraph;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
@@ -89,6 +89,9 @@ public class ComputeLinkedVariables {
 
                 Function<Variable, Integer> computeImmutable = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
                         v.parameterizedType().defaultImmutable(analysisProvider, false);
+                Function<Variable, Integer> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
+                        v.parameterizedType().immutableOfHiddenContent(analysisProvider, true);
+
                 int sourceImmutable = computeImmutable.apply(variable);
                 boolean isBeingReassigned = reassigned.contains(variable);
 
@@ -97,7 +100,7 @@ public class ComputeLinkedVariables {
                         : vi1.getLinkedVariables().remove(reassigned);
                 LinkedVariables combined = external.merge(inVi);
                 LinkedVariables curated = combined
-                        .removeIncompatibleWithImmutable(sourceImmutable, computeImmutable)
+                        .removeIncompatibleWithImmutable(sourceImmutable, computeImmutable, computeImmutableHiddenContent)
                         .remove(ignore);
 
                 boolean bidirectional = vic.variableNature().localCopyOf() == null;
@@ -106,15 +109,16 @@ public class ComputeLinkedVariables {
             }
         });
 
-        List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables, LinkedVariables.ASSIGNED);
-        List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables, LinkedVariables.DEPENDENT);
+        List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables, LinkedVariables.ASSIGNED, LinkedVariables.ASSIGNED);
+        List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables, LinkedVariables.DELAYED_VALUE, LinkedVariables.DEPENDENT);
         return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
                 clustersDependent, delaysInClustering.get());
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable> weightedGraph,
                                                         List<Variable> variables,
-                                                        int dependent) {
+                                                        int minInclusive,
+                                                        int maxInclusive) {
         Set<Variable> done = new HashSet<>();
         List<List<Variable>> result = new ArrayList<>(variables.size());
 
@@ -122,7 +126,7 @@ public class ComputeLinkedVariables {
             if (!done.contains(variable)) {
                 Map<Variable, Integer> map = weightedGraph.links(variable, false);
                 List<Variable> reachable = map.entrySet().stream()
-                        .filter(e -> e.getValue() > LinkedVariables.DELAYED_VALUE && e.getValue() <= dependent)
+                        .filter(e -> e.getValue() >= minInclusive && e.getValue() <= maxInclusive)
                         .map(Map.Entry::getKey).toList();
                 result.add(reachable);
                 done.addAll(reachable);
@@ -132,11 +136,15 @@ public class ComputeLinkedVariables {
     }
 
     public AnalysisStatus write(VariableProperty property, Map<Variable, Integer> propertyValues) {
+        if (delaysInClustering && VariableProperty.CONTEXT_NOT_NULL != property) {
+            return AnalysisStatus.DELAYS;
+        }
         if (VariableProperty.CONTEXT_MODIFIED == property) {
-            if (delaysInClustering) return AnalysisStatus.DELAYS;
             return writeProperty(clustersDependent, property, propertyValues);
         }
-        // there cannot be a delay on assignments
+        /* only CNN will immediately write, because the ENN of fields is needed to compute values of fields,
+         which in turn are needed to get rid of delays.
+         */
         return writeProperty(clustersAssigned, property, propertyValues);
     }
 
@@ -151,7 +159,7 @@ public class ComputeLinkedVariables {
             } else {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
-                    if(vic != null) {
+                    if (vic != null) {
                         ensureLevel(vic);
                         try {
                             vic.setProperty(variableProperty, summary, level);

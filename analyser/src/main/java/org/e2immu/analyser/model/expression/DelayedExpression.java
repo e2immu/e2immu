@@ -34,6 +34,13 @@ public record DelayedExpression(String msg,
                                 ParameterizedType parameterizedType,
                                 LinkedVariables linkedVariables) implements Expression {
 
+    public static final String PRECONDITION = "<precondition>";
+
+    public DelayedExpression {
+        assert PRECONDITION.equals(msg) ||
+                linkedVariables.isDelayed() : "Linked variables of " + debug + " is not delayed!";
+    }
+
     public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
@@ -66,7 +73,7 @@ public record DelayedExpression(String msg,
     }
 
     public static Expression forPrecondition(Primitives primitives) {
-        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
+        return new DelayedExpression(PRECONDITION, PRECONDITION, primitives.booleanParameterizedType,
                 LinkedVariables.EMPTY); // no need for linked variables
     }
 

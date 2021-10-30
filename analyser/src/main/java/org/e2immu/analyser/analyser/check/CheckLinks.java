@@ -82,7 +82,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 "@Linked1",
                 e2.linked1.typeInfo(),
                 extractInspected,
-                computedString,
+                computedString.isEmpty() ? null: computedString,
                 fieldInfo.fieldInspection.get().getAnnotations(),
                 new Location(fieldInfo));
     }

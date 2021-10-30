@@ -219,7 +219,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     public LinkedVariables changeAllToDelay() {
         Map<Variable, Integer> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> DELAYED_VALUE));
-        return new LinkedVariables(map);
+        return new LinkedVariables(map, true);
     }
 
     public Integer value(Variable variable) {
@@ -242,7 +242,8 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
     public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable,
-                                                           Function<Variable, Integer> computeImmutable) {
+                                                           Function<Variable, Integer> computeImmutable,
+                                                           Function<Variable, Integer> computeImmutableHiddenContent) {
         if (sourceImmutable == Level.DELAY) {
             return changeToDelay(); // but keep the 0
         }
@@ -260,16 +261,22 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         }
         Map<Variable, Integer> result = new HashMap<>();
         for (Map.Entry<Variable, Integer> entry : adjustedSource.entrySet()) {
+            int linkLevel = entry.getValue();
             int targetImmutable = computeImmutable.apply(entry.getKey());
             if (targetImmutable == Level.DELAY) {
                 result.put(entry.getKey(), DELAYED_VALUE);
             } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-                if (targetImmutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE || entry.getValue() != DEPENDENT) {
-                    result.put(entry.getKey(), entry.getValue());
+                if (linkLevel <= DEPENDENT) {
+                    result.put(entry.getKey(), linkLevel);
+                } else { // INDEPENDENT1+
+                    int immutableHidden = computeImmutableHiddenContent.apply(entry.getKey());
+                    if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                        result.put(entry.getKey(), linkLevel);
+                    }
                 }
             } else {
                 // targetImmutable is @ERImmutable
-                if (entry.getValue() == ASSIGNED) {
+                if (linkLevel == ASSIGNED) {
                     result.put(entry.getKey(), ASSIGNED);
                 }
             }

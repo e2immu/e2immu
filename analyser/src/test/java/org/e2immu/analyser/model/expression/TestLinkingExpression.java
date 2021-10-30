@@ -23,7 +23,6 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Parser;
@@ -32,7 +31,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -111,8 +113,7 @@ public class TestLinkingExpression {
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));
         MethodInfo arrayListConstructor = arrayList.findConstructor(collection);
 
-        Variable v = new LocalVariableReference(new LocalVariable(Set.of(), "v", "v", collectionInteger,
-                List.of(), arrayList, VariableNature.METHOD_WIDE));
+        Variable v = new LocalVariableReference(new LocalVariable("v", collectionInteger));
         VariableExpression ve = new VariableExpression(v);
 
         // new ArrayList<>(v), with v a local collection variable
@@ -164,12 +165,10 @@ public class TestLinkingExpression {
         assertEquals(MultiLevel.INDEPENDENT_1, p1.getProperty(VariableProperty.INDEPENDENT));
 
         ParameterizedType arrayListInteger = new ParameterizedType(arrayList, List.of(integer()));
-        Variable v = new LocalVariableReference(new LocalVariable(Set.of(), "v", "v", arrayListInteger,
-                List.of(), arrayList, VariableNature.METHOD_WIDE));
+        Variable v = new LocalVariableReference(new LocalVariable("v", arrayListInteger));
         VariableExpression ve = new VariableExpression(v);
 
-        Variable i = new LocalVariableReference(new LocalVariable(Set.of(), "i", "i", integer(),
-                List.of(), arrayList, VariableNature.METHOD_WIDE));
+        Variable i = new LocalVariableReference(new LocalVariable("i", integer()));
         VariableExpression vi = new VariableExpression(i);
 
         // v.add(0, i)
@@ -192,16 +191,13 @@ public class TestLinkingExpression {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));
 
-        Variable v = new LocalVariableReference(new LocalVariable(Set.of(), "v", "v", collectionInteger,
-                List.of(), collections, VariableNature.METHOD_WIDE));
+        Variable v = new LocalVariableReference(new LocalVariable("v", collectionInteger));
         VariableExpression ve = new VariableExpression(v);
 
-        Variable i = new LocalVariableReference(new LocalVariable(Set.of(), "i", "i", integer(),
-                List.of(), collections, VariableNature.METHOD_WIDE));
+        Variable i = new LocalVariableReference(new LocalVariable("i", integer()));
         VariableExpression vi = new VariableExpression(i);
 
-        Variable j = new LocalVariableReference(new LocalVariable(Set.of(), "j", "j", integer(),
-                List.of(), collections, VariableNature.METHOD_WIDE));
+        Variable j = new LocalVariableReference(new LocalVariable("j", integer()));
         VariableExpression vj = new VariableExpression(j);
 
         // Collections.addAll(v, i, j)

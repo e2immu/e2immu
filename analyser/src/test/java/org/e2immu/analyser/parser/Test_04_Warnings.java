@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -303,7 +306,34 @@ public class Test_04_Warnings extends CommonTestRunner {
     // modifying an immutable set
     @Test
     public void test4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Warnings_4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    assertEquals("Set.copyOf(input)", d.currentValue().toString());
+                    assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
+                    // because immutableOfHiddenContent = @ERContainer
+                    assertEquals("this.set:0", d.variableInfo().getLinkedVariables().toString());
+                    // we wait because of hidden content
+                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                    assertEquals(expectImm, d.getPropertyOfCurrentValue(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                //        assertNotNull(d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+        };
+
         testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -391,17 +421,14 @@ public class Test_04_Warnings extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -412,15 +439,10 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
-                }
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
         };
 

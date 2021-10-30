@@ -14,13 +14,20 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.*;
+
 import java.util.Set;
 
 public class Warnings_4 {
 
+    // not Linked1 because String is recursively immutable
+    @Linked1(absent = true)
+    @Modified
+    @NotNull1
+    @ERContainer
     private final Set<String> set;
 
-    public Warnings_4(Set<String> input) {
+    public Warnings_4(@Independent Set<String> input) {
         set = Set.copyOf(input);
     }
 
@@ -28,6 +35,7 @@ public class Warnings_4 {
         return set;
     }
 
+    // this one causes an error!
     public void add(String s) {
         set.add(s);
     }

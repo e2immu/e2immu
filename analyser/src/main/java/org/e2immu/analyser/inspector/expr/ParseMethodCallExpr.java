@@ -229,7 +229,13 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 } else {
                     valueToAdd = v;
                 }
-                if (!mapExpansion.containsKey(k)) mapExpansion.put(k, valueToAdd);
+                /* Example: Ecoll -> String, in case the formal parameter was Collection<E>, and the concrete Set<String>
+                Now if Ecoll is a method parameter, it needs linking to the 
+
+                 */
+                if (!mapExpansion.containsKey(k)) {
+                    mapExpansion.put(k, valueToAdd);
+                }
             });
             i++;
             if (i >= formalParameters.size()) break; // varargs... we have more than there are

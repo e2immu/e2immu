@@ -139,9 +139,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
             // evaluatedDependentVariable is our best effort at evaluation of the individual components
             if (delayed || forwardEvaluationInfo.isAssignmentTarget()) {
                 Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable);
-                LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext);
-                Expression wrappedObject = PropertyWrapper.propertyWrapper(dve, linkedVariables);
-                builder.setExpression(wrappedObject);
+                builder.setExpression(dve);
             } else {
                 if (evaluatedDependentVariable.arrayVariable != null) {
                     builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, array.value(),

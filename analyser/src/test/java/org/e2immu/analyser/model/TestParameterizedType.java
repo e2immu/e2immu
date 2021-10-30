@@ -196,15 +196,16 @@ public class TestParameterizedType {
     @Test
     public void test_2A() {
         // 1 level
-        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSuperType(IP, map);
+        ParameterizedType mapPt = map.asParameterizedType(InspectionProvider.DEFAULT);
+        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSuperType(IP, mapPt);
         assertEquals("{K as #0 in org.e2immu.Map=Type param K, V as #1 in org.e2immu.Map=Type param V}", t.toString());
 
         // 2 levels (1x combine)
-        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSuperType(IP, map);
+        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSuperType(IP, mapPt);
         assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type param V}", t2.toString());
 
         // 3 levels (2x combine)
-        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSuperType(IP, map);
+        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSuperType(IP, mapPt);
         assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type java.lang.Integer}", t3.toString());
     }
 
@@ -242,16 +243,17 @@ public class TestParameterizedType {
 
     @Test
     public void test_3A() {
+        ParameterizedType mapPt = map.asSimpleParameterizedType();
         // 1 level
-        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSubType(IP, map);
+        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSubType(IP, mapPt);
         assertEquals("{K as #0 in org.e2immu.HashMap=Type param K, V as #1 in org.e2immu.HashMap=Type param V}", t.toString());
 
         // 2 levels (1x combine)
-        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSubType(IP, map);
+        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSubType(IP, mapPt);
         assertEquals("{V as #0 in org.e2immu.StringMap=Type param V}", t2.toString());
 
         // 3 levels (2x combine)
-        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSubType(IP, map);
+        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSubType(IP, mapPt);
         assertEquals("{}", t3.toString());
     }
 

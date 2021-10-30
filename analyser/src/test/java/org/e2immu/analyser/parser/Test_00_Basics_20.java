@@ -52,9 +52,10 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 String expectedLv = d.iteration() == 0 ? "list:-1" : "list:1";
                 assertEquals(expectedLv, ci.linkedVariables().toString());
             }
-            if("getListC2".equals(d.methodInfo().name)) {
+            if ("getListC2".equals(d.methodInfo().name)) {
                 EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
-                assertEquals("this.list:2", cd.linkedVariables().toString());
+                String expectLv = d.iteration() == 0 ? "this.list:-1" : "this.list:2";
+                assertEquals(expectLv, cd.linkedVariables().toString());
             }
             if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
@@ -78,11 +79,12 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
-            if("getListC2".equals(d.methodInfo().name)) {
+            if ("getListC2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<new:ArrayList<T>>" : "new ArrayList<>(list)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("return getListC2:0,this.list:2", d.variableInfo().getLinkedVariables().toString());
+                    String expectLv = d.iteration() == 0 ? "return getListC2:0,this.list:-1" : "return getListC2:0,this.list:2";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("test1".equals(d.methodInfo().name)) {
@@ -129,19 +131,19 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
             }
-            if("getFirstC1".equals(d.methodInfo().name)) {
+            if ("getFirstC1".equals(d.methodInfo().name)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
-            if("getFirstC2".equals(d.methodInfo().name)) {
+            if ("getFirstC2".equals(d.methodInfo().name)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
-            if("getListC2".equals(d.methodInfo().name)) {
+            if ("getListC2".equals(d.methodInfo().name)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
-            if("getListC1".equals(d.methodInfo().name)) {
+            if ("getListC1".equals(d.methodInfo().name)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }

@@ -2477,7 +2477,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         if (valueIsDelayed) {
             return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType,
-                    value.linkedVariables(evaluationContext));
+                    value.linkedVariables(evaluationContext).changeAllToDelay());
         }
         return NewObject.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());
     }
@@ -2988,7 +2988,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             }
 
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                    eval.getLinkedVariables().remove(v -> v.equals(variable)));
+                                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay());
                             translationMap.put(DelayedVariableExpression.forVariable(variable), delayed);
                         });
                 return mergeValue.translate(translationMap.build());

@@ -190,7 +190,7 @@ public class Lambda extends ElementImpl implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.EMPTY);
+            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
@@ -199,7 +199,7 @@ public class Lambda extends ElementImpl implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.EMPTY);
+                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
                 }
             } else {
                 result = NewObject.forGetInstance(identifier, parameterizedType);

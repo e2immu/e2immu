@@ -33,6 +33,11 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
                             TypeInfo owningType,
                             VariableNature nature) {
 
+    // testing!
+    public LocalVariable(String name, ParameterizedType parameterizedType) {
+        this(Set.of(), name, name, parameterizedType, List.of(), parameterizedType.typeInfo, VariableNature.METHOD_WIDE);
+    }
+
     public LocalVariable {
         Objects.requireNonNull(name);
         Objects.requireNonNull(owningType);
