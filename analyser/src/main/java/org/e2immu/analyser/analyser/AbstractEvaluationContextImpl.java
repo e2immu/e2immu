@@ -20,11 +20,11 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.NullConstant;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -64,6 +64,21 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
             return !boolValue.constant();
         }
         return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, true));
+    }
+
+    @Override
+    public boolean notNullAccordingToConditionManager(Expression expression) {
+        if (Primitives.isNotBooleanOrBoxedBoolean(expression.returnType())) {
+            // do not use the Condition manager to check for null in creation of isNull
+            Expression isNull = Equals.equals(expression.getIdentifier(),
+                    this, expression, NullConstant.NULL_CONSTANT, false);
+            if(isNull.isBoolValueFalse()) {
+                // this is not according to the condition manager, but always not null
+                return false;
+            }
+            return conditionManager.evaluate(this, isNull).isBoolValueFalse();
+        }
+        return conditionManager.evaluate(this, expression).isBoolValueTrue();
     }
 
     /*

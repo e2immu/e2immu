@@ -14,9 +14,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

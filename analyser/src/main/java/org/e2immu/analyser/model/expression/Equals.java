@@ -69,7 +69,10 @@ public class Equals extends BinaryOperator {
                 return new BooleanConstant(primitives, false);
         }
 
-        if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
+        if (l instanceof ConstantExpression<?> lc
+                && r instanceof ConstantExpression<?> rc
+                && !(lc instanceof NullConstant)
+                && (!(rc instanceof NullConstant))) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
 

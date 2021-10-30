@@ -1114,19 +1114,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    /*
-        private LinkedVariables remap(Map<Variable, LinkedVariables> remap, LinkedVariables linkedVariables) {
-            if (linkedVariables.isEmpty()) return linkedVariables;
-            Set<Variable> set = new HashSet<>(linkedVariables.variables());
-            remap.forEach((v, lv) -> {
-                if (set.contains(v)) {
-                    set.remove(v);
-                    set.addAll(lv.variables());
-                }
-            });
-            return new LinkedVariables(set, linkedVariables.isDelayed());
-        }
-    */
     private void addToMap(GroupPropertyValues groupPropertyValues,
                           VariableProperty variableProperty,
                           Function<Variable, Integer> falseValue,
@@ -1302,68 +1289,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(assignmentIds, readId, statementTime, changeData.readAtStatementTime());
-    }
-
-    private static final LinkedVariables EMPTY_OVERRIDE = new LinkedVariables(Map.of(), false);
-
-    private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ChangeData changeData,
-                                                       Variable variable,
-                                                       VariableInfo vi,
-                                                       VariableInfo vi1) {
-        // regardless of what's being delayed or not, if the type is level 2 immutable or more, there cannot be links
-
-        if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
-            TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
-            if (immutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                return EMPTY_OVERRIDE;
-            }
-        }
-        if (changeData.linkedVariables().isDelayed()) {
-            log(DELAYED, "Apply of {}, {} is delayed because of linked variables of {}",
-                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
-                    variable.fullyQualifiedName());
-            return changeData.linkedVariables();
-        }
-
-        if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-            log(DELAYED, "Apply of statement {}, {} is delayed because of variable field delay",
-                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return LinkedVariables.DELAYED_EMPTY;
-        }
-
-        // no assignment, we need to copy, potentially add to previous value
-
-        LinkedVariables previousValue = vi1.getLinkedVariables();
-        LinkedVariables toAddFromPreviousValue;
-        if (changeData.markAssignment()) {
-            if (vi.isConfirmedVariableField()) {
-                toAddFromPreviousValue = previousValue.removeAllButLocalCopiesOf(variable);
-                if (previousValue.isDelayed()) {
-                    log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of variable field {}",
-                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
-                            variable.fullyQualifiedName());
-                    return toAddFromPreviousValue.merge(changeData.linkedVariables());
-                }
-            } else {
-                toAddFromPreviousValue = LinkedVariables.EMPTY;
-            }
-        } else {
-            if (previousValue.isDelayed()) {
-                log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of {}",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
-                        variable.fullyQualifiedName());
-                return previousValue.merge(changeData.linkedVariables());
-            }
-            toAddFromPreviousValue = previousValue;
-        }
-        // note that the null here is actual presence or absence in a map...
-        LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linkedVariables());
-        log(ANALYSER, "Set linked variables of {} to '{}' in {}, {}",
-                variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-
-        assert !mergedValue.isDelayed();
-        return mergedValue;
     }
 
     /*

@@ -155,7 +155,11 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default boolean notNullAccordingToConditionManager(Variable variable) {
-        return true;
+        return false;
+    }
+
+    default boolean notNullAccordingToConditionManager(Expression expression) {
+        return false;
     }
 
     default LinkedVariables linkedVariables(Variable variable) {

@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -278,7 +279,18 @@ public class Assignment extends ElementImpl implements Expression {
         }
 
         // may already be linked to others
-        LinkedVariables linkedVariables = resultOfExpression.linkedVariables(evaluationContext);
+        LinkedVariables lvExpression = resultOfExpression.linkedVariables(evaluationContext);
+        LinkedVariables linkedVariables;
+        IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
+        IsVariableExpression iveResult = resultOfExpression.asInstanceOf(IsVariableExpression.class);
+        if(ive != null && iveResult == null) {
+            /* To preserve uni-directionality from local copy to main variable, we only add the variable when the
+            result of the expression is not a variable either. (in which case they point to the same underlying variable anyway)
+            */
+            linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.ASSIGNED)));
+        } else {
+            linkedVariables = lvExpression;
+        }
         assert !linkedVariables.isDelayed() ||
                 evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                         "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,

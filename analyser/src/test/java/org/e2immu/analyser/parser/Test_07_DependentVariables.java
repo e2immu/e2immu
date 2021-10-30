@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_07_DependentVariables extends CommonTestRunner {
     public Test_07_DependentVariables() {
-        super(false);
+        super(true);
     }
 
     @Test
@@ -135,6 +135,24 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getI".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:i>" : "i";
+                    assertEquals(expectValue, d.currentValue().minimalOutput());
+                    assertEquals("return getI:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+
+                    int expectEnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() == 0 ? "<f:i>" : "i";
+                    assertEquals(expectValue, d.currentValue().minimalOutput());
+                    assertEquals("return getI:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+
+                    int expectEnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+            }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -171,7 +189,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        String expectLv = d.iteration() == 0 ? "p:2,this.xs:0" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -200,10 +218,12 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("xs".equals(d.fieldInfo().name)) {
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                String expectLinked = "p:2";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
-                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
-                assertEquals(expectLinked1, d.fieldAnalysis().getLinked1Variables().toString());
+            }
+            if ("i".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 
@@ -225,14 +245,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertTrue(d.methodInfo().isConstructor);
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "xs";
+                        String expectLinked = d.iteration() == 0 ? "this.xs:0" : "xs";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.xs";
+                    String expectLinked = d.iteration() == 0 ? "<f:xs>[index]:0,return getX:0" : "this.xs";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }

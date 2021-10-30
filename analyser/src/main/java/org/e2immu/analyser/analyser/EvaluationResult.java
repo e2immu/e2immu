@@ -152,6 +152,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public int getProperty(VariableProperty variableProperty) {
             return properties.getOrDefault(variableProperty, Level.DELAY);
         }
+
+        public boolean isMarkedRead() {
+            return !readAtStatementTime.isEmpty();
+        }
     }
 
     public int getProperty(Expression expression, VariableProperty variableProperty) {
@@ -288,20 +292,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
 
             if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL &&
-                    evaluationContext.notNullAccordingToConditionManager(variable)) {
+                    (evaluationContext.notNullAccordingToConditionManager(variable)
+                          ||  evaluationContext.notNullAccordingToConditionManager(value))) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
             int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-          //  if (notNullValue < notNullRequired) { // also do delayed values
-                // so intrinsically we can have null.
-                // if context not null is already high enough, don't complain
-                int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-                if (contextNotNull == MultiLevel.NULLABLE) {
-                    setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE); // so we can raise an error
-                }
-                setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-          //  }
+            //  if (notNullValue < notNullRequired) { // also do delayed values
+            // so intrinsically we can have null.
+            // if context not null is already high enough, don't complain
+            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
+            if (contextNotNull == MultiLevel.NULLABLE) {
+                setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE); // so we can raise an error
+            }
+            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
+            //  }
 
         }
 
@@ -452,14 +457,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void markContextModified(Variable variable, int modified) {
             assert evaluationContext != null;
-            if (evaluationContext.isPresent(variable)) {
-                int ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
-                        .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
-                        : Level.FALSE;
-                if (ignoreContentModifications != Level.TRUE) {
-                    log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
+            int ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
+                    .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
+                    : Level.FALSE;
+            if (ignoreContentModifications != Level.TRUE) {
+                log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
+                ChangeData cd = valueChanges.get(variable);
+                // if the variable is not present yet (a field), we expect it to have been markedRead
+                if(cd != null  && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
                     setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);
-
+                }
                     /*
                     The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
                     which does not play nice with the copying rules that copy when never read/assigned to.
@@ -469,11 +476,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         markRead(redirect.variable());
                     }
                     */
-                } else {
-                    log(CONTEXT_MODIFICATION, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
-                }
             } else {
-                log(CONTEXT_MODIFICATION, "Not yet marking {} as context modified, not present", variable.fullyQualifiedName());
+                log(CONTEXT_MODIFICATION, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
             }
         }
 

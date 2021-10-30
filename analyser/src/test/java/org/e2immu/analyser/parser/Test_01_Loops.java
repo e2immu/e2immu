@@ -16,8 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.ForEachStatement;
@@ -25,13 +24,12 @@ import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -338,6 +336,10 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
+
+                        assertEquals("res:0,return method:0", d.variableInfo().getLinkedVariables().toString());
+
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
@@ -346,8 +348,12 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<merge:String>" : "res"; // indirection
                         assertEquals(expect, d.currentValue().toString());
+
+                        assertEquals("res:0,return method:0", d.variableInfo().getLinkedVariables().toString());
+
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
             }
@@ -737,6 +743,45 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("java.time.ZoneOffset.UTC".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:UTC>" : "nullable instance type ZoneOffset";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("java.time.ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
+
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+                if ("result".equals(d.variableName())) {
+                    if ("4".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("5".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("4".equals(d.statementId())) {
+                        assertEquals("return method:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("5".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0
+                                ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>"
+                                : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String expectLv = "result:0,return method:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
@@ -746,9 +791,24 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
         };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo typeInfo = typeMap.get(LocalDateTime.class);
+            MethodInfo now = typeInfo.findUniqueMethod("now", 0);
+            assertTrue(now.methodInspection.get().isStatic());
+            assertEquals(Level.FALSE, now.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            TypeInfo chrono = typeMap.get(ChronoLocalDateTime.class);
+            MethodInfo toInstant = chrono.findUniqueMethod("toInstant", 1);
+            assertFalse(toInstant.methodInspection.get().isStatic());
+            assertEquals(Level.FALSE, toInstant.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            ParameterAnalysis utc = toInstant.parameterAnalysis(0);
+            assertEquals(Level.TRUE, utc.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        };
+
         // potential null pointer exception
         testClass("Loops_11", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
@@ -966,7 +1026,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
 
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() ==0 ? "container:-1,entry:0" : "entry:0";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,entry:0" : "entry:0";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -993,6 +1053,12 @@ public class Test_01_Loops extends CommonTestRunner {
     // Solution: DelayedExpression.translate()
     @Test
     public void test_19() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("1.0.1.0.1".equals(d.statementId())) {
+                EvaluationResult.ChangeData cd = d.findValueChangeByToString("container.read");
+                assertFalse(cd.properties().containsKey(VariableProperty.CONTEXT_NOT_NULL));
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
 
@@ -1027,10 +1093,35 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
+
+                if ("org.e2immu.analyser.testexample.Loops_19.Container.read#container".equals(d.variableName())) {
+                    if ("1.0.1.0.1".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<f:read>" : "";
+                        assertEquals(expectValue, d.currentValue().toString());
+
+                        String expectLv = d.iteration() <= 1 ? "container.read:0" : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        // must be nullable, because of the null check
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? "!<m:entrySet>.isEmpty()" : "!kvStore$0.entrySet().isEmpty()";
+                    assertEquals(expectCondition, d.conditionManagerForNextStatement().condition().toString());
+                }
+            }
+        };
+
         testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

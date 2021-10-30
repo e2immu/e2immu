@@ -114,7 +114,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
                 map.put(v, newValue);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = inMap == ASSIGNED ? ASSIGNED : Math.min(newValue, inMap);
+                int merged = newValue == ASSIGNED || inMap == ASSIGNED ? ASSIGNED : Math.min(newValue, inMap);
                 map.put(v, merged);
             }
         });
