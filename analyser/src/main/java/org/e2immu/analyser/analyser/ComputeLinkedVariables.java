@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
@@ -91,6 +93,12 @@ public class ComputeLinkedVariables {
                         v.parameterizedType().defaultImmutable(analysisProvider, false);
                 Function<Variable, Integer> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
                         v.parameterizedType().immutableOfHiddenContent(analysisProvider, true);
+                Function<Variable, Boolean> immutableCanBeIncreasedByTypeParameters = v -> {
+                    TypeInfo bestType = v.parameterizedType().bestTypeInfo();
+                    if (bestType == null) return true;
+                    TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
+                    return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+                };
 
                 int sourceImmutable = computeImmutable.apply(variable);
                 boolean isBeingReassigned = reassigned.contains(variable);
@@ -100,7 +108,8 @@ public class ComputeLinkedVariables {
                         : vi1.getLinkedVariables().remove(reassigned);
                 LinkedVariables combined = external.merge(inVi);
                 LinkedVariables curated = combined
-                        .removeIncompatibleWithImmutable(sourceImmutable, computeImmutable, computeImmutableHiddenContent)
+                        .removeIncompatibleWithImmutable(sourceImmutable, computeImmutable,
+                                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
                         .remove(ignore);
 
                 boolean bidirectional = vic.variableNature().localCopyOf() == null;
@@ -145,7 +154,12 @@ public class ComputeLinkedVariables {
         /* only CNN will immediately write, because the ENN of fields is needed to compute values of fields,
          which in turn are needed to get rid of delays.
          */
-        return writeProperty(clustersAssigned, property, propertyValues);
+        try {
+            return writeProperty(clustersAssigned, property, propertyValues);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Clusters assigned are: {}", clustersAssigned);
+            throw ise;
+        }
     }
 
     private AnalysisStatus writeProperty(List<List<Variable>> clusters,

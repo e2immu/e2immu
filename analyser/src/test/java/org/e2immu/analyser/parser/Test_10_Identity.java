@@ -132,15 +132,26 @@ public class Test_10_Identity extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("idem2".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
-                if ("0".equals(d.statementId())) {
-                    assertTrue(d.getProperty(VariableProperty.CONTEXT_NOT_NULL) != Level.DELAY);
+            if ("idem2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<m:idem>" : "s/*@NotNull*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String expectLv = d.iteration() == 0 ? "return idem2:0,s:-1" : "return idem2:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
                 }
-                if ("1".equals(d.statementId())) {
-                    // because the @NotNull situation of the parameter of idem has not been resolved yet, there cannot be a
-                    // delay resolved here
-                    int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectContextNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.getProperty(VariableProperty.CONTEXT_NOT_NULL) != Level.DELAY);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // because the @NotNull situation of the parameter of idem has not been resolved yet, there cannot be a
+                        // delay resolved here
+                        int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectContextNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
                 }
             }
         };
@@ -164,7 +175,8 @@ public class Test_10_Identity extends CommonTestRunner {
                 assertEquals(expectParamNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 if (d.iteration() >= 1) {
@@ -268,7 +280,7 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem4".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(d.falseFrom1(), methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             }

@@ -283,13 +283,13 @@ public class Assignment extends ElementImpl implements Expression {
         LinkedVariables linkedVariables;
         IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
         IsVariableExpression iveResult = resultOfExpression.asInstanceOf(IsVariableExpression.class);
-        if(ive != null && iveResult == null) {
+        if(ive != null && iveResult != null && iveResult.variable().variableNature().localCopyOf() == null) {
             /* To preserve uni-directionality from local copy to main variable, we only add the variable when the
             result of the expression is not a variable either. (in which case they point to the same underlying variable anyway)
             */
             linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.ASSIGNED)));
         } else {
-            linkedVariables = lvExpression;
+            linkedVariables = lvExpression.minimum(LinkedVariables.DEPENDENT);
         }
         assert !linkedVariables.isDelayed() ||
                 evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,

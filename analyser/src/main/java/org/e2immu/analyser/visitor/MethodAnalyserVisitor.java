@@ -61,6 +61,9 @@ public interface MethodAnalyserVisitor {
         public int falseFrom1() {
             return iteration == 0 ? Level.DELAY: Level.FALSE;
         }
+        public int trueFrom1() {
+            return iteration == 0 ? Level.DELAY: Level.TRUE;
+        }
         public int falseFrom2() {
             return iteration <= 1 ? Level.DELAY: Level.FALSE;
         }

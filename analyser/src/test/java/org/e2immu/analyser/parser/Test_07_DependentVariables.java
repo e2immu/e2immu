@@ -163,7 +163,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                             "nullable instance type X/*{L } {L1 xs}*/";
 
                     assertEquals(expectValue, d.currentValue().minimalOutput());
-                    String expectLv = d.iteration() == 0 ? "<f:xs>[index]:0,return getX:0" : "";
+                    String expectLv = d.iteration() == 0 ? "<f:xs>[index]:-1,return getX:0" : "";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;

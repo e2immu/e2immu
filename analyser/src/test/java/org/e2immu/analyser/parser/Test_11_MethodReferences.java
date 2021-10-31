@@ -85,8 +85,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));

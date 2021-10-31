@@ -1968,9 +1968,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
-                        firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                        Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo,
                                         firstStatement.index, firstStatement.statement.getIdentifier()),
-                                Message.Label.UNREACHABLE_STATEMENT));
+                                Message.Label.UNREACHABLE_STATEMENT);
+                        // let's add it to us, rather than to this unreachable statement
+                        statementAnalysis.ensure(msg);
                     }
                     // guaranteed to be reached in block is always ALWAYS because it is the first statement
                     setExecutionOfSubBlock(firstStatement, isTrue ? ALWAYS : NEVER);
@@ -1979,9 +1981,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     blocks.get(1).ifPresent(firstStatement -> {
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
-                            firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                            Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo,
                                             firstStatement.index, firstStatement.statement.getIdentifier()),
-                                    Message.Label.UNREACHABLE_STATEMENT));
+                                    Message.Label.UNREACHABLE_STATEMENT);
+                            statementAnalysis.ensure(msg);
                         }
                         setExecutionOfSubBlock(firstStatement, isTrue ? NEVER : ALWAYS);
                     });
@@ -1996,9 +1999,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
-                        nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index,
-                                        nextAnalysis.statement.getIdentifier()),
-                                Message.Label.UNREACHABLE_STATEMENT));
+                        Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index,
+                                nextAnalysis.statement.getIdentifier()), Message.Label.UNREACHABLE_STATEMENT);
+                        statementAnalysis.ensure(msg);
                     }
                 }
             } else throw new UnsupportedOperationException();

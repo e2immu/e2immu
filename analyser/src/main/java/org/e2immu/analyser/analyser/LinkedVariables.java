@@ -171,6 +171,13 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
+    public LinkedVariables minimum(int minimum) {
+        return new LinkedVariables(variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e ->
+                        e.getValue() == DELAYED_VALUE ? DELAYED_VALUE :
+                                Math.max(minimum, e.getValue()))));
+    }
+
     public Stream<Variable> variablesAssignedOrDependent() {
         return variables.entrySet().stream()
                 .filter(e -> isAssignedOrLinked(e.getValue()))
@@ -243,6 +250,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
      */
     public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable,
                                                            Function<Variable, Integer> computeImmutable,
+                                                           Function<Variable, Boolean> immutableCanBeIncreasedByTypeParameters,
                                                            Function<Variable, Integer> computeImmutableHiddenContent) {
         if (sourceImmutable == Level.DELAY) {
             return changeToDelay(); // but keep the 0
@@ -253,7 +261,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
             // level 2+ -> remove all @Dependent
             boolean recursivelyImmutable = sourceImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             adjustedSource = variables.entrySet().stream()
-                    .filter(e -> recursivelyImmutable ? e.getValue() == ASSIGNED :
+                    .filter(e -> recursivelyImmutable ? e.getValue() <= ASSIGNED :
                             e.getValue() != DEPENDENT)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } else {
@@ -262,22 +270,30 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         Map<Variable, Integer> result = new HashMap<>();
         for (Map.Entry<Variable, Integer> entry : adjustedSource.entrySet()) {
             int linkLevel = entry.getValue();
-            int targetImmutable = computeImmutable.apply(entry.getKey());
+            Variable target = entry.getKey();
+            int targetImmutable = computeImmutable.apply(target);
             if (targetImmutable == Level.DELAY) {
-                result.put(entry.getKey(), DELAYED_VALUE);
+                result.put(target, DELAYED_VALUE);
             } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
                 if (linkLevel <= DEPENDENT) {
-                    result.put(entry.getKey(), linkLevel);
+                    result.put(target, linkLevel);
                 } else { // INDEPENDENT1+
-                    int immutableHidden = computeImmutableHiddenContent.apply(entry.getKey());
-                    if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-                        result.put(entry.getKey(), linkLevel);
+                    Boolean canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
+                    if (canIncrease == null) {
+                        result.put(target, DELAYED_VALUE);
+                    } else if (canIncrease) {
+                        int immutableHidden = computeImmutableHiddenContent.apply(target);
+                        if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                            result.put(target, linkLevel);
+                        }
+                    } else {
+                        result.put(target, linkLevel);
                     }
                 }
             } else {
                 // targetImmutable is @ERImmutable
-                if (linkLevel == ASSIGNED) {
-                    result.put(entry.getKey(), ASSIGNED);
+                if (linkLevel <= ASSIGNED) {
+                    result.put(target, linkLevel);
                 }
             }
         }
@@ -287,5 +303,4 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     public static boolean isAssignedOrLinked(int dependent) {
         return dependent == ASSIGNED || dependent == DEPENDENT;
     }
-
 }

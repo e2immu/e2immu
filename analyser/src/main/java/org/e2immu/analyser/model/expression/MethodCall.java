@@ -516,7 +516,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                objectValue.linkedVariables(evaluationContext).changeAllToDelay()));
+                linkedVariables(evaluationContext).changeAllToDelay()));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
@@ -910,6 +910,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.TRUE) {
             return parameterExpressions.get(0).linkedVariables(evaluationContext);
+        }
+        if (identity == Level.DELAY) {
+            // temporarily link to both the object and the parameter, in a delayed way
+            return object.linkedVariables(evaluationContext)
+                    .merge(parameterExpressions.get(0).linkedVariables(evaluationContext)).changeAllToDelay();
         }
 
         // RULE 3: in a factory method, the result links to the parameters, directly

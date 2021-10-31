@@ -73,7 +73,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    String expectLv = d.iteration() == 0 ? "i3:0,this.map:-1" : "i3:0";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
@@ -84,7 +85,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
-                int expectNotNull = d.iteration()==0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };

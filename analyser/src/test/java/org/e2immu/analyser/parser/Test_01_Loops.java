@@ -336,8 +336,8 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
-
-                        assertEquals("res:0,return method:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectLv = d.iteration() == 0 ? "res:0,return method:-1,s:-1" : "res:0,return method:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -349,11 +349,12 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<merge:String>" : "res"; // indirection
                         assertEquals(expect, d.currentValue().toString());
 
-                        assertEquals("res:0,return method:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectLv = d.iteration() == 0 ? "res:-1,return method:0,s:-1" : "res:0,return method:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
             }
@@ -773,7 +774,7 @@ public class Test_01_Loops extends CommonTestRunner {
                                 ? "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>"
                                 : "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = "result:0,return method:0";
+                        String expectLv = d.iteration() == 0 ? "entry:-1,key:-1,result:0,return method:0" : "result:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -1014,19 +1015,18 @@ public class Test_01_Loops extends CommonTestRunner {
                                 ? "<m:entrySet>.isEmpty()||<m:contains>||0==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
                                 : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectVars = d.iteration() == 0
-                                ? "[kvStore, org.e2immu.analyser.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, container.read, result]"
-                                : "[kvStore$0]";
+                        String expectVars = d.iteration() == 0 ? "[kvStore, container.read, result]" : "[kvStore$0]";
                         assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("entry:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectLv = d.iteration() == 0 ? "entry:0,key:-1" : "entry:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expectL1 = d.iteration() == 0 ? "container:-1,entry:0" : "entry:0";
+                        String expectL1 = d.iteration() == 0 ? "container:-1,entry:0,key:-1" : "entry:0";
                         assertEquals(expectL1, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -1121,7 +1121,7 @@ public class Test_01_Loops extends CommonTestRunner {
         testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

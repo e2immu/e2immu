@@ -21,11 +21,11 @@ import java.util.*;
 @E1Container
 public class Modification_10 {
     @NotModified
-    @Linked(to = {"Modification_10:list"})
+    @Linked(to = { "Modification_10:list", "Modification_10.c1" })
     final Collection<String> c0;
 
     @NotModified
-    @Linked(to = {"Modification_10:list"})
+    @Linked(to = { "Modification_10:list", "Modification_10.c0" })
     final Collection<String> c1;
 
     @NotModified

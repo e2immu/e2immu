@@ -657,7 +657,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             return Level.DELAY;
         }
         //
-        LinkedVariables variables = proxy.getLinkedVariables();
+        LinkedVariables variables = proxy.getLinkedVariables()
+                .remove(v -> v instanceof FieldReference fr && fr.fieldInfo == fieldInfo);
         if (!variables.isEmpty() && variables.variablesWithLevel(LinkedVariables.DEPENDENT)
                 .allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.MUTABLE;

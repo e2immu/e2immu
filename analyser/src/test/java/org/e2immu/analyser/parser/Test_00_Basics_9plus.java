@@ -95,7 +95,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
                     assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    assertEquals("contains:0,return test1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("contains:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

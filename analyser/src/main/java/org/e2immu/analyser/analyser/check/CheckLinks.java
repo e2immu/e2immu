@@ -130,7 +130,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         boolean verifyAbsent = annotation.e2ImmuAnnotationParameters().isVerifyAbsent();
 
         if (verifyAbsent) {
-            boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.computedValue != null);
+            boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.computedValue != null && !kv.computedValue.isBlank());
 
             if (haveComputedValue || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
                 messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));

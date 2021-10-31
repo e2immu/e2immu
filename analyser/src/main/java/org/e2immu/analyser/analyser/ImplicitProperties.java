@@ -35,7 +35,7 @@ public class ImplicitProperties {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             case CONTAINER -> Level.TRUE;
             case INDEPENDENT -> MultiLevel.INDEPENDENT;
-            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL; // NOT: EXTERNAL_NOT_NULL!
             default -> Level.DELAY;
         };
     }

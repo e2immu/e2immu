@@ -91,6 +91,9 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 if ("list".equals(d.variableName()) && "3".equals(d.statementId())) {
                     int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                    String expectLv = d.iteration() <= 1 ? "i:-1,list:0" : "i:2,list:0";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
                     assertEquals("new C1<>(list)", d.currentValue().toString());

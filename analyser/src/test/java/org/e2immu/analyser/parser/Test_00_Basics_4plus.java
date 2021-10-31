@@ -53,6 +53,21 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if (I.equals(d.variableName())) {
                     String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i$0";
                     assertEquals(expect, d.currentValue().toString());
+                    assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if ("getI".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expect = d.iteration() == 0 ? "<f:i>" : "i$0";
+                    assertEquals(expect, d.currentValue().toString());
+                    String expectLv = d.iteration() == 0 ? "return getI:0,this.i:0" : "return getI:0";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
         };
@@ -570,15 +585,15 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if (I.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
+                        String expect = d.iteration() <= 1 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
-
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
@@ -587,7 +602,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
 
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // we switch to NOT_INVOLVED, given that the field has been assigned; its external value is of no use
@@ -733,7 +749,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0" : "i$1:0,i$2:0,j0:0,j:0,k:0";
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
-                    if("4.0.0".equals(d.statementId())) {
+                    if ("4.0.0".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "j:0,k:0" : "i$1:0,i$2:0,j:0,k:0";
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
