@@ -89,7 +89,7 @@ public class ExplicitTypes {
             MethodCall mc;
             if ((mc = element.asInstanceOf(MethodCall.class)) != null) {
                 add(mc.object.returnType(), UsedAs.METHOD);
-                addTypesFromParameters(mc.methodInfo, UsedAs.METHOD);
+                addTypesFromParameters(mc.methodInfo, mc.parameterExpressions, UsedAs.METHOD);
             }
 
             // new A() -> A cannot be replaced by unbound type parameter
@@ -97,7 +97,7 @@ public class ExplicitTypes {
             if ((newObject = element.asInstanceOf(NewObject.class)) != null) {
                 add(newObject.parameterizedType(), UsedAs.NEW_OBJECT);
                 if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
-                    addTypesFromParameters(newObject.constructor(), UsedAs.NEW_OBJECT);
+                    addTypesFromParameters(newObject.constructor(), newObject.parameterExpressions(), UsedAs.NEW_OBJECT);
                 }
             }
 
@@ -160,7 +160,7 @@ public class ExplicitTypes {
             }
 
             // lambda == new InterfaceType() { .. }
-            if(element instanceof Lambda lambda) {
+            if (element instanceof Lambda lambda) {
                 add(lambda.abstractFunctionalType, UsedAs.LAMBDA);
             }
         };
@@ -176,12 +176,28 @@ public class ExplicitTypes {
 
     // a.method(b, c) -> unless the formal parameter types are either Object or another unbound parameter type,
     // they cannot be replaced by unbound type parameter
-    private void addTypesFromParameters(MethodInfo methodInfo, UsedAs usedAs) {
+    private void addTypesFromParameters(MethodInfo methodInfo, List<Expression> expressions, UsedAs usedAs) {
         Objects.requireNonNull(methodInfo);
-        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
+        List<ParameterInfo> parameters = methodInfo.methodInspection.get().getParameters();
+        int i = 0;
+        for (Expression expression : expressions) {
+            ParameterInfo parameterInfo = i < parameters.size() ? parameters.get(i) : parameters.get(parameters.size() - 1);
             ParameterizedType formal = parameterInfo.parameterizedType;
             if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundTypeParameter()) {
                 add(formal, usedAs);
+            }
+            ParameterizedType concrete = expression.returnType();
+            if(Primitives.isPrimitiveExcludingVoid(concrete) && !Primitives.isPrimitiveExcludingVoid(formal)) {
+                // formal could be an unbound type parameter, so int is boxed into Integer
+                ParameterizedType boxed = inspectionProvider.getPrimitives().boxed(concrete.typeInfo).asSimpleParameterizedType();
+                add(boxed, usedAs);
+            }
+            i++;
+        }
+        for (Expression expression : expressions) {
+            ParameterizedType dynamic = expression.returnType();
+            if (!Primitives.isJavaLangObject(dynamic) && !dynamic.isUnboundTypeParameter()) {
+                add(dynamic, usedAs);
             }
         }
     }

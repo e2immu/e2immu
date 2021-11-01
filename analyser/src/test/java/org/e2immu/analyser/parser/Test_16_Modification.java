@@ -669,7 +669,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertFalse(list.isAssignedToFieldDelaysResolved());
                 } else {
                     assertTrue(list.isAssignedToFieldDelaysResolved());
-                    assertEquals("c0=0, c1=1, l0=100, l1=100, l2=100, s0=100, s1=100", list.getAssignedToField()
+                    assertEquals("c0=1, c1=2, l0=100, l1=100, l2=100, s0=100, s1=100", list.getAssignedToField()
                             .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
                 }
                 if (iteration >= 2) {
@@ -876,12 +876,12 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-                //      .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //       .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -895,15 +895,13 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && PARENT_CLASS_SET.equals(d.variableName())) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId()) && d.variable() instanceof This) {
                 assertEquals(PARENT_CLASS_THIS, d.variableName());
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
@@ -911,7 +909,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
@@ -922,8 +920,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -959,18 +956,16 @@ public class Test_16_Modification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             String name = d.methodInfo().name;
             if ("clear".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.TRUE, d.getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED));
                 assertTrue(d.getThisAsVariable().isRead());
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -1017,14 +1012,12 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE; // TRUE good, FALSE would have been acceptable as well
-                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()

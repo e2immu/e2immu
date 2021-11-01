@@ -709,6 +709,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                         public LinkedVariables getLinkedVariables() {
                             return vi.getLinkedVariables();
                         }
+
+                        @Override
+                        public String toString() {
+                            return "ALL_CONSTR:" + getValue().toString();
+                        }
                     });
                     if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor) {
                         // we'll warn for the combination of field initializer, and occurrence in at least one constructor
@@ -761,6 +766,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                         public boolean isDelayedValue() {
                             return vi.isDelayed();
                         }
+
+                        @Override
+                        public String toString() {
+                            return "STATIC_BLOCK:" + getValue().toString();
+                        }
                     };
                     delays = vi.isDelayed();
                 }
@@ -803,6 +813,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 @Override
                 public int getProperty(VariableProperty variableProperty) {
                     return ec.getProperty(getValue(), variableProperty, false, false);
+                }
+
+                @Override
+                public String toString() {
+                    return "ALL_SET:" + getValue().toString();
                 }
             });
         }
@@ -859,6 +874,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 @Override
                 public int getProperty(VariableProperty variableProperty) {
                     return getValue().getProperty(null, variableProperty, false);
+                }
+
+                @Override
+                public String toString() {
+                    return "NO_INIT:" + getValue().toString();
                 }
             });
         }

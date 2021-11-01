@@ -15,14 +15,15 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo first && "first".equals(first.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     assertEquals("nullable instance type S/*@Identity*/", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("first:0,this.first:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -54,14 +55,15 @@ public class Test_38_FirstThen extends CommonTestRunner {
             if ("first".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
 
-                String expectValues = "[first/*@NotNull*/,null]";
-          //      assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
+                String expectValues = d.iteration() == 0 ? "[ALL_CONSTR:first/*@NotNull*/, ALL_CONSTR:<s:>]"
+                        : "[ALL_CONSTR:null, ALL_CONSTR:first/*@NotNull*/]";
+                assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FirstThen_0".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param S]", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param S", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
 

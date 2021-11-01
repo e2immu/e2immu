@@ -145,7 +145,7 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public List<Variable> variables() {
-        if(variable instanceof FieldReference fr) {
+        if(variable instanceof FieldReference fr && fr.scope != null) {
             return ListUtil.concatImmutable(List.of(variable), fr.scope.variables());
         }
         return List.of(variable);

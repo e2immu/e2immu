@@ -251,7 +251,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     assertTrue(variableInfo.isAssigned());
 
-                    String expect = d.iteration() == 0 ? "null==<f:integer>&&ii>=0" : "null==integer&&ii>=0";
+                    String expect = d.iteration() == 0 ? "ii>=0" : "null==integer&&ii>=0";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
                             .combinedPrecondition.get().expression().toString());
                     assertEquals(d.iteration() == 0,

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -1012,11 +1013,11 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<m:entrySet>.isEmpty()||<m:contains>||0==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
+                                ? "<m:entrySet>.isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>"
                                 : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectVars = d.iteration() == 0 ? "[kvStore, container.read, result]" : "[kvStore$0]";
-                        assertEquals(expectVars, d.currentValue().variables().toString());
+                        String expectVars = d.iteration() == 0 ? "[entry, key, kvStore, result]" : "[kvStore$0]";
+                        assertEquals(expectVars, d.currentValue().variables().stream().map(Variable::toString).sorted().toList().toString());
                     }
                 }
                 if ("entry".equals(d.variableName())) {

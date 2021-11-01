@@ -46,8 +46,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                 if ("0".equals(d.statementId())) {
-                    int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
@@ -123,7 +122,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
                     d.methodAnalysis().getPrecondition().expression().toString());
             ParameterAnalysis a = d.parameterAnalyses().get(0);
-            int expectNnp = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             ParameterAnalysis b = d.parameterAnalyses().get(1);
             assertEquals(expectNnp, b.getProperty(VariableProperty.NOT_NULL_PARAMETER));

@@ -190,7 +190,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             } else if (Primitives.isPrimitiveExcludingVoid(bestType)) {
                 value = Level.TRUE;
             } else {
-                int override = bestOfParameterOverrides(parameterInfo, VariableProperty.CONTAINER);
+                int override = bestOfParameterOverridesForContainer(parameterInfo);
                 if (override == Level.DELAY) {
                     return DELAYS;
                 }
@@ -205,15 +205,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return DONE;
     }
 
-
-    private int bestOfParameterOverrides(ParameterInfo parameterInfo, VariableProperty variableProperty) {
+    // can easily be parameterized to other variable properties
+    private int bestOfParameterOverridesForContainer(ParameterInfo parameterInfo) {
         return parameterInfo.owner.methodResolution.get().overrides().stream()
                 .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
                 .mapToInt(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
-                    return pa.getPropertyFromMapNeverDelay(variableProperty);
-                }).max().orElse(variableProperty.falseValue);
+                    return pa.getPropertyFromMapNeverDelay(VariableProperty.CONTAINER);
+                }).max().orElse(VariableProperty.CONTAINER.falseValue);
     }
 
 
@@ -308,8 +308,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         delays = true;
                     }
                 }
-
-                // FIXME check this code!
 
                 if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
                     int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);

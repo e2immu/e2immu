@@ -809,7 +809,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int formal = methodAnalysis.getProperty(variableProperty);
         // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
         if (VariableProperty.IMMUTABLE == variableProperty) {
-            // IMPROVE but, the formal value could already have been "upgraded" from the immutability of the type (firstEntry() is @E2Container instead of @Container)
             return dynamicImmutable(formal, methodAnalysis, evaluationContext);
         }
         if (VariableProperty.INDEPENDENT == variableProperty) {
@@ -827,7 +826,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY) return Level.DELAY;
         if (identity == Level.TRUE) {
-            return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE, true, true);
+            return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE,
+                    true, true);
         }
 
         if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
@@ -844,35 +844,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
             SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
             MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
-            if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                int minParams = Integer.MAX_VALUE;
-                for (Expression expression : parameterExpressions) {
-                    ParameterizedType concreteType = expression.returnType();
-                    EvaluationContext.HiddenContent concreteHiddenTypes = evaluationContext
-                            .extractHiddenContentTypes(concreteType, hiddenContentTypes);
-                    if (concreteHiddenTypes.delay()) {
-                        minParams = Level.DELAY;
-                    } else {
-                        int hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                                .mapToInt(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
-                                .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-                        minParams = Math.min(minParams, hiddenImmutable);
-                    }
-                }
 
-                if (minParams == Level.DELAY) return Level.DELAY;
-                return MultiLevel.sumImmutableLevels(formal, minParams);
+            if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+                return factoryMethodDynamicallyImmutable(formal, methodInspection, hiddenContentTypes, evaluationContext);
             }
 
-            LinkedVariables linked = linkedVariables(evaluationContext);
-            int linked1Immutable = linked.variables().entrySet().stream()
-                    .filter(e -> e.getValue() > LinkedVariables.DEPENDENT)
-                    .mapToInt(e -> evaluationContext.getProperty(e.getKey(), VariableProperty.IMMUTABLE))
-                    .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-            if (linked1Immutable == Level.DELAY) return Level.DELAY;
-            return MultiLevel.sumImmutableLevels(formal, linked1Immutable);
+            /*
+            Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
+            It can still upgrade to ERImmutable when the K and V become ER themselves
+             */
+            int defaultImmutable = returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, formal);
+            return defaultImmutable;
         }
         return formal;
+    }
+
+    private int factoryMethodDynamicallyImmutable(int formal,
+                                                  MethodInspection methodInspection,
+                                                  SetOfTypes hiddenContentTypes,
+                                                  EvaluationContext evaluationContext) {
+        int minParams = Integer.MAX_VALUE;
+        for (Expression expression : parameterExpressions) {
+            ParameterizedType concreteType = expression.returnType();
+            EvaluationContext.HiddenContent concreteHiddenTypes = evaluationContext
+                    .extractHiddenContentTypes(concreteType, hiddenContentTypes);
+            if (concreteHiddenTypes.delay()) {
+                minParams = Level.DELAY;
+            } else {
+                int hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
+                        .mapToInt(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
+                        .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+                minParams = Math.min(minParams, hiddenImmutable);
+            }
+        }
+
+        if (minParams == Level.DELAY) return Level.DELAY;
+        return MultiLevel.sumImmutableLevels(formal, minParams);
     }
 
     /*
