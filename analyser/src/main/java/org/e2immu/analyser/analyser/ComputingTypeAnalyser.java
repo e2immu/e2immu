@@ -387,7 +387,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         allExplicitTypes.addAll(superTypesOfExplicitTypes);
 
         allTypes.removeAll(allExplicitTypes);
-        allTypes.removeIf(Primitives::isPrimitiveExcludingVoid);
+        allTypes.removeIf(pt -> Primitives.isPrimitiveExcludingVoid(pt) || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
         typeAnalysis.explicitTypes.set(new SetOfTypes(allExplicitTypes));
         typeAnalysis.hiddenContentTypes.set(new SetOfTypes(allTypes));
@@ -971,7 +971,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 // we need to know the immutability level of the hidden content of the field
                 Set<ParameterizedType> hiddenContent = typeAnalysis.hiddenContentLinkedTo(fieldInfo);
                 int minHiddenContentImmutable = hiddenContent.stream()
-                        .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
+                        .mapToInt(pt -> pt.defaultImmutable(analyserContext, true))
                         .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
                 int immutableLevel = MultiLevel.oneLevelMoreFromValue(minHiddenContentImmutable);
                 minLevel = Math.min(minLevel, immutableLevel);
@@ -1190,12 +1190,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
         if (extensionClass != Level.DELAY) return DONE;
 
-        int e2Immutable = MultiLevel.effectiveAtLevel(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.LEVEL_2_IMMUTABLE);
-        if (e2Immutable == MultiLevel.DELAY) {
+        int e2Immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (e2Immutable == Level.DELAY) {
             log(DELAYED, "Extension class: don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        if (e2Immutable < MultiLevel.EVENTUAL) {
+        if (e2Immutable < MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             log(TYPE_ANALYSER, "Type {} is not an @ExtensionClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.FALSE);
             return DONE;
@@ -1259,12 +1259,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
         if (utilityClass != Level.DELAY) return DELAYS;
 
-        int e2Immutable = MultiLevel.effectiveAtLevel(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.LEVEL_2_IMMUTABLE);
-        if (e2Immutable == MultiLevel.DELAY) {
+        int e2Immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (e2Immutable == Level.DELAY) {
             log(DELAYED, "Utility class: Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        if (e2Immutable < MultiLevel.EVENTUAL) {
+        if (e2Immutable < MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             log(TYPE_ANALYSER, "Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
             return DONE;

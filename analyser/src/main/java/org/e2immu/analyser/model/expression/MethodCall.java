@@ -666,7 +666,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 newInstance = NewObject.forGetInstance(current.getIdentifier(), current.returnType());
             }
         } else {
-            newInstance = NewObject.forGetInstance(currentCall.getIdentifier(), currentCall.returnType());
+            newInstance = NewObject.forGetInstance(currentCall.getIdentifier(), objectValue.returnType());
         }
 
         Expression modifiedInstance;

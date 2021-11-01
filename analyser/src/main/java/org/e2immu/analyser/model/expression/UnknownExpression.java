@@ -65,6 +65,8 @@ public class UnknownExpression extends ElementImpl implements Expression {
         switch (variableProperty) {
             case IMMUTABLE:
                 return typeAnalysis == null ? MultiLevel.NOT_INVOLVED : typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            case INDEPENDENT:
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED : typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
             case CONTAINER:
                 return typeAnalysis == null ? Level.FALSE : typeAnalysis.getProperty(VariableProperty.CONTAINER);
             case NOT_NULL_EXPRESSION:

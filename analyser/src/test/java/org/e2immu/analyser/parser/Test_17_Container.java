@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -23,8 +22,6 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -76,7 +73,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals(expectNne, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                 }
@@ -99,8 +96,9 @@ public class Test_17_Container extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
+                String expectLinked = d.iteration() == 0 ? "" : "p:0";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
 
                 // s is of type Set<String>, so we wait for values
                 int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
@@ -110,7 +108,7 @@ public class Test_17_Container extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
                 ParameterAnalysis p = d.parameterAnalyses().get(0);
-                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
                 assertEquals(expectEnn, p.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
@@ -217,23 +215,14 @@ public class Test_17_Container extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("set3".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        if (d.iteration() == 0) {
-                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                            assertEquals("*", d.variableInfo().getLinkedVariables().toString());
-                        } else {
-                            assertEquals("s$0",
-                                    d.variableInfo().getLinkedVariables().toString());
-                        }
+                        String expectLv = d.iteration() == 0 ? "set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-
-                        if (d.iteration() == 0) {
-                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                        } else {
-                            assertEquals("s$0", d.variableInfo().getLinkedVariables().toString());
-                        }
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
                 }
@@ -241,30 +230,22 @@ public class Test_17_Container extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
-                        if (d.iteration() == 0) {
-                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                        } else {
-                            assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                            assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        }
+                        String expectLv = d.iteration() == 0 ? "set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        if (d.iteration() == 0) {
-                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                        } else {
-                            assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                            // set3 -> s$0 -> this.s (-> s$0)
-                            assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        }
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        // set3 -> s$0 -> this.s (-> s$0)
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
                     }
                     if ("1".equals(d.statementId())) {
-                        // here we merge with the info in "0"
-                        if (d.iteration() == 0) {
-                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                        } else {
-                            assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                            assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        }
+                        assertEquals("s3:0,set3:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
+                        // set3 -> s$0 -> this.s (-> s$0)
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
                 if (S_0.equals(d.variableName())) {
@@ -330,21 +311,17 @@ public class Test_17_Container extends CommonTestRunner {
 
             if ("m1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p0 && "modified".equals(p0.name)) {
                 if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
 
             if ("m2".equals(d.methodInfo().name) && "toModifyM2".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "modified2";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals("modified2:0,toModifyM2:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -357,10 +334,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
             }
             if ("m2".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
             }
             if ("crossModify".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
@@ -393,7 +370,7 @@ public class Test_17_Container extends CommonTestRunner {
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 assertEquals("nullable instance type Collection<String>/*@Identity*/", d.currentValue().toString());
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("coll5:0", d.variableInfo().getLinkedVariables().toString());
                 if ("0".equals(d.statementId())) {
                     assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                 }

@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -46,7 +45,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("key:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -59,8 +58,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 assertEquals("key", d.currentValue().toString());
-                // empty because String is @E2Container!
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("key:0,this.key:0", d.variableInfo().getLinkedVariables().toString());
             }
 
         };
@@ -135,19 +133,15 @@ public class Test_22_SubTypes extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if ("it2".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "set2";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("it2:0,set2:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        // the link should not simply disappear
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "set2";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("it2:0,set2:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "set2".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        // the link is symmetric, but only shows in one direction
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("it2:2,set2:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -155,16 +149,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                {
-                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                }
-                {
-                    ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                    assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                    int expectModified = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                }
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
 

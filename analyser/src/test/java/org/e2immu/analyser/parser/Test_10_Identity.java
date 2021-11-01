@@ -137,7 +137,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:idem>" : "s/*@NotNull*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "return idem2:0,s:-1" : "return idem2:0";
+                        String expectLv = d.iteration() == 0 ? "return idem2:0,s:-1" : "return idem2:0,s:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }

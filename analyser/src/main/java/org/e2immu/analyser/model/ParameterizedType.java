@@ -1055,4 +1055,7 @@ public class ParameterizedType {
         return Stream.concat(recursiveFromParent, concreteInterfaceTypes);
     }
 
+    public boolean isUnboundWildcard() {
+        return typeInfo == null && typeParameter == null;
+    }
 }

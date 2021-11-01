@@ -68,7 +68,7 @@ public record DelayedExpression(String msg,
 
     public static Expression forArrayLength(Primitives primitives) {
         return new DelayedExpression("<delayed array length>",
-                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.EMPTY);
+                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.DELAYED_EMPTY);
         // result is an int, so no linked variables
     }
 

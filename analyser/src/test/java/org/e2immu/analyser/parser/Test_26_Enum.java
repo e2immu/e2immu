@@ -70,15 +70,14 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectExtImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -95,7 +94,7 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L } {L1 }*/==this";
+                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L }*/==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -132,7 +131,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type Enum_1/*{L } {L1 }*/==this?1+i$0:<return value>";
+                                : "instance type Enum_1/*{L }*/==this?1+i$0:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
@@ -219,7 +218,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("i$2".equals(d.variableName())) {
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("i$2:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("i$2$2-E".equals(d.variableName())) {
@@ -238,7 +237,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "this==<v:<v:array>[<v:i>]>" : "instance type Enum_3/*{L } {L1 }*/==this";
+                    String expectCondition = d.iteration() == 0 ? "this==<v:<v:array>[<v:i>]>" : "instance type Enum_3/*{L }*/==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
@@ -307,7 +306,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 ParameterAnalysis cnt = d.parameterAnalyses().get(0);
                 if (d.iteration() > 0) {
                     assertTrue(cnt.assignedToFieldIsFrozen());
-                    assertEquals("{cnt=ASSIGNED}", cnt.getAssignedToField().toString());
+                    assertEquals("{cnt=1}", cnt.getAssignedToField().toString());
                 }
             }
         };
@@ -332,10 +331,10 @@ public class Test_26_Enum extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            // shallow analyser
             if ("valueOf".equals(d.methodInfo().name)) {
-                // immediate, because no Annotated API so hard-coded
-               // assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
-                //        d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(Level.DELAY, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(0, d.iteration());
             }
         };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()

@@ -98,7 +98,9 @@ public class InequalityHelper {
     }
 
     public static Double extractEquals(List<Expression> expressions) {
-        return expressions.stream().filter(e -> e instanceof Equals eq && eq.lhs instanceof ConstantExpression<?>)
+        return expressions.stream().filter(e -> e instanceof Equals eq
+                        && eq.lhs instanceof ConstantExpression<?>
+                        && !(eq.lhs instanceof NullConstant))
                 .map(e -> extractDouble((Number) ((ConstantExpression<?>) ((Equals) e).lhs).getValue()))
                 .findFirst().orElse(null);
     }

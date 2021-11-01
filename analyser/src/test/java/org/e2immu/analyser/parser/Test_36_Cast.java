@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -45,7 +44,13 @@ public class Test_36_Cast extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Cast_0".equals(d.typeInfo().simpleName)) {
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
         testClass("Cast_0", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -70,13 +75,13 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE; // = int
+                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE; // = int
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    String expectLinked = d.iteration() == 0 ? "return incrementedT:-1,this.t:0" : "this.t:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
@@ -84,12 +89,12 @@ public class Test_36_Cast extends CommonTestRunner {
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                assertEquals("t", d.currentValue().toString());
+                assertEquals("t/*(String)*/", d.currentValue().toString());
                 assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
                         pw.castType().equals(d.evaluationContext().getPrimitives().stringParameterizedType));
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                assertEquals("t", d.currentValue().toString());
+                assertEquals("t/*(Counter)*/", d.currentValue().toString());
                 assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
                         "Counter".equals(Objects.requireNonNull(pw.castType().typeInfo).simpleName));
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE; // = Counter
@@ -124,4 +129,15 @@ public class Test_36_Cast extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_2() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Cast_2".equals(d.typeInfo().simpleName)) {
+                assertEquals("T", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
+        testClass("Cast_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
+    }
 }

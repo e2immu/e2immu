@@ -113,7 +113,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), vi.valueIsSet() ? null : vi.getValue());
         initial.newVariable(false);
         initial.setValue(vi.getValue(), vi.isDelayed());
-        return new VariableInfoContainerImpl(ci, Either.right(initial), null, null);
+
+        return new VariableInfoContainerImpl(ci, Either.right(initial), new SetOnce<>(), Level.MERGE);
     }
 
     /*

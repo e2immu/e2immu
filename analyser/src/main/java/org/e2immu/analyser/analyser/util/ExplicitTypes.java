@@ -84,9 +84,7 @@ public class ExplicitTypes {
     private void explicitTypes(Element start) {
         Consumer<Element> visitor = element -> {
 
-            /* a.method() -> type of a cannot be replaced by unbound type parameter,
-
-             UNLESS the method is abstract, (hence the type is abstract), and the modification status is not set
+            /* a.method() -> the type of "a" cannot be replaced by unbound type parameter,
              */
             MethodCall mc;
             if ((mc = element.asInstanceOf(MethodCall.class)) != null) {
@@ -121,7 +119,7 @@ public class ExplicitTypes {
                 }
             }
 
-            // a.b -> type of a == owner of b cannot be replaced by unbound type parameter
+            // a.b -> the type of "a" == the owner of "b" cannot be replaced by unbound type parameter
             VariableExpression ve;
             if ((ve = element.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference fr) {
                 add(fr.fieldInfo.owner.asParameterizedType(inspectionProvider), UsedAs.FIELD_ACCESS);

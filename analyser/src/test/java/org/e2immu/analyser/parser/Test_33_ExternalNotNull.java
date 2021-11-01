@@ -144,12 +144,12 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("q".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, enn);
                 assertEquals(Level.FALSE, effFinal);
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("r".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, enn);
                 assertEquals(Level.FALSE, effFinal);
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
         testClass("ExternalNotNull_0", 0, 4, new DebugConfiguration.Builder()

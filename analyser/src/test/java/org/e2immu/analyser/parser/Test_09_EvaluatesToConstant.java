@@ -83,7 +83,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 assertEquals("null==param?\"x\":param", d.currentValue().toString());
                 int nne = d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nne);
-                assertEquals("b:0", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("b:0,param:1", d.variableInfo().getLinkedVariables().toString());
             }
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
                 int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;

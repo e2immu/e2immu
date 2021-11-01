@@ -50,7 +50,7 @@ public class Test_24_TypeParameters extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("TypeParameters_0".equals(d.methodInfo().name) && STRINGS.equals(d.variableName())) {
                 assertEquals("input.stream().map(C::new).collect(Collectors.toList())", d.currentValue().toString());
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("this.strings:0", d.variableInfo().getLinkedVariables().toString());
             }
         };
 

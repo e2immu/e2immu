@@ -291,7 +291,7 @@ public class EvaluateMethodCall {
                         }
                         Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
                         Integer assignedOrLinked = assigned.get(fieldInfo);
-                        if (assignedOrLinked == LinkedVariables.ASSIGNED) {
+                        if (LinkedVariables.isAssigned(assignedOrLinked)) {
                             return builder.setExpression(newObject.getParameterExpressions().get(i)).build();
                         }
                         i++;

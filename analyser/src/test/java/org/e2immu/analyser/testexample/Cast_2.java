@@ -12,32 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
 
-/**
- * Classic key-value object, typical example of level 2 immutable class.
- *
- * @param <K> type of key
- * @param <V> type of value
+/*
+Example of a cast which messes with the immutability rules:
  */
 @E2Container
-public class Pair<K, V> {
+public class Cast_2<T> {
 
-    public final K k;
-    public final V v;
+    private final T t;
 
-    public Pair(K k, V v) {
-        this.k = k;
-        this.v = v;
+    public Cast_2(T input) {
+        t = input;
     }
 
-    public K getK() {
-        return k;
+    @NotModified
+    public T getT() {
+        return t;
     }
 
-    public V getV() {
-        return v;
+    @NotModified
+    public String getTAsString() {
+        return t.toString();
     }
 }

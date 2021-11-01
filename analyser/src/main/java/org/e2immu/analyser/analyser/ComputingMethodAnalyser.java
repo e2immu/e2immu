@@ -975,7 +975,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     public VariableInfo getReturnAsVariable() {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        assert lastStatement != null; // either constructor, and then we shouldn't ask; or compilation error
+        assert lastStatement != null; // either a constructor, and then we shouldn't ask; or compilation error
         return lastStatement.getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
 

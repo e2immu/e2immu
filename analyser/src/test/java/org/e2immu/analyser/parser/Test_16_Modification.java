@@ -876,12 +876,12 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-          //      .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
-         //       .addEvaluationResultVisitor(evaluationResultVisitor)
+                //      .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //       .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -1200,9 +1200,6 @@ public class Test_16_Modification extends CommonTestRunner {
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
 
-                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                assertEquals(expectLinked1, d.fieldAnalysis().getLinked1Variables().toString());
-
                 assertEquals(d.iteration() > 0,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished.isSet());
 
@@ -1221,11 +1218,11 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_19", 0, 0, new DebugConfiguration.Builder()
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -1320,9 +1317,6 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("set".equals(d.fieldInfo().name)) {
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
-
-                String expectLinked1 = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
-                assertEquals(expectLinked1, d.fieldAnalysis().getLinked1Variables().toString());
 
                 assertEquals(d.iteration() > 0,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished.isSet());

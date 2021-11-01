@@ -71,13 +71,13 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("values".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
         };
 
@@ -85,7 +85,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
@@ -112,7 +112,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("values".equals(d.methodInfo().name)) {
@@ -121,8 +121,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -135,7 +134,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                int expectImm = MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };

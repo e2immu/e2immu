@@ -39,11 +39,9 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        int TOO_LATE = 8;
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-                assertEquals("[Type param T, Type param T, Type param T, Type param T, Type param T, Type param T]",
+                assertEquals("Type java.util.Map.Entry<T,java.lang.Boolean>, Type param T, Type param T, Type param T, Type param T, Type param T, Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
 
                 int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
@@ -69,7 +67,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("UpgradableBooleanMap::putAll", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return combiner:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -98,14 +96,13 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
             // accumulator
             if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
 
             // finisher
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
 
             // putAll

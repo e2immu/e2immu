@@ -292,7 +292,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             }
             Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
             Integer assignedOrLinked = assigned.get(fieldInfo);
-            if (assignedOrLinked == LinkedVariables.ASSIGNED) {
+            if (LinkedVariables.isAssigned(assignedOrLinked)) {
                 return i;
             }
             i++;

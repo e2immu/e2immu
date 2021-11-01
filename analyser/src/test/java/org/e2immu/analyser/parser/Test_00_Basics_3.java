@@ -221,7 +221,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
                     assertEquals(expectS, d.currentValue().toString());
                     String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
-                            : "this.s:0"; // and not return getS:0,s$0:0, as the link is unidirectional
+                            : "return getS:0,s$0:1,this.s:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;

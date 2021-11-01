@@ -49,9 +49,10 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     }
 
     public static final int DELAYED_VALUE = -1;
-    public static final int ASSIGNED = 0;
-    public static final int DEPENDENT = 1;
-    public static final int INDEPENDENT1 = 2;
+    public static final int STATICALLY_ASSIGNED = 0;
+    public static final int ASSIGNED = 1;
+    public static final int DEPENDENT = 2;
+    public static final int INDEPENDENT1 = 3;
     public static final int NO_LINKING = MultiLevel.MAX_LEVEL;
 
     public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), false);
@@ -71,7 +72,11 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     }
 
     public static boolean isNotIndependent(int assignedOrLinked) {
-        return assignedOrLinked >= 0 && assignedOrLinked < NO_LINKING;
+        return assignedOrLinked >= STATICALLY_ASSIGNED && assignedOrLinked < NO_LINKING;
+    }
+
+    public static boolean isAssigned(int level) {
+        return level == STATICALLY_ASSIGNED || level == ASSIGNED;
     }
 
     public LinkedVariables mergeDelay(LinkedVariables other) {
@@ -82,7 +87,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
                 map.put(v, DELAYED_VALUE);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = inMap == ASSIGNED ? ASSIGNED : DELAYED_VALUE;
+                int merged = inMap == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED : DELAYED_VALUE;
                 map.put(v, merged);
             }
         });
@@ -114,7 +119,8 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
                 map.put(v, newValue);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = newValue == ASSIGNED || inMap == ASSIGNED ? ASSIGNED : Math.min(newValue, inMap);
+                int merged = newValue == STATICALLY_ASSIGNED || inMap == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED
+                        : Math.min(newValue, inMap);
                 map.put(v, merged);
             }
         });
@@ -205,7 +211,8 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public LinkedVariables changeToDelay() {
         Map<Variable, Integer> map = variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == ASSIGNED ? ASSIGNED : DELAYED_VALUE));
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED : DELAYED_VALUE));
         return new LinkedVariables(map);
     }
 
@@ -301,6 +308,6 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     }
 
     public static boolean isAssignedOrLinked(int dependent) {
-        return dependent == ASSIGNED || dependent == DEPENDENT;
+        return dependent >= STATICALLY_ASSIGNED && dependent <= DEPENDENT;
     }
 }

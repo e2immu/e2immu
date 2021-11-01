@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.LinkedVariables.*;
+import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED;
+import static org.e2immu.analyser.analyser.LinkedVariables.DELAYED_VALUE;
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
@@ -145,15 +146,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     return DELAYS;
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(v -> v instanceof FieldReference)
-                        .map(v -> (FieldReference) v).toList();
-                // FIXME check at least INDEP_1
+                        .filter(e -> e.getKey() instanceof FieldReference && e.getValue() >= LinkedVariables.INDEPENDENT1)
+                        .map(e -> (FieldReference) e.getKey()).toList();
                 if (!fields.isEmpty()) {
                     // so we know the parameter is content linked to some fields
                     // now the value of independence (from 1 to infinity) is determined by the size of the
                     // hidden content component inside the field
-
-                    // FIXME
 
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
                     int minHiddenContentImmutable = fields.stream()
@@ -242,7 +240,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             EXTERNAL_IMMUTABLE);
 
     private static Set<VariableProperty> propertiesToCopy(int assignedOrLinked) {
-        if (assignedOrLinked == ASSIGNED) return PROPERTIES;
+        if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
         if (assignedOrLinked == LinkedVariables.DEPENDENT) return Set.of(MODIFIED_OUTSIDE_METHOD);
         return Set.of();
     }
@@ -288,7 +286,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             FieldInfo fieldInfo = e.getKey();
             int assignedOrLinked = e.getValue();
             Set<VariableProperty> propertiesToCopy = propertiesToCopy(assignedOrLinked);
-            if (assignedOrLinked == ASSIGNED) notAssignedToField = false;
+            if (LinkedVariables.isAssigned(assignedOrLinked)) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
@@ -314,14 +312,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 // FIXME check this code!
 
                 if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, true);
+                    int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
                     if (immutable == Level.DELAY) {
                         delays = true;
                     } else {
                         int levelImmutable = MultiLevel.level(immutable);
                         int typeIndependent;
                         if (levelImmutable <= LEVEL_1_IMMUTABLE) {
-                            if(assignedOrLinked <= LinkedVariables.DEPENDENT) {
+                            if (assignedOrLinked <= LinkedVariables.DEPENDENT) {
                                 typeIndependent = MultiLevel.DEPENDENT;
                             } else {
                                 typeIndependent = INDEPENDENT_1;

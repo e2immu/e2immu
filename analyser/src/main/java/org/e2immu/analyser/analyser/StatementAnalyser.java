@@ -669,7 +669,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // make a copy because we might add a variable when linking the local loop copy
         evaluationResult.changeData().forEach((v, cd) ->
                 ensureVariables(sharedState.evaluationContext, v, cd, evaluationResult.statementTime()));
-        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variables.stream()
+        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue,
                         (v1, v2) -> v2, HashMap::new));
 
@@ -749,7 +749,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueProperties,
                                 changeData.properties(), groupPropertyValues);
 
-                        LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.ASSIGNED);
+                        LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED);
                         local.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
                         local.setValue(valueToWriteCorrected, valueToWriteIsDelayed, linkedToMain, merged2,
@@ -1647,7 +1647,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         read,
                         newValue,
                         mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
-                        LinkedVariables.of(vi.variable(), LinkedVariables.ASSIGNED),
+                        LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED),
                         true);
                 statementAnalysis.variables.put(loopCopyFqn, newVic);
             }

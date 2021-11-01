@@ -15,19 +15,68 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_05_ListUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("compare".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    // because hasNext is a modifying method
+                    String expect = d.iteration() == 0 ? "!<m:hasNext>" : "!instance type boolean";
+                    assertEquals(expect, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("immutableConcat".equals(d.methodInfo().name)) {
+                if ("t".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("nullable instance type T", d.currentValue().toString());
+                        assertTrue(d.variableInfo().isAssigned());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        fail(); // should not exist beyond the loop!
+                    }
+                }
+            }
+            if ("compare".equals(d.methodInfo().name)) {
+                if ("it2".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("values2.iterator()", d.currentValue().toString());
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:it2>" : "instance type Iterator<T>";
+                        assertEquals(expected, d.currentValue().toString());
+                        int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                        assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "values1.isEmpty()?values2.iterator():<v:it2>"
+                                : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
+                        assertEquals(expected, d.currentValue().toString());
+                        int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                        assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("concatImmutable".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
@@ -35,7 +84,10 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                 }
             }
         };
+
         testUtilClass(List.of("ListUtil"), 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

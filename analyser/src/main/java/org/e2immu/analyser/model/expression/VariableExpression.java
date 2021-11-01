@@ -356,7 +356,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
             Integer assignedOrLinked = assigned.get(fieldInfo);
-            if (assignedOrLinked == LinkedVariables.ASSIGNED) {
+            if (LinkedVariables.isAssigned(assignedOrLinked)) {
                 return newObject.getParameterExpressions().get(i);
             }
             i++;

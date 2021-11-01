@@ -64,9 +64,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expect = d.iteration() == 0 ? "<f:i>" : "i$0";
                     assertEquals(expect, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getI:0,this.i:0" : "return getI:0";
+                    String expectLv = d.iteration() == 0 ? "return getI:0,this.i:0" : "i$0:1,return getI:0,this.i:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
@@ -174,12 +174,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
-                                : "field$0:0,this.field:0,v1:0,v2:0";
+                                : "field$0:1,this.field:0,v1:0,v2:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
-                                : "field$0:0,this.field:0,v1:0,v2:0";
+                                : "field$0:1,this.field:0,v1:0,v2:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
@@ -187,7 +187,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("v2".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
-                                : "field$0:0,this.field:0,v1:0,v2:0";
+                                : "field$0:1,this.field:0,v1:1,v2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
@@ -197,12 +197,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if (FIELD_0_FQN.equals(d.variableName())) {
                     assert d.iteration() > 0;
                     if ("0".equals(d.statementId())) {
-                        assertEquals("field$0:0,this.field:0,v1:0",
+                        assertEquals("field$0:0,this.field:0,v1:1",
                                 d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals("field$0:0,this.field:0,v1:0,v2:0",
+                        assertEquals("field$0:0,this.field:0,v1:1,v2:1",
                                 d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
@@ -215,7 +215,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:field>" : FIELD_0;
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectedLv = d.iteration() == 0 ? "this.field:0,v1:0" : "field$0:0,this.field:0,v1:0";
+                        String expectedLv = d.iteration() == 0 ? "this.field:0,v1:0" : "field$0:1,this.field:0,v1:0";
                         assertEquals(expectedLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
@@ -536,7 +536,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:0,j:0";
+                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:1,j:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -548,7 +548,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals("instance type int", d.currentValue().toString());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("i$0:0", d.variableInfo().getLinkedVariables().toString());
+                        // NOTE: it is fine to have i$1 here, as long as it is not with a :0
+                        assertEquals("i$0:0,i$1:1,j:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (I1_FQN.equals(d.variableName())) {
@@ -557,10 +558,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals("instance type int", d.currentValue().toString());
                     if ("1.0.0".equals(d.statementId())) {
                         // after the assignment, i becomes a different value
-                        assertEquals("i$1:0,j:0,this.i:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
+                        String expectLv = "i$1:0,j:0,this.i:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString(), d.statementId());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // after the assignment, i becomes a different value
+                        assertEquals("i$1:0,j:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
+                    }
+                    if ("1.0.3".equals(d.statementId())) {
                         assertEquals("i$1:0,j:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
                     }
                     if ("1".equals(d.statementId())) {
@@ -568,11 +573,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if (I101_FQN.equals(d.variableName())) {
-                    assertEquals("i$1$1.0.1-E:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-
+                    if ("1".equals(d.statementId())) {
+                        assertFalse(d.variableInfoContainer().hasEvaluation());
+                    }
                     // is primitive
-                    if ("1.0.1".equals(d.statementId())) {
-                        fail();
+                    if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
+                        fail("Should not follow the path 102-103-1M-new it-1E-100");
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertEquals("1+" + I1, d.currentValue().toString());
@@ -582,6 +588,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals("1+" + I1, d.currentValue().toString());
                         assertEquals("1.0.2-C", d.variableInfo().getReadId());
                     }
+                    assertEquals("i$1$1.0.1-E:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (I.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -596,13 +603,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
+                        String expect = d.iteration() <= 1 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
 
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.1".equals(d.statementId())) {
@@ -620,8 +627,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        String expectLv = "this.i:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
@@ -731,30 +737,30 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("j".equals(d.variableName())) {
                     String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:0,j:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:0,j:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0,this.i:0" : "i$1:0,i$2:0,j0:0,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
                             "4.0.0.0.3".equals(d.statementId()) || "4.0.0.0.4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0" : "i$1:0,i$2:0,j0:0,j:0,k:0";
+                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0" : "i$1:1,i$2:1,j0:0,j:0,k:0";
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0" : "i$1:0,i$2:0,j:0,k:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,k:0" : "i$1:1,i$2:1,j:0,k:0";
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:0,i$2:0,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                 }
@@ -773,17 +779,17 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     if (I1.equals(d.variable().simpleName())) {
                         if ("3".equals(d.statementId())) {
-                            assertEquals("i$1:0,j:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
                             assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         }
                         if ("4.0.0.0.0".equals(d.statementId())) {
-                            assertEquals("i$1:0,i$2:0,j0:0,j:0,k:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("i$1:0,i$2:1,j0:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
                             assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         }
                         if ("4".equals(d.statementId())) {
-                            assertEquals("i$1:0,i$2:0,j:0,k:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
                             assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         }
@@ -802,6 +808,16 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
+                if ("org.e2immu.analyser.testexample.Basics_8.i$CI$4.0.0:M".equals(d.variableName())) {
+                    if ("4.0.0".equals(d.statementId())) {
+                        fail("Do we get here?");
+                    }
+                    if ("4".equals(d.statementId())) {
+                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                        int expectExtImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                        //assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    }
                 }
             }
         };

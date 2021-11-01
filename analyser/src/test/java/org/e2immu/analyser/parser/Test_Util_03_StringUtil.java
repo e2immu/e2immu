@@ -19,7 +19,9 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Util_03_StringUtil extends CommonTestRunner {
 
@@ -37,13 +40,26 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                 if ("s".equals(d.variableName()) && "0".equals(d.statementId())) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
-                if(d.variable() instanceof ReturnVariable) {
-                    if("1".equals(d.statementId())) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
                         assertEquals("n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
-                    if("2".equals(d.statementId())) {
+                    if ("2".equals(d.statementId())) {
                         assertEquals("n<=100?i>=10&&n>=11?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("n<=1000?i>=100&&n>=101?Integer.toString(i):\"0\"+Integer.toString(i):n<=100?i>=10&&n>=11?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                if ("4".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().flowData.alwaysEscapesViaException());
+                    assertEquals("n>=1001", d.conditionManagerForNextStatement().state().toString());
+                    // IMPROVE has to move to preconditions (n <= 1000)
                 }
             }
         };
@@ -65,9 +81,17 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                     .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                assertEquals("", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
         testUtilClass(List.of("StringUtil"), 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

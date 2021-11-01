@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_01_SMapList extends CommonTestRunner {
 
-    public static final String COPY_OF_TMP = "Map.copyOf((instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type HashMap<A,List<B>>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/)";
+    public static final String COPY_OF_TMP = "Map.copyOf(map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type HashMap<A,List<B>>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/)";
 
     public Test_Util_01_SMapList() {
         super(true);
@@ -51,7 +51,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
-                assertEquals("instance type Set<Entry<K,V>>", d.evaluationResult().value().toString());
+                assertEquals("src.entrySet()", d.evaluationResult().value().toString());
             }
         }
     };
@@ -115,7 +115,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
-            assertEquals("", d.variableInfo().getLinkedVariables().toString());
+            if("3".equals(d.statementId())) {
+                assertEquals("bs:3,list:0", d.variableInfo().getLinkedVariables().toString());
+            } else {
+                assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
+            }
         }
 
 
@@ -127,7 +131,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("destination")) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("nullable instance type Map<A,List<B>>", d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("destination:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("inDestination".equals(d.variableName())) {
@@ -141,7 +145,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<v:change>||null==<m:get>" : "change$1||null==destination.get(e$1.getKey())";
                     assertEquals("true", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
@@ -149,7 +153,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
@@ -158,13 +162,13 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("change$1".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     assertEquals("true", d.currentValue().toString());
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals("change$1:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         }
@@ -265,7 +269,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo map = typeMap.get(Map.class);
         MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
-        assertEquals(MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                 entrySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         MethodInfo copyOf = map.findUniqueMethod("copyOf", 1);
         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));

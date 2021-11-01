@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
@@ -139,11 +140,14 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Map.of(variable, LinkedVariables.ASSIGNED));
+        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED));
     }
 
     @Override
     public List<Variable> variables() {
+        if(variable instanceof FieldReference fr) {
+            return ListUtil.concatImmutable(List.of(variable), fr.scope.variables());
+        }
         return List.of(variable);
     }
 

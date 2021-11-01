@@ -349,7 +349,13 @@ public record NewObject(
         LinkedVariables result = LinkedVariables.EMPTY;
         int i = 0;
         for (Expression value : parameterExpressions) {
-            ParameterInfo parameterInfo = methodInspection.getParameters().get(i);
+            ParameterInfo parameterInfo;
+            if (i < methodInspection.getParameters().size()) {
+                parameterInfo = methodInspection.getParameters().get(i);
+            } else {
+                parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
+                assert parameterInfo.parameterInspection.get().isVarArgs();
+            }
             ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
             int independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
             LinkedVariables sub = value.linkedVariables(evaluationContext);

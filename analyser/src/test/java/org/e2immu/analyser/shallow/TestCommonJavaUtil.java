@@ -165,6 +165,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     }
 

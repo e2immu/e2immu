@@ -19,7 +19,7 @@ import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 /*
-Example of a cast, but not one that interferes with the immutability rules
+Example of a cast which messes with the immutability rules:
  */
 @E2Container
 public class Cast_0<T> {

@@ -53,7 +53,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
                 assertEquals("nullable instance type List<String>", d.currentValue().toString());
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
             }
         };
 
@@ -86,12 +86,12 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        String expectValue = d.iteration() == 0 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
-                        //      assertEquals(expectValue, d.currentValue().toString());
+                        String expectValue = d.iteration() == 0 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
             }
@@ -101,13 +101,11 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
-                else {
-                    // FIXME this cannot be correct... the state simply disappears
-                    assertEquals("!\"a\".equals(paramB)&&\"b\".equals(paramB)",
-                            d.methodAnalysis().getSingleReturnValue().toString());
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
-                }
+                // IMPROVE this cannot be correct... the state simply disappears
+                assertEquals("!\"a\".equals(paramB)&&\"b\".equals(paramB)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+
             }
             if ("methodA".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));

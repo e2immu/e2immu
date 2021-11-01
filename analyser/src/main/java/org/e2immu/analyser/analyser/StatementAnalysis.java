@@ -500,6 +500,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return StringUtil.inScopeOf(pattern.scope(), index);
         }
         if (copyIsParent) {
+            // see variableEntryStream(EVALUATION) -> ignore those that have merges but no eval; see e.g. Basics_7
+            if (vic.hasMerge() && !vic.hasEvaluation()) return false;
             return !(vic.variableNature() instanceof VariableNature.ConditionalInitialization);
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
@@ -655,7 +657,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Map<VariableProperty, Integer> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.ASSIGNED);
+                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.STATICALLY_ASSIGNED);
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
                     LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
@@ -800,7 +802,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (evaluationContext.isDelayed(value)) {
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
                         variableInfo.getLinkedVariables()
-                             .changeAllToDelay());
+                                .changeAllToDelay());
                 // FIXME Loops11 vs Loops2
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
@@ -809,6 +811,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private record AcceptForMerging(VariableInfoContainer vic, boolean accept) {
+        // useful for debugging
+        @Override
+        public String toString() {
+            return vic.current().variable().fullyQualifiedName() + ":" + accept;
+        }
     }
 
     /**
@@ -890,7 +897,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                             linkedVariablesMap.put(variable, linkedVariables);
 
-                            if(ignoreCurrent) variablesWhereMergeOverwrites.add(variable);
+                            if (ignoreCurrent) variablesWhereMergeOverwrites.add(variable);
 
                             /*
                             criteria for creating a ConditionalInitialization copy of a field:
@@ -934,7 +941,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 // the !merged check here is because some variables appear 2x, once with a positive accept,
                 // and the second time from inside the block with a negative one
-               // if (!merged.contains(fqn)) doNotWrite.add(variable);
+                // if (!merged.contains(fqn)) doNotWrite.add(variable);
             }
 
             // CNN_FOR_PARENT overwrite
@@ -1063,15 +1070,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Map<VariableProperty, Integer> valueProperties = EvaluationContext.VALUE_PROPERTIES.stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, variableInfo::getProperty));
         assert variableInfo.variable() instanceof FieldReference;
+        VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
-            VariableInfoContainer vic = VariableInfoContainerImpl.copyOfFieldForConditionalInitialization(variableInfo, index);
+            vic = VariableInfoContainerImpl.copyOfFieldForConditionalInitialization(variableInfo, index);
             variables.put(fqn, vic);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
         } else {
-            VariableInfoContainer vic = variables.get(fqn);
+            vic = variables.get(fqn);
             vic.setValue(variableInfo.getValue(), variableInfo.isDelayed(), variableInfo.getLinkedVariables(),
                     valueProperties, true);
         }
+        vic.ensureLevelForPropertiesLinkedVariables(MERGE);
+        vic.setLinkedVariables(LinkedVariables.of(variableInfo.variable(), LinkedVariables.STATICALLY_ASSIGNED), MERGE);
+        assert !vic.hasEvaluation();
     }
 
     private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {
@@ -1483,6 +1494,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream() {
         return variables.stream();
+    }
+
+    public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level) {
+        return variables.stream()
+                // if in EVALUATION, ignore those that have a merge but no evaluation
+                .filter(e -> level != EVALUATION || e.getValue().hasEvaluation() || !e.getValue().hasMerge());
     }
 
     // this is a safe constant (delay == -1)

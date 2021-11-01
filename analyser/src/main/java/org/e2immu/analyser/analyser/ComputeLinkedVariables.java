@@ -50,7 +50,7 @@ public class ComputeLinkedVariables {
 
     private final VariableInfoContainer.Level level;
     private final StatementAnalysis statementAnalysis;
-    private final List<List<Variable>> clustersAssigned;
+    private final List<List<Variable>> clustersStaticallyAssigned;
     private final List<List<Variable>> clustersDependent;
     public final boolean delaysInClustering;
     private final WeightedGraph<Variable> weightedGraph;
@@ -60,10 +60,10 @@ public class ComputeLinkedVariables {
                                    VariableInfoContainer.Level level,
                                    Predicate<Variable> ignore,
                                    WeightedGraph<Variable> weightedGraph,
-                                   List<List<Variable>> clustersAssigned,
+                                   List<List<Variable>> clustersStaticallyAssigned,
                                    List<List<Variable>> clustersDependent,
                                    boolean delaysInClustering) {
-        this.clustersAssigned = clustersAssigned;
+        this.clustersStaticallyAssigned = clustersStaticallyAssigned;
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
         this.ignore = ignore;
@@ -82,7 +82,7 @@ public class ComputeLinkedVariables {
         AtomicBoolean delaysInClustering = new AtomicBoolean();
         List<Variable> variables = new ArrayList<>(statementAnalysis.variables.size());
 
-        statementAnalysis.variables.stream().forEach(e -> {
+        statementAnalysis.variableEntryStream(level).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
             Variable variable = vi1.variable();
@@ -118,8 +118,10 @@ public class ComputeLinkedVariables {
             }
         });
 
-        List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables, LinkedVariables.ASSIGNED, LinkedVariables.ASSIGNED);
-        List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables, LinkedVariables.DELAYED_VALUE, LinkedVariables.DEPENDENT);
+        List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables,
+                LinkedVariables.STATICALLY_ASSIGNED, LinkedVariables.STATICALLY_ASSIGNED);
+        List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables,
+                LinkedVariables.DELAYED_VALUE, LinkedVariables.DEPENDENT);
         return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
                 clustersDependent, delaysInClustering.get());
     }
@@ -155,9 +157,9 @@ public class ComputeLinkedVariables {
          which in turn are needed to get rid of delays.
          */
         try {
-            return writeProperty(clustersAssigned, property, propertyValues);
+            return writeProperty(clustersStaticallyAssigned, property, propertyValues);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Clusters assigned are: {}", clustersAssigned);
+            LOGGER.error("Clusters assigned are: {}", clustersStaticallyAssigned);
             throw ise;
         }
     }
@@ -202,17 +204,18 @@ public class ComputeLinkedVariables {
     }
 
     public void writeLinkedVariables() {
-        statementAnalysis.variables.stream().forEach(e -> {
-            VariableInfoContainer vic = e.getValue();
+        statementAnalysis.variableEntryStream(level)
+                .forEach(e -> {
+                    VariableInfoContainer vic = e.getValue();
 
-            Variable variable = vic.current().variable();
-            if (!ignore.test(variable)) {
-                Map<Variable, Integer> map = weightedGraph.links(variable, true);
-                LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
+                    Variable variable = vic.current().variable();
+                    if (!ignore.test(variable)) {
+                        Map<Variable, Integer> map = weightedGraph.links(variable, true);
+                        LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                ensureLevel(vic);
-                vic.setLinkedVariables(linkedVariables, level);
-            }
-        });
+                        ensureLevel(vic);
+                        vic.setLinkedVariables(linkedVariables, level);
+                    }
+                });
     }
 }
