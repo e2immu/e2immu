@@ -213,18 +213,36 @@ public class Test_17_Container extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof ParameterInfo pi && "s3".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("s3:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "s3:0,set3:-1,this.s:-1" : "s3:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
                 if ("set3".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
-                    if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    if ("1.0.0".equals(d.statementId())) {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
-
+                    if("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
                 // this one tests the linking mechanism from the field into the local copy
                 if (S.equals(d.variableName())) {
@@ -242,7 +260,9 @@ public class Test_17_Container extends CommonTestRunner {
 
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("s3:0,set3:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
+                        // NO s3!
+                        String expectLv = d.iteration() == 0 ? "s3:-1,set3:0,this.s:0" : "s$0:1,set3:0,this.s:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         // set3 -> s$0 -> this.s (-> s$0)
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -272,6 +292,7 @@ public class Test_17_Container extends CommonTestRunner {
             if (S.equals(d.fieldInfo().fullyQualifiedName())) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

@@ -166,7 +166,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
                     String expectLv = switch (d.iteration()) {
                         case 0 -> "<f:xs>[index]:-1,return getX:0";
-                        case 1 -> "return getX:0,this.xs:-1,xs[index]:0";
+                        case 1 -> "return getX:0,this.xs:-1,xs[index]:-1";
                         default -> "return getX:0,this.xs:1,xs[index]:1";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

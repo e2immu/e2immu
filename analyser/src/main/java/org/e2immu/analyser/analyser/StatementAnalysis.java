@@ -350,7 +350,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.variableEntryStream()
+        copyFrom.variables.stream()
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
                 .forEach(e -> copyVariableFromPreviousInIteration0(e,
@@ -801,9 +801,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
             if (evaluationContext.isDelayed(value)) {
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
-                        variableInfo.getLinkedVariables()
-                                .changeAllToDelay());
-                // FIXME Loops11 vs Loops2
+                        variableInfo.getLinkedVariables().changeAllToDelay());
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
             return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
@@ -1486,14 +1484,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
-    }
-
-    public Stream<VariableInfo> variableStream(VariableInfoContainer.Level level) {
-        return variables.stream().map(Map.Entry::getValue).map(vic -> vic.best(level));
-    }
-
-    public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream() {
-        return variables.stream();
     }
 
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level) {

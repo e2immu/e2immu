@@ -384,6 +384,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             evaluation.get().setStatementTime(statementTime);
         }
     }
+
     /*
     private void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables) {
         VariableInfo vi1 = getPreviousOrInitial();
@@ -402,17 +403,23 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 */
     @Override
-    public void ensureLevelForPropertiesLinkedVariables(Level level) {
+    public VariableInfo ensureLevelForPropertiesLinkedVariables(Level level) {
         if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
             VariableInfo vi1 = getPreviousOrInitial();
-            evaluation.set(prepareForWritingContextProperties(vi1));
-        } else if (level.equals(Level.MERGE) && !has(Level.MERGE)) {
-            VariableInfo vi1 = best(Level.EVALUATION);
-            if(merge == null) {
-                throw new UnsupportedOperationException("Cannot have a merge on "+vi1.variable().fullyQualifiedName());
-            }
-            merge.set(prepareForWritingContextProperties(vi1));
+            VariableInfoImpl vi = prepareForWritingContextProperties(vi1);
+            evaluation.set(vi);
+            return vi;
         }
+        if (level.equals(Level.MERGE) && !has(Level.MERGE)) {
+            VariableInfo vi1 = best(Level.EVALUATION);
+            if (merge == null) {
+                throw new UnsupportedOperationException("Cannot have a merge on " + vi1.variable().fullyQualifiedName());
+            }
+            VariableInfoImpl vi = prepareForWritingContextProperties(vi1);
+            merge.set(vi);
+            return vi;
+        }
+        return best(level);
     }
 
     @Override

@@ -176,13 +176,18 @@ public class ComputeLinkedVariables {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
                     if (vic != null) {
-                        ensureLevel(vic);
-                        try {
-                            vic.setProperty(variableProperty, summary, level);
-                        } catch (IllegalStateException ise) {
-                            LOGGER.error("Current cluster: {}", cluster);
-                            throw ise;
-                        }
+                        VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(level);
+                        if (vi.getProperty(variableProperty) == Level.DELAY) {
+                            try {
+                                vic.setProperty(variableProperty, summary, level);
+                            } catch (IllegalStateException ise) {
+                                LOGGER.error("Current cluster: {}", cluster);
+                                throw ise;
+                            }
+                        } /*
+                         else: local copies make it hard to get all values on the same line
+                         The principle is: once it gets a value, that's the one it keeps
+                         */
                     }
                 }
             }
@@ -190,11 +195,6 @@ public class ComputeLinkedVariables {
         return analysisStatus;
     }
 
-    private void ensureLevel(VariableInfoContainer vic) {
-        if (!vic.has(level)) {
-            vic.ensureLevelForPropertiesLinkedVariables(level);
-        }
-    }
 
     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
     private int computeSummary(List<Variable> cluster, Map<Variable, Integer> propertyValues) {
@@ -213,7 +213,7 @@ public class ComputeLinkedVariables {
                         Map<Variable, Integer> map = weightedGraph.links(variable, true);
                         LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                        ensureLevel(vic);
+                        vic.ensureLevelForPropertiesLinkedVariables(level);
                         vic.setLinkedVariables(linkedVariables, level);
                     }
                 });

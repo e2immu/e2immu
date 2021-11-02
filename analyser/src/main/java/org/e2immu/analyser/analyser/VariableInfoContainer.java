@@ -67,7 +67,7 @@ public interface VariableInfoContainer {
 
     boolean has(Level level);
 
-    void ensureLevelForPropertiesLinkedVariables(Level level);
+    VariableInfo ensureLevelForPropertiesLinkedVariables(Level level);
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {

@@ -73,7 +73,7 @@ public class WeightedGraph<T> extends Freezable {
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
                 if (followDelayed || d >= 0) {
-                    int distanceToN = d < 0 ? d : Math.max(currentDistanceToT, d);
+                    int distanceToN = d < 0 || currentDistanceToT < 0 ? Math.min(d, currentDistanceToT) : Math.max(currentDistanceToT, d);
                     Integer currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
                         // we've not been at N before

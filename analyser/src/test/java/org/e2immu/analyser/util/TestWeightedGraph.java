@@ -49,7 +49,7 @@ public class TestWeightedGraph {
         assertEquals(Map.of('a', 0, 'c', 1), fromA);
 
         Map<Character, Integer> fromAFollow = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', -1, 'c', 0, 'd', 1), fromAFollow);
+        assertEquals(Map.of('a', 0, 'b', -1, 'c', -1, 'd', -1), fromAFollow);
     }
 
 
@@ -108,5 +108,18 @@ public class TestWeightedGraph {
 
         Map<Character, Integer> fromB2 = graph.links('b', true);
         assertEquals(Map.of('a', 1, 'b', 0, 'c', 0, 'd', 1), fromB2);
+    }
+
+    @Test
+    public void testDelay() {
+        WeightedGraph<Character> graph = new WeightedGraph<>();
+
+        graph.addNode('a', Map.of('b', 0, 'c', -1), true);
+
+        Map<Character, Integer> fromB = graph.links('b', true);
+        assertEquals(Map.of('a', 0, 'b', 0, 'c', -1), fromB);
+
+        Map<Character, Integer> fromC = graph.links('c', true);
+        assertEquals(Map.of('a', -1, 'b', -1, 'c', 0), fromC);
     }
 }
