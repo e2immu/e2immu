@@ -274,8 +274,7 @@ public class MethodLevelData implements DelayDebugger {
         Optional<VariableInfo> delayed = sharedState.statementAnalysis.variableStream()
                 .filter(vi -> !(vi.variable() instanceof This))
                 // local variables that have been created, but not yet assigned/read; reject ConditionalInitialization
-                .filter(vi -> !(vi.variable() instanceof LocalVariableReference)
-                        || (vi.isAssigned() || vi.isRead()) && vi.isNotConditionalInitialization())
+                .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
                 .filter(vi -> (vi.getLinkedVariables().isDelayed() &&
                         vi.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) != Level.TRUE)
                         || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)

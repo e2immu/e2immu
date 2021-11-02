@@ -134,9 +134,4 @@ public interface VariableInfo {
                 && (!isRead() || getReadId().compareTo(latest) < 0)
                 && StringUtil.inSameBlock(latest, index);
     }
-
-    default boolean isNotConditionalInitialization() {
-        return !(variable() instanceof LocalVariableReference lvr) ||
-                !(lvr.variable.nature() instanceof VariableNature.ConditionalInitialization);
-    }
 }

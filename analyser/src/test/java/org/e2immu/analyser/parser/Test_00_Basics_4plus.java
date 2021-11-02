@@ -499,34 +499,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
                     }
-                    if (d.iteration() == 0 && ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                        assertEquals(Level.DELAY, cnn);
-                    } else {
-                        //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn, "in statement " + d.statementId());
-                    }
-                } else if ("org.e2immu.analyser.testexample.Basics_7.i$CI$0.0.0-E".equals(d.variableName())) {
-                    // FIXME how come this.i disappears after one iteration?
-                    if ("0".equals(d.statementId())) {
-                        assertEquals("i$CI$0.0.0-E:0,p:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.variableInfoContainer()
-                                .getPreviousOrInitial().getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    }
-                    if ("1".equals(d.statementId())) {
-                        assertEquals("i$CI$0.0.0-E:0,p:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
-                    //assertEquals(d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED, extImm,
-                    //        "Statement " + d.statementId());
 
-                } else if ("org.e2immu.analyser.testexample.Basics_7.i$CI$1.0.0-E".equals(d.variableName())) {
-                    // same stuff
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn, "in statement " + d.statementId());
 
-                    if ("1".equals(d.statementId())) {
-                        assertEquals("i$CI$1.0.0-E:0,p:0,this.i:0",
-                                d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
-                        assertEquals(MultiLevel.NOT_INVOLVED, extImm);
-                    }
                 }
                 if (d.variable() instanceof This) {
                     assertEquals(MultiLevel.NOT_INVOLVED, extImm);
@@ -643,24 +618,24 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if (I.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? I_DELAYED : "instance type int";
+                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? I_DELAYED : "instance type int";
+                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
                         int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
 
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.1".equals(d.statementId())) {
@@ -683,8 +658,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "i$CI$1.0.1-E:0,this.i:0" : "this.i:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                 }
@@ -811,7 +785,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,i$CI$4.0.0:M:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                 }
@@ -859,17 +833,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                }
-                if ("org.e2immu.analyser.testexample.Basics_8.i$CI$4.0.0:M".equals(d.variableName())) {
-                    if ("4.0.0".equals(d.statementId())) {
-                        fail("Do we get here?");
-                    }
-                    if ("4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,i$CI$4.0.0:M:0,j:0,k:0,this.i:0" : "this.i:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        int expectExtImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                        //assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    }
                 }
             }
         };

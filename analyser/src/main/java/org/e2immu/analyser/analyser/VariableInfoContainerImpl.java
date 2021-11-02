@@ -95,29 +95,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /*
-    factory method for conditional initialization
-     */
-    public static String conditionalInitializationSuffix(VariableInfo vi) {
-        return "$CI$" + vi.getAssignmentIds().getLatestAssignment();
-    }
-
-    public static VariableInfoContainerImpl copyOfFieldForConditionalInitialization(VariableInfo vi, String index) {
-        Objects.requireNonNull(vi);
-        FieldReference fr = (FieldReference) vi.variable();
-        String suffix = conditionalInitializationSuffix(vi);
-        VariableNature.ConditionalInitialization ci = new VariableNature.ConditionalInitialization(index, fr.fieldInfo);
-        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fr.simpleName() + suffix,
-                fr.fullyQualifiedName() + suffix, fr.parameterizedType(), List.of(), fr.getOwningType(), ci);
-        LocalVariableReference newVariable = new LocalVariableReference(lv);
-        VariableInfoImpl initial = new VariableInfoImpl(newVariable, vi.getAssignmentIds(),
-                NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), vi.valueIsSet() ? null : vi.getValue());
-        initial.newVariable(false);
-        initial.setValue(vi.getValue(), vi.isDelayed());
-
-        return new VariableInfoContainerImpl(ci, Either.right(initial), new SetOnce<>(), Level.MERGE);
-    }
-
-    /*
     factory method for new variables
      */
     public static VariableInfoContainerImpl newLocalCopyOfVariableField(Variable variable,

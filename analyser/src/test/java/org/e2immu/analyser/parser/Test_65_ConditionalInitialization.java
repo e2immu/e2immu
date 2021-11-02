@@ -28,7 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
@@ -44,20 +45,11 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
                     }
-                    if("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        String expect = d.iteration()==0 ? "<m:isEmpty>?Set.of(\"a\",\"b\"):<f:set>"
-                                :"set.isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<m:isEmpty>?Set.of(\"a\",\"b\"):<f:set>"
+                                : "set.isEmpty()?Set.of(\"a\",\"b\"):instance type Set<String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
-                }
-                if (d.variableName().contains("$CI$")) {
-                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_0.set$CI$0.0.0-E",
-                            d.variableName());
-                    if ("1.0.0".equals(d.statementId()) || "0.0.0".equals(d.statementId()))
-                        fail("Should not exist here");
-                    // holds for "0", "1"
-                    assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -71,7 +63,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                 int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                //assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 
@@ -90,18 +82,6 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("ConditionalInitialization_1".equals(d.methodInfo().name)) {
-                if (d.variableName().contains("$CI$")) {
-                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_1.set$CI$0.0.0-E",
-                            d.variableName());
-                    if ("0.1.0".equals(d.statementId())) fail("Should not exist here");
-                    // holds for "0"
-                    assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
-                }
-            }
-        };
-
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 String expect = "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
@@ -116,7 +96,6 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
         // field occurs in all constructors or at least one static block
 
         testClass("ConditionalInitialization_1", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
@@ -140,17 +119,6 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        // overwrite the value...
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("ConditionalInitialization_3".equals(d.methodInfo().name)) {
-                if (d.variableName().contains("$CI$")) {
-                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_3.set$CI$0.0.0-E",
-                            d.variableName());
-                    assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
-                }
-            }
-        };
-
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 String expect = "new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,null";
@@ -163,7 +131,6 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
         // field occurs in all constructors or at least one static block
         testClass("ConditionalInitialization_3", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

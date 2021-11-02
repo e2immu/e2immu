@@ -306,13 +306,38 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         // else: do not at viThis to the result
 
-        // so now we decide whether to return normalValue, or collect the ConditionalInitializations
-        List<VariableInfo> conditionals = variables.stream()
-                .filter(e -> e.getValue().variableNature() instanceof VariableNature.ConditionalInitialization ci
-                        && ci.source() == fieldInfo)
-                .map(e -> e.getValue().current()).toList();
-        result.addAll(conditionals);
+        // search for all VI's that did an assignment without self-references
+        Set<String> done = new HashSet<>();
+        Set<String> added = new HashSet<>();
+        for (VariableInfo normal : normalValue) {
+            Iterator<String> it = normal.getAssignmentIds().idStream();
+            while (it.hasNext()) {
+                String assignmentId = it.next();
+                String assignmentIndex = StringUtil.stripLevel(assignmentId);
+                if (!done.contains(assignmentIndex) && !prefixAdded(assignmentIndex, added)) {
+                    StatementAnalysis statementAnalysis = methodAnalysis.getFirstStatement().navigateTo(assignmentIndex);
+                    VariableInfoContainer assignmentVic = statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
+                    String level = StringUtil.level(assignmentId);
+                    VariableInfo assignmentVi = EVALUATION.label.equals(level) ? assignmentVic.best(EVALUATION) : assignmentVic.best(MERGE);
+                    Expression value = assignmentVi.getValue();
+                    if (acceptForConditionalInitialization(fieldInfo, value)) {
+                        added.add(assignmentIndex);
+                        result.add(assignmentVi);
+                    }
+                    done.add(assignmentIndex);
+                }
+            }
+        }
         return result;
+    }
+
+    private boolean prefixAdded(String assignmentIndex, Set<String> added) {
+        return added.stream().anyMatch(assignmentIndex::startsWith);
+    }
+
+    private boolean acceptForConditionalInitialization(FieldInfo fieldInfo, Expression value) {
+        List<Variable> variables = value.variables();
+        return variables.stream().noneMatch(v -> v instanceof FieldReference fr && fieldInfo.equals(fr.fieldInfo));
     }
 
     public boolean containsMessage(Message.Label messageLabel) {
@@ -501,8 +526,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         if (copyIsParent) {
             // see variableEntryStream(EVALUATION) -> ignore those that have merges but no eval; see e.g. Basics_7
-            if (vic.hasMerge() && !vic.hasEvaluation()) return false;
-            return !(vic.variableNature() instanceof VariableNature.ConditionalInitialization);
+            return !vic.hasMerge() || vic.hasEvaluation();
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         }
@@ -889,8 +913,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     if (toMerge.size() > 0) {
                         try {
-                            Expression resultingValue = destination.merge(evaluationContext,
-                                    stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge, groupPropertyValues);
+                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent,
+                                    toMerge, groupPropertyValues);
 
                             LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo.getLinkedVariables())
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
@@ -898,27 +922,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
                             if (ignoreCurrent) variablesWhereMergeOverwrites.add(variable);
 
-                            /*
-                            ConditionalInitialization copies are there to catch the different potential values of a field,
-                            as support for the field analyser; they break a chicken-and-egg situation.
-                            The CI variable starts off linked to the field reference; in the next iterations, however
-                            it may not satisfy the creation criteria anymore.
-
-                            criteria for creating a ConditionalInitialization copy of a field:
-                            1- assignment in exactly this sub-block
-                            2- the overall result contains the variable itself, (in a delayed fashion?)
-                            3- the assignment is conditional (i.e. the previous value still counts)
-                            See Test_65_ConditionalInitialization
-                             */
-
-                            if (variable instanceof FieldReference fr && resultingValue.variables().contains(fr)) {
-                                for (StatementAnalysis.ConditionAndVariableInfo source : toMerge) {
-                                    if (StringUtil.inSameBlock(source.variableInfo.getAssignmentIds().getLatestAssignmentIndex(),
-                                            source.indexOfLastStatement)) {
-                                        addConditionalAssignmentCopy(source.variableInfo, groupPropertyValues, linkedVariablesMap);
-                                    }
-                                }
-                            }
                             if (atLeastOneBlockExecuted &&
                                     checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
                                 ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier()),
@@ -929,11 +932,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     methodAnalysis.getMethodInfo().fullyQualifiedName, index);
                             throw throwable;
                         }
-                    } else if (vic.variableNature() instanceof VariableNature.ConditionalInitialization ci) {
-                        /* may not be "recreated" anymore: See Basics_7; condition for creating disappears in iteration 1
-                           we stick to the original, uninteresting values, and let the linking do the job
-                         */
-
                     } else if (destination.hasMerge()) {
                         assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                         // in previous iterations there was data for us, but now there isn't; copy from I/E into M
@@ -1068,46 +1066,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return navigationData.next.get().get().navigateTo(target);
         }
         throw new UnsupportedOperationException("? have index " + index + ", looking for " + target);
-    }
-
-    /*
-    we keep a record of the value of the field; NNE is the one property that matters to us at the moment
-     */
-    private void addConditionalAssignmentCopy(VariableInfo variableInfo, GroupPropertyValues groupPropertyValues, Map<Variable, LinkedVariables> linkedVariablesMap) {
-        assert variableInfo.variable() instanceof FieldReference;
-
-        String fqn = conditionalAssignmentFqn(variableInfo);
-        Map<VariableProperty, Integer> valueProperties = EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Collectors.toUnmodifiableMap(k -> k, variableInfo::getProperty));
-        VariableInfoContainer vic;
-        if (!variables.isSet(fqn)) {
-            vic = VariableInfoContainerImpl.copyOfFieldForConditionalInitialization(variableInfo, index);
-            variables.put(fqn, vic);
-            valueProperties.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
-        } else {
-            vic = variables.get(fqn);
-            vic.setValue(variableInfo.getValue(), variableInfo.isDelayed(), variableInfo.getLinkedVariables(),
-                    valueProperties, true);
-        }
-        vic.ensureLevelForPropertiesLinkedVariables(MERGE);
-        VariableInfo vi = vic.current();
-        Variable newVariable = vi.variable();
-        LinkedVariables linkedVariables = LinkedVariables.of(newVariable, LinkedVariables.STATICALLY_ASSIGNED,
-                variableInfo.variable(), LinkedVariables.STATICALLY_ASSIGNED);
-        vic.setLinkedVariables(linkedVariables, MERGE);
-        linkedVariablesMap.put(newVariable, linkedVariables);
-
-        VariableInfo vi1 = vic.getPreviousOrInitial();
-        for (VariableProperty vp : GroupPropertyValues.PROPERTIES) {
-            groupPropertyValues.set(vp, newVariable, vi1.getProperty(vp));
-        }
-
-        assert !vic.hasEvaluation();
-    }
-
-    private String conditionalAssignmentFqn(VariableInfo variableInfo) {
-        String suffix = VariableInfoContainerImpl.conditionalInitializationSuffix(variableInfo);
-        return variableInfo.variable().fullyQualifiedName() + suffix;
     }
 
     private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {

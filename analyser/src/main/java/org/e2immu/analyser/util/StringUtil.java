@@ -113,6 +113,14 @@ public class StringUtil {
         return index.compareTo(scope) >= 0;
     }
 
+    public static String level(String assignmentId) {
+        int dash = assignmentId.lastIndexOf('-');
+        if (dash >= 0) return assignmentId.substring(dash);
+        int colon = assignmentId.lastIndexOf(':');
+        if (colon >= 0) return assignmentId.substring(colon);
+        throw new UnsupportedOperationException();
+    }
+
     public static String stripLevel(String assignmentId) {
         int dash = assignmentId.lastIndexOf('-');
         if (dash >= 0) return assignmentId.substring(0, dash);

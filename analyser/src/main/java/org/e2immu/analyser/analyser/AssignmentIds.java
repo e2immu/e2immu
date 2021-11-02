@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
@@ -63,5 +64,9 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
 
     public String getEarliestAssignmentIndex() {
         return ids.isEmpty() ? "-" : ids.ceiling("-");
+    }
+
+    public Iterator<String> idStream() {
+        return ids.descendingIterator();
     }
 }

@@ -249,25 +249,6 @@ public interface VariableNature {
     /*
     situation 9
 
-    copy for conditional assignments of fields
-    Meant for variable, static fields (ConditionalInitialization tests).
-    Only travels "upwards" to the end of the method (never down into blocks)
-     */
-    record ConditionalInitialization(String statementIndex, FieldInfo source) implements VariableNature {
-        @Override
-        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            return previousIsParent;
-        }
-
-        @Override
-        public boolean acceptForSubBlockMerging(String index) {
-            return !index.equals(statementIndex);
-        }
-    }
-
-    /*
-    situation 10
-
     try resource variable
     Value in VIC overrides the default one in the local variable
     The variable only exists in statementIndex-Evaluation + sub-block 0
