@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
@@ -471,49 +472,99 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
-                if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                    assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
-                }
-                if ("0.0.1".equals(d.statementId())) {
-                    // READ IMPLICITLY via the variable 'i'
-                    assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                    String expectValue = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
-                    assertEquals(expectValue, d.currentValue().toString());
+            if ("Basics_7".equals(d.methodInfo().name)) {
+                int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+                int extImm = d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
 
-                    int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
-                }
-                if ("0".equals(d.statementId())) {
-                    assertTrue(d.variableInfoContainer().hasMerge());
-                    assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
+                if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        // READ IMPLICITLY via the variable 'i'
+                        assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        String expectValue = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
+                        assertEquals(expectValue, d.currentValue().toString());
 
-                    String expectValue = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
-                    assertEquals(expectValue, d.currentValue().toString());
-                    int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
+                        int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
+
+                        String expectValue = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
+                        assertEquals(expectValue, d.currentValue().toString());
+                        int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
+                    }
+                    if (d.iteration() == 0 && ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()))) {
+                        assertEquals(Level.DELAY, cnn);
+                    } else {
+                        //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn, "in statement " + d.statementId());
+                    }
+                } else if ("org.e2immu.analyser.testexample.Basics_7.i$CI$0.0.0-E".equals(d.variableName())) {
+                    // FIXME how come this.i disappears after one iteration?
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("i$CI$0.0.0-E:0,p:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.variableInfoContainer()
+                                .getPreviousOrInitial().getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("i$CI$0.0.0-E:0,p:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    //assertEquals(d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED, extImm,
+                    //        "Statement " + d.statementId());
+
+                } else if ("org.e2immu.analyser.testexample.Basics_7.i$CI$1.0.0-E".equals(d.variableName())) {
+                    // same stuff
+
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("i$CI$1.0.0-E:0,p:0,this.i:0",
+                                d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(MultiLevel.NOT_INVOLVED, extImm);
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    assertEquals(MultiLevel.NOT_INVOLVED, extImm);
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                }
+                if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    assertEquals(d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED, extImm);
+                }
+
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    if ("0.0.1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
+                }
+
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("p", d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "b?<f:i>:<f:i>" : "b?p:0";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                 }
             }
-
-            if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
-                    && "out".equals(fr.fieldInfo.name)) {
-                if ("0.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                }
-                if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                }
-            }
-
             if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     assertEquals(I0 + "+q", d.currentValue().toString());
@@ -632,7 +683,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = "this.i:0";
+                        String expectLv = d.iteration() == 0 ? "i$CI$1.0.1-E:0,this.i:0" : "this.i:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
@@ -760,7 +811,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectLv, linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,i$CI$4.0.0:M:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                 }
@@ -814,7 +865,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         fail("Do we get here?");
                     }
                     if ("4".equals(d.statementId())) {
-                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
+                        String expectLv = d.iteration() == 0 ? "i$CI$4.0.0.0.1-E:0,i$CI$4.0.0:M:0,j:0,k:0,this.i:0" : "this.i:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         int expectExtImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                         //assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                     }

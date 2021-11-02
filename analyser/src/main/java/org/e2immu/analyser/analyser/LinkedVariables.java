@@ -71,6 +71,10 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         return new LinkedVariables(Map.of(variable, value), value == DELAYED_VALUE);
     }
 
+    public static LinkedVariables of(Variable var1, int v1, Variable var2, int v2) {
+        return new LinkedVariables(Map.of(var1, v1, var2, v2), v2 == DELAYED_VALUE || v1 == DELAYED_VALUE);
+    }
+
     public static boolean isNotIndependent(int assignedOrLinked) {
         return assignedOrLinked >= STATICALLY_ASSIGNED && assignedOrLinked < NO_LINKING;
     }
