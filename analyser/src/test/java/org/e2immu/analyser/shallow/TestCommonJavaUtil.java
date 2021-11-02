@@ -335,6 +335,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.NOT_INVOLVED, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
     }
 
     @Test
@@ -386,5 +388,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
         assertEquals(Level.TRUE, p0.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testRandomNextInt() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Random.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("nextInt", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
     }
 }

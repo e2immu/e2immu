@@ -920,6 +920,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (identity == Level.DELAY) {
             // temporarily link to both the object and the parameter, in a delayed way
+            if(parameterExpressions.isEmpty()) return LinkedVariables.DELAYED_EMPTY;
             return object.linkedVariables(evaluationContext)
                     .merge(parameterExpressions.get(0).linkedVariables(evaluationContext)).changeAllToDelay();
         }

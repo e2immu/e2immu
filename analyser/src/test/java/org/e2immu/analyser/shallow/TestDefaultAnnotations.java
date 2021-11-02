@@ -387,4 +387,25 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
         assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.IMMUTABLE));
     }
+
+
+    @Test
+    public void testRandomNextInt() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Random.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("nextInt", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+    }
+
+
+    @Test
+    public void testObjectsRequireNonNull() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Objects.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("requireNonNull", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
+        ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
+        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+    }
 }

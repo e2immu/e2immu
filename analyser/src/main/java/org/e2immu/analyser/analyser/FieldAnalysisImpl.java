@@ -222,7 +222,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             int modified = getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
 
             // @Final(after=), @Final, @Variable
-            if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
+            if (effectivelyFinal == Level.FALSE && MultiLevel.effective(ownerImmutable) == MultiLevel.EVENTUAL) {
                 String labels = typeAnalysisOfOwner.markLabel();
                 annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
             } else {

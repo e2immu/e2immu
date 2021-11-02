@@ -91,9 +91,8 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-
-
-        testClass("InspectionGaps_2", 0, 0, new DebugConfiguration.Builder()
+        // no AAPI, warnings for Map.put
+        testClass("InspectionGaps_2", 0, 4, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -148,47 +147,9 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("InspectionGaps_11".equals(d.methodInfo().name)) {
-                int expectDep = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectDep, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
-            }
-
-            if ("createUnmodifiable".equals(d.methodInfo().name)) {
-                assertEquals("new ArrayList<>(list)", d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
-                int expectNne = MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                int expectModified = Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
-
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectPm, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            }
-            if ("of".equals(d.methodInfo().name)) {
-                MethodInspection mi = d.evaluationContext().getAnalyserContext().getMethodInspection(d.methodInfo());
-                Statement statement0 = mi.getMethodBody().structure.getStatements().get(0);
-                assertTrue(statement0 instanceof ReturnStatement returnStatement &&
-                        returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
-
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-
-            }
-        };
-
         testClass(List.of("InspectionGaps_11"), List.of("jmods/java.compiler.jmod"),
-                0, 0,
+                0, 1,
                 new DebugConfiguration.Builder()
-                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());

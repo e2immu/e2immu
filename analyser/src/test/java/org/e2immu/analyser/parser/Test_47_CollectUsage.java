@@ -37,12 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Test_47_CollectUsage extends CommonTestRunner {
 
     public Test_47_CollectUsage() {
-        super(false);
+        super(true);
     }
 
     @Test
     public void test_0() throws IOException {
-        TypeContext typeContext = testClass("CollectUsage_0", 0, 1,
+        TypeContext typeContext = testClass("CollectUsage_0", 0, 0,
                 new DebugConfiguration.Builder().build());
         CollectUsages collectUsages = new CollectUsages(List.of("java.lang"), Set.of("java.util"));
         List<TypeInfo> types = List.of(typeContext.getFullyQualified(CollectUsage_0.class));

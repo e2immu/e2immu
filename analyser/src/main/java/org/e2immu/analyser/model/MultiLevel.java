@@ -273,8 +273,15 @@ public class MultiLevel {
 
     public static int fromIndependentToLinkedVariableLevel(int independent) {
         assert independent < MultiLevel.INDEPENDENT; // cannot be linked
-        if(independent == MultiLevel.DEPENDENT) return LinkedVariables.DEPENDENT;
-        if(independent == MultiLevel.INDEPENDENT_1) return LinkedVariables.INDEPENDENT1;
+        if (independent == MultiLevel.DEPENDENT) return LinkedVariables.DEPENDENT;
+        if (independent == MultiLevel.INDEPENDENT_1) return LinkedVariables.INDEPENDENT1;
         return level(independent) + 2;
+    }
+
+    public static boolean isAtLeastEffectivelyE2Immutable(int i) {
+        int level = level(i);
+        if (level < MultiLevel.LEVEL_2_IMMUTABLE) return false;
+        int effective = effective(i);
+        return effective >= MultiLevel.EVENTUAL_AFTER;
     }
 }

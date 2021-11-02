@@ -23,8 +23,9 @@ import java.util.stream.Stream;
 
 /*
 Arrays.ArrayList competes with ArrayList. It is clear that the latter should win!
+
+is @E1Immutable without Annotated API, @E1Container with Annotated API
  */
-@E1Container
 public class InspectionGaps_11 {
     private final String s1;
     private final String s2;

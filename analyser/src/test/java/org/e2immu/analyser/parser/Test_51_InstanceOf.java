@@ -124,7 +124,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        testClass("InstanceOf_3", 0, 0, new DebugConfiguration.Builder()
+        // because of no annotated APIs, Set.addAll is non-modifying, so we get a warning that we ignore the result
+        testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 

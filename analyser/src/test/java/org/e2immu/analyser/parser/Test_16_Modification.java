@@ -1082,8 +1082,55 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
+        /*
+        in iteration 2, statementAnalysis should copy the IMMUTABLE value of 1 of input into the variable's properties
+         */
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Modification_15".equals(d.methodInfo().name)) {
+                int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
+                int extImm = d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                int cImm = d.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+                int imm = d.getProperty(VariableProperty.IMMUTABLE);
+
+                if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertTrue(d.iteration() < 2 || "1".equals(d.statementId()));
+
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectEnn, enn);
+                        int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                        assertEquals(expectExtImm, extImm);
+                        assertEquals(MultiLevel.MUTABLE, cImm);
+                        int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                        assertEquals(expectImm, imm, "Statement: " + d.statementId());
+                    }
+
+                } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
+                    assertEquals("1", d.statementId());
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectEnn, enn);
+                    int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                    assertEquals(expectExtImm, extImm);
+                } else if (d.variable() instanceof This) {
+                    assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                    assertEquals(MultiLevel.NOT_INVOLVED, extImm);
+                } else {
+                    fail("?" + d.variableName());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Modification_15".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectImm, p0.getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

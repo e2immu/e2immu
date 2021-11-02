@@ -649,12 +649,13 @@ public class ParameterizedType {
      */
     public ParameterizedType concreteSuperType(InspectionProvider inspectionProvider,
                                                ParameterizedType superType) {
-        if (typeInfo == superType.typeInfo) {
+        TypeInfo bestType = bestTypeInfo(inspectionProvider);
+        if (bestType == superType.typeInfo) {
             // if we start with Iterable<String>, and we're aiming for Iterable<E>, then
             // Iterable<String> is the right answer
             return this;
         }
-        TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
+        TypeInspection inspection = inspectionProvider.getTypeInspection(bestType);
         if (!Primitives.isJavaLangObject(inspection.parentClass())) {
             if (inspection.parentClass().typeInfo == superType.typeInfo) {
                 return concreteDirectSuperType(inspectionProvider, inspection.parentClass());

@@ -2777,15 +2777,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
                 int cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
-                if (cImm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
+                if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return true;
                 int imm = variableInfo.getProperty(IMMUTABLE);
-                if (imm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
+                if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return true;
                 int extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-                if (extImm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
+                if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return true;
                 int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext, false);
-                return formal >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                return MultiLevel.isAtLeastEffectivelyE2Immutable(formal);
             }
-            return getProperty(value, IMMUTABLE, true, false) >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            int valueProperty = getProperty(value, IMMUTABLE, true, false);
+            return MultiLevel.isAtLeastEffectivelyE2Immutable(valueProperty);
         }
 
         private int getVariableProperty(Variable variable, VariableProperty variableProperty, boolean duringEvaluation) {
@@ -2818,7 +2819,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (variableProperty == IMMUTABLE) {
                     int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext(), false);
                     if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
-                    if (inMap == Level.DELAY) {
+
+                    // FIXME improvement, but not good enough
+                    if (inMap == Level.DELAY && !(ve.variable() instanceof ParameterInfo)) {
                         assert translatedDelay("getProperty",
                                 ve.variable().parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
                                 ve.variable().fullyQualifiedName() + "@" + index() + D_IMMUTABLE);

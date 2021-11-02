@@ -186,9 +186,8 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
-                assertEquals(MultiLevel.DEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -235,20 +234,22 @@ public class Test_56_Fluent extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("from".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "instance".equals(p.name)) {
-                    assertTrue(d.variableInfo().linkedVariablesIsSet());
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    if ("0".equals(d.statementId())) {
+                        // because parameters are @Modified by default, we're without annotated APIs
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals("nullable instance type IFluent_1/*@Identity*/", d.currentValue().toString());
+                        assertEquals("instance:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // STEP 3 value of 0 not set because no linked variables set for return variable
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     // STEP 4 <s:Builder> value delayed -> linked variables delayed; why is value delayed?
                     // Precondition in state is delayed (empty set instead of null)
-                    assertEquals("this", d.currentValue().toString());
+                    assertEquals("this/*(Builder)*/", d.currentValue().toString());
                 }
             }
         };

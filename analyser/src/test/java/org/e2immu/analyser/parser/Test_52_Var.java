@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Test_52_Var extends CommonTestRunner {
 
     public Test_52_Var() {
-        super(false);
+        super(true);
     }
 
     // basics
@@ -117,39 +117,37 @@ public class Test_52_Var extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("sw".equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                    assertEquals("new StringWriter()", d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
                             .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
                     assertTrue(d.variableInfoContainer().hasMerge());
-                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                    assertEquals("new StringWriter()", d.currentValue().toString());
                 } else {
                     fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)
                 }
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("(nullable instance type StringWriter).toString()", d.currentValue().toString());
+                    assertEquals("sw.toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
-                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals("sw.toString()", d.currentValue().toString());
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertEquals("\"Error!\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
-                }
-                if ("0".equals(d.statementId())) {
-                    assertEquals("nullable instance type String", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo typeInfo = typeMap.get(String.class);
             int imm = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, imm);
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, imm);
         };
 
-        testClass("Var_5", 0, 1, new DebugConfiguration.Builder()
+        testClass("Var_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());

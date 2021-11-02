@@ -560,7 +560,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             assert createDelay(StatementAnalyser.INITIALISE_OR_UPDATE_VARIABLES,
                                     prevInitial.variable().fullyQualifiedName() + "@" + index + "." + variableProperty.name());
                         }
-                    }
+                    }/*
+                    if(prevInitial.getProperty(IMMUTABLE) == Level.DELAY) {
+                        int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
+                        if(immutable >= 0) {
+                            vic.setProperty(IMMUTABLE, immutable, INITIAL);
+                        }
+                    }*/
                 });
     }
 

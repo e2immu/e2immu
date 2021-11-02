@@ -33,8 +33,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_66_VariableScope extends CommonTestRunner {
 
+    // we want Random.nextInt() to be modifying
     public Test_66_VariableScope() {
-        super(false);
+        super(true);
     }
 
     @Test
@@ -53,8 +54,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        // potential null pointer in out
-        testClass("VariableScope_0", 0, 1, new DebugConfiguration.Builder()
+        testClass("VariableScope_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
