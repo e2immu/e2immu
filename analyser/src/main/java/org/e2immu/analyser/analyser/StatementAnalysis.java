@@ -781,10 +781,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private LocalVariableReference createLocalCopy(Variable original, VariableNature copy) {
+        String lvSimple;
+        if (original instanceof FieldReference fr && !fr.scopeIsThis()) {
+            if (fr.scope == null) {
+                lvSimple = (fr.isStatic ? fr.fieldInfo.owner.simpleName : "this") + "." + original.simpleName();
+            } else if (fr.scope instanceof VariableExpression ve) {
+                lvSimple = ve.variable().simpleName() + "." + original.simpleName();
+            } else {
+                lvSimple = fr.scope.minimalOutput() + "." + original.simpleName();
+            }
+        } else {
+            lvSimple = original.simpleName();
+        }
         LocalVariable localVariable = new LocalVariable.Builder()
                 .addModifier(LocalVariableModifier.FINAL)
                 .setName(original.fullyQualifiedName() + copy.suffix())
-                .setSimpleName(original.simpleName() + copy.suffix())
+                .setSimpleName(lvSimple + copy.suffix())
                 .setNature(copy)
                 .setParameterizedType(original.parameterizedType())
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)

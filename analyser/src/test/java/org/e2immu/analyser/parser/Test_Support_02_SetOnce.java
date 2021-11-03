@@ -37,8 +37,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// FIXME delay issue (too quickly final)
-
 public class Test_Support_02_SetOnce extends CommonTestRunner {
 
     public Test_Support_02_SetOnce() {
@@ -103,12 +101,21 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     default -> "null!=t";
                 };
                 assertEquals(expectCondition, d.condition().toString());
-                // FIXME here's the problem
                 String expectPrecondition = d.iteration() <= 1 ? "<precondition>" : "true";
                 assertEquals(expectPrecondition, d.statementAnalysis().stateData.getPrecondition().expression().toString());
             }
 
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    ConditionManager cm = d.statementAnalysis().stateData.conditionManagerForNextStatement.get();
+                    String expectCondition = switch (d.iteration()) {
+                        case 0 -> "<m:isSet>";
+                        case 1 -> "null!=<f:t>";
+                        default -> "null!=t";
+                    };
+                    assertEquals(expectCondition, cm.condition().toString());
+                    assertEquals(d.iteration() <= 1, d.condition().isDelayed(d.evaluationContext()));
+                }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.statementAnalysis().stateData.getPrecondition().expression().toString());
                 }
@@ -158,11 +165,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     }
                 }
             }
-            if ("getOrDefault".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof This) {
-                    assertEquals("org.e2immu.support.SetOnce.this", d.variable().fullyQualifiedName());
-                }
-            }
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof LocalVariableReference lvr && "t$0".equals(lvr.simpleName())) {
                     if ("1".equals(d.statementId())) {
@@ -206,11 +208,15 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
 
                         int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                        //   assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }
             if ("getOrDefault".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    assertEquals("org.e2immu.support.SetOnce.this", d.variable().fullyQualifiedName());
+                }
+
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
                         String expectValue = switch (d.iteration()) {
@@ -326,6 +332,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 } else {
                     assertEquals("null==t",
                             d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                }
+                if (d.iteration() <= 1) {
+                    assertNull(d.methodAnalysis().getPrecondition());
+                } else {
+                    assertEquals("null==t||null==other.t",
+                            d.methodAnalysis().getPrecondition().expression().toString());
                 }
                 assertEquals(d.iteration() >= 1,
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());

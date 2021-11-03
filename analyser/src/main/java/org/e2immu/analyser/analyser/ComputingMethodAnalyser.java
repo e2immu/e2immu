@@ -409,7 +409,11 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             return DONE;
         }
 
-        Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
+        /*
+        FilterMode.ALL will find clauses in Or and in And constructs. See SetOnce.copy for an example of an Or
+        construct.
+         */
+        Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ALL);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {

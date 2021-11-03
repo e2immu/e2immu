@@ -19,10 +19,12 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.List;
@@ -67,16 +69,19 @@ public class EvaluatePreconditionFromMethod {
             // the result of the re-evaluation may cause delays
 
             // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
-            Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated);
+            Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated, true);
             if (evaluationContext.isDelayed(inCondition)) {
                 builder.addPrecondition(Precondition.forDelayed(inCondition));
             } else if (!inCondition.isBoolValueTrue()) {
+
+                // See TestSupport SetOnce, @Mark computation in copy()
+                // See Precondition_0, where there is no condition, so it doesn't matter; Precondition_6, where it does
 
                 // from the result we either may infer another condition, or values to be set...
 
                 // NOT_NULL on parameters -> not in PC but as annotations on the parameter
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-                Filter.FilterResult<ParameterInfo> filterResult = filter.filter(reEvaluated,
+                Filter.FilterResult<ParameterInfo> filterResult = filter.filter(inCondition,
                         filter.individualNullOrNotNullClauseOnParameter());
                 Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
@@ -87,7 +92,7 @@ public class EvaluatePreconditionFromMethod {
 
                 // all the rest: preconditions
                 Expression translated = evaluationContext.acceptAndTranslatePrecondition(filterResult.rest());
-                if (translated != null) {
+                if (translated != null && !translated.isBoolValueTrue()) {
                     builder.addPrecondition(new Precondition(translated,
                             List.of(new Precondition.MethodCallCause(methodInfo, scopeObject))));
                 }

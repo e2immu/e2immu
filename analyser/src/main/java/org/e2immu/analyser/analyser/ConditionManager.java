@@ -113,6 +113,7 @@ public record ConditionManager(Expression condition,
     public ConditionManager replaceState(Expression state, Set<Variable> stateIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, precondition, preconditionIsDelayed, parent);
     }
+
     /*
     we guarantee a parent so that the condition counts!
      */
@@ -198,14 +199,25 @@ public record ConditionManager(Expression condition,
      * @return a value without the precondition attached
      */
     public Expression evaluate(EvaluationContext evaluationContext, Expression value) {
+        return evaluate(evaluationContext, value, false);
+    }
+
+    public Expression evaluate(EvaluationContext evaluationContext, Expression value, boolean negate) {
         Expression absoluteState = absoluteState(evaluationContext);
         if (absoluteState.isUnknown() || value.isUnknown()) throw new UnsupportedOperationException();
+        /*
+        check on true: no state, so don't do anything
+         */
+        boolean reallyNegate = negate && !absoluteState.isBoolValueTrue();
+        Expression negated = reallyNegate
+                ? Negation.negate(evaluationContext, absoluteState)
+                : absoluteState;
 
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
-            combinedWithPrecondition = absoluteState;
+            combinedWithPrecondition = negated;
         } else {
-            combinedWithPrecondition = And.and(evaluationContext, absoluteState, precondition.expression());
+            combinedWithPrecondition = And.and(evaluationContext, negated, precondition.expression());
         }
 
         // this one solves boolean problems; in a boolean context, there is no difference
@@ -216,7 +228,7 @@ public record ConditionManager(Expression condition,
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         // return the result without precondition
-        return And.and(evaluationContext, absoluteState, value);
+        return reallyNegate ? Or.or(evaluationContext, negated, value) : And.and(evaluationContext, negated, value);
     }
 
 
@@ -275,16 +287,14 @@ public record ConditionManager(Expression condition,
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationContext evaluationContext) {
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);
-        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
-        // those parts that have nothing to do with individual clauses
-        Expression rest = filterResult.rest();
-        Expression mine = rest.isBoolValueTrue() ? rest :
-                Negation.negate(new EvaluationContextImpl(evaluationContext.getAnalyserContext()), rest);
+        Expression absoluteState = absoluteState(evaluationContext);
+        if (absoluteState.isUnknown()) throw new UnsupportedOperationException();
+        Expression negated = Negation.negate(evaluationContext, absoluteState);
 
-        if (parent == null) return mine;
-        Expression fromParent = parent.precondition(evaluationContext);
-        return And.and(evaluationContext, mine, fromParent);
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(negated, filter.individualNullOrNotNullClauseOnParameter());
+        // those parts that have nothing to do with individual clauses
+        return filterResult.rest();
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {

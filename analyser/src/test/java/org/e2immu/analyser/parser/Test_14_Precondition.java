@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Precondition_4;
+import org.e2immu.analyser.testexample.Precondition_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -281,7 +282,7 @@ public class Test_14_Precondition extends CommonTestRunner {
     }
 
     @Test
-    public void test_4() throws IOException {
+    public void test4() throws IOException {
         TypeContext typeContext = testClass("Precondition_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
         TypeInfo pc4 = typeContext.getFullyQualified(Precondition_4.class);
@@ -309,4 +310,39 @@ public class Test_14_Precondition extends CommonTestRunner {
                 .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
     }
     */
+
+    @Test
+    public void test6() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("setI".equals(d.methodInfo().name)) {
+                if("0.0.0.0.0".equals(d.statementId())) {
+                    assertEquals("b&&i<=-1", d.statementAnalysis().stateData
+                            .conditionManagerForNextStatement.get().absoluteState(d.evaluationContext()).toString());
+
+                    assertEquals("!b||i>=0", d.statementAnalysis()
+                            .stateData.getPrecondition().expression().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    // has moved to the precondition
+
+                    assertTrue(d.statementAnalysis().stateData
+                            .conditionManagerForNextStatement.get().precondition().isEmpty());
+                   assertEquals("!b||i>=0", d.statementAnalysis()
+                           .methodLevelData.combinedPrecondition.get().expression().toString());
+                }
+            }
+        };
+        TypeContext typeContext = testClass("Precondition_6", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .build());
+        TypeInfo typeInfo = typeContext.getFullyQualified(Precondition_6.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("setI", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
+        assertEquals(1, methodAnalysis.getComputedCompanions().size());
+        assertEquals("return !b||i>=0;", methodAnalysis.getComputedCompanions().values()
+                .stream().findFirst().orElseThrow()
+                .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
+    }
 }

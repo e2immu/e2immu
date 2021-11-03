@@ -95,11 +95,11 @@ public class Filter {
                     }
                 } else if (v instanceof And andValue) {
                     if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
-                        filterResult.set(processAndOr(andValue.getExpressions(), filterMethods));
+                        filterResult.set(processAndOr(false, andValue.getExpressions(), filterMethods));
                     }
                 } else if (v instanceof Or orValue) {
                     if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
-                        filterResult.set(processAndOr(orValue.expressions(), filterMethods));
+                        filterResult.set(processAndOr(true, orValue.expressions(), filterMethods));
                     }
                 } else {
                     for (FilterMethod<X> filterMethod : filterMethods) {
@@ -124,8 +124,10 @@ public class Filter {
         return Negation.negate(evaluationContext, rest);
     }
 
-    private <X> FilterResult<X> processAndOr(List<Expression> values,
-                                             List<FilterMethod<X>> filterMethods) {
+    private <X> FilterResult<X> processAndOr(
+            boolean or,
+            List<Expression> values,
+            List<FilterMethod<X>> filterMethods) {
         List<FilterResult<X>> results = values.stream().map(v -> {
             FilterResult<X> sub = internalFilter(v, filterMethods);
             return sub == null ? new FilterResult<X>(Map.of(), v) : sub;
@@ -138,7 +140,7 @@ public class Filter {
         Expression rest;
         if (restList.isEmpty()) rest = defaultRest(evaluationContext.getPrimitives(), filterMode);
         else if (restList.size() == 1) rest = restList.get(0);
-        else if (filterMode == FilterMode.REJECT) {
+        else if (or) {
             rest = Or.or(evaluationContext, restList);
         } else {
             rest = And.and(evaluationContext, restList.toArray(Expression[]::new));
