@@ -366,6 +366,9 @@ class VariableInfoImpl implements VariableInfo {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+        if(evaluationContext.isMyself(variable)) {
+            setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
+        }
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {

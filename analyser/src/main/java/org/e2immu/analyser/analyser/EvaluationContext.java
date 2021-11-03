@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
@@ -313,6 +314,26 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default boolean hasBeenAssigned(Variable variable) {
+        return false;
+    }
+
+    /*
+    should we compute context immutable? not if we're a variable of the type itself
+     */
+    default boolean isMyself(Variable variable) {
+        InspectionProvider inspectionProvider = getAnalyserContext();
+        TypeInfo bestType = variable.parameterizedType().bestTypeInfo(inspectionProvider);
+        TypeInfo myself = getCurrentType();
+        if (myself.equals(bestType)) return true;
+        TypeInfo primaryVariable = bestType == null ? null : bestType.primaryType();
+        TypeInfo primaryMyself = myself.primaryType();
+        if (primaryMyself.equals(primaryVariable)) {
+            // in the same compilation unit, analysed at the same time
+            return bestType.parentalHierarchyContains(myself, inspectionProvider) ||
+                    myself.parentalHierarchyContains(bestType, inspectionProvider) ||
+                    bestType.nonStaticallyEnclosingTypesContains(myself, inspectionProvider) ||
+                    myself.nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
+        }
         return false;
     }
 

@@ -77,7 +77,7 @@ public class ComputeLinkedVariables {
                                                 Predicate<Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
-                                                AnalysisProvider analysisProvider) {
+                                                EvaluationContext evaluationContext) {
         WeightedGraph<Variable> weightedGraph = new WeightedGraph<>();
         AtomicBoolean delaysInClustering = new AtomicBoolean();
         List<Variable> variables = new ArrayList<>(statementAnalysis.variables.size());
@@ -89,7 +89,9 @@ public class ComputeLinkedVariables {
             if (!ignore.test(variable)) {
                 variables.add(variable);
 
-                Function<Variable, Integer> computeImmutable = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
+                AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
+                Predicate<Variable> computeMyself = evaluationContext::isMyself;
+                Function<Variable, Integer> computeImmutable = v -> v instanceof This || evaluationContext.isMyself(v) ? MultiLevel.NOT_INVOLVED :
                         v.parameterizedType().defaultImmutable(analysisProvider, false);
                 Function<Variable, Integer> computeImmutableHiddenContent = v -> v instanceof This ? MultiLevel.NOT_INVOLVED :
                         v.parameterizedType().immutableOfHiddenContent(analysisProvider, true);
@@ -108,7 +110,7 @@ public class ComputeLinkedVariables {
                         : vi1.getLinkedVariables().remove(reassigned);
                 LinkedVariables combined = external.merge(inVi);
                 LinkedVariables curated = combined
-                        .removeIncompatibleWithImmutable(sourceImmutable, computeImmutable,
+                        .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
                                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
                         .remove(ignore);
 

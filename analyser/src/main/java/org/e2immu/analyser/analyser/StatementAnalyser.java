@@ -770,7 +770,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // a modifying method caused an updated instance value
 
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
-                    Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                    Map<VariableProperty, Integer> merged = mergePreviousAndChange(sharedState.evaluationContext,
+                            variable, vi1.getProperties().toImmutableMap(),
                             changeData.properties(), groupPropertyValues, true);
                     vic.setValue(changeData.value(), valueIsDelayed, vi1.getLinkedVariables(), merged, false);
                 } else {
@@ -779,12 +780,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
                         // so we must integrate set properties
-                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(
+                                sharedState.evaluationContext,
+                                variable, vi1.getProperties().toImmutableMap(),
                                 changeData.properties(), groupPropertyValues, true);
                         vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getLinkedVariables(), merged, false);
                     } else {
                         // delayed situation; do not copy the value properties
-                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(
+                                sharedState.evaluationContext,
+                                variable, vi1.getProperties().toImmutableMap(),
                                 changeData.properties(), groupPropertyValues, false);
                         merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
                     }
@@ -868,7 +873,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
                 v -> false,
                 reassigned,
-                linkedVariablesFromChangeData, sharedState.evaluationContext.getAnalyserContext());
+                linkedVariablesFromChangeData,
+                sharedState.evaluationContext);
         computeLinkedVariables.writeLinkedVariables();
 
         // 1
@@ -1180,11 +1186,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return res;
     }
 
-    private Map<VariableProperty, Integer> mergePreviousAndChange(Variable variable,
-                                                                  Map<VariableProperty, Integer> previous,
-                                                                  Map<VariableProperty, Integer> changeData,
-                                                                  GroupPropertyValues groupPropertyValues,
-                                                                  boolean allowValueProperties) {
+    private Map<VariableProperty, Integer> mergePreviousAndChange(
+            EvaluationContext evaluationContext,
+            Variable variable,
+            Map<VariableProperty, Integer> previous,
+            Map<VariableProperty, Integer> changeData,
+            GroupPropertyValues groupPropertyValues,
+            boolean allowValueProperties) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
         both.addAll(GroupPropertyValues.PROPERTIES);
@@ -1197,6 +1205,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 int value = switch (k) {
                     case EXTERNAL_IMMUTABLE -> delayOrAtLeastMultiDelay(prev);
                     case CONTEXT_IMMUTABLE -> {
+                        if (evaluationContext.isMyself(variable)) {
+                            yield MultiLevel.MUTABLE;
+                        }
                         if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
                             yield Math.max(prev, change);
                         } else {
@@ -1289,6 +1300,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(assignmentIds, readId, statementTime, changeData.readAtStatementTime());
+        if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, EVALUATION);
     }
 
     /*
@@ -2801,37 +2813,38 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                boolean ignoreStateInConditionManager) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof IsVariableExpression ve) {
+                Variable variable = ve.variable();
                 // read what's in the property map (all values should be there) at initial or current level
-                int inMap = getVariableProperty(ve.variable(), variableProperty, duringEvaluation);
+                int inMap = getVariableProperty(variable, variableProperty, duringEvaluation);
                 if (variableProperty == NOT_NULL_EXPRESSION) {
-                    if (Primitives.isPrimitiveExcludingVoid(ve.variable().parameterizedType())) {
+                    if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
                         return MultiLevel.EFFECTIVELY_NOT_NULL;
                     }
-                    int cnn = getVariableProperty(ve.variable(), CONTEXT_NOT_NULL, duringEvaluation);
+                    int cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
                     if (cnn == Level.DELAY || inMap == Level.DELAY) {
                         // we return even if cmNn would be ENN, because our value could be higher
                         return Level.DELAY;
                     }
                     int best = MultiLevel.bestNotNull(inMap, cnn);
-                    boolean cmNn = notNullAccordingToConditionManager(ve.variable());
+                    boolean cmNn = notNullAccordingToConditionManager(variable);
                     return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
                 }
                 if (variableProperty == IMMUTABLE) {
-                    int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext(), false);
+                    int formally = variable.parameterizedType().defaultImmutable(getAnalyserContext(), false);
                     if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
 
                     // FIXME improvement, but not good enough
-                    if (inMap == Level.DELAY && !(ve.variable() instanceof ParameterInfo)) {
+                    if (inMap == Level.DELAY && !(variable instanceof ParameterInfo)) {
                         assert translatedDelay("getProperty",
-                                ve.variable().parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
-                                ve.variable().fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
+                                variable.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
+                                variable.fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
                         return Level.DELAY;
                     }
-                    int cImm = getVariableProperty(ve.variable(), CONTEXT_IMMUTABLE, duringEvaluation);
+                    int cImm = getVariableProperty(variable, CONTEXT_IMMUTABLE, duringEvaluation);
                     if (cImm == Level.DELAY) {
                         assert translatedDelay("getProperty",
-                                ve.variable().fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE,
-                                ve.variable().fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
+                                variable.fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE,
+                                variable.fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
                         return Level.DELAY;
                     }
                     return MultiLevel.bestImmutable(inMap, MultiLevel.bestImmutable(cImm, formally));

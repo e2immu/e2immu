@@ -595,11 +595,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return false;
     }
 
-    public boolean analysisAccessible(InspectionProvider inspectionProvider) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
-        if (typeInspection.inspector() == Inspector.BYTE_CODE_INSPECTION) {
-            return isPublic(inspectionProvider);
-        }
-        return true; // by hand, java parsing
+    public boolean parentalHierarchyContains(TypeInfo target, InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        ParameterizedType parent = inspection.parentClass();
+        if (parent == null || Primitives.isJavaLangObject(parent)) return false;
+        if (target.equals(parent.typeInfo)) return true;
+        return parent.typeInfo.parentalHierarchyContains(target, inspectionProvider);
+    }
+
+    public boolean nonStaticallyEnclosingTypesContains(TypeInfo target, InspectionProvider inspectionProvider) {
+        if (packageNameOrEnclosingType.isLeft()) return false;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        if (inspection.isStatic()) return false;
+        TypeInfo enclosing = packageNameOrEnclosingType.getRight();
+        if (enclosing.equals(target)) return true;
+        return enclosing.nonStaticallyEnclosingTypesContains(target, inspectionProvider);
     }
 }

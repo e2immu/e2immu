@@ -260,6 +260,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
     public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable,
+                                                           Predicate<Variable> myself,
                                                            Function<Variable, Integer> computeImmutable,
                                                            Function<Variable, Boolean> immutableCanBeIncreasedByTypeParameters,
                                                            Function<Variable, Integer> computeImmutableHiddenContent) {
@@ -282,29 +283,33 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         for (Map.Entry<Variable, Integer> entry : adjustedSource.entrySet()) {
             int linkLevel = entry.getValue();
             Variable target = entry.getKey();
-            int targetImmutable = computeImmutable.apply(target);
-            if (targetImmutable == Level.DELAY) {
-                result.put(target, DELAYED_VALUE);
-            } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-                if (linkLevel <= DEPENDENT) {
-                    result.put(target, linkLevel);
-                } else { // INDEPENDENT1+
-                    Boolean canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
-                    if (canIncrease == null) {
-                        result.put(target, DELAYED_VALUE);
-                    } else if (canIncrease) {
-                        int immutableHidden = computeImmutableHiddenContent.apply(target);
-                        if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+            if(myself.test(target)) {
+                result.put(target, linkLevel);
+            } else {
+                int targetImmutable = computeImmutable.apply(target);
+                if (targetImmutable == Level.DELAY) {
+                    result.put(target, DELAYED_VALUE);
+                } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                    if (linkLevel <= DEPENDENT) {
+                        result.put(target, linkLevel);
+                    } else { // INDEPENDENT1+
+                        Boolean canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
+                        if (canIncrease == null) {
+                            result.put(target, DELAYED_VALUE);
+                        } else if (canIncrease) {
+                            int immutableHidden = computeImmutableHiddenContent.apply(target);
+                            if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                                result.put(target, linkLevel);
+                            }
+                        } else {
                             result.put(target, linkLevel);
                         }
-                    } else {
+                    }
+                } else {
+                    // targetImmutable is @ERImmutable
+                    if (linkLevel <= ASSIGNED) {
                         result.put(target, linkLevel);
                     }
-                }
-            } else {
-                // targetImmutable is @ERImmutable
-                if (linkLevel <= ASSIGNED) {
-                    result.put(target, linkLevel);
                 }
             }
         }

@@ -979,7 +979,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
                 v -> !linkedVariablesMap.containsKey(v),
                 variablesWhereMergeOverwrites,
-                linkedVariablesFromBlocks, evaluationContext.getAnalyserContext());
+                linkedVariablesFromBlocks, evaluationContext);
         computeLinkedVariables.writeLinkedVariables();
 
         AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
