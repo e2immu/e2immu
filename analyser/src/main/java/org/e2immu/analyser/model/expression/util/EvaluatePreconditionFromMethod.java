@@ -68,7 +68,9 @@ public class EvaluatePreconditionFromMethod {
 
             // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
             Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated);
-            if (!inCondition.isBoolValueTrue()) {
+            if (evaluationContext.isDelayed(inCondition)) {
+                builder.addPrecondition(Precondition.forDelayed(inCondition));
+            } else if (!inCondition.isBoolValueTrue()) {
 
                 // from the result we either may infer another condition, or values to be set...
 

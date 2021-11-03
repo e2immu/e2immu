@@ -232,6 +232,15 @@ public class EvaluateInlineConditional {
         if (ifTrue.equals(ifFalse)) {// && evaluationContext.getProperty(condition, VariableProperty.MODIFIED) == Level.FALSE) {
             return ifTrue;
         }
+
+        // a == b ? a : b ---> b
+        if (condition instanceof Equals equals && ifTrue.equals(equals.lhs) && ifFalse.equals(equals.rhs)) {
+            return ifFalse;
+        }
+        // a == b ? b : a --> a
+        if (condition instanceof Equals equals && ifTrue.equals(equals.rhs) && ifFalse.equals(equals.lhs)) {
+            return ifFalse;
+        }
         return null;
     }
 

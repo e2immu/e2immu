@@ -240,4 +240,12 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("c?<return value>:<s:boolean>", inline2.toString());
         assertEquals(boxed, inline2.returnType());
     }
+
+    @Test
+    public void testAeqBThenAElseB() {
+        Expression inline = inline(equals(i, j), i, j);
+        assertEquals(j, inline);
+        Expression inline2 = inline(equals(i, j), j, i);
+        assertEquals(i, inline2);
+    }
 }

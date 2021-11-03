@@ -62,6 +62,7 @@ public interface FieldAnalysis extends Analysis {
             case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case FINAL:
+            case IDENTITY:
             case IGNORE_MODIFICATIONS:
             case INDEPENDENT:
             case MODIFIED_OUTSIDE_METHOD:
