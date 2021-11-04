@@ -15,12 +15,17 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Util_09_Logger extends CommonTestRunner {
 
@@ -30,7 +35,18 @@ public class Test_Util_09_Logger extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+
+            if ("log".equals(d.methodInfo().name) && d.methodAnalysis().getParameterAnalyses().size() == 4) {
+                ParameterAnalysis p3 = d.methodAnalysis().getParameterAnalyses().get(3);
+                // ignore mods not explicitly set, but because it is an abstract method in java.util.function
+                assertEquals(Level.TRUE, p3.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
+                assertEquals(Level.FALSE, p3.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+        };
+
         testUtilClass(List.of("Logger"), 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

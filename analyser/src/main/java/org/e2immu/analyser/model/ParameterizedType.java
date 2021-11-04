@@ -1059,4 +1059,12 @@ public class ParameterizedType {
     public boolean isUnboundWildcard() {
         return typeInfo == null && typeParameter == null;
     }
+
+    public boolean isAbstractInJavaUtilFunction(InspectionProvider inspectionProvider) {
+        TypeInfo bestType = bestTypeInfo(inspectionProvider);
+        return bestType != null && bestType.isPrimaryType()
+                && "java.util.function".equals(bestType.packageName())
+                && bestType.isAbstract(inspectionProvider);
+    }
+
 }

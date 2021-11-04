@@ -120,13 +120,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private int computeParameterIgnoreModification(ParameterAnalysisImpl.Builder builder) {
-        TypeInfo bestType = builder.getParameterInfo().parameterizedType.bestTypeInfo();
-        if (bestType != null && bestType.isPrimaryType()
-                && "java.util.function".equals(bestType.packageName())
-                && bestType.isAbstract(analyserContext)) {
-            return Level.TRUE;
-        }
-        return Level.FALSE;
+        return Level.fromBool(builder.getParameterInfo().parameterizedType.isAbstractInJavaUtilFunction(analyserContext));
     }
 
     private int computeNotNullParameter(ParameterAnalysisImpl.Builder builder) {

@@ -112,6 +112,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
         }
 
+        // implicit @IgnoreModifications rule for java.util.function
+        if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS) == Level.DELAY &&
+                parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)) {
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.TRUE);
+        }
+
+        if (parameterAnalysis.getProperty(MODIFIED_VARIABLE) == Level.DELAY) {
+            int contractIgnoreMod = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS);
+            if (contractIgnoreMod == Level.TRUE) {
+                parameterAnalysis.setProperty(MODIFIED_VARIABLE, Level.FALSE);
+            }
+        }
+
         if (isNoFieldsInvolved()) {
             noFieldsInvolved();
         }
