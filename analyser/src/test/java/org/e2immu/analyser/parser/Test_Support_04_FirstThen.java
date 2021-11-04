@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.FirstThen;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -123,7 +124,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportClass(List.of("FirstThen"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(FirstThen.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

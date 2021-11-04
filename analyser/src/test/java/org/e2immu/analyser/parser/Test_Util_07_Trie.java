@@ -16,6 +16,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.util.Trie;
+import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,7 +31,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Trie", "Freezable"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -21,6 +21,8 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.Freezable;
+import org.e2immu.support.SetOnceMap;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -205,7 +207,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("SetOnceMap", "Freezable"), 0, 2,
+        testSupportAndUtilClasses(List.of(SetOnceMap.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

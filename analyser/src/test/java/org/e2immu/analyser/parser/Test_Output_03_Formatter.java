@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                 }
             }
         };
-        testOutputClass(List.of("Formatter", "ElementarySpace", "OutputElement", "FormattingOptions", "Guide"),
+        testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class, Guide.class),
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());

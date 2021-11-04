@@ -19,6 +19,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -85,7 +87,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("ListUtil"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(ListUtil.class), 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

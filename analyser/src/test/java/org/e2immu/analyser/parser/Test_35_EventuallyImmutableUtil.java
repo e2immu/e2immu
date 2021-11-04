@@ -24,12 +24,15 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
-import org.e2immu.analyser.testexample.EventuallyImmutableUtil_0;
+import org.e2immu.analyser.testexample.*;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.Freezable;
+import org.e2immu.support.SetOnce;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,8 +41,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
-
-    private static final List<String> FLIP_SWITCH_SET_ONCE = List.of("FlipSwitch", "SetOnce");
 
     public Test_35_EventuallyImmutableUtil() {
         super(true);
@@ -65,8 +66,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 }
             }
         };
-        TypeContext typeContext = testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"),
-                ORG_E2IMMU_SUPPORT, 0, 0, new DebugConfiguration.Builder()
+        TypeContext typeContext = testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_0.class, FlipSwitch.class),
+                0, 0, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
 
@@ -87,7 +88,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_1"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_1.class, FlipSwitch.class, SetOnce.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
@@ -109,13 +110,14 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                assertEquals("[]", d.typeAnalysis().getEventuallyImmutableFields().toString());
+                String expectEvImm = d.iteration()<= 1 ? "[]": "[value]";
+                assertEquals(expectEvImm, d.typeAnalysis().getEventuallyImmutableFields().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{value.t=null==value.t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
 
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_2.class, FlipSwitch.class, SetOnce.class),
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
@@ -137,7 +139,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_3"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_3.class, FlipSwitch.class, SetOnce.class),
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -146,7 +148,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_4"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_4.class, FlipSwitch.class, SetOnce.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
@@ -168,7 +170,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_5"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_5.class, FlipSwitch.class, SetOnce.class),
                 0, 0, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
@@ -176,28 +178,28 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet", "Freezable"),
-                ORG_E2IMMU_SUPPORT, 0, 1, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_6.class, AddOnceSet.class, Freezable.class),
+                 0, 1, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_7() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_7"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_7.class, Freezable.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_8() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_8"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_8.class, Freezable.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_9() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_9"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(EventuallyImmutableUtil_9.class, Freezable.class),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }

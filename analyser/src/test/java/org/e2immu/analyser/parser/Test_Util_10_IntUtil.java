@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.util.IntUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,7 +30,7 @@ public class Test_Util_10_IntUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("IntUtil"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(IntUtil.class), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

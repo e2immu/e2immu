@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.Lazy;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -112,7 +113,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportClass(List.of("Lazy"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Lazy.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

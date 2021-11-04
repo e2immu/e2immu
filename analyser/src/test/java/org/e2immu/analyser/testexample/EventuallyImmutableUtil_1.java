@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.ERContainer;
 import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.TestMark;
@@ -22,7 +23,7 @@ import org.e2immu.annotation.TestMark;
 Use types in util to become an eventually immutable type
 
  */
-@E2Container(after = "value")
+@ERContainer(after = "value")
 public class EventuallyImmutableUtil_1 {
 
     public final SetOnce<String> value = new SetOnce<>();

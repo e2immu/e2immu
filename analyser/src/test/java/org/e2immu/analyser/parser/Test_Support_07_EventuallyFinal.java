@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.support.EventuallyFinal;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("EventuallyFinal"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(EventuallyFinal.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -16,6 +16,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.output.FormattingOptions;
+import org.e2immu.analyser.output.Guide;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,9 +31,9 @@ public class Test_Output_01_Guide extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testOutputClass(List.of("FormattingOptions", "Guide"),
+        testSupportAndUtilClasses(List.of(FormattingOptions.class, Guide.class),
                 0, 0, new DebugConfiguration.Builder()
-                .build());
+                        .build());
     }
 
 }

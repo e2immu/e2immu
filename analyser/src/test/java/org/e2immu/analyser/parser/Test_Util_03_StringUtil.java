@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -87,7 +88,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("StringUtil"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(StringUtil.class), 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +46,7 @@ public class Test_Util_09_Logger extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("Logger"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Logger.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

@@ -16,7 +16,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.Trie;
+import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -27,9 +30,9 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Resources", "Trie", "Freezable", "Logger"),
+        testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class, Logger.class),
                 0, 0, new DebugConfiguration.Builder()
-                .build());
+                        .build());
     }
 
 }

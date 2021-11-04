@@ -16,7 +16,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,8 +27,8 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("DependencyGraph", "Freezable"), 0, 0, new DebugConfiguration.Builder()
-                .build());
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 0, 0,
+                new DebugConfiguration.Builder().build());
     }
 
 }

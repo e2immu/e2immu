@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -85,7 +86,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
             assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
-        testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Pair.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

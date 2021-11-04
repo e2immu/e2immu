@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.util.EventuallyFinalExtension;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,7 +30,7 @@ public class Test_Util_11_EventuallyFinalExtension extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("EventuallyFinalExtension"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(EventuallyFinalExtension.class), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

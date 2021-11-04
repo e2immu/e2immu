@@ -20,6 +20,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -112,11 +113,12 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("UpgradableBooleanMap"), 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build());
+        testSupportAndUtilClasses(List.of(UpgradableBooleanMap.class),
+                0, 0, new DebugConfiguration.Builder()
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
     }
 
 }

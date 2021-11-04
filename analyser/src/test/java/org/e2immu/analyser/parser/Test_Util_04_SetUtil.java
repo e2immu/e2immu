@@ -16,6 +16,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.util.SMapList;
+import org.e2immu.analyser.util.SetUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -25,7 +27,7 @@ public class Test_Util_04_SetUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("SetUtil"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(SetUtil.class),  0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

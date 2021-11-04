@@ -136,34 +136,7 @@ public abstract class CommonTestRunner {
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected void testUtilClass(List<String> classes,
-                                 int errorsToExpect,
-                                 int warningsToExpect,
-                                 DebugConfiguration debugConfiguration) throws IOException {
-        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_UTIL,
-                errorsToExpect, warningsToExpect, debugConfiguration);
-    }
-
-
-    protected void testOutputClass(List<String> classes,
-                                   int errorsToExpect,
-                                   int warningsToExpect,
-                                   DebugConfiguration debugConfiguration) throws IOException {
-        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_OUTPUT,
-                errorsToExpect, warningsToExpect, debugConfiguration);
-    }
-
-    protected void testSupportClass(List<String> classes,
-                                    int errorsToExpect,
-                                    int warningsToExpect,
-                                    DebugConfiguration debugConfiguration) throws IOException {
-        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_SUPPORT,
-                errorsToExpect, warningsToExpect, debugConfiguration);
-    }
-
-    protected TypeContext testSupportAndUtilClasses(List<String> testClasses,
-                                                    List<String> utilClasses,
-                                                    String packageString,
+    protected TypeContext testSupportAndUtilClasses(List<Class<?>> classes,
                                                     int errorsToExpect,
                                                     int warningsToExpect,
                                                     DebugConfiguration debugConfiguration) throws IOException {
@@ -177,8 +150,7 @@ public abstract class CommonTestRunner {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
                 .addClassPath("jmods/java.xml.jmod");
 
-        testClasses.forEach(className -> builder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
-        utilClasses.forEach(className -> builder.addRestrictSourceToPackages(packageString + "." + className));
+        classes.forEach(clazz-> builder.addRestrictSourceToPackages(clazz.getCanonicalName()));
 
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS)

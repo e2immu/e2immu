@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.support.FlipSwitch;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -79,7 +80,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("FlipSwitch"), 0, 0,
+        testSupportAndUtilClasses(List.of(FlipSwitch.class), 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

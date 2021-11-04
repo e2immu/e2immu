@@ -21,7 +21,7 @@ import org.e2immu.annotation.*;
 Use types in util to become an eventually immutable type
 
  */
-@E2Container(after = "value")
+@ERContainer(after = "value")
 public class EventuallyImmutableUtil_2 {
 
     private final SetOnce<String> value = new SetOnce<>();

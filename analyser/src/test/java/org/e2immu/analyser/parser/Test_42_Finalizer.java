@@ -20,8 +20,10 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.testexample.Finalizer_1;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.support.EventuallyFinal;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -66,7 +68,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of("Finalizer_1"), List.of("EventuallyFinal"), ORG_E2IMMU_SUPPORT,
+        testSupportAndUtilClasses(List.of(Finalizer_1.class, EventuallyFinal.class),
                 1, 0, new DebugConfiguration.Builder()
                         .build());
     }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.Either;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -144,7 +145,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportClass(List.of("Either"), 0, 2, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Either.class), 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

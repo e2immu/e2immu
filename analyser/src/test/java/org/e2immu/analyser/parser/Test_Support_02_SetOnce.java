@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.support.SetOnce;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -399,7 +400,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(SetOnce.class), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

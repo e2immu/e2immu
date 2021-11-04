@@ -21,6 +21,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -277,7 +279,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("SMapList"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(SMapList.class), 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

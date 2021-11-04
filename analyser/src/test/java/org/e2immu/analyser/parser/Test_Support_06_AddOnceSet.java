@@ -16,12 +16,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -71,7 +73,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                             .getPreconditionForEventual().expression().toString());
                 }
             }
-            if("ensureNotFrozen".equals(d.methodInfo().name)) {
+            if ("ensureNotFrozen".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
@@ -90,7 +92,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("AddOnceSet", "Freezable"), 0, 1, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(AddOnceSet.class, Freezable.class), 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

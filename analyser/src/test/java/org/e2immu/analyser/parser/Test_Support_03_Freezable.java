@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class Test_Support_03_Freezable extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testSupportClass(List.of("Freezable"), 0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of(Freezable.class), 0, 0, new DebugConfiguration.Builder()
                 .build());
 
     }
