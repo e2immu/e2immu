@@ -81,6 +81,11 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
             computeMethodPropertiesAfterParameters();
+
+            parameterAnalyses.forEach(parameterAnalysis -> {
+                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                computeParameterProperties(builder);
+            });
         } else {
             computeMethodPropertyIfNecessary(VariableProperty.MODIFIED_METHOD, this::computeModifiedMethod);
 

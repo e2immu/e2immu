@@ -46,7 +46,7 @@ public class TryStatement_5 {
         }
     }
 
-    static void forward(List<String> list, Predicate<String> predicate) {
+    static void forward(List<String> list2, Predicate<String> predicate) {
 
     }
 }

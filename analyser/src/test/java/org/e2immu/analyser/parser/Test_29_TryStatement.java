@@ -16,9 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.StringConcat;
@@ -162,7 +160,25 @@ public class Test_29_TryStatement extends CommonTestRunner {
     // See also Test_62_FormatterSimplified.test 6
     @Test
     public void test_5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("forward".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("writeLine".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.simpleName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
+        };
+
         testClass("TryStatement_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
