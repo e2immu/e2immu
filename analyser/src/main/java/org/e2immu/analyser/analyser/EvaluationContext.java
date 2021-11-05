@@ -182,7 +182,7 @@ public interface EvaluationContext extends DelayDebugger {
         Map<VariableProperty, Integer> builder = new HashMap<>();
         for (VariableProperty property : VALUE_PROPERTIES) {
             int v = getProperty(value, property, true, ignoreConditionInConditionManager);
-            if (v != Level.DELAY) builder.put(property, v);
+            builder.put(property, v); // also put the -1's in, easier to detect if there are delays!
         }
         return Map.copyOf(builder);
     }

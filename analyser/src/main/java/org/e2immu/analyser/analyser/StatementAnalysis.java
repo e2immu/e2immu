@@ -700,7 +700,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Expression initialValue = statementTime == initial.getStatementTime() &&
                                 initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
-                                Instance.localCopyOfVariableField(index, fieldReference);
+                                Instance.localCopyOfVariableField(index, fieldReference, analyserContext);
                         boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
@@ -1145,7 +1145,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setInitialValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
                     Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
         } else if (variable instanceof This) {
-            vic.setInitialValue(Instance.forCatchOrThis(index, variable), false,
+            vic.setInitialValue(Instance.forCatchOrThis(index, variable, analyserContext), false,
                     typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true),
                     true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
@@ -1326,7 +1326,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
-        Instance instance = Instance.initialValueOfExternalVariableField(fieldReference, index, notNull);
+        Instance instance = Instance.initialValueOfExternalVariableField(fieldReference, index, notNull, analyserContext);
         return new ExpressionAndDelay(instance, false);
     }
 

@@ -269,8 +269,15 @@ public class InlinedMethod extends ElementImpl implements Expression {
             }
             if (replace) {
                 if (replacement == null) {
-                    replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
-                            Identifier.variable(variable))), variable.parameterizedType());
+                    Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(variable,
+                            evaluationContext.getAnalyserContext());
+                    if (valueProperties == null) {
+                        replacement = DelayedExpression.forMethod(methodInfo, variable.concreteReturnType(),
+                                evaluationContext.linkedVariables(variable).changeAllToDelay());
+                    } else {
+                        replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
+                                Identifier.variable(variable))), variable.parameterizedType(), valueProperties);
+                    }
                 }
 
                 builder.put(new VariableExpression(variable), replacement);
@@ -278,6 +285,10 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         return Map.copyOf(builder);
+    }
+
+    private Map<VariableProperty, Integer> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
+        throw new UnsupportedOperationException("To implement");
     }
 
     private int indexOfParameterLinkedToFinalField(EvaluationContext evaluationContext,

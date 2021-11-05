@@ -1466,7 +1466,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!statementAnalysis.variables.isSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
-                        Instance.forCatchOrThis(index(), lvr),
+                        Instance.forCatchOrThis(index(), lvr, analyserContext),
                         lvr.parameterizedType().defaultImmutable(analyserContext, false),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
@@ -1640,17 +1640,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index());
             String loopCopyFqn = loopCopy.fullyQualifiedName();
+            String read = index() + EVALUATION;
+            Expression newValue = Instance.localVariableInLoop(index(), vi.variable(),
+                    sharedState.evaluationContext().getAnalyserContext());
+            boolean newValueIsDelayed = sharedState.evaluationContext.isDelayed(newValue);
+            Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
-                String read = index() + EVALUATION;
-                Expression newValue = Instance.localVariableInLoop(index(), vi.variable());
-                Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
                         read,
                         newValue,
+                        newValueIsDelayed,
                         mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
                         LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED),
                         true);
                 statementAnalysis.variables.put(loopCopyFqn, newVic);
+            } else {
+                // FIXME check mergeValueAndLoopVar -- which properties are we talking about?
+                VariableInfoContainer loopVic = statementAnalysis.variables.get(loopCopyFqn);
+                loopVic.setInitialValue(newValue, newValueIsDelayed, valueProps, true);
             }
         });
         return expressionsToEvaluate;

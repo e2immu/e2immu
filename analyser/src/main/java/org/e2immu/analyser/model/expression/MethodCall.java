@@ -349,8 +349,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         boolean objectIsDelayed = evaluationContext.isDelayed(objectValue);
         LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
+        if(object instanceof IsVariableExpression ive) {
+            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED));
+        }
         LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
 
+        // FIXME this doesn't work on list = new ArrayList<>(); list.add(t); because linkedVariables is empty (computed on value!)
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
             int combined = objectIsDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, level2);
             builder.link(v, v2, combined);
@@ -652,23 +656,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance;
 
         IsVariableExpression ive;
-        if (currentCall instanceof Instance) {
+        if (currentCall instanceof Instance || currentCall instanceof ConstructorCall) {
             newInstance = currentCall;
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
-            if (current instanceof ConstructorCall constructorCall) {
-                if (constructorCall.getValueProperty(VariableProperty.NOT_NULL_EXPRESSION) == MultiLevel.NULLABLE) {
-                    newInstance = constructorCall.removeConstructor();
-                } else {
-                    newInstance = current;
-                }
-            } else if (current instanceof Instance instance) {
-                newInstance = instance;
+            if (current instanceof Instance instance || current instanceof ConstructorCall) {
+                newInstance = current;
             } else {
-                newInstance = Instance.forGetInstance(current.getIdentifier(), current.returnType());
+                Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(current.returnType(),
+                        evaluationContext.getAnalyserContext());
+                if (valueProperties == null) {
+                    return DelayedExpression.forMethod(methodInfo, current.returnType(),
+                            current.linkedVariables(evaluationContext).changeAllToDelay());
+                }
+                newInstance = Instance.forGetInstance(current.getIdentifier(), current.returnType(), valueProperties);
             }
         } else {
-            newInstance = Instance.forGetInstance(currentCall.getIdentifier(), objectValue.returnType());
+            Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(currentCall.returnType(),
+                    evaluationContext.getAnalyserContext());
+            if (valueProperties == null) {
+                return DelayedExpression.forMethod(methodInfo, currentCall.returnType(),
+                        currentCall.linkedVariables(evaluationContext).changeAllToDelay());
+            }
+            newInstance = Instance.forGetInstance(currentCall.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 
         Expression modifiedInstance;
@@ -684,6 +694,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
+    }
+
+    private static Map<VariableProperty, Integer> valuePropertiesOfInstance(ParameterizedType returnType, AnalysisProvider analysisProvider) {
+        int immutable = returnType.defaultImmutable(analysisProvider, false);
+        if (immutable < 0) return null;
+        int container = returnType.defaultContainer(analysisProvider);
+        if (container < 0) return null;
+        int independent = returnType.defaultIndependent(analysisProvider);
+        if (independent < 0) return null;
+        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                VariableProperty.IMMUTABLE, immutable,
+                VariableProperty.INDEPENDENT, independent,
+                VariableProperty.CONTAINER, container,
+                VariableProperty.IDENTITY, Level.FALSE);
     }
 
     private static boolean containsEmptyExpression(Expression expression) {

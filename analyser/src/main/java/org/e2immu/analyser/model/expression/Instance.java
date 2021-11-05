@@ -42,7 +42,7 @@ public record Instance(
         Map<VariableProperty, Integer> valueProperties,
         ArrayInitializer arrayInitializer) implements Expression {
 
-    private static Map<VariableProperty, Integer> primitiveValueProperties() {
+    public static Map<VariableProperty, Integer> primitiveValueProperties() {
         return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
                 VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
                 VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT,
@@ -55,20 +55,21 @@ public record Instance(
                 primitiveValueProperties(), null);
     }
 
-    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
+    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
+                                                Map<VariableProperty, Integer> valueProperties) {
         return new Instance(Identifier.generate(),
                 fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO,
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        // no IMMUTABLE, needs computing
-                        // no INDEPENDENT, needs computing
-                        // no CONTAINER, needs computing
-                        VariableProperty.IDENTITY, Level.FALSE), null);
+                valueProperties, null);
     }
 
+    // IMPROVE should this not be delayed?
     public static Instance forInlinedMethod(Identifier identifier,
                                             ParameterizedType parameterizedType) {
         return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                        VariableProperty.IMMUTABLE, MultiLevel.MUTABLE,
+                        VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT,
+                        VariableProperty.CONTAINER, Level.FALSE,
                         VariableProperty.IDENTITY, Level.FALSE), null);
     }
 
@@ -91,12 +92,31 @@ public record Instance(
     }
 
     // never null, never more interesting.
-    public static Instance forCatchOrThis(String index, Variable variable) {
+    public static Instance forCatchOrThis(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new Instance(Identifier.variable(variable, index),
-                parameterizedType, diamond, Map.of(VariableProperty.NOT_NULL_EXPRESSION,
-                MultiLevel.EFFECTIVELY_NOT_NULL, VariableProperty.IDENTITY, Level.FALSE), null);
+                parameterizedType, diamond,
+                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                        VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
+                        VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
+                        VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
+                        VariableProperty.IDENTITY, Level.FALSE), null);
+    }
+
+    private static int defaultIndependent(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        int v = parameterizedType.defaultIndependent(analysisProvider);
+        return v < 0 ? MultiLevel.DEPENDENT : v;
+    }
+
+    private static int defaultImmutable(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        int v = parameterizedType.defaultImmutable(analysisProvider, false);
+        return v < 0 ? MultiLevel.MUTABLE : v;
+    }
+
+    private static int defaultContainer(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        int v = parameterizedType.defaultContainer(analysisProvider);
+        return v < 0 ? Level.FALSE : v;
     }
 
     public static Instance forLoopVariable(String index, Variable variable, int initialNotNull) {
@@ -111,17 +131,26 @@ public record Instance(
      don't assume that this instance is non-null straight away; state is also generic at this point
      */
 
-    public static Instance localVariableInLoop(String index, Variable variable) {
+    public static Expression localVariableInLoop(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
+        int immutable = defaultImmutable(parameterizedType, analysisProvider);
+        int independent = defaultIndependent(parameterizedType, analysisProvider);
+        int container = defaultContainer(parameterizedType, analysisProvider);
+        if (independent < 0 || immutable < 0 || container < 0) {
+            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.DELAYED_EMPTY);
+        }
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
                         VariableProperty.IDENTITY, Level.FALSE), null);
     }
 
-    public static Instance localCopyOfVariableField(String index, Variable variable) {
+    public static Instance localCopyOfVariableField(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
+                        VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
+                        VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
+                        VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
                         VariableProperty.IDENTITY, Level.FALSE), null);
     }
 
@@ -149,15 +178,22 @@ public record Instance(
         return new Instance(Identifier.variable(fieldReference, index),
                 fieldReference.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNull,
+
                         VariableProperty.IDENTITY, Level.FALSE), null);
     }
 
     public static Instance initialValueOfExternalVariableField(FieldReference fieldReference,
                                                                String index,
-                                                               int minimalNotNull) {
+                                                               int minimalNotNull,
+                                                               AnalysisProvider analysisProvider) {
+        ParameterizedType parameterizedType = fieldReference.parameterizedType();
         return new Instance(Identifier.variable(fieldReference, index),
-                fieldReference.parameterizedType(), Diamond.SHOW_ALL, Map.of(VariableProperty.NOT_NULL_EXPRESSION, minimalNotNull,
-                VariableProperty.IDENTITY, Level.FALSE), null);
+                fieldReference.parameterizedType(), Diamond.SHOW_ALL,
+                Map.of(VariableProperty.NOT_NULL_EXPRESSION, minimalNotNull,
+                        VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
+                        VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
+                        VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
+                        VariableProperty.IDENTITY, Level.FALSE), null);
     }
 
     // null-status derived from variable in evaluation context
@@ -218,10 +254,9 @@ public record Instance(
    cannot be null, we're applying a method on it.
     */
     public static Instance forGetInstance(Identifier identifier,
-                                          ParameterizedType parameterizedType) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL,
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        VariableProperty.IDENTITY, Level.FALSE), null);
+                                          ParameterizedType parameterizedType,
+                                          Map<VariableProperty, Integer> valueProperties) {
+        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties, null);
     }
 
     public Instance(Identifier identifier,
@@ -242,7 +277,7 @@ public record Instance(
         int minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.falseValue);
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL)
             return false;
-
+        assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
         return valueProperties.values().stream().noneMatch(v -> v < 0);
     }
 
@@ -296,6 +331,7 @@ public record Instance(
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
+            /*
             // value properties
             case NOT_NULL_EXPRESSION -> {
                 Integer inMap = valueProperties.getOrDefault(variableProperty, null);
@@ -333,7 +369,8 @@ public record Instance(
                     throw new UnsupportedOperationException("Need a value for CONTAINER");
                 }
                 yield defaultValue;
-            }
+            }*/
+            case IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(variableProperty);
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };

@@ -80,9 +80,11 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertEquals("<p:collection>", d.currentValue().toString());
                     assertTrue(d.currentValueIsDelayed());
+                    assertEquals("nullable instance type Collection<String>/*@Identity*/",
+                            d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
                 } else {
                     assertTrue(d.currentValue() instanceof PropertyWrapper);
-                    assertEquals("instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
+                    assertEquals("nullable instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
                             d.currentValue().toString());
                 }
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));

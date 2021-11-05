@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -202,7 +203,10 @@ public class Lambda extends ElementImpl implements Expression {
                     result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
                 }
             } else {
-                result = Instance.forGetInstance(identifier, parameterizedType);
+                Map<VariableProperty, Integer> valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                        // FIXME need more here
+                        VariableProperty.IDENTITY, Level.FALSE);
+                result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }

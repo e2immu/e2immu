@@ -94,6 +94,16 @@ public record DelayedExpression(String msg,
         return new DelayedExpression(name, name, booleanParameterizedType, linkedVariables);
     }
 
+    public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+        String name = "<localVariableInLoop:" + parameterizedType.detailedString() + ">";
+        return new DelayedExpression(name, name, parameterizedType, linkedVariables);
+    }
+
+    public static Expression forValueOf(ParameterizedType parameterizedType) {
+        String name = "<valueOf:" + parameterizedType.detailedString() + ">";
+        return new DelayedExpression(name, name, parameterizedType, LinkedVariables.DELAYED_EMPTY);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

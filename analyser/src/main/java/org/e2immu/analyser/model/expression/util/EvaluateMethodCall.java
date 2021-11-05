@@ -241,14 +241,24 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            return Instance.forGetInstance(identifier, primitives.stringParameterizedType);
+            Map<VariableProperty, Integer> valueProperties = Instance.primitiveValueProperties();
+            return Instance.forGetInstance(identifier, primitives.stringParameterizedType, valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {
             return null; // implementation present
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
-        return Instance.forGetInstance(identifier, objectValue.returnType());
+        ParameterizedType parameterizedType = objectValue.returnType();
+        int immutable = parameterizedType.defaultImmutable(analyserContext, false);
+        int independent = parameterizedType.defaultIndependent(analyserContext);
+        int container = parameterizedType.defaultContainer(analyserContext);
+        if (immutable == Level.DELAY || independent == Level.DELAY || container == Level.DELAY) {
+            return DelayedExpression.forValueOf(parameterizedType);
+        }
+        Map<VariableProperty, Integer> valueProperties = Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE);
+        return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
 
     /*

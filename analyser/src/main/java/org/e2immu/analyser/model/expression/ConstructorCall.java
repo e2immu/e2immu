@@ -18,13 +18,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -36,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /*
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
@@ -59,26 +55,15 @@ public record ConstructorCall(
                                 ? MultiLevel.EFFECTIVELY_NOT_NULL : e.getValue()));
     }
 
-    private static Map<VariableProperty, Integer> primitiveValueProperties() {
-        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
-                VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT,
-                VariableProperty.CONTAINER, Level.TRUE,
-                VariableProperty.IDENTITY, Level.FALSE);
-    }
-
     /*
     For creation inside the inspection phase: compute on the fly, do not tolerate delays
      */
-    private static Map<VariableProperty, Integer> valueProperties(int nne, ParameterizedType parameterizedType) {
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
-                    VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT,
-                    VariableProperty.CONTAINER, Level.FALSE,
-                    VariableProperty.IDENTITY, Level.FALSE);
-        }
-        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
+    private static Map<VariableProperty, Integer> defaultValueProperties() {
+        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                VariableProperty.IMMUTABLE, MultiLevel.MUTABLE,
+                VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT,
+                VariableProperty.CONTAINER, Level.FALSE,
+                VariableProperty.IDENTITY, Level.FALSE);
     }
 
     // specific construction and copy methods: we explicitly name construction
@@ -91,179 +76,13 @@ public record ConstructorCall(
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer) {
         return new ConstructorCall(Identifier.generate(), arrayCreationConstructor, parameterizedType, Diamond.NO,
-                parameterExpressions, Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE,
-                // no INDEPENDENT, needs computing
-                VariableProperty.CONTAINER, Level.TRUE,
-                VariableProperty.IDENTITY, Level.FALSE),
+                parameterExpressions, defaultValueProperties(),
                 null, arrayInitializer);
     }
 
     public static Expression instanceFromSam(MethodInfo sam, ParameterizedType parameterizedType) {
         return new ConstructorCall(sam.getIdentifier(), null, parameterizedType, Diamond.NO, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        // no IMMUTABLE, needs computing
-                        // no INDEPENDENT, needs computing
-                        // no CONTAINER, needs computing
-                        VariableProperty.IDENTITY, Level.FALSE),
-                sam.typeInfo, null);
-    }
-
-    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
-        return new ConstructorCall(Identifier.generate(), null,
-                fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        // no IMMUTABLE, needs computing
-                        // no INDEPENDENT, needs computing
-                        // no CONTAINER, needs computing
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public static ConstructorCall forInlinedMethod(Identifier identifier,
-                                                   ParameterizedType parameterizedType) {
-        return new ConstructorCall(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public static Expression forMethodResult(Identifier identifier,
-                                             ParameterizedType parameterizedType,
-                                             Map<VariableProperty, Integer> valueProperties) {
-        return new ConstructorCall(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                valueProperties, null, null);
-    }
-
-    public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
-        return new ConstructorCall(Identifier.catchCondition(index),
-                null, primitives.booleanParameterizedType, Diamond.NO, List.of(),
-                primitiveValueProperties(), null, null);
-    }
-
-    public static ConstructorCall forTesting(ParameterizedType parameterizedType) {
-        return new ConstructorCall(Identifier.generate(), null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                primitiveValueProperties(), null, null);
-    }
-
-    // never null, never more interesting.
-    public static ConstructorCall forCatchOrThis(String index, Variable variable) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new ConstructorCall(Identifier.variable(variable, index),
-                null, parameterizedType, diamond, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION,
-                MultiLevel.EFFECTIVELY_NOT_NULL, VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public static ConstructorCall forLoopVariable(String index, Variable variable, int initialNotNull) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new ConstructorCall(Identifier.variable(variable, index),
-                null, parameterizedType, diamond, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION, initialNotNull,
-                VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-    /*
-     local variable, defined outside a loop, will be assigned inside the loop
-     don't assume that this instance is non-null straight away; state is also generic at this point
-     */
-
-    public static ConstructorCall localVariableInLoop(String index, Variable variable) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        return new ConstructorCall(Identifier.variable(variable, index), null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public static ConstructorCall localCopyOfVariableField(String index, Variable variable) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        return new ConstructorCall(Identifier.variable(variable, index), null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    /*
-    not-null always in properties
-     */
-    public static ConstructorCall initialValueOfParameter(ParameterInfo parameterInfo,
-                                                          int contractNotNull,
-                                                          int immutable,
-                                                          int independent,
-                                                          int container,
-                                                          boolean identity) {
-        return new ConstructorCall(Identifier.variable(parameterInfo), null, parameterInfo.parameterizedType,
-                Diamond.SHOW_ALL, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION, contractNotNull,
-                VariableProperty.IMMUTABLE, immutable,
-                VariableProperty.INDEPENDENT, independent,
-                VariableProperty.CONTAINER, container,
-                VariableProperty.IDENTITY, Level.fromBool(identity)), null, null);
-    }
-
-    public static ConstructorCall initialValueOfFieldPartOfConstruction(String index,
-                                                                        EvaluationContext evaluationContext,
-                                                                        FieldReference fieldReference) {
-        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
-        return new ConstructorCall(Identifier.variable(fieldReference, index),
-                null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNull,
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public static ConstructorCall initialValueOfExternalVariableField(FieldReference fieldReference,
-                                                                      String index,
-                                                                      int minimalNotNull) {
-        return new ConstructorCall(Identifier.variable(fieldReference, index), null,
-                fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION, minimalNotNull,
-                VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    // null-status derived from variable in evaluation context
-    public static ConstructorCall genericMergeResult(String index, VariableInfo variableInfo) {
-        int notNull = MultiLevel.bestNotNull(variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
-                variableInfo.variable().parameterizedType().defaultNotNull());
-        return new ConstructorCall(Identifier.variable(variableInfo.variable(), index),
-                null, variableInfo.variable().parameterizedType(),
-                Diamond.SHOW_ALL, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IDENTITY,
-                Level.fromBool(variableInfo.variable() instanceof ParameterInfo p && p.index == 0)),
-                null, null);
-    }
-
-
-    // null-status derived from variable in evaluation context
-    public static ConstructorCall genericMergeResult(String index,
-                                                     Variable variable,
-                                                     int notNull) {
-        return new ConstructorCall(Identifier.variable(variable, index), null, variable.parameterizedType(),
-                Diamond.SHOW_ALL, List.of(), Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNull,
-                VariableProperty.IDENTITY, Level.FALSE),
-                null, null);
-    }
-
-    // null-status derived from variable in evaluation context
-    public static ConstructorCall genericMergeResult(String index,
-                                                     VariableInfo variableInfo,
-                                                     int notNull) {
-        return new ConstructorCall(Identifier.variable(variableInfo.variable(), index), null, variableInfo.variable().parameterizedType(),
-                Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        VariableProperty.IDENTITY,
-                        Level.fromBool(variableInfo.variable() instanceof ParameterInfo p && p.index == 0)),
-                null, null);
-    }
-
-    public static Expression genericArrayAccess(Identifier identifier,
-                                                EvaluationContext evaluationContext,
-                                                Expression array,
-                                                Variable variable) {
-        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-        if (notNull == Level.DELAY) {
-            return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
-                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()),
-                            LinkedVariables.DELAYED_VALUE));
-        }
-        int notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
-        return new ConstructorCall(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNullOfElement,
-                        VariableProperty.IDENTITY, Level.FALSE),
-                null, null);
+                defaultValueProperties(), sam.typeInfo, null);
     }
 
     /*
@@ -273,7 +92,7 @@ public record ConstructorCall(
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
         return new ConstructorCall(Identifier.generate(), null, parameterizedType, diamond,
-                List.of(), valueProperties(MultiLevel.EFFECTIVELY_NOT_NULL, parameterizedType), anonymousClass, null);
+                List.of(), defaultValueProperties(), anonymousClass, null);
     }
 
     /*
@@ -288,8 +107,7 @@ public record ConstructorCall(
                                                  Diamond diamond,
                                                  List<Expression> parameterExpressions) {
         return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
-                valueProperties(MultiLevel.EFFECTIVELY_NOT_NULL, parameterizedType),
-                null, null);
+                defaultValueProperties(), null, null);
     }
 
     /*
@@ -437,42 +255,10 @@ public record ConstructorCall(
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             // value properties
-            case NOT_NULL_EXPRESSION -> {
+            case NOT_NULL_EXPRESSION, INDEPENDENT, IDENTITY, IMMUTABLE, CONTAINER -> {
                 Integer inMap = valueProperties.getOrDefault(variableProperty, null);
                 if (inMap != null) yield inMap;
-                throw new UnsupportedOperationException("Need a value for NOT_NULL_EXPRESSION");
-            }
-            case INDEPENDENT -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield MultiLevel.DEPENDENT;
-                int defaultValue = parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
-                if (defaultValue < 0) {
-                    throw new UnsupportedOperationException("Need a value for INDEPENDENT");
-                }
-                yield defaultValue;
-            }
-            case IDENTITY -> valueProperties.getOrDefault(variableProperty, Level.FALSE);
-            case IMMUTABLE -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield MultiLevel.MUTABLE;
-                int defaultValue = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-                if (defaultValue < 0) {
-                    throw new UnsupportedOperationException("Need a value for IMMUTABLE");
-                }
-                yield defaultValue;
-
-            }
-            case CONTAINER -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield Level.FALSE;
-                int defaultValue = parameterizedType.defaultContainer(evaluationContext.getAnalyserContext());
-                if (defaultValue < 0){
-                    throw new UnsupportedOperationException("Need a value for CONTAINER");
-                }
-                yield defaultValue;
+                throw new UnsupportedOperationException("Need a value for " + variableProperty);
             }
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
@@ -654,15 +440,30 @@ public record ConstructorCall(
         } else {
             pt = parameterizedType;
         }
-        ConstructorCall initialInstance = ConstructorCall.objectCreation(identifier, constructor, pt, diamond, res.v);
+        int nne = MultiLevel.EFFECTIVELY_NOT_NULL;
+        int immutable = pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+        int independent = pt.defaultIndependent(evaluationContext.getAnalyserContext());
+        int container = pt.defaultContainer(evaluationContext.getAnalyserContext());
+        if (nne == Level.DELAY || immutable == Level.DELAY || independent == Level.DELAY || container == Level.DELAY) {
+            LinkedVariables linkedVariables = linkedVariables(evaluationContext).changeAllToDelay();
+            Expression delayedExpression = DelayedExpression.forNewObject(pt, nne, linkedVariables);
+            return res.k.setExpression(delayedExpression).build();
+        }
+
+        Map<VariableProperty, Integer> newValueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, nne,
+                VariableProperty.IMMUTABLE, immutable, VariableProperty.INDEPENDENT, independent, VariableProperty.CONTAINER, container,
+                VariableProperty.IDENTITY, Level.FALSE);
+
+        ConstructorCall initialInstance = new ConstructorCall(identifier, constructor, pt, diamond, res.v,
+                newValueProperties, anonymousClass, null);
         Expression instance;
         if (constructor != null) {
             // check state changes of companion methods
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
-            Expression no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, this,
+            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, this,
                     constructor, constructorAnalysis, null, initialInstance, res.v);
-            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    initialInstance.linkedVariables(evaluationContext).changeAllToDelay()) : no;
+            instance = modifiedInstance == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                    initialInstance.linkedVariables(evaluationContext).changeAllToDelay()) : modifiedInstance;
         } else {
             instance = initialInstance;
         }
@@ -679,8 +480,8 @@ public record ConstructorCall(
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 
-        int immutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        if (MultiLevel.isAfterThrowWhenNotEventual(immutable)) {
+        int cImm = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();
@@ -689,9 +490,5 @@ public record ConstructorCall(
     @Override
     public Identifier getIdentifier() {
         return identifier;
-    }
-
-    public int getValueProperty(VariableProperty variableProperty) {
-        return valueProperties.get(variableProperty);
     }
 }

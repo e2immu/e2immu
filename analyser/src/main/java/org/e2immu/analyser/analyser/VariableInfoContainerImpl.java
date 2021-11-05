@@ -149,12 +149,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             String assignedId,
                                                             String readId,
                                                             Expression value,
+                                                            boolean valueIsDelayed,
                                                             Map<VariableProperty, Integer> properties,
                                                             LinkedVariables linkedVariables,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(assignedId), readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
-        initial.setValue(value, false);
+        initial.setValue(value, valueIsDelayed);
         properties.forEach(initial::setProperty);
         int cnn = initial.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         if (cnn == org.e2immu.analyser.model.Level.DELAY) {

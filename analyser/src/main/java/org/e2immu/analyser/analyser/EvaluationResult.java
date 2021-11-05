@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -293,7 +292,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL &&
                     (evaluationContext.notNullAccordingToConditionManager(variable)
-                          ||  evaluationContext.notNullAccordingToConditionManager(value))) {
+                            || evaluationContext.notNullAccordingToConditionManager(value))) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
@@ -464,7 +463,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
-                if(cd != null  && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
+                if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
                     setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);
                 }
                     /*
@@ -637,8 +636,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         fieldReference.fieldInfo.owner)) {
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
-                return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
-                        Instance.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo));
+                throw new UnsupportedOperationException("To implement");
+                /*
+
+
+                Map<VariableProperty,Integer> valueProperties = evaluationContext.getValueProperties(scope);
+                Expression newScope = valueProperties.values().stream().anyMatch(v -> v < 0)
+                        ? DelayedExpression.forInstance(scope)
+                        : Instance.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, valueProperties);
+                return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
+
+                 */
             }
             return null;
         }
