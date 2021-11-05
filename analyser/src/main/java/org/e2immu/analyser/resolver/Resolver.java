@@ -327,11 +327,11 @@ public class Resolver {
             MethodInfo sam;
             boolean artificial;
             if (fieldInfo.type.isFunctionalInterface(subContext.typeContext)) {
-                List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
-                artificial = newObjects.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
+                List<ConstructorCall> constructorCalls = parsedExpression.collect(ConstructorCall.class);
+                artificial = constructorCalls.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
 
                 if (!artificial) {
-                    NewObject newObject = newObjects.stream()
+                    ConstructorCall newObject = constructorCalls.stream()
                             .filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
                     TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
                     sam = anonymousType.findOverriddenSingleAbstractMethod();
@@ -494,7 +494,7 @@ public class Resolver {
         void visit(Element element) {
             element.visit(e -> {
                 VariableExpression ve;
-                NewObject newObject;
+                ConstructorCall constructorCall;
                 MethodCall methodCall;
                 MethodReference methodReference;
                 if (e instanceof org.e2immu.analyser.model.Expression ex &&
@@ -509,9 +509,9 @@ public class Resolver {
                 } else if ((methodReference = e.asInstanceOf(MethodReference.class)) != null &&
                         restrictToType.contains(methodReference.methodInfo.typeInfo)) {
                     methodsAndFields.add(methodReference.methodInfo);
-                } else if ((newObject = e.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null &&
-                        restrictToType.contains(newObject.constructor().typeInfo)) {
-                    methodsAndFields.add(newObject.constructor());
+                } else if ((constructorCall = e.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null &&
+                        restrictToType.contains(constructorCall.constructor().typeInfo)) {
+                    methodsAndFields.add(constructorCall.constructor());
                 } else if (e instanceof ExplicitConstructorInvocation eci) {
                     methodsAndFields.add(eci.methodInfo);
                 }
@@ -630,9 +630,9 @@ public class Resolver {
     private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
         AtomicBoolean createSelf = new AtomicBoolean();
         methodInfo.methodInspection.get().getMethodBody().visit(element -> {
-            NewObject newObject;
-            if ((newObject = element.asInstanceOf(NewObject.class)) != null) {
-                if (newObject.parameterizedType().typeInfo == methodInfo.typeInfo) {
+            Instance instance;
+            if ((instance = element.asInstanceOf(Instance.class)) != null) {
+                if (instance.parameterizedType().typeInfo == methodInfo.typeInfo) {
                     createSelf.set(true);
                 }
             }

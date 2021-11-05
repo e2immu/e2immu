@@ -18,8 +18,8 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -89,7 +89,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 if ("il5".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new InlineMethods_5(a)", d.currentValue().toString());
-                        if (d.currentValue() instanceof NewObject newObject) {
+                        if (d.currentValue() instanceof ConstructorCall newObject) {
                             assertEquals(1, newObject.parameterExpressions().size());
                         } else fail();
                     }

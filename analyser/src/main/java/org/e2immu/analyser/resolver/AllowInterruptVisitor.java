@@ -16,9 +16,9 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
 
 import java.util.Set;
@@ -36,15 +36,15 @@ public class AllowInterruptVisitor {
         element.visit(e -> {
             MethodCall methodCall;
             MethodReference methodReference;
-            NewObject newObject;
+            ConstructorCall constructorCall;
             if (e instanceof SynchronizedStatement) {
                 allowInterrupts.set(true);
             } else if ((methodCall = e.asInstanceOf(MethodCall.class)) != null) {
                 if (verify(methodCall.methodInfo, exclude)) allowInterrupts.set(true);
             } else if ((methodReference = e.asInstanceOf(MethodReference.class)) != null) {
                 if (verify(methodReference.methodInfo, exclude)) allowInterrupts.set(true);
-            } else if ((newObject = e.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
-                if (verify(newObject.constructor(), exclude)) allowInterrupts.set(true);
+            } else if ((constructorCall = e.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
+                if (verify(constructorCall.constructor(), exclude)) allowInterrupts.set(true);
             }
         });
         return allowInterrupts.get();

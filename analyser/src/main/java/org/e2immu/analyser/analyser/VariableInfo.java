@@ -15,16 +15,13 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
@@ -49,7 +46,7 @@ public interface VariableInfo {
     default Expression getVariableValue(Variable myself) {
         Expression value = getValue();
         Variable v = variable();
-        if (!v.equals(myself) && value.isInstanceOf(NewObject.class)) {
+        if (!v.equals(myself) && value.isInstanceOf(Instance.class)) {
             return new VariableExpression(v);
         }
         return value;

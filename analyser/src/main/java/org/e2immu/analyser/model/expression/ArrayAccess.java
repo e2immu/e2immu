@@ -148,7 +148,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
                 Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
                 if (currentValue.isDelayed(evaluationContext)) {
                     // we have no value yet
-                    Expression newObject = NewObject.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
+                    Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
                             evaluatedDependentVariable);
                     LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext);
                     builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);

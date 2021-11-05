@@ -99,7 +99,7 @@ public class TestLinkingExpression {
         MethodInfo arrayListConstructor = arrayList.findConstructor(0);
 
         // new ArrayList<>()
-        NewObject newObject = NewObject.objectCreation(Identifier.CONSTANT,
+        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMapBuilder),
                 Diamond.YES, List.of());
         LinkedVariables linkedVariables = newObject.linkedVariables(evaluationContext);
@@ -118,7 +118,7 @@ public class TestLinkingExpression {
 
         // new ArrayList<>(v), with v a local collection variable
         // because no AnnotatedAPI, v is @Dependent
-        NewObject newObject = NewObject.objectCreation(Identifier.CONSTANT,
+        ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.CONSTANT,
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMapBuilder),
                 Diamond.YES, List.of(ve));
         LinkedVariables linkedVariables = newObject.linkedVariables(evaluationContext);

@@ -332,32 +332,33 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     private static Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
         if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
-            NewObject newObject;
-            if ((newObject = scopeValue.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
-                return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
+            ConstructorCall constructorCall;
+            if ((constructorCall = scopeValue.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
+                return extractNewObject(evaluationContext, constructorCall, fr.fieldInfo);
             }
             if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
                 FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
                 Expression efv = fieldAnalysis.getEffectivelyFinalValue();
-                NewObject no2;
-                if (efv != null && (no2 = efv.asInstanceOf(NewObject.class)) != null && no2.constructor() != null) {
-                    return extractNewObject(evaluationContext, no2, fr.fieldInfo);
+                ConstructorCall cc2;
+                if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
+                    return extractNewObject(evaluationContext, cc2, fr.fieldInfo);
                 }
             }
         }
         return null;
     }
 
-    private static Expression extractNewObject(EvaluationContext evaluationContext, NewObject newObject, FieldInfo
-            fieldInfo) {
+    private static Expression extractNewObject(EvaluationContext evaluationContext,
+                                               ConstructorCall constructorCall,
+                                               FieldInfo fieldInfo) {
         int i = 0;
         List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+                .getParameterAnalyses(constructorCall.constructor()).collect(Collectors.toList());
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
             Integer assignedOrLinked = assigned.get(fieldInfo);
             if (LinkedVariables.isAssigned(assignedOrLinked)) {
-                return newObject.getParameterExpressions().get(i);
+                return constructorCall.getParameterExpressions().get(i);
             }
             i++;
         }

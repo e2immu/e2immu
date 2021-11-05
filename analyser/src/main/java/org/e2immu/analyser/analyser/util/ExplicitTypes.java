@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -37,19 +36,16 @@ Extra: abstract types on which ONLY abstract methods without modification status
 public class ExplicitTypes {
 
     public enum UsedAs {
-        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST, CAST_DELAY, CAST_SELF,
+        METHOD, ASSIGN_TO_NEW_OBJECT, CONSTRUCTOR_CALL, FIELD_ACCESS, FOR_EACH, SWITCH, CAST, CAST_DELAY, CAST_SELF,
         EXPLICIT_RETURN_TYPE, CATCH, LAMBDA,
     }
 
-    private final AnalysisProvider analysisProvider;
     private final InspectionProvider inspectionProvider;
     private final Map<ParameterizedType, Set<UsedAs>> result = new HashMap<>();
     private final TypeInfo typeBeingAnalysed;
 
-    public ExplicitTypes(AnalysisProvider analysisProvider,
-                         InspectionProvider inspectionProvider,
+    public ExplicitTypes(InspectionProvider inspectionProvider,
                          TypeInfo typeBeingAnalysed) {
-        this.analysisProvider = analysisProvider;
         this.inspectionProvider = inspectionProvider;
         this.typeBeingAnalysed = typeBeingAnalysed;
     }
@@ -93,16 +89,17 @@ public class ExplicitTypes {
             }
 
             // new A() -> A cannot be replaced by unbound type parameter
-            NewObject newObject;
-            if ((newObject = element.asInstanceOf(NewObject.class)) != null) {
-                add(newObject.parameterizedType(), UsedAs.NEW_OBJECT);
-                if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
-                    addTypesFromParameters(newObject.constructor(), newObject.parameterExpressions(), UsedAs.NEW_OBJECT);
+            ConstructorCall constructorCall;
+            if ((constructorCall = element.asInstanceOf(ConstructorCall.class)) != null) {
+                add(constructorCall.parameterizedType(), UsedAs.CONSTRUCTOR_CALL);
+                if (constructorCall.constructor() != null) { // can be null, anonymous implementation of interface
+                    addTypesFromParameters(constructorCall.constructor(), constructorCall.parameterExpressions(),
+                            UsedAs.CONSTRUCTOR_CALL);
                 }
             }
 
             // x = new Y() -> the type of x cannot be replaced by an unbound type parameter
-            if (element instanceof Assignment assignment && assignment.value.isInstanceOf(NewObject.class)) {
+            if (element instanceof Assignment assignment && assignment.value.isInstanceOf(Instance.class)) {
                 add(assignment.target.returnType(), UsedAs.ASSIGN_TO_NEW_OBJECT);
             }
 

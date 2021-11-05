@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.InspectionGaps_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -80,7 +80,7 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
                 MethodInspection mi = d.evaluationContext().getAnalyserContext().getMethodInspection(d.methodInfo());
                 Statement statement0 = mi.getMethodBody().structure.getStatements().get(0);
                 assertTrue(statement0 instanceof ReturnStatement returnStatement &&
-                        returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
+                        returnStatement.expression instanceof Instance); // and not UnknownObjectCreation
             }
         };
 

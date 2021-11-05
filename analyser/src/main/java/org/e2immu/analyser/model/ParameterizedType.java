@@ -921,6 +921,22 @@ public class ParameterizedType {
 
     public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
 
+    public int defaultContainer(AnalysisProvider analysisProvider) {
+        TypeInfo bestType = bestTypeInfo();
+        if (arrays > 0) {
+            return Level.TRUE;
+        }
+        if (bestType == null) {
+            // unbound type parameter, null constant
+            return Level.TRUE;
+        }
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return TYPE_ANALYSIS_NOT_AVAILABLE;
+        }
+        return typeAnalysis.getProperty(VariableProperty.CONTAINER);
+    }
+
     public int defaultIndependent(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
         if (arrays > 0) {

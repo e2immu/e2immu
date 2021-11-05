@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -638,7 +638,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
                 return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
-                        NewObject.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo));
+                        Instance.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo));
             }
             return null;
         }

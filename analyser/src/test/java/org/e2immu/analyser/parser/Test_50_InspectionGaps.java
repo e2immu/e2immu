@@ -14,15 +14,11 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.InspectionGaps_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;

@@ -19,10 +19,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -108,9 +105,9 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:getAndIncrement>" : "instance type $1";
                     assertEquals(expectValue, d.currentValue().toString());
                     if (d.iteration() > 0) {
-                        NewObject newObject = (NewObject) d.currentValue();
+                        Instance instance = (Instance) d.currentValue();
                         assertEquals("Type org.e2immu.analyser.testexample.FunctionalInterface_1.$1",
-                                newObject.parameterizedType().toString());
+                                instance.parameterizedType().toString());
                     }
                 }
             }
@@ -340,7 +337,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.statementAnalysis().statement instanceof ExpressionAsStatement expression &&
                             expression.expression instanceof Assignment assignment &&
-                            assignment.value instanceof NewObject newObject &&
+                            assignment.value instanceof ConstructorCall newObject &&
                             newObject.anonymousClass() != null);
                 }
             }

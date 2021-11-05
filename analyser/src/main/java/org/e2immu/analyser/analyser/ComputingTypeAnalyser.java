@@ -372,7 +372,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         // then, compute the explicit types
         Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
-                new ExplicitTypes(analyserContext, analyserContext, typeInfo).go(typeInspection).getResult();
+                new ExplicitTypes(analyserContext, typeInfo).go(typeInspection).getResult();
 
         Set<ParameterizedType> allExplicitTypes = new HashSet<>(explicitTypes.keySet());
         allExplicitTypes.addAll(explicitTypesFromInterfaces);
@@ -1113,11 +1113,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (doNotCallMyOwnConstructFromMethod) {
                 // exactly one field has an initialiser with a constructor
                 long fieldsWithInitialiser = typeInspection.fields().stream().filter(fieldInfo -> {
-                    NewObject no;
+                    ConstructorCall cc;
                     return fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
-                            (no = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().asInstanceOf(NewObject.class)) != null &&
-                            no.constructor() != null &&
-                            typeInspection.constructors().contains(no.constructor());
+                            (cc = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().asInstanceOf(ConstructorCall.class)) != null &&
+                            cc.constructor() != null &&
+                            typeInspection.constructors().contains(cc.constructor());
                 }).count();
                 if (fieldsWithInitialiser == 1L) {
                     log(TYPE_ANALYSER, "Type {} is @Singleton, found exactly one new object creation in field initialiser",

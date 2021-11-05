@@ -15,7 +15,7 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -191,13 +191,13 @@ public class OutputTypeInfo {
                     outputBuilder.add(new Text(fieldInfo.name));
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                     Expression initialiser = fieldInitialiser == null ? null : fieldInitialiser.initialiser();
-                    NewObject newObject;
-                    if (initialiser != null && (newObject = initialiser.asInstanceOf(NewObject.class)) != null) {
-                        if (!newObject.parameterExpressions().isEmpty()) {
+                    ConstructorCall constructorCall;
+                    if (initialiser != null && (constructorCall = initialiser.asInstanceOf(ConstructorCall.class)) != null) {
+                        if (!constructorCall.parameterExpressions().isEmpty()) {
                             Guide.GuideGenerator args = Guide.defaultGuideGenerator();
                             outputBuilder.add(Symbol.LEFT_PARENTHESIS).add(args.start());
                             boolean firstParam = true;
-                            for (Expression expression : newObject.parameterExpressions()) {
+                            for (Expression expression : constructorCall.parameterExpressions()) {
                                 if (firstParam) {
                                     firstParam = false;
                                 } else {

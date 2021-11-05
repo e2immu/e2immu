@@ -700,7 +700,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Expression initialValue = statementTime == initial.getStatementTime() &&
                                 initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
-                                NewObject.localCopyOfVariableField(index, fieldReference);
+                                Instance.localCopyOfVariableField(index, fieldReference);
                         boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
@@ -846,7 +846,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         variableInfo.getLinkedVariables().changeAllToDelay());
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-            return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
+            return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
         }
     }
 
@@ -1145,7 +1145,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setInitialValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
                     Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
         } else if (variable instanceof This) {
-            vic.setInitialValue(NewObject.forCatchOrThis(index, variable), false,
+            vic.setInitialValue(Instance.forCatchOrThis(index, variable), false,
                     typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true),
                     true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
@@ -1154,7 +1154,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
-            Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
+            Expression initial = initialValueOfParameter(evaluationContext, parameterInfo);
             vic.setInitialValue(initial, false,
                     parameterPropertyMap(analyserContext, parameterInfo), true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
@@ -1179,11 +1179,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic;
     }
 
-    private Expression initialValueOfParameter(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
-        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-        int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
+    private Expression initialValueOfParameter(EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
+        ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+        int notNull = Math.max(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
-        return NewObject.initialValueOfParameter(parameterInfo, notNull, parameterInfo.index == 0);
+        int immutable = Math.max(Math.max(parameterAnalysis.getProperty(IMMUTABLE),
+                        parameterInfo.parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false)),
+                MultiLevel.MUTABLE);
+        int independent = Math.max(Math.max(parameterAnalysis.getProperty(INDEPENDENT),
+                        parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext())),
+                MultiLevel.DEPENDENT);
+        int container = Math.max(Math.max(parameterAnalysis.getProperty(CONTAINER),
+                        parameterInfo.parameterizedType.defaultContainer(evaluationContext.getAnalyserContext())),
+                Level.FALSE);
+        return Instance.initialValueOfParameter(parameterInfo, notNull, immutable,
+                independent, container,
+                parameterInfo.index == 0);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -1279,11 +1290,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isConstant()) {
                 return new ExpressionAndDelay(initialValue, false);
             }
-            if (initialValue.isInstanceOf(NewObject.class)) return new ExpressionAndDelay(initialValue, false);
+            if (initialValue.isInstanceOf(Instance.class)) return new ExpressionAndDelay(initialValue, false);
 
             // TODO will crash when notNull==-1
-            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(index, evaluationContext, fieldReference);
-            return new ExpressionAndDelay(newObject, false);
+            Instance instance = Instance.initialValueOfFieldPartOfConstruction(index, evaluationContext, fieldReference);
+            return new ExpressionAndDelay(instance, false);
         }
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -1309,14 +1320,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (efv.isConstant()) {
                     return new ExpressionAndDelay(efv, false);
                 }
-                NewObject newObject;
-                if ((newObject = efv.asInstanceOf(NewObject.class)) != null) {
-                    return new ExpressionAndDelay(newObject, false);
+                Instance instance;
+                if ((instance = efv.asInstanceOf(Instance.class)) != null) {
+                    return new ExpressionAndDelay(instance, false);
                 }
             }
         }
-        NewObject newObject = NewObject.initialValueOfExternalVariableField(fieldReference, index, notNull);
-        return new ExpressionAndDelay(newObject, false);
+        Instance instance = Instance.initialValueOfExternalVariableField(fieldReference, index, notNull);
+        return new ExpressionAndDelay(instance, false);
     }
 
     public int statementTime(VariableInfoContainer.Level level) {

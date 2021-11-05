@@ -345,12 +345,12 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
                     assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
                     int expectContainer;
-                    if ("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
                         expectContainer = Level.TRUE;
                     } else {
                         expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     }
-                    assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
                 }
             }
             if ("getT".equals(d.methodInfo().name)) {

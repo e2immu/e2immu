@@ -202,7 +202,7 @@ public class Lambda extends ElementImpl implements Expression {
                     result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
                 }
             } else {
-                result = NewObject.forGetInstance(identifier, parameterizedType);
+                result = Instance.forGetInstance(identifier, parameterizedType);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }

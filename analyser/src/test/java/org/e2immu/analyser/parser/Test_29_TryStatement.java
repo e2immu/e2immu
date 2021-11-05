@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.StringConcat;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -61,7 +61,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
                 }
                 if ("0".equals(d.statementId())) {
                     // meaning: no idea, but not null
-                    assertTrue(d.currentValue() instanceof NewObject);
+                    assertTrue(d.currentValue() instanceof Instance);
                     assertEquals("instance type String", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }

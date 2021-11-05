@@ -66,7 +66,7 @@ public class EnumMethods {
                 enumType.asParameterizedType(expressionContext.typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);
         var returnNewArray = new ReturnStatement(Identifier.generate(),
-                NewObject.withArrayInitialiser(null, valuesReturnType, List.of(), arrayInitializer));
+                ConstructorCall.withArrayInitialiser(null, valuesReturnType, List.of(), arrayInitializer));
         var valuesBlock = new Block.BlockBuilder(Identifier.generate()).addStatement(returnNewArray).build();
         var valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values")
                 .setSynthetic(true)

@@ -164,10 +164,10 @@ public class InstanceOf extends ElementImpl implements Expression {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }
         }
-        NewObject newObject;
-        if ((newObject = value.asInstanceOf(NewObject.class)) != null) {
+        Instance instance;
+        if ((instance = value.asInstanceOf(Instance.class)) != null) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    newObject.parameterizedType()), evaluationContext);
+                    instance.parameterizedType()), evaluationContext);
             return builder.compose(er).setExpression(er.value()).build();
         }
         if (value.isInstanceOf(MethodCall.class)) {

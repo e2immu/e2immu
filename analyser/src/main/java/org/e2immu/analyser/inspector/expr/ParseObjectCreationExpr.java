@@ -17,7 +17,7 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.UnevaluatedObjectCreation;
 import org.e2immu.analyser.parser.InspectionProvider;
 
@@ -61,7 +61,7 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return NewObject.withAnonymousClass(parameterizedType, anonymousType, diamond);
+            return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
@@ -96,7 +96,7 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return NewObject.objectCreation(Identifier.generate(), method.methodInspection.getMethodInfo(),
+        return ConstructorCall.objectCreation(Identifier.generate(), method.methodInspection.getMethodInfo(),
                 finalParameterizedType, diamond, newParameterExpressions);
     }
 

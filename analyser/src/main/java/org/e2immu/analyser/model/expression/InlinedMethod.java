@@ -234,21 +234,21 @@ public class InlinedMethod extends ElementImpl implements Expression {
                         if (staticField) {
                             replace = false;
                         } else {
-                            NewObject newObject = scope.asInstanceOf(NewObject.class);
+                            ConstructorCall constructorCall = scope.asInstanceOf(ConstructorCall.class);
                             VariableExpression ve;
-                            if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                            if (constructorCall == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
                                 Expression value = evaluationContext.currentValue(ve.variable(),
                                         evaluationContext.getInitialStatementTime());
                                 if (value != null) {
-                                    newObject = value.asInstanceOf(NewObject.class);
+                                    constructorCall = value.asInstanceOf(ConstructorCall.class);
                                 } // else, see Loops_19
                             }
-                            if (newObject != null && newObject.constructor() != null) {
+                            if (constructorCall != null && constructorCall.constructor() != null) {
                                 // only now we can start to take a look at the parameters
-                                int index = indexOfParameterLinkedToFinalField(evaluationContext, newObject.constructor(),
+                                int index = indexOfParameterLinkedToFinalField(evaluationContext, constructorCall.constructor(),
                                         fieldReference.fieldInfo);
                                 if (index >= 0) {
-                                    replacement = newObject.getParameterExpressions().get(index);
+                                    replacement = constructorCall.getParameterExpressions().get(index);
                                 }
                             }
                         }
@@ -269,7 +269,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             }
             if (replace) {
                 if (replacement == null) {
-                    replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
+                    replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
                             Identifier.variable(variable))), variable.parameterizedType());
                 }
 
@@ -445,11 +445,11 @@ public class InlinedMethod extends ElementImpl implements Expression {
             return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
         }
 
-        // FIXME nullable
+        // FIXME should this be delayed? we never want to end up with an InlinedMethod object
         @Override
-        public NewObject currentValue(Variable variable, int statementTime) {
+        public Instance currentValue(Variable variable, int statementTime) {
             ensureVariableIsKnown(variable);
-            return NewObject.forInlinedMethod(identifier, variable.parameterizedType(), MultiLevel.NULLABLE);
+            return Instance.forInlinedMethod(identifier, variable.parameterizedType());
         }
 
         @Override

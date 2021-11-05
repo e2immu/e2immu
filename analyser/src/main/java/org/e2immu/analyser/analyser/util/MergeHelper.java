@@ -22,11 +22,9 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-
-import java.util.List;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -162,11 +160,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion() {
-        return NewObject.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi);
+        return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi);
     }
 
     public Expression noConclusion(int notNull) {
-        return NewObject.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi, notNull);
+        return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi, notNull);
     }
 
     public Expression delayedConclusion() {

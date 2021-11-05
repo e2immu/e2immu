@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -167,6 +167,7 @@ public interface EvaluationContext extends DelayDebugger {
         return LinkedVariables.EMPTY;
     }
 
+    // DO NOT change this set unless you adapt NewObject as well; it maintains a set of value properties
     Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
             NOT_NULL_EXPRESSION, INDEPENDENT);
 
@@ -193,7 +194,7 @@ public interface EvaluationContext extends DelayDebugger {
     default Expression currentValue(Variable variable, int statementTime) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // a new one with empty state -- we cannot be bothered here.
-        return NewObject.forTesting(variable.parameterizedType());
+        return Instance.forTesting(variable.parameterizedType());
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
@@ -321,8 +322,12 @@ public interface EvaluationContext extends DelayDebugger {
     should we compute context immutable? not if we're a variable of the type itself
      */
     default boolean isMyself(Variable variable) {
+        return isMyself(variable.parameterizedType());
+    }
+
+    default boolean isMyself(ParameterizedType parameterizedType) {
         InspectionProvider inspectionProvider = getAnalyserContext();
-        TypeInfo bestType = variable.parameterizedType().bestTypeInfo(inspectionProvider);
+        TypeInfo bestType = parameterizedType.bestTypeInfo(inspectionProvider);
         TypeInfo myself = getCurrentType();
         if (myself.equals(bestType)) return true;
         TypeInfo primaryVariable = bestType == null ? null : bestType.primaryType();

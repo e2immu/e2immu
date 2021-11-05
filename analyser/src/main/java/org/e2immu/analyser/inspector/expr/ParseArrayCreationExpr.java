@@ -18,8 +18,8 @@ import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.IntConstant;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 
 import java.util.List;
@@ -36,7 +36,7 @@ public class ParseArrayCreationExpr {
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());
-        return NewObject.withArrayInitialiser(
+        return ConstructorCall.withArrayInitialiser(
                 createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer);
     }

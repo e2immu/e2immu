@@ -238,7 +238,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 Expression initializer;
                 if (fieldInitialiser.initialiser() instanceof MethodReference) {
-                    initializer = NewObject.instanceFromSam(fieldInitialiser.implementationOfSingleAbstractMethod(),
+                    initializer = ConstructorCall.instanceFromSam(fieldInitialiser.implementationOfSingleAbstractMethod(),
                             fieldInfo.type);
                 } else {
                     initializer = fieldInitialiser.initialiser();
@@ -932,8 +932,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (set.size() == 1) {
             Expression expression = values.get(0).getValue();
-            NewObject newObject;
-            if ((newObject = expression.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
+            ConstructorCall constructorCall;
+            if ((constructorCall = expression.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
                 int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
@@ -950,9 +950,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
-                    effectivelyFinalValue = newObject.removeConstructor();
+                    effectivelyFinalValue = constructorCall.removeConstructor();
                 } else {
-                    effectivelyFinalValue = newObject;
+                    effectivelyFinalValue = constructorCall;
                 }
             } else {
                 effectivelyFinalValue = expression;
@@ -1018,10 +1018,10 @@ public class FieldAnalyser extends AbstractAnalyser {
      */
     private Boolean recursivelyConstant(Expression effectivelyFinalValue) {
         if (effectivelyFinalValue.isConstant()) return true;
-        NewObject newObject;
-        if ((newObject = effectivelyFinalValue.asInstanceOf(NewObject.class)) != null) {
-            if (newObject.constructor() == null) return false;
-            for (Expression parameter : newObject.getParameterExpressions()) {
+        ConstructorCall constructorCall;
+        if ((constructorCall = effectivelyFinalValue.asInstanceOf(ConstructorCall.class)) != null) {
+            if (constructorCall.constructor() == null) return false;
+            for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
@@ -1322,7 +1322,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 Variable variable = variableValue.variable();
                 return getProperty(variable, variableProperty);
             }
-            return value.getProperty(this, variableProperty, true);
+            try {
+                return value.getProperty(this, variableProperty, true);
+            } catch(RuntimeException re) {
+                LOGGER.error("Caught exception while evaluating expression '{}'", value);
+                throw re;
+            }
         }
 
         @Override

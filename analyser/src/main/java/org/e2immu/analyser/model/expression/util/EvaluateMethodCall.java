@@ -27,8 +27,7 @@ import org.e2immu.analyser.util.Logger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.VariableProperty.IMMUTABLE;
-import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
@@ -196,13 +195,19 @@ public class EvaluateMethodCall {
                     concreteReturnType, parameters);
             case Level.TRUE -> {
                 int notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
-                if (notNull == Level.DELAY) {
+                int immutable = methodAnalysis.getProperty(IMMUTABLE);
+                int independent = methodAnalysis.getProperty(INDEPENDENT);
+                int container = methodAnalysis.getProperty(CONTAINER);
+                if (notNull == Level.DELAY || immutable == Level.DELAY || independent == Level.DELAY || container == Level.DELAY) {
                     yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay);
                 }
-                yield NewObject.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
+
+                Map<VariableProperty, Integer> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
+                        IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE);
+                yield Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
-                        concreteReturnType, notNull);
+                        concreteReturnType, valueProperties);
             }
             default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay);
         };
@@ -236,14 +241,14 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            return NewObject.forGetInstance(identifier, primitives.stringParameterizedType);
+            return Instance.forGetInstance(identifier, primitives.stringParameterizedType);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {
             return null; // implementation present
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
-        return NewObject.forGetInstance(identifier, objectValue.returnType());
+        return Instance.forGetInstance(identifier, objectValue.returnType());
     }
 
     /*
@@ -257,16 +262,16 @@ public class EvaluateMethodCall {
                                                    Expression objectValue,
                                                    LinkedVariables linkedVariables,
                                                    InlinedMethod iv) {
-        NewObject newObject;
+        ConstructorCall constructorCall;
         VariableExpression varEx;
-        NewObject no;
-        if ((no = objectValue.asInstanceOf(NewObject.class)) != null) newObject = no;
+        ConstructorCall cc;
+        if ((cc = objectValue.asInstanceOf(ConstructorCall.class)) != null) constructorCall = cc;
         else if ((varEx = objectValue.asInstanceOf(VariableExpression.class)) != null
                 && varEx.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            NewObject no2;
-            if ((no2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(NewObject.class)) != null) {
-                newObject = no2;
+            ConstructorCall cc2;
+            if ((cc2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(ConstructorCall.class)) != null) {
+                constructorCall = cc2;
             } else {
                 return null;
             }
@@ -274,7 +279,7 @@ public class EvaluateMethodCall {
             return null;
         }
         VariableExpression ve;
-        if ((ve = iv.expression().asInstanceOf(VariableExpression.class)) != null && newObject.constructor() != null) {
+        if ((ve = iv.expression().asInstanceOf(VariableExpression.class)) != null && constructorCall.constructor() != null) {
             Variable variable = ve.variable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -283,7 +288,7 @@ public class EvaluateMethodCall {
 
                     int i = 0;
                     List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                            .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+                            .getParameterAnalyses(constructorCall.constructor()).collect(Collectors.toList());
                     for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
@@ -292,7 +297,7 @@ public class EvaluateMethodCall {
                         Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
                         Integer assignedOrLinked = assigned.get(fieldInfo);
                         if (LinkedVariables.isAssigned(assignedOrLinked)) {
-                            return builder.setExpression(newObject.getParameterExpressions().get(i)).build();
+                            return builder.setExpression(constructorCall.getParameterExpressions().get(i)).build();
                         }
                         i++;
                     }
