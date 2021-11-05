@@ -343,7 +343,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
-                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this" :
+                                "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
                                 RETURN_VALUE;
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
@@ -435,7 +435,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
