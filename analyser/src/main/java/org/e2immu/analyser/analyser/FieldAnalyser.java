@@ -931,7 +931,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         Set<Expression> set = new HashSet<>(expressions);
 
         if (set.size() == 1) {
-            Expression expression = values.get(0).getValue();
+            FieldAnalysisImpl.ValueAndPropertyProxy proxy = values.get(0);
+            Expression expression = proxy.getValue();
             ConstructorCall constructorCall;
             if ((constructorCall = expression.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
@@ -950,7 +951,14 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
-                    effectivelyFinalValue = constructorCall.removeConstructor();
+                    Map<VariableProperty, Integer>valueProperties = Map.of(
+                            VariableProperty.NOT_NULL_EXPRESSION, proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
+                            VariableProperty.IMMUTABLE, proxy.getProperty(VariableProperty.IMMUTABLE),
+                            VariableProperty.INDEPENDENT, proxy.getProperty(VariableProperty.INDEPENDENT),
+                            VariableProperty.CONTAINER, proxy.getProperty(VariableProperty.CONTAINER),
+                            VariableProperty.IDENTITY, proxy.getProperty(VariableProperty.IDENTITY)
+                    );
+                    effectivelyFinalValue = constructorCall.removeConstructor(valueProperties);
                 } else {
                     effectivelyFinalValue = constructorCall;
                 }

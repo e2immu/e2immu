@@ -44,16 +44,8 @@ public record ConstructorCall(
         ParameterizedType parameterizedType,
         Diamond diamond,
         List<Expression> parameterExpressions,
-        Map<VariableProperty, Integer> valueProperties,
         TypeInfo anonymousClass,
         ArrayInitializer arrayInitializer) implements HasParameterExpressions {
-
-    private static Map<VariableProperty, Integer> ensureNotNull(Map<VariableProperty, Integer> in) {
-        return in.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                        e -> e.getValue() < MultiLevel.EFFECTIVELY_NOT_NULL && e.getKey() == VariableProperty.NOT_NULL_EXPRESSION
-                                ? MultiLevel.EFFECTIVELY_NOT_NULL : e.getValue()));
-    }
 
     // specific construction and copy methods: we explicitly name construction
     /*
@@ -65,13 +57,12 @@ public record ConstructorCall(
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer) {
         return new ConstructorCall(Identifier.generate(), arrayCreationConstructor, parameterizedType, Diamond.NO,
-                parameterExpressions, Map.of(),
-                null, arrayInitializer);
+                parameterExpressions, null, arrayInitializer);
     }
 
     public static Expression instanceFromSam(MethodInfo sam, ParameterizedType parameterizedType) {
         return new ConstructorCall(sam.getIdentifier(), null, parameterizedType, Diamond.NO, List.of(),
-                Map.of(), sam.typeInfo, null);
+                sam.typeInfo, null);
     }
 
     /*
@@ -81,7 +72,7 @@ public record ConstructorCall(
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
         return new ConstructorCall(Identifier.generate(), null, parameterizedType, diamond,
-                List.of(), Map.of(), anonymousClass, null);
+                List.of(), anonymousClass, null);
     }
 
     /*
@@ -96,11 +87,11 @@ public record ConstructorCall(
                                                  Diamond diamond,
                                                  List<Expression> parameterExpressions) {
         return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
-                Map.of(), null, null);
+                null, null);
     }
 
 
-    public Expression removeConstructor() {
+    public Expression removeConstructor(Map<VariableProperty, Integer> valueProperties) {
         assert arrayInitializer == null;
         return new Instance(identifier, parameterizedType, diamond, valueProperties);
     }
@@ -110,10 +101,8 @@ public record ConstructorCall(
                            ParameterizedType parameterizedType,
                            Diamond diamond,
                            List<Expression> parameterExpressions,
-                           Map<VariableProperty, Integer> valueProperties,
                            TypeInfo anonymousClass,
                            ArrayInitializer arrayInitializer) {
-        assert constructor != null || arrayInitializer != null; // but not both
         this.identifier = identifier;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
@@ -121,7 +110,6 @@ public record ConstructorCall(
         this.anonymousClass = anonymousClass;
         this.arrayInitializer = arrayInitializer;
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
-        this.valueProperties = valueProperties;
     }
 
     @Override
@@ -139,14 +127,13 @@ public record ConstructorCall(
                 parameterExpressions.equals(newObject.parameterExpressions) &&
                 Objects.equals(anonymousClass, newObject.anonymousClass) &&
                 Objects.equals(constructor, newObject.constructor) &&
-                Objects.equals(arrayInitializer, newObject.arrayInitializer) &&
-                valueProperties.equals(newObject.valueProperties);
+                Objects.equals(arrayInitializer, newObject.arrayInitializer);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor,
-                arrayInitializer, valueProperties);
+                arrayInitializer);
     }
 
     @Override
@@ -156,7 +143,6 @@ public record ConstructorCall(
                 translationMap.translateType(parameterizedType),
                 diamond,
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                valueProperties,
                 anonymousClass, // not translating this yet!
                 arrayInitializer == null ? null : TranslationMapImpl.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
     }
@@ -220,71 +206,21 @@ public record ConstructorCall(
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        ParameterizedType pt;
+        if (anonymousClass != null) {
+            pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
+        } else {
+            pt = parameterizedType;
+        }
         return switch (variableProperty) {
-            /*
-             value properties; errors should appear only when the object is unevaluated
-             (because it was created in the inspection phase)
-             */
-            case NOT_NULL_EXPRESSION, INDEPENDENT, IDENTITY, IMMUTABLE, CONTAINER -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                throw new UnsupportedOperationException("Need a value for " + variableProperty);
-            }
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case INDEPENDENT -> pt.defaultIndependent(evaluationContext.getAnalyserContext());
+            case IDENTITY -> Level.FALSE;
+            case IMMUTABLE -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+            case CONTAINER -> pt.defaultContainer(evaluationContext.getAnalyserContext());
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };
-        /*
-        switch (variableProperty) {
-            case NOT_NULL_EXPRESSION: {
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType))
-                    return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return minimalNotNull;
-            }
-            case IDENTITY:
-                return Level.fromBool(identity);
-
-            case CONTEXT_MODIFIED:
-            case CONTEXT_MODIFIED_DELAY:
-            case PROPAGATE_MODIFICATION_DELAY:
-            case IGNORE_MODIFICATIONS:
-                return Level.FALSE;
-
-            case INDEPENDENT:
-                return parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
-
-            case CONTAINER: { // must be pretty similar to the code in ParameterAnalysis, because every parameter will be of this type
-                Boolean transparent = parameterizedType.isTransparent(evaluationContext.getAnalyserContext(),
-                        evaluationContext.getCurrentType());
-                if (transparent == Boolean.TRUE) return Level.TRUE;
-                // if implicit is null, we cannot return FALSE, we'll have to wait!
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                int withoutDelay;
-                if (bestType != null) {
-                    withoutDelay = evaluationContext.getAnalyserContext()
-                            .getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
-                } else {
-                    withoutDelay = Level.FALSE;
-                }
-                return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
-            }
-            case IMMUTABLE: {
-                int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-                if (constructor != null) {
-                    if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
-                        return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
-                    if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
-                        return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
-                }
-                assert immutable != Level.DELAY || evaluationContext.translatedDelay(this.toString(),
-                        parameterizedType.bestTypeInfo().fullyQualifiedName + DelayDebugger.D_IMMUTABLE,
-                        this + "@" + evaluationContext.statementIndex() + DelayDebugger.D_IMMUTABLE);
-                return immutable;
-            }
-            default:
-        }*/
-        // @NotModified should not be asked here
-        //throw new UnsupportedOperationException("Asking for " + variableProperty);
     }
 
     @Override
@@ -331,9 +267,6 @@ public record ConstructorCall(
                             .add(Symbol.RIGHT_PARENTHESIS);
                 }
             }
-        } else {
-            Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
-            outputBuilder.add(text);
         }
         if (anonymousClass != null) {
             outputBuilder.add(anonymousClass.output(qualification, false));
@@ -341,19 +274,7 @@ public record ConstructorCall(
         if (arrayInitializer != null) {
             outputBuilder.add(arrayInitializer.output(qualification));
         }
-        // TODO not consistent, but hack after changing 10s of tests, don't want to change back again
-        if (valueProperties.getOrDefault(VariableProperty.IDENTITY, Level.FALSE) == Level.TRUE) {
-            outputBuilder.add(new Text("/*@Identity*/"));
-        }
         return outputBuilder;
-    }
-
-    private String text() {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
-        int minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.falseValue);
-        if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
-        return "";
     }
 
     @Override
@@ -378,7 +299,7 @@ public record ConstructorCall(
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         ConstructorCall newObject = new ConstructorCall(identifier, constructor, parameterizedType,
-                diamond, reParamValues, valueProperties, anonymousClass, arrayInitializer);
+                diamond, reParamValues, anonymousClass, arrayInitializer);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams);
         return builder.setExpression(newObject).build();
     }
@@ -404,41 +325,24 @@ public record ConstructorCall(
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, forwardEvaluationInfo, constructor, false, null);
 
-        ParameterizedType pt;
-        if (anonymousClass != null) {
-            pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
-        } else {
-            pt = parameterizedType;
-        }
-        int nne = MultiLevel.EFFECTIVELY_NOT_NULL;
-        int immutable = pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-        int independent = pt.defaultIndependent(evaluationContext.getAnalyserContext());
-        int container = pt.defaultContainer(evaluationContext.getAnalyserContext());
-        if (nne == Level.DELAY || immutable == Level.DELAY || independent == Level.DELAY || container == Level.DELAY) {
-            LinkedVariables linkedVariables = linkedVariables(evaluationContext).changeAllToDelay();
-            Expression delayedExpression = DelayedExpression.forNewObject(pt, nne, linkedVariables);
-            return res.k.setExpression(delayedExpression).build();
-        }
-
-        Map<VariableProperty, Integer> newValueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, nne,
-                VariableProperty.IMMUTABLE, immutable, VariableProperty.INDEPENDENT, independent, VariableProperty.CONTAINER, container,
-                VariableProperty.IDENTITY, Level.FALSE);
-
-        ConstructorCall initialInstance = new ConstructorCall(identifier, constructor, pt, diamond, res.v,
-                newValueProperties, anonymousClass, null);
 
         // check state changes of companion methods
-        MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
-        Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext,
-                constructor, constructorAnalysis, null, initialInstance, res.v);
-        Expression instance = modifiedInstance == null
-                ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                initialInstance.linkedVariables(evaluationContext).changeAllToDelay())
-                : modifiedInstance;
-
+        Expression instance;
+        if (constructor != null) {
+            MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
+            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext,
+                    constructor, constructorAnalysis, null, this, res.v);
+            instance = modifiedInstance == null
+                    ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                    linkedVariables(evaluationContext).changeAllToDelay())
+                    : modifiedInstance;
+        } else {
+            instance = this;
+        }
         res.k.setExpression(instance);
 
-        if ((!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
+        if (constructor != null &&
+                (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
             res.k.incrementStatementTime();
         }
 

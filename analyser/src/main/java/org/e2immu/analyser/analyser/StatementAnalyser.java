@@ -686,8 +686,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
 
-        AnalysisStatus immutableAtAssignment = DONE;
-
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -708,25 +706,34 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 Expression bestValue = bestValue(changeData, vi1);
                 Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue);
-                boolean valueToWriteIsDelayed = sharedState.evaluationContext.isDelayed(valueToWrite);
 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext
                         .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
+                boolean valuePropertiesIsDelayed = valueProperties.values().stream().anyMatch(v -> v == Level.DELAY);
+
+                boolean valueToWriteIsDelayed = sharedState.evaluationContext.isDelayed(valueToWrite);
+                Expression valueToWritePossiblyDelayed;
+                boolean valueToWritePossiblyDelayedIsDelayed;
+                if (valueToWriteIsDelayed) {
+                    valueToWritePossiblyDelayed = valueToWrite;
+                    valueToWritePossiblyDelayedIsDelayed = true;
+                } else if (valuePropertiesIsDelayed) {
+                    valueToWritePossiblyDelayed = DelayedExpression.forDelayedValueProperties(variable.parameterizedType(),
+                            valueToWrite.linkedVariables(sharedState.evaluationContext).changeAllToDelay());
+                    valueToWritePossiblyDelayedIsDelayed = sharedState.evaluationContext.isDelayed(valueToWritePossiblyDelayed);
+                } else {
+                    // no delays!
+                    valueToWritePossiblyDelayed = valueToWrite;
+                    valueToWritePossiblyDelayedIsDelayed = false;
+                }
 
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties,
                         changeData.properties(), groupPropertyValues);
-
                 // LVs start empty, the changeData.linkedVariables will be added later
-                vic.setValue(valueToWrite, valueToWriteIsDelayed, LinkedVariables.EMPTY,
+                vic.setValue(valueToWritePossiblyDelayed, valueToWritePossiblyDelayedIsDelayed, LinkedVariables.EMPTY,
                         merged, false);
-
-                int immutable = merged.getOrDefault(IMMUTABLE, Level.DELAY);
-                if (immutable == Level.DELAY) {
-                    // we want to revisit this one without blocking everything
-                    immutableAtAssignment = DELAYS;
-                }
 
                 if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -752,7 +759,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED);
                         local.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
-                        local.setValue(valueToWriteCorrected, valueToWriteIsDelayed, linkedToMain, merged2,
+                        local.setValue(valueToWriteCorrected, valueToWritePossiblyDelayedIsDelayed, linkedToMain, merged2,
                                 false);
                         existingVariablesNotVisited.remove(localVar);
                     }
@@ -949,8 +956,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
-        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
-                .combine(cImmStatus.combine(immutableAtAssignment))));
+        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus.combine(cImmStatus)));
     }
 
     private Variable obtainLoopVar() {

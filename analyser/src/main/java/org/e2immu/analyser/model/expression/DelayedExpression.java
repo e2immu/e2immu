@@ -104,6 +104,11 @@ public record DelayedExpression(String msg,
         return new DelayedExpression(name, name, parameterizedType, LinkedVariables.DELAYED_EMPTY);
     }
 
+    public static Expression forDelayedValueProperties(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+        String name = "<vp:"+parameterizedType.detailedString()+">";
+        return new DelayedExpression(name, name, parameterizedType, linkedVariables);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.
