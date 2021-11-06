@@ -69,12 +69,8 @@ public class NullConstant implements ConstantExpression<Object> {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE;
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY,
-                    IGNORE_MODIFICATIONS, IDENTITY -> FALSE;
-
-            // if this becomes a problem we'll have to add a parameterized type as the expression context, and
-            // take the value of the parameterized type's best type analysis
-            case CONTAINER, INDEPENDENT -> Level.DELAY;
-            case IMMUTABLE -> MultiLevel.NOT_INVOLVED;
+                    IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE;
+            case IMMUTABLE, INDEPENDENT -> MultiLevel.NOT_INVOLVED;
             default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
         };
     }

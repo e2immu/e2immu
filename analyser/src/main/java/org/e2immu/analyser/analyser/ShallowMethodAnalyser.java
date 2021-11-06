@@ -27,10 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
 
 public class ShallowMethodAnalyser extends MethodAnalyser {
 
@@ -135,22 +132,12 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         return Math.max(MultiLevel.NULLABLE, override);
     }
 
+    /*
+    @Container on parameters needs to be contracted; but it does inherit
+     */
     private int computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
-        TypeInfo bestType = builder.getParameterInfo().parameterizedType.bestTypeInfo(analyserContext);
-        if (bestType == null) return Level.TRUE;
-        if (Primitives.isPrimitiveExcludingVoid(bestType)) return Level.TRUE;
-        int override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER);
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-        int typeContainer;
-        if (typeAnalysis == null) {
-            typeContainer = Level.FALSE;
-            messages.add(Message.newMessage(new Location(bestType), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE));
-        } else {
-            typeContainer = typeAnalysis.getProperty(CONTAINER);
-        }
-        return Math.max(Level.FALSE, Math.max(typeContainer, override));
+        return Math.max(Level.FALSE, bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER));
     }
-
 
     private void computeMethodPropertiesAfterParameters() {
         computeMethodPropertyIfNecessary(VariableProperty.IMMUTABLE, this::computeMethodImmutable);
@@ -374,29 +361,6 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
                     return pa.getPropertyFromMapNeverDelay(variableProperty);
                 }).max().orElse(Level.DELAY);
-    }
-
-    private void checkContradictions(WithInspectionAndAnalysis where,
-                                     Map<AnnotationExpression, List<MethodInfo>> annotations) {
-        if (annotations.size() < 2) return;
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        checkContradictions(where, annotations, e2.notModified, e2.modified);
-        checkContradictions(where, annotations, e2.notNull, e2.nullable);
-    }
-
-    private void checkContradictions(WithInspectionAndAnalysis where,
-                                     Map<AnnotationExpression, List<MethodInfo>> annotations,
-                                     AnnotationExpression left,
-                                     AnnotationExpression right) {
-        List<MethodInfo> leftMethods = annotations.getOrDefault(left, List.of());
-        List<MethodInfo> rightMethods = annotations.getOrDefault(right, List.of());
-        if (!leftMethods.isEmpty() && !rightMethods.isEmpty()) {
-            messages.add(Message.newMessage(new Location(where), Message.Label.CONTRADICTING_ANNOTATIONS,
-                    left + " in " + leftMethods.stream()
-                            .map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; ")) +
-                            "; " + right + " in " + rightMethods.stream()
-                            .map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; "))));
-        }
     }
 
     @Override

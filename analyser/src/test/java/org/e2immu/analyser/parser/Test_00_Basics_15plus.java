@@ -15,8 +15,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -72,6 +77,17 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                     if ("a$0.i".equals(d.variable().toString())) {
                         assertEquals("instance type int", d.currentValue().toString());
                     }
+                }
+            }
+            if("setA".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
+                    if("0".equals(d.statementId())) {
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTAINER));
+                    }
+                }
+                if(d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
+                    assertEquals("a", d.currentValue().toString());
+                    assertTrue(d.currentValue() instanceof VariableExpression);
                 }
             }
         };

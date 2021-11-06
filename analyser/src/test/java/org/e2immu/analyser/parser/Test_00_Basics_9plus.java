@@ -344,13 +344,8 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
                     assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
-                    int expectContainer;
-                    if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                        expectContainer = Level.TRUE;
-                    } else {
-                        expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    }
-                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
+                    // not contracted
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTAINER));
                 }
             }
             if ("getT".equals(d.methodInfo().name)) {
@@ -398,7 +393,8 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(Level.TRUE, p0.getProperty(VariableProperty.CONTAINER));
+                // not contracted
+                assertEquals(Level.FALSE, p0.getProperty(VariableProperty.CONTAINER));
             }
         };
 

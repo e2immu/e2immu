@@ -192,28 +192,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return DONE;
     }
 
-
+    /*
+    Only contracted, but it does inherit.
+    Meaning: no argument to this parameter can be of a concrete type that modifies its parameters.
+     */
     private AnalysisStatus analyseContainer(SharedState sharedState) {
         int inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
         if (inMap == Level.DELAY) {
-            int value;
-            TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo(analyserContext);
-            if (bestType == null) {
-                value = Level.TRUE;
-            } else if (Primitives.isPrimitiveExcludingVoid(bestType)) {
-                value = Level.TRUE;
-            } else {
-                int override = bestOfParameterOverridesForContainer(parameterInfo);
-                if (override == Level.DELAY) {
-                    return DELAYS;
-                }
-                int typeContainer = analyserContext.getTypeAnalysis(bestType).getProperty(CONTAINER);
-                if (typeContainer == Level.DELAY) {
-                    return DELAYS;
-                }
-                value = Math.max(override, typeContainer);
-            }
-            parameterAnalysis.setProperty(CONTAINER, value);
+            int override = bestOfParameterOverridesForContainer(parameterInfo);
+            parameterAnalysis.setProperty(CONTAINER, override);
         }
         return DONE;
     }

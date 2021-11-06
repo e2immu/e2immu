@@ -366,7 +366,7 @@ class VariableInfoImpl implements VariableInfo {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
-        if(evaluationContext.isMyself(variable)) {
+        if (evaluationContext.isMyself(variable)) {
             setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
         }
     }
@@ -561,7 +561,9 @@ class VariableInfoImpl implements VariableInfo {
                 .min().orElseThrow();
         int worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 Math.min(worstNotNull, evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
-        return mergeHelper.noConclusion(worstNotNullIncludingCurrent);
+        Map<VariableProperty, Integer> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
+        // FIXME
+        return mergeHelper.noConclusion(valueProperties);
     }
 
     /*

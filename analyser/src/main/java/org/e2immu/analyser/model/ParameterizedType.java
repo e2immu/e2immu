@@ -928,7 +928,7 @@ public class ParameterizedType {
         }
         if (bestType == null) {
             // unbound type parameter, null constant
-            return Level.TRUE;
+            return Level.FALSE;
         }
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {

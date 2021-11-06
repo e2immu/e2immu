@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.expression.Instance;
@@ -321,7 +320,7 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testLoops7() {
-        Instance i1 = Instance.forLoopVariable("0", vi, MultiLevel.EFFECTIVELY_NOT_NULL);
+        Instance i1 = Instance.forLoopVariable("0", vi, Instance.primitiveValueProperties());
         Expression iGtI1 = GreaterThanZero.greater(minimalEvaluationContext, i, i1, false);
         assertEquals("i>instance type int", iGtI1.toString());
         Expression iLeI2 = GreaterThanZero.less(minimalEvaluationContext, i, i1, true);

@@ -400,7 +400,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // companion methods
         Expression modifiedInstance;
         if (modified == Level.TRUE) {
-            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, this, methodInfo,
+            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
         } else {
             modifiedInstance = null;
@@ -585,7 +585,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     static Expression checkCompanionMethodsModifying(
             EvaluationResult.Builder builder,
             EvaluationContext evaluationContext,
-            Expression currentCall,
             MethodInfo methodInfo,
             MethodAnalysis methodAnalysis,
             Expression object,
@@ -656,8 +655,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance;
 
         IsVariableExpression ive;
-        if (currentCall instanceof Instance || currentCall instanceof ConstructorCall) {
-            newInstance = currentCall;
+        if (objectValue instanceof Instance || objectValue instanceof ConstructorCall) {
+            newInstance = objectValue;
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
             if (current instanceof Instance instance || current instanceof ConstructorCall) {
@@ -672,13 +671,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 newInstance = Instance.forGetInstance(current.getIdentifier(), current.returnType(), valueProperties);
             }
         } else {
-            Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(currentCall.returnType(),
+            Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(objectValue.returnType(),
                     evaluationContext.getAnalyserContext());
             if (valueProperties == null) {
-                return DelayedExpression.forMethod(methodInfo, currentCall.returnType(),
-                        currentCall.linkedVariables(evaluationContext).changeAllToDelay());
+                return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
+                        objectValue.linkedVariables(evaluationContext).changeAllToDelay());
             }
-            newInstance = Instance.forGetInstance(currentCall.getIdentifier(), objectValue.returnType(), valueProperties);
+            newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 
         Expression modifiedInstance;
@@ -688,7 +687,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
         }
 
-        LinkedVariables linkedVariables = currentCall.linked1VariablesScope(evaluationContext);
+        LinkedVariables linkedVariables = objectValue.linked1VariablesScope(evaluationContext);
         VariableExpression ve;
         if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);

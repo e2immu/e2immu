@@ -19,12 +19,15 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+
+import java.util.Map;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -154,17 +157,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     private Expression safe(EvaluationResult result) {
         if (result.getMessageStream().anyMatch(m -> true)) {
             // something gone wrong, retreat
-            return noConclusion();
+            Map<VariableProperty, Integer> variableProperties = evaluationContext.getValueProperties(vi.getValue());
+            return noConclusion(variableProperties);
         }
         return result.value();
     }
 
-    public Expression noConclusion() {
-        return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi);
-    }
-
-    public Expression noConclusion(int notNull) {
-        return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi, notNull);
+    public Expression noConclusion(Map<VariableProperty, Integer> variableProperties) {
+        return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }
 
     public Expression delayedConclusion() {

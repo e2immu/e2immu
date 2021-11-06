@@ -845,8 +845,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
                         variableInfo.getLinkedVariables().changeAllToDelay());
             }
-            int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-            return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), notNull);
+            Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(value);
+            return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);
         }
     }
 
@@ -1189,12 +1189,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int independent = Math.max(Math.max(parameterAnalysis.getProperty(INDEPENDENT),
                         parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext())),
                 MultiLevel.DEPENDENT);
-        int container = Math.max(Math.max(parameterAnalysis.getProperty(CONTAINER),
-                        parameterInfo.parameterizedType.defaultContainer(evaluationContext.getAnalyserContext())),
-                Level.FALSE);
+        int container = parameterAnalysis.getProperty(CONTAINER);
+        assert container != Level.DELAY;
         return Instance.initialValueOfParameter(parameterInfo, notNull, immutable,
-                independent, container,
-                parameterInfo.index == 0);
+                independent, container, parameterInfo.index == 0);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {

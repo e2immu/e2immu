@@ -55,17 +55,6 @@ public record ConstructorCall(
                                 ? MultiLevel.EFFECTIVELY_NOT_NULL : e.getValue()));
     }
 
-    /*
-    For creation inside the inspection phase: compute on the fly, do not tolerate delays
-     */
-    private static Map<VariableProperty, Integer> defaultValueProperties() {
-        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IMMUTABLE, MultiLevel.MUTABLE,
-                VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT,
-                VariableProperty.CONTAINER, Level.FALSE,
-                VariableProperty.IDENTITY, Level.FALSE);
-    }
-
     // specific construction and copy methods: we explicitly name construction
     /*
     specific situation, new X[] { 0, 1, 2 } array initialiser
@@ -76,13 +65,13 @@ public record ConstructorCall(
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer) {
         return new ConstructorCall(Identifier.generate(), arrayCreationConstructor, parameterizedType, Diamond.NO,
-                parameterExpressions, defaultValueProperties(),
+                parameterExpressions, Map.of(),
                 null, arrayInitializer);
     }
 
     public static Expression instanceFromSam(MethodInfo sam, ParameterizedType parameterizedType) {
         return new ConstructorCall(sam.getIdentifier(), null, parameterizedType, Diamond.NO, List.of(),
-                defaultValueProperties(), sam.typeInfo, null);
+                Map.of(), sam.typeInfo, null);
     }
 
     /*
@@ -92,7 +81,7 @@ public record ConstructorCall(
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
         return new ConstructorCall(Identifier.generate(), null, parameterizedType, diamond,
-                List.of(), defaultValueProperties(), anonymousClass, null);
+                List.of(), Map.of(), anonymousClass, null);
     }
 
     /*
@@ -107,25 +96,13 @@ public record ConstructorCall(
                                                  Diamond diamond,
                                                  List<Expression> parameterExpressions) {
         return new ConstructorCall(identifier, constructor, parameterizedType, diamond, parameterExpressions,
-                defaultValueProperties(), null, null);
+                Map.of(), null, null);
     }
 
-    /*
-   getInstance is used by MethodCall to enrich an instance with state.
 
-   cannot be null, we're applying a method on it.
-    */
-    public static ConstructorCall forGetInstance(Identifier identifier,
-                                                 ParameterizedType parameterizedType) {
-        return new ConstructorCall(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        VariableProperty.IDENTITY, Level.FALSE), null, null);
-    }
-
-    public ConstructorCall removeConstructor() {
-        return new ConstructorCall(identifier, null, parameterizedType, diamond, List.of(),
-                ensureNotNull(valueProperties),
-                anonymousClass, arrayInitializer);
+    public Expression removeConstructor() {
+        assert arrayInitializer == null;
+        return new Instance(identifier, parameterizedType, diamond, valueProperties);
     }
 
     public ConstructorCall(Identifier identifier,
@@ -136,25 +113,15 @@ public record ConstructorCall(
                            Map<VariableProperty, Integer> valueProperties,
                            TypeInfo anonymousClass,
                            ArrayInitializer arrayInitializer) {
+        assert constructor != null || arrayInitializer != null; // but not both
         this.identifier = identifier;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
-        this.constructor = constructor; // can be null after modification (constructor lost)
+        this.constructor = constructor;
         this.anonymousClass = anonymousClass;
         this.arrayInitializer = arrayInitializer;
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
         this.valueProperties = valueProperties;
-        assert internalChecks();
-
-    }
-
-    private boolean internalChecks() {
-        int minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.falseValue);
-        if (constructor != null && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return false;
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL)
-            return false;
-
-        return valueProperties.values().stream().noneMatch(v -> v < 0);
     }
 
     @Override
@@ -254,7 +221,10 @@ public record ConstructorCall(
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
-            // value properties
+            /*
+             value properties; errors should appear only when the object is unevaluated
+             (because it was created in the inspection phase)
+             */
             case NOT_NULL_EXPRESSION, INDEPENDENT, IDENTITY, IMMUTABLE, CONTAINER -> {
                 Integer inMap = valueProperties.getOrDefault(variableProperty, null);
                 if (inMap != null) yield inMap;
@@ -456,21 +426,19 @@ public record ConstructorCall(
 
         ConstructorCall initialInstance = new ConstructorCall(identifier, constructor, pt, diamond, res.v,
                 newValueProperties, anonymousClass, null);
-        Expression instance;
-        if (constructor != null) {
-            // check state changes of companion methods
-            MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
-            Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, this,
-                    constructor, constructorAnalysis, null, initialInstance, res.v);
-            instance = modifiedInstance == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    initialInstance.linkedVariables(evaluationContext).changeAllToDelay()) : modifiedInstance;
-        } else {
-            instance = initialInstance;
-        }
+
+        // check state changes of companion methods
+        MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
+        Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext,
+                constructor, constructorAnalysis, null, initialInstance, res.v);
+        Expression instance = modifiedInstance == null
+                ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                initialInstance.linkedVariables(evaluationContext).changeAllToDelay())
+                : modifiedInstance;
+
         res.k.setExpression(instance);
 
-        if (constructor != null &&
-                (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
+        if ((!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
             res.k.incrementStatementTime();
         }
 

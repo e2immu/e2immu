@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
@@ -103,18 +104,24 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
+                        assertTrue(d.currentValue() instanceof PropertyWrapper);
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
-                                : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
+                                : "instance type ArrayList<I>/*this.contains(new I())&&1==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() <= 1 ? "i:-1,list:0" : "i:3,list:0";
+                        // i:3 gone, because substitution with "new I()"
+                        String expectLv = d.iteration() <= 1 ? "i:-1,list:0" : "list:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         // delayed because linking is delayed!
-                        int expectCm = d.iteration()<= 1? Level.DELAY: Level.TRUE;
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                        int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
@@ -122,7 +129,11 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
-                    String expectLv = d.iteration() <= 2 ? "ci:0,i:-1,list:-1" : "ci:0,i:3,list:2";
+                    String expectLv = switch (d.iteration()) {
+                        case 0, 1 -> "ci:0,i:-1,list:-1";
+                        case 2 -> "ci:0,list:-1"; // "i" substituted for new I()
+                        default -> "ci:0,list:2";
+                    };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
@@ -132,7 +143,11 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    String expectLv = d.iteration() <= 2 ? "ci2:0,ci:-1,i:-1,list:-1" : "ci2:0,ci:3,i:3,list:3";
+                    String expectLv = switch (d.iteration()) {
+                        case 0, 1 -> "ci2:0,ci:-1,i:-1,list:-1";
+                        case 2 -> "ci2:0,ci:-1,list:-1"; // "i" substituted for new I()
+                        default -> "ci2:0,ci:3,list:3";
+                    };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;

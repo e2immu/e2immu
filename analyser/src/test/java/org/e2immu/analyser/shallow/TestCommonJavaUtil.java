@@ -48,6 +48,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.CONTAINER));
 
         // as opposed to java.io.PrintStream.print(X x), for example
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
@@ -188,6 +189,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
+    }
+
+    @Test
+    public void testArrayList() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ArrayList.class);
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
     }
 
     @Test

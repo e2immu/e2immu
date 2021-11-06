@@ -967,7 +967,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
         vic.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 statementAnalysis.statementTime(EVALUATION), Set.of());
-        Expression instance = Instance.forLoopVariable(index(), loopVar, MultiLevel.NULLABLE);
+        Map<VariableProperty, Integer> valueProperties = Map.of(); // FIXME
+        Expression instance = Instance.forLoopVariable(index(), loopVar, valueProperties);
         vic.setValue(instance, someValueWasDelayed, LinkedVariables.EMPTY, Map.of(), false);
         vic.setLinkedVariables(linked, EVALUATION);
     }
@@ -1527,8 +1528,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     CONTEXT_NOT_NULL, initialNotNull,
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
-
-                    vic.setValue(Instance.forLoopVariable(index(), lvr, initialNotNull),
+                    Map<VariableProperty, Integer> valueProperties = Map.of(); // FIXME
+                    vic.setValue(Instance.forLoopVariable(index(), lvr, valueProperties),
                             false, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                     vic.setLinkedVariables(LinkedVariables.EMPTY, INITIAL);
@@ -2825,12 +2826,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     boolean cmNn = notNullAccordingToConditionManager(variable);
                     return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
                 }
+
                 if (variableProperty == IMMUTABLE) {
                     int formally = variable.parameterizedType().defaultImmutable(getAnalyserContext(), false);
                     if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
-
-                    // FIXME improvement, but not good enough
-                    if (inMap == Level.DELAY && !(variable instanceof ParameterInfo)) {
+                    if (isMyself(variable.parameterizedType())) return MultiLevel.MUTABLE;
+                    if (formally == Level.DELAY) {
+                        return Level.DELAY;
+                    }
+                    if (inMap == Level.DELAY) {
                         assert translatedDelay("getProperty",
                                 variable.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
                                 variable.fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
@@ -2994,9 +2998,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .forEach(e -> {
                             VariableInfo eval = e.getValue().best(EVALUATION);
                             Variable variable = eval.variable();
-                            int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true, false);
-                            if (nne != Level.DELAY) {
-                                Expression newObject = Instance.genericMergeResult(index(), e.getValue().current(), nne);
+
+                            Map<VariableProperty, Integer> valueProperties = getValueProperties(eval.getValue());
+                            boolean isDelayed = valueProperties.values().stream().anyMatch(v -> v == Level.DELAY);
+                            if (!isDelayed) {
+                                Expression newObject = Instance.genericMergeResult(index(),
+                                        e.getValue().current().variable(), valueProperties);
                                 translationMap.put(new VariableExpression(variable), newObject);
                             }
 
