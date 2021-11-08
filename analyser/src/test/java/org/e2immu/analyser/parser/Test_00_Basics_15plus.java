@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -87,7 +88,9 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1
                             ? "<vp:org.e2immu.analyser.testexample.Basics_18.A>" : "a";
-                    assertEquals("a", d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
+                    int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };

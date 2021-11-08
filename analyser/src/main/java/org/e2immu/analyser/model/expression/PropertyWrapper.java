@@ -266,10 +266,4 @@ public record PropertyWrapper(Expression expression,
     public Expression state() {
         return state;
     }
-
-    @Override
-    public Expression removeState() {
-        if (state != null) return expression;
-        return this;
-    }
 }

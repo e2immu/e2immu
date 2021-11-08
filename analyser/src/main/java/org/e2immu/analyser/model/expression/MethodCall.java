@@ -328,6 +328,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // revisit abstract method, check if object value pointed to a concrete, modifying method
+        // FIXME should we not do this by default, abstract or not?
         if (abstractMethod && objectValue instanceof IsVariableExpression ve) {
             MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(ve.variable(), methodInfo);
             if (pointsToConcreteMethod != null) {
@@ -353,8 +354,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED));
         }
         LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
-
-        // FIXME this doesn't work on list = new ArrayList<>(); list.add(t); because linkedVariables is empty (computed on value!)
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
             int combined = objectIsDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, level2);
             builder.link(v, v2, combined);

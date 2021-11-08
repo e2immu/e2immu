@@ -623,14 +623,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {
-        // initial, so we need to copy from analysers.
-        // parameters are dealt with in the first part of this method
-        // here we deal with copying in values from fields
-        VariableInfo variableInfo = vic.current();
-        if (!(variableInfo.variable() instanceof FieldReference fieldReference)) return;
+        VariableInfo viInitial = vic.best(INITIAL);
+        if (!(viInitial.variable() instanceof FieldReference fieldReference)) return;
 
         // see if we can resolve a delay in statement time
-        if (variableInfo.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+        if (viInitial.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal != Level.DELAY) {
@@ -640,17 +637,27 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // so from here on, isConfirmedVariableField may be set
         }
         boolean selfReference = inPartOfConstruction() && !(fieldReference.scopeIsThis());
-
-        // this is the first time we see this field (initial)
-        ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
         Map<VariableProperty, Integer> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
-        Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
         Map<VariableProperty, Integer> combined = new HashMap<>(map);
-        valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
+        ExpressionAndDelay initialValue;
 
-        // copy into initial
-        VariableInfo viInitial = vic.best(INITIAL);
-        vic.setInitialValue(initialValue.expression, initialValue.expressionIsDelayed, combined, true);
+        if (!viInitial.valueIsSet()) {
+            // we don't have an initial value yet
+            initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
+            Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
+            valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
+
+            // copy into initial
+
+            vic.setInitialValue(initialValue.expression, initialValue.expressionIsDelayed, combined, true);
+        } else {
+            // only set properties copied from the field
+            map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
+            initialValue = new ExpressionAndDelay(viInitial.getValue(), false);
+            // add the value properties from the current value to combined
+            Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(viInitial.getValue());
+            valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
+        }
 
         /* copy into evaluation, but only if there is no assignment and no reading
 
@@ -674,7 +681,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private static final Set<VariableProperty> FROM_FIELD_ANALYSER_TO_PROPERTIES
-            = Set.of(FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
+            = Set.of(FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD);
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {

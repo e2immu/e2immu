@@ -230,7 +230,8 @@ public interface Expression extends Element, Comparable<Expression> {
         return thisVar.get();
     }
 
-    default Expression removeState() {
-        return this;
+    default Expression delayedValue(EvaluationContext evaluationContext) {
+        return DelayedExpression.forDelayedValueProperties(returnType(),
+                linkedVariables(evaluationContext).changeAllToDelay());
     }
 }

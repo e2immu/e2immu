@@ -363,4 +363,10 @@ public record ConstructorCall(
     public Identifier getIdentifier() {
         return identifier;
     }
+
+    @Override
+    public Expression delayedValue(EvaluationContext evaluationContext) {
+        return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                linkedVariables(evaluationContext).changeAllToDelay());
+    }
 }
