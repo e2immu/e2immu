@@ -14,9 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugCollector;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
-import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -31,13 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class CompanionAnalyser implements DelayDebugger {
+public class CompanionAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompanionAnalyser.class);
 
     private final AnalyserContext analyserContext;
@@ -46,7 +42,6 @@ public class CompanionAnalyser implements DelayDebugger {
     public final CompanionMethodName companionMethodName;
     public final CompanionAnalysisImpl.Builder companionAnalysis;
     public final TypeAnalysis typeAnalysis;
-    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public CompanionAnalyser(AnalyserContext analyserContext,
                              TypeAnalysis typeAnalysis,
@@ -66,11 +61,7 @@ public class CompanionAnalyser implements DelayDebugger {
         try {
             if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
                 if (iteration == 0) {
-                    log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
-                            companionMethodName, mainMethod.fullyQualifiedName());
-                    assert translatedDelay(companionMethod.fullyQualifiedName, mainMethod.typeInfo.fullyQualifiedName + D_ASPECTS, // FIXME
-                            companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
-                    return AnalysisStatus.DELAYS;
+                    return new AnalysisStatus.Delayed(new CauseOfDelay.SimpleCause(mainMethod.typeInfo, CauseOfDelay.Cause.ASPECT));
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
@@ -79,17 +70,13 @@ public class CompanionAnalyser implements DelayDebugger {
                 companionAnalysis.value.set(EmptyExpression.EMPTY_EXPRESSION);
                 return DONE;
             }
-            int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
-            if (modifyingMainMethod == Level.DELAY && !mainMethod.isConstructor) {
+            DV modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
+            if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
-                log(DELAYED, "Delaying companion analysis of {} of {}, modification of main method delayed",
-                        companionMethodName, mainMethod.fullyQualifiedName());
-                assert translatedDelay(companionMethod.fullyQualifiedName, mainMethod.fullyQualifiedName + D_MODIFIED_METHOD,
-                        companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
-                return AnalysisStatus.DELAYS;
+                return new AnalysisStatus.Delayed(modifyingMainMethod.causesOfDelay());
             }
-            computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
+            computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod.valueIsTrue());
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .getMethodBody().structure.statements().get(0);
@@ -97,11 +84,7 @@ public class CompanionAnalyser implements DelayDebugger {
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationContext.isDelayed(evaluationResult.value())) {
-                log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
-                        companionMethodName, mainMethod.fullyQualifiedName());
-                assert translatedDelay(companionMethod.fullyQualifiedName, companionMethod.fullyQualifiedName + ":0" + D_EVALUATION_RESULT,
-                        companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
-                return AnalysisStatus.DELAYS;
+                return new AnalysisStatus.Delayed(new CauseOfDelay.SimpleCause(companionMethod, CauseOfDelay.Cause.VALUE));
             }
             companionAnalysis.value.set(evaluationResult.value());
 
@@ -156,50 +139,10 @@ public class CompanionAnalyser implements DelayDebugger {
         companionAnalysis.parameterValues.set(parameterValues);
     }
 
-    @Override
-    public boolean foundDelay(String where, String delayFqn) {
-        return delayDebugCollector.foundDelay(where, delayFqn);
-    }
-
-    @Override
-    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-        return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
-    }
-
-    @Override
-    public boolean createDelay(String where, String delayFqn) {
-        return delayDebugCollector.createDelay(where, delayFqn);
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        return delayDebugCollector.streamNodes();
-    }
-
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
             super(iteration, conditionManager, null);
-        }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean createDelay(String where, String delayFqn) {
-            return delayDebugCollector.createDelay(where, delayFqn);
-        }
-
-        @Override
-        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-            return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
-        }
-
-        @Override
-        public boolean foundDelay(String where, String delayFqn) {
-            return delayDebugCollector.foundDelay(where, delayFqn);
         }
 
         @Override
@@ -234,7 +177,7 @@ public class CompanionAnalyser implements DelayDebugger {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
+            CausesOfDelay conditionIsDelayed = isDelayedSet(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
                     Precondition.empty(getPrimitives()), null);
             return new EvaluationContextImpl(iteration, cm);
@@ -242,7 +185,7 @@ public class CompanionAnalyser implements DelayDebugger {
 
         @Override
         public EvaluationContext childState(Expression state) {
-            Set<Variable> stateIsDelayed = isDelayedSet(state);
+            CausesOfDelay stateIsDelayed = isDelayedSet(state);
             ConditionManager cm = conditionManager.addState(state, stateIsDelayed);
             return new EvaluationContextImpl(iteration, cm);
         }
@@ -251,7 +194,8 @@ public class CompanionAnalyser implements DelayDebugger {
         public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
-                if (remapping == null) return DelayedVariableExpression.forParameter(parameterInfo);
+                if (remapping == null)
+                    return DelayedVariableExpression.forParameter(parameterInfo, CauseOfDelay.Cause.REMAP_PARAMETER);
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);
@@ -259,7 +203,7 @@ public class CompanionAnalyser implements DelayDebugger {
 
         @Override
         public boolean hasState(Expression expression) {
-            if(expression instanceof VariableExpression) return false;
+            if (expression instanceof VariableExpression) return false;
             return expression.hasState();
         }
 

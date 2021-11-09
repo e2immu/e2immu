@@ -33,8 +33,7 @@ public class ArrayLength extends ElementImpl implements Expression {
     private final Primitives primitives;
     private final Expression scope;
 
-    public ArrayLength(Primitives primitives,
-                       @NotNull Expression scope) {
+    public ArrayLength(Primitives primitives, @NotNull Expression scope) {
         super(Identifier.generate());
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;

@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
@@ -48,12 +47,18 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         this.primitives = primitives;
     }
 
-    public int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
+    public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
+        Integer v = properties.getOrDefault(variableProperty, Level.DELAY);
+        if (v == Level.DELAY) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
+        return new DV.NoDelay(v);
     }
 
-    public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
+    public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
+        return new DV.NoDelay(properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent()));
+    }
+
+    public void setProperty(VariableProperty variableProperty, DV dv) {
+        setProperty(variableProperty, dv.value());
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -80,8 +85,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         return annotationChecks.get(annotationExpression);
     }
 
-    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int notNull) {
-
+    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, DV notNullDv) {
+        int notNull = notNullDv.value();
         // not null
         if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
             annotations.put(e2ImmuAnnotationExpressions.notNull1, true);
@@ -103,7 +108,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
-        int container = getProperty(VariableProperty.CONTAINER);
+        DV container = getProperty(VariableProperty.CONTAINER);
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysisImpl.Builder) this).typeInfo.isInterface();
@@ -113,8 +118,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
-        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, isInterface,
-                eventualFieldNames, betterThanFormal);
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container.value(),
+                isType, isInterface, eventualFieldNames, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             List<Expression> list;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
@@ -131,7 +136,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     protected void doIndependent(E2ImmuAnnotationExpressions e2, int independent, int formallyIndependent, int immutable) {
         AnnotationExpression expression;
 
-        if(independent == formallyIndependent) {
+        if (independent == formallyIndependent) {
             // no annotation needed
             return;
         }
@@ -315,14 +320,5 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {
         throw new UnsupportedOperationException();
-    }
-
-    public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {
-        Map<VariableProperty, Integer> res = new HashMap<>();
-        for (VariableProperty property : properties) {
-            int value = getProperty(property);
-            res.put(property, value);
-        }
-        return res;
     }
 }

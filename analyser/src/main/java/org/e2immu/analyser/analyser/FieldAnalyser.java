@@ -951,7 +951,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
-                    Map<VariableProperty, Integer>valueProperties = Map.of(
+                    Map<VariableProperty, Integer> valueProperties = Map.of(
                             VariableProperty.NOT_NULL_EXPRESSION, proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
                             VariableProperty.IMMUTABLE, proxy.getProperty(VariableProperty.IMMUTABLE),
                             VariableProperty.INDEPENDENT, proxy.getProperty(VariableProperty.INDEPENDENT),
@@ -1211,8 +1211,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-        int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return DelayedVariableExpression.forField(fieldReference);
+        DV effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (effectivelyFinal .isDelayed()) return DelayedVariableExpression.forField(fieldReference,
+                new CauseOfDelay.FieldReferenceCause(fieldReference, CauseOfDelay.Cause.FIELD_FINAL));
         if (effectivelyFinal == Level.FALSE) {
             return new VariableExpression(variable);
         }
@@ -1332,7 +1333,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
             try {
                 return value.getProperty(this, variableProperty, true);
-            } catch(RuntimeException re) {
+            } catch (RuntimeException re) {
                 LOGGER.error("Caught exception while evaluating expression '{}'", value);
                 throw re;
             }

@@ -938,11 +938,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 
         // RULE 2: @Identity links to the 1st parameter
-        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.TRUE) {
+        DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity.valueIsTrue()) {
             return parameterExpressions.get(0).linkedVariables(evaluationContext);
         }
-        if (identity == Level.DELAY) {
+        if (identity.isDelayed()) {
             // temporarily link to both the object and the parameter, in a delayed way
             if (parameterExpressions.isEmpty()) return LinkedVariables.DELAYED_EMPTY;
             return object.linkedVariables(evaluationContext)

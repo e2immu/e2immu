@@ -3065,7 +3065,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public boolean variableIsDelayed(Variable variable) {
+        public CausesOfDelay variableIsDelayed(Variable variable) {
             VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
             return vi == null || vi.isDelayed();
         }

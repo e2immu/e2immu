@@ -91,7 +91,7 @@ public record ConstructorCall(
     }
 
 
-    public Expression removeConstructor(Map<VariableProperty, Integer> valueProperties) {
+    public Expression removeConstructor(Map<VariableProperty, DV> valueProperties) {
         assert arrayInitializer == null;
         return new Instance(identifier, parameterizedType, diamond, valueProperties);
     }
@@ -186,11 +186,12 @@ public record ConstructorCall(
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
             ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-            int independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            DV independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
             LinkedVariables sub = value.linkedVariables(evaluationContext);
-            if (independentOnParameter == Level.DELAY) {
+            if (independentOnParameter.isDelayed()) {
                 result = result.mergeDelay(sub);
-            } else if (independentOnParameter >= MultiLevel.DEPENDENT && independentOnParameter < MultiLevel.INDEPENDENT) {
+            } else if (independentOnParameter.value() >= MultiLevel.DEPENDENT &&
+                    independentOnParameter.value() < MultiLevel.INDEPENDENT) {
                 result = result.merge(sub, MultiLevel.fromIndependentToLinkedVariableLevel(independentOnParameter));
             }
             i++;
@@ -205,7 +206,7 @@ public record ConstructorCall(
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         ParameterizedType pt;
         if (anonymousClass != null) {
             pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
@@ -213,12 +214,12 @@ public record ConstructorCall(
             pt = parameterizedType;
         }
         return switch (variableProperty) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT -> pt.defaultIndependent(evaluationContext.getAnalyserContext());
-            case IDENTITY -> Level.FALSE;
+            case IDENTITY -> Level.FALSE_DV;
             case IMMUTABLE -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
             case CONTAINER -> pt.defaultContainer(evaluationContext.getAnalyserContext());
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE;
+            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };
     }

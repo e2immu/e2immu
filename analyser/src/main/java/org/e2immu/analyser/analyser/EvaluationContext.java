@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -26,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +38,7 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 /**
  * Defaults because of tests
  */
-public interface EvaluationContext extends DelayDebugger {
+public interface EvaluationContext {
     Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int getIteration() {
@@ -112,9 +108,9 @@ public interface EvaluationContext extends DelayDebugger {
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
-    default int getProperty(Expression value, VariableProperty variableProperty,
-                            boolean duringEvaluation,
-                            boolean ignoreStateInConditionManager) {
+    default DV getProperty(Expression value, VariableProperty variableProperty,
+                           boolean duringEvaluation,
+                           boolean ignoreStateInConditionManager) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
@@ -139,11 +135,11 @@ public interface EvaluationContext extends DelayDebugger {
     /*
      assumes that currentValue has been queried before!
      */
-    default int getProperty(Variable variable, VariableProperty variableProperty) {
+    default DV getProperty(Variable variable, VariableProperty variableProperty) {
         throw new UnsupportedOperationException();
     }
 
-    default int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+    default DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
         throw new UnsupportedOperationException();
     }
 
@@ -171,17 +167,17 @@ public interface EvaluationContext extends DelayDebugger {
     Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
             NOT_NULL_EXPRESSION, INDEPENDENT);
 
-    default Map<VariableProperty, Integer> getValueProperties(Expression value) {
+    default Map<VariableProperty, DV> getValueProperties(Expression value) {
         return getValueProperties(value, false);
     }
 
     /*
     computed/copied during assignment. Critical that NNE is present!
      */
-    default Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
-        Map<VariableProperty, Integer> builder = new HashMap<>();
+    default Map<VariableProperty, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        Map<VariableProperty, DV> builder = new HashMap<>();
         for (VariableProperty property : VALUE_PROPERTIES) {
-            int v = getProperty(value, property, true, ignoreConditionInConditionManager);
+            DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
             builder.put(property, v); // also put the -1's in, easier to detect if there are delays!
         }
         return Map.copyOf(builder);
@@ -246,48 +242,12 @@ public interface EvaluationContext extends DelayDebugger {
         return getAnalyserContext().getMethodAnalysis(methodInfo);
     }
 
-    default boolean variableIsDelayed(Variable variable) {
-        return false;
+    default CausesOfDelay variableIsDelayed(Variable variable) {
+        return CausesOfDelay.EMPTY;
     }
 
-    default boolean isDelayed(Expression expression) {
-        if (expression.isInstanceOf(DelayedExpression.class) || expression.isInstanceOf(DelayedVariableExpression.class)) {
-            return true;
-        }
-        try {
-            // not a stream, easier to debug
-            for (Element sub : expression.subElements()) {
-                if (sub instanceof Expression e && isDelayed(e)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (RuntimeException runtimeException) {
-            LOGGER.error("Error computing isDelayed on type " + expression.getClass());
-            throw runtimeException;
-        }
-    }
-
-    default Set<Variable> isDelayedSet(Expression expression) {
-        if (expression.isInstanceOf(DelayedExpression.class)) return Set.of();
-        DelayedVariableExpression dve;
-        if ((dve = expression.asInstanceOf(DelayedVariableExpression.class)) != null) return Set.of(dve.variable());
-        try {
-            Set<Variable> set = null;
-            for (Element element : expression.subElements()) {
-                if (element instanceof Expression ex) {
-                    Set<Variable> delayed = isDelayedSet(ex);
-                    if (delayed != null) {
-                        if (set == null) set = delayed;
-                        else set = SetUtil.immutableUnion(set, delayed);
-                    }
-                }
-            }
-            return set;
-        } catch (RuntimeException runtimeException) {
-            LOGGER.error("Error computing isDelayed on type " + expression.getClass());
-            throw runtimeException;
-        }
+    default CausesOfDelay isDelayed(Expression expression) {
+        return expression.causesOfDelay(this);
     }
 
     default This currentThis() {
@@ -352,29 +312,35 @@ public interface EvaluationContext extends DelayDebugger {
     This again allows us to compute immutability values better than formal.
      */
 
-    record HiddenContent(List<ParameterizedType> hiddenTypes, boolean delay) {
+    record HiddenContent(List<ParameterizedType> hiddenTypes, CausesOfDelay causesOfDelay) {
         public HiddenContent {
             assert hiddenTypes != null;
         }
 
         public HiddenContent merge(HiddenContent other) {
-            return new HiddenContent(ListUtil.concatImmutable(hiddenTypes, other.hiddenTypes), delay || other.delay);
+            return new HiddenContent(ListUtil.concatImmutable(hiddenTypes, other.hiddenTypes),
+                    causesOfDelay.merge(other.causesOfDelay));
         }
     }
 
-    HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), false);
-    HiddenContent HIDDEN_CONTENT_DELAYED = new HiddenContent(List.of(), true);
+    HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), CausesOfDelay.EMPTY);
+
 
     default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
-        if (hiddenContentTypes == null) return HIDDEN_CONTENT_DELAYED;
+        if (hiddenContentTypes == null) return new HiddenContent(List.of(),
+                new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(getCurrentType(), CauseOfDelay.Cause.HIDDEN_CONTENT)));
         if (hiddenContentTypes.contains(concreteType)) {
-            return new HiddenContent(List.of(concreteType), false);
+            return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
         }
         TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
         if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
-        int immutable = concreteType.defaultImmutable(getAnalyserContext(), false);
-        if (immutable == MultiLevel.INDEPENDENT) return NO_HIDDEN_CONTENT;
-        if (immutable <= Level.DELAY) return HIDDEN_CONTENT_DELAYED; // and type analysis not available
+        DV immutable = concreteType.defaultImmutable(getAnalyserContext(), false);
+        if (immutable.value() == MultiLevel.INDEPENDENT) return NO_HIDDEN_CONTENT;
+        if (immutable.isDelayed()) {
+            new HiddenContent(List.of(),
+                    new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT))
+                            .merge(immutable.causesOfDelay()));
+        }
 
         // hidden content is more complex
         TypeInspection bestInspection = getAnalyserContext().getTypeInspection(bestType);

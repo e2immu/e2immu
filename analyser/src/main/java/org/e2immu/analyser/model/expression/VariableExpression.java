@@ -73,7 +73,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
     }
 
@@ -145,11 +145,11 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public boolean isDelayed(EvaluationContext evaluationContext) {
-        if (variable instanceof FieldReference fr) {
-            return fr.scope != null && fr.scope.isDelayed(evaluationContext);
+    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
+        if (variable instanceof FieldReference fr && fr.scope != null) {
+            return fr.scope.causesOfDelay(evaluationContext);
         }
-        return false; // should have taken DelayedVariableExpression otherwise
+        return CausesOfDelay.EMPTY; // should have taken DelayedVariableExpression otherwise
     }
 
     @Override
@@ -192,12 +192,12 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
         }
 
-        int notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-        if (notNull > MultiLevel.NULLABLE) {
+        DV notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        if (notNull.value() > MultiLevel.NULLABLE) {
             builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
         }
-        int modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
-        if (modified != Level.DELAY) {
+        DV modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
+        if (!modified.isDelayed()) {
             builder.markContextModified(variable, modified);
             // do not check for implicit this!! otherwise, any x.y will also affect this.y
 
@@ -207,40 +207,40 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
         }
 
-        int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.CONTAINER);
-        if (notModified1 == Level.TRUE) {
+        DV notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.CONTAINER);
+        if (notModified1.valueIsTrue()) {
             builder.variableOccursInContainerContext(variable, adjustedScope);
         }
 
-        int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-        if (methodCalled == Level.TRUE) {
+        DV methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
+        if (methodCalled.valueIsTrue()) {
             builder.markMethodCalled(variable);
         }
 
-        int contextModifiedDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY);
-        if (contextModifiedDelay == Level.TRUE) {
+        DV contextModifiedDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY);
+        if (contextModifiedDelay.valueIsTrue()) {
             builder.markContextModifiedDelay(variable);
         }
 
-        int contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
-        if (contextNotNullDelay == Level.TRUE) {
+        DV contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
+        if (contextNotNullDelay.valueIsTrue()) {
             builder.markContextNotNullDelay(variable);
         }
 
-        int contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        int nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
-        if (contextImmutable > MultiLevel.MUTABLE) {
+        DV contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        DV nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
+        if (contextImmutable .value()> MultiLevel.MUTABLE) {
             builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
         }
 
-        int contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);
-        if (contextImmutableDelay == Level.TRUE) {
+        DV contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);
+        if (contextImmutableDelay.valueIsTrue()) {
             builder.markContextImmutableDelay(variable);
         }
 
         // when we don't know yet if forEach( ...)'s first parameter has the @PropagateModification annotation
-        int propagateModificationDelay = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION_DELAY);
-        if (propagateModificationDelay == Level.TRUE) {
+        DV propagateModificationDelay = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION_DELAY);
+        if (propagateModificationDelay.valueIsTrue()) {
             builder.markPropagateModificationDelay(variable);
         }
 
@@ -258,22 +258,23 @@ public record VariableExpression(Variable variable, String name) implements Expr
                                   EvaluationResult scopeResult,
                                   Expression currentValue) {
         if (scopeResult != null) {
-            boolean scopeResultIsDelayed = evaluationContext.isDelayed(scopeResult.getExpression());
+            CausesOfDelay scopeResultIsDelayed = evaluationContext.isDelayed(scopeResult.getExpression());
             InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
             if (currentValue instanceof VariableExpression ve
                     && ve.variable() instanceof FieldReference fr
                     && !fr.scope.equals(scopeResult.value())) {
-                if (!scopeResultIsDelayed) {
+                if (!scopeResultIsDelayed.isDelayed()) {
                     return new VariableExpression(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
                 }
-                return DelayedVariableExpression.forField(fr);
+                return DelayedVariableExpression.forField(fr, scopeResultIsDelayed);
             }
             if (currentValue instanceof DelayedVariableExpression ve
                     && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
-                if (!scopeResultIsDelayed) {
-                    return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                if (!scopeResultIsDelayed.isDelayed()) {
+                    return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()),
+                            ve.causesOfDelay);
                 }
-                return DelayedVariableExpression.forField(fr);
+                return DelayedVariableExpression.forField(fr, ve.causesOfDelay);
             }
         }
         return currentValue;

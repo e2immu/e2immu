@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -56,7 +53,7 @@ public class UnknownExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
             return primitiveGetProperty(variableProperty);
         }
@@ -64,37 +61,37 @@ public class UnknownExpression extends ElementImpl implements Expression {
                 : evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
         switch (variableProperty) {
             case IMMUTABLE:
-                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED : typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
             case INDEPENDENT:
-                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED : typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
             case CONTAINER:
-                return typeAnalysis == null ? Level.FALSE : typeAnalysis.getProperty(VariableProperty.CONTAINER);
+                return typeAnalysis == null ? Level.FALSE_DV : typeAnalysis.getProperty(VariableProperty.CONTAINER);
             case NOT_NULL_EXPRESSION:
-                return MultiLevel.NULLABLE;
+                return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:
             case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
-                return Level.FALSE;
+                return Level.FALSE_DV;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
     }
 
-    public static int primitiveGetProperty(VariableProperty variableProperty) {
+    public static DV primitiveGetProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case CONTAINER:
-                return Level.TRUE;
+                return Level.TRUE_DV;
             case NOT_NULL_EXPRESSION:
-                return MultiLevel.EFFECTIVELY_NOT_NULL;
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:
             case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
-                return Level.FALSE;
+                return Level.FALSE_DV;
             case INDEPENDENT:
-                return MultiLevel.INDEPENDENT;
+                return MultiLevel.INDEPENDENT_DV;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
     }

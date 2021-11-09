@@ -89,7 +89,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 
@@ -135,10 +135,14 @@ public class ArrayAccess extends ElementImpl implements Expression {
         } else {
             boolean delayed = array.value().isDelayed(evaluationContext) || indexValue.value().isDelayed(evaluationContext);
             DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(), returnType);
-
             // evaluatedDependentVariable is our best effort at evaluation of the individual components
-            if (delayed || forwardEvaluationInfo.isAssignmentTarget()) {
-                Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable);
+
+            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
+                builder.setExpression(NullConstant.NULL_CONSTANT); // not really relevant
+            } else if (delayed) {
+                CausesOfDelay causesOfDelay = array.value().causesOfDelay(evaluationContext)
+                        .merge(indexValue.value().causesOfDelay(evaluationContext));
+                Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
                 builder.setExpression(dve);
             } else {
                 if (evaluatedDependentVariable.arrayVariable != null) {

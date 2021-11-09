@@ -996,15 +996,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         @Override
         public EvaluationContext child(Expression condition) {
-            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
                     Precondition.empty(getPrimitives()), null);
             return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
-        }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1013,7 +1007,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         @Override
-        public int getProperty(Variable variable, VariableProperty variableProperty) {
+        public DV getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
                 VariableProperty vp = external(variableProperty);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);

@@ -18,6 +18,10 @@ import org.e2immu.support.SetOnceMap;
 
 public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
 
+    public void put(VariableProperty variableProperty, DV dv) {
+        put(variableProperty, dv.value());
+    }
+
     @Override
     public void put(VariableProperty variableProperty, Integer integer) {
         if (integer == null || integer < 0) {

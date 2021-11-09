@@ -48,22 +48,14 @@ public abstract class AnalysisImpl implements Analysis {
         return annotations.entrySet().stream();
     }
 
-    public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
+    public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
+        return new DV.NoDelay( properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent()));
     }
 
     @Override
-    public int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
-    }
-
-
-    public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {
-        Map<VariableProperty, Integer> res = new HashMap<>();
-        for (VariableProperty property : properties) {
-            int value = getProperty(property);
-            res.put(property, value);
-        }
-        return res;
+    public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
+        Integer v = properties.getOrDefault(variableProperty, Level.DELAY);
+        if (v == Level.DELAY) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
+        return new DV.NoDelay(v);
     }
 }

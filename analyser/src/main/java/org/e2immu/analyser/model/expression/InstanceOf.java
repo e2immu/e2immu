@@ -68,7 +68,7 @@ public class InstanceOf extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 
@@ -201,11 +201,11 @@ public class InstanceOf extends ElementImpl implements Expression {
     }
 
     @Override
-    public boolean isDelayed(EvaluationContext evaluationContext) {
+    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext ) {
         if (expression instanceof VariableExpression ve) {
             return evaluationContext.variableIsDelayed(ve.variable());
         }
-        return expression.isDelayed(evaluationContext);
+        return expression.causesOfDelay(evaluationContext);
     }
 
     @Override

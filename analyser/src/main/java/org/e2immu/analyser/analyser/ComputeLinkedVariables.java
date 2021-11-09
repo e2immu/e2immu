@@ -25,9 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /*
 Goal:
@@ -52,7 +52,7 @@ public class ComputeLinkedVariables {
     private final StatementAnalysis statementAnalysis;
     private final List<List<Variable>> clustersStaticallyAssigned;
     private final List<List<Variable>> clustersDependent;
-    public final boolean delaysInClustering;
+    public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable> weightedGraph;
     private final Predicate<Variable> ignore;
 
@@ -62,7 +62,7 @@ public class ComputeLinkedVariables {
                                    WeightedGraph<Variable> weightedGraph,
                                    List<List<Variable>> clustersStaticallyAssigned,
                                    List<List<Variable>> clustersDependent,
-                                   boolean delaysInClustering) {
+                                   CausesOfDelay delaysInClustering) {
         this.clustersStaticallyAssigned = clustersStaticallyAssigned;
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
@@ -79,7 +79,7 @@ public class ComputeLinkedVariables {
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
         WeightedGraph<Variable> weightedGraph = new WeightedGraph<>();
-        AtomicBoolean delaysInClustering = new AtomicBoolean();
+        Set<CauseOfDelay> delaysInClustering = new HashSet<>();
         List<Variable> variables = new ArrayList<>(statementAnalysis.variables.size());
 
         statementAnalysis.variableEntryStream(level).forEach(e -> {
@@ -116,7 +116,12 @@ public class ComputeLinkedVariables {
 
                 boolean bidirectional = vic.variableNature().localCopyOf() == null;
                 weightedGraph.addNode(variable, curated.variables(), bidirectional);
-                if (curated.isDelayed()) delaysInClustering.set(true);
+                if (curated.isDelayed()) {
+                    curated.variables().forEach((v, value) -> {
+                        if (value == Level.DELAY)
+                            delaysInClustering.add(new CauseOfDelay.VariableCause(v, CauseOfDelay.Cause.LINKING));
+                    });
+                }
             }
         });
 
@@ -125,7 +130,7 @@ public class ComputeLinkedVariables {
         List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables,
                 LinkedVariables.DELAYED_VALUE, LinkedVariables.DEPENDENT);
         return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
-                clustersDependent, delaysInClustering.get());
+                clustersDependent, CausesOfDelay.from(delaysInClustering));
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable> weightedGraph,
@@ -149,8 +154,8 @@ public class ComputeLinkedVariables {
     }
 
     public AnalysisStatus write(VariableProperty property, Map<Variable, Integer> propertyValues) {
-        if (delaysInClustering && VariableProperty.CONTEXT_NOT_NULL != property) {
-            return AnalysisStatus.DELAYS;
+        if (delaysInClustering.isDelayed()) {
+            return new AnalysisStatus.Delayed(delaysInClustering, false);
         }
         if (VariableProperty.CONTEXT_MODIFIED == property) {
             return writeProperty(clustersDependent, property, propertyValues);
@@ -171,9 +176,17 @@ public class ComputeLinkedVariables {
                                          Map<Variable, Integer> propertyValues) {
         AnalysisStatus analysisStatus = AnalysisStatus.DONE;
         for (List<Variable> cluster : clusters) {
-            int summary = computeSummary(cluster, propertyValues);
+            int summary = cluster.stream()
+                    .mapToInt(v -> propertyValues.getOrDefault(v, Level.DELAY))
+                    // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
+                    .reduce(0, Level.OR);
             if (summary == Level.DELAY) {
-                analysisStatus = AnalysisStatus.DELAYS;
+                analysisStatus = new AnalysisStatus.Delayed(new CausesOfDelay.SimpleSet(
+                        cluster.stream()
+                                .filter(v -> propertyValues.getOrDefault(v, Level.DELAY) == Level.DELAY)
+                                .map(v -> new CauseOfDelay.VariableCause(v, CauseOfDelay.Cause.from(variableProperty)))
+                                .collect(Collectors.toUnmodifiableSet())
+                ));
             } else {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
@@ -195,14 +208,6 @@ public class ComputeLinkedVariables {
             }
         }
         return analysisStatus;
-    }
-
-
-    // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
-    private int computeSummary(List<Variable> cluster, Map<Variable, Integer> propertyValues) {
-        return cluster.stream()
-                .mapToInt(v -> propertyValues.getOrDefault(v, Level.DELAY))
-                .reduce(0, Level.OR);
     }
 
     public void writeLinkedVariables() {

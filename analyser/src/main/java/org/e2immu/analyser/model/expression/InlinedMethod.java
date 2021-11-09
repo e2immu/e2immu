@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.*;
@@ -110,7 +109,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
     a method call, and the result of the method should be used.
      */
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
@@ -124,7 +123,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             Set<Variable> newVariables = new HashSet<>(result.getExpression().variables());
             boolean haveVariableFields = newVariables.stream()
                     .anyMatch(v -> v instanceof FieldReference fr && evaluationContext.getAnalyserContext()
-                            .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL) == Level.FALSE);
+                            .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL).valueIsFalse());
             InlinedMethod newIm = new InlinedMethod(identifier, im.methodInfo(), result.getExpression(),
                     newVariables, haveVariableFields);
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
@@ -229,8 +228,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
                     FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                    if (effectivelyFinal == Level.TRUE) {
+                    DV effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                    if (effectivelyFinal.valueIsTrue()) {
                         if (staticField) {
                             replace = false;
                         } else {
@@ -258,9 +257,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
                         FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
                                 staticField ? null : ve);
-                        boolean delayed = evaluationContext.variableIsDelayed(scopeField);
-                        if (delayed) {
-                            replacement = DelayedVariableExpression.forField(scopeField);
+                        CausesOfDelay causesOfDelay = evaluationContext.variableIsDelayed(scopeField);
+                        if (causesOfDelay.isDelayed()) {
+                            replacement = DelayedVariableExpression.forField(scopeField, causesOfDelay);
                         } else {
                             replacement = new VariableExpression(scopeField);
                         }
@@ -269,11 +268,12 @@ public class InlinedMethod extends ElementImpl implements Expression {
             }
             if (replace) {
                 if (replacement == null) {
-                    Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(variable,
+                    Map<VariableProperty, DV> valueProperties = valuePropertiesOfInstance(variable,
                             evaluationContext.getAnalyserContext());
                     if (valueProperties == null) {
                         replacement = DelayedExpression.forMethod(methodInfo, variable.concreteReturnType(),
-                                evaluationContext.linkedVariables(variable).changeAllToDelay());
+                                evaluationContext.linkedVariables(variable).changeAllToDelay(),
+                                CausesOfDelay.EMPTY); // FIXME
                     } else {
                         replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
                                 Identifier.variable(variable))), variable.parameterizedType(), valueProperties);
@@ -287,8 +287,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
         return Map.copyOf(builder);
     }
 
-    private Map<VariableProperty, Integer> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
-        throw new UnsupportedOperationException("To implement");
+    private Map<VariableProperty, DV> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
+        throw new UnsupportedOperationException("To implement"); // FIXME
     }
 
     private int indexOfParameterLinkedToFinalField(EvaluationContext evaluationContext,
@@ -391,15 +391,14 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         @Override
         public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
             return new EvaluationContextImpl(this,
-                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, conditionIsDelayed));
+                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(),
+                            condition, condition.causesOfDelay(this)));
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            Set<Variable> stateIsDelayed = isDelayedSet(state);
-            return new EvaluationContextImpl(this, conditionManager.addState(state, stateIsDelayed));
+            return new EvaluationContextImpl(this, conditionManager.addState(state, state.causesOfDelay(this)));
         }
 
         @Override
@@ -419,20 +418,20 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+        public DV getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
             return evaluationContext.getProperty(value, variableProperty, duringEvaluation, ignoreStateInConditionManager);
         }
 
         @Override
-        public int getProperty(Variable variable, VariableProperty variableProperty) {
+        public DV getProperty(Variable variable, VariableProperty variableProperty) {
             ensureVariableIsKnown(variable);
-            return variableProperty.falseValue; // FIXME
+            return variableProperty.falseDv; // FIXME
         }
 
         @Override
-        public int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+        public DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
             ensureVariableIsKnown(variable);
-            return variableProperty.falseValue; // FIXME
+            return variableProperty.falseDv; // FIXME
         }
 
         @Override
@@ -447,12 +446,12 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public Map<VariableProperty, Integer> getValueProperties(Expression value) {
+        public Map<VariableProperty, DV> getValueProperties(Expression value) {
             return evaluationContext.getValueProperties(value);
         }
 
         @Override
-        public Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        public Map<VariableProperty, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
             return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
         }
 
@@ -514,18 +513,13 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public boolean variableIsDelayed(Variable variable) {
-            return false; // nothing can be delayed here
+        public CausesOfDelay variableIsDelayed(Variable variable) {
+            return CausesOfDelay.EMPTY; // nothing can be delayed here
         }
 
         @Override
-        public boolean isDelayed(Expression expression) {
-            return false; // nothing can be delayed here
-        }
-
-        @Override
-        public Set<Variable> isDelayedSet(Expression expression) {
-            return null; // nothing can be delayed here
+        public CausesOfDelay isDelayed(Expression expression) {
+            return CausesOfDelay.EMPTY; // nothing can be delayed here
         }
 
         @Override
@@ -556,26 +550,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
         @Override
         public boolean hasBeenAssigned(Variable variable) {
             return evaluationContext.hasBeenAssigned(variable);
-        }
-
-        @Override
-        public boolean foundDelay(String where, String delayFqn) {
-            return evaluationContext.foundDelay(where, delayFqn);
-        }
-
-        @Override
-        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-            return evaluationContext.translatedDelay(where, delayFromFqn, newDelayFqn);
-        }
-
-        @Override
-        public boolean createDelay(String where, String delayFqn) {
-            return evaluationContext.createDelay(where, delayFqn);
-        }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            return Stream.of();
         }
 
         @Override

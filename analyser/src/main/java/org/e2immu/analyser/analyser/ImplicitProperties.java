@@ -21,34 +21,34 @@ import org.e2immu.analyser.parser.Primitives;
 
 public class ImplicitProperties {
 
-    public static int arrayProperties(VariableProperty variableProperty) {
+    public static DV arrayProperties(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-            case CONTAINER -> Level.TRUE;
-            default -> Level.DELAY;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+            case CONTAINER -> Level.TRUE_DV;
+            default -> Level.NOT_INVOLVED_DV;
         };
     }
 
-    public static int primitiveProperties(VariableProperty variableProperty) {
+    public static DV primitiveProperties(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-            case CONTAINER -> Level.TRUE;
-            case INDEPENDENT -> MultiLevel.INDEPENDENT;
-            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL; // NOT: EXTERNAL_NOT_NULL!
-            default -> Level.DELAY;
+            case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+            case CONTAINER -> Level.TRUE_DV;
+            case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+            case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!
+            default -> Level.NOT_INVOLVED_DV;
         };
     }
 
-    public static int fromType(ParameterizedType parameterizedType, VariableProperty variableProperty) {
+    public static DV fromType(ParameterizedType parameterizedType, VariableProperty variableProperty) {
         if (parameterizedType.arrays > 0) {
-            int arrayPropertyValue = arrayProperties(variableProperty);
-            if (arrayPropertyValue > Level.DELAY) return arrayPropertyValue;
+            DV arrayPropertyValue = arrayProperties(variableProperty);
+            if (arrayPropertyValue != Level.NOT_INVOLVED_DV) return arrayPropertyValue;
         }
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            int primitivePropertyValue = primitiveProperties(variableProperty);
-            if (primitivePropertyValue > Level.DELAY) return primitivePropertyValue;
+            DV primitivePropertyValue = primitiveProperties(variableProperty);
+            if (primitivePropertyValue != Level.NOT_INVOLVED_DV) return primitivePropertyValue;
         }
-        return Level.DELAY;
+        return Level.NOT_INVOLVED_DV;
     }
 }

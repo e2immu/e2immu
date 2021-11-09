@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -119,10 +116,10 @@ public class MultiValue extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
-            int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
-            if (notNull == Level.DELAY) return Level.DELAY;
+            DV notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
+            if (notNull.isDelayed()) return notNull;
             return MultiLevel.composeOneLevelLess(notNull); // default = @NotNull level 0
         }
         // default is to refer to each of the components

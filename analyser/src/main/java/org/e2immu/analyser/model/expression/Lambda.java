@@ -191,21 +191,24 @@ public class Lambda extends ElementImpl implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
+            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY,
+                    new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(evaluationContext.getCurrentType(),
+                            CauseOfDelay.Cause.TYPE_ANALYSIS)));
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
                 Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv != null) {
+                if (srv.isDone(evaluationContext)) {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY);
+                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY,
+                            srv.causesOfDelay(evaluationContext));
                 }
             } else {
-                Map<VariableProperty, Integer> valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                Map<VariableProperty, DV> valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         // FIXME need more here
-                        VariableProperty.IDENTITY, Level.FALSE);
+                        VariableProperty.IDENTITY, Level.FALSE_DV);
                 result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);

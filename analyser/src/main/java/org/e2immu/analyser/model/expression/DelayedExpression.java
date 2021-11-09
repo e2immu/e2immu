@@ -27,12 +27,14 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
+import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
 @E2Container
 public record DelayedExpression(String msg,
                                 String debug,
                                 ParameterizedType parameterizedType,
-                                LinkedVariables linkedVariables) implements Expression {
+                                LinkedVariables linkedVariables,
+                                CausesOfDelay causesOfDelay) implements Expression {
 
     public static final String PRECONDITION = "<precondition>";
 
@@ -42,9 +44,11 @@ public record DelayedExpression(String msg,
     }
 
     public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType,
-                                              LinkedVariables linkedVariables) {
+                                              LinkedVariables linkedVariables,
+                                              CausesOfDelay causesOfDelay) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
-                "<method:" + methodInfo.fullyQualifiedName + ">", concreteReturnType, linkedVariables);
+                "<method:" + methodInfo.fullyQualifiedName + ">", concreteReturnType, linkedVariables,
+                causesOfDelay);
     }
 
     /*
@@ -94,18 +98,18 @@ public record DelayedExpression(String msg,
         return new DelayedExpression(name, name, booleanParameterizedType, linkedVariables);
     }
 
-    public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType, LinkedVariables linkedVariables, CausesOfDelay causesOfDelay) {
         String name = "<localVariableInLoop:" + parameterizedType.detailedString() + ">";
-        return new DelayedExpression(name, name, parameterizedType, linkedVariables);
+        return new DelayedExpression(name, name, parameterizedType, linkedVariables, causesOfDelay);
     }
 
-    public static Expression forValueOf(ParameterizedType parameterizedType) {
+    public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
         String name = "<valueOf:" + parameterizedType.detailedString() + ">";
-        return new DelayedExpression(name, name, parameterizedType, LinkedVariables.DELAYED_EMPTY);
+        return new DelayedExpression(name, name, parameterizedType, LinkedVariables.DELAYED_EMPTY, causesOfDelay);
     }
 
     public static Expression forDelayedValueProperties(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
-        String name = "<vp:"+parameterizedType.detailedString()+">";
+        String name = "<vp:" + parameterizedType.detailedString() + ">";
         return new DelayedExpression(name, name, parameterizedType, linkedVariables);
     }
 
@@ -160,15 +164,10 @@ public record DelayedExpression(String msg,
     }
 
     @Override
-    public boolean isDelayed(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION &&
-                Primitives.isPrimitiveExcludingVoid(parameterizedType)) return EFFECTIVELY_NOT_NULL;
-        return Level.DELAY;
+                Primitives.isPrimitiveExcludingVoid(parameterizedType)) return EFFECTIVELY_NOT_NULL_DV;
+        return causesOfDelay;
     }
 
     // See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
@@ -177,7 +176,7 @@ public record DelayedExpression(String msg,
     public Expression translate(TranslationMap translationMap) {
         if (linkedVariables.isEmpty()) return this;
         return new DelayedExpression(msg, debug, translationMap.translateType(parameterizedType),
-                linkedVariables.translate(translationMap));
+                linkedVariables.translate(translationMap), causesOfDelay);
     }
 
     @Override
@@ -193,5 +192,10 @@ public record DelayedExpression(String msg,
     @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT; // not important in final equality
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return causesOfDelay;
     }
 }

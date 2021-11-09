@@ -82,22 +82,23 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
         // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
         // computed, the property IMMUTABLE is not "contract" anymore
-        int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
-        int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
-        int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
-        if (contractImmutable != Level.DELAY && formallyImmutable != Level.DELAY
+        DV formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
+        DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
+        DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
+        if (contractImmutable.isDone() && formallyImmutable.isDone()
                 && !parameterAnalysis.properties.isSet(IMMUTABLE)) {
-            int combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore == Level.TRUE);
+            DV combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore.valueIsTrue());
+            assert combined.isDone();
             parameterAnalysis.properties.put(IMMUTABLE, combined);
         }
 
-        int contractIndependent = parameterAnalysis.getProperty(INDEPENDENT);
-        if (contractIndependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
+        DV contractIndependent = parameterAnalysis.getProperty(INDEPENDENT);
+        if (contractIndependent.isDone() && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
             parameterAnalysis.properties.put(INDEPENDENT, contractIndependent);
         }
 
-        int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
-        if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+        DV contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+        if (contractModified.isDone() && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
         }
 
@@ -106,21 +107,21 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED); // not involved
             }
         } else {
-            int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
-            if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+            DV contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+            if (contractNotNull.isDone() && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull.value());
             }
         }
 
         // implicit @IgnoreModifications rule for java.util.function
-        if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS) == Level.DELAY &&
+        if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed() &&
                 parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)) {
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.TRUE);
         }
 
-        if (parameterAnalysis.getProperty(MODIFIED_VARIABLE) == Level.DELAY) {
-            int contractIgnoreMod = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS);
-            if (contractIgnoreMod == Level.TRUE) {
+        if (parameterAnalysis.getProperty(MODIFIED_VARIABLE).isDelayed()) {
+            DV contractIgnoreMod = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS);
+            if (contractIgnoreMod.valueIsTrue()) {
                 parameterAnalysis.setProperty(MODIFIED_VARIABLE, Level.FALSE);
             }
         }
@@ -137,7 +138,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
             // we wait until the other analyser has finished, since we need the properties it computes
-            return DELAYS;
+            return new Delayed(new CauseOfDelay.SimpleCause(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD));
         }
         /*
          Because INDEPENDENT has not been set by ANALYSE_FIELD_ASSIGNMENTS, it cannot have been assigned to a field.
@@ -156,7 +157,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index);
-                    return DELAYS;
+                    return new Delayed(new CauseOfDelay.VariableInStatement(parameterInfo, lastStatement, CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue() >= LinkedVariables.INDEPENDENT1)
@@ -167,17 +168,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     // hidden content component inside the field
 
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    int minHiddenContentImmutable = fields.stream()
+                    DV minHiddenContentImmutable = fields.stream()
+                            // hidden content is available, because linking has been computed(?)
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
-                            .mapToInt(pt -> pt.defaultImmutable(analyserContext, false))
-                            .min().orElse(EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-                    if (minHiddenContentImmutable == Level.DELAY) {
-                        log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
-                                "Delay independent in parameter {}, waiting for independent of fields {}",
-                                parameterInfo.fullyQualifiedName(), fields);
-                        return DELAYS;
+                            .map(pt -> pt.defaultImmutable(analyserContext, false))
+                            .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                    if (minHiddenContentImmutable.isDelayed()) {
+                        return new Delayed(minHiddenContentImmutable.causesOfDelay());
                     }
-                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
+                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable.value());
                     int independent = immutableLevel <= LEVEL_2_IMMUTABLE ? INDEPENDENT_1 :
                             MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
                     log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(independent),
@@ -197,29 +196,24 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     Meaning: no argument to this parameter can be of a concrete type that modifies its parameters.
      */
     private AnalysisStatus analyseContainer(SharedState sharedState) {
-        int inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
-        if (inMap == Level.DELAY) {
-            int override = bestOfParameterOverridesForContainer(parameterInfo);
+        DV inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
+        if (inMap.isDelayed()) {
+            DV override = bestOfParameterOverridesForContainer(parameterInfo);
+            assert override.isDone();
             parameterAnalysis.setProperty(CONTAINER, override);
         }
         return DONE;
     }
 
     // can easily be parameterized to other variable properties
-    private int bestOfParameterOverridesForContainer(ParameterInfo parameterInfo) {
+    private DV bestOfParameterOverridesForContainer(ParameterInfo parameterInfo) {
         return parameterInfo.owner.methodResolution.get().overrides().stream()
                 .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
-                .mapToInt(mi -> {
+                .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
                     return pa.getPropertyFromMapNeverDelay(VariableProperty.CONTAINER);
-                }).max().orElse(VariableProperty.CONTAINER.falseValue);
-    }
-
-
-    @Override
-    protected String where(String componentName) {
-        return parameterInfo.fullyQualifiedName() + ":" + componentName;
+                }).reduce(Level.FALSE_DV, DV::max);
     }
 
     /**
@@ -250,7 +244,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         boolean delays = false;
 
         // no point, we need to have seen the statement+field analysers first.
-        if (sharedState.iteration == 0) return DELAYS;
+        if (sharedState.iteration == 0) return new DV.SingleDelay(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
@@ -292,8 +286,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
 
                 for (VariableProperty variableProperty : propertiesToCopy) {
-                    int inField = fieldAnalysis.getProperty(variableProperty);
-                    if (inField != Level.DELAY) {
+                    DV inField = fieldAnalysis.getProperty(variableProperty);
+                    if (inField.isDone()) {
                         if (!parameterAnalysis.properties.isSet(variableProperty)) {
                             log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
@@ -310,8 +304,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 }
 
                 if (!parameterAnalysis.properties.isSet(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
-                    if (immutable == Level.DELAY) {
+                    DV immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
+                    if (immutable .isDelayed()) {
                         delays = true;
                     } else {
                         int levelImmutable = MultiLevel.level(immutable);
@@ -367,7 +361,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return variableProperty == EXTERNAL_NOT_NULL || variableProperty == EXTERNAL_IMMUTABLE;
     }
 
-    private int combineImmutable(int formallyImmutable, int contractImmutable, boolean contractedBefore) {
+    private DV combineImmutable(DV formallyImmutable, DV contractImmutable, boolean contractedBefore) {
         int contractLevel = MultiLevel.level(contractImmutable);
         int formalLevel = MultiLevel.level(formallyImmutable);
         int contractEffective = MultiLevel.effective(contractImmutable);
@@ -380,7 +374,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
                     return formallyImmutable;
                 }
-                return MultiLevel.compose(EVENTUAL_BEFORE, contractLevel);
+                return new DV.NoDelay(MultiLevel.compose(EVENTUAL_BEFORE, contractLevel));
             }
             messages.add(Message.newMessage(parameterAnalysis.location,
                     Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
@@ -398,10 +392,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
                 return formallyImmutable;
             }
-            return formalEffective == EVENTUAL ? MultiLevel.compose(EVENTUAL_AFTER, contractLevel) : contractImmutable;
+            return formalEffective == EVENTUAL ? new DV.NoDelay(MultiLevel.compose(EVENTUAL_AFTER, contractLevel)) : contractImmutable;
         }
 
-        if (contractImmutable == MUTABLE) {
+        if (contractImmutable.value() == MUTABLE) {
             return formallyImmutable;
         }
         throw new UnsupportedOperationException("Should have covered all the bases");
@@ -490,7 +484,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
                 int value = vi.getProperty(variableProperty);
-                if (value != Level.DELAY) {
+                if (value.isDone()) {
                     parameterAnalysis.setProperty(variableProperty, value);
                     log(ANALYSER, "Set {} on parameter {} to {}", variableProperty,
                             parameterInfo.fullyQualifiedName(), value);

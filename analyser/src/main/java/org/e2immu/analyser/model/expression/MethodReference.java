@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -93,16 +90,16 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
         ForwardEvaluationInfo scopeForward;
 
-        int propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
-        if (propagateMod == Level.TRUE) {
+        DV propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        if (propagateMod.valueIsTrue()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-            int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
+            DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            DV contextModifiedDelay = Level.fromBoolDv(modified .isDelayed());
 
-            Map<VariableProperty, Integer> map = Map.of(
+            Map<VariableProperty, DV> map = Map.of(
                     VariableProperty.CONTEXT_MODIFIED, modified,
                     VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
-                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
             scopeForward = new ForwardEvaluationInfo(map, true, forwardEvaluationInfo.assignmentTarget());
 
@@ -111,7 +108,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
                 builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
                 builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
-                builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
+                builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE_DV);
             }
         } else {
             scopeForward = forwardEvaluationInfo.copyNotNull();
@@ -138,14 +135,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
-            case CONTAINER -> Level.TRUE;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+            case CONTAINER -> Level.TRUE_DV;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
-            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE;
-            case INDEPENDENT -> MultiLevel.INDEPENDENT;
+            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE_DV;
+            case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             default -> throw new UnsupportedOperationException("Property: " + variableProperty);
         };
     }

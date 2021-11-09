@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -128,24 +125,31 @@ public class ArrayInitializer extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
+        return Arrays.stream(multiExpression.expressions())
+                .map(e -> e.causesOfDelay(evaluationContext))
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+    }
+
+    @Override
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (multiExpression.isEmpty()) {
             return switch (variableProperty) {
-                case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                case INDEPENDENT -> MultiLevel.INDEPENDENT;
-                case CONSTANT, CONTAINER -> Level.TRUE;
-                case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                case CONSTANT, CONTAINER -> Level.TRUE_DV;
+                case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + variableProperty);
             };
         }
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
-            int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
-            if (notNull == Level.DELAY) return Level.DELAY;
+            DV notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
+            if (notNull.isDelayed()) return notNull;
             return MultiLevel.composeOneLevelMore(notNull);
         }
         if (VariableProperty.EXTERNAL_IMMUTABLE == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
             // it is an array
-            return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+            return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
         }
         // default is to refer to each of the components
         return multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);

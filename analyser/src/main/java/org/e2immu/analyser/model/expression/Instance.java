@@ -39,14 +39,14 @@ public record Instance(
         Identifier identifier, // variable FQN + assignment ID
         ParameterizedType parameterizedType,
         Diamond diamond,
-        Map<VariableProperty, Integer> valueProperties) implements Expression {
+        Map<VariableProperty, DV> valueProperties) implements Expression {
 
-    public static Map<VariableProperty, Integer> primitiveValueProperties() {
-        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
-                VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT,
-                VariableProperty.CONTAINER, Level.TRUE,
-                VariableProperty.IDENTITY, Level.FALSE);
+    public static Map<VariableProperty, DV> primitiveValueProperties() {
+        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
+                VariableProperty.CONTAINER, Level.TRUE_DV,
+                VariableProperty.IDENTITY, Level.FALSE_DV);
     }
 
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
@@ -55,7 +55,7 @@ public record Instance(
     }
 
     public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
-                                                Map<VariableProperty, Integer> valueProperties) {
+                                                Map<VariableProperty, DV> valueProperties) {
         return new Instance(Identifier.generate(),
                 fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO,
                 valueProperties);
@@ -65,18 +65,17 @@ public record Instance(
     public static Instance forInlinedMethod(Identifier identifier,
                                             ParameterizedType parameterizedType) {
         return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL,
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                        VariableProperty.IMMUTABLE, MultiLevel.MUTABLE,
-                        VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT,
-                        VariableProperty.CONTAINER, Level.FALSE,
-                        VariableProperty.IDENTITY, Level.FALSE));
+                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                        VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV,
+                        VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_DV,
+                        VariableProperty.CONTAINER, Level.FALSE_DV,
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     public static Expression forMethodResult(Identifier identifier,
                                              ParameterizedType parameterizedType,
-                                             Map<VariableProperty, Integer> valueProperties) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL,
-                valueProperties);
+                                             Map<VariableProperty, DV> valueProperties) {
+        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
     }
 
     public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
@@ -96,29 +95,29 @@ public record Instance(
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new Instance(Identifier.variable(variable, index),
                 parameterizedType, diamond,
-                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
+                Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
-    private static int defaultIndependent(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        int v = parameterizedType.defaultIndependent(analysisProvider);
-        return v < 0 ? MultiLevel.DEPENDENT : v;
+    private static DV defaultIndependent(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        DV v = parameterizedType.defaultIndependent(analysisProvider);
+        return v.replaceDelayBy(MultiLevel.DEPENDENT_DV);
     }
 
-    private static int defaultImmutable(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        int v = parameterizedType.defaultImmutable(analysisProvider, false);
-        return v < 0 ? MultiLevel.MUTABLE : v;
+    private static DV defaultImmutable(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        DV v = parameterizedType.defaultImmutable(analysisProvider, false);
+        return v.replaceDelayBy(MultiLevel.MUTABLE_DV);
     }
 
-    private static int defaultContainer(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        int v = parameterizedType.defaultContainer(analysisProvider);
-        return v < 0 ? Level.FALSE : v;
+    private static DV defaultContainer(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
+        DV v = parameterizedType.defaultContainer(analysisProvider);
+        return v.replaceDelayBy(Level.FALSE_DV);
     }
 
-    public static Instance forLoopVariable(String index, Variable variable, Map<VariableProperty, Integer> valueProperties) {
+    public static Instance forLoopVariable(String index, Variable variable, Map<VariableProperty, DV> valueProperties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new Instance(Identifier.variable(variable, index),
@@ -131,18 +130,19 @@ public record Instance(
 
     public static Expression localVariableInLoop(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        int immutable = defaultImmutable(parameterizedType, analysisProvider);
-        int independent = defaultIndependent(parameterizedType, analysisProvider);
-        int container = defaultContainer(parameterizedType, analysisProvider);
-        if (independent < 0 || immutable < 0 || container < 0) {
-            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.DELAYED_EMPTY);
+        DV immutable = defaultImmutable(parameterizedType, analysisProvider);
+        DV independent = defaultIndependent(parameterizedType, analysisProvider);
+        DV container = defaultContainer(parameterizedType, analysisProvider);
+        if (independent.isDelayed() || immutable.isDelayed() || container.isDelayed()) {
+            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.DELAYED_EMPTY,
+                    independent.causesOfDelay().merge(immutable.causesOfDelay().merge(container.causesOfDelay())));
         }
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
                         VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     public static Instance localCopyOfVariableField(String index, Variable variable, AnalysisProvider analysisProvider) {
@@ -152,40 +152,40 @@ public record Instance(
                         VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     /*
     not-null always in properties
      */
     public static Instance initialValueOfParameter(ParameterInfo parameterInfo,
-                                                   int contractNotNull,
-                                                   int immutable,
-                                                   int independent,
-                                                   int container,
+                                                   DV contractNotNull,
+                                                   DV immutable,
+                                                   DV independent,
+                                                   DV container,
                                                    boolean identity) {
         return new Instance(Identifier.variable(parameterInfo), parameterInfo.parameterizedType,
                 Diamond.SHOW_ALL, Map.of(VariableProperty.NOT_NULL_EXPRESSION, contractNotNull,
                 VariableProperty.IMMUTABLE, immutable,
                 VariableProperty.INDEPENDENT, independent,
                 VariableProperty.CONTAINER, container,
-                VariableProperty.IDENTITY, Level.fromBool(identity)));
+                VariableProperty.IDENTITY, Level.fromBoolDv(identity)));
     }
 
     public static Instance initialValueOfFieldPartOfConstruction(String index,
                                                                  EvaluationContext evaluationContext,
                                                                  FieldReference fieldReference) {
-        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
+        DV notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
         return new Instance(Identifier.variable(fieldReference, index),
                 fieldReference.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNull,
-
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        // TODO
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     public static Instance initialValueOfExternalVariableField(FieldReference fieldReference,
                                                                String index,
-                                                               int minimalNotNull,
+                                                               DV minimalNotNull,
                                                                AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = fieldReference.parameterizedType();
         return new Instance(Identifier.variable(fieldReference, index),
@@ -194,13 +194,13 @@ public record Instance(
                         VariableProperty.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         VariableProperty.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         VariableProperty.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     // null-status derived from variable in evaluation context
     public static Instance genericMergeResult(String index,
                                               Variable variable,
-                                              Map<VariableProperty, Integer> valueProperties) {
+                                              Map<VariableProperty, DV> valueProperties) {
         return new Instance(Identifier.variable(variable, index), variable.parameterizedType(),
                 Diamond.SHOW_ALL, valueProperties);
     }
@@ -209,16 +209,16 @@ public record Instance(
                                                 EvaluationContext evaluationContext,
                                                 Expression array,
                                                 Variable variable) {
-        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-        if (notNull == Level.DELAY) {
+        DV notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+        if (notNull.isDelayed()) {
             return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
                     LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()),
                             LinkedVariables.DELAYED_VALUE));
         }
-        int notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
+        DV notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNullOfElement,
-                        VariableProperty.IDENTITY, Level.FALSE));
+                        VariableProperty.IDENTITY, Level.FALSE_DV));
     }
 
     /*
@@ -228,14 +228,14 @@ public record Instance(
     */
     public static Instance forGetInstance(Identifier identifier,
                                           ParameterizedType parameterizedType,
-                                          Map<VariableProperty, Integer> valueProperties) {
+                                          Map<VariableProperty, DV> valueProperties) {
         return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
     }
 
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,
                     Diamond diamond,
-                    Map<VariableProperty, Integer> valueProperties) {
+                    Map<VariableProperty, DV> valueProperties) {
         this.identifier = identifier;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
@@ -245,11 +245,12 @@ public record Instance(
     }
 
     private boolean internalChecks() {
-        int minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.falseValue);
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL)
+        DV minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, null);
+        if (minimalNotNull == null) return false;
+        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull.value() < MultiLevel.EFFECTIVELY_NOT_NULL)
             return false;
         assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
-        return valueProperties.values().stream().noneMatch(v -> v < 0);
+        return valueProperties.values().stream().noneMatch(DV::isDelayed);
     }
 
     @Override
@@ -296,7 +297,7 @@ public record Instance(
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             /*
             // value properties
@@ -338,7 +339,7 @@ public record Instance(
                 yield defaultValue;
             }*/
             case IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(variableProperty);
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE;
+            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };
         /*
@@ -418,7 +419,7 @@ public record Instance(
         outputBuilder.add(text);
 
         // TODO not consistent, but hack after changing 10s of tests, don't want to change back again
-        if (valueProperties.getOrDefault(VariableProperty.IDENTITY, Level.FALSE) == Level.TRUE) {
+        if (valueProperties.getOrDefault(VariableProperty.IDENTITY, Level.FALSE_DV).valueIsTrue()) {
             outputBuilder.add(new Text("/*@Identity*/"));
         }
         return outputBuilder;
@@ -427,8 +428,8 @@ public record Instance(
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
-        int minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.falseValue);
-        if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
+        DV minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE_DV);
+        if (minimalNotNull.value() < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
         return "";
     }
 
@@ -462,7 +463,7 @@ public record Instance(
         return identifier;
     }
 
-    public int getValueProperty(VariableProperty variableProperty) {
+    public DV getValueProperty(VariableProperty variableProperty) {
         return valueProperties.get(variableProperty);
     }
 }

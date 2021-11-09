@@ -40,8 +40,4 @@ public class AggregatingParameterAnalyser extends ParameterAnalyser {
         return AnalysisStatus.DONE;
     }
 
-    @Override
-    protected String where(String componentName) {
-        return parameterInfo.fullyQualifiedName() + ":AGG:" + componentName;
-    }
 }

@@ -23,6 +23,12 @@ public interface FieldAnalysis extends Analysis {
      */
     Expression getEffectivelyFinalValue();
 
+    /*
+     if final, equal to getEffectivelyFinalValue
+     if variable, set when the value properties are present
+     */
+    Expression getValue(); // final, or variable (in terms of an instance); null if not determined
+
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
     // In other words, if A->B, then B cannot be @NotModified unless A is too
@@ -38,22 +44,22 @@ public interface FieldAnalysis extends Analysis {
 
     ParameterizedType concreteTypeNullWhenDelayed();
 
-    default int getFieldProperty(AnalysisProvider analysisProvider,
-                                 FieldInfo fieldInfo,
-                                 TypeInfo bestType,
-                                 VariableProperty variableProperty) {
-        int propertyFromType = ImplicitProperties.fromType(fieldInfo.type, variableProperty);
-        if (propertyFromType > Level.DELAY) return propertyFromType;
+    default DV getFieldProperty(AnalysisProvider analysisProvider,
+                                FieldInfo fieldInfo,
+                                TypeInfo bestType,
+                                VariableProperty variableProperty) {
+        DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, variableProperty);
+        if (propertyFromType != Level.NOT_INVOLVED_DV) return propertyFromType;
 
         switch (variableProperty) {
             case IMMUTABLE:
-                int fieldImmutable = getPropertyFromMapDelayWhenAbsent(variableProperty);
-                if (fieldImmutable == Level.DELAY && !fieldInfo.owner.shallowAnalysis()) {
-                    return Level.DELAY;
+                DV fieldImmutable = getPropertyFromMapDelayWhenAbsent(variableProperty);
+                if (fieldImmutable.isDelayed() && !fieldInfo.owner.shallowAnalysis()) {
+                    return fieldImmutable;
                 }
-                int typeImmutable = fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE :
+                DV typeImmutable = fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                         analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-                return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
+                return typeImmutable.max(fieldImmutable);
 
             case CONSTANT:
             case CONTAINER:

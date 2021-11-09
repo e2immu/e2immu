@@ -16,29 +16,88 @@ package org.e2immu.analyser.analyser;
 
 import java.util.function.Function;
 
-public enum AnalysisStatus {
-    PROGRESS(0), // changes, but not yet fully done
-    DELAYS(1), // no changes, due to delays
-    DONE(2), // done this one
+public interface AnalysisStatus {
 
-    RUN_AGAIN(3), // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
-    DONE_ALL(3), // done this one, don't do any of the others
+    int pos();
 
-    SKIPPED(4) // used for unreachable code, but never in the AnalyserComponents
-    ;
+    boolean isDelayed();
 
-    private final int pos;
+    boolean isProgress();
 
-    AnalysisStatus(int pos) {
-        this.pos = pos;
+    boolean isDone();
+
+    CausesOfDelay causesOfDelay();
+
+    record NotDelayed(int pos) implements AnalysisStatus {
+        @Override
+        public boolean isDelayed() {
+            return false;
+        }
+
+        @Override
+        public boolean isProgress() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+
+        @Override
+        public CausesOfDelay causesOfDelay() {
+            return CausesOfDelay.EMPTY;
+        }
     }
 
-    public AnalysisStatus combine(AnalysisStatus other) {
+    record Delayed(CausesOfDelay causesOfDelay, boolean progress) implements AnalysisStatus {
+        public Delayed(CauseOfDelay cause) {
+            this(new CausesOfDelay.SimpleSet(cause), false);
+        }
+
+        public Delayed(CausesOfDelay causes) {
+            this(causes, false);
+        }
+
+        @Override
+        public int pos() {
+            return progress ? 0 : 1;
+        }
+
+        @Override
+        public boolean isDelayed() {
+            return true;
+        }
+
+        @Override
+        public boolean isProgress() {
+            return progress;
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public CausesOfDelay causesOfDelay() {
+            return causesOfDelay;
+        }
+    }
+
+    AnalysisStatus DONE = new NotDelayed(2); // done this one
+    AnalysisStatus RUN_AGAIN = new NotDelayed(3); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
+    AnalysisStatus DONE_ALL = new NotDelayed(3); // done this one, don't do any of the others
+    AnalysisStatus SKIPPED = new NotDelayed(4); // used for unreachable code, but never in the AnalyserComponents
+
+    default AnalysisStatus combine(AnalysisStatus other) {
         if (other == null) return this;
-        if (other.pos < pos) return other;
+        if (other.pos() <= 1 && pos() <= 1) {
+            return new Delayed(causesOfDelay().merge(other.causesOfDelay()), pos() == 0 || other.pos() == 0);
+        }
+        if (other.pos() < pos()) return other;
         return this;
     }
-
 
     @FunctionalInterface
     interface AnalysisResultSupplier<S> extends Function<S, AnalysisStatus> {

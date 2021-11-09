@@ -14,11 +14,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -27,6 +27,7 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import static org.e2immu.analyser.model.Level.FALSE;
+import static org.e2immu.analyser.model.Level.FALSE_DV;
 
 @E2Container
 public class NullConstant implements ConstantExpression<Object> {
@@ -56,21 +57,21 @@ public class NullConstant implements ConstantExpression<Object> {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        int max = Math.max(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
+        DV max = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION).max(
                 forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-        if (max > MultiLevel.NULLABLE) {
+        if (max.value() > MultiLevel.NULLABLE) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
         return builder.setExpression(NULL_CONSTANT).build();
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
-            case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE;
+            case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY,
-                    IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE;
-            case IMMUTABLE, INDEPENDENT -> MultiLevel.NOT_INVOLVED;
+                    IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE_DV;
+            case IMMUTABLE, INDEPENDENT -> MultiLevel.NOT_INVOLVED_DV;
             default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
         };
     }

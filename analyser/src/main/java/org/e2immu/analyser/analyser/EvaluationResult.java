@@ -60,7 +60,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
                                List<Expression> storedValues,
-                               boolean someValueWasDelayed,
+                               CausesOfDelay causes,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
@@ -173,13 +173,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public static class Builder {
         private final EvaluationContext evaluationContext;
         private final Messages messages = new Messages();
+        private final Set<CauseOfDelay> causes = new HashSet<>();
         private Expression value;
         private List<Expression> storedExpressions;
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
-        private boolean someValueWasDelayed;
         private final Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelays = new HashMap<>();
 
         // for a constant EvaluationResult
@@ -249,11 +249,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
+        public void addCausesOfDelay(CausesOfDelay causesOfDelay) {
+            this.causes.addAll(causesOfDelay.causes());
+        }
+
+        public void addCauseOfDelay(CauseOfDelay cause) {
+            this.causes.add(cause);
+        }
+
         public Builder setExpression(Expression value) {
             assert value != null;
 
             this.value = value;
-            someValueWasDelayed |= evaluationContext != null && evaluationContext.isDelayed(value) || value instanceof DelayedExpression;
             return this;
         }
 
@@ -266,9 +273,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public EvaluationResult build() {
+            if (value != null) {
+                causes.addAll(value.causesOfDelay().causes());
+            }
+            CausesOfDelay causesOfDelay = causes.isEmpty() ? CausesOfDelay.EMPTY : new CausesOfDelay(causes);
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
-                    someValueWasDelayed,
+                    causesOfDelay,
                     messages,
                     valueChanges,
                     precondition,
@@ -283,7 +294,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          * @param value           the variable's value. This can be a variable expression again (redirect).
          * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
          */
-        public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
+        public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
             assert notNullRequired > MultiLevel.NULLABLE;
@@ -410,19 +421,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markPropagateModificationDelay(Variable variable) {
-            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
+            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
         }
 
         public void markContextNotNullDelay(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE_DV);
         }
 
         public void markContextImmutableDelay(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE_DELAY, Level.TRUE);
+            setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE_DELAY, Level.TRUE_DV);
         }
 
         public void variableOccursInEventuallyImmutableContext(Identifier identifier,
-                                                               Variable variable, int requiredImmutable, int nextImmutable) {
+                                                               Variable variable, DV requiredImmutable, DV nextImmutable) {
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
             int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
@@ -454,7 +465,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void markContextModified(Variable variable, int modified) {
+        public void markContextModified(Variable variable, DV modified) {
             assert evaluationContext != null;
             int ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
                     .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
@@ -539,7 +550,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         // Used in transformation of parameter lists
-        public void setProperty(Variable variable, VariableProperty property, int value) {
+        public void setProperty(Variable variable, VariableProperty property, DV value) {
             assert evaluationContext != null;
 
             ChangeData newEcd;

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 
 /*
@@ -33,6 +34,7 @@ public class MultiLevel {
 
     public static final int DELAY = 0;
     public static final int FALSE = 1;
+    public static final DV FALSE_DV = new DV.NoDelay(FALSE);
     public static final int EVENTUAL = 2;
     public static final int EVENTUAL_BEFORE = 3;
     public static final int EVENTUAL_AFTER = 4;
@@ -56,11 +58,15 @@ public class MultiLevel {
     // DEPENDENT (only at the first level, nothing to do with eventual)
 
     public static final int DEPENDENT = FALSE; // no need for more
+    public static final DV DEPENDENT_DV = FALSE_DV;
+
     // dependent_1 == independent at level 1, but dependent at level 2
     public static final int INDEPENDENT_1 = compose(EFFECTIVE, LEVEL_1_DEPENDENT);
+    public static final DV INDEPENDENT_1_DV = new DV.NoDelay(INDEPENDENT_1);
 
     // independent == independent both at level 1 (mutable content) and level 2 (immutable content)
     public static final int INDEPENDENT = compose(EFFECTIVE, LEVEL_R_DEPENDENT);
+    public static final DV INDEPENDENT_DV = new DV.NoDelay(INDEPENDENT);
 
     // IMMUTABLE
 
@@ -78,19 +84,28 @@ public class MultiLevel {
 
     public static final int EFFECTIVELY_CONTENT2_NOT_NULL = compose(EFFECTIVE, NOT_NULL_2);
     public static final int EFFECTIVELY_CONTENT_NOT_NULL = compose(EFFECTIVE, NOT_NULL_1);
+    public static final DV EFFECTIVELY_CONTENT_NOT_NULL_DV = new DV.NoDelay(EFFECTIVELY_CONTENT_NOT_NULL);
     public static final int EFFECTIVELY_NOT_NULL_AFTER = compose(EVENTUAL_AFTER, NOT_NULL);
     public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE, NOT_NULL);
+    public static final DV EFFECTIVELY_NOT_NULL_DV = new DV.NoDelay(EFFECTIVELY_NOT_NULL);
 
     public static final int EFFECTIVELY_RECURSIVELY_IMMUTABLE = compose(EFFECTIVE, LEVEL_R_IMMUTABLE);
+    public static final DV EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+
     public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, LEVEL_2_IMMUTABLE);
+    public static final DV EFFECTIVELY_E2IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E2IMMUTABLE);
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, LEVEL_1_IMMUTABLE);
+    public static final DV EFFECTIVELY_E1IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E1IMMUTABLE);
     public static final int EFFECTIVELY_E3IMMUTABLE = compose(EFFECTIVE, LEVEL_3_IMMUTABLE);
 
     public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
 
     public static final int MUTABLE = FALSE;
+    public static final DV MUTABLE_DV = new DV.NoDelay(MUTABLE);
     public static final int NULLABLE = FALSE;
+    public static final DV NULLABLE_DV = new DV.NoDelay(NULLABLE);
     public static final int NOT_INVOLVED = DELAY;
+    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(NOT_INVOLVED);
 
     /**
      * Make a value combining effective and level
@@ -106,6 +121,10 @@ public class MultiLevel {
         return effective + level * FACTOR;
     }
 
+    public static int effective(DV dv) {
+        return effective(dv.value());
+    }
+
     public static int effective(int i) {
         if (i < 0) return i;
         return i & AND;
@@ -116,6 +135,10 @@ public class MultiLevel {
         int level = i >> SHIFT;
         if (level < minLevel) return FALSE;
         return i & AND;
+    }
+
+    public static int level(DV dv) {
+        return level(dv.value());
     }
 
     public static int level(int i) {
@@ -192,6 +215,10 @@ public class MultiLevel {
         return effective == EVENTUAL_BEFORE || effective == EVENTUAL;
     }
 
+    public static DV composeOneLevelLess(DV dv) {
+        return new DV.NoDelay(composeOneLevelLess(dv.value()));
+    }
+
     // E2Container -> E1Container; Content2 NN -> content NN
     public static int composeOneLevelLess(int i) {
         if (i < 0) return i;
@@ -200,6 +227,10 @@ public class MultiLevel {
         int effective = effective(i);
         int newLevel = level == MAX_LEVEL ? level : level - 1;
         return compose(effective, newLevel);
+    }
+
+    public static DV composeOneLevelMore(DV dv) {
+        return new DV.NoDelay(composeOneLevelMore(dv.value()));
     }
 
     public static int composeOneLevelMore(int i) {
@@ -250,6 +281,15 @@ public class MultiLevel {
         return compose(effective(base), levelBase + levelParams);
     }
 
+    public static DV sumImmutableLevels(DV base, DV parameters) {
+        int v = base.value();
+        int levelBase = level(v);
+        int levelParams = level(parameters.value());
+        if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL)
+            return new DV.NoDelay(compose(effective(v), MAX_LEVEL));
+        return new DV.NoDelay(compose(effective(v), levelBase + levelParams));
+    }
+
     public static int independentCorrespondingToImmutableLevel(int immutableLevel) {
         if (immutableLevel < 0) return immutableLevel;
         if (immutableLevel == 0) return 0;
@@ -269,6 +309,9 @@ public class MultiLevel {
         int levelImmutable = MultiLevel.level(immutable);
         if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
         return levelImmutable == levelIndependent;
+    }
+    public static int fromIndependentToLinkedVariableLevel(DV dv) {
+      return fromIndependentToLinkedVariableLevel(dv.value());
     }
 
     public static int fromIndependentToLinkedVariableLevel(int independent) {

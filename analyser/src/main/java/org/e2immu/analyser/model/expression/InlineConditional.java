@@ -107,21 +107,21 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
             if (Primitives.isPrimitiveExcludingVoid(returnType())) {
-                return MultiLevel.EFFECTIVELY_NOT_NULL;
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
             Expression c = condition;
             EvaluationContext child = evaluationContext.child(c);
-            int nneIfTrue = child.getProperty(ifTrue, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-            if (nneIfTrue <= MultiLevel.NULLABLE) {
+            DV nneIfTrue = child.getProperty(ifTrue, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            if (nneIfTrue.value() <= MultiLevel.NULLABLE) {
                 return nneIfTrue;
             }
             Expression notC = Negation.negate(evaluationContext, c);
             EvaluationContext notChild = evaluationContext.child(notC);
-            int nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-            return Math.min(nneIfFalse, nneIfTrue);
+            DV nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            return nneIfFalse.min(nneIfTrue);
         }
         if (EvaluationContext.VALUE_PROPERTIES.contains(variableProperty)) {
             return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);

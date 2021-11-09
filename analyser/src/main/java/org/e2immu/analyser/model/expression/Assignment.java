@@ -34,8 +34,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
-import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES_SET;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -288,13 +286,6 @@ public class Assignment extends ElementImpl implements Expression {
         } else {
             linkedVariables = lvExpression;
         }
-
-        assert !linkedVariables.isDelayed() ||
-                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
-                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
-
-
         builder.assignment(at, resultOfExpression, linkedVariables);
     }
 

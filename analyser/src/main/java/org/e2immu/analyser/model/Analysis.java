@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableProperty;
 
 import java.util.HashMap;
@@ -84,16 +85,16 @@ public interface Analysis {
 
      getXXXProperty is then always implemented in XXXAnalysis
      */
-    int getProperty(VariableProperty variableProperty);
+    DV getProperty(VariableProperty variableProperty);
 
     // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
-    int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty);
+    DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty);
 
     /**
      * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
      * Reverts to <code>variableProperty.valueWhenAbsent</code> when no value present in map.
      */
-    int getPropertyFromMapNeverDelay(VariableProperty variableProperty);
+    DV getPropertyFromMapNeverDelay(VariableProperty variableProperty);
 
     Location location();
 
@@ -155,4 +156,6 @@ public interface Analysis {
     default boolean isNotContracted() {
         return analysisMode() != AnalysisMode.CONTRACTED;
     }
+
+    WithInspectionAndAnalysis where();
 }

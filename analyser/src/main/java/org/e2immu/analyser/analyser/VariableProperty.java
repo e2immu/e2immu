@@ -165,6 +165,8 @@ public enum VariableProperty {
     public final int best;
     public final int falseValue;
     private final int valueWhenAbsent;
+    public final DV bestDv;
+    public final DV falseDv;
 
     VariableProperty(String name) {
         this(name, Level.FALSE, Level.TRUE, Level.FALSE);
@@ -178,6 +180,8 @@ public enum VariableProperty {
         this.best = best;
         this.falseValue = falseValue;
         this.valueWhenAbsent = valueWhenAbsent;
+        bestDv = new DV.NoDelay(best);
+        falseDv = new DV.NoDelay(falseValue);
     }
 
     @Override

@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -97,13 +94,13 @@ public class TypeExpression implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         if (variableProperty == VariableProperty.IMMUTABLE) {
             // used by EvaluationContext.extractHiddenContent
             return parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
         }
-        return variableProperty.falseValue;
+        return variableProperty.falseDv;
     }
 
     @Override

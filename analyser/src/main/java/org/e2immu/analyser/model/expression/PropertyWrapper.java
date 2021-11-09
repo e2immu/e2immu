@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 public record PropertyWrapper(Expression expression,
                               Expression state,
-                              Map<VariableProperty, Integer> properties,
+                              Map<VariableProperty, DV> properties,
                               LinkedVariables linkedVariables,
                               ParameterizedType castType) implements Expression, ExpressionWrapper {
 
@@ -71,28 +71,28 @@ public record PropertyWrapper(Expression expression,
 
     private EvaluationResult reEvaluated(EvaluationContext evaluationContext, EvaluationResult reValue) {
         Expression newValue = reValue.value();
-        Map<VariableProperty, Integer> reduced = reduce(evaluationContext, newValue, properties);
+        Map<VariableProperty, DV> reduced = reduce(evaluationContext, newValue, properties);
         Expression result = reduced.isEmpty() ? newValue : PropertyWrapper.propertyWrapper(newValue, reduced);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
         return builder.setExpression(result).build();
     }
 
-    private static Map<VariableProperty, Integer> reduce(EvaluationContext evaluationContext,
-                                                         Expression expression,
-                                                         Map<VariableProperty, Integer> map) {
+    private static Map<VariableProperty, DV> reduce(EvaluationContext evaluationContext,
+                                                    Expression expression,
+                                                    Map<VariableProperty, DV> map) {
         return map.entrySet().stream()
                 .filter(e -> {
-                    int v = evaluationContext.getProperty(expression, e.getKey(), true, false);
-                    return v != e.getValue();
+                    DV v = evaluationContext.getProperty(expression, e.getKey(), true, false);
+                    return v.value() != e.getValue().value();
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
+    public static Expression propertyWrapper(Expression value, Map<VariableProperty, DV> properties) {
         return new PropertyWrapper(value, null, properties, null, null);
     }
 
-    public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ParameterizedType castType) {
+    public static Expression propertyWrapper(Expression value, Map<VariableProperty, DV> properties, ParameterizedType castType) {
         return new PropertyWrapper(value, null, properties, null, castType);
     }
 
@@ -105,7 +105,7 @@ public record PropertyWrapper(Expression expression,
         return new PropertyWrapper(expression, state, Map.of(), null, null);
     }
 
-    public static Expression addState(Expression expression, Expression state, Map<VariableProperty, Integer> properties) {
+    public static Expression addState(Expression expression, Expression state, Map<VariableProperty, DV> properties) {
         assert state != null;
         return new PropertyWrapper(expression, state, properties, null, null);
     }
@@ -132,7 +132,8 @@ public record PropertyWrapper(Expression expression,
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
+        String propertyString = properties.entrySet().stream()
+                .filter(e -> e.getValue().value() > e.getKey().falseValue)
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
         boolean haveComment = !propertyString.isBlank() || castType != null || linkedVariables != null || state != null;
@@ -177,8 +178,8 @@ public record PropertyWrapper(Expression expression,
         return outputBuilder;
     }
 
-    private static String stringValue(Map.Entry<VariableProperty, Integer> e) {
-        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue() == MultiLevel.INDEPENDENT_1)
+    private static String stringValue(Map.Entry<VariableProperty, DV> e) {
+        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue().value() == MultiLevel.INDEPENDENT_1)
             return "@Dependent1";
         return e.getKey().toString();
     }
@@ -194,14 +195,14 @@ public record PropertyWrapper(Expression expression,
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (castType != null && (
                 variableProperty == VariableProperty.IMMUTABLE || variableProperty == VariableProperty.CONTAINER ||
                         variableProperty == VariableProperty.INDEPENDENT)) {
             return castType.getProperty(evaluationContext.getAnalyserContext(), variableProperty);
         }
-        int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (inMap != Level.DELAY) return inMap;
+        DV inMap = properties.getOrDefault(variableProperty, null);
+        if (inMap != null) return inMap;
         return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
     }
 

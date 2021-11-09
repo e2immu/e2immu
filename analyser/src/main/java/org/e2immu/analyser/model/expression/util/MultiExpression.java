@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
@@ -40,12 +41,11 @@ public record MultiExpression(Expression... expressions) {
                 .orElse(ParameterizedType.NULL_CONSTANT);
     }
 
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
-                .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
-                .min()
-                .orElseThrow(() -> new RuntimeException("Implement the empty situation for propery " + variableProperty));
+                .map(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
+                .reduce(variableProperty.bestDv, DV::min);
     }
 
     public Stream<Expression> stream() {

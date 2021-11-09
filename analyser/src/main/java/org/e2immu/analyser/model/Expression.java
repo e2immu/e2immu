@@ -84,15 +84,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
-    default boolean isDelayed(EvaluationContext evaluationContext) {
-        // not a stream, much easier to debug like this!
-        for (Element element : subElements()) {
-            boolean delayed = element instanceof Expression e && e.isDelayed(evaluationContext);
-            if (delayed) return true;
-        }
-        return false;
-    }
-
     default boolean isDiscreteType() {
         ParameterizedType type = returnType();
         return type != null && Primitives.isDiscrete(type);
@@ -102,7 +93,7 @@ public interface Expression extends Element, Comparable<Expression> {
     // Use that method as the general way of obtaining a value for a property from a Value object
     // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
 
-    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    default DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException("For type " + getClass() + ", property " + variableProperty);
     }
 
@@ -233,5 +224,16 @@ public interface Expression extends Element, Comparable<Expression> {
     default Expression delayedValue(EvaluationContext evaluationContext) {
         return DelayedExpression.forDelayedValueProperties(returnType(),
                 linkedVariables(evaluationContext).changeAllToDelay());
+    }
+
+    default CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
+        return CausesOfDelay.EMPTY;
+    }
+    default boolean isDelayed(EvaluationContext evaluationContext) {
+        return causesOfDelay(evaluationContext).isDone();
+    }
+
+    default boolean isDone(EvaluationContext evaluationContext) {
+        return causesOfDelay(evaluationContext).isDone();
     }
 }

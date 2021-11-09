@@ -30,24 +30,60 @@ import java.util.Map;
 import java.util.Objects;
 
 @E2Container
-public record DelayedVariableExpression(String msg, String debug,
-                                        Variable variable) implements Expression, IsVariableExpression {
+public class DelayedVariableExpression implements Expression, IsVariableExpression {
+    public final String msg;
+    public final String debug;
+    public final Variable variable;
+    public final CausesOfDelay causesOfDelay;
 
-    public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo) {
+    public DelayedVariableExpression(String msg,
+                                     String debug,
+                                     Variable variable,
+                                     CauseOfDelay.Cause cause,
+                                     CausesOfDelay otherCausesOfDelay) {
+        this.msg = msg;
+        this.debug = debug;
+        this.causesOfDelay = cause == null ? otherCausesOfDelay :
+                otherCausesOfDelay.merge(new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, cause)));
+        this.variable = variable;
+    }
+
+    public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo, CauseOfDelay.Cause cause) {
+        return forParameter(parameterInfo, cause, CausesOfDelay.EMPTY);
+    }
+
+    public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
+                                                         CauseOfDelay.Cause cause,
+                                                         CausesOfDelay otherCausesOfDelay) {
         return new DelayedVariableExpression("<p:" + parameterInfo.name + ">",
-                "<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo);
+                "<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo,
+                cause, otherCausesOfDelay);
     }
 
-    public static DelayedVariableExpression forField(FieldReference fieldReference) {
+    public static DelayedVariableExpression forField(FieldReference fieldReference, CauseOfDelay.Cause cause) {
+        return forField(fieldReference, cause, CausesOfDelay.EMPTY);
+    }
+
+    public static DelayedVariableExpression forField(FieldReference fieldReference, CausesOfDelay causesOfDelay) {
+        return forField(fieldReference, null, causesOfDelay);
+    }
+
+    public static DelayedVariableExpression forField(FieldReference fieldReference,
+                                                     CauseOfDelay.Cause cause,
+                                                     CausesOfDelay otherCausesOfDelay) {
         return new DelayedVariableExpression("<f:" + fieldReference.fieldInfo.name + ">",
-                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference);
+                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference, cause, otherCausesOfDelay);
     }
 
-    public static Expression forVariable(Variable variable) {
-        if (variable instanceof FieldReference fieldReference) return forField(fieldReference);
-        if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
+    public static Expression forVariable(Variable variable, CauseOfDelay cause) {
+        return forVariable(variable, new CausesOfDelay(cause));
+    }
+
+    public static Expression forVariable(Variable variable, CausesOfDelay causesOfDelay) {
+        if (variable instanceof FieldReference fieldReference) return forField(fieldReference, causesOfDelay);
+        if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
         return new DelayedVariableExpression("<v:" + variable.simpleName() + ">",
-                "<variable:" + variable.fullyQualifiedName() + ">", variable);
+                "<variable:" + variable.fullyQualifiedName() + ">", variable, causesOfDelay);
     }
 
     /*
@@ -55,12 +91,18 @@ public record DelayedVariableExpression(String msg, String debug,
     whether the field will be variable or not.
     Basics7 shows a case where the local condition manager goes from true to false depending on this equality.
      */
+
     @Override
     public boolean equals(Object o) {
         if (variable instanceof FieldReference) {
             return this == o;
         }
         return o instanceof DelayedVariableExpression dve && dve.variable.equals(variable);
+    }
+
+    @Override
+    public Variable variable() {
+        return variable;
     }
 
     @Override
@@ -120,22 +162,17 @@ public record DelayedVariableExpression(String msg, String debug,
     }
 
     @Override
-    public boolean isDelayed(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty && Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL;
+            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
-        return Level.DELAY;
+        return causesOfDelay;
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression replace =  translationMap.directExpression(this);
-        return replace != null && replace != this ? replace: this;
+        Expression replace = translationMap.directExpression(this);
+        return replace != null && replace != this ? replace : this;
     }
 
     @Override
@@ -145,7 +182,7 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public List<Variable> variables() {
-        if(variable instanceof FieldReference fr && fr.scope != null) {
+        if (variable instanceof FieldReference fr && fr.scope != null) {
             return ListUtil.concatImmutable(List.of(variable), fr.scope.variables());
         }
         return List.of(variable);
@@ -154,5 +191,10 @@ public record DelayedVariableExpression(String msg, String debug,
     @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT;
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return causesOfDelay;
     }
 }

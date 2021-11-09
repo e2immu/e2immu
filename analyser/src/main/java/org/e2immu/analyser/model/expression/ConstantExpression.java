@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -49,22 +46,22 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    default DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         switch (variableProperty) {
             case CONTAINER:
-                return Level.TRUE;
+                return Level.TRUE_DV;
             case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+                return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION:
-                return MultiLevel.EFFECTIVELY_NOT_NULL;
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case MODIFIED_METHOD:
             case CONTEXT_MODIFIED_DELAY:
             case PROPAGATE_MODIFICATION_DELAY:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
-                return Level.FALSE;
+                return Level.FALSE_DV;
             case INDEPENDENT:
-                return MultiLevel.INDEPENDENT;
+                return MultiLevel.INDEPENDENT_DV;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }

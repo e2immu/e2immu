@@ -17,7 +17,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.*;
 
 import java.util.Map;
-import java.util.Set;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 
@@ -39,14 +38,14 @@ public interface ParameterAnalysis extends Analysis {
         return true;
     }
 
-    default int getParameterProperty(AnalysisProvider analysisProvider,
-                                     ParameterInfo parameterInfo,
-                                     VariableProperty variableProperty) {
+    default DV getParameterProperty(AnalysisProvider analysisProvider,
+                                    ParameterInfo parameterInfo,
+                                    VariableProperty variableProperty) {
 
 
         // some absolutely trivial cases
-        int propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, variableProperty);
-        if (propertyFromType > Level.DELAY) return propertyFromType;
+        DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, variableProperty);
+        if (propertyFromType != Level.NOT_INVOLVED_DV) return propertyFromType;
 
         switch (variableProperty) {
             case CONTAINER:
@@ -62,41 +61,37 @@ public interface ParameterAnalysis extends Analysis {
                 break;
 
             case IDENTITY:
-                return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
+                return Level.fromBoolDv(parameterInfo.index == 0);
 
             case NOT_NULL_EXPRESSION:
-                return MultiLevel.NULLABLE;
+                return MultiLevel.NULLABLE_DV;
 
             case MODIFIED_VARIABLE: {
-                int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
-                if (mv != Level.DELAY) return mv;
-                int cm = getPropertyFromMapDelayWhenAbsent(CONTEXT_MODIFIED);
-                int mom = getPropertyFromMapDelayWhenAbsent(MODIFIED_OUTSIDE_METHOD);
-                if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
-                return Math.max(cm, mom);
+                DV mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
+                if (mv.isDone()) return mv;
+                DV cm = getPropertyFromMapDelayWhenAbsent(CONTEXT_MODIFIED);
+                DV mom = getPropertyFromMapDelayWhenAbsent(MODIFIED_OUTSIDE_METHOD);
+                return cm.max(mom);
             }
 
             case IMMUTABLE: {
-                int imm = getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
-                if (imm != Level.DELAY) return imm;
-                int external = getPropertyFromMapDelayWhenAbsent(EXTERNAL_IMMUTABLE);
-                int context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
-                if (external == variableProperty.best || context == variableProperty.best) return variableProperty.best;
-                int formalImmutable = parameterInfo.parameterizedType.defaultImmutable(analysisProvider, true);
-                if (external == Level.DELAY || context == Level.DELAY || formalImmutable == Level.DELAY)
-                    return Level.DELAY;
-                return MultiLevel.bestImmutable(formalImmutable, MultiLevel.bestImmutable(external, context));
+                DV imm = getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
+                if (imm.isDone()) return imm;
+                DV external = getPropertyFromMapDelayWhenAbsent(EXTERNAL_IMMUTABLE);
+                if (external.value() == variableProperty.best) return external;
+                DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
+                if (context.value() == variableProperty.best) return context;
+                DV formalImmutable = parameterInfo.parameterizedType.defaultImmutable(analysisProvider, true);
+                return formalImmutable.max(external.max(context));
             }
 
-            case NOT_NULL_PARAMETER:
-                int nnp = getPropertyFromMapDelayWhenAbsent(NOT_NULL_PARAMETER);
-                if (nnp != Level.DELAY) return nnp;
-                int cnn = getPropertyFromMapDelayWhenAbsent(CONTEXT_NOT_NULL);
-                int enn = getPropertyFromMapDelayWhenAbsent(EXTERNAL_NOT_NULL);
-                if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;
-                // note that ENN can be MultiLevel.DELAY, but CNN cannot have that value; it must be at least NULLABLE
-                return MultiLevel.bestNotNull(cnn, enn);
-
+            case NOT_NULL_PARAMETER: {
+                DV nnp = getPropertyFromMapDelayWhenAbsent(NOT_NULL_PARAMETER);
+                if (nnp.isDone()) return nnp;
+                DV cnn = getPropertyFromMapDelayWhenAbsent(CONTEXT_NOT_NULL);
+                DV enn = getPropertyFromMapDelayWhenAbsent(EXTERNAL_NOT_NULL);
+                return cnn.max(enn);
+            }
             default:
                 throw new PropertyException(Analyser.AnalyserIdentification.PARAMETER, variableProperty);
         }
@@ -104,14 +99,14 @@ public interface ParameterAnalysis extends Analysis {
     }
 
 
-    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
-        int v = getProperty(variableProperty);
+    default DV getPropertyVerifyContracted(VariableProperty variableProperty) {
+        DV v = getProperty(variableProperty);
         // special code to catch contracted values
         if (variableProperty == NOT_NULL_EXPRESSION) {
-            return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_PARAMETER));
+            return v.max(getProperty(NOT_NULL_PARAMETER));
         }
         if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
-            return Math.max(v, getProperty(MODIFIED_VARIABLE));
+            return v.max(getProperty(MODIFIED_VARIABLE));
         }
         return v;
     }
