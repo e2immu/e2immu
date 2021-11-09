@@ -133,24 +133,24 @@ public class ArrayAccess extends ElementImpl implements Expression {
             }
             builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
         } else {
-            boolean delayed = array.value().isDelayed(evaluationContext) || indexValue.value().isDelayed(evaluationContext);
+            boolean delayed = array.value().isDelayed() || indexValue.value().isDelayed();
             DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(), returnType);
             // evaluatedDependentVariable is our best effort at evaluation of the individual components
 
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.setExpression(NullConstant.NULL_CONSTANT); // not really relevant
             } else if (delayed) {
-                CausesOfDelay causesOfDelay = array.value().causesOfDelay(evaluationContext)
-                        .merge(indexValue.value().causesOfDelay(evaluationContext));
+                CausesOfDelay causesOfDelay = array.value().causesOfDelay()
+                        .merge(indexValue.value().causesOfDelay());
                 Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
                 builder.setExpression(dve);
             } else {
                 if (evaluatedDependentVariable.arrayVariable != null) {
                     builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, array.value(),
-                            MultiLevel.EFFECTIVELY_NOT_NULL);
+                            MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 }
                 Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
-                if (currentValue.isDelayed(evaluationContext)) {
+                if (currentValue.isDelayed()) {
                     // we have no value yet
                     Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
                             evaluatedDependentVariable);
@@ -165,9 +165,9 @@ public class ArrayAccess extends ElementImpl implements Expression {
             }
         }
 
-        int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        DV notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         VariableExpression ve;
-        if (notNullRequired > MultiLevel.NULLABLE &&
+        if (notNullRequired.value() > MultiLevel.NULLABLE &&
                 (ve = builder.getExpression().asInstanceOf(VariableExpression.class)) != null) {
             builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }

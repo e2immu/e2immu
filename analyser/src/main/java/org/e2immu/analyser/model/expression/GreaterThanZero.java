@@ -315,6 +315,11 @@ public class GreaterThanZero extends ElementImpl implements Expression {
         return new GreaterThanZero(identifier, booleanParameterizedType, expression.translate(translationMap), allowEquals);
     }
 
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
+    }
+
     public Expression expression() {
         return expression;
     }

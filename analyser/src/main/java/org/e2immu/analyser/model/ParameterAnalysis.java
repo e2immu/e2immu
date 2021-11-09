@@ -30,7 +30,7 @@ public interface ParameterAnalysis extends Analysis {
      * If a parameter is linked to one or more fields (implying the parameter is variable), the map contains pairs (fieldInfo, LINKED).
      * At any time, the map can contain (fieldInfo, NO) tuples.
      */
-    default Map<FieldInfo, Integer> getAssignedToField() {
+    default Map<FieldInfo, DV> getAssignedToField() {
         return null;
     }
 

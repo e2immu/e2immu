@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -150,5 +151,12 @@ public class SwitchExpression extends ElementImpl implements Expression, HasSwit
     @Override
     public ParameterizedType returnType() {
         return returnType;
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return selector.causesOfDelay()
+                .merge(Arrays.stream(yieldExpressions.expressions())
+                        .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
     }
 }

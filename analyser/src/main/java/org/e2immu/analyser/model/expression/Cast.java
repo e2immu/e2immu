@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -109,6 +106,11 @@ public class Cast extends ElementImpl implements Expression {
         if (predicate.test(expression)) {
             expression.visit(predicate);
         }
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
     }
 
     public Expression getExpression() {

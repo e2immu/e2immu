@@ -95,7 +95,7 @@ public class ArrayLength extends ElementImpl implements Expression {
         if (result.value() instanceof ArrayInitializer arrayInitializer) {
             Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
             builder.setExpression(size);
-        } else if (result.value().isDelayed(evaluationContext)) {
+        } else if (result.value().isDelayed()) {
             builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives()));
         } else {
             builder.setExpression(new UnknownExpression(returnType(), "array length"));

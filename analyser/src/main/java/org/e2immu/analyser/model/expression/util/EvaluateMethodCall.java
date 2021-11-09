@@ -25,6 +25,7 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
@@ -62,12 +63,13 @@ public class EvaluateMethodCall {
             return builder.setExpression(methodValue).build();
         }
 
-        LinkedVariables linkedVariablesForDelay = objectValue.linkedVariables(evaluationContext).changeAllToDelay();
+        Function<CausesOfDelay, LinkedVariables> linkedVariablesForDelay =
+                causes -> objectValue.linkedVariables(evaluationContext).changeAllToDelay(causes);
 
         // no value (method call on field that does not have effective value yet)
         CausesOfDelay objectValueDelayed = objectValue.causesOfDelay();
         if (objectValueDelayed.isDelayed()) {
-            return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay, objectValueDelayed);
+            return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(objectValueDelayed), objectValueDelayed);
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
@@ -187,7 +189,7 @@ public class EvaluateMethodCall {
             } else {
                 // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
                 log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay,
+                return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
                         srv.causesOfDelay());
             }
         }
@@ -200,10 +202,10 @@ public class EvaluateMethodCall {
                 DV immutable = methodAnalysis.getProperty(IMMUTABLE);
                 DV independent = methodAnalysis.getProperty(INDEPENDENT);
                 DV container = methodAnalysis.getProperty(CONTAINER);
-                if (notNull.isDelayed() || immutable.isDelayed() || independent.isDelayed() || container.isDelayed()) {
-                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay,
-                            notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay())
-                                    .merge(container.causesOfDelay()));
+                CausesOfDelay delays = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay())
+                        .merge(container.causesOfDelay());
+                if (delays.isDelayed()) {
+                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
                 }
 
                 Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
@@ -213,7 +215,7 @@ public class EvaluateMethodCall {
                                 parameters.stream().map(Expression::getIdentifier).toList())),
                         concreteReturnType, valueProperties);
             }
-            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay,
+            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(modified.causesOfDelay()),
                     modified.causesOfDelay());
         };
         return builder.setExpression(methodValue).build();
@@ -311,12 +313,12 @@ public class EvaluateMethodCall {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
                                             iv.expression().returnType(), linkedVariables,
                                             new CausesOfDelay.SimpleSet(
-                                                    new CauseOfDelay.SimpleCause(parameterAnalysis.where(),
+                                                    new CauseOfDelay.SimpleCause(parameterAnalysis.location(),
                                                             CauseOfDelay.Cause.ASSIGNED_TO_FIELD))))
                                     .build();
                         }
-                        Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
-                        Integer assignedOrLinked = assigned.get(fieldInfo);
+                        Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
+                        DV assignedOrLinked = assigned.get(fieldInfo);
                         if (LinkedVariables.isAssigned(assignedOrLinked)) {
                             return builder.setExpression(constructorCall.getParameterExpressions().get(i)).build();
                         }
@@ -331,7 +333,7 @@ public class EvaluateMethodCall {
     private Expression computeEvaluationOfEquals(MethodInfo methodInfo,
                                                  ParameterizedType concreteReturnType,
                                                  Expression objectValue,
-                                                 LinkedVariables linkedVariables,
+                                                 Function<CausesOfDelay, LinkedVariables> linkedVariables,
                                                  List<Expression> parameters) {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
@@ -339,7 +341,7 @@ public class EvaluateMethodCall {
             if (modifying.isDelayed()) {
                 log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables,
+                return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(modifying.causesOfDelay()),
                         modifying.causesOfDelay());
             }
             if (paramValue.equals(objectValue) && modifying.valueIsFalse()) {
@@ -495,10 +497,11 @@ public class EvaluateMethodCall {
                                             ParameterizedType concreteReturnType,
                                             MethodAnalysis methodAnalysis,
                                             Expression scope,
-                                            LinkedVariables linkedVariables) {
+                                            Function<CausesOfDelay, LinkedVariables> linkedVariables) {
         DV fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables, fluent.causesOfDelay());
+            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(fluent.causesOfDelay()),
+                    fluent.causesOfDelay());
         }
         if (!fluent.valueIsTrue()) return null;
         return scope;
@@ -511,11 +514,11 @@ public class EvaluateMethodCall {
                                               ParameterizedType concreteReturnType,
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters,
-                                              LinkedVariables linkedVariables,
+                                              Function<CausesOfDelay, LinkedVariables> linkedVariables,
                                               EvaluationContext evaluationContext) {
         DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
-            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables,
+            return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(identity.causesOfDelay()),
                     identity.causesOfDelay());
         }
         if (!identity.valueIsTrue()) return null;

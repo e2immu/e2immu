@@ -149,8 +149,8 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
             builder.compose(scopeResult);
         }
 
-        int cnn = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-        if (cnn > MultiLevel.NULLABLE) {
+        DV cnn = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        if (cnn.value() > MultiLevel.NULLABLE) {
             builder.variableOccursInNotNullContext(variable, this, cnn);
         }
         return builder.setExpression(this).build();

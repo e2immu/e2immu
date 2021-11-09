@@ -239,6 +239,11 @@ public record Or(Identifier identifier, Primitives primitives, List<Expression> 
     }
 
     @Override
+    public CausesOfDelay causesOfDelay() {
+        return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+    }
+
+    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));

@@ -63,7 +63,8 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         if (combined instanceof BooleanConstant boolValue) {
             return !boolValue.constant();
         }
-        return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, true));
+        DV nne = getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, true);
+        return MultiLevel.isEffectivelyNotNull(nne.value());
     }
 
     @Override
@@ -72,7 +73,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
             // do not use the Condition manager to check for null in creation of isNull
             Expression isNull = Equals.equals(expression.getIdentifier(),
                     this, expression, NullConstant.NULL_CONSTANT, false);
-            if(isNull.isBoolValueFalse()) {
+            if (isNull.isBoolValueFalse()) {
                 // this is not according to the condition manager, but always not null
                 return false;
             }

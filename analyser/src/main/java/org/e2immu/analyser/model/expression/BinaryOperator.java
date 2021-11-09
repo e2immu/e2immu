@@ -156,9 +156,9 @@ public class BinaryOperator extends ElementImpl implements Expression {
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
             if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true) && r instanceof IsVariableExpression ve) {
-                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE);
+                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE_DV);
             } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true) && l instanceof IsVariableExpression ve) {
-                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE);
+                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE_DV);
             }
             return Equals.equals(identifier, evaluationContext, l, r);
         }
@@ -513,5 +513,10 @@ public class BinaryOperator extends ElementImpl implements Expression {
         if (removeRhs) return lhs;
         return new BinaryOperator(identifier, primitives, lhs.removeAllReturnValueParts(),
                 operator, rhs.removeAllReturnValueParts(), precedence);
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return lhs.causesOfDelay().merge(rhs.causesOfDelay());
     }
 }

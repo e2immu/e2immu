@@ -22,23 +22,11 @@ public enum VariableProperty {
     /*
     "short-lived" properties of the EvaluationResult
      */
-
-    // single simple purpose: on `this` to see if local methods have been called
-    METHOD_CALLED("method called"),
-
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
-    CONTEXT_MODIFIED_DELAY("method delay"),
-    PROPAGATE_MODIFICATION_DELAY("propagate modification delay"),
-
-    // continuation of METHOD_DELAY from variable properties into field summaries
-    SCOPE_DELAY("scope delay"),
 
     // only lives in change map
     IN_NOT_NULL_CONTEXT("in not-null context"),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
-
-    // on final fields with constructor initializer, we need to decide on constructor or instance
-    EXTERNAL_IMMUTABLE_BREAK_DELAY("break immutable delay"),
 
     // in ForwardEvaluationInfo
     PROPAGATE_MODIFICATION("propagate modification"),
@@ -88,7 +76,6 @@ public enum VariableProperty {
      */
 
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
-    CONTEXT_IMMUTABLE_DELAY("context immutable delay"),
     NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
 
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
@@ -162,7 +149,6 @@ public enum VariableProperty {
     public final String name;
     public final int best;
     public final int falseValue;
-    private final int valueWhenAbsent;
     private final DV valueWhenAbsentDv;
     public final DV bestDv;
     public final DV falseDv;
@@ -178,7 +164,6 @@ public enum VariableProperty {
         this.name = name;
         this.best = best;
         this.falseValue = falseValue;
-        this.valueWhenAbsent = valueWhenAbsent;
         valueWhenAbsentDv = new DV.NoDelay(valueWhenAbsent);
         bestDv = new DV.NoDelay(best);
         falseDv = new DV.NoDelay(falseValue);

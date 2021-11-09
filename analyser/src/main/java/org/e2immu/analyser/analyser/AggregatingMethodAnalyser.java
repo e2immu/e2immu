@@ -57,12 +57,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, DV::max))
-                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, DV::min))
-                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, DV::min))
-                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, DV::max))
-                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, DV::min))
-                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, DV::min))
+                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, DV::max, DV.MIN_INT_DV))
+                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, DV::min, DV.MAX_INT_DV))
+                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, DV::min, DV.MAX_INT_DV))
+                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, DV::max, DV.MIN_INT_DV))
+                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, DV::min, DV.MAX_INT_DV))
+                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, DV::min, DV.MAX_INT_DV))
                 .add(METHOD_VALUE, iteration -> this.aggregateMethodValue());
 
         analyserComponents = builder.build();
@@ -102,10 +102,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         return analysisStatus;
     }
 
-    private AnalysisStatus aggregateMethodValue(EvaluationContext evaluationContext) {
+    private AnalysisStatus aggregateMethodValue() {
         if (!methodAnalysis.singleReturnValue.isSet()) {
             CausesOfDelay delays = implementingAnalyses.get().stream()
-                    .map(a -> a.getSingleReturnValue().causesOfDelay(evaluationContext))
+                    .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
                 return new AnalysisStatus.Delayed(delays);
@@ -125,21 +125,15 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus aggregate(VariableProperty variableProperty, BinaryOperator<DV> operator) {
-        int current = methodAnalysis.getProperty(variableProperty);
-        if (current == Level.DELAY) {
-            int identity = operator == VariableInfoImpl.MIN ? variableProperty.best : variableProperty.falseValue;
-            int value = implementingAnalyses.get().stream()
-                    .mapToInt(a -> a.getProperty(variableProperty))
-                    .reduce(identity, operator);
-            if (value == Level.DELAY) {
+    private AnalysisStatus aggregate(VariableProperty variableProperty, BinaryOperator<DV> operator, DV start) {
+        DV current = methodAnalysis.getProperty(variableProperty);
+        if (current.isDelayed()) {
+            DV value = implementingAnalyses.get().stream()
+                    .map(a -> a.getProperty(variableProperty))
+                    .reduce(start, operator);
+            if (value.isDelayed()) {
                 log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, methodInfo.fullyQualifiedName);
-                assert translatedDelay("AGG:" + variableProperty,
-                        implementingAnalyses.get().stream().filter(a -> a.getProperty(variableProperty) == Level.DELAY)
-                                .findFirst().orElseThrow().getMethodInfo().fullyQualifiedName + "." + variableProperty.name(),
-                        methodInfo.fullyQualifiedName + "." + variableProperty.name());
-
-                return DELAYS;
+                return new AnalysisStatus.Delayed(value);
             }
             log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, methodInfo.fullyQualifiedName);
             methodAnalysis.setProperty(variableProperty, value);
@@ -175,11 +169,6 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
     @Override
     public void makeImmutable() {
         // nothing
-    }
-
-    @Override
-    protected String where(String componentName) {
-        return methodInfo.fullyQualifiedName + ":AGG:" + componentName;
     }
 
     @Override

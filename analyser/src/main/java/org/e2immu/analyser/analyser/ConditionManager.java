@@ -156,9 +156,8 @@ public record ConditionManager(Expression condition,
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
-        CausesOfDelay newStateIsDelayed = evaluationContext.isDelayedSet(newState);
         return new ConditionManager(condition, conditionIsDelayed, newState,
-                newStateIsDelayed.merge(stateIsDelayed),
+                newState.causesOfDelay().merge(stateIsDelayed),
                 precondition, preconditionIsDelayed, parent);
     }
 
@@ -323,8 +322,12 @@ public record ConditionManager(Expression condition,
         return isDelayed() || parent != null && parent.isDelayed();
     }
 
-    public boolean isStateDelayedOrPreconditionDelayed() {
-        return stateIsDelayed != null || preconditionIsDelayed != null;
+    public CausesOfDelay stateDelayedOrPreconditionDelayed() {
+        return stateIsDelayed.merge(preconditionIsDelayed);
+    }
+
+    public CausesOfDelay causesOfDelay() {
+        return conditionIsDelayed.merge(stateIsDelayed).merge(preconditionIsDelayed);
     }
 
     public static record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

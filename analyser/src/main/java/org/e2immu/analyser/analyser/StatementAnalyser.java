@@ -720,7 +720,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     valueToWritePossiblyDelayed = valueToWrite;
                     valueToWritePossiblyDelayedIsDelayed = true;
                 } else if (valuePropertiesIsDelayed) {
-                    valueToWritePossiblyDelayed = valueToWrite.delayedValue(sharedState.evaluationContext);
+                    valueToWritePossiblyDelayed = valueToWrite.createDelayedValue(sharedState.evaluationContext);
                     valueToWritePossiblyDelayedIsDelayed = true;
                 } else {
                     // no delays!

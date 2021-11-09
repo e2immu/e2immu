@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -96,8 +95,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
             if (cd != null) {
-                Integer inChangeData = cd.properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
-                if (inChangeData != null && inChangeData >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                DV inChangeData = cd.properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
+                if (inChangeData != null && inChangeData.value() >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
             }
         }
         return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
@@ -113,11 +112,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
      * of the changeData of "t").
      */
     public record ChangeData(Expression value,
-                             boolean stateIsDelayed,
+                             CausesOfDelay stateIsDelayed,
                              boolean markAssignment,
                              Set<Integer> readAtStatementTime,
                              LinkedVariables linkedVariables,
-                             Map<VariableProperty, Integer> properties) {
+                             Map<VariableProperty, DV> properties) {
         public ChangeData {
             Objects.requireNonNull(linkedVariables);
             Objects.requireNonNull(readAtStatementTime);
@@ -127,9 +126,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ChangeData merge(ChangeData other) {
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
-            Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
+            Map<VariableProperty, DV> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
             return new ChangeData(other.value == null ? value : other.value,
-                    other.stateIsDelayed,
+                    other.stateIsDelayed, // and not a merge!
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
                     combinedLinkedVariables,
@@ -137,19 +136,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public boolean haveContextMethodDelay() {
-            return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.DELAY) == Level.TRUE;
+            return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV).isDelayed();
         }
 
         public boolean havePropagationModificationDelay() {
-            return properties.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.DELAY) == Level.TRUE;
+            return properties.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE_DV).isDelayed();
         }
 
-        public boolean haveDelaysCausedByMethodCalls() {
-            return properties.getOrDefault(VariableProperty.SCOPE_DELAY, Level.DELAY) == Level.TRUE;
-        }
-
-        public int getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefault(variableProperty, Level.DELAY);
+        public DV getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, variableProperty.falseDv);
         }
 
         public boolean isMarkedRead() {
@@ -157,11 +152,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
     }
 
-    public int getProperty(Expression expression, VariableProperty variableProperty) {
+    public DV getProperty(Expression expression, VariableProperty variableProperty) {
         if (expression instanceof VariableExpression ve) {
             ChangeData changeData = changeData().get(ve.variable());
             if (changeData != null) {
-                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                DV inChangeData = changeData.properties.getOrDefault(variableProperty, null);
                 if (inChangeData != null) return inChangeData;
             }
             return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), variableProperty, statementTime);
@@ -173,7 +168,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public static class Builder {
         private final EvaluationContext evaluationContext;
         private final Messages messages = new Messages();
-        private final Set<CauseOfDelay> causes = new HashSet<>();
+        private CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         private Expression value;
         private List<Expression> storedExpressions;
         private int statementTime;
@@ -250,11 +245,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void addCausesOfDelay(CausesOfDelay causesOfDelay) {
-            this.causes.addAll(causesOfDelay.causes());
-        }
-
-        public void addCauseOfDelay(CauseOfDelay cause) {
-            this.causes.add(cause);
+            this.causesOfDelay = this.causesOfDelay.merge(causesOfDelay);
         }
 
         public Builder setExpression(Expression value) {
@@ -274,9 +265,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public EvaluationResult build() {
             if (value != null) {
-                causes.addAll(value.causesOfDelay().causes());
+                addCausesOfDelay(value.causesOfDelay());
             }
-            CausesOfDelay causesOfDelay = causes.isEmpty() ? CausesOfDelay.EMPTY : new CausesOfDelay(causes);
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay,
@@ -297,30 +287,30 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
-            assert notNullRequired > MultiLevel.NULLABLE;
+            assert notNullRequired.value() > MultiLevel.NULLABLE;
 
             if (variable instanceof This) return; // nothing to be done here
 
-            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL &&
+            if (notNullRequired.value() == MultiLevel.EFFECTIVELY_NOT_NULL &&
                     (evaluationContext.notNullAccordingToConditionManager(variable)
                             || evaluationContext.notNullAccordingToConditionManager(value))) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            DV notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
             //  if (notNullValue < notNullRequired) { // also do delayed values
             // so intrinsically we can have null.
             // if context not null is already high enough, don't complain
-            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-            if (contextNotNull == MultiLevel.NULLABLE) {
-                setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE); // so we can raise an error
+            DV contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
+            if (contextNotNull.value() == MultiLevel.NULLABLE) {
+                setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE_DV); // so we can raise an error
             }
             setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             //  }
 
         }
 
-        private int getContainerFromInitial(Expression expression) {
+        private DV getContainerFromInitial(Expression expression) {
             if (expression instanceof VariableExpression variableExpression) {
                 return getPropertyFromInitial(variableExpression.variable(), VariableProperty.CONTAINER);
             }
@@ -330,10 +320,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         it is important that the value is read from initial (-C), and not from evaluation (-E)
          */
-        private int getPropertyFromInitial(Variable variable, VariableProperty variableProperty) {
+        private DV getPropertyFromInitial(Variable variable, VariableProperty variableProperty) {
             ChangeData changeData = valueChanges.get(variable);
             if (changeData != null) {
-                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                DV inChangeData = changeData.properties.getOrDefault(variableProperty, null);
                 if (inChangeData != null) return inChangeData;
             }
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
@@ -348,7 +338,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             if (ecd == null) {
                 newEcd = new ChangeData(null,
-                        false, false, Set.of(statementTime),
+                        CausesOfDelay.EMPTY, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -406,7 +396,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData current = valueChanges.get(variable);
             ChangeData newVcd;
             if (current == null) {
-                boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
+                CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
                 newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables,
                         Map.of());
             } else {
@@ -416,61 +406,36 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newVcd);
         }
 
-        public void markContextModifiedDelay(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
-        }
-
-        public void markPropagateModificationDelay(Variable variable) {
-            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
-        }
-
-        public void markContextNotNullDelay(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE_DV);
-        }
-
-        public void markContextImmutableDelay(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE_DELAY, Level.TRUE_DV);
-        }
-
         public void variableOccursInEventuallyImmutableContext(Identifier identifier,
-                                                               Variable variable, DV requiredImmutable, DV nextImmutable) {
+                                                               Variable variable,
+                                                               DV requiredImmutable,
+                                                               DV nextImmutable) {
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
-            int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
-            if (currentImmutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
-                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable) && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
+            DV currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
+            if (currentImmutable.value() >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable.value())
+                        && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable.value())) {
                     raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
-                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable) && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable)) {
+                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable.value())
+                        && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable.value())) {
                     raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }
             // everything proceeds as normal
-            assert evaluationContext == null || nextImmutable != Level.DELAY ||
-                    evaluationContext.createDelay("variableOccursInContext",
-                            variable.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + DelayDebugger.D_CONTEXT_IMMUTABLE);
             setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE, nextImmutable);
         }
 
-        public void markMethodCalled(Variable variable) {
-            assert evaluationContext != null;
-
-            Variable v;
-            if (variable instanceof This) {
-                v = variable;
-            } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType()) {
-                v = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-            } else v = null;
-            if (v != null) {
-                setProperty(v, VariableProperty.METHOD_CALLED, Level.TRUE);
-            }
-        }
-
+        /**
+         * @param variable the variable in whose context the modification takes place
+         * @param modified possibly delayed
+         */
         public void markContextModified(Variable variable, DV modified) {
             assert evaluationContext != null;
-            int ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
+            DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
                     .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
-                    : Level.FALSE;
-            if (ignoreContentModifications != Level.TRUE) {
+                    : Level.FALSE_DV;
+            if (!ignoreContentModifications.valueIsTrue()) {
                 log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
@@ -494,15 +459,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInContainerContext(Variable variable, Expression currentExpression) {
             assert evaluationContext != null;
 
-            if (evaluationContext.isDelayed(currentExpression)) return; // not yet
+            if (currentExpression.isDelayed()) return; // not yet
             // if we already know that the variable is NOT @NotModified1, then we'll raise an error
-            int container = getContainerFromInitial(currentExpression);
-            if (container == Level.FALSE) {
+            DV container = getContainerFromInitial(currentExpression);
+            if (container.valueIsFalse()) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);
-            } else if (container == Level.DELAY) {
+            } else if (container.isDelayed()) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                setProperty(variable, VariableProperty.CONTAINER, Level.TRUE);
+                // FIXME does this make sense?
+                setProperty(variable, VariableProperty.CONTAINER, Level.TRUE_DV);
             }
         }
 
@@ -523,19 +489,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Builder assignment(Variable assignmentTarget, Expression resultOfExpression, LinkedVariables linkedVariables) {
             assert evaluationContext != null;
-            boolean stateIsDelayed = evaluationContext.getConditionManager().isStateDelayedOrPreconditionDelayed();
-            boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
+            CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().stateDelayedOrPreconditionDelayed();
             // NOTE: we cannot use the @NotNull of the result in DelayedExpression.forState (Loops_1 is a good counter-example)
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
             // in case both state and result of expression are delayed, we give preference to the result
             // we do NOT take the delayed state into account when the assignment target is the reason for the delay
             // see FirstThen_0 and Singleton_7
-            Expression value = stateIsDelayed
-                    && !resultOfExpressionIsDelayed
+            Expression value = stateIsDelayed.isDelayed()
+                    && !resultOfExpression.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
-                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay()) : resultOfExpression;
+                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay(stateIsDelayed)) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
@@ -556,7 +521,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(null, false, false, Set.of(),
+                newEcd = new ChangeData(null, CausesOfDelay.EMPTY, false, Set.of(),
                         LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -566,34 +531,23 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newEcd);
         }
 
-        public void eraseContextModified(Variable variable) {
-            ChangeData ecd = valueChanges.get(variable);
-            if (ecd != null) {
-                Map<VariableProperty, Integer> propertiesWithoutContextModified = new HashMap<>(ecd.properties);
-                propertiesWithoutContextModified.remove(VariableProperty.CONTEXT_MODIFIED);
-                ChangeData newChangeData = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
-                        ecd.readAtStatementTime, ecd.linkedVariables, Map.copyOf(propertiesWithoutContextModified));
-                valueChanges.put(variable, newChangeData);
-            }
-        }
-
-        private Map<VariableProperty, Integer> mergeProperties
-                (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
-            Map<VariableProperty, Integer> res = new HashMap<>(m1);
-            m2.forEach((vp, v) -> res.merge(vp, v, Math::max));
+        private Map<VariableProperty, DV> mergeProperties
+                (Map<VariableProperty, DV> m1, Map<VariableProperty, DV> m2) {
+            Map<VariableProperty, DV> res = new HashMap<>(m1);
+            m2.forEach((vp, v) -> res.merge(vp, v, DV::max));
             return Map.copyOf(res);
         }
 
         /*
       we use a null value for inScope to indicate a delay
        */
-        public void link(Variable inArgument, Variable inScope, int level) {
+        public void link(Variable inArgument, Variable inScope, DV level) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(inArgument);
-            LinkedVariables linked = inScope == null ? LinkedVariables.DELAYED_EMPTY :
+            LinkedVariables linked = inScope == null ? LinkedVariables.delayedEmpty() :
                     new LinkedVariables(Map.of(inScope, level));
             if (ecd == null) {
-                newEcd = new ChangeData(null, false, false, Set.of(), linked, Map.of());
+                newEcd = new ChangeData(null, CausesOfDelay.EMPTY, false, Set.of(), linked, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.properties);

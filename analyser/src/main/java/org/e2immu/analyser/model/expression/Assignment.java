@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -33,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -166,6 +162,11 @@ public class Assignment extends ElementImpl implements Expression {
     }
 
     @Override
+    public CausesOfDelay causesOfDelay() {
+        return value.causesOfDelay();
+    }
+
+    @Override
     public Precedence precedence() {
         return Precedence.ASSIGNMENT;
     }
@@ -278,11 +279,11 @@ public class Assignment extends ElementImpl implements Expression {
         }
 
         // may already be linked to others
-        LinkedVariables lvExpression = resultOfExpression.linkedVariables(evaluationContext).minimum(LinkedVariables.ASSIGNED);
+        LinkedVariables lvExpression = resultOfExpression.linkedVariables(evaluationContext).minimum(LinkedVariables.ASSIGNED_DV);
         LinkedVariables linkedVariables;
         IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
         if(ive != null) {
-            linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED)));
+            linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV)));
         } else {
             linkedVariables = lvExpression;
         }

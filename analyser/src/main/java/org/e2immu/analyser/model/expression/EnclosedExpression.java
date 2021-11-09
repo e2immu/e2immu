@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -86,6 +87,11 @@ public class EnclosedExpression extends ElementImpl implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         return inner.evaluate(evaluationContext, forwardEvaluationInfo);
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return inner.causesOfDelay();
     }
 
     public Expression inner() {

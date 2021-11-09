@@ -14,14 +14,16 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.SetOnce;
 
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -95,19 +97,14 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
     }
 
     private AnalysisStatus aggregate(VariableProperty variableProperty) {
-        int current = typeAnalysis.getProperty(variableProperty);
-        if (current == Level.DELAY) {
-            int value = implementingAnalyses.get().stream()
-                    .mapToInt(a -> a.getProperty(variableProperty))
-                    .reduce(variableProperty.best, VariableInfoImpl.MIN);
-            if (value == Level.DELAY) {
+        DV current = typeAnalysis.getProperty(variableProperty);
+        if (current.isDelayed()) {
+            DV value = implementingAnalyses.get().stream()
+                    .map(a -> a.getProperty(variableProperty))
+                    .reduce(variableProperty.bestDv, DV::min);
+            if (value.isDelayed()) {
                 log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, typeInfo.fullyQualifiedName);
-                assert translatedDelay("AGG:" + variableProperty,
-                        implementingAnalyses.get().stream().filter(a -> a.getProperty(variableProperty) == Level.DELAY)
-                                .findFirst().orElseThrow().getTypeInfo().fullyQualifiedName + "." + variableProperty.name(),
-                        typeInfo.fullyQualifiedName + "." + variableProperty.name());
-
-                return DELAYS;
+                return new AnalysisStatus.Delayed(value);
             }
             log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(variableProperty, value);

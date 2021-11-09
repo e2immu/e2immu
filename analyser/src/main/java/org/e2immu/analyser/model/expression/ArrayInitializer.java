@@ -125,9 +125,8 @@ public class ArrayInitializer extends ElementImpl implements Expression {
     }
 
     @Override
-    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
-        return Arrays.stream(multiExpression.expressions())
-                .map(e -> e.causesOfDelay(evaluationContext))
+    public CausesOfDelay causesOfDelay() {
+        return Arrays.stream(multiExpression.expressions()).map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 

@@ -64,11 +64,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public WithInspectionAndAnalysis where() {
-        return typeInfo;
-    }
-
-    @Override
     public Boolean immutableCanBeIncreasedByTypeParameters() {
         return immutableCanBeIncreasedByTypeParameters;
     }
@@ -203,12 +198,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
             this.analyserContext = analyserContext;
         }
-
-        @Override
-        public WithInspectionAndAnalysis where() {
-            return typeInfo;
-        }
-
+        
         @Override
         public TypeInfo getTypeInfo() {
             return typeInfo;

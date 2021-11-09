@@ -128,10 +128,12 @@ public record DetectEventual(MethodInfo methodInfo,
         if (isMark.valueIsTrue()) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
-        Boolean isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,
+        DV isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,
                 fieldsAndBefore.fields, methodAnalyser);
-        if (isMarkViaModifyingMethod == null) return MethodAnalysis.DELAYED_EVENTUAL;
-        if (isMarkViaModifyingMethod) {
+        if (isMarkViaModifyingMethod.isDelayed()) {
+            return MethodAnalysis.delayedEventual(isMarkViaModifyingMethod.causesOfDelay());
+        }
+        if (isMarkViaModifyingMethod.valueIsTrue()) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
         return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, false, null);
@@ -178,7 +180,7 @@ public record DetectEventual(MethodInfo methodInfo,
             Set<FieldInfo> fields = new HashSet<>();
             for (Expression part : and.getExpressions()) {
                 MethodAnalysis.Eventual eventual = singleTestMark(part);
-                if (eventual == MethodAnalysis.DELAYED_EVENTUAL) return eventual;
+                if (eventual.causesOfDelay().isDelayed()) return eventual;
                 if (eventual == MethodAnalysis.NOT_EVENTUAL || eventual.test() == Boolean.FALSE) {
                     return MethodAnalysis.NOT_EVENTUAL;
                 }
@@ -205,8 +207,8 @@ public record DetectEventual(MethodInfo methodInfo,
                 ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             MethodAnalysis.Eventual mao = methodCallAnalysis.getEventual();
-            if (mao == MethodAnalysis.DELAYED_EVENTUAL) {
-                return MethodAnalysis.DELAYED_EVENTUAL;
+            if (mao.causesOfDelay().isDelayed()) {
+                return MethodAnalysis.delayedEventual(mao.causesOfDelay());
             }
             Boolean testMark = mao.test();
             if (testMark == null) return MethodAnalysis.NOT_EVENTUAL;
@@ -241,7 +243,7 @@ public record DetectEventual(MethodInfo methodInfo,
         Set<FieldInfo> fields = new HashSet<>();
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
             FieldReference adjustedFieldReference = analyserContext.adjustThis(e.getKey());
-            if (typeAnalysis.approvedPreconditionsIsSet(e2, adjustedFieldReference)) {
+            if (typeAnalysis.approvedPreconditionsStatus(e2, adjustedFieldReference).isDone()) {
                 Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, adjustedFieldReference);
                 FieldInfo field = typeAnalysis.translateToVisibleField(e.getKey());
                 if (field != null) {

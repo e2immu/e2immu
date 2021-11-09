@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -90,6 +91,11 @@ public class CommaExpression extends ElementImpl implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new CommaExpression(expressions.stream().map(translationMap::translateExpression).toList());
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 
     public List<Expression> expressions() {

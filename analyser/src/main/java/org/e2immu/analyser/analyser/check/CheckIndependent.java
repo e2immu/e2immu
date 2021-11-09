@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
@@ -56,7 +57,7 @@ public class CheckIndependent {
     }
 
      static String levelString(AbstractAnalysisBuilder analysis, VariableProperty variableProperty) {
-         int value = analysis.getProperty(variableProperty);
+         DV value = analysis.getProperty(variableProperty);
          int level = MultiLevel.level(value) ;
          return level <= MultiLevel.LEVEL_2_IMMUTABLE || level == MultiLevel.MAX_LEVEL
                  ? null : Integer.toString(level+1);

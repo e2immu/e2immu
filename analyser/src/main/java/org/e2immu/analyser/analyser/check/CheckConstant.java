@@ -53,7 +53,7 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
                                Expression singleReturnValue,
                                List<AnnotationExpression> annotations,
                                Location where) {
-        boolean isConstant = analysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.CONSTANT) == Level.TRUE;
+        boolean isConstant = analysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.CONSTANT) .valueIsTrue();
         String computedValue = isConstant ? singleReturnValue.minimalOutput() : null;
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String value = ae.extract("value", "");

@@ -36,9 +36,9 @@ public class MethodCallIncompatibleWithPrecondition {
 
     return null upon delays.
      */
-    public static Boolean isMark(EvaluationContext evaluationContext,
-                                 Set<FieldInfo> fields,
-                                 MethodAnalyser methodAnalyser) {
+    public static DV isMark(EvaluationContext evaluationContext,
+                            Set<FieldInfo> fields,
+                            MethodAnalyser methodAnalyser) {
         StatementAnalysis statementAnalysis = methodAnalyser.methodAnalysis.getLastStatement();
         assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
         Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
@@ -51,7 +51,8 @@ public class MethodCallIncompatibleWithPrecondition {
             if (!variableInfo.valueIsSet()) {
                 log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.methodInfo.fullyQualifiedName);
-                return null;
+                return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableInStatement(variableInfo.variable(),
+                        statementAnalysis, CauseOfDelay.Cause.VALUE));
             }
             if (evaluationContext.hasState(variableInfo.getValue())) {
                 Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);
@@ -67,11 +68,11 @@ public class MethodCallIncompatibleWithPrecondition {
                     Expression normalisedPrecondition = normaliseMethods(evaluationContext, preconditionInTermsOfAspect);
                     Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
                     Expression and = And.and(evaluationContext, normalisedPrecondition, normalisedStateWithInvariants);
-                    if (and.isBoolValueFalse()) return true;
+                    if (and.isBoolValueFalse()) return Level.TRUE_DV;
                 }
             }
         }
-        return false;
+        return Level.FALSE_DV;
     }
 
     private static Expression normaliseMethods(EvaluationContext evaluationContext, Expression expression) {
@@ -79,7 +80,7 @@ public class MethodCallIncompatibleWithPrecondition {
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall && !builder.translateMethod(methodCall.methodInfo)) {
                 MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
-                if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE) {
+                if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD).valueIsFalse()) {
                     // non-modifying method; from all overrides, choose the one that does not have an override
                     // IMPROVE there could be multiple, but then, how do we choose?
                     methodCall.methodInfo.methodResolution.get().overrides().stream()

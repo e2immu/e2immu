@@ -149,10 +149,10 @@ public class InstanceOf extends ElementImpl implements Expression {
         if (value.isUnknown()) {
             return builder.setExpression(value).build();
         }
-        if (value.isDelayed(evaluationContext)) {
+        if (value.isDelayed()) {
             LinkedVariables linkedVariables = value.linkedVariables(evaluationContext);
             return builder.setExpression(DelayedExpression.forInstanceOf(evaluationContext.getPrimitives(),
-                            parameterizedType, linkedVariables.changeAllToDelay()))
+                            parameterizedType, linkedVariables.changeAllToDelay(value.causesOfDelay())))
                     .build();
         }
         if (value instanceof NullConstant) {
@@ -201,11 +201,8 @@ public class InstanceOf extends ElementImpl implements Expression {
     }
 
     @Override
-    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext ) {
-        if (expression instanceof VariableExpression ve) {
-            return evaluationContext.variableIsDelayed(ve.variable());
-        }
-        return expression.causesOfDelay(evaluationContext);
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
     }
 
     @Override

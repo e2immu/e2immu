@@ -38,9 +38,9 @@ public class CheckFinalNotModified {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
         boolean isModifiedOrVariable;
         if (Final.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE;
+            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsFalse();
         } else if (NotModified.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE;
+            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE).valueIsFalse();
         } else throw new UnsupportedOperationException();
 
         String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;

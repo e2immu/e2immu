@@ -70,7 +70,7 @@ public interface MethodAnalysis extends Analysis {
     }
 
     /**
-     * @return null when the method has no eventual
+     * @return never null; can be delayed
      */
     default Eventual getEventual() {
         throw new UnsupportedOperationException();

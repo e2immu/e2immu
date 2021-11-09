@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class CompanionAnalyser {
@@ -83,7 +84,7 @@ public class CompanionAnalyser {
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (evaluationContext.isDelayed(evaluationResult.value())) {
+            if (evaluationResult.value().isDelayed()) {
                 return new AnalysisStatus.Delayed(new CauseOfDelay.SimpleCause(companionMethod, CauseOfDelay.Cause.VALUE));
             }
             companionAnalysis.value.set(evaluationResult.value());
@@ -156,8 +157,8 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
-            return variableProperty.falseValue; // but no delay, see Equals.checkParameter
+        public DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+            return variableProperty.falseDv; // but no delay, see Equals.checkParameter
         }
 
         @Override
@@ -177,16 +178,14 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            CausesOfDelay conditionIsDelayed = isDelayedSet(condition);
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
                     Precondition.empty(getPrimitives()), null);
             return new EvaluationContextImpl(iteration, cm);
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            CausesOfDelay stateIsDelayed = isDelayedSet(state);
-            ConditionManager cm = conditionManager.addState(state, stateIsDelayed);
+            ConditionManager cm = conditionManager.addState(state, state.causesOfDelay());
             return new EvaluationContextImpl(iteration, cm);
         }
 

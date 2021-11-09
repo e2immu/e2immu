@@ -85,11 +85,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     @Override
-    public WithInspectionAndAnalysis where() {
-        return methodAnalysis.getMethodInfo(); // FIXME do we need a statement ID here?
-    }
-
-    @Override
     public int compareTo(StatementAnalysis o) {
         return index.compareTo(o.index);
     }

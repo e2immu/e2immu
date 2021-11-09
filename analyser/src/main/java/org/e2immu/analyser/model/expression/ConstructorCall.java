@@ -189,7 +189,7 @@ public record ConstructorCall(
             DV independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
             LinkedVariables sub = value.linkedVariables(evaluationContext);
             if (independentOnParameter.isDelayed()) {
-                result = result.mergeDelay(sub);
+                result = result.mergeDelay(sub, independentOnParameter);
             } else if (independentOnParameter.value() >= MultiLevel.DEPENDENT &&
                     independentOnParameter.value() < MultiLevel.INDEPENDENT) {
                 result = result.merge(sub, MultiLevel.fromIndependentToLinkedVariableLevel(independentOnParameter));
@@ -333,10 +333,14 @@ public record ConstructorCall(
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             Expression modifiedInstance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext,
                     constructor, constructorAnalysis, null, this, res.v);
-            instance = modifiedInstance == null
-                    ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    linkedVariables(evaluationContext).changeAllToDelay())
-                    : modifiedInstance;
+            if (modifiedInstance == null) {
+                instance = this;
+            } else {
+                instance = modifiedInstance.isDelayed()
+                        ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                        linkedVariables(evaluationContext).changeAllToDelay(modifiedInstance.causesOfDelay()))
+                        : modifiedInstance;
+            }
         } else {
             instance = this;
         }
@@ -353,8 +357,8 @@ public record ConstructorCall(
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 
-        int cImm = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
+        DV cImm = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        if (MultiLevel.isAfterThrowWhenNotEventual(cImm.value())) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();
@@ -366,8 +370,8 @@ public record ConstructorCall(
     }
 
     @Override
-    public Expression delayedValue(EvaluationContext evaluationContext) {
+    public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
         return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
-                linkedVariables(evaluationContext).changeAllToDelay());
+                linkedVariables(evaluationContext).changeAllToDelay(causes));
     }
 }

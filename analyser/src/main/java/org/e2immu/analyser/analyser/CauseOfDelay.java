@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.Variable;
 
 public interface CauseOfDelay {
@@ -25,6 +23,7 @@ public interface CauseOfDelay {
         VALUE("The value has not yet been determined"),
         VALUE_NOT_NULL("The value's NOT_NULL status has not yet been determined"),
         VALUE_IMMUTABLE("The value's IMMUTABLE status has not yet been determined"),
+        VALUE_INDEPENDENT("The value's INDEPENDENT status has not yet been determined"),
         CONTEXT_MODIFIED("Context modified not yet been determined"),
         LINKING("Delay in linking"),
         REMAP_PARAMETER("Remapping a parameter for the companion analyser is not yet possible"),
@@ -36,7 +35,8 @@ public interface CauseOfDelay {
         TYPE_ANALYSIS("Type analysis missing"),
         HIDDEN_CONTENT("Hidden content of type has not yet been determined"),
         INITIAL_VALUE("Not yet initialized"),
-        APPROVED_PRECONDITIONS("Approved preconditions for field");
+        APPROVED_PRECONDITIONS("Approved preconditions for field"),
+        TO_IMPLEMENT("Temporary; needs implementation");
 
         public final String msg;
 
@@ -47,6 +47,8 @@ public interface CauseOfDelay {
         public static Cause from(VariableProperty variableProperty) {
             return switch (variableProperty) {
                 case IMMUTABLE -> VALUE_IMMUTABLE;
+                case NOT_NULL_EXPRESSION -> VALUE_NOT_NULL;
+                case INDEPENDENT -> VALUE_INDEPENDENT;
                 default -> throw new UnsupportedOperationException();
             };
         }
@@ -58,26 +60,11 @@ public interface CauseOfDelay {
 
     Cause cause();
 
-    WithInspectionAndAnalysis withInspectionAndAnalysis();
+    Location location();
 
-    record SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) implements CauseOfDelay {
+    record SimpleCause(Location location, Cause cause) implements CauseOfDelay {
     }
 
-    record VariableCause(Variable variable, Cause cause) implements CauseOfDelay {
-        @Override
-        public WithInspectionAndAnalysis withInspectionAndAnalysis() {
-            return fromVariable(variable);
-        }
-    }
-
-    record VariableInStatement(Variable variable, StatementAnalysis statementAnalysis, Cause cause) implements CauseOfDelay {
-        @Override
-        public WithInspectionAndAnalysis withInspectionAndAnalysis() {
-            return fromVariable(variable);
-        }
-    }
-
-    static private WithInspectionAndAnalysis fromVariable(Variable variable) {
-    return    variable instanceof FieldReference fr ? fr.fieldInfo : variable instanceof ParameterInfo pi ? pi : null;
+    record VariableCause(Variable variable, Location location, Cause cause) implements CauseOfDelay {
     }
 }

@@ -54,6 +54,10 @@ public class LinkedVariables {
         this.causesOfDelay = causesOfDelay.merge(otherCausesOfDelay);
     }
 
+    public static LinkedVariables delayedEmpty(CausesOfDelay causes) {
+        return new LinkedVariables(Map.of(), causes);
+    }
+
     public boolean isDelayed() {
         return causesOfDelay.isDelayed();
     }
@@ -256,17 +260,6 @@ public class LinkedVariables {
         return variables.get(variable);
     }
 
-    public static int bestValue(int v1, int v2) {
-        assert v1 >= 0;
-        assert v2 >= 0;
-        return Math.min(v1, v2);
-    }
-
-    public static int worstValue(int v1, int v2) {
-        if (v1 < 0 || v2 < 0) return -1;
-        return Math.max(v1, v2);
-    }
-
     /*
     we prune a linked variables map, based on immutable values.
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
@@ -334,5 +327,9 @@ public class LinkedVariables {
 
     public CausesOfDelay causesOfDelay() {
         return causesOfDelay;
+    }
+
+    public Map<Variable, DV> variables() {
+        return variables;
     }
 }

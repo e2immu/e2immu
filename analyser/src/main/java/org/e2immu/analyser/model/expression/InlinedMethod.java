@@ -272,7 +272,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
                             evaluationContext.getAnalyserContext());
                     if (valueProperties == null) {
                         replacement = DelayedExpression.forMethod(methodInfo, variable.concreteReturnType(),
-                                evaluationContext.linkedVariables(variable).changeAllToDelay(),
+                                evaluationContext.linkedVariables(variable)
+                                        .changeAllToDelay(new CausesOfDelay.SimpleSet(methodInfo, CauseOfDelay.Cause.TO_IMPLEMENT)),
                                 CausesOfDelay.EMPTY); // FIXME
                     } else {
                         replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
@@ -301,8 +302,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
             if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                 return -2; // delays
             }
-            Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
-            Integer assignedOrLinked = assigned.get(fieldInfo);
+            Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
+            DV assignedOrLinked = assigned.get(fieldInfo);
             if (LinkedVariables.isAssigned(assignedOrLinked)) {
                 return i;
             }
@@ -393,12 +394,12 @@ public class InlinedMethod extends ElementImpl implements Expression {
         public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             return new EvaluationContextImpl(this,
                     conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(),
-                            condition, condition.causesOfDelay(this)));
+                            condition, condition.causesOfDelay()));
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            return new EvaluationContextImpl(this, conditionManager.addState(state, state.causesOfDelay(this)));
+            return new EvaluationContextImpl(this, conditionManager.addState(state, state.causesOfDelay()));
         }
 
         @Override

@@ -247,7 +247,7 @@ public interface EvaluationContext {
     }
 
     default CausesOfDelay isDelayed(Expression expression) {
-        return expression.causesOfDelay(this);
+        return expression.causesOfDelay();
     }
 
     default This currentThis() {

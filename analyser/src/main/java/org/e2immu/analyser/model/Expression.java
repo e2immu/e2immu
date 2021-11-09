@@ -221,9 +221,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return thisVar.get();
     }
 
-    default Expression delayedValue(EvaluationContext evaluationContext) {
+    default Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
         return DelayedExpression.forDelayedValueProperties(returnType(),
-                linkedVariables(evaluationContext).changeAllToDelay());
+                linkedVariables(evaluationContext).changeAllToDelay(causes));
     }
 
     default CausesOfDelay causesOfDelay() {

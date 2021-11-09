@@ -131,9 +131,11 @@ public class MultiLevel {
         if (i < 0) return i;
         return i & AND;
     }
+
     public static DV effectiveAtLevelDv(DV dv, int minLevel) {
         return new DV.NoDelay(effectiveAtLevel(dv.value(), minLevel));
     }
+
     public static int effectiveAtLevel(int i, int minLevel) {
         if (i < 0) return i;
         int level = i >> SHIFT;
@@ -191,6 +193,14 @@ public class MultiLevel {
 
     public static int before(int level) {
         return compose(EVENTUAL_BEFORE, level);
+    }
+
+    public static DV beforeDv(int level) {
+        return new DV.NoDelay(compose(EVENTUAL_BEFORE, level));
+    }
+
+    public static DV afterDv(int level) {
+        return new DV.NoDelay(compose(EVENTUAL_AFTER, level));
     }
 
     public static int after(int level) {
@@ -255,6 +265,7 @@ public class MultiLevel {
     public static String niceIndependent(DV dv) {
         return niceIndependent(dv.value());
     }
+
     public static String niceIndependent(int i) {
         if (DEPENDENT == i) return "@Dependent";
         if (INDEPENDENT == i) return "@Independent";
@@ -264,6 +275,7 @@ public class MultiLevel {
     public static String niceImmutable(DV dv) {
         return niceImmutable(dv.value());
     }
+
     public static String niceImmutable(int i) {
         if (MUTABLE == i) return "@Mutable";
         int level = level(i) + 1;
@@ -324,8 +336,9 @@ public class MultiLevel {
         if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
         return levelImmutable == levelIndependent;
     }
-    public static int fromIndependentToLinkedVariableLevel(DV dv) {
-      return fromIndependentToLinkedVariableLevel(dv.value());
+
+    public static DV fromIndependentToLinkedVariableLevel(DV dv) {
+        return new DV.NoDelay(fromIndependentToLinkedVariableLevel(dv.value()));
     }
 
     public static int fromIndependentToLinkedVariableLevel(int independent) {

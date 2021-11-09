@@ -178,6 +178,11 @@ public class UnaryOperator extends ElementImpl implements Expression {
     }
 
     @Override
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
+    }
+
+    @Override
     public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }

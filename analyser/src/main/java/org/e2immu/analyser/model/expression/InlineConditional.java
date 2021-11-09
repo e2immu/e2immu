@@ -235,6 +235,11 @@ public class InlineConditional extends ElementImpl implements Expression {
 
 
     @Override
+    public CausesOfDelay causesOfDelay() {
+        return condition.causesOfDelay().merge(ifTrue.causesOfDelay()).merge(ifFalse.causesOfDelay());
+    }
+
+    @Override
     public List<? extends Element> subElements() {
         return List.of(condition, ifTrue, ifFalse);
     }

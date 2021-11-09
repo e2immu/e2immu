@@ -156,6 +156,4 @@ public interface Analysis {
     default boolean isNotContracted() {
         return analysisMode() != AnalysisMode.CONTRACTED;
     }
-
-    WithInspectionAndAnalysis where();
 }

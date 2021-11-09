@@ -267,4 +267,9 @@ public record PropertyWrapper(Expression expression,
     public Expression state() {
         return state;
     }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return expression.causesOfDelay();
+    }
 }

@@ -213,7 +213,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        int modified = evaluationContext.getAnalyserContext()
+        DV modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
         EvaluationResult mv = new EvaluateMethodCall(evaluationContext, this).methodValue(modified,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
@@ -280,14 +280,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             throw e;
         }
         // is the method modifying, do we need to wait?
-        int modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        int modified = alwaysModifying ? Level.TRUE : recursiveCall || partOfCallCycle ? Level.FALSE : modifiedMethod;
-        int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
-        builder.causeOfContextModificationDelay(methodInfo, modified == Level.DELAY);
+        DV modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        DV modified = alwaysModifying ? Level.TRUE_DV : recursiveCall || partOfCallCycle ? Level.FALSE_DV : modifiedMethod;
+        DV contextModifiedDelay = Level.fromBoolDv(modified.isDelayed());
+        builder.causeOfContextModificationDelay(methodInfo, modified.isDelayed());
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
-        int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-        boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+        DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        boolean contentNotNullRequired = notNullForward.value() == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
         ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
                 computeContextImmutable(evaluationContext);
@@ -299,17 +299,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
              */
             This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
             builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
-            builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
-            builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
         }
 
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.CONTEXT_NOT_NULL, notNullForward,
-                VariableProperty.METHOD_CALLED, Level.TRUE,
-                VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                 VariableProperty.CONTEXT_MODIFIED, modified,
-                VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
                 VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
                 VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true,
                 forwardEvaluationInfo.assignmentTarget()));
@@ -333,13 +328,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(ve.variable(), methodInfo);
             if (pointsToConcreteMethod != null) {
                 MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
-                int modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-                if (modifyingConcreteMethod != Level.DELAY) {
-                    builder.markContextModified(ve.variable(), modifyingConcreteMethod);
-                } else {
-                    builder.markContextModifiedDelay(ve.variable());
-                    builder.eraseContextModified(ve.variable());
-                }
+                DV modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                builder.markContextModified(ve.variable(), modifyingConcreteMethod);
             }
             // TODO else propagate modification?
         }
@@ -348,14 +338,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
 
 
-        boolean objectIsDelayed = evaluationContext.isDelayed(objectValue);
         LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
-        if(object instanceof IsVariableExpression ive) {
-            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED));
+        if (object instanceof IsVariableExpression ive) {
+            linkedVariables = linkedVariables.merge(LinkedVariables.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV));
         }
         LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
-            int combined = objectIsDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, level2);
+            DV combined = object.isDelayed() ? object.causesOfDelay() : level.min(level2);
             builder.link(v, v2, combined);
         }));
 
@@ -371,7 +360,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         increment = false;
                     } else if (lastStatement.flowData.initialTimeNotYetSet()) {
                         return delayedMethod(evaluationContext, builder, objectValue,
-                                contextModifiedDelay == Level.TRUE, parameterValues);
+                                contextModifiedDelay.valueIsTrue(), parameterValues);
                     } else {
                         if (lastStatement.flowData.timeAfterSubBlocksNotYetSet()) {
                             increment = false;
@@ -391,9 +380,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         boolean delayedFinalizer = checkFinalizer(evaluationContext, builder, methodAnalysis, objectValue);
 
-        if (parameterValues.stream().anyMatch(evaluationContext::isDelayed) || delayedFinalizer) {
+        CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (parameterDelays.isDelayed() || delayedFinalizer) {
             return delayedMethod(evaluationContext, builder, objectValue,
-                    contextModifiedDelay == Level.TRUE, parameterValues);
+                    contextModified, parameterValues);
         }
 
         // companion methods
@@ -515,11 +505,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            EvaluationResult.Builder builder,
                                            Expression objectValue,
                                            boolean contextModifiedDelay,
-                                           List<Expression> parameterValues) {
+                                           List<Expression> parameterValues,
+                                           CausesOfDelay causesOfDelay) {
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                linkedVariables(evaluationContext).changeAllToDelay()));
+                linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
@@ -547,36 +538,35 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Only(before) goes from BEFORE to BEFORE
     @Only(after) goes from AFTER to AFTER
      */
-    private record ImmutableData(int delay, int required, int next) {
+    private record ImmutableData(CausesOfDelay causes, DV required, DV next) {
     }
 
-    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(Level.DELAY, Level.DELAY, Level.DELAY);
-    private static final ImmutableData IMMUTABLE_DELAYED = new ImmutableData(Level.TRUE, Level.DELAY, Level.DELAY);
+    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(CausesOfDelay.EMPTY, Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
 
     private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
-        int formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
+        DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
                 .getProperty(VariableProperty.IMMUTABLE);
-        if (formalTypeImmutable == Level.DELAY) {
-            return IMMUTABLE_DELAYED;
+        if (formalTypeImmutable.isDelayed()) {
+            return new ImmutableData(formalTypeImmutable.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
         }
         int effective = MultiLevel.effective(formalTypeImmutable);
         if (effective != MultiLevel.EVENTUAL) {
             return NOT_EVENTUAL;
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
-        if (eventual == null) {
-            return IMMUTABLE_DELAYED;
+        if (eventual.causesOfDelay().isDelayed()) {
+            return new ImmutableData(eventual.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
         }
 
         int formalLevel = MultiLevel.level(formalTypeImmutable);
         if (eventual.mark()) {
-            return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.after(formalLevel));
+            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeDv(formalLevel), MultiLevel.afterDv(formalLevel));
         }
         if (eventual.after() != null) {
             if (eventual.after()) {
-                return new ImmutableData(Level.DELAY, MultiLevel.after(formalLevel), MultiLevel.after(formalLevel));
+                return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.afterDv(formalLevel), MultiLevel.afterDv(formalLevel));
             }
-            return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.before(formalLevel));
+            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeDv(formalLevel), MultiLevel.beforeDv(formalLevel));
         }
         return NOT_EVENTUAL;
     }
@@ -589,13 +579,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues) {
-        if (evaluationContext.isDelayed(objectValue)) return null; // don't even try
+        if (objectValue.isDelayed()) return objectValue; // don't even try
         if (objectValue.cannotHaveState()) return null; // ditto
 
         Expression state;
         if (evaluationContext.hasState(objectValue)) {
             state = evaluationContext.state(objectValue);
-            if (evaluationContext.isDelayed(state)) return null; // DELAY
+            if (state.isDelayed()) return null; // DELAY
         } else {
             state = new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
@@ -654,28 +644,39 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance;
 
         IsVariableExpression ive;
+        Expression xx;
         if (objectValue instanceof Instance || objectValue instanceof ConstructorCall) {
             newInstance = objectValue;
+            xx = null;
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
-            if (current instanceof Instance instance || current instanceof ConstructorCall) {
+            if (current instanceof Instance || current instanceof ConstructorCall) {
                 newInstance = current;
+                xx = null;
             } else {
-                Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(current.returnType(),
-                        evaluationContext.getAnalyserContext());
-                if (valueProperties == null) {
-                    return DelayedExpression.forMethod(methodInfo, current.returnType(),
-                            current.linkedVariables(evaluationContext).changeAllToDelay());
-                }
-                newInstance = Instance.forGetInstance(current.getIdentifier(), current.returnType(), valueProperties);
+                xx = current;
+                newInstance = null;
             }
         } else {
-            Map<VariableProperty, Integer> valueProperties = valuePropertiesOfInstance(objectValue.returnType(),
-                    evaluationContext.getAnalyserContext());
-            if (valueProperties == null) {
+            xx = objectValue;
+            newInstance = null;
+        }
+        if (xx != null) {
+            ParameterizedType returnType = xx.returnType();
+            AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
+            DV immutable = returnType.defaultImmutable(analysisProvider, false);
+            DV container = returnType.defaultContainer(analysisProvider);
+            DV independent = returnType.defaultIndependent(analysisProvider);
+            CausesOfDelay causesOfDelay = immutable.causesOfDelay().merge(container.causesOfDelay()).merge(independent.causesOfDelay());
+            if (causesOfDelay.isDelayed()) {
                 return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
-                        objectValue.linkedVariables(evaluationContext).changeAllToDelay());
+                        objectValue.linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay);
             }
+            var valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    VariableProperty.IMMUTABLE, immutable,
+                    VariableProperty.INDEPENDENT, independent,
+                    VariableProperty.CONTAINER, container,
+                    VariableProperty.IDENTITY, Level.FALSE_DV);
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 
@@ -694,19 +695,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return modifiedInstance;
     }
 
-    private static Map<VariableProperty, Integer> valuePropertiesOfInstance(ParameterizedType returnType, AnalysisProvider analysisProvider) {
-        int immutable = returnType.defaultImmutable(analysisProvider, false);
-        if (immutable < 0) return null;
-        int container = returnType.defaultContainer(analysisProvider);
-        if (container < 0) return null;
-        int independent = returnType.defaultIndependent(analysisProvider);
-        if (independent < 0) return null;
-        return Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL,
-                VariableProperty.IMMUTABLE, immutable,
-                VariableProperty.INDEPENDENT, independent,
-                VariableProperty.CONTAINER, container,
-                VariableProperty.IDENTITY, Level.FALSE);
-    }
 
     private static boolean containsEmptyExpression(Expression expression) {
         AtomicBoolean result = new AtomicBoolean();
@@ -743,11 +731,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return companionValueTranslationResult.value();
     }
 
-    private int notNullRequirementOnScope(int notNullRequirement) {
-        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
-            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL; // @NotNull1
+    private DV notNullRequirementOnScope(DV notNullRequirement) {
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement.value())) {
+            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }
-        return MultiLevel.EFFECTIVELY_NOT_NULL;
+        return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }
 
     private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {
@@ -767,8 +755,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        if (modified == Level.TRUE && evaluationContext.cannotBeModified(objectValue)) {
+        DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        if (modified.valueIsTrue() && evaluationContext.cannotBeModified(objectValue)) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }
@@ -780,11 +768,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                    ForwardEvaluationInfo forwardEvaluationInfo,
                                                    boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
-            int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-            if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
-                int methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-                if (methodNotNull != Level.DELAY) {
-                    boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
+            DV requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+            if (MultiLevel.isEffectivelyNotNull(requiredNotNull.value())) {
+                DV methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                if (methodNotNull.isDone()) {
+                    boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull.value());
                     if (!isNotNull) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
@@ -823,42 +811,43 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
-            return variableProperty.best;
+            return variableProperty.bestDv;
         }
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
-        int formal = methodAnalysis.getProperty(variableProperty);
+        DV formal = methodAnalysis.getProperty(variableProperty);
         // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
         if (VariableProperty.IMMUTABLE == variableProperty) {
             return dynamicImmutable(formal, methodAnalysis, evaluationContext);
         }
         if (VariableProperty.INDEPENDENT == variableProperty) {
-            int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE, duringEvaluation);
-            if (immutable == Level.DELAY) return Level.DELAY;
+            DV immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE, duringEvaluation);
+            if (immutable.isDelayed()) return immutable;
             int immutableLevel = MultiLevel.level(immutable);
             if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
-                return MultiLevel.independentCorrespondingToImmutableLevel(immutableLevel);
+                return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             }
         }
         return formal;
     }
 
-    private int dynamicImmutable(int formal, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
-        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY) return Level.DELAY;
-        if (identity == Level.TRUE) {
+    private DV dynamicImmutable(DV formal, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
+        DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity.isDelayed()) return identity;
+        if (identity.valueIsTrue()) {
             return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE,
                     true, true);
         }
 
-        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
+        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal.value())) {
             // the independence of the result, and the immutable level of the hidden content, will determine the result
-            int methodIndependent = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-            if (methodIndependent == Level.DELAY) return Level.DELAY;
-            assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
+            DV methodIndependent = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            if (methodIndependent.isDelayed()) return methodIndependent;
+
+            assert MultiLevel.independentConsistentWithImmutable(methodIndependent.value(), formal.value()) :
                     "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
 
             // we know the method is formally @Independent1+ < @Independent;
@@ -870,39 +859,37 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
 
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                return factoryMethodDynamicallyImmutable(formal, methodInspection, hiddenContentTypes, evaluationContext);
+                return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, evaluationContext);
             }
 
             /*
             Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
             It can still upgrade to ERImmutable when the K and V become ER themselves
              */
-            int defaultImmutable = returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, formal);
-            return defaultImmutable;
+            return returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, formal);
         }
         return formal;
     }
 
-    private int factoryMethodDynamicallyImmutable(int formal,
-                                                  MethodInspection methodInspection,
-                                                  SetOfTypes hiddenContentTypes,
-                                                  EvaluationContext evaluationContext) {
-        int minParams = Integer.MAX_VALUE;
+    private DV factoryMethodDynamicallyImmutable(DV formal,
+                                                 SetOfTypes hiddenContentTypes,
+                                                 EvaluationContext evaluationContext) {
+        DV minParams = DV.MAX_INT_DV;
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Expression expression : parameterExpressions) {
             ParameterizedType concreteType = expression.returnType();
             EvaluationContext.HiddenContent concreteHiddenTypes = evaluationContext
                     .extractHiddenContentTypes(concreteType, hiddenContentTypes);
-            if (concreteHiddenTypes.delay()) {
-                minParams = Level.DELAY;
+            if (concreteHiddenTypes.causesOfDelay().isDelayed()) {
+                causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
             } else {
-                int hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .mapToInt(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
-                        .min().orElse(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-                minParams = Math.min(minParams, hiddenImmutable);
+                DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
+                        .map(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
+                        .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
+                minParams = minParams.min(hiddenImmutable);
             }
         }
-
-        if (minParams == Level.DELAY) return Level.DELAY;
+        if (causesOfDelay.isDelayed()) return causesOfDelay;
         return MultiLevel.sumImmutableLevels(formal, minParams);
     }
 
@@ -944,9 +931,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (identity.isDelayed()) {
             // temporarily link to both the object and the parameter, in a delayed way
-            if (parameterExpressions.isEmpty()) return LinkedVariables.DELAYED_EMPTY;
+            if (parameterExpressions.isEmpty()) return LinkedVariables.delayedEmpty(identity.causesOfDelay());
             return object.linkedVariables(evaluationContext)
-                    .merge(parameterExpressions.get(0).linkedVariables(evaluationContext)).changeAllToDelay();
+                    .merge(parameterExpressions.get(0).linkedVariables(evaluationContext)).changeAllToDelay(identity);
         }
 
         // RULE 3: in a factory method, the result links to the parameters, directly
@@ -959,12 +946,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
         LinkedVariables linkedVariablesOfScope = object.linkedVariables(evaluationContext);
 
-        int methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        if (methodIndependent == Level.DELAY) {
-            return linkedVariablesOfScope.changeToDelay();
+        DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        if (methodIndependent.isDelayed()) {
+            return linkedVariablesOfScope.changeToDelay(methodIndependent);
         }
-        if (methodIndependent == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
-        int level = MultiLevel.fromIndependentToLinkedVariableLevel(methodIndependent);
+        if (methodIndependent.value() == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
+        DV level = MultiLevel.fromIndependentToLinkedVariableLevel(methodIndependent);
         return LinkedVariables.EMPTY.merge(linkedVariablesOfScope, level);
     }
 

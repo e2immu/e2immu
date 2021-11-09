@@ -145,14 +145,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
-        if (variable instanceof FieldReference fr && fr.scope != null) {
-            return fr.scope.causesOfDelay(evaluationContext);
-        }
-        return CausesOfDelay.EMPTY; // should have taken DelayedVariableExpression otherwise
-    }
-
-    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         EvaluationResult scopeResult;
@@ -210,11 +202,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
         DV notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.CONTAINER);
         if (notModified1.valueIsTrue()) {
             builder.variableOccursInContainerContext(variable, adjustedScope);
-        }
-
-        DV methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-        if (methodCalled.valueIsTrue()) {
-            builder.markMethodCalled(variable);
         }
 
         DV contextModifiedDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY);
@@ -282,7 +269,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Map.of(variable, 0), false);
+        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV));
     }
 
     @Override
@@ -356,8 +343,8 @@ public record VariableExpression(Variable variable, String name) implements Expr
         List<ParameterAnalysis> parameterAnalyses = evaluationContext
                 .getParameterAnalyses(constructorCall.constructor()).collect(Collectors.toList());
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-            Map<FieldInfo, Integer> assigned = parameterAnalysis.getAssignedToField();
-            Integer assignedOrLinked = assigned.get(fieldInfo);
+            Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
+            DV assignedOrLinked = assigned.get(fieldInfo);
             if (LinkedVariables.isAssigned(assignedOrLinked)) {
                 return constructorCall.getParameterExpressions().get(i);
             }

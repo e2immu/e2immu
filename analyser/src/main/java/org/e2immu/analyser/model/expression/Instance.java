@@ -134,8 +134,9 @@ public record Instance(
         DV independent = defaultIndependent(parameterizedType, analysisProvider);
         DV container = defaultContainer(parameterizedType, analysisProvider);
         if (independent.isDelayed() || immutable.isDelayed() || container.isDelayed()) {
-            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.DELAYED_EMPTY,
-                    independent.causesOfDelay().merge(immutable.causesOfDelay().merge(container.causesOfDelay())));
+            CausesOfDelay causes = independent.causesOfDelay().merge(immutable.causesOfDelay()).merge(container.causesOfDelay());
+            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.delayedEmpty(causes),
+                    causes);
         }
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
@@ -212,8 +213,7 @@ public record Instance(
         DV notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull.isDelayed()) {
             return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
-                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()),
-                            LinkedVariables.DELAYED_VALUE));
+                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull));
         }
         DV notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,

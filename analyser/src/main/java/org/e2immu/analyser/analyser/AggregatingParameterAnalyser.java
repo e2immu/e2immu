@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.ParameterInfo;
 
 import java.util.stream.Stream;

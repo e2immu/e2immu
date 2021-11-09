@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.stream.Collectors;
@@ -110,8 +111,8 @@ public interface DV {
             this(causeOfDelay, Level.DELAY);
         }
 
-        public SingleDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-            this(new CauseOfDelay.SimpleCause(withInspectionAndAnalysis, cause), Level.DELAY);
+        public SingleDelay(Location location, CauseOfDelay.Cause cause) {
+            this(new CauseOfDelay.SimpleCause(location, cause), Level.DELAY);
         }
 
         @Override
