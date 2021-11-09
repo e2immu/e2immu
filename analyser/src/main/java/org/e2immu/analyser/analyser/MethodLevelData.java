@@ -14,10 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugCollector;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
-import org.e2immu.analyser.analyser.util.DelayDebugger;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -35,7 +31,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -47,7 +42,7 @@ import static org.e2immu.analyser.util.Logger.log;
  * Method level data is incrementally copied from one statement to the next.
  * The method analyser will only investigate the data from the last statement in the method!
  */
-public class MethodLevelData implements DelayDebugger {
+public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
     public static final String MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY = "mergeCausesOfContextModificationDelay";
@@ -86,7 +81,6 @@ public class MethodLevelData implements DelayDebugger {
     find a better, more definitive solution.
      */
     private final EventuallyFinal<Map<WithInspectionAndAnalysis, Integer>> causesOfContextModificationDelay = new EventuallyFinal<>();
-    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public void addCircularCall() {
         if (!callsPotentiallyCircularMethod.isSet()) {
@@ -271,29 +265,16 @@ public class MethodLevelData implements DelayDebugger {
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
         assert !linksHaveBeenEstablished.isSet();
 
-        Optional<VariableInfo> delayed = sharedState.statementAnalysis.variableStream()
+        CausesOfDelay delayed = sharedState.statementAnalysis.variableStream()
                 .filter(vi -> !(vi.variable() instanceof This))
                 // local variables that have been created, but not yet assigned/read; reject ConditionalInitialization
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
-                .filter(vi -> (vi.getLinkedVariables().isDelayed() &&
-                        vi.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) != Level.TRUE)
-                        || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
-                .findFirst();
-        if (delayed.isPresent()) {
-            VariableInfo vi = delayed.get();
-
-            assert vi.linkedVariablesIsSet() ||
-                    translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
-                            vi.variable().fullyQualifiedName() + "@" + sharedState.statementAnalysis.index + D_LINKED_VARIABLES_SET,
-                            sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
-            assert vi.getProperty(VariableProperty.CONTEXT_MODIFIED) != Level.DELAY ||
-                    translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
-                            vi.variable().fullyQualifiedName() + "@" + sharedState.statementAnalysis.index + D_CONTEXT_MODIFIED,
-                            sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
-
-            log(DELAYED, "Links have not yet been established for (findFirst) {}, statement {}",
-                    delayed.get().variable().fullyQualifiedName(), sharedState.statementAnalysis.index);
-            return DELAYS;
+                // FIXME break immutable removed temporarily
+                .map(vi -> vi.getLinkedVariables().causesOfDelay().merge(
+                        vi.getProperty(VariableProperty.CONTEXT_MODIFIED).causesOfDelay()))
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delayed.isDelayed()) {
+            return new AnalysisStatus.Delayed(delayed);
         }
         linksHaveBeenEstablished.set();
         return DONE;
@@ -309,25 +290,5 @@ public class MethodLevelData implements DelayDebugger {
             callsPotentiallyCircularMethod.set(false);
         }
         return DONE;
-    }
-
-    @Override
-    public boolean foundDelay(String where, String delayFqn) {
-        return delayDebugCollector.foundDelay(where, delayFqn);
-    }
-
-    @Override
-    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-        return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
-    }
-
-    @Override
-    public boolean createDelay(String where, String delayFqn) {
-        return delayDebugCollector.createDelay(where, delayFqn);
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        return delayDebugCollector.streamNodes();
     }
 }

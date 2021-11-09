@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -35,63 +34,76 @@ Convention for spotting delays:
 1. at assignment level: no delays, never
 2. at dependent, independent1 level: add the variable, with DELAYED_VALUE
  */
-public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelayed) {
+public class LinkedVariables {
 
-    public LinkedVariables(Map<Variable, Integer> variables) {
-        this(variables, variables.values().stream().anyMatch(v -> v == DELAYED_VALUE));
+    private final Map<Variable, DV> variables;
+    private final CausesOfDelay causesOfDelay;
+
+    public LinkedVariables(Map<Variable, DV> variables) {
+        this(variables, variables.values().stream()
+                .map(DV::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
     }
 
-    public LinkedVariables(Map<Variable, Integer> variables, boolean isDelayed) {
+    public LinkedVariables(Map<Variable, DV> variables, CausesOfDelay otherCausesOfDelay) {
         assert variables != null;
         this.variables = Map.copyOf(variables);
-        this.isDelayed = isDelayed;
-        assert variables.isEmpty() || variables.values().stream().anyMatch(v -> v == DELAYED_VALUE) == isDelayed;
+        CausesOfDelay causesOfDelay = variables.values().stream()
+                .map(DV::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        this.causesOfDelay = causesOfDelay.merge(otherCausesOfDelay);
     }
 
-    public static final int DELAYED_VALUE = -1;
+    public boolean isDelayed() {
+        return causesOfDelay.isDelayed();
+    }
+
     public static final int STATICALLY_ASSIGNED = 0;
     public static final int ASSIGNED = 1;
     public static final int DEPENDENT = 2;
     public static final int INDEPENDENT1 = 3;
     public static final int NO_LINKING = MultiLevel.MAX_LEVEL;
 
-    public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), false);
-    public static final LinkedVariables DELAYED_EMPTY = new LinkedVariables(Map.of(), true);
+    public static final DV STATICALLY_ASSIGNED_DV = new DV.NoDelay(0);
+    public static final DV ASSIGNED_DV = new DV.NoDelay(1);
+    public static final DV DEPENDENT_DV = new DV.NoDelay(2);
+    public static final DV INDEPENDENT1_DV = new DV.NoDelay(3);
+    public static final DV NO_LINKING_DV = new DV.NoDelay(MultiLevel.MAX_LEVEL);
 
-    // different object from DELAYED_EMPTY, used to ensure that EMPTY is set when there is no "normal" delay
-    public static final LinkedVariables NOT_INVOLVED_DELAYED_EMPTY = new LinkedVariables(Map.of(), true);
+    public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), CausesOfDelay.EMPTY);
 
     public static final String DELAY_STRING = "<delay>";
 
-    public static LinkedVariables sameValue(Stream<Variable> variables, int value) {
+    public static LinkedVariables sameValue(Stream<Variable> variables, DV value) {
         return new LinkedVariables(variables.collect(Collectors.toMap(v -> v, v -> value)));
     }
 
-    public static LinkedVariables of(Variable variable, int value) {
-        return new LinkedVariables(Map.of(variable, value), value == DELAYED_VALUE);
+    public static LinkedVariables of(Variable variable, DV value) {
+        return new LinkedVariables(Map.of(variable, value));
     }
 
-    public static LinkedVariables of(Variable var1, int v1, Variable var2, int v2) {
-        return new LinkedVariables(Map.of(var1, v1, var2, v2), v2 == DELAYED_VALUE || v1 == DELAYED_VALUE);
+    public static LinkedVariables of(Variable var1, DV v1, Variable var2, DV v2) {
+        return new LinkedVariables(Map.of(var1, v1, var2, v2));
     }
 
-    public static boolean isNotIndependent(int assignedOrLinked) {
-        return assignedOrLinked >= STATICALLY_ASSIGNED && assignedOrLinked < NO_LINKING;
+    public static boolean isNotIndependent(DV assignedOrLinked) {
+        return assignedOrLinked.value() >= STATICALLY_ASSIGNED && assignedOrLinked.value() < NO_LINKING;
     }
 
-    public static boolean isAssigned(int level) {
-        return level == STATICALLY_ASSIGNED || level == ASSIGNED;
+    public static boolean isAssigned(DV level) {
+        return level.value() == STATICALLY_ASSIGNED || level.value() == ASSIGNED;
     }
 
-    public LinkedVariables mergeDelay(LinkedVariables other) {
-        HashMap<Variable, Integer> map = new HashMap<>(variables);
+    public LinkedVariables mergeDelay(LinkedVariables other, DV whenMissing) {
+        assert whenMissing.isDelayed();
+        HashMap<Variable, DV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            Integer inMap = map.get(v);
+            DV inMap = map.get(v);
             if (inMap == null) {
-                map.put(v, DELAYED_VALUE);
+                map.put(v, whenMissing);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = inMap == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED : DELAYED_VALUE;
+                DV merged = inMap.value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV : whenMissing;
                 map.put(v, merged);
             }
         });
@@ -114,17 +126,17 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     (leaving the hidden content hidden?) to x  max(1,0)=1
     if INDEPENDENT_1, then x is hidden content linked to b is hidden content linked to c, max(1,1)=1
      */
-    public LinkedVariables merge(LinkedVariables other, int minimum) {
-        HashMap<Variable, Integer> map = new HashMap<>(variables);
+    public LinkedVariables merge(LinkedVariables other, DV minimum) {
+        HashMap<Variable, DV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            int newValue = Math.max(i, minimum);
-            Integer inMap = map.get(v);
+            DV newValue = i.max(minimum);
+            DV inMap = map.get(v);
             if (inMap == null) {
                 map.put(v, newValue);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                int merged = newValue == STATICALLY_ASSIGNED || inMap == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED
-                        : Math.min(newValue, inMap);
+                DV merged = newValue.value() == STATICALLY_ASSIGNED || inMap.value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV
+                        : newValue.min(inMap);
                 map.put(v, merged);
             }
         });
@@ -132,7 +144,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     }
 
     public LinkedVariables merge(LinkedVariables other) {
-        return merge(other, Integer.MIN_VALUE); // no effect
+        return merge(other, DV.MIN_INT_DV); // no effect
     }
 
     public boolean isEmpty() {
@@ -154,21 +166,21 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LinkedVariables that = (LinkedVariables) o;
-        return variables.equals(that.variables) && isDelayed == that.isDelayed;
+        return variables.equals(that.variables) && causesOfDelay.equals(that.causesOfDelay);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variables, isDelayed);
+        return Objects.hash(variables, causesOfDelay);
     }
 
     public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {
         if (isEmpty()) return this;
-        Map<Variable, Integer> remaining = variables.entrySet().stream()
+        Map<Variable, DV> remaining = variables.entrySet().stream()
                 .filter(e -> e.getKey() instanceof LocalVariableReference lvr &&
                         variable.equals(lvr.variable.nature().localCopyOf()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new LinkedVariables(remaining, isDelayed);
+        return new LinkedVariables(remaining);
     }
 
     public boolean contains(Variable variable) {
@@ -177,32 +189,30 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public LinkedVariables removeDelays() {
         return new LinkedVariables(variables.entrySet().stream()
-                .filter(e -> e.getValue() >= 0)
+                .filter(e -> e.getValue().value() >= 0)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
-    public LinkedVariables minimum(int minimum) {
+    public LinkedVariables minimum(DV minimum) {
         return new LinkedVariables(variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e ->
-                        e.getValue() == DELAYED_VALUE ? DELAYED_VALUE :
-                                Math.max(minimum, e.getValue()))));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> minimum.max(e.getValue()))));
     }
 
     public Stream<Variable> variablesAssignedOrDependent() {
         return variables.entrySet().stream()
-                .filter(e -> isAssignedOrLinked(e.getValue()))
+                .filter(e -> isAssignedOrLinked(e.getValue().value()))
                 .map(Map.Entry::getKey);
     }
 
     public Stream<Variable> variablesWithLevel(int level) {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue() == level)
+                .filter(e -> e.getValue().value() == level)
                 .map(Map.Entry::getKey);
     }
 
     public Stream<Variable> independent1Variables() {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue() > DEPENDENT)
+                .filter(e -> e.getValue().value() > DEPENDENT)
                 .map(Map.Entry::getKey);
     }
 
@@ -210,48 +220,50 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
         if (isEmpty()) return this;
         var translatedVariables = variables.entrySet().stream()
                 .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue));
-        return new LinkedVariables(translatedVariables, isDelayed);
+        return new LinkedVariables(translatedVariables);
     }
 
-    public LinkedVariables changeToDelay() {
-        Map<Variable, Integer> map = variables.entrySet().stream()
+    public LinkedVariables changeToDelay(DV delay) {
+        assert delay.isDelayed();
+        Map<Variable, DV> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED : DELAYED_VALUE));
+                        e -> e.getValue().value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV : delay.min(e.getValue())));
         return new LinkedVariables(map);
     }
 
     public LinkedVariables remove(Set<Variable> reassigned) {
-        Map<Variable, Integer> map = variables.entrySet().stream()
+        Map<Variable, DV> map = variables.entrySet().stream()
                 .filter(e -> !reassigned.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new LinkedVariables(map);
     }
 
     public LinkedVariables remove(Predicate<Variable> remove) {
-        Map<Variable, Integer> map = variables.entrySet().stream()
+        Map<Variable, DV> map = variables.entrySet().stream()
                 .filter(e -> !remove.test(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new LinkedVariables(map);
     }
 
-    public LinkedVariables changeAllToDelay() {
-        Map<Variable, Integer> map = variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> DELAYED_VALUE));
-        return new LinkedVariables(map, true);
+    public LinkedVariables changeAllToDelay(DV delay) {
+        assert delay.isDelayed();
+        Map<Variable, DV> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> delay.max(e.getValue())));
+        return new LinkedVariables(map);
     }
 
-    public Integer value(Variable variable) {
+    public DV value(Variable variable) {
         return variables.get(variable);
     }
 
     public static int bestValue(int v1, int v2) {
-        assert v1 > DELAYED_VALUE;
-        assert v2 > DELAYED_VALUE;
+        assert v1 >= 0;
+        assert v2 >= 0;
         return Math.min(v1, v2);
     }
 
     public static int worstValue(int v1, int v2) {
-        if (v1 == DELAYED_VALUE || v2 == DELAYED_VALUE) return DELAYED_VALUE;
+        if (v1 < 0 || v2 < 0) return -1;
         return Math.max(v1, v2);
     }
 
@@ -259,46 +271,46 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
     we prune a linked variables map, based on immutable values.
     if the source is @ERImmutable, then there cannot be linked; but the same holds for the targets!
      */
-    public LinkedVariables removeIncompatibleWithImmutable(int sourceImmutable,
+    public LinkedVariables removeIncompatibleWithImmutable(DV sourceImmutable,
                                                            Predicate<Variable> myself,
-                                                           Function<Variable, Integer> computeImmutable,
-                                                           Function<Variable, Boolean> immutableCanBeIncreasedByTypeParameters,
-                                                           Function<Variable, Integer> computeImmutableHiddenContent) {
-        if (sourceImmutable == Level.DELAY) {
-            return changeToDelay(); // but keep the 0
+                                                           Function<Variable, DV> computeImmutable,
+                                                           Function<Variable, DV> immutableCanBeIncreasedByTypeParameters,
+                                                           Function<Variable, DV> computeImmutableHiddenContent) {
+        if (sourceImmutable.isDelayed()) {
+            return changeToDelay(sourceImmutable); // but keep the 0
         }
 
-        Map<Variable, Integer> adjustedSource;
-        if (!variables.isEmpty() && sourceImmutable >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        Map<Variable, DV> adjustedSource;
+        if (!variables.isEmpty() && sourceImmutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             // level 2+ -> remove all @Dependent
-            boolean recursivelyImmutable = sourceImmutable == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+            boolean recursivelyImmutable = sourceImmutable.value() == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
             adjustedSource = variables.entrySet().stream()
-                    .filter(e -> recursivelyImmutable ? e.getValue() <= ASSIGNED :
-                            e.getValue() != DEPENDENT)
+                    .filter(e -> recursivelyImmutable ? e.getValue().value() <= ASSIGNED :
+                            e.getValue().value() != DEPENDENT)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } else {
             adjustedSource = variables;
         }
-        Map<Variable, Integer> result = new HashMap<>();
-        for (Map.Entry<Variable, Integer> entry : adjustedSource.entrySet()) {
-            int linkLevel = entry.getValue();
+        Map<Variable, DV> result = new HashMap<>();
+        for (Map.Entry<Variable, DV> entry : adjustedSource.entrySet()) {
+            DV linkLevel = entry.getValue();
             Variable target = entry.getKey();
-            if(myself.test(target)) {
+            if (myself.test(target)) {
                 result.put(target, linkLevel);
             } else {
-                int targetImmutable = computeImmutable.apply(target);
-                if (targetImmutable == Level.DELAY) {
-                    result.put(target, DELAYED_VALUE);
-                } else if (targetImmutable < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-                    if (linkLevel <= DEPENDENT) {
+                DV targetImmutable = computeImmutable.apply(target);
+                if (targetImmutable.isDelayed()) {
+                    result.put(target, targetImmutable);
+                } else if (targetImmutable.value() < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                    if (linkLevel.value() <= DEPENDENT) {
                         result.put(target, linkLevel);
                     } else { // INDEPENDENT1+
-                        Boolean canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
-                        if (canIncrease == null) {
-                            result.put(target, DELAYED_VALUE);
-                        } else if (canIncrease) {
-                            int immutableHidden = computeImmutableHiddenContent.apply(target);
-                            if (immutableHidden < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                        DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
+                        if (canIncrease.isDelayed()) {
+                            result.put(target, canIncrease);
+                        } else if (canIncrease.valueIsTrue()) {
+                            DV immutableHidden = computeImmutableHiddenContent.apply(target);
+                            if (immutableHidden.value() < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
                                 result.put(target, linkLevel);
                             }
                         } else {
@@ -307,7 +319,7 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
                     }
                 } else {
                     // targetImmutable is @ERImmutable
-                    if (linkLevel <= ASSIGNED) {
+                    if (linkLevel.value() <= ASSIGNED) {
                         result.put(target, linkLevel);
                     }
                 }
@@ -318,5 +330,9 @@ public record LinkedVariables(Map<Variable, Integer> variables, boolean isDelaye
 
     public static boolean isAssignedOrLinked(int dependent) {
         return dependent >= STATICALLY_ASSIGNED && dependent <= DEPENDENT;
+    }
+
+    public CausesOfDelay causesOfDelay() {
+        return causesOfDelay;
     }
 }

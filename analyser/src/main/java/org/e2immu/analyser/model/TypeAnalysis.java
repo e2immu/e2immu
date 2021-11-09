@@ -42,9 +42,9 @@ public interface TypeAnalysis extends Analysis {
         return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
     }
 
-    boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldInfo);
+    CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldInfo);
 
-    boolean approvedPreconditionsIsFrozen(boolean e2);
+    CausesOfDelay approvedPreconditionsStatus(boolean e2);
 
     Set<FieldInfo> getEventuallyImmutableFields();
 
@@ -97,7 +97,7 @@ public interface TypeAnalysis extends Analysis {
                 }).collect(Collectors.toUnmodifiableSet()));
     }
 
-    default int getTypeProperty(VariableProperty variableProperty) {
+    default DV getTypeProperty(VariableProperty variableProperty) {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
 
         switch (variableProperty) {
@@ -119,12 +119,12 @@ public interface TypeAnalysis extends Analysis {
         return getAspects().containsKey(aspect);
     }
 
-    default int maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default DV maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream().filter(TypeInfo::isInterface);
         return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty))
-                .max().orElse(Level.DELAY);
+                .map(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty))
+                .reduce(Level.NOT_INVOLVED_DV, DV::max);
     }
 
     /*
@@ -142,12 +142,12 @@ public interface TypeAnalysis extends Analysis {
 
     Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
 
-    boolean haveTransparentTypes();
-
     default Boolean isPartOfHiddenContent(ParameterizedType type) {
-        if (haveTransparentTypes()) {
+        if (hiddenContentTypeStatus().isDone()) {
             return getTransparentTypes().contains(type);
         }
         return null;
     }
+
+    CausesOfDelay hiddenContentTypeStatus();
 }

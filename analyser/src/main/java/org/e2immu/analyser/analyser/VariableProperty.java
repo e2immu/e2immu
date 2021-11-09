@@ -17,8 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 
-import java.util.Set;
-
 public enum VariableProperty {
 
     /*
@@ -165,6 +163,7 @@ public enum VariableProperty {
     public final int best;
     public final int falseValue;
     private final int valueWhenAbsent;
+    private final DV valueWhenAbsentDv;
     public final DV bestDv;
     public final DV falseDv;
 
@@ -180,6 +179,7 @@ public enum VariableProperty {
         this.best = best;
         this.falseValue = falseValue;
         this.valueWhenAbsent = valueWhenAbsent;
+        valueWhenAbsentDv = new DV.NoDelay(valueWhenAbsent);
         bestDv = new DV.NoDelay(best);
         falseDv = new DV.NoDelay(falseValue);
     }
@@ -189,8 +189,8 @@ public enum VariableProperty {
         return name;
     }
 
-    public int valueWhenAbsent() {
-        return valueWhenAbsent;
+    public DV valueWhenAbsent() {
+        return valueWhenAbsentDv;
     }
 
 }

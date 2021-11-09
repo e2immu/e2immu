@@ -18,13 +18,11 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -35,28 +33,31 @@ public record DetectEventual(MethodInfo methodInfo,
                              AnalyserContext analyserContext) {
 
     public MethodAnalysis.Eventual detect(EvaluationContext evaluationContext) {
-        if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
+        CausesOfDelay delaysE1 = typeAnalysis.approvedPreconditionsStatus(false);
+        if (delaysE1.isDelayed()) {
             log(DELAYED, "No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
-            return MethodAnalysis.DELAYED_EVENTUAL;
+            return MethodAnalysis.delayedEventual(delaysE1);
         }
-        if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
+        CausesOfDelay delaysE2 = typeAnalysis.approvedPreconditionsStatus(false);
+        if (delaysE2.isDelayed()) {
             log(DELAYED, "No decision on approved E2 preconditions yet for {}", methodInfo.distinguishingName());
-            return MethodAnalysis.DELAYED_EVENTUAL;
+            return MethodAnalysis.delayedEventual(delaysE2);
         }
 
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        if (modified == Level.DELAY) {
+        DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        if (modified.isDelayed()) {
             log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
-            return MethodAnalysis.DELAYED_EVENTUAL;
+            return MethodAnalysis.delayedEventual(modified.causesOfDelay());
         }
-        if (!methodAnalysis.preconditionForEventual.isSet()) {
+        CausesOfDelay delaysPc = methodAnalysis.preconditionForEventualStatus();
+        if (delaysPc.isDelayed()) {
             log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
-            return MethodAnalysis.DELAYED_EVENTUAL;
+            return MethodAnalysis.delayedEventual(delaysPc);
         }
         Optional<Precondition> precondition = methodAnalysis.preconditionForEventual.get();
         boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
-        if (modified == Level.FALSE && Primitives.isBoolean(methodInfo.returnType())) {
+        if (modified.valueIsFalse() && Primitives.isBoolean(methodInfo.returnType())) {
 
             /*
             @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark
@@ -64,15 +65,15 @@ public record DetectEventual(MethodInfo methodInfo,
             */
 
             if (precondition.isEmpty()) {
-                if (methodAnalysis.getSingleReturnValue() == null) {
-                    log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
-                    return MethodAnalysis.DELAYED_EVENTUAL;
-                }
                 Expression srv = methodAnalysis.getSingleReturnValue();
+                if (srv.isDelayed()) {
+                    log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
+                    return MethodAnalysis.delayedEventual(srv.causesOfDelay());
+                }
                 if (srv instanceof InlinedMethod inlinedMethod) {
                     MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
-                    if (eventual == MethodAnalysis.DELAYED_EVENTUAL) {
-                        return MethodAnalysis.DELAYED_EVENTUAL;
+                    if (eventual.causesOfDelay().isDelayed()) {
+                        return MethodAnalysis.delayedEventual(eventual.causesOfDelay());
                     }
                     if (eventual != MethodAnalysis.NOT_EVENTUAL) {
                         return eventual;
@@ -119,12 +120,12 @@ public record DetectEventual(MethodInfo methodInfo,
         the cause of the precondition will help in case of non-assignment-based @Mark detection
          */
         MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(methodInfo);
-        Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition.get(), methodAnalyser);
-        if (isMark == null) {
-            return MethodAnalysis.DELAYED_EVENTUAL;
+        DV isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition.get(), methodAnalyser);
+        if (isMark.isDelayed()) {
+            return MethodAnalysis.delayedEventual(isMark.causesOfDelay());
         }
 
-        if (isMark) {
+        if (isMark.valueIsTrue()) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
         Boolean isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,

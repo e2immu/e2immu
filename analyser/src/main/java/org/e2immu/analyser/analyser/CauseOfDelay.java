@@ -34,7 +34,9 @@ public interface CauseOfDelay {
         ASSIGNED_TO_FIELD("The component 'analyseFieldAssignments' has not yet finished"),
         IMMUTABLE("Type's IMMUTABLE status has not yet been determined"),
         TYPE_ANALYSIS("Type analysis missing"),
-        HIDDEN_CONTENT("Hidden content of type has not yet been determined");
+        HIDDEN_CONTENT("Hidden content of type has not yet been determined"),
+        INITIAL_VALUE("Not yet initialized"),
+        APPROVED_PRECONDITIONS("Approved preconditions for field");
 
         public final String msg;
 

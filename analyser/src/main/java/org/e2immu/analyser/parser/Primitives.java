@@ -336,13 +336,13 @@ public class Primitives {
                     .noParent(this)
                     .build());
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
-            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE_DV);
+            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
+            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
             ti.typeAnalysis.set(builder.build());
@@ -358,13 +358,13 @@ public class Primitives {
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
-            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
-            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE_DV);
+            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+            builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
             builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
             builder.immutableCanBeIncreasedByTypeParameters.set(false);
         }

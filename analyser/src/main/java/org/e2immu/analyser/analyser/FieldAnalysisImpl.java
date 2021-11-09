@@ -184,7 +184,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public int getProperty(VariableProperty variableProperty) {
+        public DV getProperty(VariableProperty variableProperty) {
             return getFieldProperty(analysisProvider, fieldInfo, bestType, variableProperty);
         }
 

@@ -226,14 +226,15 @@ public interface Expression extends Element, Comparable<Expression> {
                 linkedVariables(evaluationContext).changeAllToDelay());
     }
 
-    default CausesOfDelay causesOfDelay(EvaluationContext evaluationContext) {
+    default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
     }
-    default boolean isDelayed(EvaluationContext evaluationContext) {
-        return causesOfDelay(evaluationContext).isDone();
+
+    default boolean isDelayed() {
+        return causesOfDelay().isDelayed();
     }
 
-    default boolean isDone(EvaluationContext evaluationContext) {
-        return causesOfDelay(evaluationContext).isDone();
+    default boolean isDone() {
+        return causesOfDelay().isDone();
     }
 }

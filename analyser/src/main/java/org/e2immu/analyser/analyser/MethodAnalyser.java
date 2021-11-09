@@ -214,4 +214,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         Stream<DelayDebugNode> parameterStream = parameterAnalysers.stream().flatMap(ParameterAnalyser::streamNodes);
         return Stream.concat(super.streamNodes(), parameterStream);
     }
+
+    public CausesOfDelay fromFieldToParametersStatus() {
+    }
 }

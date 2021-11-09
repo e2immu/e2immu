@@ -32,7 +32,7 @@ public class AnalyserComponents<T, S> {
     private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
-        Arrays.fill(state, DELAYS);
+        Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
     }
 
     public AnalysisStatus getStatus(String t) {
@@ -61,15 +61,16 @@ public class AnalyserComponents<T, S> {
     // done  -> done
 
     // all done -> mark done for this and all subsequent steps, don't execute them
-
+    // run-again -> will be run again, but does not delay
     public AnalysisStatus run(S s) {
         int i = 0;
-        boolean allDone = true;
-        boolean changes = false;
+        AnalysisStatus combined = DONE;
         for (AnalysisStatus.AnalysisResultSupplier<S> supplier : suppliers.values()) {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
+                // execute
                 AnalysisStatus afterExec = supplier.apply(s);
+                assert afterExec != NOT_YET_EXECUTED;
                 if (afterExec == DONE_ALL) {
                     while (i < state.length) {
                         state[i++] = DONE;
@@ -78,14 +79,13 @@ public class AnalyserComponents<T, S> {
                 }
                 state[i] = afterExec;
                 if (afterExec != RUN_AGAIN) {
-                    if (afterExec == PROGRESS) changes = true;
-                    if (afterExec != DONE) allDone = false;
-                    if (afterExec != initialState) changes = true;
+                    assert afterExec.isDelayed() || afterExec == DONE;
+                    combined = combined.combine(afterExec);
                 }
             }
             i++;
         }
-        return allDone ? DONE : changes ? PROGRESS : DELAYS;
+        return combined;
     }
 
     public String details() {

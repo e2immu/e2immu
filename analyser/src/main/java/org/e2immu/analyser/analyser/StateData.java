@@ -132,4 +132,7 @@ public class StateData implements DelayDebugger {
     public Stream<DelayDebugNode> streamNodes() {
         return delayDebugCollector.streamNodes();
     }
+
+    public CausesOfDelay conditionManagerForNextStatementStatus() {
+    }
 }

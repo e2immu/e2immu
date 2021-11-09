@@ -112,7 +112,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         assertEquals("Type param S,Type param T", d.typeAnalysis().getTransparentTypes().types()
                 .stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
-        assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsIsFrozen(false));
+        assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsStatus(false));
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {

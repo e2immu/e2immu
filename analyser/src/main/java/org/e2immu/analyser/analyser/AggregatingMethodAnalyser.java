@@ -22,10 +22,9 @@ import org.e2immu.support.SetOnce;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.IntBinaryOperator;
+import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -58,12 +57,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, VariableInfoImpl.MAX))
-                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, VariableInfoImpl.MIN))
-                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, VariableInfoImpl.MIN))
-                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, VariableInfoImpl.MIN))
-                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, VariableInfoImpl.MIN))
-                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, VariableInfoImpl.MIN))
+                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, DV::max))
+                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, DV::min))
+                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, DV::min))
+                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, DV::max))
+                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, DV::min))
+                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, DV::min))
                 .add(METHOD_VALUE, iteration -> this.aggregateMethodValue());
 
         analyserComponents = builder.build();
@@ -103,15 +102,18 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         return analysisStatus;
     }
 
-    private AnalysisStatus aggregateMethodValue() {
+    private AnalysisStatus aggregateMethodValue(EvaluationContext evaluationContext) {
         if (!methodAnalysis.singleReturnValue.isSet()) {
-            if (implementingAnalyses.get().stream().anyMatch(a -> a.getSingleReturnValue() == null)) {
-                return DELAYS;
+            CausesOfDelay delays = implementingAnalyses.get().stream()
+                    .map(a -> a.getSingleReturnValue().causesOfDelay(evaluationContext))
+                    .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+            if (delays.isDelayed()) {
+                return new AnalysisStatus.Delayed(delays);
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
             // unless it is a constant, a parameter of the method, or statically assigned to a constructor (?) we can't do much
             Expression value;
-            if(singleValue.isConstant()) {
+            if (singleValue.isConstant()) {
                 value = singleValue;
             } else {
                 // TODO implement other cases, such as parameter values
@@ -123,7 +125,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus aggregate(VariableProperty variableProperty, IntBinaryOperator operator) {
+    private AnalysisStatus aggregate(VariableProperty variableProperty, BinaryOperator<DV> operator) {
         int current = methodAnalysis.getProperty(variableProperty);
         if (current == Level.DELAY) {
             int identity = operator == VariableInfoImpl.MIN ? variableProperty.best : variableProperty.falseValue;

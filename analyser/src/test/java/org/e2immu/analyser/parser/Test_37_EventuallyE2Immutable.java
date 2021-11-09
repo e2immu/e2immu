@@ -68,7 +68,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("EventuallyE2Immutable_0".equals(d.typeInfo().simpleName)) {
                 String expect = d.iteration() == 0 ? "{}" : "{t=null==t}";
                 assertEquals(expect, d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsIsFrozen(true));
+                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsStatus(true));
 
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
@@ -151,7 +151,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // String expect = "{}" : "{t=null==t}";
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsIsFrozen(true));
+                assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsStatus(true));
 
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));

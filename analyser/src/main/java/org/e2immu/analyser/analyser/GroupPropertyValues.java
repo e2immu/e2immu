@@ -32,7 +32,7 @@ public class GroupPropertyValues {
     public static final Set<VariableProperty> DELAY_PROPERTIES = Set.of(CONTEXT_MODIFIED_DELAY,
             CONTEXT_IMMUTABLE_DELAY, CONTEXT_NOT_NULL_DELAY);
 
-    private final Map<VariableProperty, Map<Variable, Integer>> map = new HashMap<>();
+    private final Map<VariableProperty, Map<Variable, DV>> map = new HashMap<>();
 
     public GroupPropertyValues() {
         for (VariableProperty variableProperty : PROPERTIES) {
@@ -40,20 +40,20 @@ public class GroupPropertyValues {
         }
     }
 
-    public Map<Variable, Integer> getMap(VariableProperty variableProperty) {
+    public Map<Variable, DV> getMap(VariableProperty variableProperty) {
         return Objects.requireNonNull(map.get(variableProperty));
     }
 
-    public void set(VariableProperty variableProperty, Variable variable, int value) {
+    public void set(VariableProperty variableProperty, Variable variable, DV value) {
         getMap(variableProperty).put(variable, value);
     }
 
-    public int get(VariableProperty variableProperty, Variable variable, int defaultValue) {
+    public DV get(VariableProperty variableProperty, Variable variable, DV defaultValue) {
         return getMap(variableProperty).getOrDefault(variable, defaultValue);
     }
 
-    public void setIfKeyAbsent(VariableProperty variableProperty, Variable variable, int value) {
-        Map<Variable, Integer> vpMap = getMap(variableProperty);
+    public void setIfKeyAbsent(VariableProperty variableProperty, Variable variable, DV value) {
+        Map<Variable, DV> vpMap = getMap(variableProperty);
         if (!vpMap.containsKey(variable)) {
             vpMap.put(variable, value);
         }

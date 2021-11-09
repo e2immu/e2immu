@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+
 import java.util.function.Function;
 
 public interface AnalysisStatus {
@@ -51,12 +53,23 @@ public interface AnalysisStatus {
     }
 
     record Delayed(CausesOfDelay causesOfDelay, boolean progress) implements AnalysisStatus {
+
+        public Delayed(DV dv) {
+            this(dv.causesOfDelay());
+            assert dv.isDelayed();
+        }
+
+        public Delayed(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
+            this(new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(withInspectionAndAnalysis, cause)));
+        }
+
         public Delayed(CauseOfDelay cause) {
             this(new CausesOfDelay.SimpleSet(cause), false);
         }
 
         public Delayed(CausesOfDelay causes) {
             this(causes, false);
+            assert causes.isDelayed();
         }
 
         @Override
@@ -85,10 +98,12 @@ public interface AnalysisStatus {
         }
     }
 
+
+    // delayed = 1; progress = 0
     AnalysisStatus DONE = new NotDelayed(2); // done this one
     AnalysisStatus RUN_AGAIN = new NotDelayed(3); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
     AnalysisStatus DONE_ALL = new NotDelayed(3); // done this one, don't do any of the others
-    AnalysisStatus SKIPPED = new NotDelayed(4); // used for unreachable code, but never in the AnalyserComponents
+    AnalysisStatus NOT_YET_EXECUTED = new NotDelayed(4); // initial value, always removed upon combining
 
     default AnalysisStatus combine(AnalysisStatus other) {
         if (other == null) return this;

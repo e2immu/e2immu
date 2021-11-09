@@ -101,7 +101,7 @@ public interface MethodAnalysis extends Analysis {
         return last.methodLevelData;
     }
 
-    default int getMethodProperty(VariableProperty variableProperty) {
+    default DV getMethodProperty(VariableProperty variableProperty) {
         return switch (variableProperty) {
             case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
                     FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(variableProperty);
@@ -109,20 +109,31 @@ public interface MethodAnalysis extends Analysis {
         };
     }
 
-    default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default DV valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
         return overrides.stream()
-                .mapToInt(ma -> ma.getPropertyFromMapDelayWhenAbsent(variableProperty)).max().orElse(Level.DELAY);
+                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(variableProperty))
+                .reduce(Level.NOT_INVOLVED_DV, DV::max);
     }
 
     default boolean eventualIsSet() {
         return true;
     }
 
-    Eventual NOT_EVENTUAL = new Eventual(Set.of(), false, null, null);
-    Eventual DELAYED_EVENTUAL = new Eventual(Set.of(), false, null, null);
+    Eventual NOT_EVENTUAL = new Eventual(CausesOfDelay.EMPTY, Set.of(), false, null, null);
 
-    record Eventual(Set<FieldInfo> fields,
+    CausesOfDelay preconditionForEventualStatus();
+
+    CausesOfDelay eventualStatus();
+
+    CausesOfDelay preconditionStatus();
+
+    static Eventual delayedEventual(CausesOfDelay causes) {
+        return new Eventual(causes, Set.of(), false, null, null);
+    }
+
+    record Eventual(CausesOfDelay causesOfDelay,
+                    Set<FieldInfo> fields,
                     boolean mark,
                     Boolean after, // null for a @Mark without @Only
                     Boolean test) { // true for isSet (before==false), false for !isSet (before==true), null for absent
@@ -131,13 +142,17 @@ public interface MethodAnalysis extends Analysis {
             assert !fields.isEmpty() || !mark && after == null && test == null;
         }
 
+        public Eventual(Set<FieldInfo> fields, boolean mark, Boolean after, Boolean test) {
+            this(CausesOfDelay.EMPTY, fields, mark, after, test);
+        }
+
         @Override
         public String toString() {
             if (mark) return "@Mark: " + fields;
             if (test != null) return "@TestMark: " + fields;
             if (after == null) {
                 if (this == NOT_EVENTUAL) return "NOT_EVENTUAL";
-                if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
+           //     if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
                 throw new UnsupportedOperationException();
             }
             return "@Only " + (after ? "after" : "before") + ": " + fields;

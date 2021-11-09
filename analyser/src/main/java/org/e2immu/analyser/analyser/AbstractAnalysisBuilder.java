@@ -26,7 +26,9 @@ import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,25 +50,21 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        Integer v = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (v == Level.DELAY) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
-        return new DV.NoDelay(v);
+        DV v = properties.getOrDefault(variableProperty, null);
+        if (v == null) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
+        return v;
     }
 
     public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return new DV.NoDelay(properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent()));
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
     }
 
-    public void setProperty(VariableProperty variableProperty, DV dv) {
-        setProperty(variableProperty, dv.value());
-    }
-
-    public void setProperty(VariableProperty variableProperty, int i) {
+    public void setProperty(VariableProperty variableProperty, DV i) {
         if (!properties.isSet(variableProperty)) {
-            if (i != Level.DELAY) properties.put(variableProperty, i);
+            if (i.isDone()) properties.put(variableProperty, i);
         } else {
-            int current = properties.get(variableProperty);
-            if (i != current) {
+            DV current = properties.get(variableProperty);
+            if (i.value() != current.value()) {
                 throw new UnsupportedOperationException("Trying to overwrite property " + variableProperty + " with value " + i + ", current value " + current);
             }
         }
@@ -107,7 +105,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, boolean betterThanFormal) {
         DV container = getProperty(VariableProperty.CONTAINER);
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
@@ -118,7 +116,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
-        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container.value(),
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable.value(), container.value(),
                 isType, isInterface, eventualFieldNames, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             List<Expression> list;
@@ -174,7 +172,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int levelImmutable = -1;
-        int notNull = -1;
+        DV notNull = null;
         boolean container = false;
         int levelIndependent = -1;
         Messages messages = new Messages();
@@ -195,8 +193,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     // exception: @Container on a parameter is always restrictive/contracted
                     || analyserIdentification == Analyser.AnalyserIdentification.PARAMETER &&
                     e2ImmuAnnotationExpressions.container.typeInfo() == annotationExpression.typeInfo())) {
-                int trueFalse = parameters.absent() ? Level.FALSE : Level.TRUE;
-                int falseTrue = !parameters.absent() ? Level.FALSE : Level.TRUE;
+                DV trueFalse = parameters.absent() ? Level.FALSE_DV : Level.TRUE_DV;
+                DV falseTrue = !parameters.absent() ? Level.FALSE_DV : Level.TRUE_DV;
 
                 TypeInfo t = annotationExpression.typeInfo();
                 if (e2ImmuAnnotationExpressions.e1Immutable.typeInfo() == t) {
@@ -223,11 +221,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.nullable.typeInfo() == t) {
-                    notNull = MultiLevel.NULLABLE;
+                    notNull = MultiLevel.NULLABLE_DV;
                 } else if (e2ImmuAnnotationExpressions.notNull.typeInfo() == t) {
-                    notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
+                    notNull = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                 } else if (e2ImmuAnnotationExpressions.notNull1.typeInfo() == t) {
-                    notNull = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                    notNull = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 } else if (e2ImmuAnnotationExpressions.notModified.typeInfo() == t) {
                     setProperty(modified, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.modified.typeInfo() == t) {
@@ -251,7 +249,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                     levelIndependent = MultiLevel.LEVEL_R_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_DV);
                 } else if (e2ImmuAnnotationExpressions.independent1.typeInfo() == t) {
                     levelIndependent = MultiLevel.LEVEL_1_DEPENDENT;
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
@@ -277,20 +275,20 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (levelIndependent >= 0) {
-            int value = MultiLevel.compose(MultiLevel.EFFECTIVE, levelIndependent);
+            DV value = new DV.NoDelay(MultiLevel.compose(MultiLevel.EFFECTIVE, levelIndependent));
             setProperty(VariableProperty.INDEPENDENT, value);
         }
         if (container) {
-            setProperty(VariableProperty.CONTAINER, Level.TRUE);
+            setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
             if (levelImmutable == -1) {
-                setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+                setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
             }
         }
         if (levelImmutable >= 0) {
-            int value = MultiLevel.compose(MultiLevel.EFFECTIVE, levelImmutable);
+            DV value = new DV.NoDelay(MultiLevel.compose(MultiLevel.EFFECTIVE, levelImmutable));
             setProperty(VariableProperty.IMMUTABLE, value);
         }
-        if (notNull >= 0) {
+        if (notNull != null) {
             setProperty(analyserIdentification.notNull, notNull);
         }
         if (mark != null && only == null) {

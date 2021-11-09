@@ -15,10 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -46,9 +43,9 @@ public class AssignmentIncompatibleWithPrecondition {
      * <li>precondition is cause by method call to other internal @Mark/@Only method
      * </ul>
      */
-    public static Boolean isMark(AnalyserContext analyserContext,
-                                 Precondition precondition,
-                                 MethodAnalyser methodAnalyser) {
+    public static DV isMark(AnalyserContext analyserContext,
+                            Precondition precondition,
+                            MethodAnalyser methodAnalyser) {
         Set<Variable> variables = new HashSet<>(precondition.expression().variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -71,7 +68,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         if (value instanceof ConstantExpression) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                     variableInfo.getValue(), pcExpression);
-                            if (incompatible != null) return incompatible;
+                            if (incompatible != null) return Level.fromBoolDv(incompatible);
                         } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
                             Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get()
@@ -80,13 +77,13 @@ public class AssignmentIncompatibleWithPrecondition {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                 Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                                return !isCompatible(evaluationContext, stateInTermsOfField, pcExpression);
+                                return Level.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
                             }
                         }
                     } else if (Primitives.isBoolean(fieldInfo.type)) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                 variableInfo.getValue(), pcExpression);
-                        if (incompatible != null) return incompatible;
+                        if (incompatible != null) return Level.fromBoolDv(incompatible);
                     } else {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
@@ -94,12 +91,13 @@ public class AssignmentIncompatibleWithPrecondition {
                         Expression combined = And.and(evaluationContext, state, notNull);
 
                         if (isCompatible(evaluationContext, combined, pcExpression)) {
-                            if (statementAnalysis.stateData.conditionManagerForNextStatement.isVariable()) {
-                                return null; // DELAYS
+                            CausesOfDelay delays = statementAnalysis.stateData.conditionManagerForNextStatementStatus();
+                            if (delays.isDelayed()) {
+                                return delays; // IMPROVE we're not gathering them, rather returning the first one here
                             }
-                            return false;
+                            return Level.FALSE_DV;
                         }
-                        return true;
+                        return Level.TRUE_DV;
                     }
                 }
             }
@@ -107,13 +105,14 @@ public class AssignmentIncompatibleWithPrecondition {
 
         // METHOD
         MethodAnalysis.Eventual consistent = null;
-
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Precondition.PreconditionCause preconditionCause : precondition.causes()) {
             // example in FlipSwitch, where copy() calls set(), which should have been handled before
             if (preconditionCause instanceof Precondition.MethodCallCause methodCallCause) {
                 MethodInfo calledMethod = methodCallCause.methodInfo();
                 MethodAnalysis calledMethodAnalysis = analyserContext.getMethodAnalysis(calledMethod);
-                if (calledMethodAnalysis.eventualIsSet()) {
+                CausesOfDelay delays = calledMethodAnalysis.eventualStatus();
+                if (delays.isDone()) {
                     MethodAnalysis.Eventual eventual = calledMethodAnalysis.getEventual();
                     if (eventual != MethodAnalysis.NOT_EVENTUAL) {
                         if (consistent == null) consistent = eventual;
@@ -123,18 +122,21 @@ public class AssignmentIncompatibleWithPrecondition {
                         }
                     }
                 } else {
-                    return null; // DELAYS
+                    causesOfDelay = causesOfDelay.merge(delays);
                 }
             }
         }
+        if (causesOfDelay.isDelayed()) return causesOfDelay;
         if (consistent != null) {
-            return consistent.mark();
+            return Level.fromBoolDv(consistent.mark());
         }
-        return false;
+        return Level.FALSE_DV;
     }
 
 
-    private static Boolean remapReturnIncompatible(EvaluationContext evaluationContext, Variable variable, Expression value,
+    private static Boolean remapReturnIncompatible(EvaluationContext evaluationContext,
+                                                   Variable variable,
+                                                   Expression value,
                                                    Expression precondition) {
         Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
         Expression reEvaluated = precondition.reEvaluate(evaluationContext, map).getExpression();

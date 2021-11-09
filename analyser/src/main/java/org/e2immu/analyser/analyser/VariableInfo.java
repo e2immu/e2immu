@@ -64,9 +64,7 @@ public interface VariableInfo {
 
     boolean valueIsSet();
 
-    int getProperty(VariableProperty variableProperty);
-
-    int getProperty(VariableProperty variableProperty, int defaultValue);
+    DV getProperty(VariableProperty variableProperty, DV delayValue);
 
     /**
      * @return immutable copy of the properties map, for debugging mostly
@@ -80,7 +78,7 @@ public interface VariableInfo {
 
     boolean hasProperty(VariableProperty variableProperty);
 
-    Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
+    Stream<Map.Entry<VariableProperty, DV>> propertyStream();
 
     /*
     if statement time < 0, this means that statement time is irrelevant for this variable.

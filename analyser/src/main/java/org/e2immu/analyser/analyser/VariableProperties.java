@@ -16,22 +16,18 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.support.SetOnceMap;
 
-public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
-
-    public void put(VariableProperty variableProperty, DV dv) {
-        put(variableProperty, dv.value());
-    }
+public class VariableProperties extends SetOnceMap<VariableProperty, DV> {
 
     @Override
-    public void put(VariableProperty variableProperty, Integer integer) {
-        if (integer == null || integer < 0) {
+    public void put(VariableProperty variableProperty, DV dv) {
+        if (dv == null || dv.isDelayed()) {
             throw new IllegalArgumentException("Setting delay for " + variableProperty);
         }
-        Integer inMap = super.getOrDefaultNull(variableProperty);
+        DV inMap = super.getOrDefaultNull(variableProperty);
         if (inMap == null) {
-            super.put(variableProperty, integer);
-        } else if (!inMap.equals(integer)) {
-            throw new IllegalArgumentException("Changing value of " + variableProperty + " from " + inMap + " to " + integer);
+            super.put(variableProperty, dv);
+        } else if (!inMap.equals(dv)) {
+            throw new IllegalArgumentException("Changing value of " + variableProperty + " from " + inMap + " to " + dv);
         }
     }
 

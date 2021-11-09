@@ -25,6 +25,10 @@ Delayable Value
  */
 public interface DV {
 
+    DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE);
+
+    DV MIN_INT_DV = new NoDelay(Integer.MIN_VALUE);
+
     int value();
 
     CausesOfDelay causesOfDelay();
@@ -36,6 +40,8 @@ public interface DV {
     DV min(DV other);
 
     DV max(DV other);
+
+    DV maxIgnoreDelay(DV other);
 
     DV replaceDelayBy(DV nonDelay);
 
@@ -71,6 +77,12 @@ public interface DV {
         }
 
         @Override
+        public DV maxIgnoreDelay(DV other) {
+            if (other.value() >= value) return other;
+            return this;
+        }
+
+        @Override
         public DV replaceDelayBy(DV nonDelay) {
             assert nonDelay.isDone();
             return this;
@@ -84,6 +96,11 @@ public interface DV {
         @Override
         public boolean isDelayed() {
             return false;
+        }
+
+        @Override
+        public String toString() {
+            return Integer.toString(value);
         }
     }
 
@@ -102,10 +119,16 @@ public interface DV {
             return new CausesOfDelay.SimpleSet(causeOfDelay);
         }
 
+        private DV merge(DV other) {
+            if (other instanceof SingleDelay sd && sd.causeOfDelay.equals(causeOfDelay)) return this;
+            return new CausesOfDelay.SimpleSet(Stream.concat(Stream.of(causeOfDelay),
+                    other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
+        }
+
         @Override
         public DV min(DV other) {
             if (other.isDelayed()) {
-                return null;
+                return merge(other);
             }
             return this; // other is not a delay
         }
@@ -113,11 +136,17 @@ public interface DV {
         @Override
         public DV max(DV other) {
             if (other.isDelayed()) {
-                if (other instanceof SingleDelay sd && sd.causeOfDelay.equals(causeOfDelay)) return this;
-                return new CausesOfDelay.SimpleSet(Stream.concat(Stream.of(causeOfDelay),
-                        other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
+                return merge(other);
             }
             return this; // other is not a delay
+        }
+
+        @Override
+        public DV maxIgnoreDelay(DV other) {
+            if (other.isDelayed()) {
+                return merge(other);
+            }
+            return other; // other is not a delay
         }
 
         @Override
@@ -144,6 +173,14 @@ public interface DV {
         public DV replaceDelayBy(DV nonDelay) {
             assert nonDelay.isDone();
             return nonDelay;
+        }
+
+        @Override
+        public String toString() {
+            return "SingleDelay{" +
+                    "causeOfDelay=" + causeOfDelay +
+                    ", value=" + value +
+                    '}';
         }
     }
 }

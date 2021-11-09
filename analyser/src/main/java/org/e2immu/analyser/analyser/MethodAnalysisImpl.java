@@ -244,7 +244,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public int getProperty(VariableProperty variableProperty) {
+        public DV getProperty(VariableProperty variableProperty) {
             return getMethodProperty(variableProperty);
         }
 

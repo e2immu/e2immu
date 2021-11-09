@@ -77,6 +77,8 @@ public class MultiLevel {
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, LEVEL_2_IMMUTABLE);
     public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, LEVEL_1_IMMUTABLE);
+    public static final DV EVENTUALLY_E1IMMUTABLE_DV = new DV.NoDelay(EVENTUALLY_E1IMMUTABLE);
+
     public static final int EVENTUALLY_RECURSIVELY_IMMUTABLE = compose(EVENTUAL, LEVEL_R_IMMUTABLE);
 
     public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_2_IMMUTABLE);
@@ -129,7 +131,9 @@ public class MultiLevel {
         if (i < 0) return i;
         return i & AND;
     }
-
+    public static DV effectiveAtLevelDv(DV dv, int minLevel) {
+        return new DV.NoDelay(effectiveAtLevel(dv.value(), minLevel));
+    }
     public static int effectiveAtLevel(int i, int minLevel) {
         if (i < 0) return i;
         int level = i >> SHIFT;
@@ -248,12 +252,18 @@ public class MultiLevel {
         return level == MAX_LEVEL ? MAX_LEVEL : level + 1;
     }
 
+    public static String niceIndependent(DV dv) {
+        return niceIndependent(dv.value());
+    }
     public static String niceIndependent(int i) {
         if (DEPENDENT == i) return "@Dependent";
         if (INDEPENDENT == i) return "@Independent";
         return "@Dependent" + (level(i) + 1);
     }
 
+    public static String niceImmutable(DV dv) {
+        return niceImmutable(dv.value());
+    }
     public static String niceImmutable(int i) {
         if (MUTABLE == i) return "@Mutable";
         int level = level(i) + 1;
@@ -288,6 +298,10 @@ public class MultiLevel {
         if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL)
             return new DV.NoDelay(compose(effective(v), MAX_LEVEL));
         return new DV.NoDelay(compose(effective(v), levelBase + levelParams));
+    }
+
+    public static DV independentCorrespondingToImmutableLevelDv(int immutableLevel) {
+        return new DV.NoDelay(independentCorrespondingToImmutableLevel(immutableLevel));
     }
 
     public static int independentCorrespondingToImmutableLevel(int immutableLevel) {

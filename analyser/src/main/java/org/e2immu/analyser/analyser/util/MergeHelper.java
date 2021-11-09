@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser.util;
 
 // assignment in if and else block
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.DelayedExpression;
@@ -157,13 +154,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     private Expression safe(EvaluationResult result) {
         if (result.getMessageStream().anyMatch(m -> true)) {
             // something gone wrong, retreat
-            Map<VariableProperty, Integer> variableProperties = evaluationContext.getValueProperties(vi.getValue());
+            Map<VariableProperty, DV> variableProperties = evaluationContext.getValueProperties(vi.getValue());
             return noConclusion(variableProperties);
         }
         return result.value();
     }
 
-    public Expression noConclusion(Map<VariableProperty, Integer> variableProperties) {
+    public Expression noConclusion(Map<VariableProperty, DV> variableProperties) {
         return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }
 

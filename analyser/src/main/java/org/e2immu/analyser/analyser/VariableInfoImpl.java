@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.IntBinaryOperator;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,8 +68,9 @@ class VariableInfoImpl implements VariableInfo {
         this.assignmentIds = assignmentIds;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
-        value.setVariable(DelayedVariableExpression.forVariable(variable));
-        linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
+        CausesOfDelay causesOfDelay = initialValue(variable);
+        value.setVariable(DelayedVariableExpression.forVariable(variable, causesOfDelay));
+        linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }
 
     // normal one for creating an initial or evaluation
@@ -86,8 +87,13 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable) : delayedValue);
-        linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
+        CausesOfDelay causesOfDelay = initialValue(variable);
+        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, causesOfDelay) : delayedValue);
+        linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
+    }
+
+    private static CausesOfDelay initialValue(Variable variable) {
+        return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, CauseOfDelay.Cause.INITIAL_VALUE));
     }
 
     @Override
@@ -111,7 +117,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Stream<Map.Entry<VariableProperty, Integer>> propertyStream() {
+    public Stream<Map.Entry<VariableProperty, DV>> propertyStream() {
         return properties.stream();
     }
 
@@ -136,12 +142,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public int getProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
-    }
-
-    @Override
-    public int getProperty(VariableProperty variableProperty, int defaultValue) {
+    public DV getProperty(VariableProperty variableProperty, DV defaultValue) {
         return properties.getOrDefault(variableProperty, defaultValue);
     }
 
@@ -176,7 +177,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
-    void setProperty(VariableProperty variableProperty, int value) {
+    void setProperty(VariableProperty variableProperty, DV value) {
         assert !GroupPropertyValues.DELAY_PROPERTIES.contains(variableProperty) :
                 "?? trying to add a delay property to a variable: " + variableProperty;
         try {
@@ -228,79 +229,82 @@ class VariableInfoImpl implements VariableInfo {
     things to set for a new variable
      */
     public void newVariable(boolean notNull) {
-        setProperty(VariableProperty.CONTEXT_NOT_NULL, Math.max(notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE,
-                variable.parameterizedType().defaultNotNull()));
-        setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-        setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
-        setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE); // even if the variable is a primitive...
-        setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED);
+        setProperty(VariableProperty.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
+                .max(variable.parameterizedType().defaultNotNull()));
+        setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
+        setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+        setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
+        setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+    }
+
+    public void ensureProperty(VariableProperty vp, DV dv) {
+        DV inMap = getProperty(vp, null);
+        if (inMap == null) {
+            setProperty(vp, dv);
+        }
     }
 
     // ***************************** MERGE RELATED CODE *********************************
 
-    private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
+    private record MergeOp(VariableProperty variableProperty, BinaryOperator<DV> operator, DV initial) {
     }
 
     // it is important to note that the properties are NOT read off the value, but from the properties map
     // this copying has to have taken place earlier; for each of the variable properties below:
 
-    public static final IntBinaryOperator MAX = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
-            ? Level.DELAY : Math.max(i1, i2);
-    public static final IntBinaryOperator MIN = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
-            ? Level.DELAY : Math.min(i1, i2);
 
-    private static final IntBinaryOperator MAX_CM = (i1, i2) ->
-            i1 == Level.TRUE || i2 == Level.TRUE ? Level.TRUE :
-                    i1 == Level.DELAY || i2 == Level.DELAY ? Level.DELAY : Level.FALSE;
+    private static final BinaryOperator<DV> MAX_CM = (i1, i2) ->
+            i1.valueIsTrue() || i2.valueIsTrue() ? Level.TRUE_DV :
+                    i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : Level.FALSE_DV;
 
     private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
-            new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
-            new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
-            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, Math::max, Level.DELAY),
+            new MergeOp(SCOPE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(METHOD_CALLED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_MODIFIED_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(PROPAGATE_MODIFICATION_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_IMMUTABLE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
-            new MergeOp(NOT_NULL_EXPRESSION, MIN, NOT_NULL_EXPRESSION.best),
-            new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
-            new MergeOp(EXTERNAL_NOT_NULL, MIN, EXTERNAL_NOT_NULL.best),
-            new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
-            new MergeOp(EXTERNAL_IMMUTABLE, MIN, EXTERNAL_IMMUTABLE.best),
-            new MergeOp(CONTEXT_IMMUTABLE, MAX, CONTEXT_IMMUTABLE.falseValue),
+            new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
+            new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
+            new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
+            new MergeOp(IMMUTABLE, DV::min, IMMUTABLE.bestDv),
+            new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
+            new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
 
-            new MergeOp(CONTAINER, MIN, CONTAINER.best),
-            new MergeOp(IDENTITY, MIN, IDENTITY.best),
+            new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
+            new MergeOp(IDENTITY, DV::min, IDENTITY.bestDv),
 
-            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
     );
 
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
-            new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
-            new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
-            new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
-            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, Math::max, Level.DELAY),
+            new MergeOp(SCOPE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(METHOD_CALLED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_MODIFIED_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(PROPAGATE_MODIFICATION_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_IMMUTABLE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
-            new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
-            new MergeOp(EXTERNAL_NOT_NULL, MIN, EXTERNAL_NOT_NULL.best),
-            new MergeOp(EXTERNAL_IMMUTABLE, MIN, EXTERNAL_IMMUTABLE.best),
-            new MergeOp(CONTEXT_IMMUTABLE, MAX, CONTEXT_IMMUTABLE.falseValue),
+            new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
+            new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
+            new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
+            new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
 
-            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
     );
 
     // TESTING ONLY!!
@@ -367,12 +371,12 @@ class VariableInfoImpl implements VariableInfo {
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         if (evaluationContext.isMyself(variable)) {
-            setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
+            setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
         }
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
-        Map<VariableProperty, Integer> map = evaluationContext.getValueProperties(mergedValue, false);
+        Map<VariableProperty, DV> map = evaluationContext.getValueProperties(mergedValue, false);
         map.forEach(this::setProperty);
     }
 
@@ -444,19 +448,19 @@ class VariableInfoImpl implements VariableInfo {
             list.add(previous);
         }
         for (MergeOp mergeOp : MERGE_WITHOUT_VALUE_PROPERTIES) {
-            int commonValue = mergeOp.initial;
+            DV commonValue = mergeOp.initial;
 
             for (VariableInfo vi : list) {
                 if (vi != null) {
-                    int value = vi.getProperty(mergeOp.variableProperty);
-                    commonValue = mergeOp.operator.applyAsInt(commonValue, value);
+                    DV value = vi.getProperty(mergeOp.variableProperty);
+                    commonValue = mergeOp.operator.apply(commonValue, value);
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
             if (GroupPropertyValues.PROPERTIES.contains(mergeOp.variableProperty)) {
                 groupPropertyValues.set(mergeOp.variableProperty, previous.variable(), commonValue);
             } else {
-                if (commonValue > Level.DELAY) {
+                if (commonValue.isDone()) {
                     setProperty(mergeOp.variableProperty, commonValue);
                 }
             }
@@ -464,14 +468,13 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     // used by change data
-    public static Map<VariableProperty, Integer> mergeIgnoreAbsent
-    (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+    public static Map<VariableProperty, DV> mergeIgnoreAbsent(Map<VariableProperty, DV> m1, Map<VariableProperty, DV> m2) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
-        Map<VariableProperty, Integer> map = new HashMap<>();
+        Map<VariableProperty, DV> map = new HashMap<>();
         for (MergeOp mergeOp : MERGE) {
-            Integer v1 = m1.getOrDefault(mergeOp.variableProperty, null);
-            Integer v2 = m2.getOrDefault(mergeOp.variableProperty, null);
+            DV v1 = m1.getOrDefault(mergeOp.variableProperty, null);
+            DV v2 = m2.getOrDefault(mergeOp.variableProperty, null);
 
             if (v1 == null) {
                 if (v2 != null) {
@@ -481,8 +484,8 @@ class VariableInfoImpl implements VariableInfo {
                 if (v2 == null) {
                     map.put(mergeOp.variableProperty, v1);
                 } else {
-                    int v = mergeOp.operator.applyAsInt(v1, v2);
-                    if (v > Level.DELAY) {
+                    DV v = mergeOp.operator.apply(v1, v2);
+                    if (v.isDelayed()) {
                         map.put(mergeOp.variableProperty, v);
                     }
                 }
@@ -557,11 +560,11 @@ class VariableInfoImpl implements VariableInfo {
         }
         // no clue
 
-        int worstNotNull = reduced.stream().mapToInt(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
+        DV worstNotNull = reduced.stream().map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
                 .min().orElseThrow();
-        int worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
-                Math.min(worstNotNull, evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
-        Map<VariableProperty, Integer> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
+        DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
+                worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
+        Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
         // FIXME
         return mergeHelper.noConclusion(valueProperties);
     }

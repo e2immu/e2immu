@@ -15,10 +15,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.Set;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,7 +27,7 @@ public interface CausesOfDelay extends DV {
     CausesOfDelay EMPTY = new SimpleSet(Set.of());
 
     static CausesOfDelay from(Set<CauseOfDelay> causes) {
-        return causes.isEmpty() ? EMPTY: new SimpleSet(causes);
+        return causes.isEmpty() ? EMPTY : new SimpleSet(causes);
     }
 
     boolean contains(Variable variable);
@@ -37,6 +37,10 @@ public interface CausesOfDelay extends DV {
     Stream<CauseOfDelay> causesStream();
 
     record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfDelay {
+
+        public SimpleSet(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
+            this(new CauseOfDelay.SimpleCause(withInspectionAndAnalysis, cause));
+        }
 
         public SimpleSet(CauseOfDelay cause) {
             this(Set.of(cause));
@@ -82,12 +86,32 @@ public interface CausesOfDelay extends DV {
 
         @Override
         public DV min(DV other) {
-            return null;
+            if (other.isDelayed()) {
+                return merge(other);
+            }
+            // other is not delayed
+            return this;
+        }
+
+        private DV merge(DV other) {
+            return new CausesOfDelay.SimpleSet(Stream.concat(causesStream(),
+                    other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
         }
 
         @Override
         public DV max(DV other) {
-            return null;
+            if (other.isDelayed()) {
+                return merge(other);
+            }
+            return this; // other is not a delay
+        }
+
+        @Override
+        public DV maxIgnoreDelay(DV other) {
+            if (other.isDelayed()) {
+                return merge(other);
+            }
+            return other; // other is not a delay
         }
 
         @Override

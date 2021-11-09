@@ -43,7 +43,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final boolean immutableCanBeIncreasedByTypeParameters;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
-                             Map<VariableProperty, Integer> properties,
+                             Map<VariableProperty, DV> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
                              Map<FieldReference, Expression> approvedPreconditionsE1,
                              Map<FieldReference, Expression> approvedPreconditionsE2,
@@ -61,6 +61,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.eventuallyImmutableFields = eventuallyImmutableFields;
         this.visibleFields = visibleFields;
         this.immutableCanBeIncreasedByTypeParameters = immutableCanBeIncreasedByTypeParameters;
+    }
+
+    @Override
+    public WithInspectionAndAnalysis where() {
+        return typeInfo;
     }
 
     @Override
@@ -94,7 +99,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public int getProperty(VariableProperty variableProperty) {
+    public DV getProperty(VariableProperty variableProperty) {
         return getTypeProperty(variableProperty);
     }
 
@@ -119,13 +124,13 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldReference) {
-        return e2 ? approvedPreconditionsE2.containsKey(fieldReference) : approvedPreconditionsE1.containsKey(fieldReference);
+    public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldInfo) {
+        return CausesOfDelay.EMPTY;
     }
 
     @Override
-    public boolean approvedPreconditionsIsFrozen(boolean e2) {
-        return true;
+    public CausesOfDelay approvedPreconditionsStatus(boolean e2) {
+        return CausesOfDelay.EMPTY;
     }
 
     @Override
@@ -145,9 +150,10 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public boolean haveTransparentTypes() {
-        return true;
+    public CausesOfDelay hiddenContentTypeStatus() {
+        return CausesOfDelay.EMPTY;
     }
+
 
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
@@ -184,6 +190,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public final SetOnce<Boolean> immutableCanBeIncreasedByTypeParameters = new SetOnce<>();
 
+        private CausesOfDelay approvedPreconditionsE1Delays;
+        private CausesOfDelay approvedPreconditionsE2Delays;
+
         /*
         analyser context can be null for Primitives, ShallowTypeAnalyser
          */
@@ -193,6 +202,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
             this.analyserContext = analyserContext;
+        }
+
+        @Override
+        public WithInspectionAndAnalysis where() {
+            return typeInfo;
         }
 
         @Override
@@ -226,8 +240,16 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldReference) {
-            return e2 ? approvedPreconditionsE2.isSet(fieldReference) : approvedPreconditionsE1.isSet(fieldReference);
+        public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldReference) {
+            return e2 ? (approvedPreconditionsE2.isSet(fieldReference) ? CausesOfDelay.EMPTY :
+                    new CausesOfDelay.SimpleSet(fieldReference.fieldInfo, CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
+                    (approvedPreconditionsE1.isSet(fieldReference) ? CausesOfDelay.EMPTY :
+                            new CausesOfDelay.SimpleSet(fieldReference.fieldInfo, CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
+        }
+
+        public CausesOfDelay approvedPreconditionsStatus(boolean e2) {
+            return e2 ? (approvedPreconditionsE2.isFrozen() ? CausesOfDelay.EMPTY : approvedPreconditionsE2Delays)
+                    : (approvedPreconditionsE1.isFrozen() ? CausesOfDelay.EMPTY : approvedPreconditionsE1Delays);
         }
 
         public void freezeApprovedPreconditionsE1() {
@@ -240,10 +262,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public void putInApprovedPreconditionsE1(FieldReference fieldReference, Expression expression) {
             approvedPreconditionsE1.put(fieldReference, expression);
-        }
-
-        public boolean approvedPreconditionsIsFrozen(boolean e2) {
-            return e2 ? approvedPreconditionsE2.isFrozen() : approvedPreconditionsE1.isFrozen();
         }
 
         public void freezeApprovedPreconditionsE2() {
@@ -265,7 +283,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public int getProperty(VariableProperty variableProperty) {
+        public DV getProperty(VariableProperty variableProperty) {
             return getTypeProperty(variableProperty);
         }
 
@@ -297,31 +315,31 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // @ExtensionClass
-            if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {
+            if (getProperty(VariableProperty.EXTENSION_CLASS).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.extensionClass, true);
             }
 
             // @Finalizer
-            if (getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
+            if (getProperty(VariableProperty.FINALIZER).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.finalizer, true);
             }
 
             // @UtilityClass
-            if (getProperty(VariableProperty.UTILITY_CLASS) == Level.TRUE) {
+            if (getProperty(VariableProperty.UTILITY_CLASS).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.utilityClass, true);
             }
 
             // @Singleton
-            if (getProperty(VariableProperty.SINGLETON) == Level.TRUE) {
+            if (getProperty(VariableProperty.SINGLETON).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.singleton, true);
             }
 
-            int immutable = getProperty(VariableProperty.IMMUTABLE);
+            DV immutable = getProperty(VariableProperty.IMMUTABLE);
             doImmutableContainer(e2ImmuAnnotationExpressions, immutable, false);
 
             // @Independent
-            int independent = getProperty(VariableProperty.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent, MultiLevel.NOT_INVOLVED, immutable);
+            DV independent = getProperty(VariableProperty.INDEPENDENT);
+            doIndependent(e2ImmuAnnotationExpressions, independent.value(), MultiLevel.NOT_INVOLVED, immutable.value());
         }
 
         @Override
@@ -330,8 +348,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public boolean haveTransparentTypes() {
-            return hiddenContentTypes.isSet();
+        public CausesOfDelay hiddenContentTypeStatus() {
+            if (hiddenContentTypes.isSet()) return CausesOfDelay.EMPTY;
+            return new CausesOfDelay.SimpleSet(typeInfo, CauseOfDelay.Cause.HIDDEN_CONTENT);
         }
 
         @Override
@@ -350,6 +369,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     getAspects(),
                     visibleFields,
                     immutableCanBeIncreasedByTypeParameters.getOrDefault(false));
+        }
+
+        public void setApprovedPreconditionsE1Delays(CausesOfDelay causes) {
+            approvedPreconditionsE1Delays = causes;
+        }
+
+        public void setApprovedPreconditionsE2Delays(CausesOfDelay causes) {
+            approvedPreconditionsE2Delays = causes;
         }
     }
 }

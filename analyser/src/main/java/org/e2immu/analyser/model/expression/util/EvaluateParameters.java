@@ -14,14 +14,8 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.analyser.util.DelayDebugger;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
@@ -33,9 +27,9 @@ import java.util.Map;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
-    private static final Map<VariableProperty, Integer> RECURSIVE_CALL =
-            Map.of(VariableProperty.CONTEXT_MODIFIED, Level.FALSE,
-                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
+    private static final Map<VariableProperty, DV> RECURSIVE_CALL =
+            Map.of(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV,
+                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
                                                                              EvaluationContext evaluationContext,
@@ -46,7 +40,7 @@ public class EvaluateParameters {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
         int i = 0;
-        int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
+        DV minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         builder.causeOfContextModificationDelay(methodInfo, false); // will be overwritten when there's a delay
@@ -68,13 +62,13 @@ public class EvaluateParameters {
                     parameterInfo = params.get(i);
                 }
                 // NOT_NULL, NOT_MODIFIED
-                int independent;
-                Map<VariableProperty, Integer> map;
+                DV independent;
+                Map<VariableProperty, DV> map;
                 try {
                     if (evaluationContext.getCurrentMethod() != null &&
                             evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
                         map = new HashMap<>(RECURSIVE_CALL);
-                        independent = MultiLevel.DEPENDENT;
+                        independent = MultiLevel.DEPENDENT_DV;
                     } else {
                         // copy from parameter into map used for forwarding
                         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
@@ -91,42 +85,40 @@ public class EvaluateParameters {
 
                 // propagating modifications? a functional interface-type parameter, with @Independent1
                 if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
-                    if (independent == Level.DELAY) {
+                    if (independent.isDelayed()) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
+                            map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE_DV);
                         } else {
-                            map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
+                            map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
                         }
-                    } else if (independent == MultiLevel.INDEPENDENT_1) {
-                        map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE);
+                    } else if (independent.value() == MultiLevel.INDEPENDENT_1) {
+                        map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE_DV);
                     }
                 }
 
                 {
-                    int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
-                    if (contextModified == Level.DELAY) {
+                    DV contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, null);
+                    if (contextModified == null) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+                            map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
                         } else {
-                            map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
-                            assert evaluationContext.createDelay(parameterInfo.fullyQualifiedName(),
-                                    methodInfo.fullyQualifiedName + DelayDebugger.D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
+                            map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
                             builder.causeOfContextModificationDelay(methodInfo, true);
                         }
                     }
                 }
-                int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
-                if (contextNotNull == Level.DELAY) {
+                DV contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
+                if (contextNotNull == null) {
                     if (recursiveOrPartOfCallCycle) {
-                        map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
+                        map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
                     } else {
-                        map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                        map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE_DV);
                     }
                 }
 
-                minNotNullOverParameters = Math.min(minNotNullOverParameters, contextNotNull);
+                minNotNullOverParameters = minNotNullOverParameters.min(contextNotNull);
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true,
                         forwardEvaluationInfo.assignmentTarget());
@@ -143,14 +135,14 @@ public class EvaluateParameters {
         }
 
         VariableExpression scopeVariable;
-        if (minNotNullOverParameters == MultiLevel.EFFECTIVELY_NOT_NULL &&
+        if (minNotNullOverParameters.value() == MultiLevel.EFFECTIVELY_NOT_NULL &&
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&
                 methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
             builder.setProperty(scopeVariable.variable(), VariableProperty.CONTEXT_NOT_NULL,
-                    MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
+                    MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
         }
         return new Pair<>(builder, parameterValues);
     }

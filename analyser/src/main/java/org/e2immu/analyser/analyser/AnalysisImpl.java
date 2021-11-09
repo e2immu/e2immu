@@ -16,20 +16,17 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Level;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 
 public abstract class AnalysisImpl implements Analysis {
 
-    public final Map<VariableProperty, Integer> properties;
+    public final Map<VariableProperty, DV> properties;
     private final Map<AnnotationExpression, AnnotationCheck> annotations;
 
-    protected AnalysisImpl(Map<VariableProperty, Integer> properties, Map<AnnotationExpression, AnnotationCheck> annotations) {
+    protected AnalysisImpl(Map<VariableProperty, DV> properties, Map<AnnotationExpression, AnnotationCheck> annotations) {
         this.annotations = annotations;
         this.properties = properties;
     }
@@ -38,7 +35,7 @@ public abstract class AnalysisImpl implements Analysis {
     public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
         AnnotationCheck annotationCheck = annotations.get(annotationExpression);
         if (annotationCheck == null) {
-           return AnnotationCheck.NO_INFORMATION;
+            return AnnotationCheck.NO_INFORMATION;
         }
         return annotationCheck;
     }
@@ -49,13 +46,13 @@ public abstract class AnalysisImpl implements Analysis {
     }
 
     public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return new DV.NoDelay( properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent()));
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
     }
 
     @Override
     public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        Integer v = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (v == Level.DELAY) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
-        return new DV.NoDelay(v);
+        DV v = properties.getOrDefault(variableProperty, null);
+        if (v == null) return new DV.SingleDelay(where(), CauseOfDelay.Cause.from(variableProperty));
+        return v;
     }
 }
