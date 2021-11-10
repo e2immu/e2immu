@@ -18,7 +18,6 @@ import java.util.Objects;
 
 public record InterruptsFlow(String name, int level, String label) {
     public static final String NO_LABEL = "";
-    public static final InterruptsFlow DELAYED = new InterruptsFlow("delayed", -1, NO_LABEL);
 
     public static final InterruptsFlow NO = new InterruptsFlow("no interrupt", 0, NO_LABEL);
     public static final InterruptsFlow RETURN = new InterruptsFlow("return", 3, NO_LABEL);

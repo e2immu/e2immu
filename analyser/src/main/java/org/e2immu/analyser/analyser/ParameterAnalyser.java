@@ -97,16 +97,16 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
+            DV valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
-                    .mapToInt(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
+                    .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
                             pi, variableProperty))
-                    .max().orElse(Level.DELAY);
-            int value = parameterAnalysis.getProperty(variableProperty);
-            if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+                    .reduce(DV.MIN_INT_DV, DV::max);
+            DV value = parameterAnalysis.getProperty(variableProperty);
+            if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE
-                        ? value > valueFromOverrides : value < valueFromOverrides;
+                        ? value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
                     String msg;
                     if (variableProperty == INDEPENDENT) {

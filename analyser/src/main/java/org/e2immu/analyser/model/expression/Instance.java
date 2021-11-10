@@ -339,7 +339,7 @@ public record Instance(
                 yield defaultValue;
             }*/
             case IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(variableProperty);
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
+            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };
         /*

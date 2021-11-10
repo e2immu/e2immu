@@ -15,6 +15,7 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
@@ -36,7 +37,7 @@ public interface FieldAnalyserVisitor {
                 Supplier<Stream<Message>> messageStream,
                 Map<String, AnalysisStatus> statuses) {
 
-        public int getProperty(Expression value, VariableProperty variableProperty) {
+        public DV getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty, false, false);
         }
 

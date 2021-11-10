@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import static org.e2immu.analyser.model.Level.FALSE;
 import static org.e2immu.analyser.model.Level.FALSE_DV;
 
 @E2Container
@@ -69,8 +68,7 @@ public class NullConstant implements ConstantExpression<Object> {
     public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE_DV;
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY,
-                    IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE_DV;
+            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE_DV;
             case IMMUTABLE, INDEPENDENT -> MultiLevel.NOT_INVOLVED_DV;
             default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
         };

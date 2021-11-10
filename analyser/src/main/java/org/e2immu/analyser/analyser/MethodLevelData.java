@@ -88,7 +88,7 @@ public class MethodLevelData {
         }
     }
 
-    public Set<Variable> combinedPreconditionIsDelayedSet() {
+    public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return null;
         Precondition cp = combinedPrecondition.get();
         if (cp == null) return Set.of();

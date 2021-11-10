@@ -29,7 +29,6 @@ public interface StatementAnalyserVariableVisitor {
                 String variableName,
                 Variable variable,
                 Expression currentValue,
-                boolean currentValueIsDelayed,
                 VariableProperties properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {
@@ -38,24 +37,16 @@ public interface StatementAnalyserVariableVisitor {
             Objects.requireNonNull(currentValue);
         }
 
-        public int getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefault(variableProperty, Level.DELAY);
+        public DV getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, null);
         }
 
         public boolean hasProperty(VariableProperty variableProperty) {
             return properties.isSet(variableProperty);
         }
 
-        public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
+        public DV getPropertyOfCurrentValue(VariableProperty variableProperty) {
             return evaluationContext.getProperty(currentValue, variableProperty, false, false);
-        }
-
-        public int falseFrom1() {
-            return iteration == 0 ? Level.DELAY: Level.FALSE;
-        }
-
-        public int falseFrom2() {
-            return iteration <= 1 ? Level.DELAY: Level.FALSE;
         }
     }
 

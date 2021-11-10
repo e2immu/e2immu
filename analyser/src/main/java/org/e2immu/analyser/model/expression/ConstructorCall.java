@@ -219,7 +219,7 @@ public record ConstructorCall(
             case IDENTITY -> Level.FALSE_DV;
             case IMMUTABLE -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
             case CONTAINER -> pt.defaultContainer(evaluationContext.getAnalyserContext());
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
+            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
         };
     }

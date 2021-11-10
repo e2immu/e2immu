@@ -47,6 +47,14 @@ public interface DV extends WeightedGraph.Weight {
 
     DV replaceDelayBy(DV nonDelay);
 
+    default boolean gt(DV other) {
+        return value() > other.value();
+    }
+
+    default boolean lt(DV other) {
+        return value() < other.value();
+    }
+
     default boolean valueIsTrue() {
         return value() == Level.TRUE;
     }

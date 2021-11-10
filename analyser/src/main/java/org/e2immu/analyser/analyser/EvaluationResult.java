@@ -112,6 +112,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
      * of the changeData of "t").
      */
     public record ChangeData(Expression value,
+                             CausesOfDelay delays,
                              CausesOfDelay stateIsDelayed,
                              boolean markAssignment,
                              Set<Integer> readAtStatementTime,
@@ -128,6 +129,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, DV> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
             return new ChangeData(other.value == null ? value : other.value,
+                    delays.merge(other.delays),
                     other.stateIsDelayed, // and not a merge!
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
@@ -265,6 +267,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public EvaluationResult build() {
             if (value != null) {
+                valueChanges.values().forEach(cd -> addCausesOfDelay(cd.delays));
                 addCausesOfDelay(value.causesOfDelay());
             }
             return new EvaluationResult(evaluationContext, statementTime, value,
@@ -338,10 +341,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             if (ecd == null) {
                 newEcd = new ChangeData(null,
-                        CausesOfDelay.EMPTY, false, Set.of(statementTime),
+                        CausesOfDelay.EMPTY, CausesOfDelay.EMPTY, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, Map.of());
             } else {
-                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.delays, ecd.stateIsDelayed, ecd.markAssignment,
                         SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables,
                         ecd.properties);
             }
@@ -397,10 +400,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newVcd;
             if (current == null) {
                 CausesOfDelay stateIsDelayed = evaluationContext.getConditionManager().causesOfDelay();
-                newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables,
+                newVcd = new ChangeData(instance, stateIsDelayed, stateIsDelayed, false, Set.of(), linkedVariables,
                         Map.of());
             } else {
-                newVcd = new ChangeData(instance, current.stateIsDelayed, current.markAssignment,
+                newVcd = new ChangeData(instance, current.delays, current.stateIsDelayed, current.markAssignment,
                         current.readAtStatementTime, linkedVariables, current.properties);
             }
             valueChanges.put(variable, newVcd);
@@ -505,9 +508,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
-                newEcd = new ChangeData(value, stateIsDelayed, markAssignment, Set.of(), linkedVariables, Map.of());
+                newEcd = new ChangeData(value, value.causesOfDelay().merge(stateIsDelayed),
+                        stateIsDelayed, markAssignment, Set.of(), linkedVariables, Map.of());
             } else {
-                newEcd = new ChangeData(value, stateIsDelayed, ecd.markAssignment || markAssignment,
+                newEcd = new ChangeData(value, ecd.delays.merge(stateIsDelayed).merge(value.causesOfDelay()),
+                        ecd.stateIsDelayed.merge(stateIsDelayed), ecd.markAssignment || markAssignment,
                         ecd.readAtStatementTime, linkedVariables, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
@@ -521,10 +526,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(null, CausesOfDelay.EMPTY, false, Set.of(),
+                newEcd = new ChangeData(null, value.causesOfDelay(), CausesOfDelay.EMPTY, false, Set.of(),
                         LinkedVariables.EMPTY, Map.of(property, value));
             } else {
-                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.delays.merge(value.causesOfDelay()), ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables,
                         mergeProperties(ecd.properties, Map.of(property, value)));
             }
@@ -547,9 +552,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             LinkedVariables linked = inScope == null ? LinkedVariables.delayedEmpty() :
                     new LinkedVariables(Map.of(inScope, level));
             if (ecd == null) {
-                newEcd = new ChangeData(null, CausesOfDelay.EMPTY, false, Set.of(), linked, Map.of());
+                newEcd = new ChangeData(null, level.causesOfDelay(),
+                        CausesOfDelay.EMPTY, false, Set.of(), linked, Map.of());
             } else {
-                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.delays.merge(level.causesOfDelay()),
+                        ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.properties);
             }
             valueChanges.put(inArgument, newEcd);

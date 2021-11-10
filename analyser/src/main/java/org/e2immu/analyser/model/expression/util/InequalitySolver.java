@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
@@ -73,7 +72,7 @@ public class InequalitySolver {
             if (element instanceof MethodCall methodCall) {
                 if (Primitives.isNumeric(methodCall.returnType()) && evaluationContext.getAnalyserContext()
                         .getMethodAnalysis(methodCall.methodInfo)
-                        .getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE) {
+                        .getProperty(VariableProperty.MODIFIED_METHOD).valueIsFalse()) {
                     oneVariables.add(methodCall);
                 } else {
                     invalid.set(true);

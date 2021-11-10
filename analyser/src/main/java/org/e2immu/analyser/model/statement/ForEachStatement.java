@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -43,19 +40,13 @@ public class ForEachStatement extends LoopStatement {
                 .setBlock(block).build(), label);
     }
 
-    private static FlowData.Execution computeExecution(Expression expression, EvaluationContext evaluationContext) {
-        if (evaluationContext.isDelayed(expression)) return FlowData.Execution.DELAYED_EXECUTION;
+    private static DV computeExecution(Expression expression, EvaluationContext evaluationContext) {
+        if (expression.isDelayed()) return expression.causesOfDelay();
 
         if (expression instanceof ArrayInitializer arrayInitializer) {
-            return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.Execution.NEVER : FlowData.Execution.ALWAYS;
+            return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.NEVER : FlowData.ALWAYS;
         }
-        /* IMPROVE we can try to extract a length or size
-        if (expression instanceof VariableExpression variableExpression) {
-            NewObject newObject = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
-            if (newObject != null && !newObject.state().isBoolValueTrue()) { ... }
-        }
-        */
-        return FlowData.Execution.CONDITIONALLY; // we have no clue
+        return FlowData.CONDITIONALLY; // we have no clue
     }
 
     @Override

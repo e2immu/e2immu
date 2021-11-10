@@ -258,7 +258,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
-            typeAnalysis.immutableCanBeIncreasedByTypeParameters.set(false);
+            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
         }
     }
 
@@ -523,7 +523,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        typeAnalysisBuilder.hiddenContentTypes.set(new SetOfTypes(typeParametersAsParameterizedTypes));
+        typeAnalysisBuilder.setTransparentTypes(new SetOfTypes(typeParametersAsParameterizedTypes));
 
         simpleComputeIndependent(typeAnalysisBuilder);
 
@@ -536,10 +536,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     private void determineImmutableCanBeIncreasedByTypeParameters(TypeInspection typeInspection,
                                                                   TypeAnalysisImpl.Builder typeAnalysisBuilder) {
-        if (!typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.isSet()) {
+        if (typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters().isDelayed()) {
             boolean res = typeInspection.typeParameters().stream()
                     .anyMatch(tp -> Boolean.TRUE != tp.isAnnotatedWithIndependent());
-            typeAnalysisBuilder.immutableCanBeIncreasedByTypeParameters.set(res);
+            typeAnalysisBuilder.setImmutableCanBeIncreasedByTypeParameters(res);
         }
     }
 

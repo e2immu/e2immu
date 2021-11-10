@@ -55,7 +55,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      CauseOfDelay causeOfDelay) {
-        return forField(fieldReference, new CauseOfDelay.SimpleCause(causeOfDelay));
+        return forField(fieldReference, new CausesOfDelay.SimpleSet(causeOfDelay));
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,

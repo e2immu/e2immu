@@ -69,8 +69,6 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
-            case CONTEXT_MODIFIED_DELAY:
-            case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
                 return Level.FALSE_DV;
         }
@@ -86,8 +84,6 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTEXT_MODIFIED:
-            case CONTEXT_MODIFIED_DELAY:
-            case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
                 return Level.FALSE_DV;
             case INDEPENDENT:

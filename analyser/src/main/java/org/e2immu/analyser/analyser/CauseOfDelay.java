@@ -33,12 +33,16 @@ public interface CauseOfDelay {
         MODIFIED_METHOD("The method's modification status has not yet been determined"),
         ASSIGNED_TO_FIELD("The component 'analyseFieldAssignments' has not yet finished"),
         IMMUTABLE("Type's IMMUTABLE status has not yet been determined"),
+        EXTERNAL_NOT_NULL("Variable's EXTERNAL_NOT_NULL value not yet determined"),
         TYPE_ANALYSIS("Type analysis missing"),
         HIDDEN_CONTENT("Hidden content of type has not yet been determined"),
         INITIAL_VALUE("Not yet initialized"),
         APPROVED_PRECONDITIONS("Approved preconditions for field"),
         TO_IMPLEMENT("Temporary; needs implementation"),
-        FIRST_ITERATION("Certain actions cannot be done in the first iteration");
+        FIRST_ITERATION("Certain actions cannot be done in the first iteration"),
+        CNN_PARENT("Context not null for parent"),
+        REPLACEMENT("Reiterate, because of statement replacement"),
+        VARIABLE_DOES_NOT_EXIST("Variable does not (yet) exist");
 
         public final String msg;
 

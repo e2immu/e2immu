@@ -98,7 +98,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
             Map<VariableProperty, DV> map = Map.of(
                     VariableProperty.CONTEXT_MODIFIED, modified,
-                    VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                     VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
             scopeForward = new ForwardEvaluationInfo(map, true, forwardEvaluationInfo.assignmentTarget());
@@ -107,8 +106,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             if (methodInfo.methodInspection.get().isStatic()) {
                 This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
                 builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
-                builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
-                builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE_DV);
             }
         } else {
             scopeForward = forwardEvaluationInfo.copyNotNull();

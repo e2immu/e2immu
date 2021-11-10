@@ -51,8 +51,8 @@ public class MethodCallIncompatibleWithPrecondition {
             if (!variableInfo.valueIsSet()) {
                 log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.methodInfo.fullyQualifiedName);
-                return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableInStatement(variableInfo.variable(),
-                        statementAnalysis, CauseOfDelay.Cause.VALUE));
+                return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variableInfo.variable(),
+                        statementAnalysis.location(), CauseOfDelay.Cause.VALUE));
             }
             if (evaluationContext.hasState(variableInfo.getValue())) {
                 Expression state = variableInfo.getValue().stateTranslateThisTo(fieldReference);

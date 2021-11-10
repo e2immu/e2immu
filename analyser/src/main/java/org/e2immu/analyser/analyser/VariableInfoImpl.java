@@ -561,7 +561,7 @@ class VariableInfoImpl implements VariableInfo {
         // no clue
 
         DV worstNotNull = reduced.stream().map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
-                .min().orElseThrow();
+                .reduce(DV.MIN_INT_DV, DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
         Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);

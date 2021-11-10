@@ -154,9 +154,9 @@ public class ComputeLinkedVariables {
         return result;
     }
 
-    public AnalysisStatus write(VariableProperty property, Map<Variable, DV> propertyValues) {
+    public CausesOfDelay write(VariableProperty property, Map<Variable, DV> propertyValues) {
         if (delaysInClustering.isDelayed()) {
-            return new AnalysisStatus.Delayed(delaysInClustering, false);
+            return delaysInClustering;
         }
         if (VariableProperty.CONTEXT_MODIFIED == property) {
             return writeProperty(clustersDependent, property, propertyValues);
@@ -172,10 +172,10 @@ public class ComputeLinkedVariables {
         }
     }
 
-    private AnalysisStatus writeProperty(List<List<Variable>> clusters,
-                                         VariableProperty variableProperty,
-                                         Map<Variable, DV> propertyValues) {
-        AnalysisStatus analysisStatus = AnalysisStatus.DONE;
+    private CausesOfDelay writeProperty(List<List<Variable>> clusters,
+                                        VariableProperty variableProperty,
+                                        Map<Variable, DV> propertyValues) {
+        CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (List<Variable> cluster : clusters) {
             DV summary = cluster.stream()
                     // IMPORTANT: property has to be present, or we get a null pointer!
@@ -183,7 +183,7 @@ public class ComputeLinkedVariables {
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(Level.FALSE_DV, DV::max);
             if (summary.isDelayed()) {
-                analysisStatus = new AnalysisStatus.Delayed(summary.causesOfDelay());
+                causes = causes.merge(summary.causesOfDelay());
             } else {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
@@ -204,7 +204,7 @@ public class ComputeLinkedVariables {
                 }
             }
         }
-        return analysisStatus;
+        return causes;
     }
 
     public void writeLinkedVariables() {

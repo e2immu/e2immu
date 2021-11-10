@@ -15,11 +15,13 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.VariableFirstThen;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,12 +40,12 @@ import static org.e2immu.analyser.util.Logger.log;
 public class FlowData {
 
     // meant for statements following a
-    private final SetOnce<Execution> guaranteedToBeReachedInCurrentBlock = new SetOnce<>();
-    private final SetOnce<Execution> guaranteedToBeReachedInMethod = new SetOnce<>();
+    private final VariableFirstThen<CausesOfDelay, DV> guaranteedToBeReachedInCurrentBlock;
+    private final VariableFirstThen<CausesOfDelay, DV> guaranteedToBeReachedInMethod;
     // execution of the block
-    public final SetOnce<Execution> blockExecution = new SetOnce<>();
+    public final VariableFirstThen<CausesOfDelay, DV> blockExecution;
     // are there any statements in sub-blocks that interrupt the flow?
-    private final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
+    private final VariableFirstThen<CausesOfDelay, Map<InterruptsFlow, DV>> interruptsFlow;
 
     // counts all increases in statement time
     private final SetOnce<Integer> initialTime = new SetOnce<>(); // STEP 1
@@ -51,6 +53,14 @@ public class FlowData {
     private final SetOnce<Integer> timeAfterSubBlocks = new SetOnce<>(); // STEP 4
 
     public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
+
+    public FlowData(Location location) {
+        CausesOfDelay initialDelay = new CausesOfDelay.SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
+        guaranteedToBeReachedInCurrentBlock = new VariableFirstThen<>(initialDelay);
+        guaranteedToBeReachedInMethod = new VariableFirstThen<>(initialDelay);
+        interruptsFlow = new VariableFirstThen<>(initialDelay);
+        blockExecution = new VariableFirstThen<>(initialDelay);
+    }
 
     public void initialiseAssignmentIds(FlowData previous) {
         assignmentIdOfStatementTime.putAll(previous.assignmentIdOfStatementTime);
@@ -111,85 +121,98 @@ public class FlowData {
         return timeAfterSubBlocks.get();
     }
 
-    public Execution interruptStatus() {
+    public DV interruptStatus() {
         // what is the worst that can happen? ESCAPE-ALWAYS
-        if (!interruptsFlowIsSet()) return Execution.DELAYED_EXECUTION;
-        return interruptsFlow.get().values().stream().reduce(Execution.NEVER, Execution::best);
+        if (!interruptsFlowIsSet()) return interruptsFlow.getFirst();
+        return interruptsFlow.get().values().stream().reduce(NEVER, DV::max);
     }
 
     // if interrupt status is empty, we return ALWAYS -- we're good to proceed
     // if interrupt status is ALWAYS, we return NEVER -- this execution will not be reachable
     // if interrupt status is NEVER, or there is no interrupt, we return ALWAYS -- this we can reach
     // if interrupt status are ALWAYS and NEVER, we should interpret as CONDITIONALLY
-    private Execution interruptStatusToExecution() {
-        if (!interruptsFlowIsSet()) return Execution.DELAYED_EXECUTION;
-        List<Execution> execs = interruptsFlow.get().entrySet().stream()
-                // NO -> ALWAYS is filtered out; NO - CONDITIONALLY needs to be kept!
-                .filter(e -> e.getKey() != NO || e.getValue() != Execution.ALWAYS)
+    private DV interruptStatusToExecution() {
+        if (!interruptsFlowIsSet()) return interruptsFlow.getFirst();
+        List<DV> execs = interruptsFlow.get().entrySet().stream()
+                // "NO -> ALWAYS" is filtered out; NO - CONDITIONALLY needs to be kept!
+                .filter(e -> !e.getKey().equals(NO) || !e.getValue().equals(ALWAYS))
                 .map(Map.Entry::getValue).toList();
-        if (execs.isEmpty()) return Execution.ALWAYS;
-        boolean allAlways = execs.stream().allMatch(e -> e == Execution.ALWAYS);
+        if (execs.isEmpty()) return ALWAYS;
+        boolean allAlways = execs.stream().allMatch(e -> e.equals(ALWAYS));
         if (allAlways) {
-            return Execution.NEVER;
+            return NEVER;
         }
-        boolean allNever = execs.stream().allMatch(e -> e == Execution.NEVER);
-        if (allNever) return Execution.ALWAYS;
-        return Execution.CONDITIONALLY;
+        boolean allNever = execs.stream().allMatch(e -> e.equals(NEVER));
+        if (allNever) return ALWAYS;
+        return CONDITIONALLY;
     }
 
     public InterruptsFlow bestAlwaysInterrupt() {
-        if (!interruptsFlowIsSet()) return DELAYED;
+        assert interruptsFlowIsSet();
         InterruptsFlow best = NO;
-        for (Map.Entry<InterruptsFlow, Execution> e : interruptsFlow.get().entrySet()) {
-            Execution execution = e.getValue();
-            if (execution != Execution.ALWAYS) return NO;
+        for (Map.Entry<InterruptsFlow, DV> e : interruptsFlow.get().entrySet()) {
+            DV execution = e.getValue();
+            if (!execution.equals(ALWAYS)) return NO;
             InterruptsFlow interruptsFlow = e.getKey();
             best = interruptsFlow.best(best);
         }
         return best;
     }
 
-    public Execution execution(Execution statementsExecution) {
+    public DV execution(DV statementsExecution) {
         // combine with guaranteed to be reached in block
-        FlowData.Execution execution = guaranteedToBeReachedInMethod.getOrDefault(Execution.DELAYED_EXECUTION);
-        return execution.worst(statementsExecution);
+        if (guaranteedToBeReachedInMethod.isSet()) {
+            return guaranteedToBeReachedInMethod.get().min(statementsExecution);
+        }
+        return guaranteedToBeReachedInMethod.getFirst().min(statementsExecution);
     }
 
-    public void setGuaranteedToBeReached(Execution execution) {
+    public void setGuaranteedToBeReached(DV execution) {
         setGuaranteedToBeReachedInCurrentBlock(execution);
         setGuaranteedToBeReachedInMethod(execution);
     }
 
-    public void setGuaranteedToBeReachedInCurrentBlock(Execution executionInBlock) {
-        if (executionInBlock != Execution.DELAYED_EXECUTION) {
+    public void setGuaranteedToBeReachedInCurrentBlock(DV executionInBlock) {
+        if (executionInBlock.isDone()) {
             if ((!guaranteedToBeReachedInCurrentBlock.isSet() || !guaranteedToBeReachedInCurrentBlock.get().equals(executionInBlock))) {
                 guaranteedToBeReachedInCurrentBlock.set(executionInBlock);
             }
+        } else {
+            guaranteedToBeReachedInCurrentBlock.setFirst(executionInBlock.causesOfDelay());
         }
     }
 
-    public void setGuaranteedToBeReachedInMethod(Execution executionInMethod) {
-        if (executionInMethod != Execution.DELAYED_EXECUTION) {
+    public void setGuaranteedToBeReachedInMethod(DV executionInMethod) {
+        if (executionInMethod.isDone()) {
             if (!guaranteedToBeReachedInMethod.isSet() || !guaranteedToBeReachedInMethod.get().equals(executionInMethod)) {
                 guaranteedToBeReachedInMethod.set(executionInMethod);
             }
+        } else {
+            guaranteedToBeReachedInMethod.setFirst(executionInMethod.causesOfDelay());
         }
     }
 
-    public Execution getGuaranteedToBeReachedInCurrentBlock() {
-        return guaranteedToBeReachedInCurrentBlock.getOrDefault(Execution.DELAYED_EXECUTION);
+    public DV getGuaranteedToBeReachedInCurrentBlock() {
+        if (guaranteedToBeReachedInCurrentBlock.isSet()) {
+            return guaranteedToBeReachedInCurrentBlock.get();
+        }
+        return guaranteedToBeReachedInCurrentBlock.getFirst();
     }
 
-    public Execution getGuaranteedToBeReachedInMethod() {
-        return guaranteedToBeReachedInMethod.getOrDefault(Execution.DELAYED_EXECUTION);
+    public DV getGuaranteedToBeReachedInMethod() {
+        if (guaranteedToBeReachedInMethod.isSet()) {
+            return guaranteedToBeReachedInMethod.get();
+        }
+        return guaranteedToBeReachedInMethod.getFirst();
     }
 
     public boolean isUnreachable() {
-        return guaranteedToBeReachedInMethod.isSet() && guaranteedToBeReachedInMethod.get() == Execution.NEVER;
+        return guaranteedToBeReachedInMethod.isSet() && guaranteedToBeReachedInMethod.get().equals(NEVER);
     }
 
-    public Map<InterruptsFlow, Execution> getInterruptsFlow() {
-        return interruptsFlow.getOrDefaultNull();
+    // testing only
+    public Map<InterruptsFlow, DV> getInterruptsFlow() {
+        return interruptsFlow.get();
     }
 
     public boolean interruptsFlowIsSet() {
@@ -200,31 +223,13 @@ public class FlowData {
     at some point we need to make a distinction between different
      */
     public boolean alwaysEscapesViaException() {
-        return interruptsFlow.isSet() && interruptsFlow.get().get(ESCAPE) == Execution.ALWAYS;
+        return interruptsFlow.isSet() && interruptsFlow.get().get(ESCAPE).equals(ALWAYS);
     }
 
-    public enum Execution {
-        DEFAULT(3), // only local data transfer from SwitchEntry or IfElseStatement
-
-        ALWAYS(2), CONDITIONALLY(1), NEVER(0),
-
-        DELAYED_EXECUTION(-1); // don't know yet
-        final int level;
-
-        Execution(int level) {
-            this.level = level;
-        }
-
-        Execution worst(Execution other) {
-            return level <= other.level ? this : other;
-        }
-
-
-        public Execution best(Execution other) {
-            if (this == DELAYED_EXECUTION || other == DELAYED_EXECUTION) return DELAYED_EXECUTION;
-            return level >= other.level ? this : other;
-        }
-    }
+    public static final DV DEFAULT_EXECUTION = new DV.NoDelay(3);
+    public static final DV ALWAYS = new DV.NoDelay(2);
+    public static final DV CONDITIONALLY = new DV.NoDelay(1);
+    public static final DV NEVER = new DV.NoDelay(0);
 
     /**
      * Call occurs before the actual analysis of the statement.
@@ -235,24 +240,26 @@ public class FlowData {
      * @return true when unreachable statement
      */
     public AnalysisStatus computeGuaranteedToBeReachedReturnUnreachable(StatementAnalysis previousStatement,
-                                                                        Execution blockExecution,
+                                                                        DV blockExecution,
                                                                         Expression state,
-                                                                        boolean stateIsDelayed,
-                                                                        boolean localConditionManagerIsDelayed) {
-        AnalysisStatus delayBasedOnExecutionAndLocalConditionManager =
-                stateIsDelayed || localConditionManagerIsDelayed || blockExecution == Execution.DELAYED_EXECUTION ? DELAYS : DONE;
+                                                                        CausesOfDelay stateIsDelayed,
+                                                                        CausesOfDelay localConditionManagerIsDelayed) {
+        CausesOfDelay causes = stateIsDelayed
+                .merge(localConditionManagerIsDelayed)
+                .merge(blockExecution.causesOfDelay());
+        AnalysisStatus delayBasedOnExecutionAndLocalConditionManager = new Delayed(causes);
 
         // some statements that need executing independently of delays
         if (previousStatement == null) {
             // start of a block is always reached in that block
-            setGuaranteedToBeReachedInCurrentBlock(Execution.ALWAYS);
-        } else if (previousStatement.flowData.getGuaranteedToBeReachedInMethod() == Execution.NEVER) {
-            setGuaranteedToBeReachedInCurrentBlock(Execution.NEVER);
-            setGuaranteedToBeReachedInMethod(Execution.NEVER);
+            setGuaranteedToBeReachedInCurrentBlock(ALWAYS);
+        } else if (previousStatement.flowData.getGuaranteedToBeReachedInMethod().equals(NEVER)) {
+            setGuaranteedToBeReachedInCurrentBlock(NEVER);
+            setGuaranteedToBeReachedInMethod(NEVER);
             return delayBasedOnExecutionAndLocalConditionManager; // no more errors
         }
 
-        if (stateIsDelayed) {
+        if (stateIsDelayed.isDelayed()) {
             log(Logger.LogTarget.DELAYED, "Delaying guaranteed to be reached, no value state");
             return delayBasedOnExecutionAndLocalConditionManager;
         }
@@ -269,18 +276,19 @@ public class FlowData {
 
         // look at the previous statement in the block, there are no delays
 
-        Execution prev = previousStatement.flowData.getGuaranteedToBeReachedInCurrentBlock();
+        DV prev = previousStatement.flowData.getGuaranteedToBeReachedInCurrentBlock();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
-        Execution interrupt = previousStatement.flowData.interruptStatusToExecution();
-        Execution execBasedOnState = state.isBoolValueFalse() ? Execution.NEVER : Execution.ALWAYS;
-        Execution executionInCurrentBlock = prev.worst(interrupt).worst(execBasedOnState);
+        DV interrupt = previousStatement.flowData.interruptStatusToExecution();
+        DV execBasedOnState = state.isBoolValueFalse() ? NEVER : ALWAYS;
+        DV executionInCurrentBlock = prev.min(interrupt).min(execBasedOnState);
 
         setGuaranteedToBeReachedInCurrentBlock(executionInCurrentBlock);
-        setGuaranteedToBeReachedInMethod(executionInCurrentBlock.worst(blockExecution));
+        setGuaranteedToBeReachedInMethod(executionInCurrentBlock.min(blockExecution));
 
-        if (executionInCurrentBlock == Execution.NEVER) return DONE_ALL;
-        if (delayBasedOnExecutionAndLocalConditionManager == DELAYS) return DELAYS;
-        return executionInCurrentBlock == Execution.DELAYED_EXECUTION ? DELAYS : DONE;
+        if (executionInCurrentBlock.equals(NEVER)) return DONE_ALL;
+        if (delayBasedOnExecutionAndLocalConditionManager.isDelayed())
+            return delayBasedOnExecutionAndLocalConditionManager;
+        return executionInCurrentBlock.isDelayed() ? new Delayed(executionInCurrentBlock) : DONE;
     }
 
     public AnalysisStatus analyseInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
@@ -290,15 +298,15 @@ public class FlowData {
 
         if (!oldStyleSwitch) {
             if (statement instanceof ReturnStatement) {
-                setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
+                setInterruptsFlow(Map.of(RETURN, ALWAYS));
                 return DONE;
             }
             if (statement instanceof ThrowStatement) {
-                setInterruptsFlow(Map.of(ESCAPE, Execution.ALWAYS));
+                setInterruptsFlow(Map.of(ESCAPE, ALWAYS));
                 return DONE;
             }
             if (statement instanceof BreakStatement breakStatement) {
-                setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), Execution.ALWAYS));
+                setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), ALWAYS));
                 return DONE;
             }
         }
@@ -309,7 +317,7 @@ public class FlowData {
         }
 
         if (statement instanceof ContinueStatement continueStatement) {
-            setInterruptsFlow(Map.of(InterruptsFlow.createContinue(continueStatement.label), Execution.ALWAYS));
+            setInterruptsFlow(Map.of(InterruptsFlow.createContinue(continueStatement.label), ALWAYS));
             return DONE;
         }
         // in case there is no explicit return statement at the end of the method...
@@ -317,21 +325,21 @@ public class FlowData {
         boolean endOfBlockTopLevel = statementAnalyser.statementAnalysis.atTopLevel() &&
                 statementAnalyser.navigationData.next.get().isEmpty();
         if (endOfBlockTopLevel) {
-            setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
+            setInterruptsFlow(Map.of(RETURN, ALWAYS));
             return DONE;
         }
 
         // all the obvious ones have been done; for the rest we need to ensure that blockExecution has been set already
-        if (!blockExecution.isSet()) return DELAYS;
+        if (!blockExecution.isSet()) return new Delayed(blockExecution.getFirst());
 
         if (previousStatement != null && !previousStatement.flowData.interruptsFlowIsSet()) {
             log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
                     previousStatement.index());
-            return DELAYS;
+            return new Delayed(previousStatement.flowData.interruptsFlow.getFirst());
         }
 
         // situation from the previous statement
-        Map<InterruptsFlow, Execution> builder = new HashMap<>(previousStatement == null ? Map.of() :
+        Map<InterruptsFlow, DV> builder = new HashMap<>(previousStatement == null ? Map.of() :
                 previousStatement.flowData.interruptsFlow.get());
 
         List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks();
@@ -339,57 +347,63 @@ public class FlowData {
             if (!subAnalyser.statementAnalysis.flowData.interruptsFlowIsSet()) {
                 log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
                         subAnalyser.index());
-                return DELAYS;
+                CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.interruptsFlow.getFirst().causesOfDelay();
+                interruptsFlow.setFirst(delays);
+                return new Delayed(delays);
             }
-            Map<InterruptsFlow, Execution> subInterrupts = subAnalyser.statementAnalysis.flowData.interruptsFlow.get();
+            Map<InterruptsFlow, DV> subInterrupts = subAnalyser.statementAnalysis.flowData.interruptsFlow.get();
             if (subInterrupts.isEmpty()) {
                 // in this sub-block, there are no interrupts...
-                Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrDefault(Execution.DELAYED_EXECUTION);
-                if (subAnalyserExecution == Execution.DELAYED_EXECUTION) {
+                if (subAnalyser.statementAnalysis.flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                    interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
-                    return DELAYS;
+                    return new Delayed(delays);
                 }
-                builder.put(NO, subAnalyserExecution);
-            } else for (Map.Entry<InterruptsFlow, Execution> entry : subInterrupts.entrySet()) {
+                builder.put(NO, subAnalyser.statementAnalysis.flowData.blockExecution.get());
+            } else for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
                 InterruptsFlow i = entry.getKey();
-                Execution e = entry.getValue();
-                if (e == Execution.DELAYED_EXECUTION) {
+                DV e = entry.getValue();
+                if (e.isDelayed()) {
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} interruptsFlow",
                             subAnalyser.index());
-                    return DELAYS;
+                    interruptsFlow.setFirst(e.causesOfDelay());
+                    return new Delayed(e);
                 }
                 // if we're a loop statement, we can accept the interrupt as being one for us (break, continue)
                 if (rejectInterrupt(statement, i)) {
-                    builder.merge(i, e, (a, b) -> b.best(a));
+                    builder.merge(i, e, (a, b) -> b.max(a));
                 }
-                Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrDefault(Execution.DELAYED_EXECUTION);
-                if (subAnalyserExecution == Execution.DELAYED_EXECUTION) {
+                if (subAnalyser.statementAnalysis.flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                    interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
-                    return DELAYS;
+                    return new Delayed(delays);
                 }
-                builder.merge(i, subAnalyserExecution, (a, b) -> b.worst(a));
+                builder.merge(i, subAnalyser.statementAnalysis.flowData.blockExecution.get(), (a, b) -> b.min(a));
             }
         }
         setInterruptsFlow(Map.copyOf(builder));
         return DONE;
     }
 
-    private void setInterruptsFlow(Map<InterruptsFlow, Execution> map) {
+    private void setInterruptsFlow(Map<InterruptsFlow, DV> map) {
         if (!interruptsFlow.isSet() || !interruptsFlow.get().equals(map)) {
             interruptsFlow.set(map);
         }
     }
 
-    public AnalysisStatus setBlockExecution(Execution blockExecution) {
-        if (blockExecution != Execution.DELAYED_EXECUTION) {
+    public AnalysisStatus setBlockExecution(DV blockExecution) {
+        if (blockExecution.isDone()) {
             if ((!this.blockExecution.isSet() || !this.blockExecution.get().equals(blockExecution))) {
                 this.blockExecution.set(blockExecution);
             }
             return DONE;
         }
-        return DELAYS;
+        this.blockExecution.setFirst(blockExecution.causesOfDelay());
+        return new Delayed(blockExecution);
     }
 
     private static boolean rejectInterrupt(Statement statement, InterruptsFlow interruptsFlow) {

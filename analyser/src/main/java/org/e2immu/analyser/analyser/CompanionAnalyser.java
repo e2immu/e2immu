@@ -194,7 +194,9 @@ public class CompanionAnalyser {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
                 if (remapping == null)
-                    return DelayedVariableExpression.forParameter(parameterInfo, CauseOfDelay.Cause.REMAP_PARAMETER);
+                    return DelayedVariableExpression.forParameter(parameterInfo,
+                            new CausesOfDelay.SimpleSet(
+                                    new CauseOfDelay.VariableCause(variable, getLocation(), CauseOfDelay.Cause.REMAP_PARAMETER)));
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);

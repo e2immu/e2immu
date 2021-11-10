@@ -204,31 +204,10 @@ public record VariableExpression(Variable variable, String name) implements Expr
             builder.variableOccursInContainerContext(variable, adjustedScope);
         }
 
-        DV contextModifiedDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY);
-        if (contextModifiedDelay.valueIsTrue()) {
-            builder.markContextModifiedDelay(variable);
-        }
-
-        DV contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
-        if (contextNotNullDelay.valueIsTrue()) {
-            builder.markContextNotNullDelay(variable);
-        }
-
         DV contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
         if (contextImmutable .value()> MultiLevel.MUTABLE) {
             builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
-        }
-
-        DV contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);
-        if (contextImmutableDelay.valueIsTrue()) {
-            builder.markContextImmutableDelay(variable);
-        }
-
-        // when we don't know yet if forEach( ...)'s first parameter has the @PropagateModification annotation
-        DV propagateModificationDelay = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION_DELAY);
-        if (propagateModificationDelay.valueIsTrue()) {
-            builder.markPropagateModificationDelay(variable);
         }
 
         // having done all this, we do try for a shortcut

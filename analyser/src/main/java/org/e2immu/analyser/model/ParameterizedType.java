@@ -961,16 +961,16 @@ public class ParameterizedType {
         DV baseValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (baseValue.isDelayed()) return baseValue;
         if (MultiLevel.level(baseValue.value()) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
-            Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            if (doSum == Boolean.TRUE) {
+            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            if (doSum.valueIsTrue()) {
                 DV paramValue = parameters.stream()
                         .map(pt -> pt.defaultIndependent(analysisProvider))
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
                 return MultiLevel.sumImmutableLevels(baseValue, paramValue);
             }
-            if (doSum == null) {
-                return new DV.SingleDelay(bestType, CauseOfDelay.Cause.IMMUTABLE);
+            if (doSum.isDelayed()) {
+                return doSum;
             }
         }
         return baseValue;
@@ -1027,12 +1027,12 @@ public class ParameterizedType {
         }
         DV dynamicBaseValue = dynamicValue.max(baseValue);
         if (MultiLevel.level(dynamicBaseValue.value()) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
-            Boolean doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            if (doSum == null) {
+            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
+            if (doSum.isDelayed()) {
                 assert typeAnalysis.isNotContracted();
-                return new DV.SingleDelay(bestType, CauseOfDelay.Cause.IMMUTABLE);
+                return doSum;
             }
-            if (doSum) {
+            if (doSum.valueIsTrue()) {
                 DV paramValue = parameters.stream()
                         .map(pt -> pt.defaultImmutable(analysisProvider, true))
                         .map(v -> v.value() == TYPE_ANALYSIS_NOT_AVAILABLE ? MultiLevel.MUTABLE_DV : v)

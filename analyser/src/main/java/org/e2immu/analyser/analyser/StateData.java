@@ -110,12 +110,8 @@ public class StateData   {
         return statesOfInterrupts.stream().map(e -> e.getValue().get());
     }
 
-    public Set<Variable> valueOfExpressionIsDelayed() {
+    public CausesOfDelay valueOfExpressionIsDelayed() {
         if (valueOfExpression.isFinal()) return null;
-        Expression value = valueOfExpression.get();
-        if (value instanceof DelayedVariableExpression dve) {
-            return Set.of(dve.variable());
-        }
-        return Set.of();
+        return valueOfExpression.get().causesOfDelay();
     }
 }

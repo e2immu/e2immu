@@ -350,6 +350,10 @@ public class MultiLevel {
         return level(independent) + 2;
     }
 
+    public static boolean isAtLeastEffectivelyE2Immutable(DV dv) {
+        return isAtLeastEffectivelyE2Immutable(dv.value());
+    }
+
     public static boolean isAtLeastEffectivelyE2Immutable(int i) {
         int level = level(i);
         if (level < MultiLevel.LEVEL_2_IMMUTABLE) return false;

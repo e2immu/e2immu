@@ -22,14 +22,14 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Map;
 import java.util.Set;
 
-public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager,
+public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManager,
                                   LocalVariableCreation catchVariable,
                                   Map<String, Expression> switchIdToLabels,
                                   Expression switchSelector,
-                                  Set<Variable> switchSelectorIsDelayed) {
+                                  CausesOfDelay switchSelectorIsDelayed) {
 
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
-        return new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.initialConditionManager(primitives),
+        return new ForwardAnalysisInfo(FlowData.ALWAYS, ConditionManager.initialConditionManager(primitives),
                 null, null, null, null);
     }
 

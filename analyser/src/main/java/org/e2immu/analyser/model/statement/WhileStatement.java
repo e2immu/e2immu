@@ -30,10 +30,10 @@ public class WhileStatement extends LoopStatement {
                           Block block) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
-                    if(ec.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
-                    if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
-                    if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
-                    return FlowData.Execution.CONDITIONALLY;
+                    if (v.isDelayed()) return v.causesOfDelay();
+                    if (v.isBoolValueFalse()) return FlowData.NEVER;
+                    if (v.isBoolValueTrue()) return FlowData.ALWAYS;
+                    return FlowData.CONDITIONALLY;
                 })
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)

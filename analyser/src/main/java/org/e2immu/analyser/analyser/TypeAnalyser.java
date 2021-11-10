@@ -132,10 +132,10 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
 
     private void checkWorseThanSpecifiedInInterfacesImplemented() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
-            int valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, variableProperty);
-            int value = typeAnalysis.getProperty(variableProperty);
-            if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-                boolean complain = value < valueFromOverrides;
+            DV valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, variableProperty);
+            DV value = typeAnalysis.getProperty(variableProperty);
+            if (valueFromOverrides.isDone() && value.isDone()) {
+                boolean complain = value.lt(valueFromOverrides);
                 if (complain) {
                     messages.add(Message.newMessage(new Location(typeInfo),
                             Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, variableProperty.name));
@@ -159,10 +159,4 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         typeAnalysis.transferPropertiesToAnnotations(e2);
     }
-
-    @Override
-    protected String where(String componentName) {
-        return typeInfo.fullyQualifiedName + ":" + componentName;
-    }
-
 }

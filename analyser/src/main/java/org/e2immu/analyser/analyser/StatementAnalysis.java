@@ -59,7 +59,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData;
-    public final FlowData flowData = new FlowData();
+    public final FlowData flowData;
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
@@ -74,6 +74,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
         stateData = new StateData(statement instanceof LoopStatement);
+        flowData = new FlowData(location());
     }
 
     public String fullyQualifiedName() {
@@ -575,8 +576,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                                   Variable variable) {
         //update @Immutable
         assert variable instanceof ParameterInfo;
-        int currentImmutable = vi.getProperty(IMMUTABLE);
-        if (currentImmutable == Level.DELAY) {
+        DV currentImmutable = vi.getProperty(IMMUTABLE);
+        if (currentImmutable.isDelayed()) {
             DV formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext, false);
             if (formalImmutable.isDone()) {
                 vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
@@ -586,8 +587,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
         if (bestType != null) {
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
-            int currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
-            if (currentIndependent == Level.DELAY) {
+            DV currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
+            if (currentIndependent.isDelayed()) {
                 DV independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
                 if (independent.isDone()) {
                     vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
@@ -694,7 +695,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
                                 Instance.localCopyOfVariableField(index, fieldReference, analyserContext);
-                        boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
+                        boolean initialValueIsDelayed = initialValue.causesOfDelay().isDelayed();
                         Map<VariableProperty, DV> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, DV> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
@@ -834,9 +835,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             if (replacements.isEmpty()) return value;
 
-            if (evaluationContext.isDelayed(value)) {
+            if (value.isDelayed()) {
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
-                        variableInfo.getLinkedVariables().changeAllToDelay());
+                        variableInfo.getLinkedVariables().changeAllToDelay(value.causesOfDelay()));
             }
             Map<VariableProperty, DV> valueProperties = evaluationContext.getValueProperties(value);
             return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);
@@ -966,13 +967,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             lastStatements.stream().filter(cal -> cal.lastStatement.statementAnalysis.variables.isSet(fqn)).forEach(cal -> {
                 VariableInfoContainer calVic = cal.lastStatement.statementAnalysis.variables.get(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
-                int cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
-                int cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
-                if (cnn4ParentDelay == Level.TRUE && cnn4ParentDelayResolved != Level.TRUE) {
-                    groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), Level.DELAY);
+                DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
+                DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
+                if (cnn4ParentDelay.valueIsTrue() && !cnn4ParentDelayResolved.valueIsTrue()) {
+                    CausesOfDelay delay = new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(calVi.variable(),
+                            location(), CauseOfDelay.Cause.CNN_PARENT)); // TODO improve this system!
+                    groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), delay);
                 } else {
-                    int cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
-                    if (cnn4Parent != Level.DELAY)
+                    DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
+                    if (cnn4Parent.isDone())
                         groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
                 }
             });
@@ -1273,8 +1276,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitializerValue();
-            if (initialValue == null) { // initialiser value not yet evaluated
-                return DelayedVariableExpression.forField(fieldReference, CauseOfDelay.Cause.VALUE);
+            if (initialValue.isDelayed()) { // initialiser value not yet evaluated
+                return initialValue;
             }
             if (initialValue.isConstant()) {
                 return initialValue;

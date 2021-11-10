@@ -238,16 +238,18 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     private AnalysisStatus analyseImmutableCanBeIncreasedByTypeParameters() {
-        if (typeAnalysis.immutableCanBeIncreasedByTypeParameters.isSet()) return DONE;
-        if (!typeAnalysis.hiddenContentTypes.isSet()) {
-            return new AnalysisStatus.Delayed(typeInfo, CauseOfDelay.Cause.HIDDEN_CONTENT);
+        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentTypeStatus();
+        if (typeAnalysis.immutableCanBeIncreasedByTypeParameters().isDone()) return DONE;
+        if (hiddenContentStatus.isDelayed()) {
+            typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(hiddenContentStatus);
+            return new AnalysisStatus.Delayed(hiddenContentStatus);
         }
 
-        boolean res = typeAnalysis.hiddenContentTypes.get().types()
+        boolean res = typeAnalysis.getTransparentTypes().types()
                 .stream().anyMatch(t -> t.bestTypeInfo(analyserContext) == null);
 
         log(IMMUTABLE_LOG, "Immutable can be increased for {}? {}", typeInfo.fullyQualifiedName, res);
-        typeAnalysis.immutableCanBeIncreasedByTypeParameters.set(res);
+        typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(res);
         return DONE;
     }
 
@@ -255,7 +257,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
      */
     private AnalysisStatus analyseTransparentTypes() {
-        if (typeAnalysis.hiddenContentTypes.isSet()) return DONE;
+        if (typeAnalysis.hiddenContentTypeStatus().isDone()) return DONE;
 
         // STEP 1: Ensure all my static sub-types have been processed, but wait if that's not possible
 
@@ -265,7 +267,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     .filter(TypeInfo::isStatic)
                     .map(st -> {
                         TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                        if (!stAna.hiddenContentTypes.isSet()) {
+                        if (stAna.hiddenContentTypeStatus().isDelayed()) {
                             ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(st);
                             typeAnalyser.analyseTransparentTypes();
                         }
@@ -289,7 +291,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             TypeAnalysisImpl.Builder typeAnalysisStaticEnclosing = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(staticEnclosing);
             CausesOfDelay delays = typeAnalysisStaticEnclosing.hiddenContentTypeStatus();
             if (delays.isDone()) {
-                typeAnalysis.hiddenContentTypes.copy(typeAnalysisStaticEnclosing.hiddenContentTypes);
+                typeAnalysis.setTransparentTypes(typeAnalysisStaticEnclosing.getTransparentTypes());
                 typeAnalysis.explicitTypes.copy(typeAnalysisStaticEnclosing.explicitTypes);
             } else {
                 log(DELAYED, "Hidden content of inner class {} computed together with that of enclosing class {}",
@@ -392,7 +394,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         allTypes.removeIf(pt -> Primitives.isPrimitiveExcludingVoid(pt) || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
         typeAnalysis.explicitTypes.set(new SetOfTypes(allExplicitTypes));
-        typeAnalysis.hiddenContentTypes.set(new SetOfTypes(allTypes));
+        typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
         log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);
         return DONE;
     }

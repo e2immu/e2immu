@@ -54,7 +54,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Eventual eventual,
                                Precondition precondition,
                                AnalysisMode analysisMode,
-                               Map<VariableProperty, Integer> properties,
+                               Map<VariableProperty, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
                                Map<CompanionMethodName, MethodInfo> computedCompanions) {
@@ -133,12 +133,27 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
+    public CausesOfDelay preconditionForEventualStatus() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
+    public CausesOfDelay eventualStatus() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
+    public CausesOfDelay preconditionStatus() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
     public Precondition getPrecondition() {
         return precondition;
     }
 
     @Override
-    public int getProperty(VariableProperty variableProperty) {
+    public DV getProperty(VariableProperty variableProperty) {
         return getMethodProperty(variableProperty);
     }
 
@@ -182,12 +197,27 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Precondition getPrecondition() {
-            return precondition.getOrDefaultNull();
+            return precondition.get();
         }
 
         @Override
         public boolean eventualIsSet() {
             return eventual.isSet();
+        }
+
+        @Override
+        public CausesOfDelay preconditionForEventualStatus() {
+            return null;
+        }
+
+        @Override
+        public CausesOfDelay eventualStatus() {
+            return null;
+        }
+
+        @Override
+        public CausesOfDelay preconditionStatus() {
+            return null;
         }
 
         public Builder(AnalysisMode analysisMode,
@@ -216,7 +246,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getSingleReturnValue(),
                     preconditionForEventual.getOrDefault(Optional.empty()).orElse(null),
                     eventual.getOrDefault(NOT_EVENTUAL),
-                    precondition.getOrDefault(Precondition.empty(primitives)),
+                    precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
                     analysisMode(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
@@ -249,15 +279,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return getMethodProperty(variableProperty);
         }
 
-        private int formalProperty() {
+        private DV formalProperty() {
             return returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
         }
 
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-            int modified = getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modified = getProperty(VariableProperty.MODIFIED_METHOD);
 
             // @Precondition
-            if (precondition.isSet()) {
+            if (precondition.isFinal()) {
                 Precondition pc = precondition.get();
                 if (!(pc.expression() instanceof BooleanConstant)) {
                     // generate a companion method, but only when the precondition is non-trivial
@@ -269,21 +299,21 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
-            AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
+            AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                     e2ImmuAnnotationExpressions.modified;
             annotations.put(ae, true);
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            int formallyImmutable = formalProperty();
-            int dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
-            if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
+            DV formallyImmutable = formalProperty();
+            DV dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
+            if (MultiLevel.isBetterImmutable(dynamicallyImmutable.value(), formallyImmutable.value())) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }
 
             if (Primitives.isVoidOrJavaLangVoid(returnType)) return;
 
             // @Identity
-            if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
+            if (getProperty(VariableProperty.IDENTITY).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.identity, true);
             }
 
@@ -291,7 +321,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (Primitives.isPrimitiveExcludingVoid(returnType)) return;
 
             // @Fluent
-            if (getProperty(VariableProperty.FLUENT) == Level.TRUE) {
+            if (getProperty(VariableProperty.FLUENT).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.fluent, true);
             }
 
@@ -299,9 +329,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             // @Dependent @Independent
-            int independent = getProperty(VariableProperty.INDEPENDENT);
-            int formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
-            doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
+            DV independent = getProperty(VariableProperty.INDEPENDENT);
+            DV formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
+            doIndependent(e2ImmuAnnotationExpressions, independent.value(), formallyIndependent.value(), dynamicallyImmutable.value());
         }
 
         protected void writeEventual(Eventual eventual) {
@@ -339,7 +369,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Eventual getEventual() {
-            return eventual.getOrDefault(DELAYED_EVENTUAL);
+            return eventual.get();
         }
 
         public void setFirstStatement(StatementAnalysis firstStatement) {
@@ -358,6 +388,14 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         protected void writeEventual(String markValue, boolean mark, Boolean isAfter, Boolean test) {
             Set<FieldInfo> fields = methodInfo.typeInfo.findFields(inspectionProvider, markValue);
             writeEventual(new MethodAnalysis.Eventual(fields, mark, isAfter, test));
+        }
+
+        public void setPrecondition(Precondition pc) {
+            if (pc.expression().isDelayed()) {
+                precondition.setVariable(pc);
+            } else {
+                precondition.setFinal(pc);
+            }
         }
     }
 

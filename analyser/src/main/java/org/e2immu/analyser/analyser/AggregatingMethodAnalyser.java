@@ -52,7 +52,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         assert methodAnalysis.analysisMode == Analysis.AnalysisMode.AGGREGATED;
 
         // TODO improve!
-        methodAnalysis.precondition.set(Precondition.empty(analyserContextInput.getPrimitives()));
+        methodAnalysis.precondition.setFinal(Precondition.empty(analyserContextInput.getPrimitives()));
         methodAnalysis.preconditionForEventual.set(Optional.empty());
         methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
 

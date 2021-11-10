@@ -51,22 +51,22 @@ public class ShallowFieldAnalyser {
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.fromBool(fieldInfo.isExplicitlyFinal() || enumField));
+        fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
 
         // unless annotated with something heavier, ...
         if (enumField && !fieldAnalysisBuilder.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-            fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         if (!fieldAnalysisBuilder.properties.isSet(VariableProperty.CONTAINER)) {
-            int typeIsContainer;
+            DV typeIsContainer;
             if (fieldAnalysisBuilder.bestType == null) {
-                typeIsContainer = Level.TRUE;
+                typeIsContainer = Level.TRUE_DV;
             } else {
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(fieldAnalysisBuilder.bestType);
                 if (typeAnalysis != null) {
                     typeIsContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
                 } else {
-                    typeIsContainer = VariableProperty.CONTAINER.falseValue;
+                    typeIsContainer = VariableProperty.CONTAINER.falseDv;
                     if (fieldInfo.isPublic()) {
                         messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                                 fieldAnalysisBuilder.bestType.fullyQualifiedName));
@@ -76,7 +76,7 @@ public class ShallowFieldAnalyser {
             fieldAnalysisBuilder.setProperty(VariableProperty.CONTAINER, typeIsContainer);
         }
 
-        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE
+        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
             Expression value;
@@ -85,7 +85,7 @@ public class ShallowFieldAnalyser {
             } else {
                 value = EmptyExpression.EMPTY_EXPRESSION; // IMPROVE
             }
-            fieldAnalysisBuilder.effectivelyFinalValue.set(value);
+            fieldAnalysisBuilder.setValue(value);
         }
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
     }

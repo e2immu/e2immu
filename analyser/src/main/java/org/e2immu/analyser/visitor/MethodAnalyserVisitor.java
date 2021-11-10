@@ -34,7 +34,7 @@ public interface MethodAnalyserVisitor {
                 Map<String, AnalysisStatus> statuses,
                 Supplier<Stream<Message>> messageStream) {
 
-        public int getProperty(Expression value, VariableProperty variableProperty) {
+        public DV getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty, false, false);
         }
 

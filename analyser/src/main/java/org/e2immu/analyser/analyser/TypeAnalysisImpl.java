@@ -20,10 +20,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.AddOnceSet;
-import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.SetOnce;
-import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.*;
 
 import java.util.Map;
 import java.util.Objects;
@@ -64,8 +61,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Boolean immutableCanBeIncreasedByTypeParameters() {
-        return immutableCanBeIncreasedByTypeParameters;
+    public DV immutableCanBeIncreasedByTypeParameters() {
+        return Level.fromBoolDv(immutableCanBeIncreasedByTypeParameters);
     }
 
     @Override
@@ -165,14 +162,13 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     public static class Builder extends AbstractAnalysisBuilder implements TypeAnalysis {
         public final TypeInfo typeInfo;
-        private final AnalyserContext analyserContext;
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
         public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
-        public final SetOnce<SetOfTypes> hiddenContentTypes = new SetOnce<>();
+        private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
         public final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
@@ -183,10 +179,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final Set<FieldInfo> visibleFields;
         public final AnalysisMode analysisMode;
 
-        public final SetOnce<Boolean> immutableCanBeIncreasedByTypeParameters = new SetOnce<>();
+        private final VariableFirstThen<CausesOfDelay, Boolean> immutableCanBeIncreasedByTypeParameters;
 
         private CausesOfDelay approvedPreconditionsE1Delays;
         private CausesOfDelay approvedPreconditionsE2Delays;
+
+        private static CausesOfDelay initialDelay(TypeInfo typeInfo) {
+            return new CausesOfDelay.SimpleSet(typeInfo, CauseOfDelay.Cause.INITIAL_VALUE);
+        }
 
         /*
         analyser context can be null for Primitives, ShallowTypeAnalyser
@@ -196,7 +196,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.typeInfo = typeInfo;
             this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
-            this.analyserContext = analyserContext;
+            hiddenContentTypes = new VariableFirstThen<>(initialDelay(typeInfo));
+            immutableCanBeIncreasedByTypeParameters = new VariableFirstThen<>(initialDelay(typeInfo));
         }
 
         @Override
@@ -294,7 +295,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public SetOfTypes getTransparentTypes() {
-            return hiddenContentTypes.getOrDefaultNull();
+            return hiddenContentTypes.get();
         }
 
         @Override
@@ -340,12 +341,25 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public CausesOfDelay hiddenContentTypeStatus() {
             if (hiddenContentTypes.isSet()) return CausesOfDelay.EMPTY;
-            return new CausesOfDelay.SimpleSet(typeInfo, CauseOfDelay.Cause.HIDDEN_CONTENT);
+            return hiddenContentTypes.getFirst();
         }
 
         @Override
-        public Boolean immutableCanBeIncreasedByTypeParameters() {
-            return immutableCanBeIncreasedByTypeParameters.getOrDefaultNull();
+        public DV immutableCanBeIncreasedByTypeParameters() {
+            return immutableCanBeIncreasedByTypeParameters.isFirst() ? immutableCanBeIncreasedByTypeParameters.getFirst()
+                    : Level.fromBoolDv(immutableCanBeIncreasedByTypeParameters.get());
+        }
+
+        public void setImmutableCanBeIncreasedByTypeParameters(CausesOfDelay causes) {
+            immutableCanBeIncreasedByTypeParameters.setFirst(causes);
+        }
+
+        public void setImmutableCanBeIncreasedByTypeParameters(Boolean b) {
+            immutableCanBeIncreasedByTypeParameters.set(b);
+        }
+
+        public void setTransparentTypes(SetOfTypes setOfTypes) {
+            hiddenContentTypes.set(setOfTypes);
         }
 
         public TypeAnalysis build() {

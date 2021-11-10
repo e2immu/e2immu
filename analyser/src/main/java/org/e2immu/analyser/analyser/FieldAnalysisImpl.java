@@ -114,7 +114,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         private final EventuallyFinal<Expression> initializerValue = new EventuallyFinal<>();
-        private final VariableFirstThen<CausesOfDelay, List<ValueAndPropertyProxy>> values = new VariableFirstThen<>(CausesOfDelay.EMPTY);
+        private final VariableFirstThen<CausesOfDelay, List<ValueAndPropertyProxy>> values;
         private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
 
         // end product of the dependency analysis of linkage between the variables in a method
@@ -141,6 +141,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             LinkedVariables delayedLinkedVariables = LinkedVariables.delayedEmpty(initialDelay(fieldInfo));
             setValue(DelayedExpression.forInitialFieldValue(fieldInfo, delayedLinkedVariables, initialDelay(fieldInfo)));
             linkedVariables.setVariable(delayedLinkedVariables);
+            this.values = new VariableFirstThen<>(initialDelay(fieldInfo));
         }
 
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {
@@ -310,7 +311,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         public void setLinkedVariables(LinkedVariables linkedVariables) {
-            if(linkedVariables.isDelayed()) {
+            if (linkedVariables.isDelayed()) {
                 this.linkedVariables.setVariable(linkedVariables);
             } else {
                 this.linkedVariables.setFinal(linkedVariables);

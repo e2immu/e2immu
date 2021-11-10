@@ -343,8 +343,8 @@ public class Primitives {
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
             builder.properties.put(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
-            builder.immutableCanBeIncreasedByTypeParameters.set(false);
+            builder.setTransparentTypes(SetOfTypes.EMPTY);
+            builder.setImmutableCanBeIncreasedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
         }
     }
@@ -365,8 +365,8 @@ public class Primitives {
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
-            builder.hiddenContentTypes.set(SetOfTypes.EMPTY);
-            builder.immutableCanBeIncreasedByTypeParameters.set(false);
+            builder.setTransparentTypes(SetOfTypes.EMPTY);
+            builder.setImmutableCanBeIncreasedByTypeParameters(false);
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,

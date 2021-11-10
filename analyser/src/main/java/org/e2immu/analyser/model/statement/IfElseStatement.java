@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -55,11 +52,11 @@ public class IfElseStatement extends StatementWithExpression {
         return builder.build();
     }
 
-    private static FlowData.Execution standardExecution(Expression v, EvaluationContext evaluationContext) {
-        if (evaluationContext.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
-        if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
-        if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
-        return FlowData.Execution.CONDITIONALLY;
+    private static DV standardExecution(Expression v, EvaluationContext evaluationContext) {
+        if (v.isDelayed()) return v.causesOfDelay();
+        if (v.isBoolValueTrue()) return FlowData.ALWAYS;
+        if (v.isBoolValueFalse()) return FlowData.NEVER;
+        return FlowData.CONDITIONALLY;
     }
 
     @Override
