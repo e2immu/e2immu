@@ -131,7 +131,7 @@ public interface TypeAnalysis extends Analysis {
     Optional<T> is @E2Immutable. In general T can be mutable; it is part of the immutable content of Optional.
     Optional<Integer> is @ERImmutable, because Integer is so.
      */
-    Boolean immutableCanBeIncreasedByTypeParameters();
+    DV immutableCanBeIncreasedByTypeParameters();
 
     /*
     too simple an implementation, we should do real bookkeeping: which fields hold which types?
@@ -142,11 +142,12 @@ public interface TypeAnalysis extends Analysis {
 
     Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider);
 
-    default Boolean isPartOfHiddenContent(ParameterizedType type) {
-        if (hiddenContentTypeStatus().isDone()) {
-            return getTransparentTypes().contains(type);
+    default DV isPartOfHiddenContent(ParameterizedType type) {
+        CausesOfDelay status = hiddenContentTypeStatus();
+        if (status.isDone()) {
+            return Level.fromBoolDv( getTransparentTypes().contains(type));
         }
-        return null;
+        return status;
     }
 
     CausesOfDelay hiddenContentTypeStatus();

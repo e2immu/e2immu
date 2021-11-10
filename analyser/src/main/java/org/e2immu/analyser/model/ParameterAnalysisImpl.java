@@ -25,12 +25,12 @@ import java.util.Map;
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
 
     private final ParameterInfo parameterInfo;
-    public final Map<FieldInfo, Integer> assignedToField;
+    public final Map<FieldInfo, DV> assignedToField;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
-                                  Map<VariableProperty, Integer> properties,
+                                  Map<VariableProperty, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
-                                  Map<FieldInfo, Integer> assignedToField) {
+                                  Map<FieldInfo, DV> assignedToField) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
@@ -48,7 +48,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
-        private final SetOnceMap<FieldInfo, Integer> assignedToField = new SetOnceMap<>();
+        private final SetOnceMap<FieldInfo, DV> assignedToField = new SetOnceMap<>();
         private final FlipSwitch delaysOnFieldsResolved = new FlipSwitch();
         public final Location location;
         private final AnalysisProvider analysisProvider;
@@ -102,7 +102,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable
             DV modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
-            if (parameterInfo.parameterizedType.canBeModifiedInThisClass(analysisProvider) != Boolean.TRUE) {
+            if (!parameterInfo.parameterizedType.canBeModifiedInThisClass(analysisProvider).valueIsTrue()) {
                 AnnotationExpression ae = modified.value() == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);

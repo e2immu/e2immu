@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -162,7 +163,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // ************** PRECONDITION
 
-        public final SetOnce<Precondition> precondition = new SetOnce<>();
+        public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();

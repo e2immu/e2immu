@@ -117,6 +117,11 @@ public record DelayedExpression(String msg,
         return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type, linkedVariables, causesOfDelay);
     }
 
+    /* temporary, in field analyser */
+    public static Expression forFieldProperty(FieldInfo fieldInfo, VariableProperty aFinal, CausesOfDelay causesOfDelay) {
+        return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type, LinkedVariables.EMPTY, causesOfDelay);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,7 +25,7 @@ import java.util.stream.Stream;
 /*
 Delayable Value
  */
-public interface DV {
+public interface DV extends WeightedGraph.Weight {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE);
 
@@ -102,6 +103,11 @@ public interface DV {
         @Override
         public String toString() {
             return Integer.toString(value);
+        }
+
+        @Override
+        public int compareTo(WeightedGraph.Weight o) {
+            return value - ((DV) o).value();
         }
     }
 
@@ -186,6 +192,11 @@ public interface DV {
                     "causeOfDelay=" + causeOfDelay +
                     ", value=" + value +
                     '}';
+        }
+
+        @Override
+        public int compareTo(WeightedGraph.Weight o) {
+            return value - ((DV) o).value();
         }
     }
 }

@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -123,6 +124,11 @@ public interface CausesOfDelay extends DV {
         public DV replaceDelayBy(DV nonDelay) {
             assert nonDelay.isDone();
             return nonDelay;
+        }
+
+        @Override
+        public int compareTo(WeightedGraph.Weight o) {
+            return value() - ((DV) o).value();
         }
     }
 }

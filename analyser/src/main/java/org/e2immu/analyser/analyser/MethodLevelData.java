@@ -55,7 +55,7 @@ public class MethodLevelData {
     // part of modification status for dealing with circular methods
     private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
 
-    public Boolean getCallsPotentiallyCircularMethod() {
+    public DV getCallsPotentiallyCircularMethod() {
         return callsPotentiallyCircularMethod.getOrDefaultNull();
     }
 

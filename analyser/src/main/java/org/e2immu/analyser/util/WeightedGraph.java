@@ -28,9 +28,17 @@ import java.util.function.BiConsumer;
  * @param <T>
  */
 @E2Container(after = "frozen")
-public class WeightedGraph<T> extends Freezable {
-    private static class Node<T> {
-        Map<T, Integer> dependsOn;
+public class WeightedGraph<T, W extends WeightedGraph.Weight> extends Freezable {
+    public interface WeightType<W extends Weight> {
+        W neutral();
+    }
+
+    public interface Weight extends Comparable<Weight> {
+
+    }
+
+    private static class Node<T, W extends Weight> {
+        Map<T, W> dependsOn;
         final T t;
 
         private Node(T t) {
@@ -38,8 +46,14 @@ public class WeightedGraph<T> extends Freezable {
         }
     }
 
+    private final W neutral;
+
+    public WeightedGraph(WeightType<W> weightType) {
+        neutral = weightType.neutral();
+    }
+
     @Modified
-    private final Map<T, Node<T>> nodeMap = new HashMap<>();
+    private final Map<T, Node<T, W>> nodeMap = new HashMap<>();
 
     @NotModified
     public int size() {
@@ -52,35 +66,36 @@ public class WeightedGraph<T> extends Freezable {
     }
 
     @Independent
-    public Map<T, Integer> links(@NotNull T t, boolean followDelayed) {
-        Map<T, Integer> result = new HashMap<>();
-        result.put(t, 0);
+    public Map<T, W> links(@NotNull T t, boolean followDelayed) {
+        Map<T, W> result = new HashMap<>();
+        result.put(t, neutral);
         recursivelyComputeLinks(t, result, followDelayed);
         return result;
     }
 
     @NotModified
-    private void recursivelyComputeLinks(@NotNull T t, @NotNull Map<T, Integer> distanceToStartingPoint, boolean followDelayed) {
+    private void recursivelyComputeLinks(@NotNull T t, @NotNull Map<T, W> distanceToStartingPoint, boolean followDelayed) {
         Objects.requireNonNull(t);
-        Node<T> node = nodeMap.get(t);
+        Node<T, W> node = nodeMap.get(t);
 
         // must be already present!
-        int currentDistanceToT = distanceToStartingPoint.get(t);
+        W currentDistanceToT = distanceToStartingPoint.get(t);
 
         // do I have outgoing arrows?
         if (node != null && node.dependsOn != null) {
 
             // yes, opportunity (1) to improve distance computations, (2) to visit them
             node.dependsOn.forEach((n, d) -> {
-                if (followDelayed || d >= 0) {
-                    int distanceToN = d < 0 || currentDistanceToT < 0 ? Math.min(d, currentDistanceToT) : Math.max(currentDistanceToT, d);
-                    Integer currentDistanceToN = distanceToStartingPoint.get(n);
+                if (followDelayed || d.compareTo(neutral) >= 0) {
+                    W distanceToN = d.compareTo(neutral) < 0 || currentDistanceToT.compareTo(neutral) < 0
+                            ? min(d, currentDistanceToT) : max(currentDistanceToT, d);
+                    W currentDistanceToN = distanceToStartingPoint.get(n);
                     if (currentDistanceToN == null) {
                         // we've not been at N before
                         distanceToStartingPoint.put(n, distanceToN);
                         recursivelyComputeLinks(n, distanceToStartingPoint, followDelayed);
                     } else {
-                        int newDistanceToN = currentDistanceToN == 0 ? 0 : Math.min(distanceToN, currentDistanceToN);
+                        W newDistanceToN = currentDistanceToN .compareTo(neutral) == 0 ? neutral : min(distanceToN, currentDistanceToN);
                         distanceToStartingPoint.put(n, newDistanceToN);
                     }
                 } // else: ignore delayed links!
@@ -88,18 +103,26 @@ public class WeightedGraph<T> extends Freezable {
         }
     }
 
+    private  W min(W w1, W w2) {
+        return w1.compareTo(w2) <= 0 ? w1 : w2;
+    }
+
+    private  W max(W w1, W w2) {
+        return w1.compareTo(w2) <= 0 ? w2 : w1;
+    }
+
     @NotModified(contract = true)
-    public void visit(@NotNull BiConsumer<T, Map<T, Integer>> consumer) {
+    public void visit(@NotNull BiConsumer<T, Map<T, W>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
     @NotNull
     @Modified
     @Only(before = "frozen")
-    private Node<T> getOrCreate(@NotNull T t) {
+    private Node<T, W> getOrCreate(@NotNull T t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
-        Node<T> node = nodeMap.get(t);
+        Node<T, W> node = nodeMap.get(t);
         if (node == null) {
             node = new Node<>(t);
             nodeMap.put(t, node);
@@ -109,20 +132,20 @@ public class WeightedGraph<T> extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Map<T, Integer> dependsOn) {
+    public void addNode(@NotNull T t, @NotNull Map<T, W> dependsOn) {
         addNode(t, dependsOn, false);
     }
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull Map<T, Integer> dependsOn, boolean bidirectional) {
+    public void addNode(@NotNull T t, @NotNull Map<T, W> dependsOn, boolean bidirectional) {
         ensureNotFrozen();
-        Node<T> node = getOrCreate(t);
-        for (Map.Entry<T, Integer> e : dependsOn.entrySet()) {
+        Node<T, W> node = getOrCreate(t);
+        for (Map.Entry<T, W> e : dependsOn.entrySet()) {
             if (node.dependsOn == null) node.dependsOn = new HashMap<>();
             node.dependsOn.put(e.getKey(), e.getValue());
             if (bidirectional) {
-                Node<T> n = getOrCreate(e.getKey());
+                Node<T, W> n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) n.dependsOn = new HashMap<>();
                 n.dependsOn.put(t, e.getValue());
             }

@@ -62,6 +62,7 @@ public class LinkedVariables {
         return causesOfDelay.isDelayed();
     }
 
+    public static final int DELAYED_VALUE = -1;
     public static final int STATICALLY_ASSIGNED = 0;
     public static final int ASSIGNED = 1;
     public static final int DEPENDENT = 2;
@@ -204,7 +205,7 @@ public class LinkedVariables {
 
     public Stream<Variable> variablesAssignedOrDependent() {
         return variables.entrySet().stream()
-                .filter(e -> isAssignedOrLinked(e.getValue().value()))
+                .filter(e -> isAssignedOrLinked(e.getValue()))
                 .map(Map.Entry::getKey);
     }
 
