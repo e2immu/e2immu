@@ -868,7 +868,8 @@ public class ParameterizedType {
     public DV isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return new DV.SingleDelay(typeBeingAnalysed, CauseOfDelay.Cause.HIDDEN_CONTENT);
+        if (hiddenContentTypes == null) return new DV.SingleDelay(new Location(typeBeingAnalysed),
+                CauseOfDelay.Cause.HIDDEN_CONTENT);
         return Level.fromBoolDv(hiddenContentTypes.contains(this));
     }
 

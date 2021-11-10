@@ -44,8 +44,8 @@ public class Test_Util_00_Pair extends CommonTestRunner {
                     assertNull(d.fieldAnalysis().isTransparentType());
                 } else {
                     assertTrue(d.fieldAnalysis().isTransparentType());
-                    assertEquals("k", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                    if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve) {
+                    assertEquals("k", d.fieldAnalysis().getValue().toString());
+                    if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                         assertTrue(ve.variable() instanceof ParameterInfo pi && "k".equals(pi.name));
                     } else fail();
                 }
@@ -55,8 +55,8 @@ public class Test_Util_00_Pair extends CommonTestRunner {
                     assertNull(d.fieldAnalysis().isTransparentType());
                 } else {
                     assertTrue(d.fieldAnalysis().isTransparentType());
-                    assertEquals("v", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                    if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve) {
+                    assertEquals("v", d.fieldAnalysis().getValue().toString());
+                    if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                         assertTrue(ve.variable() instanceof ParameterInfo pi && "v".equals(pi.name));
                     } else fail();
                 }

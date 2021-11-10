@@ -57,7 +57,7 @@ public class Test_46_Singleton extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("created".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<variable value>" : "[true,false]";
-                assertEquals(expected, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
 
@@ -141,7 +141,7 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("created".equals(d.fieldInfo().name)) {
                 FieldAnalysisImpl.Builder builder = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
                 String expected = d.iteration() <= 1 ? "<variable value>" : "false";
-                assertEquals(expected, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
                 assertEquals("[false, false]", builder.getValues().stream()
                         .map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList().toString());

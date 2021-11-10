@@ -76,6 +76,8 @@ public class MultiLevel {
     public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, NOT_NULL_1);
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, LEVEL_2_IMMUTABLE);
+    public static final DV EVENTUALLY_E2IMMUTABLE_DV = new DV.NoDelay(EVENTUALLY_E2IMMUTABLE);
+
     public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, LEVEL_1_IMMUTABLE);
     public static final DV EVENTUALLY_E1IMMUTABLE_DV = new DV.NoDelay(EVENTUALLY_E1IMMUTABLE);
 

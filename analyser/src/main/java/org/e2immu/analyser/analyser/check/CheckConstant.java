@@ -32,8 +32,8 @@ import java.util.function.Function;
 public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e2) {
 
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        Expression singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
-                fieldAnalysis.getEffectivelyFinalValue() : EmptyExpression.EMPTY_EXPRESSION;
+        Expression singleReturnValue = fieldAnalysis.getValue() != null ?
+                fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
         checkConstant(messages, (AbstractAnalysisBuilder) fieldAnalysis,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),

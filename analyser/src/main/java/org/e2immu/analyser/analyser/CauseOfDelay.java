@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
 
 public interface CauseOfDelay {
@@ -36,7 +37,8 @@ public interface CauseOfDelay {
         HIDDEN_CONTENT("Hidden content of type has not yet been determined"),
         INITIAL_VALUE("Not yet initialized"),
         APPROVED_PRECONDITIONS("Approved preconditions for field"),
-        TO_IMPLEMENT("Temporary; needs implementation");
+        TO_IMPLEMENT("Temporary; needs implementation"),
+        FIRST_ITERATION("Certain actions cannot be done in the first iteration");
 
         public final String msg;
 
@@ -63,6 +65,9 @@ public interface CauseOfDelay {
     Location location();
 
     record SimpleCause(Location location, Cause cause) implements CauseOfDelay {
+        public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
+            this(new Location(withInspectionAndAnalysis), cause);
+        }
     }
 
     record VariableCause(Variable variable, Location location, Cause cause) implements CauseOfDelay {

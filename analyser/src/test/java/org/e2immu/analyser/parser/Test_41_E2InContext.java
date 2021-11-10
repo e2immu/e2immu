@@ -72,10 +72,10 @@ public class Test_41_E2InContext extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("eventually".equals(d.fieldInfo().name)) {
                 if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
                     assertEquals(INSTANCE_TYPE_EVENTUALLY_STRING,
-                            d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                            d.fieldAnalysis().getValue().toString());
                 }
                 int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));

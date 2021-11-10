@@ -230,7 +230,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("i".equals(d.fieldInfo().name)) {
-                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };

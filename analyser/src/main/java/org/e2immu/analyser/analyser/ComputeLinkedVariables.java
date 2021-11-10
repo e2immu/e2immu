@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeAnalysis;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
@@ -191,7 +188,7 @@ public class ComputeLinkedVariables {
                 for (Variable variable : cluster) {
                     VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
                     if (vic != null) {
-                        VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(level);
+                        VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
                         if (vi.getProperty(variableProperty) == Level.DELAY) {
                             try {
                                 vic.setProperty(variableProperty, summary, level);
@@ -220,7 +217,7 @@ public class ComputeLinkedVariables {
                         Map<Variable, Integer> map = weightedGraph.links(variable, true);
                         LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                        vic.ensureLevelForPropertiesLinkedVariables(level);
+                        vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
                         vic.setLinkedVariables(linkedVariables, level);
                     }
                 });

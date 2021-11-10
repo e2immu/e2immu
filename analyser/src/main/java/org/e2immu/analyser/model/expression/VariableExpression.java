@@ -326,7 +326,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
             if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
                 FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
-                Expression efv = fieldAnalysis.getEffectivelyFinalValue();
+                Expression efv = fieldAnalysis.getValue();
                 ConstructorCall cc2;
                 if (efv != null && (cc2 = efv.asInstanceOf(ConstructorCall.class)) != null && cc2.constructor() != null) {
                     return extractNewObject(evaluationContext, cc2, fr.fieldInfo);

@@ -44,7 +44,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("isSet".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }

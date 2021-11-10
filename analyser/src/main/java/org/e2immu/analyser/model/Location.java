@@ -17,9 +17,16 @@ package org.e2immu.analyser.model;
 import java.util.Objects;
 
 public class Location implements Comparable<Location> {
+    public static final Location NOT_YET_SET = new Location();
     public final WithInspectionAndAnalysis info;
     public final String statementIndexInMethod;
     public final Identifier identifier;
+
+    private Location() {
+        this.info = null;
+        this.statementIndexInMethod = null;
+        this.identifier = Identifier.CONSTANT;
+    }
 
     public Location(WithInspectionAndAnalysis info) {
         this(info, null, info.getIdentifier());
@@ -55,12 +62,18 @@ public class Location implements Comparable<Location> {
 
     @Override
     public String toString() {
+        if (info == null) {
+            return "NOT_YET_SET";
+        }
         return info.niceClassName() + " " + info.fullyQualifiedName()
                 + (identifier instanceof Identifier.PositionalIdentifier pi ? " (line " + pi.line() + ", pos " + pi.pos() + ")" :
                 (statementIndexInMethod == null ? "" : " (statement " + statementIndexInMethod + ")"));
     }
 
     public String detailedLocation() {
+        if (info == null) {
+            return "NOT_YET_SET";
+        }
         String type;
         if (info instanceof TypeInfo) type = "Type";
         else if (info instanceof FieldInfo) type = "Field";
@@ -73,6 +86,9 @@ public class Location implements Comparable<Location> {
     }
 
     public int compareTo(Location other) {
+        if (info == null || other.info == null) {
+            throw new UnsupportedOperationException("Encountering NOT_YET_SET");
+        }
         int c = info.getTypeInfo().primaryType().fullyQualifiedName
                 .compareTo(other.info.getTypeInfo().primaryType().fullyQualifiedName);
         if (c != 0) return c;

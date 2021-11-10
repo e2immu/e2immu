@@ -457,13 +457,13 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertEquals("t", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("t", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
             if ("s".equals(d.fieldInfo().name)) {
                 assertTrue(d.fieldInfo().owner.isPrivate());
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("s", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("s", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };

@@ -111,6 +111,10 @@ public interface DV {
             this(causeOfDelay, Level.DELAY);
         }
 
+        public SingleDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
+            this(new Location(withInspectionAndAnalysis), cause);
+        }
+
         public SingleDelay(Location location, CauseOfDelay.Cause cause) {
             this(new CauseOfDelay.SimpleCause(location, cause), Level.DELAY);
         }

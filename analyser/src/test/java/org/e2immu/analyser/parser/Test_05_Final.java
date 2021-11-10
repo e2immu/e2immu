@@ -188,18 +188,18 @@ public class Test_05_Final extends CommonTestRunner {
             if ("s1".equals(d.fieldInfo().name)) {
                 if (d.iteration() > 0) {
                     // cannot properly be assigned/linked to one parameter
-                    assertEquals("[s1+\"abc\",s1]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                    assertEquals("[s1+\"abc\",s1]", d.fieldAnalysis().getValue().debugOutput());
                 } else {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 }
                 assertEquals("s1:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
-                    assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-                    assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
+                    assertEquals("[null,s2]", d.fieldAnalysis().getValue().debugOutput());
+                    assertTrue(d.fieldAnalysis().getValue() instanceof MultiValue);
                 }
                 assertEquals("s2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }

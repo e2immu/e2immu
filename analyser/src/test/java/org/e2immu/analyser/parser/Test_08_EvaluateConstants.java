@@ -94,7 +94,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis()
                         .getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("in", d.fieldAnalysis().getValue().toString());
             }
         };
 

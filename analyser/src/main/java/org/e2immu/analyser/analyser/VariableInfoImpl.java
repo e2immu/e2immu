@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
@@ -40,7 +41,7 @@ import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEqu
 
 class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
-
+    private final Location location;
     private final Variable variable;
     private final AssignmentIds assignmentIds;
     private final String readId;
@@ -59,27 +60,30 @@ class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
     }
 
     // used by merge code
-    private VariableInfoImpl(Variable variable, AssignmentIds assignmentIds, String readId) {
+    private VariableInfoImpl(Location location, Variable variable, AssignmentIds assignmentIds, String readId) {
+        this.location = Objects.requireNonNull(location);
         this.variable = Objects.requireNonNull(variable);
         this.assignmentIds = assignmentIds;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
-        CausesOfDelay causesOfDelay = initialValue(variable);
+        CausesOfDelay causesOfDelay = initialValue(location, variable);
         value.setVariable(DelayedVariableExpression.forVariable(variable, causesOfDelay));
         linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }
 
     // normal one for creating an initial or evaluation
-    VariableInfoImpl(Variable variable,
+    VariableInfoImpl(Location location,
+                     Variable variable,
                      AssignmentIds assignmentIds,
                      String readId,
                      int statementTime,
                      Set<Integer> readAtStatementTimes,
                      Expression delayedValue) {
+        this.location = Objects.requireNonNull(location);
         this.variable = Objects.requireNonNull(variable);
         this.assignmentIds = Objects.requireNonNull(assignmentIds);
         this.readId = Objects.requireNonNull(readId);
@@ -87,13 +91,13 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        CausesOfDelay causesOfDelay = initialValue(variable);
+        CausesOfDelay causesOfDelay = initialValue(location, variable);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, causesOfDelay) : delayedValue);
         linkedVariables.setVariable(new LinkedVariables(Map.of(), causesOfDelay));
     }
 
-    private static CausesOfDelay initialValue(Variable variable) {
-        return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, CauseOfDelay.Cause.INITIAL_VALUE));
+    private static CausesOfDelay initialValue(Location location, Variable variable) {
+        return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
     }
 
     @Override
@@ -147,6 +151,15 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
+    public DV getProperty(VariableProperty variableProperty) {
+        DV dv = properties.getOrDefault(variableProperty, null);
+        if(dv == null) {
+            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, CauseOfDelay.Cause.from(variableProperty)));
+        }
+        return dv;
+    }
+
+    @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("[name=").append(name()).append(", props=").append(properties);
@@ -178,8 +191,6 @@ class VariableInfoImpl implements VariableInfo {
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     void setProperty(VariableProperty variableProperty, DV value) {
-        assert !GroupPropertyValues.DELAY_PROPERTIES.contains(variableProperty) :
-                "?? trying to add a delay property to a variable: " + variableProperty;
         try {
             properties.put(variableProperty, value);
         } catch (RuntimeException e) {
@@ -258,13 +269,7 @@ class VariableInfoImpl implements VariableInfo {
                     i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : Level.FALSE_DV;
 
     private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(SCOPE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(METHOD_CALLED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_MODIFIED_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(PROPAGATE_MODIFICATION_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
             new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_IMMUTABLE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
@@ -286,13 +291,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
-            new MergeOp(SCOPE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(METHOD_CALLED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_MODIFIED_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(PROPAGATE_MODIFICATION_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
             new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_IMMUTABLE_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
@@ -328,7 +327,8 @@ class VariableInfoImpl implements VariableInfo {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(evaluationContext, atLeastOneBlockExecuted,
                 getAssignmentIds(), mergeSources);
         String mergedReadId = mergedReadId(evaluationContext, getReadId(), mergeSources);
-        VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentIds, mergedReadId);
+        VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
+                variable, mergedAssignmentIds, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
                 groupPropertyValues);
         return newObject;
@@ -364,9 +364,9 @@ class VariableInfoImpl implements VariableInfo {
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
 
-        setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
+        setValue(mergedValue, mergedValue.isDelayed());
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        if (!mergedValue.isDelayed(evaluationContext)) {
+        if (!mergedValue.isDelayed()) {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);

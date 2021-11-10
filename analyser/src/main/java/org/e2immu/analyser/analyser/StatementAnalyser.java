@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
-import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -52,7 +50,7 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysis.class)
-public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers, DelayDebugger {
+public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
@@ -756,7 +754,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 changeData.properties(), groupPropertyValues);
 
                         LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED);
-                        local.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+                        local.ensureEvaluation(getLocation(),
+                                new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
                         local.setValue(valueToWriteCorrected, valueToWritePossiblyDelayedIsDelayed, linkedToMain, merged2,
                                 false);
@@ -970,7 +969,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                              EvaluationContext evaluationContext) {
         LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
         VariableInfoContainer vic = statementAnalysis.findForWriting(loopVar);
-        vic.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+        vic.ensureEvaluation(getLocation(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 statementAnalysis.statementTime(EVALUATION), Set.of());
         Map<VariableProperty, Integer> valueProperties = Map.of(); // FIXME
         Expression instance = Instance.forLoopVariable(index(), loopVar, valueProperties);
@@ -1294,7 +1293,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
-        vic.ensureEvaluation(assignmentIds, readId, statementTime, changeData.readAtStatementTime());
+        vic.ensureEvaluation(getLocation(), assignmentIds, readId, statementTime, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, EVALUATION);
     }
 
@@ -1428,7 +1427,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
         if (!vic.hasEvaluation()) {
             VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(initial.getAssignmentIds(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+            vic.ensureEvaluation(getLocation(), initial.getAssignmentIds(), initial.getReadId(),
+                    initial.getStatementTime(), initial.getReadAtStatementTimes());
         }
         if (delays) {
             vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
@@ -1471,7 +1471,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String name = catchVariable.localVariable.name();
             if (!statementAnalysis.variables.isSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
-                VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
+                VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(getLocation(), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, analyserContext),
                         lvr.parameterizedType().defaultImmutable(analyserContext, false),
                         statementAnalysis.navigationData.hasSubBlocks());
@@ -1500,7 +1500,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     } else {
                         variableNature = new VariableNature.NormalLocalVariable(index());
                     }
-                    vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    vic = VariableInfoContainerImpl.newVariable(getLocation(),
+                            lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableNature, statementAnalysis.navigationData.hasSubBlocks());
                     newVariable = true;
                     if (statement() instanceof LoopStatement) {
@@ -1603,7 +1604,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
                             ve.variable() : null;
                     VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
-                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr,
+                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(getLocation(), lvr,
                             VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableNature,
                             statementAnalysis.navigationData.hasSubBlocks());
@@ -1652,7 +1653,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean newValueIsDelayed = sharedState.evaluationContext.isDelayed(newValue);
             Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
-                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(getLocation(),
+                        loopCopy, assigned,
                         read,
                         newValue,
                         newValueIsDelayed,
@@ -3091,26 +3093,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public boolean foundDelay(String where, String delayFqn) {
-            return statementAnalysis.foundDelay(where, delayFqn);
-        }
-
-        @Override
-        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-            return statementAnalysis.translatedDelay(where, delayFromFqn, newDelayFqn);
-        }
-
-        @Override
-        public boolean createDelay(String where, String delayFqn) {
-            return statementAnalysis.createDelay(where, delayFqn);
-        }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public boolean hasState(Expression expression) {
             VariableExpression ve;
             if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
@@ -3134,25 +3116,5 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public VariableInfo findOrThrow(Variable variable) {
             return statementAnalysis.findOrThrow(variable);
         }
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        return statementAnalysis.streamNodes();
-    }
-
-    @Override
-    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
-        return statementAnalysis.translatedDelay(where, delayFromFqn, newDelayFqn);
-    }
-
-    @Override
-    public boolean createDelay(String where, String delayFqn) {
-        return statementAnalysis.createDelay(where, delayFqn);
-    }
-
-    @Override
-    public boolean foundDelay(String where, String delayFqn) {
-        return statementAnalysis.foundDelay(where, delayFqn);
     }
 }

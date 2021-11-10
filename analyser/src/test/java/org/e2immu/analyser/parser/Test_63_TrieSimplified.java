@@ -255,15 +255,15 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));
                 // wait until TrieNode is immutable
                 if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
-                    assertEquals("instance type TrieNode<T>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals("instance type TrieNode<T>", d.fieldAnalysis().getValue().toString());
                 }
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("map".equals(d.fieldInfo().name)) {
-                assertEquals("null", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("null", d.fieldAnalysis().getValue().toString());
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         };
@@ -385,9 +385,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("root".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
-                    assertEquals("new TrieNode<>()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals("new TrieNode<>()", d.fieldAnalysis().getValue().toString());
                 }
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }

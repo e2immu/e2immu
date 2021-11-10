@@ -68,7 +68,7 @@ public class Test_26_Enum extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
 
                 int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
@@ -269,7 +269,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.CONSTANT));
             }
             if ("cnt".equals(d.fieldInfo().name)) {
-                assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("cnt", d.fieldAnalysis().getValue().toString());
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
@@ -296,8 +296,8 @@ public class Test_26_Enum extends CommonTestRunner {
         // two assert statements should return "true"
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("cnt".equals(d.fieldInfo().name)) {
-                assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve
+                assertEquals("cnt", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression ve
                         && ve.variable() instanceof ParameterInfo);
             }
         };

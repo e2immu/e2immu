@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.function.Function;
@@ -59,8 +60,8 @@ public interface AnalysisStatus {
             assert dv.isDelayed();
         }
 
-        public Delayed(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-            this(new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(withInspectionAndAnalysis, cause)));
+        public Delayed(Location location, CauseOfDelay.Cause cause) {
+            this(new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(location, cause)));
         }
 
         public Delayed(CauseOfDelay cause) {

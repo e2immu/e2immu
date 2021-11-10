@@ -198,7 +198,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
             this.analyserContext = analyserContext;
         }
-        
+
         @Override
         public TypeInfo getTypeInfo() {
             return typeInfo;

@@ -203,7 +203,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("instance type HashMap<K,V>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type HashMap<K,V>", d.fieldAnalysis().getValue().toString());
             }
         };
 

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.*;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -171,11 +170,11 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
 
     private void checkWorseThanOverriddenMethod() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
-            int value = methodAnalysis.getProperty(variableProperty);
-            if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+            DV valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
+            DV value = methodAnalysis.getProperty(variableProperty);
+            if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED_METHOD ?
-                        value > valueFromOverrides : value < valueFromOverrides;
+                        value.value() > valueFromOverrides.value() : value.value() < valueFromOverrides.value();
                 if (complain) {
                     messages.add(Message.newMessage(new Location(methodInfo),
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
@@ -207,12 +206,6 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
     public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
         return getFieldAsVariable(fieldInfo, false).stream().filter(VariableInfo::isAssigned)
                 .toList();
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        Stream<DelayDebugNode> parameterStream = parameterAnalysers.stream().flatMap(ParameterAnalyser::streamNodes);
-        return Stream.concat(super.streamNodes(), parameterStream);
     }
 
     public CausesOfDelay fromFieldToParametersStatus() {

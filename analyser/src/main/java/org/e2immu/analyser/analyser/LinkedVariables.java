@@ -321,8 +321,8 @@ public class LinkedVariables {
         return new LinkedVariables(result);
     }
 
-    public static boolean isAssignedOrLinked(int dependent) {
-        return dependent >= STATICALLY_ASSIGNED && dependent <= DEPENDENT;
+    public static boolean isAssignedOrLinked(DV dependent) {
+        return dependent.value() >= STATICALLY_ASSIGNED && dependent.value() <= DEPENDENT;
     }
 
     public CausesOfDelay causesOfDelay() {

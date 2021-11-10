@@ -125,7 +125,7 @@ public class MethodLevelData {
         return causesOfContextModificationDelay.get().keySet();
     }
 
-    public boolean linksHaveNotYetBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
+    public CausesOfDelay linksHaveNotYetBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
         if (linksHaveBeenEstablished.isSet()) return false;
         Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
         if (causes != null && !causes.isEmpty() && causes.keySet().stream().allMatch(canBeIgnored)) {

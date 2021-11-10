@@ -132,11 +132,11 @@ public class Test_Support_00_Either extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("left".equals(d.fieldInfo().name)) {
-            assertEquals("a", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            assertEquals("a", d.fieldAnalysis().getValue().toString());
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
         if ("right".equals(d.fieldInfo().name)) {
-            assertEquals("b", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            assertEquals("b", d.fieldAnalysis().getValue().toString());
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
     };

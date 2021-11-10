@@ -641,7 +641,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         private void markVariablesFromSubFieldInitializers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo subType) {
             assert evaluationContext != null;
-            Expression initialValue = fieldAnalysis.getInitialValue();
+            Expression initialValue = fieldAnalysis.getInitializerValue();
             if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;
             initialValue.variables().forEach(variable -> {
                 Variable v = acceptForMarkingRemoveScopeOfFields(variable, subType);

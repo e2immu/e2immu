@@ -64,7 +64,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         }
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            if (iteration > 0) assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+            if (iteration > 0) assertNotNull(d.fieldAnalysis().getValue());
         }
     };
 

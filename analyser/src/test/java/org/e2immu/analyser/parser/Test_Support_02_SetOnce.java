@@ -58,7 +58,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 String expectValues = d.iteration() == 0 ? "[null, <s:T>]" : "[null, t]";
                 assertEquals(expectValues,

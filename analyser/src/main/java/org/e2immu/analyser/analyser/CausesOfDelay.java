@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
 
@@ -39,7 +40,11 @@ public interface CausesOfDelay extends DV {
     record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfDelay {
 
         public SimpleSet(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-            this(new CauseOfDelay.SimpleCause(withInspectionAndAnalysis, cause));
+            this(new CauseOfDelay.SimpleCause(new Location(withInspectionAndAnalysis), cause));
+        }
+
+        public SimpleSet(Location location, CauseOfDelay.Cause cause) {
+            this(new CauseOfDelay.SimpleCause(location, cause));
         }
 
         public SimpleSet(CauseOfDelay cause) {

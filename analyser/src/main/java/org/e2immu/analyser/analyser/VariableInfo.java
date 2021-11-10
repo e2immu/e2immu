@@ -66,6 +66,8 @@ public interface VariableInfo {
 
     DV getProperty(VariableProperty variableProperty, DV delayValue);
 
+    DV getProperty(VariableProperty variableProperty);
+
     /**
      * @return immutable copy of the properties map, for debugging mostly
      */

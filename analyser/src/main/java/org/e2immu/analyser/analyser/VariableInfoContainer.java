@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 
@@ -67,7 +68,7 @@ public interface VariableInfoContainer {
 
     boolean has(Level level);
 
-    VariableInfo ensureLevelForPropertiesLinkedVariables(Level level);
+    VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level);
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
@@ -144,7 +145,9 @@ public interface VariableInfoContainer {
      */
     void copy();
 
-    void ensureEvaluation(AssignmentIds assignmentIds, String readId, int statementTime, Set<Integer> readAtStatementTimes);
+    void ensureEvaluation(Location location,
+                          AssignmentIds assignmentIds,
+                          String readId, int statementTime, Set<Integer> readAtStatementTimes);
 
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,

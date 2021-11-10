@@ -619,7 +619,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         CausesOfDelay fieldsReady = myFieldAnalysers.stream()
                 .map(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsFalse()
-                        ? CausesOfDelay.EMPTY : fa.fieldAnalysis.getEffectivelyFinalValue().causesOfDelay())
+                        ? CausesOfDelay.EMPTY : fa.fieldAnalysis.getValue().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (fieldsReady.isDelayed()) {
             log(DELAYED, "Delaying container, need effectively final value to be known for final fields");

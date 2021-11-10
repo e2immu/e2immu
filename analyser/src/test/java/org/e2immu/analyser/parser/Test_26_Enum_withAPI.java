@@ -83,7 +83,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
-                assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
 
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
@@ -192,7 +192,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
-                assertEquals("new Enum_4(1)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("new Enum_4(1)", d.fieldAnalysis().getValue().toString());
 
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));

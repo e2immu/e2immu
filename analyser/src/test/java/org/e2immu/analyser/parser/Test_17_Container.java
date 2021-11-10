@@ -446,7 +446,7 @@ public class Test_17_Container extends CommonTestRunner {
             if ("list".equals(d.fieldInfo().name)) {
                 if (d.iteration() > 0) {
                     assertEquals("instance type ArrayList<String>",
-                            d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                            d.fieldAnalysis().getValue().toString());
                 }
             }
         };

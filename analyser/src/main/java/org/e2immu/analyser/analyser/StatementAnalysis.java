@@ -73,7 +73,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
-        stateData = new StateData(statement instanceof LoopStatement, fullyQualifiedName());
+        stateData = new StateData(statement instanceof LoopStatement);
     }
 
     public String fullyQualifiedName() {
@@ -440,7 +440,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer newVic;
 
         if (markCopyOfEnclosingMethod) {
-            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(vic, navigationData.hasSubBlocks());
+            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
+                    vic, navigationData.hasSubBlocks());
         } else if (!vic.variableNature().isLocalVariableInLoopDefinedOutside()
                 && statement instanceof LoopStatement && variable.isLocal()) {
             // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
@@ -550,7 +551,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
                         DV value = parameterAnalysis.getProperty(variableProperty);
-                        if (value .isDone()) {
+                        if (value.isDone()) {
                             vic.setProperty(variableProperty, value, INITIAL);
                         }
                     }/*
@@ -588,7 +589,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             int currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
             if (currentIndependent == Level.DELAY) {
                 DV independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (independent .isDone()) {
+                if (independent.isDone()) {
                     vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
                 }
             }
@@ -600,7 +601,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!(variableInfo.variable() instanceof This thisVar)) return;
         Map<VariableProperty, DV> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo, false);
         map.forEach((k, v) -> {
-            if (v .isDone()) {
+            if (v.isDone()) {
                 vic.setProperty(k, v, INITIAL);
             }
         });
@@ -679,13 +680,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Map<VariableProperty, DV> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.STATICALLY_ASSIGNED);
+                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.STATICALLY_ASSIGNED_DV);
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
                     LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
-                        VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
-                                index + INITIAL, navigationData.hasSubBlocks());
+                        VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(location(),
+                                localCopy, index + INITIAL, navigationData.hasSubBlocks());
                         variables.put(localCopy.fullyQualifiedName(), lvrVic);
                         String assignmentIdOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
@@ -1127,7 +1128,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
-        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(variable, statementTimeForVariable,
+        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable, statementTimeForVariable,
                 variableInLoop, navigationData.hasSubBlocks());
         variables.put(variable.fullyQualifiedName(), vic);
 
@@ -1271,7 +1272,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean myOwn = fieldReference.scopeOwnerIs(methodAnalysis.getMethodInfo().typeInfo);
 
         if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised
-            Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
+            Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitializerValue();
             if (initialValue == null) { // initialiser value not yet evaluated
                 return DelayedVariableExpression.forField(fieldReference, CauseOfDelay.Cause.VALUE);
             }
@@ -1291,7 +1292,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // when selfReference (as in this.x = other.x during construction), we never delay
 
 
-        Expression efv = fieldAnalysis.getEffectivelyFinalValue();
+        Expression efv = fieldAnalysis.getValue();
         if (efv.isDelayed()) {
             if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isNotContracted() && !selfReference) {
                 return DelayedVariableExpression.forField(fieldReference, efv.causesOfDelay());

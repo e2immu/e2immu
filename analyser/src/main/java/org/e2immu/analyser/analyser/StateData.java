@@ -14,9 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugCollector;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
-import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -28,12 +25,9 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
-public class StateData implements DelayDebugger {
-    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
-    private final String methodFqnIndex;
+public class StateData   {
 
-    public StateData(boolean isLoop, String methodFqnIndex) {
-        this.methodFqnIndex = methodFqnIndex;
+    public StateData(boolean isLoop ) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
     }
 
@@ -54,7 +48,6 @@ public class StateData implements DelayDebugger {
     public void setPrecondition(Precondition expression, boolean isDelayed) {
         if (isDelayed) {
             precondition.setVariable(expression);
-            assert createDelay(methodFqnIndex + ":STD", methodFqnIndex + D_PRECONDITION);
         } else setFinalAllowEquals(precondition, expression);
     }
 
@@ -84,8 +77,12 @@ public class StateData implements DelayDebugger {
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         if (localConditionManager.isSafeDelayed()) {
             conditionManagerForNextStatement.setVariable(localConditionManager);
-            assert createDelay(methodFqnIndex+":STD", methodFqnIndex+ D_CONDITION_MANAGER_FOR_NEXT_STMT);
         } else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
+    }
+
+    public CausesOfDelay conditionManagerForNextStatementStatus() {
+        if(conditionManagerForNextStatement.isFinal()) return CausesOfDelay.EMPTY;
+        return conditionManagerForNextStatement.get().causesOfDelay();
     }
 
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
@@ -93,7 +90,6 @@ public class StateData implements DelayDebugger {
     public void setValueOfExpression(Expression value, boolean isDelayed) {
         if (isDelayed) {
             valueOfExpression.setVariable(value);
-            assert createDelay(methodFqnIndex + ":STD", methodFqnIndex + D_VALUE_OF_EXPRESSION);
         } else setFinalAllowEquals(valueOfExpression, value);
     }
 
@@ -121,18 +117,5 @@ public class StateData implements DelayDebugger {
             return Set.of(dve.variable());
         }
         return Set.of();
-    }
-
-    @Override
-    public boolean createDelay(String where, String delayFqn) {
-        return delayDebugCollector.createDelay(where, delayFqn);
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        return delayDebugCollector.streamNodes();
-    }
-
-    public CausesOfDelay conditionManagerForNextStatementStatus() {
     }
 }

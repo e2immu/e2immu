@@ -14,9 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugCollector;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
-import org.e2immu.analyser.analyser.util.DelayDebugProcessor;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -120,12 +117,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                     }
                     // this has to happen before the regular analysers, because there are no delays
                     //if (methodAnalyser instanceof ShallowMethodAnalyser) {
-                   //     methodAnalyser.analyse(0, null);
-                   // }
+                    //     methodAnalyser.analyse(0, null);
+                    // }
                     methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                     // finalizers are done early, before the first assignments
                     if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                        typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+                        typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE_DV);
                     }
                 }
             });
@@ -237,26 +234,21 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     public void analyse() {
         int iteration = 0;
-        int timeAtStartOfIteration = 0;
-        AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
+        AnalysisStatus analysisStatus = AnalysisStatus.NOT_YET_EXECUTED;
 
-        while (analysisStatus == AnalysisStatus.PROGRESS) {
-            timeAtStartOfIteration = DelayDebugCollector.currentTime();
+        do {
             log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, time {}\n******",
-                    iteration, name, timeAtStartOfIteration);
+                    iteration, name);
 
             analysisStatus = analyse(iteration, null);
             iteration++;
 
             if (analysisStatus == AnalysisStatus.DONE) break;
-        }
-        if (analysisStatus == AnalysisStatus.DELAYS) {
+        } while (analysisStatus.isProgress());
+        if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
             if (org.e2immu.analyser.util.Logger.isLogEnabled(org.e2immu.analyser.util.Logger.LogTarget.DELAYED)) {
-                final int startTime = timeAtStartOfIteration;
-                new DelayDebugProcessor(streamNodes()
-                        .filter(ddn -> ddn.time > startTime).sorted()
-                        .toList()).process();
+                LOGGER.error("Delays: {}", analysisStatus.causesOfDelay());
             }
             throw new UnsupportedOperationException("No progress after " + iteration + " iterations for primary type(s) " + name + "?");
         }
@@ -265,7 +257,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
         LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
         for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
-            if (pair.v == AnalysisStatus.DELAYS) {
+            if (pair.v.isDelayed()) {
                 LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName(), pair.k.getAnalyserComponents().details());
                 if (pair.k instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.logAnalysisStatuses();
@@ -367,10 +359,5 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<DelayDebugNode> streamNodes() {
-        return analysers.stream().flatMap(Analyser::streamNodes);
     }
 }

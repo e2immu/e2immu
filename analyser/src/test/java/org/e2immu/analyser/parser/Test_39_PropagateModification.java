@@ -170,8 +170,8 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("name".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("name", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve) {
+                assertEquals("name", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                     assertTrue(ve.variable() instanceof ParameterInfo);
                 } else fail();
                 assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,

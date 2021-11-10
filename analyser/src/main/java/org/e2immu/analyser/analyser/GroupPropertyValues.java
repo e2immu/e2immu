@@ -29,9 +29,6 @@ public class GroupPropertyValues {
             VariableProperty.EXTERNAL_IMMUTABLE,
             VariableProperty.CONTEXT_IMMUTABLE);
 
-    public static final Set<VariableProperty> DELAY_PROPERTIES = Set.of(CONTEXT_MODIFIED_DELAY,
-            CONTEXT_IMMUTABLE_DELAY, CONTEXT_NOT_NULL_DELAY);
-
     private final Map<VariableProperty, Map<Variable, DV>> map = new HashMap<>();
 
     public GroupPropertyValues() {
@@ -57,9 +54,5 @@ public class GroupPropertyValues {
         if (!vpMap.containsKey(variable)) {
             vpMap.put(variable, value);
         }
-    }
-
-    public Collection<Variable> allVariables() {
-        return map.values().stream().flatMap(m -> m.keySet().stream()).toList();
     }
 }

@@ -328,7 +328,7 @@ public interface EvaluationContext {
 
     default HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
         if (hiddenContentTypes == null) return new HiddenContent(List.of(),
-                new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(getCurrentType(), CauseOfDelay.Cause.HIDDEN_CONTENT)));
+                new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(getLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT)));
         if (hiddenContentTypes.contains(concreteType)) {
             return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
         }
@@ -338,7 +338,7 @@ public interface EvaluationContext {
         if (immutable.value() == MultiLevel.INDEPENDENT) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
             new HiddenContent(List.of(),
-                    new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT))
+                    new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(new Location(bestType), CauseOfDelay.Cause.HIDDEN_CONTENT))
                             .merge(immutable.causesOfDelay()));
         }
 
@@ -360,8 +360,8 @@ public interface EvaluationContext {
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             if (ve.variable() instanceof FieldReference fr) {
                 FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                return fa.getEffectivelyFinalValue() != null &&
-                        fa.getEffectivelyFinalValue().hasState();
+                return fa.getValue() != null &&
+                        fa.getValue().hasState();
             }
             return false; // no way we have this info here
         }
@@ -373,7 +373,7 @@ public interface EvaluationContext {
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             if (ve.variable() instanceof FieldReference fr) {
                 FieldAnalysis fa = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                return fa.getEffectivelyFinalValue().state();
+                return fa.getValue().state();
             }
             throw new UnsupportedOperationException();
         }

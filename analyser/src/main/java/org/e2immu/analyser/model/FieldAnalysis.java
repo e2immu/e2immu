@@ -18,14 +18,10 @@ import org.e2immu.analyser.analyser.*;
 
 public interface FieldAnalysis extends Analysis {
 
-    /**
-     * @return effectively final value; null when @Variable
-     */
-    Expression getEffectivelyFinalValue();
-
     /*
      if final, equal to getEffectivelyFinalValue
      if variable, set when the value properties are present
+     otherwise, delayed
      */
     Expression getValue(); // final, or variable (in terms of an instance); null if not determined
 
@@ -64,7 +60,6 @@ public interface FieldAnalysis extends Analysis {
             case CONSTANT:
             case CONTAINER:
             case EXTERNAL_IMMUTABLE:
-            case EXTERNAL_IMMUTABLE_BREAK_DELAY:
             case PARTIAL_EXTERNAL_IMMUTABLE:
             case EXTERNAL_NOT_NULL:
             case FINAL:
@@ -84,5 +79,5 @@ public interface FieldAnalysis extends Analysis {
         return getPropertyFromMapDelayWhenAbsent(variableProperty);
     }
 
-    Expression getInitialValue();
+    Expression getInitializerValue();
 }

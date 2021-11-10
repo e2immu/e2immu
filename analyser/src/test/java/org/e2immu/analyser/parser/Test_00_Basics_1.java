@@ -153,7 +153,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         if ("f1".equals(d.fieldInfo().name)) {
             assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             if (d.iteration() > 0) {
-                assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                assertEquals("p0", d.fieldAnalysis().getValue().debugOutput());
                 assertEquals("p0:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));

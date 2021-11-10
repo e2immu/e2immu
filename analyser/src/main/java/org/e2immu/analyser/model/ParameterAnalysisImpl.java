@@ -84,7 +84,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public Map<FieldInfo, Integer> getAssignedToField() {
+        public Map<FieldInfo, DV> getAssignedToField() {
             return assignedToField.toImmutableMap();
         }
 
@@ -121,7 +121,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
         }
 
-        public boolean addAssignedToField(FieldInfo fieldInfo, Integer assignedOrLinked) {
+        public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {
             if (!assignedToField.isSet(fieldInfo)) {
                 assignedToField.put(fieldInfo, assignedOrLinked);
                 return true;

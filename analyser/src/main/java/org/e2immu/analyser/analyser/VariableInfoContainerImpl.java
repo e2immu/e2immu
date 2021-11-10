@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -75,11 +76,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
    these variables must be implicitly final
     */
-    public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(VariableInfoContainer previous,
-                                                                                    boolean statementHasSubBlocks) {
+    public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(
+            Location location,
+            VariableInfoContainer previous,
+            boolean statementHasSubBlocks) {
         Objects.requireNonNull(previous);
         VariableInfo outside = previous.current();
-        VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
+        VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), outside.valueIsSet() ? null : outside.getValue());
         initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
@@ -94,10 +97,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     factory method for new variables
      */
-    public static VariableInfoContainerImpl newLocalCopyOfVariableField(Variable variable,
-                                                                        String readId,
-                                                                        boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED,
+    public static VariableInfoContainerImpl newLocalCopyOfVariableField(
+            Location location,
+            Variable variable,
+            String readId,
+            boolean statementHasSubBlocks) {
+        VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED,
                 readId, NOT_A_VARIABLE_FIELD, Set.of(), null);
         VariableNature variableNature = variable instanceof LocalVariableReference lvr
                 ? lvr.variable.nature() : VariableNature.METHOD_WIDE;
@@ -109,25 +114,29 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     factory method for new variables, explicitly setting the variableNature
      */
-    public static VariableInfoContainerImpl newVariable(Variable variable,
+    public static VariableInfoContainerImpl newVariable(Location location,
+                                                        Variable variable,
                                                         int statementTime,
                                                         VariableNature variableNature,
                                                         boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of(), null);
+        VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED, NOT_YET_READ,
+                statementTime, Set.of(), null);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
-        return new VariableInfoContainerImpl(variableNature, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
+        return new VariableInfoContainerImpl(variableNature, Either.right(initial),
+                statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
     /*
         factory method for new catch variables
         we need to overwrite the VariableNature because the original one has no index to define the scope
     */
-    public static VariableInfoContainerImpl newCatchVariable(LocalVariableReference lvr,
+    public static VariableInfoContainerImpl newCatchVariable(Location location,
+                                                             LocalVariableReference lvr,
                                                              String index,
                                                              Expression value,
                                                              DV immutable,
                                                              boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(index + Level.INITIAL),
+        VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Level.INITIAL),
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value, false);
@@ -142,7 +151,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     factory method for new loop variables
      */
-    public static VariableInfoContainerImpl newLoopVariable(LocalVariableReference lvr,
+    public static VariableInfoContainerImpl newLoopVariable(Location location,
+                                                            LocalVariableReference lvr,
                                                             String assignedId,
                                                             String readId,
                                                             Expression value,
@@ -150,7 +160,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             Map<VariableProperty, DV> properties,
                                                             LinkedVariables linkedVariables,
                                                             boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(assignedId), readId,
+        VariableInfoImpl initial = new VariableInfoImpl(location,
+                lvr, new AssignmentIds(assignedId), readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.setValue(value, valueIsDelayed);
         properties.forEach(initial::setProperty);
@@ -333,7 +344,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void ensureEvaluation(AssignmentIds assignmentIds, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
+    public void ensureEvaluation(Location location,
+                                 AssignmentIds assignmentIds,
+                                 String readId,
+                                 int statementTime,
+                                 Set<Integer> readAtStatementTimes) {
         if (!evaluation.isSet()) {
             VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
 
@@ -342,7 +357,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             assert !readId.equals(NOT_YET_READ) || !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isRead();
              */
 
-            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentIds, readId, statementTime,
+            VariableInfoImpl eval = new VariableInfoImpl(location,
+                    pi.variable(), assignmentIds, readId, statementTime,
                     readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue());
             evaluation.set(eval);
             if (!pi.valueIsSet()) {
@@ -371,10 +387,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 */
     @Override
-    public VariableInfo ensureLevelForPropertiesLinkedVariables(Level level) {
+    public VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level) {
         if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
             VariableInfo vi1 = getPreviousOrInitial();
-            VariableInfoImpl vi = prepareForWritingContextProperties(vi1);
+            VariableInfoImpl vi = prepareForWritingContextProperties(location, vi1);
             evaluation.set(vi);
             return vi;
         }
@@ -383,7 +399,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (merge == null) {
                 throw new UnsupportedOperationException("Cannot have a merge on " + vi1.variable().fullyQualifiedName());
             }
-            VariableInfoImpl vi = prepareForWritingContextProperties(vi1);
+            VariableInfoImpl vi = prepareForWritingContextProperties(location, vi1);
             merge.set(vi);
             return vi;
         }
@@ -404,8 +420,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         };
     }
 
-    private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
-        VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(),
+    private VariableInfoImpl prepareForWritingContextProperties(Location location, VariableInfo vi1) {
+        VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
         if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
         write.setLinkedVariables(vi1.getLinkedVariables());

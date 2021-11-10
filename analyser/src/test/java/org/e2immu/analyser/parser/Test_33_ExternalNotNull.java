@@ -132,13 +132,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("o".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, enn);
                 assertEquals(Level.TRUE, effFinal);
-                assertEquals("[null,\"hello\"]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("[null,\"hello\"]", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("p".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, enn);
                 assertEquals(Level.TRUE, effFinal);
-                assertEquals("[p1,p2]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
 
             }
             if ("q".equals(d.fieldInfo().name)) {
@@ -179,9 +179,9 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectEnn, enn);
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
-                    assertEquals("[p1,p2]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
                 }
             }
         };

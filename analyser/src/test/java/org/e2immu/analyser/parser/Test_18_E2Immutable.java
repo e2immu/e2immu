@@ -399,9 +399,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("sub".equals(d.fieldInfo().name)) {
                 if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    assertNull(d.fieldAnalysis().getValue());
                 } else {
-                    assertEquals("new Sub()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals("new Sub()", d.fieldAnalysis().getValue().toString());
                 }
             }
         };

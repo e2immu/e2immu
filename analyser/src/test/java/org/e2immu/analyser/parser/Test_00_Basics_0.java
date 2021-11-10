@@ -55,8 +55,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             if ("explicitlyFinal".equals(d.fieldInfo().name)) {
                 assertEquals("", fieldAnalysis.getLinkedVariables().toString());
                 assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
-                assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
+                assertEquals("\"abc\"", fieldAnalysis.getValue().toString());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getValue(),
                         VariableProperty.NOT_NULL_EXPRESSION));
                 assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
                         fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));

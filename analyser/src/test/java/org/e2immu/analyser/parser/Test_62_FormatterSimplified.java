@@ -362,17 +362,17 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("forwardInfo".equals(d.fieldInfo().name)) {
-                assertEquals("forwardInfo", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression);
+                assertEquals("forwardInfo", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
             }
             if ("pos".equals(d.fieldInfo().name)) {
-                assertEquals("pos", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression);
+                assertEquals("pos", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
                 assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
             if ("guide".equals(d.fieldInfo().name)) {
-                assertEquals("guide", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression);
+                assertEquals("guide", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
             }
         };
 

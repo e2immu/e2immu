@@ -131,7 +131,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                 ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
                 assertEquals("myCounter.increment()", returnStatement.structure.expression().minimalOutput());
 
-                assertEquals("instance type $1", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type $1", d.fieldAnalysis().getValue().toString());
 
                 MethodAnalysis methodAnalysis = d.evaluationContext().getAnalyserContext().getMethodAnalysis(sam);
                 int getMethodModified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
@@ -146,9 +146,9 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                 MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
                 assertEquals("get", get.name);
 
-                assertEquals("instance type $2", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type $2", d.fieldAnalysis().getValue().toString());
                 assertEquals("Type org.e2immu.analyser.testexample.FunctionalInterface_1.$2",
-                        d.fieldAnalysis().getEffectivelyFinalValue().returnType().toString());
+                        d.fieldAnalysis().getValue().returnType().toString());
 
                 MethodAnalysis methodAnalysis = d.evaluationContext().getAnalyserContext().getMethodAnalysis(get);
                 int getMethodModified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
@@ -293,37 +293,37 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             // s -> s.lastIndexOf(c);
             if ("function1".equals(d.fieldInfo().name)) {
-                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals(TYPE + ".$4.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
                 } else fail();
             }
 
             if ("function2".equals(d.fieldInfo().name)) {
-                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals(TYPE + ".$4.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
                 } else fail();
             }
 
             if ("function3".equals(d.fieldInfo().name)) {
-                assertEquals("instance type $1", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type $1", d.fieldAnalysis().getValue().toString());
             }
 
             if ("function4".equals(d.fieldInfo().name)) {
-                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getValue().toString());
+                if (d.fieldAnalysis().getValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals(TYPE + ".$2.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
                 } else fail();
             }
 
             if ("function5".equals(d.fieldInfo().name)) {
-                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MethodCall);
+                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof MethodCall);
             }
 
             if ("function6".equals(d.fieldInfo().name)) {
-                assertEquals("instance type $5", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type $5", d.fieldAnalysis().getValue().toString());
             }
 
             if ("field1".equals(d.fieldInfo().name)) {

@@ -199,7 +199,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("position".equals(d.fieldInfo().name)) {
-                assertEquals("position", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("position", d.fieldAnalysis().getValue().toString());
 
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));

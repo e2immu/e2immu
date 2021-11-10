@@ -66,7 +66,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 int expect = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
 
-                Expression e = d.fieldAnalysis().getEffectivelyFinalValue();
+                Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<String>", e.toString());
             }
         };
@@ -256,7 +256,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().size());
                 if (d.iteration() > 0) {
-                    assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getValue().toString());
                     if (d.iteration() > 1) {
                         assertEquals(Level.TRUE,
                                 d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
@@ -351,7 +351,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("in4", d.fieldAnalysis().getValue().toString());
                 assertEquals("in4:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -475,7 +475,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
 
-                assertEquals("in6", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
 
                 if (iteration >= 1) {
@@ -832,7 +832,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 assertEquals("c.set:0,localD.set:0,setC:1", d.fieldAnalysis().getLinkedVariables().toString());
-                assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -1054,7 +1054,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("input".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals("input", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("input", d.fieldAnalysis().getValue().toString());
             }
         };
 
@@ -1360,14 +1360,14 @@ public class Test_16_Modification extends CommonTestRunner {
 
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 // value from the constructor
-                assertEquals("setC", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("setC", d.fieldAnalysis().getValue().toString());
 
                 int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("instance type HashSet<String>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("instance type HashSet<String>", d.fieldAnalysis().getValue().toString());
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished.isSet());
 
                 int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;

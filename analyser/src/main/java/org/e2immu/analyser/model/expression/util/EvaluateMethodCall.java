@@ -289,7 +289,7 @@ public class EvaluateMethodCall {
                 && varEx.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
             ConstructorCall cc2;
-            if ((cc2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(ConstructorCall.class)) != null) {
+            if ((cc2 = fieldAnalysis.getValue().asInstanceOf(ConstructorCall.class)) != null) {
                 constructorCall = cc2;
             } else {
                 return null;

@@ -39,44 +39,33 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
     public DelayedVariableExpression(String msg,
                                      String debug,
                                      Variable variable,
-                                     CauseOfDelay.Cause cause,
-                                     CausesOfDelay otherCausesOfDelay) {
+                                     CausesOfDelay causesOfDelay) {
         this.msg = msg;
         this.debug = debug;
-        this.causesOfDelay = cause == null ? otherCausesOfDelay :
-                otherCausesOfDelay.merge(new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, cause)));
+        this.causesOfDelay = causesOfDelay;
         this.variable = variable;
     }
 
-    public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo, CauseOfDelay.Cause cause) {
-        return forParameter(parameterInfo, cause, CausesOfDelay.EMPTY);
-    }
-
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
-                                                         CauseOfDelay.Cause cause,
-                                                         CausesOfDelay otherCausesOfDelay) {
+                                                         CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<p:" + parameterInfo.name + ">",
                 "<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo,
-                cause, otherCausesOfDelay);
-    }
-
-    public static DelayedVariableExpression forField(FieldReference fieldReference, CauseOfDelay.Cause cause) {
-        return forField(fieldReference, cause, CausesOfDelay.EMPTY);
-    }
-
-    public static DelayedVariableExpression forField(FieldReference fieldReference, CausesOfDelay causesOfDelay) {
-        return forField(fieldReference, null, causesOfDelay);
+                causesOfDelay);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
-                                                     CauseOfDelay.Cause cause,
-                                                     CausesOfDelay otherCausesOfDelay) {
+                                                     CauseOfDelay causeOfDelay) {
+        return forField(fieldReference, new CauseOfDelay.SimpleCause(causeOfDelay));
+    }
+
+    public static DelayedVariableExpression forField(FieldReference fieldReference,
+                                                     CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<f:" + fieldReference.fieldInfo.name + ">",
-                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference, cause, otherCausesOfDelay);
+                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference, causesOfDelay);
     }
 
     public static Expression forVariable(Variable variable, CauseOfDelay cause) {
-        return forVariable(variable, new CausesOfDelay(cause));
+        return forVariable(variable, new CausesOfDelay.SimpleSet(cause));
     }
 
     public static Expression forVariable(Variable variable, CausesOfDelay causesOfDelay) {
@@ -177,7 +166,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED));
+        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV));
     }
 
     @Override
