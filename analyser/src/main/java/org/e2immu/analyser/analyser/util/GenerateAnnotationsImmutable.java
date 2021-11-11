@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.util;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.annotation.*;
@@ -34,15 +35,15 @@ public class GenerateAnnotationsImmutable {
     }
 
     // for testing
-    public static Map<Class<?>, Map<String, Object>> generate(int immutable, int container, boolean isType) {
+    public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container, boolean isType) {
         return generate(immutable, container, isType, false, "abc", false);
     }
 
-    public static Map<Class<?>, Map<String, Object>> generate(int immutable, int container,
+    public static Map<Class<?>, Map<String, Object>> generate(DV immutable, DV container,
                                                               boolean isType,
                                                               boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
-        boolean haveContainer = container == Level.TRUE;
+        boolean haveContainer = container.valueIsTrue();
         int effective = MultiLevel.effective(immutable);
         int level = MultiLevel.level(immutable);
 
@@ -81,7 +82,7 @@ public class GenerateAnnotationsImmutable {
         if (isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
-            } else if (!isInterface || container == Level.FALSE) {
+            } else if (!isInterface || container.valueIsFalse()) {
                 res.put(MutableModifiesArguments.class, TRUE);
             }
         }

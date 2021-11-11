@@ -50,8 +50,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        DV v = properties.getOrDefault(variableProperty, null);
-        if (v == null) return new DV.SingleDelay(location(), CauseOfDelay.Cause.from(variableProperty));
+        DV v = properties.getOrDefaultNull(variableProperty);
+        if (v == null) return new DV.SingleDelay(location(), variableProperty.causeOfDelay());
         return v;
     }
 
@@ -116,7 +116,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         } else {
             eventualFieldNames = "";
         }
-        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable.value(), container.value(),
+        Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
                 isType, isInterface, eventualFieldNames, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
             List<Expression> list;

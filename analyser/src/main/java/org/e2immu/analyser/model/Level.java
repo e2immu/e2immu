@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.annotation.UtilityClass;
 
@@ -31,7 +32,7 @@ public class Level {
 
     public static final int ILLEGAL_VALUE = -2;
 
-    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(-3, "not_involved");
+    public static final DV NOT_INVOLVED_DV = new DV.SingleDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED);
 
     // TERNARY SYSTEM
     public static final int DELAY = -1;

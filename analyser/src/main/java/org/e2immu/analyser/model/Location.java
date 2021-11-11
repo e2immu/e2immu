@@ -97,6 +97,7 @@ public class Location implements Comparable<Location> {
     best toString method to show in a delay; as brief as possible
      */
     public String toDelayString() {
+        if(info == null) return "not_yet_set";
         return info.niceClassName() + "_" + info.name() + (statementIndexInMethod == null ? "" : "_" + statementIndexInMethod);
     }
 }

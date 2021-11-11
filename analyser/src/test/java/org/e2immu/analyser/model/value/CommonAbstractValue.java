@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
@@ -206,7 +205,7 @@ public abstract class CommonAbstractValue {
         @Override
         public EvaluationContext child(Expression condition) {
             return new EvaluationContextImpl(conditionManager
-                    .newAtStartOfNewBlockDoNotChangePrecondition(PRIMITIVES, condition, null));
+                    .newAtStartOfNewBlockDoNotChangePrecondition(PRIMITIVES, condition, CausesOfDelay.EMPTY));
         }
 
         @Override
@@ -225,15 +224,15 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public int getProperty(Expression value,
+        public DV getProperty(Expression value,
                                VariableProperty variableProperty,
                                boolean duringEvaluation,
                                boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION
                     && !"q".equals(ve.variable().simpleName())) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
-                    return MultiLevel.NULLABLE;
-                return MultiLevel.EFFECTIVELY_NOT_NULL;
+                    return MultiLevel.NULLABLE_DV;
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
             return value.getProperty(minimalEvaluationContext, variableProperty, true);
         }
@@ -241,11 +240,6 @@ public abstract class CommonAbstractValue {
         @Override
         public TypeInfo getCurrentType() {
             return PRIMITIVES.booleanTypeInfo;
-        }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            throw new UnsupportedOperationException();
         }
     }
 

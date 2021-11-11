@@ -16,10 +16,7 @@ package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeAnalysis;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -35,21 +32,21 @@ public class TestGenerics extends CommonAnnotatedAPI {
     public void testStreamInteger() {
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis streamAnalysis = stream.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1, streamAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, streamAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertTrue(streamAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, streamAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, streamAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE_DV, streamAnalysis.immutableCanBeIncreasedByTypeParameters());
 
         TypeInfo integer = typeContext.getFullyQualified(Integer.class);
         TypeAnalysis integerAnalysis = integer.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT, integerAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, integerAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_DV, integerAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, integerAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
 
         ParameterizedType streamOfIntegers = new ParameterizedType(stream, List.of(integerPt));
         assertEquals("Type java.util.stream.Stream<java.lang.Integer>", streamOfIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, streamOfIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, false));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, streamOfIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, false));
     }
 
     @Test
@@ -59,9 +56,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis optionalAnalysis = optional.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1, optionalAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, optionalAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertTrue(optionalAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, optionalAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, optionalAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE_DV,optionalAnalysis.immutableCanBeIncreasedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
         ParameterizedType optionalIntegerPt = new ParameterizedType(optional, List.of(integerPt));
@@ -70,9 +67,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.util.Optional<java.lang.Integer>>",
                 streamOfOptionalIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                 streamOfOptionalIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, false));
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                 streamOfOptionalIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, true));
     }
 
@@ -90,9 +87,9 @@ public class TestGenerics extends CommonAnnotatedAPI {
 
         TypeInfo entry = typeContext.getFullyQualified(Map.Entry.class);
         TypeAnalysis entryAnalysis = entry.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1, entryAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.MUTABLE, entryAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertTrue(entryAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, entryAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, entryAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE_DV,entryAnalysis.immutableCanBeIncreasedByTypeParameters());
 
         ParameterizedType integerPt = new ParameterizedType(integer, 0);
         ParameterizedType stringPt = new ParameterizedType(string, 0);
@@ -102,7 +99,7 @@ public class TestGenerics extends CommonAnnotatedAPI {
         assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Integer>>",
                 streamOfEntryStringIntegers.toString());
 
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV,
                 streamOfEntryStringIntegers.defaultImmutable(AnalysisProvider.DEFAULT_PROVIDER, false));
     }
 

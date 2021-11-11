@@ -209,5 +209,8 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
     }
 
     public CausesOfDelay fromFieldToParametersStatus() {
+        return parameterAnalysers.stream().filter(pa -> !pa.parameterAnalysis.isAssignedToFieldDelaysResolved())
+                .map(pa -> (CausesOfDelay) new CausesOfDelay.SimpleSet(pa.parameterAnalysis.location, CauseOfDelay.Cause.ASSIGNED_TO_FIELD))
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 }

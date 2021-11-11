@@ -154,7 +154,7 @@ class VariableInfoImpl implements VariableInfo {
     public DV getProperty(VariableProperty variableProperty) {
         DV dv = properties.getOrDefault(variableProperty, null);
         if(dv == null) {
-            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, CauseOfDelay.Cause.from(variableProperty)));
+            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, variableProperty.causeOfDelay()));
         }
         return dv;
     }

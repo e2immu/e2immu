@@ -21,6 +21,11 @@ import org.e2immu.analyser.model.variable.Variable;
 public interface CauseOfDelay {
 
     enum Cause {
+        IMMUTABLE_BEFORE_CONTRACTED("immutable_before_contracted", ""),
+        IN_NN_CONTEXT("in_nn_context", ""),
+        CANDIDATE_NULL_PTR("candidate_null_ptr", ""),
+        FINALIZER("finalizer", ""),
+        IGNORE_MODIFICATIONS("ignore_mods", ""),
         VALUE("value", "The value has not yet been determined"),
         VALUE_NOT_NULL("not_null", "The value's NOT_NULL status has not yet been determined"),
         VALUE_IMMUTABLE("immutable", "The value's IMMUTABLE status has not yet been determined"),
@@ -43,7 +48,28 @@ public interface CauseOfDelay {
         CNN_PARENT("context_not_null_parent", "Context not null for parent"),
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),
         VARIABLE_DOES_NOT_EXIST("var_missing", "Variable does not (yet) exist"),
-        LOCAL_PT_ANALYSERS("local_pt_analysers", "Local primary type analysers not yet present");
+        LOCAL_PT_ANALYSERS("local_pt_analysers", "Local primary type analysers not yet present"),
+        INITIAL_TIME("initial_time", "Initial time not yet set"),
+        LOCAL_VARS_ASSIGNED("local_vars", "Local variables assigned in this loop not yet determined"),
+        NOT_INVOLVED("not_involved", "Internal"),
+        MIN_INT("min_int", "Minimum integer; should only appear locally need .reduce()"),
+        CONTAINER("container", "container property not yet determined"),
+        EXTENSION_CLASS("extension_class", ""),
+        UTILITY_CLASS("utility_class", ""),
+        SINGLETON("singleton", ""),
+        IDENTITY("identity", ""),
+        FLUENT("fluent", ""),
+        CONSTANT("constant", ""),
+        TEMP_MM("temp_mm", "Temporary modified method"),
+        MODIFIED_OUTSIDE_METHOD("mom", "modified outside method"),
+        MODIFIED_VARIABLE("mod_var", "modified variable"),
+        EXT_IMM("ext_imm", ""),
+        CONTEXT_IMMUTABLE("c_imm", "context immutable"),
+        NEXT_C_IMM("next_c_imm", ""),
+        CONTEXT_NOT_NULL("cnn", ""),
+        EXT_NN("ext_nn", ""),
+        NOT_NULL_PARAMETER("nnp", ""),
+        PROP_MOD("prop_mod", "");
 
         public final String msg;
         public final String label;
@@ -51,15 +77,6 @@ public interface CauseOfDelay {
         Cause(String label, String msg) {
             this.msg = msg;
             this.label = label;
-        }
-
-        public static Cause from(VariableProperty variableProperty) {
-            return switch (variableProperty) {
-                case IMMUTABLE -> VALUE_IMMUTABLE;
-                case NOT_NULL_EXPRESSION -> VALUE_NOT_NULL;
-                case INDEPENDENT -> VALUE_INDEPENDENT;
-                default -> throw new UnsupportedOperationException();
-            };
         }
     }
 

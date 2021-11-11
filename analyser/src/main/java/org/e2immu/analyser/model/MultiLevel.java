@@ -82,10 +82,12 @@ public class MultiLevel {
     public static final DV EVENTUALLY_E1IMMUTABLE_DV =
             new DV.NoDelay(compose(EVENTUAL, LEVEL_1_IMMUTABLE), "eve1immutable");
 
-    public static final int EVENTUALLY_RECURSIVELY_IMMUTABLE = compose(EVENTUAL, LEVEL_R_IMMUTABLE);
+    public static final DV EVENTUALLY_RECURSIVELY_IMMUTABLE_DV = new DV.NoDelay(compose(EVENTUAL, LEVEL_R_IMMUTABLE));
 
-    public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_2_IMMUTABLE);
-    public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_1_IMMUTABLE);
+
+    public static final DV EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV =
+            new DV.NoDelay(compose(EVENTUAL_AFTER, LEVEL_2_IMMUTABLE));
+    public static final DV EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV = new DV.NoDelay(compose(EVENTUAL_AFTER, LEVEL_1_IMMUTABLE));
 
     public static final DV EFFECTIVELY_CONTENT2_NOT_NULL_DV =
             new DV.NoDelay(compose(EFFECTIVE, NOT_NULL_2), "content2_not_null");
@@ -101,7 +103,7 @@ public class MultiLevel {
     public static final DV EFFECTIVELY_E2IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E2IMMUTABLE, "e2immutable");
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, LEVEL_1_IMMUTABLE);
     public static final DV EFFECTIVELY_E1IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E1IMMUTABLE, "e1immutable");
-    public static final int EFFECTIVELY_E3IMMUTABLE = compose(EFFECTIVE, LEVEL_3_IMMUTABLE);
+    public static final DV EFFECTIVELY_E3IMMUTABLE_DV = new DV.NoDelay(compose(EFFECTIVE, LEVEL_3_IMMUTABLE));
 
     public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE);
 
@@ -135,6 +137,10 @@ public class MultiLevel {
         return i & AND;
     }
 
+    public static int effectiveAtLevel(DV dv, int minLevel) {
+        return effectiveAtLevel(dv.value(), minLevel);
+    }
+
     public static int effectiveAtLevel(int i, int minLevel) {
         if (i < 0) return i;
         int level = i >> SHIFT;
@@ -161,10 +167,6 @@ public class MultiLevel {
 
     public static boolean isAtLeastEventuallyE2Immutable(int i) {
         return i >= compose(EVENTUAL, LEVEL_2_IMMUTABLE);
-    }
-
-    public static boolean isAtLeastEventuallyE2ImmutableAfter(int i) {
-        return i >= EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
     }
 
     private static int eventualComponent(int component, boolean conditionsMetForEventual) {
@@ -206,12 +208,20 @@ public class MultiLevel {
         return compose(EVENTUAL_AFTER, level);
     }
 
+    public static boolean isAfterThrowWhenNotEventual(DV dv) {
+        return isAfterThrowWhenNotEventual(dv.value());
+    }
+
     public static boolean isAfterThrowWhenNotEventual(int i) {
         if (i < 0) return false;
         int effective = effective(i);
         if (effective == EVENTUAL_BEFORE) return false;
         if (effective == EVENTUAL_AFTER || effective == EVENTUAL) return true;
         throw new UnsupportedOperationException("Not eventual");
+    }
+
+    public static boolean isBeforeThrowWhenNotEventual(DV dv) {
+        return isBeforeThrowWhenNotEventual(dv.value());
     }
 
     public static boolean isBeforeThrowWhenNotEventual(int i) {
@@ -229,17 +239,13 @@ public class MultiLevel {
     }
 
     public static DV composeOneLevelLess(DV dv) {
-        return new DV.NoDelay(composeOneLevelLess(dv.value()));
-    }
-
-    // E2Container -> E1Container; Content2 NN -> content NN
-    public static int composeOneLevelLess(int i) {
-        if (i < 0) return i;
+        int i = dv.value();
+        if (i < 0) return dv;
         int level = level(i);
-        if (level == 0) return FALSE;
+        if (level == 0) return FALSE_DV;
         int effective = effective(i);
         int newLevel = level == MAX_LEVEL ? level : level - 1;
-        return compose(effective, newLevel);
+        return new DV.NoDelay(compose(effective, newLevel));
     }
 
     public static DV composeOneLevelMore(DV dv) {

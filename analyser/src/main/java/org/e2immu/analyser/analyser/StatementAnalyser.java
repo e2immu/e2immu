@@ -1176,63 +1176,33 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Map<VariableProperty, DV> res = new HashMap<>(changeData);
 
         both.forEach(k -> {
-            DV prev = previous.getOrDefault(k, Level.DELAY);
-            DV change = changeData.getOrDefault(k, Level.DELAY);
+            DV prev = previous.getOrDefault(k, k.falseDv);
+            DV change = changeData.getOrDefault(k, k.falseDv);
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
-                int value = switch (k) {
-                    case EXTERNAL_IMMUTABLE -> delayOrAtLeastMultiDelay(prev);
-                    case CONTEXT_IMMUTABLE -> {
-                        if (evaluationContext.isMyself(variable)) {
-                            yield MultiLevel.MUTABLE;
-                        }
-                        if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield Math.max(prev, change);
-                        } else {
-                            assert foundDelay("mergePrevious",
-                                    variable.fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE);
-                            yield Level.DELAY;
-                        }
-                    }
+                DV value = switch (k) {
+                    case EXTERNAL_IMMUTABLE -> MultiLevel.FALSE_DV.max(prev);
+                    case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
+
                     // values simply travel downward (delay until there's a value from another analyser)
-                    case EXTERNAL_NOT_NULL -> delayOrAtLeastMultiDelay(prev);
-                    case CONTEXT_NOT_NULL -> {
-                        if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield Math.max(variable.parameterizedType().defaultNotNull(), Math.max(prev, change));
-                        } else {
-                            yield Level.DELAY;
-                        }
-                    }
-                    case CONTEXT_MODIFIED -> {
-                        if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield maxAtLeastFalse(prev, change);
-                        } else {
-                            yield Level.DELAY;
-                        }
-                    }
+                    case EXTERNAL_NOT_NULL -> MultiLevel.FALSE_DV.max(prev);
+                    case CONTEXT_NOT_NULL -> variable.parameterizedType().defaultNotNull().max(prev).max(change);
+                    case CONTEXT_MODIFIED -> prev.max(change);
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
             } else {
                 switch (k) {
-                    case EXTERNAL_IMMUTABLE_BREAK_DELAY -> res.put(k, Math.max(prev, change));
                     // value properties are copied from previous, only when the value from previous is copied as well
                     case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
-                        if (allowValueProperties && prev != Level.DELAY) res.put(k, prev);
+                        if (allowValueProperties) res.put(k, prev);
                     }
                     // all other properties are copied from change data
-                    default -> {
-                        if (change != Level.DELAY) res.put(k, change);
-                    }
+                    default -> res.put(k, change);
                 }
             }
         });
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
-        res.keySet().removeAll(GroupPropertyValues.DELAY_PROPERTIES);
         return res;
-    }
-
-    private static int delayOrAtLeastMultiDelay(int prev) {
-        return prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
     }
 
     private static int maxAtLeastFalse(int i1, int i2) {
@@ -1617,7 +1587,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // part 3, iteration 1+: ensure local loop variable copies and their values
 
         if (!statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
-            return Either.left(statementAnalysis.localVariablesAssignedInThisLoop.delays()); // DELAY
+            return Either.left(new CausesOfDelay.SimpleSet(getLocation(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED)); // DELAY
         }
         List<Expression> expressionsToEvaluate = new ArrayList<>();
         statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {

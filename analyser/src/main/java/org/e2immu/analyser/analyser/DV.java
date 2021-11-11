@@ -29,7 +29,7 @@ public interface DV extends WeightedGraph.Weight {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
-    DV MIN_INT_DV = new NoDelay(Integer.MIN_VALUE, "min_int");
+    DV MIN_INT_DV = new SingleDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
 
     int value();
 

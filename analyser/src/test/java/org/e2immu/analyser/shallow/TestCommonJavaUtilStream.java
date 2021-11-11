@@ -29,9 +29,9 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
     public void testStream() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals(MultiLevel.INDEPENDENT_1, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertTrue(typeAnalysis.immutableCanBeIncreasedByTypeParameters());
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE_DV, typeAnalysis.immutableCanBeIncreasedByTypeParameters());
     }
 
     @Test
@@ -39,15 +39,15 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Stream.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("map", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.INDEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.MUTABLE, p0.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE_DV, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 
 
@@ -65,15 +65,15 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertTrue(methodInfo.methodInspection.get().isStatic());
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.INDEPENDENT_1, methodAnalysis.getProperty(VariableProperty.INDEPENDENT),
+        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(VariableProperty.INDEPENDENT),
                 methodInfo.fullyQualifiedName);
 
         // T
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-        assertEquals(MultiLevel.INDEPENDENT_1, p0.getProperty(VariableProperty.INDEPENDENT));
-        assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE_DV, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p0.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(VariableProperty.IMMUTABLE));
     }
 }

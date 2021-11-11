@@ -25,7 +25,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
 import static org.e2immu.analyser.output.QualifiedName.Required.YES;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions, OneVariable {
@@ -282,7 +280,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // is the method modifying, do we need to wait?
         DV modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         DV modified = alwaysModifying ? Level.TRUE_DV : recursiveCall || partOfCallCycle ? Level.FALSE_DV : modifiedMethod;
-        DV contextModifiedDelay = Level.fromBoolDv(modified.isDelayed());
         builder.causeOfContextModificationDelay(methodInfo, modified.isDelayed());
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -359,8 +356,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (lastStatement == null) {
                         increment = false;
                     } else if (lastStatement.flowData.initialTimeNotYetSet()) {
-                        return delayedMethod(evaluationContext, builder, objectValue,
-                                contextModifiedDelay.valueIsTrue(), parameterValues);
+                        CausesOfDelay.SimpleSet initialTime = new CausesOfDelay.SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
+                        return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
                     } else {
                         if (lastStatement.flowData.timeAfterSubBlocksNotYetSet()) {
                             increment = false;
@@ -382,8 +379,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (parameterDelays.isDelayed() || delayedFinalizer) {
-            return delayedMethod(evaluationContext, builder, objectValue,
-                    contextModified, parameterValues);
+            return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(parameterDelays));
         }
 
         // companion methods
@@ -396,7 +392,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         Expression result;
-        boolean resultIsDelayed;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
@@ -406,23 +401,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value().isInstanceOf(Instance.class) && modifiedInstance != null) {
                 result = modifiedInstance;
-                resultIsDelayed = false;
             } else {
                 result = mv.value();
-                resultIsDelayed = mv.someValueWasDelayed();
             }
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
-            resultIsDelayed = false;
         }
 
         builder.setExpression(result);
-
-
-        // scope delay
-        if (resultIsDelayed || contextModifiedDelay == Level.TRUE) {
-            delay(evaluationContext, builder, objectValue, contextModifiedDelay == Level.TRUE);
-        }
 
         checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
@@ -502,33 +488,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private EvaluationResult delayedMethod(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder,
-                                           Expression objectValue,
-                                           boolean contextModifiedDelay,
-                                           List<Expression> parameterValues,
                                            CausesOfDelay causesOfDelay) {
-        Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
-                methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
                 linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay));
         // set scope delay
-        delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
-    }
-
-    private void delay(EvaluationContext evaluationContext,
-                       EvaluationResult.Builder builder,
-                       Expression objectValue,
-                       boolean contextModifiedDelay) {
-        objectValue.variables().forEach(variable -> {
-            builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE);
-            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                This currentThis = evaluationContext.currentThis();
-                builder.setProperty(currentThis, VariableProperty.SCOPE_DELAY, Level.TRUE);
-                if (contextModifiedDelay) {
-                    builder.setProperty(currentThis, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
-                }
-            }
-        });
     }
 
     /*

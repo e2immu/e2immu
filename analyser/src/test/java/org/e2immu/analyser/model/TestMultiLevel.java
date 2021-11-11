@@ -27,77 +27,77 @@ public class TestMultiLevel {
         assertEquals(5, EFFECTIVELY_E1IMMUTABLE);
         assertEquals(5, INDEPENDENT_1);
 
-        assertEquals(10, EVENTUALLY_E2IMMUTABLE);
-        assertEquals(11, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
-        assertEquals(12, EVENTUALLY_E2IMMUTABLE_AFTER_MARK);
+        assertEquals(10, EVENTUALLY_E2IMMUTABLE_DV.value());
+        assertEquals(11, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV.value());
+        assertEquals(12, EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV.value());
         assertEquals(13, EFFECTIVELY_E2IMMUTABLE);
         assertEquals(805, EFFECTIVELY_RECURSIVELY_IMMUTABLE);
         assertEquals(805, INDEPENDENT);
 
-        assertEquals(13, EFFECTIVELY_CONTENT_NOT_NULL);
+        assertEquals(13, EFFECTIVELY_CONTENT_NOT_NULL_DV.value());
         assertEquals(2, compose(EVENTUAL, 0));
-        assertEquals(2, EVENTUALLY_E1IMMUTABLE);
+        assertEquals(2, EVENTUALLY_E1IMMUTABLE_DV.value());
     }
 
     @Test
     public void testLevel() {
         assertEquals(LEVEL_1_IMMUTABLE, level(EFFECTIVELY_E1IMMUTABLE));
-        assertEquals(NOT_NULL_1, level(EFFECTIVELY_CONTENT_NOT_NULL));
-        assertEquals(NOT_NULL_2, level(EFFECTIVELY_CONTENT2_NOT_NULL));
-        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE));
-        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
-        assertEquals(LEVEL_1_IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE)); // we know about E2IMMUTABLE: FALSE
+        assertEquals(NOT_NULL_1, level(EFFECTIVELY_CONTENT_NOT_NULL_DV));
+        assertEquals(NOT_NULL_2, level(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
+        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_DV));
+        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
+        assertEquals(LEVEL_1_IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE_DV)); // we know about E2IMMUTABLE: FALSE
     }
 
     @Test
     public void testValue() {
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL));
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_1));
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_2));
-        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_3));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL_DV, NOT_NULL));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL_DV, NOT_NULL_1));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL_DV, NOT_NULL_2));
+        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_CONTENT2_NOT_NULL_DV, NOT_NULL_3));
 
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL));
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_1));
-        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_2));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_1));
+        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_2));
 
-        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_NOT_NULL, NOT_NULL));
-        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_NOT_NULL, NOT_NULL_1));
+        assertEquals(EFFECTIVE, effectiveAtLevel(EFFECTIVELY_NOT_NULL_DV, NOT_NULL));
+        assertEquals(FALSE, effectiveAtLevel(EFFECTIVELY_NOT_NULL_DV, NOT_NULL_1));
     }
 
     @Test
     public void testIsBefore() {
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
-        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
+        assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
 
         assertThrows(UnsupportedOperationException.class,
                 () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE));
         assertThrows(UnsupportedOperationException.class,
                 () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE));
-        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK));
-        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK));
+        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
+        assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
     }
 
     @Test
     public void testIsAfter() {
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE));
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE));
-        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
-        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_DV));
+        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
+        assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
 
         assertThrows(UnsupportedOperationException.class,
                 () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE));
         assertThrows(UnsupportedOperationException.class,
                 () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE));
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK));
-        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
+        assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
     }
 
     @Test
     public void testOneLevelLess() {
-        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL, composeOneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL));
-        assertEquals(EFFECTIVELY_NOT_NULL, composeOneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL));
-        assertEquals(EFFECTIVELY_E1IMMUTABLE, composeOneLevelLess(EFFECTIVELY_E2IMMUTABLE));
+        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV.value(), composeOneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL_DV).value());
+        assertEquals(EFFECTIVELY_NOT_NULL_DV.value(), composeOneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL_DV).value());
+        assertEquals(EFFECTIVELY_E1IMMUTABLE_DV.value(), composeOneLevelLess(EFFECTIVELY_E2IMMUTABLE_DV).value());
     }
 }

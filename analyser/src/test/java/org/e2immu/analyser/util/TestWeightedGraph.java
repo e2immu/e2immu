@@ -14,6 +14,10 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Location;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -22,104 +26,110 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWeightedGraph {
 
+    private static final DV zero = new DV.NoDelay(0);
+    private static final DV one = new DV.NoDelay(1);
+    private static final DV two = new DV.NoDelay(2);
+
+    private static final DV delay = new DV.SingleDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+    
     @Test
     public void test1() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', 0, 'c', 1));
-        graph.addNode('b', Map.of('d', 1, 'c', 0));
+        graph.addNode('a', Map.of('b', zero, 'c', one));
+        graph.addNode('b', Map.of('d', one, 'c', zero));
         graph.addNode('c', Map.of());
 
-        Map<Character, Integer> fromA = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 0, 'c', 0, 'd', 1), fromA);
+        Map<Character, DV> fromA = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', zero, 'c', zero, 'd', one), fromA);
 
-        Map<Character, Integer> fromD = graph.links('d', true);
-        assertEquals(Map.of('d', 0), fromD);
+        Map<Character, DV> fromD = graph.links('d', true);
+        assertEquals(Map.of('d', zero), fromD);
     }
 
     @Test
     public void test1Delay() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', -1, 'c', 1));
-        graph.addNode('b', Map.of('d', 1, 'c', 0));
+        graph.addNode('a', Map.of('b', delay, 'c', one));
+        graph.addNode('b', Map.of('d', one, 'c', zero));
         graph.addNode('c', Map.of());
 
-        Map<Character, Integer> fromA = graph.links('a', false);
-        assertEquals(Map.of('a', 0, 'c', 1), fromA);
+        Map<Character, DV> fromA = graph.links('a', false);
+        assertEquals(Map.of('a', zero, 'c', one), fromA);
 
-        Map<Character, Integer> fromAFollow = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', -1, 'c', -1, 'd', -1), fromAFollow);
+        Map<Character, DV> fromAFollow = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', delay, 'c', delay, 'd', delay), fromAFollow);
     }
 
 
     @Test
     public void test2() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', 1));
-        graph.addNode('b', Map.of('c', 0));
-        graph.addNode('c', Map.of('d', 2));
+        graph.addNode('a', Map.of('b', one));
+        graph.addNode('b', Map.of('c', zero));
+        graph.addNode('c', Map.of('d', two));
 
-        Map<Character, Integer> fromA = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 1, 'c', 1, 'd', 2), fromA);
+        Map<Character, DV> fromA = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', one, 'c', one, 'd', two), fromA);
 
-        graph.addNode('d', Map.of('a', 1));
+        graph.addNode('d', Map.of('a', one));
 
         // we now have a cycle a-1->b-0->c-2->d-1->a
-        Map<Character, Integer> fromA2 = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 1, 'c', 1, 'd', 2), fromA2);
+        Map<Character, DV> fromA2 = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', one, 'c', one, 'd', two), fromA2);
 
-        Map<Character, Integer> fromB2 = graph.links('b', true);
-        assertEquals(Map.of('a', 2, 'b', 0, 'c', 0, 'd', 2), fromB2);
+        Map<Character, DV> fromB2 = graph.links('b', true);
+        assertEquals(Map.of('a', two, 'b', zero, 'c', zero, 'd', two), fromB2);
     }
 
     @Test
     public void test1Bi() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', 0, 'c', 1), true);
-        graph.addNode('b', Map.of('d', 1, 'c', 0), true);
+        graph.addNode('a', Map.of('b', zero, 'c', one), true);
+        graph.addNode('b', Map.of('d', one, 'c', zero), true);
         graph.addNode('c', Map.of(), true);
 
-        Map<Character, Integer> fromA = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 0, 'c', 0, 'd', 1), fromA);
+        Map<Character, DV> fromA = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', zero, 'c', zero, 'd', one), fromA);
 
-        Map<Character, Integer> fromD = graph.links('d', true);
-        assertEquals(Map.of('a', 1, 'b', 1, 'c', 1, 'd', 0), fromD);
+        Map<Character, DV> fromD = graph.links('d', true);
+        assertEquals(Map.of('a', one, 'b', one, 'c', one, 'd', zero), fromD);
     }
 
     @Test
     public void test2Bi() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', 1), true);
-        graph.addNode('b', Map.of('c', 0), true);
-        graph.addNode('c', Map.of('d', 2), true);
+        graph.addNode('a', Map.of('b', one), true);
+        graph.addNode('b', Map.of('c', zero), true);
+        graph.addNode('c', Map.of('d', two), true);
 
-        Map<Character, Integer> fromA = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 1, 'c', 1, 'd', 2), fromA);
+        Map<Character, DV> fromA = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', one, 'c', one, 'd', two), fromA);
 
-        graph.addNode('d', Map.of('a', 1), true);
+        graph.addNode('d', Map.of('a', one), true);
 
         // we now have a cycle a<-1->b<-0->c<-2->d<-1->a
-        Map<Character, Integer> fromA2 = graph.links('a', true);
-        assertEquals(Map.of('a', 0, 'b', 1, 'c', 1, 'd', 1), fromA2);
+        Map<Character, DV> fromA2 = graph.links('a', true);
+        assertEquals(Map.of('a', zero, 'b', one, 'c', one, 'd', one), fromA2);
 
-        Map<Character, Integer> fromB2 = graph.links('b', true);
-        assertEquals(Map.of('a', 1, 'b', 0, 'c', 0, 'd', 1), fromB2);
+        Map<Character, DV> fromB2 = graph.links('b', true);
+        assertEquals(Map.of('a', one, 'b', zero, 'c', zero, 'd', one), fromB2);
     }
 
     @Test
     public void testDelay() {
-        WeightedGraph<Character> graph = new WeightedGraph<>();
+        WeightedGraph<Character, DV> graph = new WeightedGraph<>(() -> zero);
 
-        graph.addNode('a', Map.of('b', 0, 'c', -1), true);
+        graph.addNode('a', Map.of('b', zero, 'c', delay), true);
 
-        Map<Character, Integer> fromB = graph.links('b', true);
-        assertEquals(Map.of('a', 0, 'b', 0, 'c', -1), fromB);
+        Map<Character, DV> fromB = graph.links('b', true);
+        assertEquals(Map.of('a', zero, 'b', zero, 'c', delay), fromB);
 
-        Map<Character, Integer> fromC = graph.links('c', true);
-        assertEquals(Map.of('a', -1, 'b', -1, 'c', 0), fromC);
+        Map<Character, DV> fromC = graph.links('c', true);
+        assertEquals(Map.of('a', delay, 'b', delay, 'c', zero), fromC);
     }
 }

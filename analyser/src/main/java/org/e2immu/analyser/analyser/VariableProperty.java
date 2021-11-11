@@ -25,11 +25,11 @@ public enum VariableProperty {
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
 
     // only lives in change map
-    IN_NOT_NULL_CONTEXT("in not-null context"),
-    CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
+    IN_NOT_NULL_CONTEXT("in not-null context", CauseOfDelay.Cause.IN_NN_CONTEXT),
+    CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning", CauseOfDelay.Cause.CANDIDATE_NULL_PTR),
 
     // in ForwardEvaluationInfo
-    PROPAGATE_MODIFICATION("propagate modification"),
+    PROPAGATE_MODIFICATION("propagate modification", CauseOfDelay.Cause.PROP_MOD),
 
     /*
     @NotNull, @Nullable property.
@@ -47,19 +47,19 @@ public enum VariableProperty {
     and the corresponding code in StatementAnalysis.copyBackLocalCopies
      */
     NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.NOT_NULL_PARAMETER),
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.EXT_NN),
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NULLABLE_DV),
-    CONTEXT_NOT_NULL_DELAY("not null in context delay"),
+            MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL),
+    CONTEXT_NOT_NULL_DELAY("not null in context delay", null),
 
     CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE_DV,
-            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV),
-    CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay"),
-    CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved"),
+            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV, null),
+    CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay", null),
+    CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved", null),
 
     /*
     @E2Immutable, @E1Immutable property.
@@ -75,15 +75,20 @@ public enum VariableProperty {
     immutable is computed at the static assignment level.
      */
 
-    IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
-    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
+    IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted", CauseOfDelay.Cause.IMMUTABLE_BEFORE_CONTRACTED),
+    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV,
+            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.NEXT_C_IMM),
 
-    IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
-    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
-    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.VALUE_IMMUTABLE),
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+            MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE),
+    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
+            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.EXT_IMM),
 
     // internal, temporary
-    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
+    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
+            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null),
     /*
     Modification.
 
@@ -100,14 +105,14 @@ public enum VariableProperty {
     /**
      * The default for parameters is @Modified
      */
-    MODIFIED_VARIABLE("@Modified variable"),
-    MODIFIED_OUTSIDE_METHOD("modified outside method"),
-    CONTEXT_MODIFIED("modified in context"),
+    MODIFIED_VARIABLE("@Modified variable", CauseOfDelay.Cause.MODIFIED_VARIABLE),
+    MODIFIED_OUTSIDE_METHOD("modified outside method", CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD),
+    CONTEXT_MODIFIED("modified in context", CauseOfDelay.Cause.CONTEXT_MODIFIED),
     /**
      * The default for methods is @NotModified
      */
-    MODIFIED_METHOD("@Modified method"),
-    TEMP_MODIFIED_METHOD("@Modified method, temp"),
+    MODIFIED_METHOD("@Modified method", CauseOfDelay.Cause.MODIFIED_METHOD),
+    TEMP_MODIFIED_METHOD("@Modified method, temp", CauseOfDelay.Cause.TEMP_MM),
 
     /*
     @Dependent, @Independent, @Dependent1, @Dependent2
@@ -122,7 +127,8 @@ public enum VariableProperty {
 
     @Dependent is the default in green mode, @Independent is the default in red mode.
      */
-    INDEPENDENT("@Independent", MultiLevel.DEPENDENT_DV, MultiLevel.INDEPENDENT_DV, MultiLevel.DEPENDENT_DV),
+    INDEPENDENT("@Independent", MultiLevel.DEPENDENT_DV, MultiLevel.INDEPENDENT_DV, MultiLevel.DEPENDENT_DV,
+            CauseOfDelay.Cause.VALUE_INDEPENDENT),
 
     /*
     group of more simple properties
@@ -131,38 +137,41 @@ public enum VariableProperty {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV),
-    FINALIZER("@Finalizer"),
+    FINAL("@Final", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL),
+    FINALIZER("@Finalizer", CauseOfDelay.Cause.FINALIZER),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
-    CONTAINER("@Container", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV),
-    CONSTANT("@Constant"),
-    FLUENT("@Fluent"),
-    IDENTITY("@Identity"),
-    IGNORE_MODIFICATIONS("@IgnoreModifications"),
-    SINGLETON("@Singleton"),
-    UTILITY_CLASS("@UtilityClass"),
-    EXTENSION_CLASS("@ExtensionClass");
+    CONTAINER("@Container", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, CauseOfDelay.Cause.CONTAINER),
+    CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
+    FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
+    IDENTITY("@Identity", CauseOfDelay.Cause.IDENTITY),
+    IGNORE_MODIFICATIONS("@IgnoreModifications", CauseOfDelay.Cause.IGNORE_MODIFICATIONS),
+    SINGLETON("@Singleton", CauseOfDelay.Cause.SINGLETON),
+    UTILITY_CLASS("@UtilityClass", CauseOfDelay.Cause.UTILITY_CLASS),
+    EXTENSION_CLASS("@ExtensionClass", CauseOfDelay.Cause.EXTENSION_CLASS);
 
     public final String name;
     private final DV valueWhenAbsentDv;
     public final DV bestDv;
     public final DV falseDv;
+    public final CauseOfDelay.Cause cause;
 
-    VariableProperty(String name) {
-        this(name, Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV);
+    VariableProperty(String name, CauseOfDelay.Cause cause) {
+        this(name, Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, cause);
     }
 
     VariableProperty(String name,
                      DV falseValue,
                      DV best,
-                     DV valueWhenAbsent) {
+                     DV valueWhenAbsent,
+                     CauseOfDelay.Cause cause) {
         this.name = name;
         this.valueWhenAbsentDv = valueWhenAbsent;
         this.bestDv = best;
         this.falseDv = falseValue;
+        this.cause = cause;
     }
 
     @Override
@@ -174,4 +183,8 @@ public enum VariableProperty {
         return valueWhenAbsentDv;
     }
 
+    public CauseOfDelay.Cause causeOfDelay() {
+        if (cause == null) throw new UnsupportedOperationException("Cannot cause a delay! " + name);
+        return cause;
+    }
 }

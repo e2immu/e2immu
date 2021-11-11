@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -86,11 +85,6 @@ public class TestLinkingExpression {
                 }
             };
         }
-
-        @Override
-        public Stream<DelayDebugNode> streamNodes() {
-            return null;
-        }
     };
 
     @Test
@@ -127,7 +121,7 @@ public class TestLinkingExpression {
         // new ArrayList<>(v).get(0)
         //TypeInfo list = typeContext.getFullyQualified(List.class);
         MethodInfo listGet = arrayList.findUniqueMethod("get", 1);
-        assertEquals(MultiLevel.INDEPENDENT_1, listGet.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, listGet.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
 
         MethodCall get0 = new MethodCall(Identifier.CONSTANT, newObject, listGet,
                 List.of(newInt(0)));
@@ -137,7 +131,7 @@ public class TestLinkingExpression {
 
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
-        assertEquals(MultiLevel.DEPENDENT, listSubList.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, listSubList.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
         MethodCall subList12 = new MethodCall(Identifier.CONSTANT, newObject, listSubList,
                 List.of(newInt(1), newInt(2)));
 
@@ -159,10 +153,10 @@ public class TestLinkingExpression {
         TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
         // see XML file
         MethodInfo addIndex = arrayList.findUniqueMethod("add", 2);
-        assertEquals(Level.TRUE, addIndex.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.TRUE_DV, addIndex.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
         ParameterAnalysis p1 = addIndex.parameterAnalysis(1);
-        assertEquals(MultiLevel.INDEPENDENT_1, p1.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p1.getProperty(VariableProperty.INDEPENDENT));
 
         ParameterizedType arrayListInteger = new ParameterizedType(arrayList, List.of(integer()));
         Variable v = new LocalVariableReference(new LocalVariable("v", arrayListInteger));
@@ -186,7 +180,7 @@ public class TestLinkingExpression {
         MethodInfo addAll = collections.findUniqueMethod("addAll", 2);
 
 
-        assertEquals("{0={1=2}}", addAll.crossLinks(InspectionProvider.DEFAULT).toString());
+        assertEquals("{0={1=independent1:3}}", addAll.crossLinks(InspectionProvider.DEFAULT).toString());
 
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         ParameterizedType collectionInteger = new ParameterizedType(collection, List.of(integer()));
