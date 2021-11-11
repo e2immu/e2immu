@@ -1069,7 +1069,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         statementAnalysis.candidateVariablesForNullPtrWarning.stream().forEach(variable -> {
             VariableInfo vi = statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.MERGE);
             DV cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
-            if (cnn.value() < MultiLevel.EFFECTIVELY_NOT_NULL) {
+            if (cnn.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(),
                         Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
                         "Variable: " + variable.fullyQualifiedName()));
@@ -1090,7 +1090,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED_DV);
         } else {
             DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
-            boolean variableNotNull = nne.value() >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+            boolean variableNotNull = nne.ge(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
             if (variableNotNull) {
                 DV oneLevelLess = MultiLevel.composeOneLevelLess(nne);
 
@@ -1374,20 +1374,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
      */
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
-        Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
-        boolean delays = escapeAlwaysExecuted == null || statementAnalysis.stateData.conditionManagerForNextStatement.isVariable();
-        if (escapeAlwaysExecuted != Boolean.FALSE) {
+        DV escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
+        boolean delays = escapeAlwaysExecuted.isDelayed() || statementAnalysis.stateData.conditionManagerForNextStatement.isVariable();
+        if (!escapeAlwaysExecuted.valueIsFalse()) {
             Set<Variable> nullVariables = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted == Boolean.TRUE);
+                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
                 if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted == Boolean.TRUE);
+                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
                 }
             }
-            if (escapeAlwaysExecuted == Boolean.TRUE) {
+            if (escapeAlwaysExecuted.valueIsTrue()) {
                 // escapeCondition should filter out all != null, == null clauses
                 Expression precondition = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                         .precondition(sharedState.evaluationContext);
@@ -1421,11 +1421,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     initial.getStatementTime(), initial.getReadAtStatementTimes());
         }
         if (delays) {
-            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
+            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE_DV, EVALUATION);
         } else {
-            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
+            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE_DV, EVALUATION);
             if (notifyParent) {
-                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EVALUATION);
             }
         }
     }
@@ -2764,9 +2764,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
                 DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
-                if (cnn.value() >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                if (cnn.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
                 DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-                if (nne.value() >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                if (nne.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
                 return notNullAccordingToConditionManager(ve.variable());
             }
             return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION,
@@ -2824,7 +2824,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 if (variableProperty == IMMUTABLE) {
                     DV formally = variable.parameterizedType().defaultImmutable(getAnalyserContext(), false);
-                    if (formally.value() == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
+                    if (formally.equals(IMMUTABLE.bestDv)) return formally; // EFFECTIVELY_E2, for primitives etc.
                     if (isMyself(variable.parameterizedType())) return MultiLevel.MUTABLE_DV;
                     DV formallyInMap = formally.max(inMap);
                     if (formallyInMap.isDelayed()) {

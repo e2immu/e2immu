@@ -212,7 +212,8 @@ public record Instance(
                                                 Variable variable) {
         DV notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull.isDelayed()) {
-            return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
+            // FIXME notNull
+            return DelayedExpression.forNewObject(variable.parameterizedType(), notNull,
                     LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull));
         }
         DV notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
@@ -247,7 +248,7 @@ public record Instance(
     private boolean internalChecks() {
         DV minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, null);
         if (minimalNotNull == null) return false;
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull.value() < MultiLevel.EFFECTIVELY_NOT_NULL)
+        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV))
             return false;
         assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
         return valueProperties.values().stream().noneMatch(DV::isDelayed);
@@ -429,7 +430,7 @@ public record Instance(
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
         DV minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE_DV);
-        if (minimalNotNull.value() < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
+        if (minimalNotNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return "nullable ";
         return "";
     }
 

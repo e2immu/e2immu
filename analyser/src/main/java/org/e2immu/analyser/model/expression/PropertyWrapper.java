@@ -133,7 +133,7 @@ public record PropertyWrapper(Expression expression,
     @Override
     public OutputBuilder output(Qualification qualification) {
         String propertyString = properties.entrySet().stream()
-                .filter(e -> e.getValue().value() > e.getKey().falseValue)
+                .filter(e -> e.getValue().gt(e.getKey().falseDv))
                 .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
         boolean haveComment = !propertyString.isBlank() || castType != null || linkedVariables != null || state != null;

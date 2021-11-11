@@ -116,10 +116,4 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
     public boolean ignorePrivateConstructorsForFieldValue() {
         return true; // there are no constructors
     }
-
-    @Override
-    protected String where(String componentName) {
-        return typeInfo.fullyQualifiedName + ":AGG:" + componentName;
-    }
-
 }

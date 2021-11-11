@@ -763,7 +763,7 @@ public class ParameterizedType {
         if (bestType != null) {
             return analysisProvider.getTypeAnalysis(bestType).getProperty(variableProperty);
         }
-        return new DV.NoDelay(variableProperty.falseValue);
+        return variableProperty.falseDv;
     }
 
     public TypeInfo bestTypeInfo() {

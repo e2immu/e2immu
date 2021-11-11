@@ -96,7 +96,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData cd = changeData.get(variableExpression.variable());
             if (cd != null) {
                 DV inChangeData = cd.properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
-                if (inChangeData != null && inChangeData.value() >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
             }
         }
         return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
@@ -290,11 +290,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
-            assert notNullRequired.value() > MultiLevel.NULLABLE;
+            assert notNullRequired.gt(MultiLevel.NULLABLE_DV);
 
             if (variable instanceof This) return; // nothing to be done here
 
-            if (notNullRequired.value() == MultiLevel.EFFECTIVELY_NOT_NULL &&
+            if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
                     (evaluationContext.notNullAccordingToConditionManager(variable)
                             || evaluationContext.notNullAccordingToConditionManager(value))) {
                 return; // great, no problem, no reason to complain nor increase the property
@@ -305,7 +305,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // so intrinsically we can have null.
             // if context not null is already high enough, don't complain
             DV contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-            if (contextNotNull.value() == MultiLevel.NULLABLE) {
+            if (contextNotNull.equals(MultiLevel.NULLABLE_DV)) {
                 setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE_DV); // so we can raise an error
             }
             setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
@@ -416,7 +416,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
             DV currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
-            if (currentImmutable.value() >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+            if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
                 if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable.value())
                         && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable.value())) {
                     raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
@@ -546,11 +546,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
       we use a null value for inScope to indicate a delay
        */
-        public void link(Variable inArgument, Variable inScope, DV level) {
+        public void link(Variable from, Variable to, DV level) {
             ChangeData newEcd;
-            ChangeData ecd = valueChanges.get(inArgument);
-            LinkedVariables linked = inScope == null ? LinkedVariables.delayedEmpty() :
-                    new LinkedVariables(Map.of(inScope, level));
+            ChangeData ecd = valueChanges.get(from);
+            LinkedVariables linked = new LinkedVariables(Map.of(to, level));
             if (ecd == null) {
                 newEcd = new ChangeData(null, level.causesOfDelay(),
                         CausesOfDelay.EMPTY, false, Set.of(), linked, Map.of());
@@ -559,7 +558,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables.merge(linked), ecd.properties);
             }
-            valueChanges.put(inArgument, newEcd);
+            valueChanges.put(from, newEcd);
         }
 
         public void addPrecondition(Precondition newPrecondition) {

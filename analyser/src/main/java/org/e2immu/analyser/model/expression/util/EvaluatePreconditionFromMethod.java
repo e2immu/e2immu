@@ -19,12 +19,10 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,8 +44,7 @@ public class EvaluatePreconditionFromMethod {
                     methodInfo == evaluationContext.getCurrentMethod().methodInfo;
             if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition();
         } else if (!precondition.expression().isBooleanConstant()) {
-            boolean scopeDelayed = evaluationContext.isDelayed(scopeObject);
-            if (scopeDelayed) {
+            if (scopeObject.isDelayed()) {
                 builder.addDelayOnPrecondition();
                 return;
             }
@@ -70,7 +67,7 @@ public class EvaluatePreconditionFromMethod {
 
             // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
             Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated, true);
-            if (evaluationContext.isDelayed(inCondition)) {
+            if (inCondition.isDelayed()) {
                 builder.addPrecondition(Precondition.forDelayed(inCondition));
             } else if (!inCondition.isBoolValueTrue()) {
 
@@ -86,7 +83,7 @@ public class EvaluatePreconditionFromMethod {
                 Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (!nullClauseEntry.getValue().equalsNull()) {
-                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                     }
                 }
 

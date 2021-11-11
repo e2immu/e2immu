@@ -31,20 +31,16 @@ public class Level {
 
     public static final int ILLEGAL_VALUE = -2;
 
-    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(-3);
+    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(-3, "not_involved");
 
     // TERNARY SYSTEM
     public static final int DELAY = -1;
     public static final int FALSE = 0;
     public static final int TRUE = 1;
-    public static final DV FALSE_DV = new DV.NoDelay(0);
-    public static final DV TRUE_DV = new DV.NoDelay(1);
+    public static final DV FALSE_DV = new DV.NoDelay(0, "false");
+    public static final DV TRUE_DV = new DV.NoDelay(1, "true");
 
     public static DV fromBoolDv(boolean b) {
         return b ? TRUE_DV : FALSE_DV;
-    }
-
-    public static int fromBool(boolean b) {
-        return b ? TRUE : FALSE;
     }
 }

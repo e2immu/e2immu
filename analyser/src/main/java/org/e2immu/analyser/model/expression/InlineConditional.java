@@ -115,7 +115,7 @@ public class InlineConditional extends ElementImpl implements Expression {
             Expression c = condition;
             EvaluationContext child = evaluationContext.child(c);
             DV nneIfTrue = child.getProperty(ifTrue, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-            if (nneIfTrue.value() <= MultiLevel.NULLABLE) {
+            if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
                 return nneIfTrue;
             }
             Expression notC = Negation.negate(evaluationContext, c);

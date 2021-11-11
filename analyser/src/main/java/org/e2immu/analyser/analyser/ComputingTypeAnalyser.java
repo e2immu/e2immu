@@ -693,7 +693,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return new Delayed(valueFromFields);
         }
         DV valueFromMethodParameters;
-        if (valueFromFields.value() == MultiLevel.DEPENDENT) {
+        if (valueFromFields.equals(MultiLevel.DEPENDENT)) {
             valueFromMethodParameters = MultiLevel.DEPENDENT_DV; // no need to compute anymore, at bottom anyway
         } else {
             valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
@@ -708,7 +708,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
         }
         DV valueFromMethodReturnValue;
-        if (valueFromMethodParameters.value() == MultiLevel.DEPENDENT) {
+        if (valueFromMethodParameters.equals(MultiLevel.DEPENDENT_DV)) {
             valueFromMethodReturnValue = MultiLevel.DEPENDENT_DV;
         } else {
             valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
@@ -734,7 +734,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private DV independenceOfField(FieldAnalysis fieldAnalysis) {
         DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        if (immutable.value() < MultiLevel.EFFECTIVELY_E2IMMUTABLE) return MultiLevel.DEPENDENT_DV;
+        if (immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) return MultiLevel.DEPENDENT_DV;
         TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
         if (bestType == null) {
             return MultiLevel.INDEPENDENT_1_DV;
@@ -759,7 +759,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     variableProperty, typeInfo.fullyQualifiedName);
             return new MaxValueStatus(min, new Delayed(min));
         }
-        if (min.value() == variableProperty.falseValue) {
+        if (min.equals(variableProperty.falseDv)) {
             log(ANALYSER, "{} set to least value for {}, because of parent", typeInfo.fullyQualifiedName, variableProperty);
             typeAnalysis.setProperty(variableProperty, variableProperty.falseDv);
             return new MaxValueStatus(variableProperty.falseDv, DONE);
@@ -993,7 +993,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                                 constructor.methodInfo.distinguishingName());
                         return new Delayed(independent); //not decided
                     }
-                    if (independent.value() == MultiLevel.DEPENDENT) {
+                    if (independent.equals(MultiLevel.DEPENDENT)) {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is @Dependent",
                                 typeInfo.fullyQualifiedName, constructor.methodInfo.name);
                         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
@@ -1040,7 +1040,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                                 return new Delayed(independent); //not decided
                             }
                         }
-                        if (independent.value() == MultiLevel.DEPENDENT) {
+                        if (independent.equals(MultiLevel.DEPENDENT_DV)) {
                             log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                     typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
@@ -1201,7 +1201,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             log(DELAYED, "Extension class: don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return new Delayed(e2Immutable);
         }
-        if (e2Immutable.value() < MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+        if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not an @ExtensionClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.FALSE_DV);
             return DONE;
@@ -1244,7 +1244,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                                 methodInfo.name);
                         return new Delayed(notNull);
                     }
-                    if (notNull.value() < MultiLevel.EFFECTIVELY_NOT_NULL) {
+                    if (notNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
                         log(TYPE_ANALYSER, "Type {} is not an @ExtensionClass, method {} does not have either a " +
                                         "@NotNull 1st parameter, or no parameters and returns @NotNull.", typeInfo.fullyQualifiedName,
                                 methodInfo.name);
@@ -1270,7 +1270,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             log(DELAYED, "Utility class: Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return new Delayed(e2Immutable);
         }
-        if (e2Immutable.value() < MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+        if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
             return DONE;

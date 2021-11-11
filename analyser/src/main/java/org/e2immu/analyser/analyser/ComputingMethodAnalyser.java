@@ -559,7 +559,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private DV computeImmutableValue() {
         DV formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
-        if (formalImmutable.value() == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+        if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE)) {
             return formalImmutable;
         }
 
@@ -772,7 +772,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // We also check independence (maybe the user calls a method which returns one of the fields,
         // and calls a modification directly)
 
-        return  methodInfo.typeInfo.typeInspection.get()
+        return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .map(this::modifiedOrNotTransparentAndDependent)
                 .reduce(Level.FALSE_DV, DV::max);
@@ -781,12 +781,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     private DV modifiedOrNotTransparentAndDependent(MethodInfo methodInfo) {
         MethodAnalysis ma = analyserContext.getMethodAnalysis(methodInfo);
         DV mm = ma.getProperty(VariableProperty.MODIFIED_METHOD);
-        if(!mm.valueIsFalse()) return mm;
-        DV transparent =  methodInfo.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo);
-        if(transparent.isDelayed()) return transparent;
+        if (!mm.valueIsFalse()) return mm;
+        DV transparent = methodInfo.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo);
+        if (transparent.isDelayed()) return transparent;
         DV independent = ma.getProperty(INDEPENDENT);
-        if(independent.isDelayed()) return independent;
-        return Level.fromBoolDv(transparent.valueIsFalse() && independent.value() == MultiLevel.DEPENDENT);
+        if (independent.isDelayed()) return independent;
+        return Level.fromBoolDv(transparent.valueIsFalse() && independent.equals(MultiLevel.DEPENDENT_DV));
     }
 
     private AnalysisStatus computeIndependent(SharedState sharedState) {
@@ -821,7 +821,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                                  ParameterizedType type,
                                  TypeInfo currentType,
                                  AnalysisProvider analysisProvider) {
-        if (immutable.value() == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+        if (immutable.equals( MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return MultiLevel.INDEPENDENT_DV;
         }
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
@@ -836,7 +836,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         DV typeHidden = analysisProvider.getTypeAnalysis(currentType).isPartOfHiddenContent(type);
         if (typeHidden.isDelayed()) return typeHidden;
-        if (typeHidden.valueIsFalse() && minFields.value() <= MultiLevel.DEPENDENT) {
+        if (typeHidden.valueIsFalse() && minFields.le(MultiLevel.DEPENDENT_DV)) {
             return MultiLevel.DEPENDENT_DV;
         }
         // on the sliding scale now

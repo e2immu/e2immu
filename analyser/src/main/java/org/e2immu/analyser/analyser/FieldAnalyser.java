@@ -330,7 +330,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
             return new AnalysisStatus.Delayed(bestOverContext);
         }
-        if (bestOverContext.value() < MultiLevel.EFFECTIVELY_NOT_NULL) {
+        if (bestOverContext.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
             assert fieldAnalysis.getValues().size() > 0;
 
             DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
@@ -440,7 +440,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         DV staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
-        if (staticallyImmutable.value() == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+        if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE)) {
             log(IMMUTABLE_LOG, "Field {} is statically @ERImmutable", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE; // cannot be improved
@@ -503,13 +503,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private DV correctForExposureBefore(DV immutableDv) {
-        int immutable = immutableDv.value();
-        if (immutable != MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK &&
-                immutable != MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-            return immutableDv;
+    private DV correctForExposureBefore(DV immutable) {
+        if (!immutable.equals(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV) &&
+                !immutable.equals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV)) {
+            return immutable;
         }
-        DV corrected = immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE_DV :
+        DV corrected = immutable.equals(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV) ? MultiLevel.EVENTUALLY_E1IMMUTABLE_DV :
                 MultiLevel.EVENTUALLY_E2IMMUTABLE_DV;
         if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
             return corrected;
@@ -539,7 +538,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
                             .anyMatch(vi -> vi.getLinkedVariables().contains(me));
                 });
-        return linkedToMe ? corrected : immutableDv;
+        return linkedToMe ? corrected : immutable;
     }
 
 
@@ -802,7 +801,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     //fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY, Level.TRUE);
                     return new AnalysisStatus.Delayed(immutable);
                 }
-                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable.value() < MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
                 if (downgradeFromNewInstanceWithConstructor) {
                     Map<VariableProperty, DV> valueProperties = Map.of(
                             VariableProperty.NOT_NULL_EXPRESSION, proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION),

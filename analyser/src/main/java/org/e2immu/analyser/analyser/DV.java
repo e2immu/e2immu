@@ -27,9 +27,9 @@ Delayable Value
  */
 public interface DV extends WeightedGraph.Weight {
 
-    DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE);
+    DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
-    DV MIN_INT_DV = new NoDelay(Integer.MIN_VALUE);
+    DV MIN_INT_DV = new NoDelay(Integer.MIN_VALUE, "min_int");
 
     int value();
 
@@ -55,6 +55,14 @@ public interface DV extends WeightedGraph.Weight {
         return value() < other.value();
     }
 
+    default boolean ge(DV other) {
+        return value() >= other.value();
+    }
+
+    default boolean le(DV other) {
+        return value() <= other.value();
+    }
+
     default boolean valueIsTrue() {
         return value() == Level.TRUE;
     }
@@ -63,7 +71,14 @@ public interface DV extends WeightedGraph.Weight {
         return value() == Level.FALSE;
     }
 
-    record NoDelay(int value) implements DV {
+    record NoDelay(int value, String label) implements DV {
+
+        public static final String COMPUTED = "computed";
+
+        public NoDelay(int value) {
+            this(value, COMPUTED);
+        }
+
         public NoDelay {
             assert value >= 0;
         }
@@ -110,12 +125,16 @@ public interface DV extends WeightedGraph.Weight {
 
         @Override
         public String toString() {
-            return Integer.toString(value);
+            return label + ":" + value;
         }
 
         @Override
         public int compareTo(WeightedGraph.Weight o) {
             return value - ((DV) o).value();
+        }
+
+        public boolean haveLabel() {
+            return !COMPUTED.equals(label);
         }
     }
 
@@ -196,10 +215,11 @@ public interface DV extends WeightedGraph.Weight {
 
         @Override
         public String toString() {
-            return "SingleDelay{" +
-                    "causeOfDelay=" + causeOfDelay +
-                    ", value=" + value +
-                    '}';
+            String s = causeOfDelay.toString();
+            if (value != Level.DELAY) {
+                return s + ":" + value;
+            }
+            return s;
         }
 
         @Override

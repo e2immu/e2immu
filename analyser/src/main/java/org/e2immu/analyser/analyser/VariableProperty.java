@@ -46,18 +46,18 @@ public enum VariableProperty {
     see StatementAnalyser.checkNotNullEscapesAndPreconditions
     and the corresponding code in StatementAnalysis.copyBackLocalCopies
      */
-    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE),
-    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE),
-    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE),
-    CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE),
+    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+            MultiLevel.NULLABLE_DV),
+    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+            MultiLevel.NULLABLE_DV),
+    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+            MultiLevel.NULLABLE_DV),
+    CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
+            MultiLevel.NULLABLE_DV),
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
 
-    CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE),
+    CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE_DV,
+            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay"),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved"),
 
@@ -76,14 +76,14 @@ public enum VariableProperty {
      */
 
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
-    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
+    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
 
-    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
-    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
-    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
+    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
 
     // internal, temporary
-    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, MultiLevel.MUTABLE),
+    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV),
     /*
     Modification.
 
@@ -122,7 +122,7 @@ public enum VariableProperty {
 
     @Dependent is the default in green mode, @Independent is the default in red mode.
      */
-    INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT),
+    INDEPENDENT("@Independent", MultiLevel.DEPENDENT_DV, MultiLevel.INDEPENDENT_DV, MultiLevel.DEPENDENT_DV),
 
     /*
     group of more simple properties
@@ -131,13 +131,13 @@ public enum VariableProperty {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE),
+    FINAL("@Final", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV),
     FINALIZER("@Finalizer"),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
-    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE),
+    CONTAINER("@Container", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV),
     CONSTANT("@Constant"),
     FLUENT("@Fluent"),
     IDENTITY("@Identity"),
@@ -147,26 +147,22 @@ public enum VariableProperty {
     EXTENSION_CLASS("@ExtensionClass");
 
     public final String name;
-    public final int best;
-    public final int falseValue;
     private final DV valueWhenAbsentDv;
     public final DV bestDv;
     public final DV falseDv;
 
     VariableProperty(String name) {
-        this(name, Level.FALSE, Level.TRUE, Level.FALSE);
+        this(name, Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV);
     }
 
     VariableProperty(String name,
-                     int falseValue,
-                     int best,
-                     int valueWhenAbsent) {
+                     DV falseValue,
+                     DV best,
+                     DV valueWhenAbsent) {
         this.name = name;
-        this.best = best;
-        this.falseValue = falseValue;
-        valueWhenAbsentDv = new DV.NoDelay(valueWhenAbsent);
-        bestDv = new DV.NoDelay(best);
-        falseDv = new DV.NoDelay(falseValue);
+        this.valueWhenAbsentDv = valueWhenAbsent;
+        this.bestDv = best;
+        this.falseDv = falseValue;
     }
 
     @Override

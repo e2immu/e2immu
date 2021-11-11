@@ -62,22 +62,13 @@ public class LinkedVariables {
         return causesOfDelay.isDelayed();
     }
 
-    public static final int DELAYED_VALUE = -1;
-    public static final int STATICALLY_ASSIGNED = 0;
-    public static final int ASSIGNED = 1;
-    public static final int DEPENDENT = 2;
-    public static final int INDEPENDENT1 = 3;
-    public static final int NO_LINKING = MultiLevel.MAX_LEVEL;
-
-    public static final DV STATICALLY_ASSIGNED_DV = new DV.NoDelay(0);
-    public static final DV ASSIGNED_DV = new DV.NoDelay(1);
-    public static final DV DEPENDENT_DV = new DV.NoDelay(2);
-    public static final DV INDEPENDENT1_DV = new DV.NoDelay(3);
-    public static final DV NO_LINKING_DV = new DV.NoDelay(MultiLevel.MAX_LEVEL);
+    public static final DV STATICALLY_ASSIGNED_DV = new DV.NoDelay(0, "statically_assigned");
+    public static final DV ASSIGNED_DV = new DV.NoDelay(1, "assigned");
+    public static final DV DEPENDENT_DV = new DV.NoDelay(2, "dependent");
+    public static final DV INDEPENDENT1_DV = new DV.NoDelay(3, "independent1");
+    public static final DV NO_LINKING_DV = new DV.NoDelay(MultiLevel.MAX_LEVEL, "no");
 
     public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), CausesOfDelay.EMPTY);
-
-    public static final String DELAY_STRING = "<delay>";
 
     public static LinkedVariables sameValue(Stream<Variable> variables, DV value) {
         return new LinkedVariables(variables.collect(Collectors.toMap(v -> v, v -> value)));
@@ -92,11 +83,11 @@ public class LinkedVariables {
     }
 
     public static boolean isNotIndependent(DV assignedOrLinked) {
-        return assignedOrLinked.value() >= STATICALLY_ASSIGNED && assignedOrLinked.value() < NO_LINKING;
+        return assignedOrLinked.ge(STATICALLY_ASSIGNED_DV) && assignedOrLinked.lt(NO_LINKING_DV);
     }
 
     public static boolean isAssigned(DV level) {
-        return level.value() == STATICALLY_ASSIGNED || level.value() == ASSIGNED;
+        return level.equals(STATICALLY_ASSIGNED_DV) || level.equals(ASSIGNED_DV);
     }
 
     public LinkedVariables mergeDelay(LinkedVariables other, DV whenMissing) {
@@ -108,7 +99,7 @@ public class LinkedVariables {
                 map.put(v, whenMissing);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                DV merged = inMap.value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV : whenMissing;
+                DV merged = inMap.equals(STATICALLY_ASSIGNED_DV) ? STATICALLY_ASSIGNED_DV : whenMissing;
                 map.put(v, merged);
             }
         });
@@ -140,8 +131,8 @@ public class LinkedVariables {
                 map.put(v, newValue);
             } else {
                 // once 0, always 0 (we do not accept delays on 0!)
-                DV merged = newValue.value() == STATICALLY_ASSIGNED || inMap.value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV
-                        : newValue.min(inMap);
+                DV merged = newValue.equals(STATICALLY_ASSIGNED_DV) || inMap.equals(STATICALLY_ASSIGNED_DV)
+                        ? STATICALLY_ASSIGNED_DV : newValue.min(inMap);
                 map.put(v, merged);
             }
         });
@@ -217,7 +208,7 @@ public class LinkedVariables {
 
     public Stream<Variable> independent1Variables() {
         return variables.entrySet().stream()
-                .filter(e -> e.getValue().value() > DEPENDENT)
+                .filter(e -> e.getValue().gt(DEPENDENT_DV))
                 .map(Map.Entry::getKey);
     }
 
@@ -232,7 +223,7 @@ public class LinkedVariables {
         assert delay.isDelayed();
         Map<Variable, DV> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue().value() == STATICALLY_ASSIGNED ? STATICALLY_ASSIGNED_DV : delay.min(e.getValue())));
+                        e -> e.getValue().equals(STATICALLY_ASSIGNED_DV) ? STATICALLY_ASSIGNED_DV : delay.min(e.getValue())));
         return new LinkedVariables(map);
     }
 
@@ -275,12 +266,12 @@ public class LinkedVariables {
         }
 
         Map<Variable, DV> adjustedSource;
-        if (!variables.isEmpty() && sourceImmutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        if (!variables.isEmpty() && sourceImmutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
             // level 2+ -> remove all @Dependent
-            boolean recursivelyImmutable = sourceImmutable.value() == MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
+            boolean recursivelyImmutable = sourceImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             adjustedSource = variables.entrySet().stream()
-                    .filter(e -> recursivelyImmutable ? e.getValue().value() <= ASSIGNED :
-                            e.getValue().value() != DEPENDENT)
+                    .filter(e -> recursivelyImmutable ? e.getValue().le(ASSIGNED_DV) :
+                            !e.getValue().equals(DEPENDENT_DV))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } else {
             adjustedSource = variables;
@@ -295,8 +286,8 @@ public class LinkedVariables {
                 DV targetImmutable = computeImmutable.apply(target);
                 if (targetImmutable.isDelayed()) {
                     result.put(target, targetImmutable);
-                } else if (targetImmutable.value() < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
-                    if (linkLevel.value() <= DEPENDENT) {
+                } else if (targetImmutable.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+                    if (linkLevel.le(DEPENDENT_DV)) {
                         result.put(target, linkLevel);
                     } else { // INDEPENDENT1+
                         DV canIncrease = immutableCanBeIncreasedByTypeParameters.apply(target);
@@ -304,7 +295,7 @@ public class LinkedVariables {
                             result.put(target, canIncrease);
                         } else if (canIncrease.valueIsTrue()) {
                             DV immutableHidden = computeImmutableHiddenContent.apply(target);
-                            if (immutableHidden.value() < MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE) {
+                            if (immutableHidden.lt(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
                                 result.put(target, linkLevel);
                             }
                         } else {
@@ -313,7 +304,7 @@ public class LinkedVariables {
                     }
                 } else {
                     // targetImmutable is @ERImmutable
-                    if (linkLevel.value() <= ASSIGNED) {
+                    if (linkLevel.le(ASSIGNED_DV)) {
                         result.put(target, linkLevel);
                     }
                 }
@@ -323,7 +314,7 @@ public class LinkedVariables {
     }
 
     public static boolean isAssignedOrLinked(DV dependent) {
-        return dependent.value() >= STATICALLY_ASSIGNED && dependent.value() <= DEPENDENT;
+        return dependent.ge(STATICALLY_ASSIGNED_DV) && dependent.le(DEPENDENT_DV);
     }
 
     public CausesOfDelay causesOfDelay() {

@@ -191,19 +191,20 @@ public class Lambda extends ElementImpl implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY,
+            CausesOfDelay.SimpleSet pt = new CausesOfDelay.SimpleSet(evaluationContext.getCurrentType(), CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
+            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(pt),
                     new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(evaluationContext.getCurrentType(),
                             CauseOfDelay.Cause.TYPE_ANALYSIS)));
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
                 Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv.isDone(evaluationContext)) {
+                if (srv.isDone()) {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.DELAYED_EMPTY,
-                            srv.causesOfDelay(evaluationContext));
+                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(srv.causesOfDelay()),
+                            srv.causesOfDelay());
                 }
             } else {
                 Map<VariableProperty, DV> valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,

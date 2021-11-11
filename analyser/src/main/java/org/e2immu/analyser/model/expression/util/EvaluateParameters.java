@@ -90,7 +90,7 @@ public class EvaluateParameters {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
                             map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE_DV);
                         } else {
-                         //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
+                            //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
                         }
                     } else if (independent.value() == MultiLevel.INDEPENDENT_1) {
                         map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE_DV);
@@ -104,7 +104,7 @@ public class EvaluateParameters {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
                             map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
                         } else {
-                          //  map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
+                            //  map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
                             builder.causeOfContextModificationDelay(methodInfo, true);
                         }
                     }
@@ -135,7 +135,7 @@ public class EvaluateParameters {
         }
 
         VariableExpression scopeVariable;
-        if (minNotNullOverParameters.value() == MultiLevel.EFFECTIVELY_NOT_NULL &&
+        if (minNotNullOverParameters.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&

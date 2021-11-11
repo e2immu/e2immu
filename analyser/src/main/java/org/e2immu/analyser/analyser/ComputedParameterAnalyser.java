@@ -159,7 +159,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     return new Delayed(new CauseOfDelay.VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference && e.getValue().value() >= LinkedVariables.INDEPENDENT1)
+                        .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
                         .map(e -> (FieldReference) e.getKey()).toList();
                 if (!fields.isEmpty()) {
                     // so we know the parameter is content linked to some fields
@@ -234,7 +234,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
     private static Set<VariableProperty> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
-        if (assignedOrLinked.value() == LinkedVariables.DEPENDENT) return Set.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return Set.of(MODIFIED_OUTSIDE_METHOD);
         return Set.of();
     }
 
@@ -310,7 +310,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         int levelImmutable = MultiLevel.level(immutable);
                         DV typeIndependent;
                         if (levelImmutable <= LEVEL_1_IMMUTABLE) {
-                            if (assignedOrLinked.value() <= LinkedVariables.DEPENDENT) {
+                            if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
                                 typeIndependent = DEPENDENT_DV;
                             } else {
                                 typeIndependent = INDEPENDENT_1_DV;

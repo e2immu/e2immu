@@ -174,7 +174,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
             DV value = methodAnalysis.getProperty(variableProperty);
             if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED_METHOD ?
-                        value.value() > valueFromOverrides.value() : value.value() < valueFromOverrides.value();
+                        value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
                     messages.add(Message.newMessage(new Location(methodInfo),
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));

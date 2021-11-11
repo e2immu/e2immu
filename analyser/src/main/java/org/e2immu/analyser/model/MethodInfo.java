@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -287,10 +288,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     /*
      The one method dealing with the parameters={} parameter in @Independent1, @Dependent on parameters
      */
-    public Map<Integer, Map<Integer, Integer>> crossLinks(InspectionProvider inspectionProvider) {
+    public Map<Integer, Map<Integer, DV>> crossLinks(InspectionProvider inspectionProvider) {
         List<ParameterInfo> parameters = inspectionProvider.getMethodInspection(this).getParameters();
         if (parameters.size() == 0) return Map.of();
-        Map<Integer, Map<Integer, Integer>> map = new HashMap<>();
+        Map<Integer, Map<Integer, DV>> map = new HashMap<>();
         for (ParameterInfo parameterInfo : parameters) {
             ParameterInspection pi = parameterInfo.parameterInspection.get();
             Optional<AnnotationExpression> opt = pi.getAnnotations().stream()
@@ -301,9 +302,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 AnnotationExpression ae = opt.get();
                 int[] refs = ae.extractIntArray("parameters");
                 if (refs.length > 0) {
-                    int value = ae.typeInfo().simpleName.equals("Dependent") ? LinkedVariables.DEPENDENT : LinkedVariables.INDEPENDENT1;
+                    DV value = ae.typeInfo().simpleName.equals("Dependent") ? LinkedVariables.DEPENDENT_DV : LinkedVariables.INDEPENDENT1_DV;
                     for (int r : refs) {
-                        Map<Integer, Integer> subMap = map.computeIfAbsent(parameterInfo.index, i -> new HashMap<>());
+                        Map<Integer, DV> subMap = map.computeIfAbsent(parameterInfo.index, i -> new HashMap<>());
                         subMap.put(r, value);
                     }
                 }

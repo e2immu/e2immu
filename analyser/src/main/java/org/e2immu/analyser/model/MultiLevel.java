@@ -34,7 +34,7 @@ public class MultiLevel {
 
     public static final int DELAY = 0;
     public static final int FALSE = 1;
-    public static final DV FALSE_DV = new DV.NoDelay(FALSE);
+    public static final DV FALSE_DV = new DV.NoDelay(FALSE, "false");
     public static final int EVENTUAL = 2;
     public static final int EVENTUAL_BEFORE = 3;
     public static final int EVENTUAL_AFTER = 4;
@@ -58,58 +58,59 @@ public class MultiLevel {
     // DEPENDENT (only at the first level, nothing to do with eventual)
 
     public static final int DEPENDENT = FALSE; // no need for more
-    public static final DV DEPENDENT_DV = FALSE_DV;
+    public static final DV DEPENDENT_DV = new DV.NoDelay(DEPENDENT, "dependent");
 
     // dependent_1 == independent at level 1, but dependent at level 2
     public static final int INDEPENDENT_1 = compose(EFFECTIVE, LEVEL_1_DEPENDENT);
-    public static final DV INDEPENDENT_1_DV = new DV.NoDelay(INDEPENDENT_1);
+    public static final DV INDEPENDENT_1_DV = new DV.NoDelay(INDEPENDENT_1, "independent1");
 
     // independent == independent both at level 1 (mutable content) and level 2 (immutable content)
     public static final int INDEPENDENT = compose(EFFECTIVE, LEVEL_R_DEPENDENT);
-    public static final DV INDEPENDENT_DV = new DV.NoDelay(INDEPENDENT);
+    public static final DV INDEPENDENT_DV = new DV.NoDelay(INDEPENDENT, "independent");
 
     // IMMUTABLE
 
-    public static final int EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE);
-    public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_1_IMMUTABLE);
-
+    public static final DV EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV =
+            new DV.NoDelay(compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE), "eve2_before_mark");
+    public static final DV EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV =
+            new DV.NoDelay(compose(EVENTUAL_BEFORE, LEVEL_1_IMMUTABLE), "eve1_before_mark");
     public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, NOT_NULL_1);
 
-    public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, LEVEL_2_IMMUTABLE);
-    public static final DV EVENTUALLY_E2IMMUTABLE_DV = new DV.NoDelay(EVENTUALLY_E2IMMUTABLE);
+    public static final DV EVENTUALLY_E2IMMUTABLE_DV =
+            new DV.NoDelay(compose(EVENTUAL, LEVEL_2_IMMUTABLE), "eve2immutable");
 
-    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, LEVEL_1_IMMUTABLE);
-    public static final DV EVENTUALLY_E1IMMUTABLE_DV = new DV.NoDelay(EVENTUALLY_E1IMMUTABLE);
+    public static final DV EVENTUALLY_E1IMMUTABLE_DV =
+            new DV.NoDelay(compose(EVENTUAL, LEVEL_1_IMMUTABLE), "eve1immutable");
 
     public static final int EVENTUALLY_RECURSIVELY_IMMUTABLE = compose(EVENTUAL, LEVEL_R_IMMUTABLE);
 
     public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_2_IMMUTABLE);
     public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, LEVEL_1_IMMUTABLE);
 
-    public static final int EFFECTIVELY_CONTENT2_NOT_NULL = compose(EFFECTIVE, NOT_NULL_2);
-    public static final int EFFECTIVELY_CONTENT_NOT_NULL = compose(EFFECTIVE, NOT_NULL_1);
-    public static final DV EFFECTIVELY_CONTENT_NOT_NULL_DV = new DV.NoDelay(EFFECTIVELY_CONTENT_NOT_NULL);
+    public static final DV EFFECTIVELY_CONTENT2_NOT_NULL_DV =
+            new DV.NoDelay(compose(EFFECTIVE, NOT_NULL_2), "content2_not_null");
+    public static final DV EFFECTIVELY_CONTENT_NOT_NULL_DV =
+            new DV.NoDelay(compose(EFFECTIVE, NOT_NULL_1), "content_not_null");
     public static final int EFFECTIVELY_NOT_NULL_AFTER = compose(EVENTUAL_AFTER, NOT_NULL);
-    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE, NOT_NULL);
-    public static final DV EFFECTIVELY_NOT_NULL_DV = new DV.NoDelay(EFFECTIVELY_NOT_NULL);
+    public static final DV EFFECTIVELY_NOT_NULL_DV = new DV.NoDelay(compose(EFFECTIVE, NOT_NULL), "not_null");
 
     public static final int EFFECTIVELY_RECURSIVELY_IMMUTABLE = compose(EFFECTIVE, LEVEL_R_IMMUTABLE);
-    public static final DV EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_RECURSIVELY_IMMUTABLE);
+    public static final DV EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_RECURSIVELY_IMMUTABLE, "recursively_immutable");
 
     public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, LEVEL_2_IMMUTABLE);
-    public static final DV EFFECTIVELY_E2IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E2IMMUTABLE);
+    public static final DV EFFECTIVELY_E2IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E2IMMUTABLE, "e2immutable");
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, LEVEL_1_IMMUTABLE);
-    public static final DV EFFECTIVELY_E1IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E1IMMUTABLE);
+    public static final DV EFFECTIVELY_E1IMMUTABLE_DV = new DV.NoDelay(EFFECTIVELY_E1IMMUTABLE, "e1immutable");
     public static final int EFFECTIVELY_E3IMMUTABLE = compose(EFFECTIVE, LEVEL_3_IMMUTABLE);
 
-    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE);
 
     public static final int MUTABLE = FALSE;
-    public static final DV MUTABLE_DV = new DV.NoDelay(MUTABLE);
+    public static final DV MUTABLE_DV = new DV.NoDelay(MUTABLE, "mutable");
     public static final int NULLABLE = FALSE;
-    public static final DV NULLABLE_DV = new DV.NoDelay(NULLABLE);
+    public static final DV NULLABLE_DV = new DV.NoDelay(NULLABLE, "nullable");
     public static final int NOT_INVOLVED = DELAY;
-    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(NOT_INVOLVED);
+    public static final DV NOT_INVOLVED_DV = new DV.NoDelay(NOT_INVOLVED, "not_involved");
 
     /**
      * Make a value combining effective and level
@@ -155,15 +156,15 @@ public class MultiLevel {
     }
 
     public static boolean isEventuallyE1Immutable(int i) {
-        return i == EVENTUALLY_E1IMMUTABLE || i == EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+        return i == compose(EVENTUAL, LEVEL_1_IMMUTABLE) || i == compose(EVENTUAL_BEFORE, LEVEL_1_IMMUTABLE);
     }
 
     public static boolean isEventuallyE2Immutable(int i) {
-        return i == EVENTUALLY_E2IMMUTABLE || i == EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+        return i == compose(EVENTUAL, LEVEL_2_IMMUTABLE) || i == compose(EVENTUAL_BEFORE, LEVEL_2_IMMUTABLE);
     }
 
     public static boolean isAtLeastEventuallyE2Immutable(int i) {
-        return i >= EVENTUALLY_E2IMMUTABLE;
+        return i >= compose(EVENTUAL, LEVEL_2_IMMUTABLE);
     }
 
     public static boolean isAtLeastEventuallyE2ImmutableAfter(int i) {
@@ -265,6 +266,9 @@ public class MultiLevel {
     }
 
     public static String niceIndependent(DV dv) {
+        if (dv instanceof DV.NoDelay noDelay && noDelay.haveLabel()) {
+            return noDelay.label();
+        }
         return niceIndependent(dv.value());
     }
 
@@ -275,6 +279,9 @@ public class MultiLevel {
     }
 
     public static String niceImmutable(DV dv) {
+        if (dv instanceof DV.NoDelay noDelay && noDelay.haveLabel()) {
+            return noDelay.label();
+        }
         return niceImmutable(dv.value());
     }
 
@@ -340,14 +347,10 @@ public class MultiLevel {
     }
 
     public static DV fromIndependentToLinkedVariableLevel(DV dv) {
-        return new DV.NoDelay(fromIndependentToLinkedVariableLevel(dv.value()));
-    }
-
-    public static int fromIndependentToLinkedVariableLevel(int independent) {
-        assert independent < MultiLevel.INDEPENDENT; // cannot be linked
-        if (independent == MultiLevel.DEPENDENT) return LinkedVariables.DEPENDENT;
-        if (independent == MultiLevel.INDEPENDENT_1) return LinkedVariables.INDEPENDENT1;
-        return level(independent) + 2;
+        assert dv.lt(MultiLevel.INDEPENDENT_DV); // cannot be linked
+        if (dv.equals(MultiLevel.DEPENDENT_DV)) return LinkedVariables.DEPENDENT_DV;
+        if (dv.equals(MultiLevel.INDEPENDENT_1_DV)) return LinkedVariables.INDEPENDENT1_DV;
+        return new DV.NoDelay(level(dv) + 2);
     }
 
     public static boolean isAtLeastEffectivelyE2Immutable(DV dv) {

@@ -267,7 +267,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             DV inMap = typeAnalysis.getPropertyFromMapNeverDelay(VariableProperty.INDEPENDENT);
             ValueExplanation computed = computeIndependent(typeInfo);
             // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
-            if (inMap.value() > computed.value.value()) {
+            if (inMap.gt(computed.value)) {
                 Message message = Message.newMessage(new Location(typeInfo),
                         Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
                         "Found " + inMap + ", computed maximally " + computed.value
@@ -297,7 +297,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                         ta.getTypeInfo().fullyQualifiedName))
                 .min(Comparator.comparing(p -> p.value.value()))
                 .orElse(new ValueExplanation(VariableProperty.INDEPENDENT.bestDv, "none"));
-        return myMethods.value.value() < fromSuperTypes.value.value() ? myMethods : fromSuperTypes;
+        return myMethods.value.lt(fromSuperTypes.value) ? myMethods : fromSuperTypes;
     }
 
     // dedicated method exactly for this "isFact" method
@@ -558,11 +558,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
                 return;
             }
-            if (immutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
                 // minimal value; we'd have an inconsistency otherwise
                 builder.setProperty(VariableProperty.INDEPENDENT, independent);
             }
-        } else if (immutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE && inMap.value() < independent.value()) {
+        } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
             messages.add(Message.newMessage(new Location(builder.typeInfo),
                     Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
         }

@@ -287,7 +287,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-        boolean contentNotNullRequired = notNullForward.value() == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+        boolean contentNotNullRequired = notNullForward.equals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
 
         ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
                 computeContextImmutable(evaluationContext);
@@ -388,7 +388,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // companion methods
         Expression modifiedInstance;
-        if (modified == Level.TRUE) {
+        if (modified.valueIsTrue()) {
             modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
         } else {
@@ -433,7 +433,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
      */
     public void linksBetweenParameters(EvaluationResult.Builder builder, EvaluationContext evaluationContext) {
         // key is dependent on values, but only if all of them are variable expressions
-        Map<Integer, Map<Integer, Integer>> crossLinks = methodInfo.crossLinks(evaluationContext.getAnalyserContext());
+        Map<Integer, Map<Integer, DV>> crossLinks = methodInfo.crossLinks(evaluationContext.getAnalyserContext());
         if (crossLinks != null) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             crossLinks.forEach((source, v) -> v.forEach((target, level) -> {
@@ -456,20 +456,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                         EvaluationContext evaluationContext,
                                         IsVariableExpression source,
                                         int target,
-                                        int level) {
+                                        DV level) {
         Expression expression = parameterExpressions.get(target);
         LinkedVariables targetLinks = expression.linkedVariables(evaluationContext);
-        boolean isDelayed = source.isDelayed(evaluationContext) || expression.isDelayed(evaluationContext);
+        CausesOfDelay delays = expression.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v,
-                        isDelayed ? LinkedVariables.DELAYED_VALUE : LinkedVariables.worstValue(level, l)));
+                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.min(l)));
     }
 
     private boolean checkFinalizer(EvaluationContext evaluationContext,
                                    EvaluationResult.Builder builder,
                                    MethodAnalysis methodAnalysis,
                                    Expression objectValue) {
-        if (methodAnalysis.getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
+        if (methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue()) {
             if (objectValue instanceof IsVariableExpression ve) {
                 if (raiseErrorForFinalizer(evaluationContext, builder, ve.variable())) return false;
                 // check links of this variable
@@ -489,7 +488,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private boolean raiseErrorForFinalizer(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder, Variable variable) {
         if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
-                evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)) {
+                !evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue())) {
             // ensure that the current method has been marked @Finalizer
             builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;

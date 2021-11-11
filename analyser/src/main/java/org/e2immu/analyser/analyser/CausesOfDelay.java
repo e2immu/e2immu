@@ -130,5 +130,10 @@ public interface CausesOfDelay extends DV {
         public int compareTo(WeightedGraph.Weight o) {
             return value() - ((DV) o).value();
         }
+
+        @Override
+        public String toString() {
+            return causes.stream().map(CauseOfDelay::toString).collect(Collectors.joining(";"));
+        }
     }
 }

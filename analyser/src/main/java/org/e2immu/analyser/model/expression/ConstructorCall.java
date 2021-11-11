@@ -190,8 +190,8 @@ public record ConstructorCall(
             LinkedVariables sub = value.linkedVariables(evaluationContext);
             if (independentOnParameter.isDelayed()) {
                 result = result.mergeDelay(sub, independentOnParameter);
-            } else if (independentOnParameter.value() >= MultiLevel.DEPENDENT &&
-                    independentOnParameter.value() < MultiLevel.INDEPENDENT) {
+            } else if (independentOnParameter.ge(MultiLevel.DEPENDENT_DV) &&
+                    independentOnParameter.lt(MultiLevel.INDEPENDENT_DV)) {
                 result = result.merge(sub, MultiLevel.fromIndependentToLinkedVariableLevel(independentOnParameter));
             }
             i++;
@@ -337,7 +337,7 @@ public record ConstructorCall(
                 instance = this;
             } else {
                 instance = modifiedInstance.isDelayed()
-                        ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                        ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         linkedVariables(evaluationContext).changeAllToDelay(modifiedInstance.causesOfDelay()))
                         : modifiedInstance;
             }
@@ -371,7 +371,7 @@ public record ConstructorCall(
 
     @Override
     public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
-        return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+        return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                 linkedVariables(evaluationContext).changeAllToDelay(causes));
     }
 }

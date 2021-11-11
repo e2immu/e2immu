@@ -103,7 +103,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // implicitly @NotModified when E2Immutable
             DV modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
             if (!parameterInfo.parameterizedType.canBeModifiedInThisClass(analysisProvider).valueIsTrue()) {
-                AnnotationExpression ae = modified.value() == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
+                AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);
             }
@@ -114,9 +114,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @Independent1; @Independent, @Dependent not shown
             DV independentType = parameterInfo.parameterizedType.defaultIndependent(analysisProvider);
             DV independent = getProperty(VariableProperty.INDEPENDENT);
-            if (independent.value() == MultiLevel.INDEPENDENT && independentType.value() < MultiLevel.INDEPENDENT) {
+            if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent, true);
-            } else if (independent.value() == MultiLevel.INDEPENDENT_1 && independentType.value() < MultiLevel.INDEPENDENT_1) {
+            } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent1, true);
             }
         }

@@ -127,17 +127,17 @@ public class ComputeLinkedVariables {
         });
 
         List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables,
-                LinkedVariables.STATICALLY_ASSIGNED, LinkedVariables.STATICALLY_ASSIGNED);
+                LinkedVariables.STATICALLY_ASSIGNED_DV, LinkedVariables.STATICALLY_ASSIGNED_DV);
         List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables,
-                LinkedVariables.DELAYED_VALUE, LinkedVariables.DEPENDENT);
+                DV.MIN_INT_DV, LinkedVariables.DEPENDENT_DV);
         return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
                 clustersDependent, CausesOfDelay.from(delaysInClustering));
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,
                                                         List<Variable> variables,
-                                                        int minInclusive,
-                                                        int maxInclusive) {
+                                                        DV minInclusive,
+                                                        DV maxInclusive) {
         Set<Variable> done = new HashSet<>();
         List<List<Variable>> result = new ArrayList<>(variables.size());
 
@@ -145,7 +145,7 @@ public class ComputeLinkedVariables {
             if (!done.contains(variable)) {
                 Map<Variable, DV> map = weightedGraph.links(variable, false);
                 List<Variable> reachable = map.entrySet().stream()
-                        .filter(e -> e.getValue().value() >= minInclusive && e.getValue().value() <= maxInclusive)
+                        .filter(e -> e.getValue().ge(minInclusive) && e.getValue().le(maxInclusive))
                         .map(Map.Entry::getKey).toList();
                 result.add(reachable);
                 done.addAll(reachable);

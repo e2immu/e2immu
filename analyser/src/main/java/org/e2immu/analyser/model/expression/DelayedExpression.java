@@ -26,7 +26,6 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Objects;
 
-import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
 @E2Container
@@ -59,8 +58,8 @@ public record DelayedExpression(String msg,
                 "<state:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType, int notNull, LinkedVariables linkedVariables) {
-        assert notNull >= EFFECTIVELY_NOT_NULL;
+    public static Expression forNewObject(ParameterizedType parameterizedType, DV notNull, LinkedVariables linkedVariables) {
+        assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
         return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
                 "<new:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
     }

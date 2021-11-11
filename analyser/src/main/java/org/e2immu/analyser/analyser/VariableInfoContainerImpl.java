@@ -325,7 +325,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (value.isDone()) variableInfo.setProperty(variableProperty, value);
         } else {
             assert current.isDone();
-            if (current.value() != value.value() && (current.value() < value.value() || failWhenTryingToWriteALowerValue)) {
+            if (!current.equals(value) && (current.lt(value) || failWhenTryingToWriteALowerValue)) {
                 throw new IllegalStateException("Trying to write a different value " + value +
                         ", already have " + current + ", property " + variableProperty +
                         ", variable " + current().variable().fullyQualifiedName());

@@ -74,15 +74,7 @@ public class Location implements Comparable<Location> {
         if (info == null) {
             return "NOT_YET_SET";
         }
-        String type;
-        if (info instanceof TypeInfo) type = "Type";
-        else if (info instanceof FieldInfo) type = "Field";
-        else if (info instanceof MethodInfo mi) {
-            if (mi.isConstructor) type = "Constructor";
-            else type = "Method";
-        } else if (info instanceof ParameterInfo) type = "Parameter";
-        else throw new UnsupportedOperationException();
-        return type + " " + info.fullyQualifiedName() + (statementIndexInMethod == null ? "" : ", statement " + statementIndexInMethod);
+        return info.niceClassName() + " " + info.fullyQualifiedName() + (statementIndexInMethod == null ? "" : ", statement " + statementIndexInMethod);
     }
 
     public int compareTo(Location other) {
@@ -99,5 +91,12 @@ public class Location implements Comparable<Location> {
             return statementIndexInMethod.compareTo(other.statementIndexInMethod);
         }
         return 0;
+    }
+
+    /*
+    best toString method to show in a delay; as brief as possible
+     */
+    public String toDelayString() {
+        return info.niceClassName() + "_" + info.name() + (statementIndexInMethod == null ? "" : "_" + statementIndexInMethod);
     }
 }

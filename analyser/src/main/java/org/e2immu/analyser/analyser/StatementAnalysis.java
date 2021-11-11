@@ -990,22 +990,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 linkedVariablesFromBlocks, evaluationContext);
         computeLinkedVariables.writeLinkedVariables();
 
-        AnalysisStatus ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
+        CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
-        AnalysisStatus cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
+        CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL));
 
-        AnalysisStatus extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
+        CausesOfDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
-        AnalysisStatus cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
+        CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
-        AnalysisStatus cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
+        CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
-        return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
+        return new AnalysisStatus.Delayed(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
     }
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
@@ -1038,8 +1038,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
                     assert sa != null;
-                    if (sa.flowData.getGuaranteedToBeReachedInCurrentBlock() != FlowData.Execution.ALWAYS)
-                        return false;
+                    if (!sa.flowData.getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS)) return false;
                     if (current.isRead()) {
                         if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
                             return false;
@@ -1507,11 +1506,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     return null;
                 })
-                .filter(e -> e != null && (e.v == Level.NOT_INVOLVED_DV || e.v.value() >= MultiLevel.EFFECTIVELY_NOT_NULL))
+                .filter(e -> e != null && (e.v.equals(Level.NOT_INVOLVED_DV) || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
                 .map(e -> {
                     Expression equals = Equals.equals(evaluationContext, new VariableExpression(e.k.variable()),
                             NullConstant.NULL_CONSTANT);
-                    if (e.v.value() >= MultiLevel.EFFECTIVELY_NOT_NULL) {
+                    if (e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
                         return Negation.negate(evaluationContext, equals);
                     }
                     return equals;
