@@ -147,6 +147,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public DV getProperty(VariableProperty variableProperty, DV defaultValue) {
+        if(defaultValue == null) return properties.getOrDefaultNull(variableProperty);
         return properties.getOrDefault(variableProperty, defaultValue);
     }
 

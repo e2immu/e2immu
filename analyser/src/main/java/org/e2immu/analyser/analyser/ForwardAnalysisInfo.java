@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManager,
@@ -28,9 +29,13 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
                                   Expression switchSelector,
                                   CausesOfDelay switchSelectorIsDelayed) {
 
+    public ForwardAnalysisInfo {
+        Objects.requireNonNull(switchSelectorIsDelayed);
+    }
+
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
         return new ForwardAnalysisInfo(FlowData.ALWAYS, ConditionManager.initialConditionManager(primitives),
-                null, null, null, null);
+                null, null, null, CausesOfDelay.EMPTY);
     }
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {

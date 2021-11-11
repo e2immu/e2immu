@@ -179,7 +179,7 @@ public class CompanionAnalyser {
         @Override
         public EvaluationContext child(Expression condition) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
-                    Precondition.empty(getPrimitives()), null);
+                    Precondition.empty(getPrimitives()), CausesOfDelay.EMPTY);
             return new EvaluationContextImpl(iteration, cm);
         }
 

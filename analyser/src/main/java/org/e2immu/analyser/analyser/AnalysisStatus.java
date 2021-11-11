@@ -15,11 +15,14 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.function.Function;
 
 public interface AnalysisStatus {
+
+    static AnalysisStatus of(CausesOfDelay merge) {
+        return merge.isDelayed() ? new Delayed(merge) : DONE;
+    }
 
     int pos();
 

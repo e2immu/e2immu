@@ -96,8 +96,8 @@ public class TestMultiLevel {
 
     @Test
     public void testOneLevelLess() {
-        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV.value(), composeOneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL_DV).value());
-        assertEquals(EFFECTIVELY_NOT_NULL_DV.value(), composeOneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL_DV).value());
-        assertEquals(EFFECTIVELY_E1IMMUTABLE_DV.value(), composeOneLevelLess(EFFECTIVELY_E2IMMUTABLE_DV).value());
+        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV, composeOneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
+        assertEquals(EFFECTIVELY_NOT_NULL_DV, composeOneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL_DV));
+        assertEquals(EFFECTIVELY_E1IMMUTABLE_DV, composeOneLevelLess(EFFECTIVELY_E2IMMUTABLE_DV));
     }
 }

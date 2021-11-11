@@ -79,14 +79,14 @@ public abstract class CommonAnnotatedAPI {
     }
 
     protected void testERContainerType(TypeAnalysis typeAnalysis) {
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(Level.TRUE, typeAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.INDEPENDENT, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(VariableProperty.CONTAINER));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.SINGLETON));
-        assertEquals(Level.FALSE, typeAnalysis.getProperty(VariableProperty.FINALIZER));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.SINGLETON));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.FINALIZER));
 
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.IDENTITY));

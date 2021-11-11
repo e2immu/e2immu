@@ -1220,8 +1220,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 : new HashMap<>();
 
         for (VariableProperty vp : FROM_TYPE_ANALYSER_TO_PROPERTIES) {
-            DV value = typeAnalysis.getProperty(vp);
-            result.put(vp, value);
+            result.put(vp, vp.falseDv);
         }
         return result;
     }

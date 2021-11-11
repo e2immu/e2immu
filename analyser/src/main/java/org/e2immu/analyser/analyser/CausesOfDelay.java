@@ -54,10 +54,10 @@ public interface CausesOfDelay extends DV {
 
         @Override
         public CausesOfDelay merge(CausesOfDelay other) {
-            if (other == EMPTY) return this;
-            if (this == EMPTY) return other;
-            return new SimpleSet(Stream.concat(causesStream(),
-                    other.causesStream()).collect(Collectors.toUnmodifiableSet()));
+            if (other.isDone()) return this;
+            if (isDone()) return other;
+            return new SimpleSet(Stream.concat(causesStream(), other.causesStream())
+                    .collect(Collectors.toUnmodifiableSet()));
         }
 
         @Override

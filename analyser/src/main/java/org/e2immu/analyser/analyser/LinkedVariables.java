@@ -125,7 +125,7 @@ public class LinkedVariables {
     public LinkedVariables merge(LinkedVariables other, DV minimum) {
         HashMap<Variable, DV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            DV newValue = i.max(minimum);
+            DV newValue = minimum == DV.MIN_INT_DV ? i : i.max(minimum);
             DV inMap = map.get(v);
             if (inMap == null) {
                 map.put(v, newValue);

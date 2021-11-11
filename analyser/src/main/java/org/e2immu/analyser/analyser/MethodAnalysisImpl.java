@@ -207,7 +207,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay preconditionForEventualStatus() {
-            return null;
+            return CausesOfDelay.EMPTY;
         }
 
         @Override
@@ -233,6 +233,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
             this.analysisProvider = analysisProvider;
+            precondition.setVariable(Precondition.empty(primitives));
         }
 
         @Override

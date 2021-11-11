@@ -129,14 +129,14 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         ParameterizedType pt = builder.getParameterInfo().parameterizedType;
         if (Primitives.isPrimitiveExcludingVoid(pt)) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.NOT_NULL_PARAMETER);
-        return MultiLevel.NULLABLE_DV.max(override);
+        return MultiLevel.NULLABLE_DV.maxIgnoreDelay(override);
     }
 
     /*
     @Container on parameters needs to be contracted; but it does inherit
      */
     private DV computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
-        return Level.FALSE_DV.max(bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER));
+        return Level.FALSE_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.CONTAINER));
     }
 
     private void computeMethodPropertiesAfterParameters() {
@@ -173,7 +173,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private DV bestOfOverridesOrWorstValue(VariableProperty variableProperty) {
         DV best = bestOfOverrides(variableProperty);
-        return variableProperty.falseDv.max(best);
+        return variableProperty.falseDv.maxIgnoreDelay(best);
     }
 
     private DV computeMethodContainer() {
@@ -187,12 +187,12 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
         DV fromReturnType = typeAnalysis == null ? Level.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(VariableProperty.CONTAINER);
-        return Level.FALSE_DV.max(bestOfOverrides).max(fromReturnType);
+        return Level.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
     }
 
     private DV computeModifiedMethod() {
         if (methodInfo.isConstructor) return Level.TRUE_DV;
-        return Level.FALSE_DV.max(bestOfOverrides(VariableProperty.MODIFIED_METHOD));
+        return Level.FALSE_DV.maxIgnoreDelay(bestOfOverrides(VariableProperty.MODIFIED_METHOD));
     }
 
     private DV computeMethodImmutable() {
@@ -224,7 +224,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     value = Level.FALSE_DV;
                 } else {
                     DV typeIndependent = type.defaultIndependent(analyserContext);
-                    value = Level.fromBoolDv(typeIndependent.value() == MultiLevel.INDEPENDENT);
+                    value = Level.fromBoolDv(!typeIndependent.equals(MultiLevel.INDEPENDENT_DV));
                 }
             }
             builder.setProperty(VariableProperty.MODIFIED_VARIABLE, value);
@@ -265,11 +265,11 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     }
                 }
             } else {
-                value = MultiLevel.INDEPENDENT_1_DV;
+                value = MultiLevel.INDEPENDENT_DV;
             }
         }
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), VariableProperty.INDEPENDENT);
-        return override.max(value);
+        return override.maxIgnoreDelay(value);
     }
 
     private void checkMethodIndependent() {
@@ -292,7 +292,10 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         // typeIndependent is set by hand in AnnotatedAPI files
         DV typeIndependent = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.INDEPENDENT);
         DV bestOfOverrides = bestOfOverrides(VariableProperty.INDEPENDENT);
-        return MultiLevel.DEPENDENT_DV.max(returnValueIndependent).max(bestOfOverrides).max(typeIndependent);
+        return MultiLevel.DEPENDENT_DV
+                .maxIgnoreDelay(returnValueIndependent)
+                .maxIgnoreDelay(bestOfOverrides)
+                .maxIgnoreDelay(typeIndependent);
     }
 
     private DV computeMethodIndependentReturnValue() {
@@ -337,14 +340,14 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         }
         DV fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent.valueIsTrue()) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-        return MultiLevel.NULLABLE_DV.max(bestOfOverrides(VariableProperty.NOT_NULL_EXPRESSION));
+        return MultiLevel.NULLABLE_DV.maxIgnoreDelay(bestOfOverrides(VariableProperty.NOT_NULL_EXPRESSION));
     }
 
     private DV bestOfOverrides(VariableProperty variableProperty) {
         DV bestOfOverrides = Level.NOT_INVOLVED_DV;
         for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext)) {
             DV overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(variableProperty);
-            bestOfOverrides = bestOfOverrides.max(overrideAsIs);
+            bestOfOverrides = bestOfOverrides.maxIgnoreDelay(overrideAsIs);
         }
         return bestOfOverrides;
     }

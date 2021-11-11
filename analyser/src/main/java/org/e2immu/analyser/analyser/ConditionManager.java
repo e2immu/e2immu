@@ -51,16 +51,19 @@ public record ConditionManager(Expression condition,
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
         Objects.requireNonNull(precondition);
+        Objects.requireNonNull(conditionIsDelayed);
+        Objects.requireNonNull(stateIsDelayed);
+        Objects.requireNonNull(preconditionIsDelayed);
     }
 
     public boolean isDelayed() {
-        return stateIsDelayed != null || conditionIsDelayed != null || preconditionIsDelayed != null;
+        return stateIsDelayed.isDelayed() || conditionIsDelayed.isDelayed() || preconditionIsDelayed.isDelayed();
     }
 
     public boolean isReasonForDelay(Variable variable) {
-        return stateIsDelayed != null && stateIsDelayed.contains(variable)
-                || conditionIsDelayed != null && conditionIsDelayed.contains(variable)
-                || preconditionIsDelayed != null && preconditionIsDelayed.contains(variable);
+        return stateIsDelayed.contains(variable)
+                || conditionIsDelayed.contains(variable)
+                || preconditionIsDelayed.contains(variable);
     }
 
     /*
@@ -76,14 +79,14 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, null, TRUE, null,
-                Precondition.empty(TRUE), null, null);
+        return new ConditionManager(TRUE, CausesOfDelay.EMPTY, TRUE, CausesOfDelay.EMPTY,
+                Precondition.empty(TRUE), CausesOfDelay.EMPTY, null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, null, FALSE, null,
-                new Precondition(FALSE, List.of()), null, null);
+        return new ConditionManager(FALSE, CausesOfDelay.EMPTY, FALSE, CausesOfDelay.EMPTY,
+                new Precondition(FALSE, List.of()), CausesOfDelay.EMPTY, null);
     }
 
     /*
@@ -95,7 +98,7 @@ public record ConditionManager(Expression condition,
                                                  Precondition precondition,
                                                  CausesOfDelay preconditionIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed,
-                new BooleanConstant(primitives, true), null,
+                new BooleanConstant(primitives, true), CausesOfDelay.EMPTY,
                 precondition, preconditionIsDelayed, this);
     }
 
@@ -145,7 +148,7 @@ public record ConditionManager(Expression condition,
      */
     public ConditionManager withoutState(Primitives primitives) {
         return new ConditionManager(condition, conditionIsDelayed, new BooleanConstant(primitives, true),
-                null, precondition, preconditionIsDelayed, parent);
+                CausesOfDelay.EMPTY, precondition, preconditionIsDelayed, parent);
     }
 
     /*

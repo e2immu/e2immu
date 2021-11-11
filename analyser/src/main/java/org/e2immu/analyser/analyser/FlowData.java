@@ -247,7 +247,7 @@ public class FlowData {
         CausesOfDelay causes = stateIsDelayed
                 .merge(localConditionManagerIsDelayed)
                 .merge(blockExecution.causesOfDelay());
-        AnalysisStatus delayBasedOnExecutionAndLocalConditionManager = new Delayed(causes);
+        AnalysisStatus delayBasedOnExecutionAndLocalConditionManager = AnalysisStatus.of(causes);
 
         // some statements that need executing independently of delays
         if (previousStatement == null) {

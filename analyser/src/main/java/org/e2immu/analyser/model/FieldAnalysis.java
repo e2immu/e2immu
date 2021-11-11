@@ -55,7 +55,8 @@ public interface FieldAnalysis extends Analysis {
                 }
                 DV typeImmutable = fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                         analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-                return typeImmutable.max(fieldImmutable);
+                // ignore delay OK because we're in shallow analysis
+                return typeImmutable.maxIgnoreDelay(fieldImmutable);
 
             case CONSTANT:
             case CONTAINER:

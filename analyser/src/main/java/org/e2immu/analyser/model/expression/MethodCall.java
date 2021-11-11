@@ -341,7 +341,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         LinkedVariables linked1Scope = linked1VariablesScope(evaluationContext);
         linkedVariables.variables().forEach((v, level) -> linked1Scope.variables().forEach((v2, level2) -> {
-            DV combined = object.isDelayed() ? object.causesOfDelay() : level.min(level2);
+            DV combined = object.isDelayed() ? object.causesOfDelay() : level.max(level2);
             builder.link(v, v2, combined);
         }));
 
@@ -447,7 +447,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         LinkedVariables targetLinks = expression.linkedVariables(evaluationContext);
         CausesOfDelay delays = expression.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.min(l)));
+                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.max(l)));
     }
 
     private boolean checkFinalizer(EvaluationContext evaluationContext,

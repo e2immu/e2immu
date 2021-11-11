@@ -86,7 +86,7 @@ public class TestDefaultAnnotations {
                 .filter(m -> !m.location().info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
         LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
-        //assertEquals(0L, javaLangErrors);
+        assertEquals(0L, javaLangErrors);
     }
 
     // hardcoded

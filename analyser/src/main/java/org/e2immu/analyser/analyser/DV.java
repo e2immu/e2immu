@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.WeightedGraph;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -136,13 +137,22 @@ public interface DV extends WeightedGraph.Weight {
         public boolean haveLabel() {
             return !COMPUTED.equals(label);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            NoDelay noDelay = (NoDelay) o;
+            return value == noDelay.value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(value);
+        }
     }
 
     record SingleDelay(CauseOfDelay causeOfDelay, int value) implements DV, AnalysisStatus {
-
-        public SingleDelay(CauseOfDelay causeOfDelay) {
-            this(causeOfDelay, Level.DELAY);
-        }
 
         public SingleDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
             this(new Location(withInspectionAndAnalysis), cause);

@@ -1707,7 +1707,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
             ApplyStatusAndEnnStatus applyResult = apply(sharedState, result);
-            AnalysisStatus statusPost = new Delayed(applyResult.status.merge(analysisStatus.causesOfDelay()));
+            AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status.merge(analysisStatus.causesOfDelay()));
             CausesOfDelay ennStatus = applyResult.ennStatus;
 
             if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
@@ -1740,7 +1740,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             }
-            return new Delayed(ennStatus.merge(statusPost.causesOfDelay()));
+            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()));
         } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
