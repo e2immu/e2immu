@@ -34,7 +34,6 @@ import java.time.chrono.ChronoLocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops extends CommonTestRunner {
