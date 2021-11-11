@@ -967,7 +967,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             lastStatements.stream().filter(cal -> cal.lastStatement.statementAnalysis.variables.isSet(fqn)).forEach(cal -> {
                 VariableInfoContainer calVic = cal.lastStatement.statementAnalysis.variables.get(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
-                DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
+            /*    DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
                 DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
                 if (cnn4ParentDelay.valueIsTrue() && !cnn4ParentDelayResolved.valueIsTrue()) {
                     CausesOfDelay delay = new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(calVi.variable(),
@@ -978,6 +978,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (cnn4Parent.isDone())
                         groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
                 }
+
+             */
             });
         }
 

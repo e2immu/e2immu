@@ -1348,9 +1348,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             for (Variable nullVariable : nullVariables) {
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                ensureContextNotNullForParent(nullVariable, delays.isDelayed(), escapeAlwaysExecuted.valueIsTrue());
+                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
                 if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays.isDelayed(), escapeAlwaysExecuted.valueIsTrue());
+                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
                 }
             }
             if (escapeAlwaysExecuted.valueIsTrue()) {
@@ -1378,7 +1378,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return DONE;
     }
 
-    private void ensureContextNotNullForParent(Variable nullVariable, boolean delays, boolean notifyParent) {
+    private void ensureContextNotNullForParent(Variable nullVariable, CausesOfDelay delays, boolean notifyParent) {
         // move from condition (x!=null) to property
         VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
         if (!vic.hasEvaluation()) {
@@ -1386,14 +1386,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             vic.ensureEvaluation(getLocation(), initial.getAssignmentIds(), initial.getReadId(),
                     initial.getStatementTime(), initial.getReadAtStatementTimes());
         }
-        if (delays) {
-            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE_DV, EVALUATION);
-        } else {
-            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE_DV, EVALUATION);
-            if (notifyParent) {
-                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EVALUATION);
-            }
-        }
+        DV valueToSet = delays.isDone() ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV) : delays;
+        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
     }
 
     /*

@@ -67,6 +67,7 @@ public interface CauseOfDelay {
         CONTEXT_IMMUTABLE("c_imm", "context immutable"),
         NEXT_C_IMM("next_c_imm", ""),
         CONTEXT_NOT_NULL("cnn", ""),
+        CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         EXT_NN("ext_nn", ""),
         NOT_NULL_PARAMETER("nnp", ""),
         PROP_MOD("prop_mod", "");

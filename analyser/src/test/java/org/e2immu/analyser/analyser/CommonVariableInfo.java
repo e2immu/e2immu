@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -62,6 +64,16 @@ public abstract class CommonVariableInfo {
     protected final AnalyserContext analyserContext = () -> primitives;
 
     protected final EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+
+        @Override
+        public TypeInfo getCurrentType() {
+            return primitives.stringTypeInfo;
+        }
+
+        @Override
+        public Location getLocation() {
+            return Location.NOT_YET_SET;
+        }
 
         @Override
         public AnalyserContext getAnalyserContext() {

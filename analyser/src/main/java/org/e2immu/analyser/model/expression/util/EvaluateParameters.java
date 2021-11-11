@@ -110,12 +110,8 @@ public class EvaluateParameters {
                     }
                 }
                 DV contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
-                if (contextNotNull == null) {
-                    if (recursiveOrPartOfCallCycle) {
-                        map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
-                    } else {
-                        map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE_DV);
-                    }
+                if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
+                    map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
                 }
 
                 minNotNullOverParameters = minNotNullOverParameters.min(contextNotNull);

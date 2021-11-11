@@ -54,12 +54,9 @@ public enum VariableProperty {
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL),
-    CONTEXT_NOT_NULL_DELAY("not null in context delay", null),
 
     CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE_DV,
-            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV, null),
-    CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay", null),
-    CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved", null),
+            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL_FOR_PARENT),
 
     /*
     @E2Immutable, @E1Immutable property.

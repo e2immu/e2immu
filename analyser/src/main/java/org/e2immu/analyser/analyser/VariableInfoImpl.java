@@ -152,7 +152,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public DV getProperty(VariableProperty variableProperty) {
-        DV dv = properties.getOrDefault(variableProperty, null);
+        DV dv = properties.getOrDefaultNull(variableProperty);
         if(dv == null) {
             return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, variableProperty.causeOfDelay()));
         }
@@ -269,11 +269,8 @@ class VariableInfoImpl implements VariableInfo {
                     i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : Level.FALSE_DV;
 
     private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
             new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
@@ -291,11 +288,8 @@ class VariableInfoImpl implements VariableInfo {
 
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
-            new MergeOp(CONTEXT_NOT_NULL_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
 
             new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
