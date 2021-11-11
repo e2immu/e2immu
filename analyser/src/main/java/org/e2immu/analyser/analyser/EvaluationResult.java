@@ -503,7 +503,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     && !resultOfExpression.isDelayed()
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType(),
-                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay(stateIsDelayed)) : resultOfExpression;
+                    resultOfExpression.linkedVariables(evaluationContext).changeAllToDelay(stateIsDelayed),
+                    stateIsDelayed) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
@@ -655,8 +656,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             });
         }
 
-        public void addDelayOnPrecondition() {
-            addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives())));
+        public void addDelayOnPrecondition(CausesOfDelay causes) {
+            addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives(), causes)));
         }
 
         // can be called for multiple parameters, a value of 'true' should always survive

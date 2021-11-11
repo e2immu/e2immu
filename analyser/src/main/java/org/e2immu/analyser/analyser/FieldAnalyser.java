@@ -514,6 +514,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return corrected;
         }
         // check exposed via return values of methods
+        // FIXME ignoreMyConstructors is a delay breaking measure, needs re-implementing
         CausesOfDelay delayLinkedVariables = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
                 .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)

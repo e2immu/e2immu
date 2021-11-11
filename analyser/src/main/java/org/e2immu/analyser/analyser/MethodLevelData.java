@@ -18,24 +18,18 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * IMPORTANT:
@@ -45,18 +39,25 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
-    public static final String MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY = "mergeCausesOfContextModificationDelay";
     public static final String ENSURE_THIS_PROPERTIES = "ensureThisProperties";
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
 
-    private static final int ITERATIONS_TO_WAIT = 2;
-
-    // part of modification status for dealing with circular methods
+    /* part of modification status for dealing with circular methods
+       is computed during each evaluation, never delayed
+     */
     private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
 
-    public DV getCallsPotentiallyCircularMethod() {
-        return callsPotentiallyCircularMethod.getOrDefaultNull();
+    public boolean getCallsPotentiallyCircularMethod() {
+        Boolean b = callsPotentiallyCircularMethod.getOrDefaultNull();
+        if (b == null) throw new UnsupportedOperationException("Should have been computed already");
+        return b;
+    }
+
+    public void addCircularCall() {
+        if (!callsPotentiallyCircularMethod.isSet()) {
+            callsPotentiallyCircularMethod.set(true);
+        }
     }
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
@@ -65,74 +66,29 @@ public class MethodLevelData {
     public final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
-    public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
-
-    /*
-    The map causesOfContextModificationDelay is essentially a set which records which objects were the cause of a context modification
-    delay. It is used to break infinite delay loops.
-    The eventually final object becomes final when the set is empty: there are no causes of delay anymore.
-    One by one, the causes of the delay get removed until the set is empty.
-    The reason it is a set and not a counter is that accounting is not that simple in a multi-pass system.
-    It is safe to remove the same object twice; with a counter, this is much more tricky.
-
-    The reason it is a map (rather than a set) is that we delay removal by a fixed number of iterations: the removal is necessary
-    to break delays in one direction (Modification_20) but the removal cannot take place too quickly (Modification_21).
-    IMPROVE Rather than having a fixed number of iterations between marking the removal and actually removing, we should
-    find a better, more definitive solution.
-     */
-    private final EventuallyFinal<Map<WithInspectionAndAnalysis, Integer>> causesOfContextModificationDelay = new EventuallyFinal<>();
-
-    public void addCircularCall() {
-        if (!callsPotentiallyCircularMethod.isSet()) {
-            callsPotentiallyCircularMethod.set(true);
-        }
-    }
+    private final EventuallyFinal<CausesOfDelay> linksHaveBeenEstablished = new EventuallyFinal<>();
 
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
-        if (combinedPrecondition.isFinal()) return null;
+        if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
         Precondition cp = combinedPrecondition.get();
-        if (cp == null) return Set.of();
-        return combinedPrecondition.get().expression().variables().stream().collect(Collectors.toUnmodifiableSet());
+        if (cp == null)
+            throw new UnsupportedOperationException("Called too early, haven't had the chance to write a value");
+        return combinedPrecondition.get().expression().causesOfDelay();
     }
 
-    public boolean causesOfContextModificationDelayIsVariable() {
-        return causesOfContextModificationDelay.isVariable();
-    }
-
-    public void causesOfContextModificationDelayAddVariable(Map<WithInspectionAndAnalysis, Boolean> map, boolean allowRemoval) {
-        assert causesOfContextModificationDelay.isVariable();
-        if (causesOfContextModificationDelay.get() == null) {
-            causesOfContextModificationDelay.setVariable(new HashMap<>());
-        }
-        Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
-        map.forEach((k, v) -> {
-            if (v) causes.put(k, ITERATIONS_TO_WAIT);
-            else if (allowRemoval) {
-                Integer count = causes.get(k);
-                if (count != null) {
-                    if (count == 0) causes.remove(k);
-                    else causes.put(k, count - 1);
-                }
-            }
-        });
-    }
-
-    public void causesOfContextModificationDelaySetFinal() {
-        causesOfContextModificationDelay.setFinal(Map.of());
-    }
-
-    public Set<WithInspectionAndAnalysis> getCausesOfContextModificationDelay() {
-        return causesOfContextModificationDelay.get().keySet();
-    }
 
     public CausesOfDelay linksHaveNotYetBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
-        if (linksHaveBeenEstablished.isSet()) return false;
+        return linksHaveBeenEstablished.get();
+        /*
+        if (linksHaveBeenEstablished.isSet()) return ;
         Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
         if (causes != null && !causes.isEmpty() && causes.keySet().stream().allMatch(canBeIgnored)) {
             log(LINKED_VARIABLES, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
             return false;
         }
         return true;
+
+         */
     }
 
     record SharedState(StatementAnalyserResult.Builder builder,
@@ -158,44 +114,10 @@ public class MethodLevelData {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY, this::mergeCausesOfContextModificationDelay)
             .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
             .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
             .add(COMBINE_PRECONDITION, this::combinePrecondition)
             .build();
-
-    private AnalysisStatus mergeCausesOfContextModificationDelay(SharedState sharedState) {
-        if (causesOfContextModificationDelay.isFinal()) return DONE;
-        if (sharedState.previous != null && sharedState.previous.causesOfContextModificationDelay.isVariable()) {
-            if (causesOfContextModificationDelay.get() == null) {
-                causesOfContextModificationDelay.setVariable(new HashMap<>());
-            }
-            boolean added =
-                    sharedState.previous.causesOfContextModificationDelay.get().entrySet().stream()
-                            .map(e -> causesOfContextModificationDelay.get().put(e.getKey(), e.getValue()))
-                            .reduce(false, (i, resultOfPut) -> resultOfPut == null, (a, b) -> a || b);
-            assert !added || sharedState.previous.causesOfContextModificationDelay.get().keySet().stream().allMatch(cause ->
-                    foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
-                            cause.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY));
-        }
-        sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
-                .filter(sa -> sa.methodLevelData.causesOfContextModificationDelay.get() != null)
-                .flatMap(sa -> sa.methodLevelData.causesOfContextModificationDelay.get().entrySet().stream())
-                .forEach(set -> {
-                    if (set != null) {
-                        Integer prev = causesOfContextModificationDelay.get().put(set.getKey(), set.getValue());
-                        assert prev == null || foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
-                                set.getKey().fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
-                    }
-                });
-        if (causesOfContextModificationDelay.get() == null || causesOfContextModificationDelay.get().isEmpty()) {
-            causesOfContextModificationDelaySetFinal();
-            return DONE;
-        }
-        log(DELAYED, "Still have causes of context modification delay: {}",
-                causesOfContextModificationDelay.get());
-        return DELAYS;
-    }
 
     public AnalysisStatus analyse(StatementAnalyser.SharedState sharedState,
                                   StatementAnalysis statementAnalysis,
@@ -219,20 +141,14 @@ public class MethodLevelData {
     // preconditions come from the precondition expression in stateData
     // they are accumulated from the previous statement, and from all child statements
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
-        boolean previousDelayed = sharedState.previous != null && sharedState.previous.combinedPrecondition.isVariable();
-        assert !previousDelayed || foundDelay(sharedState.where(COMBINE_PRECONDITION),
-                sharedState.myStatement(sharedState.previousIndex) + D_COMBINED_PRECONDITION);
+        CausesOfDelay previousDelays = sharedState.previous == null ? CausesOfDelay.EMPTY :
+                sharedState.previous.combinedPrecondition.get().expression().causesOfDelay();
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        Optional<StatementAnalysis> subBlockDelay = subBlocks.stream()
-                .filter(sa -> sa.methodLevelData.combinedPrecondition.isVariable()).findFirst();
-        assert subBlockDelay.isEmpty() || foundDelay(sharedState.where(COMBINE_PRECONDITION),
-                sharedState.myStatement(subBlockDelay.get().index) + D_COMBINED_PRECONDITION);
+        CausesOfDelay subBlockDelays = subBlocks.stream()
+                .map(sa -> sa.methodLevelData.combinedPrecondition.get().expression().causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        boolean preconditionFinal = sharedState.stateData.preconditionIsFinal();
-        assert preconditionFinal || translatedDelay(sharedState.where(COMBINE_PRECONDITION),
-                sharedState.myStatement() + D_PRECONDITION,
-                sharedState.myStatement() + D_COMBINED_PRECONDITION);
 
         Stream<Precondition> fromMyStateData =
                 Stream.of(sharedState.stateData.getPrecondition());
@@ -246,16 +162,12 @@ public class MethodLevelData {
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
                 .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 
-        boolean allDelayed = sharedState.evaluationContext.isDelayed(all.expression());
+        CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays)
+                .merge(sharedState.stateData.getPrecondition().expression().causesOfDelay());
 
-        // I wonder whether it is possible that the combination is delayed when none of the constituents are?
-        assert !allDelayed || createDelay(sharedState.where(COMBINE_PRECONDITION),
-                sharedState.myStatement() + D_COMBINED_PRECONDITION);
-
-        boolean delay = previousDelayed || subBlockDelay.isPresent() || !preconditionFinal || allDelayed;
-        if (delay) {
+        if (allDelayed.isDelayed()) {
             combinedPrecondition.setVariable(all);
-            return DELAYS;
+            return new AnalysisStatus.Delayed(allDelayed);
         }
 
         setFinalAllowEquals(combinedPrecondition, all);
@@ -263,7 +175,7 @@ public class MethodLevelData {
     }
 
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
-        assert !linksHaveBeenEstablished.isSet();
+        assert linksHaveBeenEstablished.isVariable();
 
         CausesOfDelay delayed = sharedState.statementAnalysis.variableStream()
                 .filter(vi -> !(vi.variable() instanceof This))
@@ -274,9 +186,10 @@ public class MethodLevelData {
                         vi.getProperty(VariableProperty.CONTEXT_MODIFIED).causesOfDelay()))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayed.isDelayed()) {
+            linksHaveBeenEstablished.setVariable(delayed);
             return new AnalysisStatus.Delayed(delayed);
         }
-        linksHaveBeenEstablished.set();
+        linksHaveBeenEstablished.setFinal(delayed);
         return DONE;
     }
 

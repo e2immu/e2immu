@@ -135,10 +135,6 @@ public class MultiLevel {
         return i & AND;
     }
 
-    public static DV effectiveAtLevelDv(DV dv, int minLevel) {
-        return new DV.NoDelay(effectiveAtLevel(dv.value(), minLevel));
-    }
-
     public static int effectiveAtLevel(int i, int minLevel) {
         if (i < 0) return i;
         int level = i >> SHIFT;

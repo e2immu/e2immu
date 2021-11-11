@@ -53,48 +53,53 @@ public record DelayedExpression(String msg,
     /*
     expression with delayed state
      */
-    public static Expression forState(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forState(ParameterizedType parameterizedType, LinkedVariables linkedVariables,
+                                      CausesOfDelay causes) {
         return new DelayedExpression("<s:" + parameterizedType.printSimple() + ">",
-                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
+                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables,
+                causes);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType, DV notNull, LinkedVariables linkedVariables) {
+    public static Expression forNewObject(ParameterizedType parameterizedType, DV notNull, LinkedVariables linkedVariables,
+                                          CausesOfDelay causes) {
         assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
         return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
-                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
+                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forReplacementObject(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forReplacementObject(ParameterizedType parameterizedType, LinkedVariables linkedVariables,
+                                                  CausesOfDelay causes) {
         return new DelayedExpression("<replace:" + parameterizedType.printSimple() + ">",
-                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
+                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forArrayLength(Primitives primitives) {
+    public static Expression forArrayLength(Primitives primitives, CausesOfDelay causes) {
         return new DelayedExpression("<delayed array length>",
-                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.DELAYED_EMPTY);
+                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.delayedEmpty(causes), causes);
         // result is an int, so no linked variables
     }
 
-    public static Expression forPrecondition(Primitives primitives) {
+    public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
         return new DelayedExpression(PRECONDITION, PRECONDITION, primitives.booleanParameterizedType,
-                LinkedVariables.EMPTY); // no need for linked variables
+                LinkedVariables.EMPTY, causes); // no need for linked variables
     }
 
     public static Expression forInstanceOf(Primitives primitives, ParameterizedType parameterizedType,
-                                           LinkedVariables linkedVariables) {
+                                           LinkedVariables linkedVariables,
+                                           CausesOfDelay causes) {
         return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
                 "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType,
-                linkedVariables);
+                linkedVariables, causes);
     }
 
-    public static Expression forMerge(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forMerge(ParameterizedType parameterizedType, LinkedVariables linkedVariables, CausesOfDelay causes) {
         return new DelayedExpression("<merge:" + parameterizedType.printSimple() + ">",
-                "<merge:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables);
+                "<merge:" + parameterizedType.detailedString() + ">", parameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, LinkedVariables linkedVariables, CausesOfDelay causes) {
         String name = "<loopIsNotEmptyCondition>";
-        return new DelayedExpression(name, name, booleanParameterizedType, linkedVariables);
+        return new DelayedExpression(name, name, booleanParameterizedType, linkedVariables, causes);
     }
 
     public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType, LinkedVariables linkedVariables, CausesOfDelay causesOfDelay) {
@@ -104,12 +109,12 @@ public record DelayedExpression(String msg,
 
     public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
         String name = "<valueOf:" + parameterizedType.detailedString() + ">";
-        return new DelayedExpression(name, name, parameterizedType, LinkedVariables.DELAYED_EMPTY, causesOfDelay);
+        return new DelayedExpression(name, name, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
-    public static Expression forDelayedValueProperties(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+    public static Expression forDelayedValueProperties(ParameterizedType parameterizedType, LinkedVariables linkedVariables, CausesOfDelay causes) {
         String name = "<vp:" + parameterizedType.detailedString() + ">";
-        return new DelayedExpression(name, name, parameterizedType, linkedVariables);
+        return new DelayedExpression(name, name, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo, LinkedVariables linkedVariables, CausesOfDelay causesOfDelay) {

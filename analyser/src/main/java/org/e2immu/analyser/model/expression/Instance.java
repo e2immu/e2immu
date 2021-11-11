@@ -214,7 +214,8 @@ public record Instance(
         if (notNull.isDelayed()) {
             // FIXME notNull
             return DelayedExpression.forNewObject(variable.parameterizedType(), notNull,
-                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull));
+                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull),
+                    notNull.causesOfDelay());
         }
         DV notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,

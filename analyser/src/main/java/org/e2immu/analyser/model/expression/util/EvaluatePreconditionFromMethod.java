@@ -38,14 +38,14 @@ public class EvaluatePreconditionFromMethod {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         Precondition precondition = methodAnalysis.getPrecondition();
-        if (precondition == null) {
+        if (precondition .isDelayed()) {
             boolean partOfCallCycle = methodInfo != null && methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             boolean callingMyself = evaluationContext.getCurrentMethod() != null &&
                     methodInfo == evaluationContext.getCurrentMethod().methodInfo;
-            if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition();
+            if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
         } else if (!precondition.expression().isBooleanConstant()) {
             if (scopeObject.isDelayed()) {
-                builder.addDelayOnPrecondition();
+                builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
                 return;
             }
             // there is a precondition, and we have a list of values... let's see what we can learn

@@ -89,11 +89,9 @@ public interface MethodAnalysis extends Analysis {
     // ************** PRECONDITION
 
     /**
-     * @return null when not yet computed, EMPTY when no precondition
+     * @return delayed when not yet computed, EMPTY when no precondition
      */
-    default Precondition getPrecondition() {
-        return null;
-    }
+    Precondition getPrecondition();
 
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();

@@ -837,7 +837,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
             if (value.isDelayed()) {
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
-                        variableInfo.getLinkedVariables().changeAllToDelay(value.causesOfDelay()));
+                        variableInfo.getLinkedVariables().changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
             }
             Map<VariableProperty, DV> valueProperties = evaluationContext.getValueProperties(value);
             return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);

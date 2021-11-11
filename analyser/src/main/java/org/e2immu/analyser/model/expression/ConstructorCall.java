@@ -338,7 +338,8 @@ public record ConstructorCall(
             } else {
                 instance = modifiedInstance.isDelayed()
                         ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        linkedVariables(evaluationContext).changeAllToDelay(modifiedInstance.causesOfDelay()))
+                        linkedVariables(evaluationContext).changeAllToDelay(modifiedInstance.causesOfDelay()),
+                        modifiedInstance.causesOfDelay())
                         : modifiedInstance;
             }
         } else {
@@ -372,6 +373,6 @@ public record ConstructorCall(
     @Override
     public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
         return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                linkedVariables(evaluationContext).changeAllToDelay(causes));
+                linkedVariables(evaluationContext).changeAllToDelay(causes), causes);
     }
 }

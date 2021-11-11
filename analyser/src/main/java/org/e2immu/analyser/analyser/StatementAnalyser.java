@@ -899,11 +899,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         importContextModifiedValuesForThisFromSubTypes(groupPropertyValues.getMap(CONTEXT_MODIFIED));
         CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
-
-        if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
-            statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
-                    .causesOfContextModificationDelay(), true);
-        }
         delay = delay.merge(cmStatus);
 
         // odds and ends
@@ -1282,7 +1277,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(getLocation(), assignmentIds, readId, statementTime, changeData.readAtStatementTime());
-        if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, EVALUATION);
+        if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
     }
 
     /*
@@ -1375,39 +1370,40 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         DV escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
-        boolean delays = escapeAlwaysExecuted.isDelayed() || statementAnalysis.stateData.conditionManagerForNextStatement.isVariable();
+        CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
+                .merge(statementAnalysis.stateData.conditionManagerForNextStatement.get().causesOfDelay());
         if (!escapeAlwaysExecuted.valueIsFalse()) {
             Set<Variable> nullVariables = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
+                ensureContextNotNullForParent(nullVariable, delays.isDelayed(), escapeAlwaysExecuted.valueIsTrue());
                 if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
+                    ensureContextNotNullForParent(copy.localCopyOf(), delays.isDelayed(), escapeAlwaysExecuted.valueIsTrue());
                 }
             }
             if (escapeAlwaysExecuted.valueIsTrue()) {
                 // escapeCondition should filter out all != null, == null clauses
                 Expression precondition = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                         .precondition(sharedState.evaluationContext);
-                boolean preconditionIsDelayed = precondition.isDelayed() || delays;
+                CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
                     log(PRECONDITION, "Escape with precondition {}", translated);
                     Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                    statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed);
-                    return preconditionIsDelayed ? DELAYS : DONE;
+                    statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed.isDelayed());
+                    return preconditionIsDelayed.isDelayed() ? new Delayed(preconditionIsDelayed) : DONE;
                 }
             }
 
-            if (delays) return DELAYS;
+            if (delays.isDelayed()) return new Delayed(delays);
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert statement (subBlocks) or apply via a method call
             statementAnalysis.stateData.setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives));
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
-            return DELAYS;
+            return new Delayed(statementAnalysis.stateData.getPrecondition().expression().causesOfDelay());
         }
         return DONE;
     }
@@ -1512,19 +1508,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
                     // an assignment may be difficult. The value is never used, only local copies are
 
-                    int defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext, false);
-                    assert defaultImmutable != Level.DELAY ||
-                            translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                                    lvr.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
-                                    lvc.localVariable.name() + "@" + index() + D_CONTEXT_IMMUTABLE);
-                    int initialNotNull = lvr.parameterizedType().defaultNotNull();
-                    Map<VariableProperty, Integer> properties =
-                            Map.of(CONTEXT_MODIFIED, Level.FALSE,
-                                    EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
+                    DV defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext, false);
+                    DV initialNotNull = lvr.parameterizedType().defaultNotNull();
+                    Map<VariableProperty, DV> properties =
+                            Map.of(CONTEXT_MODIFIED, Level.FALSE_DV,
+                                    EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
                                     CONTEXT_NOT_NULL, initialNotNull,
-                                    EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
+                                    EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
-                    Map<VariableProperty, Integer> valueProperties = Map.of(); // FIXME
+                    Map<VariableProperty, DV> valueProperties = Map.of(); // FIXME
                     vic.setValue(Instance.forLoopVariable(index(), lvr, valueProperties),
                             false, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
@@ -1618,14 +1610,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return navigationData.next.get().map(StatementAnalyser::index).orElse("xx");
     }
 
-    private List<Expression> localVariablesInLoop(SharedState sharedState) {
+    private Either<CausesOfDelay, List<Expression>> localVariablesInLoop(SharedState sharedState) {
         if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
-            return List.of(); // not for us
+            return Either.right(List.of()); // not for us
         }
         // part 3, iteration 1+: ensure local loop variable copies and their values
 
         if (!statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
-            return null; // DELAY
+            return Either.left(statementAnalysis.localVariablesAssignedInThisLoop.delays()); // DELAY
         }
         List<Expression> expressionsToEvaluate = new ArrayList<>();
         statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
@@ -1657,7 +1649,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 loopVic.setInitialValue(newValue, newValue.isDelayed(), valueProps, true);
             }
         });
-        return expressionsToEvaluate;
+        return Either.right(expressionsToEvaluate);
     }
 
     private static Map<VariableProperty, DV> mergeValueAndLoopVar(Map<VariableProperty, DV> value,
@@ -1675,14 +1667,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate = initializersAndUpdaters(sharedState);
-        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState);
+        Either<CausesOfDelay, List<Expression>> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState);
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!
          */
-        AnalysisStatus analysisStatus = expressionsFromLocalVariablesInLoop == null ? DELAYS : DONE;
-        if (expressionsFromLocalVariablesInLoop != null) {
-            expressionsFromInitAndUpdate.addAll(expressionsFromLocalVariablesInLoop);
+        AnalysisStatus analysisStatus = expressionsFromLocalVariablesInLoop.isLeft()
+                ? new Delayed(expressionsFromLocalVariablesInLoop.getLeft()) : DONE;
+        if (expressionsFromLocalVariablesInLoop.isRight()) {
+            expressionsFromInitAndUpdate.addAll(expressionsFromLocalVariablesInLoop.getRight());
         }
 
         Structure structure = statementAnalysis.statement.getStructure();
@@ -1720,12 +1713,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     return applyResult.combine(analysisStatus);
                 }
             }
-            if (analysisStatus == DONE) {
-                if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
-                    //    assert statementAnalysis.methodLevelData.causesOfContextModificationDelayIsEmpty();
-                    statementAnalysis.methodLevelData.causesOfContextModificationDelaySetFinal();
-                }
-            }
             return analysisStatus;
         }
 
@@ -1756,16 +1743,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
             ApplyStatusAndEnnStatus applyResult = apply(sharedState, result);
-            AnalysisStatus statusPost = applyResult.status.merge(analysisStatus);
-            AnalysisStatus ennStatus = applyResult.ennStatus;
+            AnalysisStatus statusPost = new Delayed(applyResult.status.merge(analysisStatus.causesOfDelay()));
+            CausesOfDelay ennStatus = applyResult.ennStatus;
 
             if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
                 if (!assignments.isBooleanConstant()) {
                     result = assignments.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
                     ApplyStatusAndEnnStatus assignmentResult = apply(sharedState, result);
-                    statusPost = assignmentResult.status.combine(analysisStatus);
-                    ennStatus = applyResult.ennStatus.combine(assignmentResult.ennStatus);
+                    statusPost = new Delayed(assignmentResult.status.merge(analysisStatus.causesOfDelay()));
+                    ennStatus = applyResult.ennStatus.merge(assignmentResult.ennStatus);
                 }
             }
 
@@ -1785,18 +1772,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
             statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
 
-            if (ennStatus != DONE) {
+            if (ennStatus.isDelayed()) {
                 log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             }
-            AnalysisStatus overall = ennStatus.combine(statusPost);
-            if (overall == DONE) {
-                if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
-                    //    assert statementAnalysis.methodLevelData.causesOfContextModificationDelayIsEmpty();
-                    statementAnalysis.methodLevelData.causesOfContextModificationDelaySetFinal();
-                }
-            }
-            return overall;
+            return new Delayed(ennStatus.merge(statusPost.causesOfDelay()));
         } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
@@ -2485,7 +2465,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         if (valueIsDelayed) {
             return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType,
-                    value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()));
+                    value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
         }
         return Instance.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());
     }
@@ -2997,7 +2977,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             }
 
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays));
+                                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
                             translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
                         });
                 return mergeValue.translate(translationMap.build());

@@ -722,13 +722,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // this will be due to calling undeclared SAMs, or calling non-modifying methods in a circular type situation
             // (A.nonModifying() calls B.modifying() on a parameter (NOT a field, so nonModifying is just that) which itself calls A.modifying()
             // NOTE that in this situation we cannot have a container, as we require a modifying! (TODO check this statement is correct)
-            DV circular = methodLevelData.getCallsPotentiallyCircularMethod();
-            if (circular.isDelayed()) {
-                log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
-                        methodInfo.distinguishingName());
-                return new AnalysisStatus.Delayed(circular);
-            }
-            if (circular.valueIsTrue()) {
+            boolean circular = methodLevelData.getCallsPotentiallyCircularMethod();
+            if (circular) {
                 DV haveModifying = findOtherModifyingElements();
                 if (haveModifying.isDelayed()) return new AnalysisStatus.Delayed(haveModifying);
                 contextModified = haveModifying;

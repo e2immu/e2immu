@@ -164,7 +164,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
         return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }
 
-    public Expression delayedConclusion() {
-        return DelayedExpression.forMerge(vi.variable().parameterizedType(), vi.getLinkedVariables());
+    public Expression delayedConclusion(CausesOfDelay causes) {
+        return DelayedExpression.forMerge(vi.variable().parameterizedType(), vi.getLinkedVariables(), causes);
     }
 }

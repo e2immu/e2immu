@@ -906,24 +906,21 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             int fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable.value(), MultiLevel.LEVEL_2_IMMUTABLE);
 
             // field is of the type of the class being analysed... it will not make the difference.
-            if (fieldImmutable.isDelayed() && typeInfo == fieldInfo.type.typeInfo) {
-                fieldE2Immutable = MultiLevel.EFFECTIVE;
-            }
-
-            // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
-            // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
             if (fieldImmutable.isDelayed()) {
-                ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
-                if (concreteType != null && concreteType.typeInfo != null &&
-                        concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
-                    fieldE2Immutable = MultiLevel.EVENTUAL_AFTER; // must follow rules, but is not eventual
+                if (typeInfo == fieldInfo.type.typeInfo) {
+                    fieldE2Immutable = MultiLevel.EFFECTIVE;
+                } else {
+                    // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
+                    // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
+                    ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
+                    if (concreteType != null && concreteType.typeInfo != null &&
+                            concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
+                        fieldE2Immutable = MultiLevel.EVENTUAL_AFTER; // must follow rules, but is not eventual
+                    } else {
+                        log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
+                        return new Delayed(fieldImmutable);
+                    }
                 }
-            }
-
-            // part of rule 2: we now need to check that @NotModified is on the field
-            if (fieldE2Immutable == MultiLevel.DELAY) {
-                log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
-                return DELAYS;
             }
 
             // NOTE: the 2 values that matter now are EVENTUAL and EFFECTIVE; any other will lead to a field
@@ -936,17 +933,17 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
                 }
             } else if (!isPrimitive) {
-                boolean fieldRequiresRules = !fieldAnalysis.isTransparentType() && fieldE2Immutable != MultiLevel.EFFECTIVE;
+                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse() && fieldE2Immutable != MultiLevel.EFFECTIVE;
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
-                int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
+                DV modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
-                if (!eventual && modified == Level.DELAY) {
+                if (!eventual && modified.isDelayed()) {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
-                    return DELAYS;
+                    return new Delayed(modified);
                 }
-                if (modified == Level.TRUE) {
+                if (modified.valueIsTrue()) {
                     if (eventual) {
                         if (!typeAnalysis.containsApprovedPreconditionsE2(thisFieldInfo)) {
                             log(IMMUTABLE_LOG, "For {} to become eventually E2Immutable, modified field {} can only be modified in methods marked @Mark or @Only(before=)");
@@ -1011,7 +1008,6 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 // calling a modifying method will result in an error
                 if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
                     DV returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                    int returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable.value(), MultiLevel.LEVEL_2_IMMUTABLE);
 
                     ParameterizedType returnType;
                     Expression srv = methodAnalyser.methodAnalysis.getSingleReturnValue();
@@ -1023,10 +1019,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         returnType = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getReturnType();
                     }
                     boolean returnTypePartOfMyself = returnTypeNestedOrChild(returnType);
-                    if (returnTypeE2Immutable == MultiLevel.DELAY && !returnTypePartOfMyself) {
+                    if (returnTypeImmutable.isDelayed() && !returnTypePartOfMyself) {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.methodInfo.distinguishingName());
-                        return DELAYS;
+                        return new Delayed(returnTypeImmutable);
                     }
+                    int returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable.value(), MultiLevel.LEVEL_2_IMMUTABLE);
                     if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
                         DV independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
