@@ -181,11 +181,11 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         if (returnType.arrays > 0 || Primitives.isPrimitiveExcludingVoid(returnType) || returnType.isUnboundTypeParameter()) {
             return Level.TRUE_DV;
         }
-        if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.NOT_INVOLVED_DV; // no decision
+        if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
         TypeInfo bestType = returnType.bestTypeInfo();
         if (bestType == null) return Level.TRUE_DV; // unbound type parameter
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
-        DV fromReturnType = typeAnalysis == null ? Level.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getProperty(VariableProperty.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(VariableProperty.CONTAINER);
         return Level.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
     }
@@ -334,7 +334,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private DV computeMethodNotNull() {
-        if (methodInfo.isConstructor || methodInfo.isVoid()) return Level.NOT_INVOLVED_DV; // no decision!
+        if (methodInfo.isConstructor || methodInfo.isVoid()) return DV.MIN_INT_DV; // no decision!
         if (Primitives.isPrimitiveExcludingVoid(methodInfo.returnType())) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
@@ -344,7 +344,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private DV bestOfOverrides(VariableProperty variableProperty) {
-        DV bestOfOverrides = Level.NOT_INVOLVED_DV;
+        DV bestOfOverrides = DV.MIN_INT_DV;
         for (MethodAnalysis override : methodAnalysis.getOverrides(analyserContext)) {
             DV overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(variableProperty);
             bestOfOverrides = bestOfOverrides.maxIgnoreDelay(overrideAsIs);
@@ -359,7 +359,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
                     return pa.getPropertyFromMapNeverDelay(variableProperty);
-                }).reduce(Level.NOT_INVOLVED_DV, DV::max);
+                }).reduce(DV.MIN_INT_DV, DV::maxIgnoreDelay);
     }
 
     @Override

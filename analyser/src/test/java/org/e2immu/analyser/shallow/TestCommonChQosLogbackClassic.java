@@ -29,10 +29,10 @@ public class TestCommonChQosLogbackClassic extends CommonAnnotatedAPI {
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("setLevel", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.FALSE_DV, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }

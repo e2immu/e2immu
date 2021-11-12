@@ -32,11 +32,11 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Consumer.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("accept", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+        assertEquals(Level.TRUE_DV, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
     }
 
     @Test
@@ -47,10 +47,10 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("apply", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(Level.TRUE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
+        assertEquals(Level.TRUE_DV, p0.getProperty(VariableProperty.MODIFIED_VARIABLE), "in "+methodInfo.fullyQualifiedName);
     }
 }
