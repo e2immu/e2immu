@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
@@ -36,6 +37,7 @@ import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
+import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -176,8 +178,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     if (minHiddenContentImmutable.isDelayed()) {
                         return minHiddenContentImmutable.causesOfDelay();
                     }
-                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable.value());
-                    DV independent = immutableLevel <= LEVEL_2_IMMUTABLE ? INDEPENDENT_1_DV :
+                    int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
+                    DV independent = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
                             MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
                     log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(independent),
                             parameterInfo.fullyQualifiedName());
@@ -312,7 +314,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     } else {
                         int levelImmutable = MultiLevel.level(immutable);
                         DV typeIndependent;
-                        if (levelImmutable <= LEVEL_1_IMMUTABLE) {
+                        if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
                             if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
                                 typeIndependent = DEPENDENT_DV;
                             } else {
@@ -366,8 +368,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private DV combineImmutable(DV formallyImmutable, DV contractImmutable, boolean contractedBefore) {
         int contractLevel = MultiLevel.level(contractImmutable);
         int formalLevel = MultiLevel.level(formallyImmutable);
-        int contractEffective = MultiLevel.effective(contractImmutable);
-        int formalEffective = MultiLevel.effective(formallyImmutable);
+        Effective contractEffective = MultiLevel.effective(contractImmutable);
+        Effective formalEffective = MultiLevel.effective(formallyImmutable);
 
         if (contractedBefore) {
             if (contractEffective == EFFECTIVE) {
@@ -376,7 +378,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
                     return formallyImmutable;
                 }
-                return new DV.NoDelay(MultiLevel.compose(EVENTUAL_BEFORE, contractLevel));
+                return MultiLevel.compose(EVENTUAL_BEFORE, contractLevel);
             }
             messages.add(Message.newMessage(parameterAnalysis.location,
                     Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
@@ -394,10 +396,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
                 return formallyImmutable;
             }
-            return formalEffective == EVENTUAL ? new DV.NoDelay(MultiLevel.compose(EVENTUAL_AFTER, contractLevel)) : contractImmutable;
+            return formalEffective == EVENTUAL ? MultiLevel.compose(EVENTUAL_AFTER, contractLevel) : contractImmutable;
         }
 
-        if (contractImmutable.value() == MUTABLE) {
+        if (contractImmutable.equals(MUTABLE_DV)) {
             return formallyImmutable;
         }
         throw new UnsupportedOperationException("Should have covered all the bases");

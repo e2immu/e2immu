@@ -58,7 +58,7 @@ public class NullConstant implements ConstantExpression<Object> {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         DV max = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION).max(
                 forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-        if (max.value() > MultiLevel.NULLABLE) {
+        if (max.gt(MultiLevel.NULLABLE_DV)) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
         return builder.setExpression(NULL_CONSTANT).build();

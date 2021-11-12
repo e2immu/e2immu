@@ -224,7 +224,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             DV modified = getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
 
             // @Final(after=), @Final, @Variable
-            if (effectivelyFinal.valueIsFalse() && MultiLevel.effective(ownerImmutable) == MultiLevel.EVENTUAL) {
+            if (effectivelyFinal.valueIsFalse() && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 String labels = typeAnalysisOfOwner.markLabel();
                 annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
             } else {
@@ -240,7 +240,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (Primitives.isPrimitiveExcludingVoid(type)) return;
 
             // @NotModified(after=), @NotModified, @Modified
-            if (modified.valueIsTrue() && MultiLevel.isEventuallyE2Immutable(ownerImmutable.value())) {
+            if (modified.valueIsTrue() && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
                 String labels = typeAnalysisOfOwner.markLabel();
                 annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
             } else {
@@ -255,13 +255,13 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             DV typeImmutable = typeImmutable();
             DV fieldImmutable = getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-            if (MultiLevel.isBetterImmutable(fieldImmutable.value(), typeImmutable.value())) {
+            if (fieldImmutable.gt(typeImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, fieldImmutable, true);
             }
         }
 
         private DV typeImmutable() {
-            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE_DV :
+            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         }
 

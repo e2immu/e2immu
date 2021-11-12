@@ -56,10 +56,10 @@ public class CheckIndependent {
                 new Location(info));
     }
 
-     static String levelString(AbstractAnalysisBuilder analysis, VariableProperty variableProperty) {
-         DV value = analysis.getProperty(variableProperty);
-         int level = MultiLevel.level(value) ;
-         return level <= MultiLevel.LEVEL_2_IMMUTABLE || level == MultiLevel.MAX_LEVEL
-                 ? null : Integer.toString(level+1);
+    static String levelString(AbstractAnalysisBuilder analysis, VariableProperty variableProperty) {
+        DV value = analysis.getProperty(variableProperty);
+        int level = MultiLevel.level(value);
+        return level <= MultiLevel.Level.IMMUTABLE_2.level || level == MultiLevel.MAX_LEVEL
+                ? null : Integer.toString(level + 1);
     }
 }

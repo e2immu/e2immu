@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.util.WeightedGraph;
 
@@ -62,11 +61,11 @@ public interface DV extends WeightedGraph.Weight {
     }
 
     default boolean valueIsTrue() {
-        return value() == Level.TRUE;
+        return value() == 1;
     }
 
     default boolean valueIsFalse() {
-        return value() == Level.FALSE;
+        return value() == 0;
     }
 
     default boolean containsCauseOfDelay(CauseOfDelay.Cause cause) {

@@ -335,7 +335,7 @@ public interface EvaluationContext {
         TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
         if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
         DV immutable = concreteType.defaultImmutable(getAnalyserContext(), false);
-        if (immutable.value() == MultiLevel.INDEPENDENT) return NO_HIDDEN_CONTENT;
+        if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
             new HiddenContent(List.of(),
                     new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(new Location(bestType), CauseOfDelay.Cause.HIDDEN_CONTENT))

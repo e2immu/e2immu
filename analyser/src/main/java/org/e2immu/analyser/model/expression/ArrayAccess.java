@@ -167,7 +167,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
 
         DV notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         VariableExpression ve;
-        if (notNullRequired.value() > MultiLevel.NULLABLE &&
+        if (notNullRequired.gt(MultiLevel.NULLABLE_DV) &&
                 (ve = builder.getExpression().asInstanceOf(VariableExpression.class)) != null) {
             builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }

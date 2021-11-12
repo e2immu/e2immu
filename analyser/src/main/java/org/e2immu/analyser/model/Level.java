@@ -31,14 +31,9 @@ public class Level {
         throw new UnsupportedOperationException();
     }
 
-    public static final int ILLEGAL_VALUE = -2;
-
     public static final DV NOT_INVOLVED_DV = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED);
 
     // TERNARY SYSTEM
-    public static final int DELAY = -1;
-    public static final int FALSE = 0;
-    public static final int TRUE = 1;
     public static final DV FALSE_DV = new DV.NoDelay(0, "false");
     public static final DV TRUE_DV = new DV.NoDelay(1, "true");
 

@@ -320,7 +320,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             return MultiLevel.INDEPENDENT_DV;
         }
         DV immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        if (immutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
 
             TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
             if (typeAnalysis != null) {

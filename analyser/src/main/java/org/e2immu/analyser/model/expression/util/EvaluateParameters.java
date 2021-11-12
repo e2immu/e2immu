@@ -92,7 +92,7 @@ public class EvaluateParameters {
                         } else {
                             //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
                         }
-                    } else if (independent.value() == MultiLevel.INDEPENDENT_1) {
+                    } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
                         map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE_DV);
                     }
                 }

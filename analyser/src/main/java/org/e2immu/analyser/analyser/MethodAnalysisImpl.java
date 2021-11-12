@@ -313,7 +313,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             DV formallyImmutable = formalProperty();
             DV dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
-            if (MultiLevel.isBetterImmutable(dynamicallyImmutable.value(), formallyImmutable.value())) {
+            if (dynamicallyImmutable.gt(formallyImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }
 
@@ -338,7 +338,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             // @Dependent @Independent
             DV independent = getProperty(VariableProperty.INDEPENDENT);
             DV formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
-            doIndependent(e2ImmuAnnotationExpressions, independent.value(), formallyIndependent.value(), dynamicallyImmutable.value());
+            doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
         }
 
         protected void writeEventual(Eventual eventual) {

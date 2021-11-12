@@ -64,7 +64,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
             return !boolValue.constant();
         }
         DV nne = getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, true);
-        return MultiLevel.isEffectivelyNotNull(nne.value());
+        return MultiLevel.isEffectivelyNotNull(nne);
     }
 
     @Override

@@ -17,36 +17,38 @@ package org.e2immu.analyser.model;
 import org.junit.jupiter.api.Test;
 
 import static org.e2immu.analyser.model.MultiLevel.*;
+import static org.e2immu.analyser.model.MultiLevel.Effective.*;
+import static org.e2immu.analyser.model.MultiLevel.Level.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMultiLevel {
 
     @Test
     public void testLookup() {
-        assertEquals(1, DEPENDENT);
-        assertEquals(5, EFFECTIVELY_E1IMMUTABLE);
-        assertEquals(5, INDEPENDENT_1);
+        assertEquals(1, DEPENDENT_DV.value());
+        assertEquals(5, EFFECTIVELY_E1IMMUTABLE_DV.value());
+        assertEquals(5, INDEPENDENT_1_DV.value());
 
         assertEquals(10, EVENTUALLY_E2IMMUTABLE_DV.value());
         assertEquals(11, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV.value());
         assertEquals(12, EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV.value());
-        assertEquals(13, EFFECTIVELY_E2IMMUTABLE);
-        assertEquals(805, EFFECTIVELY_RECURSIVELY_IMMUTABLE);
-        assertEquals(805, INDEPENDENT);
+        assertEquals(13, EFFECTIVELY_E2IMMUTABLE_DV.value());
+        assertEquals(805, EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV.value());
+        assertEquals(805, INDEPENDENT_DV.value());
 
         assertEquals(13, EFFECTIVELY_CONTENT_NOT_NULL_DV.value());
-        assertEquals(2, compose(EVENTUAL, 0));
+        assertEquals(2, compose(EVENTUAL, 0).value());
         assertEquals(2, EVENTUALLY_E1IMMUTABLE_DV.value());
     }
 
     @Test
     public void testLevel() {
-        assertEquals(LEVEL_1_IMMUTABLE, level(EFFECTIVELY_E1IMMUTABLE));
-        assertEquals(NOT_NULL_1, level(EFFECTIVELY_CONTENT_NOT_NULL_DV));
-        assertEquals(NOT_NULL_2, level(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
-        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_DV));
-        assertEquals(LEVEL_2_IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
-        assertEquals(LEVEL_1_IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE_DV)); // we know about E2IMMUTABLE: FALSE
+        assertEquals(IMMUTABLE_1.level, level(EFFECTIVELY_E1IMMUTABLE_DV));
+        assertEquals(NOT_NULL_1.level, level(EFFECTIVELY_CONTENT_NOT_NULL_DV));
+        assertEquals(NOT_NULL_2.level, level(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
+        assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_DV));
+        assertEquals(IMMUTABLE_2.level, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV));
+        assertEquals(IMMUTABLE_1.level, level(EVENTUALLY_E1IMMUTABLE_DV)); // we know about E2IMMUTABLE: FALSE
     }
 
     @Test

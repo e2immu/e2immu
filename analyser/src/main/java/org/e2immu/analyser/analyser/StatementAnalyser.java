@@ -1040,8 +1040,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (vi != null && !(vi.variable() instanceof ParameterInfo)) {
                     DV externalNotNull = vi.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
                     DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
-                    if (vi.valueIsSet() && externalNotNull.value() == MultiLevel.NULLABLE
-                            && notNullExpression.value() == MultiLevel.NULLABLE) {
+                    if (vi.valueIsSet() && externalNotNull.equals(MultiLevel.NULLABLE_DV)
+                            && notNullExpression.equals(MultiLevel.NULLABLE_DV)) {
                         Variable primary = Objects.requireNonNullElse(vic.variableNature().localCopyOf(), variable);
                         statementAnalysis.ensure(Message.newMessage(getLocation(),
                                 Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
@@ -1155,7 +1155,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE_DV : cm);
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
-        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE_DV : cImm);
+        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
 
         return res;
     }
@@ -1196,10 +1196,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         });
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
         return res;
-    }
-
-    private static int maxAtLeastFalse(int i1, int i2) {
-        return Math.max(Level.FALSE, Math.max(i1, i2));
     }
 
     /*
@@ -2705,7 +2701,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return notNullAccordingToConditionManager(ve.variable());
             }
             return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION,
-                    true, false).value());
+                    true, false));
         }
 
         /*
@@ -2784,7 +2780,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
                 // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
-                if (directNN.value() == MultiLevel.NULLABLE) {
+                if (directNN.equals(MultiLevel.NULLABLE_DV)) {
                     Expression valueIsNull = Equals.equals(Identifier.generate(),
                             this, value, NullConstant.NULL_CONSTANT, false);
                     Expression evaluation = conditionManager.evaluate(this, valueIsNull);

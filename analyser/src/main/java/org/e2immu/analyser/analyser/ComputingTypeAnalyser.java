@@ -809,13 +809,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return allMyFieldsFinal.causesOfDelay();
         }
         TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
-        int parentEffective;
+        MultiLevel.Effective parentEffective;
         if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            parentEffective = MultiLevel.EFFECTIVE;
+            parentEffective = MultiLevel.Effective.EFFECTIVE;
         } else {
             TypeInfo parentType = typeInspection.parentClass().typeInfo;
             DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(VariableProperty.IMMUTABLE);
-            parentEffective = MultiLevel.effectiveAtLevel(parentImmutable.value(), MultiLevel.LEVEL_1_IMMUTABLE);
+            parentEffective = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.Level.IMMUTABLE_1);
         }
 
         DV fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
@@ -826,7 +826,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return fromParentOrEnclosing.causesOfDelay();
         }
 
-        if (fromParentOrEnclosing.value() == MultiLevel.MUTABLE) {
+        if (fromParentOrEnclosing.equals(MultiLevel.MUTABLE_DV)) {
             log(IMMUTABLE_LOG, "{} is not an E1Immutable, E2Immutable class, because parent or enclosing is Mutable",
                     typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
@@ -835,7 +835,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         DV myWhenEXFails;
         boolean eventual;
-        if (allMyFieldsFinal.valueIsFalse() || parentEffective != MultiLevel.EFFECTIVE) {
+        if (allMyFieldsFinal.valueIsFalse() || parentEffective != MultiLevel.Effective.EFFECTIVE) {
             CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(false);
             if (approvedDelays.isDelayed()) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
@@ -844,7 +844,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
 
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
-            if (!isEventuallyE1 && parentEffective != MultiLevel.EVENTUAL) {
+            if (!isEventuallyE1 && parentEffective != MultiLevel.Effective.EVENTUAL) {
                 log(IMMUTABLE_LOG, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
                 return DONE;
@@ -874,7 +874,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return approvedDelays;
         }
 
-        int minLevel = MultiLevel.LEVEL_R_IMMUTABLE; // can only go down!
+        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
 
         boolean haveToEnforcePrivateAndIndependenceRules = false;
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
@@ -898,19 +898,19 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
             DV fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-            int fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable.value(), MultiLevel.LEVEL_2_IMMUTABLE);
+            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
 
             // field is of the type of the class being analysed... it will not make the difference.
             if (fieldImmutable.isDelayed()) {
                 if (typeInfo == fieldInfo.type.typeInfo) {
-                    fieldE2Immutable = MultiLevel.EFFECTIVE;
+                    fieldE2Immutable = MultiLevel.Effective.EFFECTIVE;
                 } else {
                     // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
                     // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
                     ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
                     if (concreteType != null && concreteType.typeInfo != null &&
                             concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
-                        fieldE2Immutable = MultiLevel.EVENTUAL_AFTER; // must follow rules, but is not eventual
+                        fieldE2Immutable = MultiLevel.Effective.EVENTUAL_AFTER; // must follow rules, but is not eventual
                     } else {
                         log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
                         return fieldImmutable.causesOfDelay();
@@ -922,13 +922,14 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             // that needs to follow the additional rules
             boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
 
-            if (fieldE2Immutable == MultiLevel.EVENTUAL) {
+            if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL) {
                 eventual = true;
                 if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
                     typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
                 }
             } else if (!isPrimitive) {
-                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse() && fieldE2Immutable != MultiLevel.EFFECTIVE;
+                boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
+                        && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
                 DV modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
@@ -970,7 +971,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 DV minHiddenContentImmutable = hiddenContent.stream()
                         .map(pt -> pt.defaultImmutable(analyserContext, true))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
-                int immutableLevel = MultiLevel.oneLevelMoreFromValue(minHiddenContentImmutable.value());
+                int immutableLevel = MultiLevel.oneLevelMoreFrom(minHiddenContentImmutable);
                 minLevel = Math.min(minLevel, immutableLevel);
             }
         }
@@ -991,7 +992,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
-                    int independentLevel = MultiLevel.oneLevelMoreFromValue(independent.value());
+                    int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                     minLevel = Math.min(minLevel, independentLevel);
                 }
             }
@@ -1018,8 +1019,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.methodInfo.distinguishingName());
                         return returnTypeImmutable.causesOfDelay();
                     }
-                    int returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable.value(), MultiLevel.LEVEL_2_IMMUTABLE);
-                    if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
+                    MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
+                    if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
                         DV independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                         if (independent.isDelayed()) {
@@ -1038,7 +1039,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
                             return DONE;
                         }
-                        int independentLevel = MultiLevel.oneLevelMoreFromValue(independent.value());
+                        int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                         minLevel = Math.min(minLevel, independentLevel);
                     }
 
@@ -1067,8 +1068,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
         }*/
 
-        int effective = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
-        DV finalValue = fromParentOrEnclosing.min(new DV.NoDelay(MultiLevel.compose(effective, minLevel)));
+        MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
+        DV finalValue = fromParentOrEnclosing.min(MultiLevel.compose(effective, minLevel));
         log(IMMUTABLE_LOG, "Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName,
                 MultiLevel.niceImmutable(finalValue));
         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, finalValue);

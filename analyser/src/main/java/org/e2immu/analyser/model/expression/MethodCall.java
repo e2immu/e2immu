@@ -512,8 +512,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (formalTypeImmutable.isDelayed()) {
             return new ImmutableData(formalTypeImmutable.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
         }
-        int effective = MultiLevel.effective(formalTypeImmutable);
-        if (effective != MultiLevel.EVENTUAL) {
+        MultiLevel.Effective effective = MultiLevel.effective(formalTypeImmutable);
+        if (effective != MultiLevel.Effective.EVENTUAL) {
             return NOT_EVENTUAL;
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
@@ -695,7 +695,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private DV notNullRequirementOnScope(DV notNullRequirement) {
-        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement.value())) {
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
@@ -732,10 +732,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                    boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
             DV requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-            if (MultiLevel.isEffectivelyNotNull(requiredNotNull.value())) {
+            if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
                 DV methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
                 if (methodNotNull.isDone()) {
-                    boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull.value());
+                    boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
@@ -790,7 +790,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             DV immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE, duringEvaluation);
             if (immutable.isDelayed()) return immutable;
             int immutableLevel = MultiLevel.level(immutable);
-            if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+            if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
                 return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             }
         }
@@ -805,12 +805,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     true, true);
         }
 
-        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal.value())) {
+        if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
             // the independence of the result, and the immutable level of the hidden content, will determine the result
             DV methodIndependent = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
             if (methodIndependent.isDelayed()) return methodIndependent;
 
-            assert MultiLevel.independentConsistentWithImmutable(methodIndependent.value(), formal.value()) :
+            assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
                     "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
 
             // we know the method is formally @Independent1+ < @Independent;
@@ -913,7 +913,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodIndependent.isDelayed()) {
             return linkedVariablesOfScope.changeToDelay(methodIndependent);
         }
-        if (methodIndependent.value() == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
+        if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) return LinkedVariables.EMPTY;
         DV level = MultiLevel.fromIndependentToLinkedVariableLevel(methodIndependent);
         return LinkedVariables.EMPTY.merge(linkedVariablesOfScope, level);
     }

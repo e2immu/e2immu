@@ -194,30 +194,30 @@ public class EvaluateMethodCall {
             }
         }
 
-        Expression methodValue = switch (modified.value()) {
-            case Level.FALSE -> new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo,
-                    concreteReturnType, parameters);
-            case Level.TRUE -> {
-                DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
-                DV immutable = methodAnalysis.getProperty(IMMUTABLE);
-                DV independent = methodAnalysis.getProperty(INDEPENDENT);
-                DV container = methodAnalysis.getProperty(CONTAINER);
-                CausesOfDelay delays = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay())
-                        .merge(container.causesOfDelay());
-                if (delays.isDelayed()) {
-                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
-                }
-
+        Expression methodValue;
+        if (modified.valueIsFalse()) {
+            methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
+        } else if (modified.valueIsTrue()) {
+            DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
+            DV immutable = methodAnalysis.getProperty(IMMUTABLE);
+            DV independent = methodAnalysis.getProperty(INDEPENDENT);
+            DV container = methodAnalysis.getProperty(CONTAINER);
+            CausesOfDelay delays = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay())
+                    .merge(container.causesOfDelay());
+            if (delays.isDelayed()) {
+                methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
+            } else {
                 Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
                         IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE_DV);
-                yield Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
+                methodValue = Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
                         concreteReturnType, valueProperties);
             }
-            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(modified.causesOfDelay()),
-                    modified.causesOfDelay());
-        };
+        } else {
+            methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType,
+                    linkedVariablesForDelay.apply(modified.causesOfDelay()), modified.causesOfDelay());
+        }
         return builder.setExpression(methodValue).build();
     }
 
@@ -528,7 +528,7 @@ public class EvaluateMethodCall {
         for (VariableProperty property : PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
             DV v = methodAnalysis.getProperty(property);
             DV p = evaluationContext.getProperty(parameter, property, true, true);
-            if (v.isDone() && v.value() != p.value()) map.put(property, v);
+            if (v.isDone() && !v.equals(p)) map.put(property, v);
         }
         return PropertyWrapper.propertyWrapper(parameter, map);
     }

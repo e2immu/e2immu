@@ -185,7 +185,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-        if (notNull.value() > MultiLevel.NULLABLE) {
+        if (notNull.gt(MultiLevel.NULLABLE_DV)) {
             builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
         }
         DV modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
@@ -206,7 +206,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
         DV contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
-        if (contextImmutable .value()> MultiLevel.MUTABLE) {
+        if (contextImmutable.gt(MultiLevel.MUTABLE_DV)) {
             builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
         }
 

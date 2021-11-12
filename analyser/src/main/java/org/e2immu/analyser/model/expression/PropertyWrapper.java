@@ -83,7 +83,7 @@ public record PropertyWrapper(Expression expression,
         return map.entrySet().stream()
                 .filter(e -> {
                     DV v = evaluationContext.getProperty(expression, e.getKey(), true, false);
-                    return v.value() != e.getValue().value();
+                    return !v.equals(e.getValue());
                 })
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -179,7 +179,7 @@ public record PropertyWrapper(Expression expression,
     }
 
     private static String stringValue(Map.Entry<VariableProperty, DV> e) {
-        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue().value() == MultiLevel.INDEPENDENT_1)
+        if (e.getKey() == VariableProperty.INDEPENDENT && e.getValue().equals(MultiLevel.INDEPENDENT_1_DV))
             return "@Dependent1";
         return e.getKey().toString();
     }

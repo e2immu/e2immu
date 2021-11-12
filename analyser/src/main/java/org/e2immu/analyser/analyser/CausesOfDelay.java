@@ -92,7 +92,7 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
         @Override
         public int value() {
-            return Level.DELAY;
+            return -1;
         }
 
         @Override

@@ -332,7 +332,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         if (bestOverContext.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-            if(fieldAnalysis.valuesStatus().isDelayed()) {
+            if (fieldAnalysis.valuesStatus().isDelayed()) {
                 log(DELAYED, "Delay @NotNull until all values are known");
                 return fieldAnalysis.valuesStatus();
             }
@@ -396,7 +396,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldAnalysis.getProperty(VariableProperty.INDEPENDENT).isDone()) return DONE;
 
         DV staticallyIndependent = fieldInfo.type.defaultIndependent(analyserContext);
-        if (staticallyIndependent.value() == MultiLevel.INDEPENDENT) {
+        if (staticallyIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
             log(INDEPENDENCE, "Field {} set to @Independent: static type",
                     fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
@@ -409,7 +409,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return immutable.causesOfDelay();
         }
         int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel >= MultiLevel.LEVEL_2_IMMUTABLE) {
+        if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
             DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             log(INDEPENDENCE, "Field {} set to {}, direct correspondence to (dynamically) immutable",
                     fieldInfo.fullyQualifiedName(), MultiLevel.niceIndependent(independent));
@@ -478,7 +478,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
         // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
-        if (MultiLevel.isBefore(worstOverValues.value())) {
+        if (MultiLevel.isBefore(worstOverValues)) {
             DV bestOverContext = myMethodsAndConstructors.stream()
                     .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
@@ -860,7 +860,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         DV recursivelyConstant;
-        if (!fieldOfOwnType && !MultiLevel.isAtLeastEventuallyE2Immutable(immutable.value()))
+        if (!fieldOfOwnType && !MultiLevel.isAtLeastEventuallyE2Immutable(immutable))
             recursivelyConstant = Level.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {
@@ -894,7 +894,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
-                    if (!MultiLevel.isEffectivelyNotNull(immutable.value())) return Level.FALSE_DV;
+                    if (!MultiLevel.isEffectivelyNotNull(immutable)) return Level.FALSE_DV;
                     DV recursively = recursivelyConstant(parameter);
                     if (!recursively.valueIsTrue()) return recursively;
                 }
@@ -908,7 +908,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert fieldAnalysis.linkedVariables.isVariable();
 
         DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-        if (immutable.value() >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+        if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
             fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
             log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");
             // finalizer check at assignment only

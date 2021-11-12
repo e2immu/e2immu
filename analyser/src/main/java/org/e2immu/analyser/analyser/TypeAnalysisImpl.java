@@ -333,7 +333,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             // @Independent
             DV independent = getProperty(VariableProperty.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent.value(), MultiLevel.NOT_INVOLVED, immutable.value());
+            doIndependent(e2ImmuAnnotationExpressions, independent, MultiLevel.NOT_INVOLVED_DV, immutable);
         }
 
         @Override

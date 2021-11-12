@@ -286,8 +286,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                                         fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
                         DV immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                         return acceptDelay && immutable.isDelayed() ? immutable :
-                                Level.fromBoolDv(MultiLevel.isEventuallyE1Immutable(immutable.value())
-                                        || MultiLevel.isEventuallyE2Immutable(immutable.value()));
+                                Level.fromBoolDv(MultiLevel.isEventuallyE1Immutable(immutable)
+                                        || MultiLevel.isEventuallyE2Immutable(immutable));
                     })
                     .reduce(Level.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
@@ -307,7 +307,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         if (transparent.isDelayed()) return transparent;
                         DV immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
 
-                        boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable.value())
+                        boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
                                 && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
                                 && !fa.isTransparentType().valueIsTrue();
                         return Level.fromBoolDv(contentChangeable);
@@ -838,7 +838,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         //combination of statically immutable (type) and dynamically immutable (value property)
         if (immutable.isDelayed()) return immutable;
         int immutableLevel = MultiLevel.level(immutable);
-        if (immutableLevel < MultiLevel.LEVEL_2_IMMUTABLE) return MultiLevel.INDEPENDENT_1_DV;
+        if (immutableLevel < MultiLevel.Level.IMMUTABLE_2.level) return MultiLevel.INDEPENDENT_1_DV;
         return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 

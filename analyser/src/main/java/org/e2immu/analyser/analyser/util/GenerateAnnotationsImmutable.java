@@ -44,11 +44,11 @@ public class GenerateAnnotationsImmutable {
                                                               boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
         boolean haveContainer = container.valueIsTrue();
-        int effective = MultiLevel.effective(immutable);
+        MultiLevel.Effective effective = MultiLevel.effective(immutable);
         int level = MultiLevel.level(immutable);
 
         // EVENTUAL
-        if (effective == MultiLevel.EVENTUAL) {
+        if (effective == MultiLevel.Effective.EVENTUAL) {
             if (isType) {
                 return map(level, haveContainer, Map.of("after", mark));
             }
@@ -59,19 +59,19 @@ public class GenerateAnnotationsImmutable {
         }
 
         // BEFORE
-        if (effective == MultiLevel.EVENTUAL_BEFORE) {
+        if (effective == MultiLevel.Effective.EVENTUAL_BEFORE) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
             return Map.of(BeforeMark.class, TRUE);
         }
 
         // AFTER
-        if (effective == MultiLevel.EVENTUAL_AFTER) {
+        if (effective == MultiLevel.Effective.EVENTUAL_AFTER) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
             return map(level, haveContainer, TRUE);
         }
 
         // EFFECTIVE
-        if (effective == MultiLevel.EFFECTIVE) {
+        if (effective == MultiLevel.Effective.EFFECTIVE) {
             if (isType || betterThanFormal) {
                 return map(level, haveContainer, TRUE);
             }
@@ -92,11 +92,11 @@ public class GenerateAnnotationsImmutable {
     private static Map<Class<?>, Map<String, Object>> map(int level, boolean container, Map<String, Object> add) {
         Map<String, Object> params = new HashMap<>(add);
         Class<?> clazz;
-        if (level == MultiLevel.LEVEL_1_IMMUTABLE) {
+        if (level == MultiLevel.Level.IMMUTABLE_1.level) {
             clazz = container ? E1Container.class : E1Immutable.class;
-        } else if (level == MultiLevel.LEVEL_2_IMMUTABLE) {
+        } else if (level == MultiLevel.Level.IMMUTABLE_2.level) {
             clazz = container ? E2Container.class : E2Immutable.class;
-        } else if (level == MultiLevel.LEVEL_R_IMMUTABLE) {
+        } else if (level == MultiLevel.Level.IMMUTABLE_R.level) {
             if (container) {
                 clazz = ERContainer.class;
             } else {

@@ -862,7 +862,7 @@ public class ParameterizedType {
         if (bestType == null) return Level.FALSE_DV;
         DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        return Level.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable.value()));
+        return Level.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
     }
 
     public DV isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
@@ -878,9 +878,8 @@ public class ParameterizedType {
         if (bestType == null) return Level.FALSE_DV;
         DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        int level = MultiLevel.level(immutable.value());
-        int effective = MultiLevel.effective(immutable.value());
-        return Level.fromBoolDv(level >= MultiLevel.LEVEL_2_IMMUTABLE && effective >= MultiLevel.EVENTUAL_AFTER);
+        boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
+        return Level.fromBoolDv(canBeModified);
     }
 
     public TypeInfo toBoxed(Primitives primitives) {
@@ -957,7 +956,7 @@ public class ParameterizedType {
         }
         DV baseValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (baseValue.isDelayed()) return baseValue;
-        if (MultiLevel.level(baseValue.value()) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
+        if (MultiLevel.isAtLeastE2Immutable(baseValue) && !parameters.isEmpty()) {
             DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameters.stream()
@@ -1023,7 +1022,7 @@ public class ParameterizedType {
             return baseValue;
         }
         DV dynamicBaseValue = dynamicValue.max(baseValue);
-        if (MultiLevel.level(dynamicBaseValue.value()) >= MultiLevel.LEVEL_2_IMMUTABLE && !parameters.isEmpty()) {
+        if (MultiLevel.isAtLeastE2Immutable(dynamicBaseValue) && !parameters.isEmpty()) {
             DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
             if (doSum.isDelayed()) {
                 assert typeAnalysis.isNotContracted();
