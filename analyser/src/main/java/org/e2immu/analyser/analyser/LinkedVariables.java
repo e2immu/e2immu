@@ -151,7 +151,7 @@ public class LinkedVariables {
     public String toString() {
         if (this == EMPTY) return "";
         return variables.entrySet().stream()
-                .map(e -> e.getKey().debug() + ":" + e.getValue())
+                .map(e -> e.getKey().debug() + ":" + e.getValue().value())
                 .sorted()
                 .collect(Collectors.joining(","));
 

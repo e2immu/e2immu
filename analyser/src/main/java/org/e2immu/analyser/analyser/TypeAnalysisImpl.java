@@ -196,8 +196,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.typeInfo = typeInfo;
             this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
-            hiddenContentTypes = new VariableFirstThen<>(initialDelay(typeInfo));
-            immutableCanBeIncreasedByTypeParameters = new VariableFirstThen<>(initialDelay(typeInfo));
+            CausesOfDelay initialDelay = initialDelay(typeInfo);
+            hiddenContentTypes = new VariableFirstThen<>(initialDelay);
+            immutableCanBeIncreasedByTypeParameters = new VariableFirstThen<>(initialDelay);
+            approvedPreconditionsE2Delays = initialDelay;
+            approvedPreconditionsE1Delays = initialDelay;
         }
 
         @Override

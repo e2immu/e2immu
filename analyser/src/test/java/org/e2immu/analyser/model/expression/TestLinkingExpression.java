@@ -116,7 +116,7 @@ public class TestLinkingExpression {
                 arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMapBuilder),
                 Diamond.YES, List.of(ve));
         LinkedVariables linkedVariables = newObject.linkedVariables(evaluationContext);
-        assertEquals("v:dependent:2", linkedVariables.toString());
+        assertEquals("v:2", linkedVariables.toString());
 
         // new ArrayList<>(v).get(0)
         //TypeInfo list = typeContext.getFullyQualified(List.class);
@@ -127,7 +127,7 @@ public class TestLinkingExpression {
                 List.of(newInt(0)));
 
         LinkedVariables lvGet = get0.linkedVariables(evaluationContext);
-        assertEquals("v:independent1:3", lvGet.toString());
+        assertEquals("v:3", lvGet.toString());
 
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
@@ -136,12 +136,12 @@ public class TestLinkingExpression {
                 List.of(newInt(1), newInt(2)));
 
         LinkedVariables lvSubList = subList12.linkedVariables(evaluationContext);
-        assertEquals("v:dependent:2", lvSubList.toString());
+        assertEquals("v:2", lvSubList.toString());
 
         // (Collection<Integer>) new ArrayList<>(v)
         Cast collectionIntCast = new Cast(newObject, collectionInteger);
         LinkedVariables lvCast = collectionIntCast.linkedVariables(evaluationContext);
-        assertEquals("v:dependent:2", lvCast.toString());
+        assertEquals("v:2", lvCast.toString());
     }
 
     private ParameterizedType integer() {
@@ -171,7 +171,7 @@ public class TestLinkingExpression {
         assertTrue(lvAdd12.isEmpty()); // because void method!
 
         LinkedVariables lvAdd12Scope = add12.linked1VariablesScope(evaluationContext);
-        assertEquals("i:independent1:3", lvAdd12Scope.toString());
+        assertEquals("i:3", lvAdd12Scope.toString());
     }
 
     @Test
@@ -202,7 +202,7 @@ public class TestLinkingExpression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         methodCall.linksBetweenParameters(builder, evaluationContext);
         // v links @Independent1 to i and j
-        assertEquals("i:independent1:3,j:independent1:3",
+        assertEquals("i:3,j:3",
                 builder.build().changeData().get(v).linkedVariables().toString());
     }
 

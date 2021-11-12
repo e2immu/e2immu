@@ -85,7 +85,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), outside.valueIsSet() ? null : outside.getValue());
         initial.newVariable(false);
-        initial.setValue(outside.getValue(), outside.isDelayed());
+        initial.setValue(outside.getValue());
         if (!outside.getLinkedVariables().isDelayed()) initial.setLinkedVariables(outside.getLinkedVariables());
 
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
@@ -139,7 +139,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Level.INITIAL),
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
-        initial.setValue(value, false);
+        initial.setValue(value);
         initial.setProperty(VariableProperty.IMMUTABLE, immutable);
         initial.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         initial.setProperty(VariableProperty.IDENTITY, org.e2immu.analyser.model.Level.FALSE_DV);
@@ -156,14 +156,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             String assignedId,
                                                             String readId,
                                                             Expression value,
-                                                            boolean valueIsDelayed,
                                                             Map<VariableProperty, DV> properties,
                                                             LinkedVariables linkedVariables,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location,
                 lvr, new AssignmentIds(assignedId), readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
-        initial.setValue(value, valueIsDelayed);
+        initial.setValue(value);
         properties.forEach(initial::setProperty);
         initial.ensureProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
         initial.ensureProperty(VariableProperty.CONTEXT_MODIFIED, org.e2immu.analyser.model.Level.FALSE_DV);
@@ -260,13 +259,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setInitialValue(Expression value, boolean valueIsDelayed, Map<VariableProperty, DV> propertiesToSet, boolean initialOrEvaluation) {
-        setValue(value, valueIsDelayed, LinkedVariables.EMPTY, propertiesToSet, initialOrEvaluation);
-    }
-
-    @Override
     public void setValue(Expression value,
-                         boolean valueIsDelayed,
                          LinkedVariables linkedVariables,
                          Map<VariableProperty, DV> propertiesToSet,
                          boolean initialOrEvaluation) {
@@ -274,16 +267,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
         try {
-            variableInfo.setValue(value, valueIsDelayed);
+            variableInfo.setValue(value);
         } catch (IllegalStateException ise) {
             LOGGER.error("Variable {}: try to write value {}, already have {}", variableInfo.variable().fullyQualifiedName(),
                     value, variableInfo.getValue());
             throw ise;
         }
+        boolean valueIsDone = value.isDone();
         propertiesToSet.forEach((vp, v) -> {
-            if (!valueIsDelayed || !EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
-                DV inMap = variableInfo.getProperty(vp, null);
-                variableInfo.setProperty(vp, inMap == null ? v : inMap.maxIgnoreDelay(v));
+            if (v.isDelayed()) {
+                if (valueIsDone && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
+                    throw new IllegalStateException("Not allowed to even try to set delay on a value property");
+                }
+            } else {
+                variableInfo.setProperty(vp, v);
             }
         });
         try {
@@ -312,7 +309,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
-        assert value.isDone();
 
         if (Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
             // not writing on a previous
@@ -362,7 +358,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue());
             evaluation.set(eval);
             if (!pi.valueIsSet()) {
-                eval.setValue(pi.getValue(), true);
+                eval.setValue(pi.getValue());
             }
         } else if (evaluation.get().statementTimeDelayed() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             evaluation.get().setStatementTime(statementTime);
@@ -423,7 +419,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private VariableInfoImpl prepareForWritingContextProperties(Location location, VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
-        if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
+        if (vi1.valueIsSet()) write.setValue(vi1.getValue());
         write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
                 .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
@@ -453,7 +449,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
             if (previous.valueIsSet()) {
-                evaluation.setValue(previous.getValue(), previous.isDelayed());
+                evaluation.setValue(previous.getValue());
             }
             evaluation.setLinkedVariables(previous.getLinkedVariables());
         }
@@ -472,7 +468,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo eval = best(Level.EVALUATION);
         Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
-        mergeImpl.setValue(eval.getValue(), eval.isDelayed());
+        mergeImpl.setValue(eval.getValue());
         mergeImpl.setLinkedVariables(eval.getLinkedVariables());
 
         eval.propertyStream()

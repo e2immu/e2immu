@@ -37,9 +37,9 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Test_00_Basics_9plus extends CommonTestRunner {
+public class Test_00_Basics_10plus extends CommonTestRunner {
 
-    public Test_00_Basics_9plus() {
+    public Test_00_Basics_10plus() {
         super(false);
     }
 

@@ -138,10 +138,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             this.sam = !fieldInfo.fieldInspection.get().fieldInitialiserIsSet() ? null :
                     fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             this.fieldInfo = fieldInfo;
-            LinkedVariables delayedLinkedVariables = LinkedVariables.delayedEmpty(initialDelay(fieldInfo));
-            setValue(DelayedExpression.forInitialFieldValue(fieldInfo, delayedLinkedVariables, initialDelay(fieldInfo)));
+            CausesOfDelay initialDelay = initialDelay(fieldInfo);
+            LinkedVariables delayedLinkedVariables = LinkedVariables.delayedEmpty(initialDelay);
+            setValue(DelayedExpression.forInitialFieldValue(fieldInfo, delayedLinkedVariables, initialDelay));
             linkedVariables.setVariable(delayedLinkedVariables);
-            this.values = new VariableFirstThen<>(initialDelay(fieldInfo));
+            this.values = new VariableFirstThen<>(initialDelay);
+            isOfTransparentType.setVariable(initialDelay);
         }
 
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {

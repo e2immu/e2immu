@@ -72,9 +72,9 @@ public class TestMultiLevel {
         assertTrue(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
 
         assertThrows(UnsupportedOperationException.class,
-                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE));
+                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE_DV));
         assertThrows(UnsupportedOperationException.class,
-                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE));
+                () -> isBeforeThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE_DV));
         assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
         assertFalse(isBeforeThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
     }
@@ -87,9 +87,9 @@ public class TestMultiLevel {
         assertFalse(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV));
 
         assertThrows(UnsupportedOperationException.class,
-                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE));
+                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E2IMMUTABLE_DV));
         assertThrows(UnsupportedOperationException.class,
-                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE));
+                () -> isAfterThrowWhenNotEventual(EFFECTIVELY_E1IMMUTABLE_DV));
         assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV));
         assertTrue(isAfterThrowWhenNotEventual(EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV));
     }

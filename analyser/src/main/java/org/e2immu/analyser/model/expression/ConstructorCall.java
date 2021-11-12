@@ -359,7 +359,7 @@ public record ConstructorCall(
         }
 
         DV cImm = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        if (MultiLevel.isAfterThrowWhenNotEventual(cImm.value())) {
+        if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();

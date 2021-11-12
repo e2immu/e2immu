@@ -23,11 +23,13 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_0 extends CommonTestRunner {
@@ -45,7 +47,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
 
-                assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
             }
         };
 
@@ -54,12 +56,11 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             FieldAnalysis fieldAnalysis = d.fieldAnalysis();
             if ("explicitlyFinal".equals(d.fieldInfo().name)) {
                 assertEquals("", fieldAnalysis.getLinkedVariables().toString());
-                assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 assertEquals("\"abc\"", fieldAnalysis.getValue().toString());
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getValue(),
-                        VariableProperty.NOT_NULL_EXPRESSION));
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
-                        fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(fieldAnalysis.getValue(),
+                        NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE));
                 assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
             }
         };
@@ -79,19 +80,22 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     assertFalse(d.variableInfo().isAssigned());
                     assertTrue(d.variableInfo().isRead());
                     if (d.iteration() == 0) {
-                        assertTrue(d.currentValueIsDelayed());
+                        assertTrue(d.currentValue().isDelayed());
                     } else {
                         assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                     }
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertDvInitial(d, "ext_nn:this.explicitlyFinal@Method_getExplicitlyFinal_0",
+                            0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
                 // this.
-                if ((TYPE + ".this").equals(d.variableName())) {
+                if (d.variable() instanceof This) {
+                    assertEquals(TYPE + ".this", d.variableName());
                     assertTrue(d.variableInfo().isRead());
                     assertEquals("instance type Basics_0", d.currentValue().toString());
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
                 // the return value
@@ -103,10 +107,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     String expectLv = "return getExplicitlyFinal:0,this.explicitlyFinal:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                  //  assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
             }
@@ -117,7 +119,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // quick check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE,
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                     stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
 

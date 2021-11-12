@@ -735,8 +735,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 Map<VariableProperty, DV> merged = mergeAssignment(variable, valueProperties, changeData.properties(), groupPropertyValues);
                 // LVs start empty, the changeData.linkedVariables will be added later
-                vic.setValue(valueToWritePossiblyDelayed, valueToWritePossiblyDelayedIsDelayed, LinkedVariables.EMPTY,
-                        merged, false);
+                vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
 
                 if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -763,8 +762,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         local.ensureEvaluation(getLocation(),
                                 new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
-                        local.setValue(valueToWriteCorrected, valueToWritePossiblyDelayedIsDelayed, linkedToMain, merged2,
-                                false);
+                        local.setValue(valueToWriteCorrected, linkedToMain, merged2, false);
                         existingVariablesNotVisited.remove(localVar);
                     }
                 }
@@ -780,11 +778,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
 
-                    boolean valueIsDelayed = changeData.value().isDelayed();
                     Map<VariableProperty, DV> merged = mergePreviousAndChange(sharedState.evaluationContext,
                             variable, vi1.getProperties().toImmutableMap(),
                             changeData.properties(), groupPropertyValues, true);
-                    vic.setValue(changeData.value(), valueIsDelayed, vi1.getLinkedVariables(), merged, false);
+                    vic.setValue(changeData.value(), vi1.getLinkedVariables(), merged, false);
                 } else {
                     if (variable instanceof This || !evaluationResult.causes().isDelayed()) {
                         // TODO we used to check for "haveDelaysCausedByMethodCalls"; now assuming ALL delays
@@ -795,7 +792,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 sharedState.evaluationContext,
                                 variable, vi1.getProperties().toImmutableMap(),
                                 changeData.properties(), groupPropertyValues, true);
-                        vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getLinkedVariables(), merged, false);
+                        vic.setValue(vi1.getValue(), vi1.getLinkedVariables(), merged, false);
                     } else {
                         // delayed situation; do not copy the value properties
                         Map<VariableProperty, DV> merged = mergePreviousAndChange(
@@ -962,7 +959,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.statementTime(EVALUATION), Set.of());
         Map<VariableProperty, DV> valueProperties = Map.of(); // FIXME
         Expression instance = Instance.forLoopVariable(index(), loopVar, valueProperties);
-        vic.setValue(instance, someValueWasDelayed.isDelayed(), LinkedVariables.EMPTY, Map.of(), false);
+        vic.setValue(instance, LinkedVariables.EMPTY, Map.of(), false);
         vic.setLinkedVariables(linked, EVALUATION);
     }
 
@@ -1176,17 +1173,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Map<VariableProperty, DV> res = new HashMap<>(changeData);
 
         both.forEach(k -> {
-            DV prev = previous.getOrDefault(k, k.falseDv);
-            DV change = changeData.getOrDefault(k, k.falseDv);
+            DV prev = previous.getOrDefault(k, k.valueWhenAbsent());
+            DV change = changeData.getOrDefault(k, k.valueWhenAbsent());
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 DV value = switch (k) {
-                    case EXTERNAL_IMMUTABLE -> MultiLevel.FALSE_DV.max(prev);
+                    case EXTERNAL_IMMUTABLE, CONTEXT_MODIFIED, EXTERNAL_NOT_NULL -> prev.max(change);
                     case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
-
-                    // values simply travel downward (delay until there's a value from another analyser)
-                    case EXTERNAL_NOT_NULL -> MultiLevel.FALSE_DV.max(prev);
                     case CONTEXT_NOT_NULL -> variable.parameterizedType().defaultNotNull().max(prev).max(change);
-                    case CONTEXT_MODIFIED -> prev.max(change);
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
@@ -1481,8 +1474,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
                     Map<VariableProperty, DV> valueProperties = Map.of(); // FIXME
-                    vic.setValue(Instance.forLoopVariable(index(), lvr, valueProperties),
-                            false, LinkedVariables.EMPTY, properties, true);
+                    Instance instance = Instance.forLoopVariable(index(), lvr, valueProperties);
+                    vic.setValue(instance, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                     vic.setLinkedVariables(LinkedVariables.EMPTY, INITIAL);
                 } else {
@@ -1602,7 +1595,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         loopCopy, assigned,
                         read,
                         newValue,
-                        newValue.isDelayed(),
                         mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
                         LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV),
                         true);
@@ -1610,7 +1602,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 // FIXME check mergeValueAndLoopVar -- which properties are we talking about?
                 VariableInfoContainer loopVic = statementAnalysis.variables.get(loopCopyFqn);
-                loopVic.setInitialValue(newValue, newValue.isDelayed(), valueProps, true);
+                loopVic.setValue(newValue, LinkedVariables.EMPTY, valueProps, true);
             }
         });
         return Either.right(expressionsToEvaluate);

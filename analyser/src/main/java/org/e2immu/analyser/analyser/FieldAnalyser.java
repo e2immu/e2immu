@@ -55,7 +55,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_CONTAINER = "analyseContainer";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
-    public static final String ANALYSE_ASSIGNMENTS = "allAssignmentsHaveBeenSet";
+    public static final String ANALYSE_VALUES = "analyseValues";
     public static final String ANALYSE_CONSTANT = "analyseConstant";
 
     public final TypeInfo primaryType;
@@ -106,12 +106,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(COMPUTE_TRANSPARENT_TYPE, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitializer)
                 .add(ANALYSE_FINAL, this::analyseFinal)
-                .add(ANALYSE_ASSIGNMENTS, sharedState -> allAssignmentsHaveBeenSet())
-                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
+                .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
+                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
                 .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
@@ -330,7 +330,12 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
             return new AnalysisStatus.Delayed(bestOverContext);
         }
+
         if (bestOverContext.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+            if(fieldAnalysis.valuesStatus().isDelayed()) {
+                log(DELAYED, "Delay @NotNull until all values are known");
+                return new AnalysisStatus.Delayed(fieldAnalysis.valuesStatus());
+            }
             assert fieldAnalysis.getValues().size() > 0;
 
             DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
@@ -653,12 +658,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         return new OccursAndDelay(false, 0, CausesOfDelay.EMPTY);
     }
 
-    private AnalysisStatus allAssignmentsHaveBeenSet() {
+    private AnalysisStatus analyseValues() {
         assert fieldAnalysis.valuesStatus().isDelayed();
         List<FieldAnalysisImpl.ValueAndPropertyProxy> values = new ArrayList<>();
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (haveInitialiser) {
-            delays = delays.merge(fieldAnalysis.valuesStatus());
+            delays = fieldAnalysis.getInitializerValue().causesOfDelay();
             EvaluationContext ec = new EvaluationContextImpl(0,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
             values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
@@ -767,7 +772,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (fieldAnalysis.valuesStatus().isDelayed()) {
-            log(DELAYED, "Delaying, have no values yet for field " + fqn);
+            log(DELAYED, "Delaying final value, have no values yet for field " + fqn);
             fieldAnalysis.setValue(DelayedExpression.forInitialFieldValue(fieldInfo,
                     fieldAnalysis.getLinkedVariables(),
                     fieldAnalysis.valuesStatus()));

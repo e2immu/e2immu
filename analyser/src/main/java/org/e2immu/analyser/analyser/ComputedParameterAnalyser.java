@@ -243,7 +243,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
 
         // no point, we need to have seen the statement+field analysers first.
-        if (sharedState.iteration == 0) return new DV.SingleDelay(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+        if (sharedState.iteration == 0) {
+            return new Delayed(new DV.SingleDelay(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD));
+        }
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();

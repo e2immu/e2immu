@@ -234,7 +234,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     public void analyse() {
         int iteration = 0;
-        AnalysisStatus analysisStatus = AnalysisStatus.NOT_YET_EXECUTED;
+        AnalysisStatus analysisStatus;
 
         do {
             log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, time {}\n******",

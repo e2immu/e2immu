@@ -152,7 +152,7 @@ public interface DV extends WeightedGraph.Weight {
         }
     }
 
-    record SingleDelay(CauseOfDelay causeOfDelay, int value) implements DV, AnalysisStatus {
+    record SingleDelay(CauseOfDelay causeOfDelay, int value) implements DV {
 
         public SingleDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
             this(new Location(withInspectionAndAnalysis), cause);
@@ -203,18 +203,8 @@ public interface DV extends WeightedGraph.Weight {
         }
 
         @Override
-        public int pos() {
-            return 1;
-        }
-
-        @Override
         public boolean isDelayed() {
             return true;
-        }
-
-        @Override
-        public boolean isProgress() {
-            return false;
         }
 
         @Override

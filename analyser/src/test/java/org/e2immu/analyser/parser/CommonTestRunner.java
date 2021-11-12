@@ -17,12 +17,15 @@ package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
@@ -150,7 +152,7 @@ public abstract class CommonTestRunner {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
                 .addClassPath("jmods/java.xml.jmod");
 
-        classes.forEach(clazz-> builder.addRestrictSourceToPackages(clazz.getCanonicalName()));
+        classes.forEach(clazz -> builder.addRestrictSourceToPackages(clazz.getCanonicalName()));
 
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS)
@@ -199,6 +201,7 @@ public abstract class CommonTestRunner {
         } else {
             filteredMessages = messages.stream()
                     .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
+                            m.location().info == null ||
                             !m.location().info.getTypeInfo().packageName().startsWith("java."))
                     .toList();
         }
@@ -217,5 +220,34 @@ public abstract class CommonTestRunner {
     protected void assertSubMap(Map<AnalysisStatus, Set<String>> expect, Map<String, AnalysisStatus> statuses) {
         expect.forEach((as, set) -> set.forEach(label -> assertEquals(as, statuses.get(label),
                 "Expected " + as + " for " + label + "; map is\n" + statuses)));
+    }
+
+    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, DV expect, VariableProperty property) {
+        DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
+        assertEquals(expect, value);
+    }
+
+    public void assertDv(StatementAnalyserVariableVisitor.Data d, DV expect, VariableProperty property) {
+        DV value = d.getProperty(property);
+        assertEquals(expect, value);
+    }
+
+    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
+        DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
+        if (d.iteration() <= delayedUpToIncluding) {
+            assertEquals(delayed, value.causesOfDelay().toString(), value.isDone() ? "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property :
+                    "Expected delay " + delayed + ", but got " + value + " in iteration " + d.iteration() + "<=" + delayedUpToIncluding + " for property " + property);
+        } else {
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        }
+    }
+
+    public void assertDv(StatementAnalyserVariableVisitor.Data d, int delayedUpToIncluding, DV expect, VariableProperty property) {
+        DV value = d.getProperty(property);
+        if (d.iteration() <= delayedUpToIncluding) {
+            assertNull(value, "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        } else {
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        }
     }
 }

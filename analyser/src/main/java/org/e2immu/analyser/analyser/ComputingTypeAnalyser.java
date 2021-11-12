@@ -746,7 +746,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private record MaxValueStatus(DV maxValue, AnalysisStatus status) {
     }
 
-    private static final AnalysisStatus MARKER = new AnalysisStatus.NotDelayed(4); // temporary marker
+    private static final AnalysisStatus MARKER = new AnalysisStatus.NotDelayed(4, "MARKER"); // temporary marker
 
     private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
         DV[] propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
@@ -1260,7 +1260,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
     private AnalysisStatus analyseUtilityClass() {
         DV utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
-        if (utilityClass.isDelayed()) return new Delayed(utilityClass);
+        if (utilityClass.isDone()) return DONE;
 
         DV e2Immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         if (e2Immutable.isDelayed()) {

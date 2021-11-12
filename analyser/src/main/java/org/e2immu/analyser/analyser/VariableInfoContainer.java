@@ -121,14 +121,7 @@ public interface VariableInfoContainer {
 
     // writing operations
     void setValue(Expression value,
-                  boolean valueIsDelayed,
                   LinkedVariables linkedVariables,
-                  Map<VariableProperty, DV> propertiesToSet,
-                  boolean initialOrEvaluation);
-
-    // writing operations
-    void setInitialValue(Expression value,
-                  boolean valueIsDelayed,
                   Map<VariableProperty, DV> propertiesToSet,
                   boolean initialOrEvaluation);
 

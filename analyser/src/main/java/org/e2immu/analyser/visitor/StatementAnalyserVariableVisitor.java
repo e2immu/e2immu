@@ -38,7 +38,7 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         public DV getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefault(variableProperty, null);
+            return properties.getOrDefaultNull(variableProperty);
         }
 
         public boolean hasProperty(VariableProperty variableProperty) {

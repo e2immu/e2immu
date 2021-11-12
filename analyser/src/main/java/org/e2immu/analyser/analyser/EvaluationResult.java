@@ -417,11 +417,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // before that value (before the first eventual call, the precondition system reigns
             DV currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
             if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
-                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable.value())
-                        && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable.value())) {
+                if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable)
+                        && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
                     raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
-                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable.value())
-                        && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable.value())) {
+                } else if (MultiLevel.isAfterThrowWhenNotEventual(requiredImmutable)
+                        && !MultiLevel.isAfterThrowWhenNotEventual(currentImmutable)) {
                     raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }

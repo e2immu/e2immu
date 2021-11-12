@@ -34,7 +34,9 @@ public interface AnalysisStatus {
 
     CausesOfDelay causesOfDelay();
 
-    record NotDelayed(int pos) implements AnalysisStatus {
+    AnalysisStatus addProgress(boolean progress);
+
+    record NotDelayed(int pos, String name) implements AnalysisStatus {
         @Override
         public boolean isDelayed() {
             return false;
@@ -53,6 +55,16 @@ public interface AnalysisStatus {
         @Override
         public CausesOfDelay causesOfDelay() {
             return CausesOfDelay.EMPTY;
+        }
+
+        @Override
+        public AnalysisStatus addProgress(boolean progress) {
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -100,14 +112,20 @@ public interface AnalysisStatus {
         public CausesOfDelay causesOfDelay() {
             return causesOfDelay;
         }
+
+        @Override
+        public AnalysisStatus addProgress(boolean progress) {
+            if (this.progress || !progress) return this;
+            return new Delayed(causesOfDelay, true);
+        }
     }
 
 
     // delayed = 1; progress = 0
-    AnalysisStatus DONE = new NotDelayed(2); // done this one
-    AnalysisStatus RUN_AGAIN = new NotDelayed(3); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
-    AnalysisStatus DONE_ALL = new NotDelayed(3); // done this one, don't do any of the others
-    AnalysisStatus NOT_YET_EXECUTED = new NotDelayed(4); // initial value, always removed upon combining
+    AnalysisStatus DONE = new NotDelayed(2, "DONE"); // done this one
+    AnalysisStatus RUN_AGAIN = new NotDelayed(3, "RUN_AGAIN"); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
+    AnalysisStatus DONE_ALL = new NotDelayed(3, "DONE_ALL"); // done this one, don't do any of the others
+    AnalysisStatus NOT_YET_EXECUTED = new NotDelayed(4, "NOT_YET_EXECUTED"); // initial value, always removed upon combining
 
     default AnalysisStatus combine(AnalysisStatus other) {
         if (other == null) return this;

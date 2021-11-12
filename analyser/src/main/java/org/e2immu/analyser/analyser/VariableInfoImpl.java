@@ -216,12 +216,12 @@ class VariableInfoImpl implements VariableInfo {
         this.linkedVariables.setVariable(linkedVariables);
     }
 
-    void setValue(Expression value, boolean valueIsDelayed) {
+    void setValue(Expression value) {
         VariableExpression ve;
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        if (valueIsDelayed) {
+        if (value.isDelayed()) {
             try {
                 this.value.setVariable(value);
             } catch (IllegalStateException ise) {
@@ -359,7 +359,7 @@ class VariableInfoImpl implements VariableInfo {
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
 
-        setValue(mergedValue, mergedValue.isDelayed());
+        setValue(mergedValue);
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
         if (!mergedValue.isDelayed()) {
             setMergedValueProperties(evaluationContext, mergedValue);

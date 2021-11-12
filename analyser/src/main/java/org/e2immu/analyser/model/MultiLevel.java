@@ -209,22 +209,14 @@ public class MultiLevel {
     }
 
     public static boolean isAfterThrowWhenNotEventual(DV dv) {
-        return isAfterThrowWhenNotEventual(dv.value());
-    }
-
-    public static boolean isAfterThrowWhenNotEventual(int i) {
+        int i = dv.value();
         if (i < 0) return false;
         int effective = effective(i);
-        if (effective == EVENTUAL_BEFORE) return false;
-        if (effective == EVENTUAL_AFTER || effective == EVENTUAL) return true;
-        throw new UnsupportedOperationException("Not eventual");
+        return effective == EVENTUAL_AFTER || effective == EVENTUAL;
     }
 
     public static boolean isBeforeThrowWhenNotEventual(DV dv) {
-        return isBeforeThrowWhenNotEventual(dv.value());
-    }
-
-    public static boolean isBeforeThrowWhenNotEventual(int i) {
+        int i = dv.value();
         if (i < 0) return false;
         int effective = effective(i);
         if (effective == EVENTUAL_AFTER) return false;

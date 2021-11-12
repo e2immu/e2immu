@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.VariableFirstThen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +172,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final InspectionProvider inspectionProvider;
 
         // the value here (size will be one)
-        public final SetOnce<Optional<Precondition>> preconditionForEventual = new SetOnce<>();
+        public final VariableFirstThen<CausesOfDelay, Optional<Precondition>> preconditionForEventual;
         private final SetOnce<Eventual> eventual = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
@@ -207,7 +208,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay preconditionForEventualStatus() {
-            return CausesOfDelay.EMPTY;
+            return preconditionForEventual.isSet() ? CausesOfDelay.EMPTY : preconditionForEventual.getFirst();
         }
 
         @Override
@@ -217,7 +218,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay preconditionStatus() {
-            return null;
+            return CausesOfDelay.EMPTY;
         }
 
         public Builder(AnalysisMode analysisMode,
@@ -234,6 +235,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.returnType = methodInfo.returnType();
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.empty(primitives));
+            preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
+        }
+
+        private static CausesOfDelay initialDelay(MethodInfo methodInfo) {
+            return new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(methodInfo, CauseOfDelay.Cause.INITIAL_VALUE));
         }
 
         @Override

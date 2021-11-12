@@ -65,12 +65,16 @@ public class AnalyserComponents<T, S> {
     public AnalysisStatus run(S s) {
         int i = 0;
         AnalysisStatus combined = DONE;
+        boolean progress = false;
         for (AnalysisStatus.AnalysisResultSupplier<S> supplier : suppliers.values()) {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
                 // execute
                 AnalysisStatus afterExec = supplier.apply(s);
                 assert afterExec != NOT_YET_EXECUTED;
+                if(afterExec == DONE || afterExec == DONE_ALL) {
+                    progress = true;
+                }
                 if (afterExec == DONE_ALL) {
                     while (i < state.length) {
                         state[i++] = DONE;
@@ -85,7 +89,7 @@ public class AnalyserComponents<T, S> {
             }
             i++;
         }
-        return combined;
+        return combined.addProgress(progress);
     }
 
     public String details() {
