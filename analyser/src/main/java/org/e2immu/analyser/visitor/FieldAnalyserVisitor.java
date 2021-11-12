@@ -35,7 +35,7 @@ public interface FieldAnalyserVisitor {
                 FieldInfo fieldInfo,
                 FieldAnalysis fieldAnalysis,
                 Supplier<Stream<Message>> messageStream,
-                Map<String, AnalysisStatus> statuses) {
+                Map<String, AnalysisStatus> statuses) implements CommonVisitorData {
 
         public DV getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty, false, false);
@@ -47,6 +47,11 @@ public interface FieldAnalyserVisitor {
                     .map(Message::toString)
                     .findFirst()
                     .orElse(null);
+        }
+
+        @Override
+        public DV getProperty(VariableProperty variableProperty) {
+            return fieldAnalysis.getProperty(variableProperty);
         }
     }
 }

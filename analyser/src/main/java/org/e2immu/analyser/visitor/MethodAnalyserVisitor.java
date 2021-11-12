@@ -32,7 +32,12 @@ public interface MethodAnalyserVisitor {
                 MethodAnalysis methodAnalysis,
                 List<ParameterAnalysis> parameterAnalyses,
                 Map<String, AnalysisStatus> statuses,
-                Supplier<Stream<Message>> messageStream) {
+                Supplier<Stream<Message>> messageStream) implements CommonVisitorData {
+
+        @Override
+        public DV getProperty(VariableProperty variableProperty) {
+            return methodAnalysis.getProperty(variableProperty);
+        }
 
         public DV getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty, false, false);
@@ -58,14 +63,19 @@ public interface MethodAnalyserVisitor {
                     .findFirst()
                     .orElse(null);
         }
-        public int falseFrom1() {
-            return iteration == 0 ? Level.DELAY: Level.FALSE;
-        }
-        public int trueFrom1() {
-            return iteration == 0 ? Level.DELAY: Level.TRUE;
-        }
-        public int falseFrom2() {
-            return iteration <= 1 ? Level.DELAY: Level.FALSE;
+
+        public CommonVisitorData p(int i) {
+            return new CommonVisitorData() {
+                @Override
+                public DV getProperty(VariableProperty variableProperty) {
+                    return parameterAnalyses.get(i).getProperty(variableProperty);
+                }
+
+                @Override
+                public int iteration() {
+                    return iteration;
+                }
+            };
         }
     }
 

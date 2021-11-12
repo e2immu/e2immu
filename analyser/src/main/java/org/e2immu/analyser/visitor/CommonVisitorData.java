@@ -14,29 +14,11 @@
 
 package org.e2immu.analyser.visitor;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.TypeAnalysis;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Map;
+public interface CommonVisitorData {
+    DV getProperty(VariableProperty variableProperty);
 
-public interface TypeAnalyserVisitor {
-    void visit(Data data);
-
-    record Data(int iteration, Primitives primitives,
-                TypeInfo typeInfo,
-                TypeInspection typeInspection,
-                TypeAnalysis typeAnalysis,
-                Map<String, AnalysisStatus> statuses,
-                AnalysisProvider analysisProvider) implements CommonVisitorData {
-        @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return typeAnalysis.getProperty(variableProperty);
-        }
-    }
+    int iteration();
 }

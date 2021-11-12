@@ -1178,7 +1178,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private Expression initialValueOfParameter(EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
         DV notNull = parameterAnalysis.getProperty(NOT_NULL_PARAMETER)
-                .max(parameterInfo.parameterizedType.defaultNotNull());
+                .maxIgnoreDelay(parameterInfo.parameterizedType.defaultNotNull());
         DV immutable = parameterAnalysis.getProperty(IMMUTABLE)
                 .max(parameterInfo.parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false))
                 .replaceDelayBy(MultiLevel.MUTABLE_DV);

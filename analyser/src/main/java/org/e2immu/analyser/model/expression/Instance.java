@@ -243,16 +243,12 @@ public record Instance(
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
         this.valueProperties = valueProperties;
         assert internalChecks();
-
     }
 
     private boolean internalChecks() {
-        DV minimalNotNull = valueProperties.getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, null);
-        if (minimalNotNull == null) return false;
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType) && minimalNotNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV))
-            return false;
         assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
-        return valueProperties.values().stream().noneMatch(DV::isDelayed);
+        assert valueProperties.values().stream().noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
+        return true;
     }
 
     @Override

@@ -174,6 +174,10 @@ public class MethodLevelData {
         return DONE;
     }
 
+    public boolean linksHaveBeenEstablished() {
+        return linksHaveBeenEstablished.isFinal();
+    }
+
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
         assert linksHaveBeenEstablished.isVariable();
 

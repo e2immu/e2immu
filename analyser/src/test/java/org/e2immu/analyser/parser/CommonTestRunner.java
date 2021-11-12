@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.visitor.CommonVisitorData;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
@@ -227,7 +228,7 @@ public abstract class CommonTestRunner {
         assertEquals(expect, value);
     }
 
-    public void assertDv(StatementAnalyserVariableVisitor.Data d, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, DV expect, VariableProperty property) {
         DV value = d.getProperty(property);
         assertEquals(expect, value);
     }
@@ -242,7 +243,7 @@ public abstract class CommonTestRunner {
         }
     }
 
-    public void assertDv(StatementAnalyserVariableVisitor.Data d, int delayedUpToIncluding, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, int delayedUpToIncluding, DV expect, VariableProperty property) {
         DV value = d.getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
             assertTrue(value == null || value.isDelayed(),
@@ -252,7 +253,7 @@ public abstract class CommonTestRunner {
         }
     }
 
-    public void assertDv(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
         DV value = d.getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
             assertEquals(delayed, value.toString(),

@@ -31,22 +31,15 @@ public interface StatementAnalyserVariableVisitor {
                 Expression currentValue,
                 VariableProperties properties,
                 VariableInfo variableInfo,
-                VariableInfoContainer variableInfoContainer) {
+                VariableInfoContainer variableInfoContainer) implements CommonVisitorData {
 
         public Data {
             Objects.requireNonNull(currentValue);
         }
 
+        @Override
         public DV getProperty(VariableProperty variableProperty) {
             return properties.getOrDefaultNull(variableProperty);
-        }
-
-        public boolean hasProperty(VariableProperty variableProperty) {
-            return properties.isDone(variableProperty);
-        }
-
-        public DV getPropertyOfCurrentValue(VariableProperty variableProperty) {
-            return evaluationContext.getProperty(currentValue, variableProperty, false, false);
         }
     }
 
