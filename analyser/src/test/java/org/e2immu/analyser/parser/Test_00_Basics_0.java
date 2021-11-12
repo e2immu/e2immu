@@ -84,9 +84,9 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     } else {
                         assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                     }
-                    assertDvInitial(d, "ext_nn:this.explicitlyFinal@Method_getExplicitlyFinal_0",
+                    assertDvInitial(d, "ext_nn@Field_explicitlyFinal",
                             0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, "ext_nn@Field_explicitlyFinal", 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
                 // this.
@@ -108,7 +108,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                  //  assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
             }

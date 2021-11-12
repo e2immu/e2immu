@@ -275,13 +275,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         boolean valueIsDone = value.isDone();
         propertiesToSet.forEach((vp, v) -> {
-            if (v.isDelayed()) {
-                if (valueIsDone && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
-                    throw new IllegalStateException("Not allowed to even try to set delay on a value property");
-                }
-            } else {
-                variableInfo.setProperty(vp, v);
+            if (v.isDelayed() && valueIsDone && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
+                throw new IllegalStateException("Not allowed to even try to set delay on a value property");
             }
+            variableInfo.setProperty(vp, v);
         });
         try {
             variableInfo.setLinkedVariables(linkedVariables);
@@ -315,18 +312,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             return;
         }
         VariableInfoImpl variableInfo = getToWrite(level);
-
-        DV current = variableInfo.getProperty(variableProperty, null);
-        if (current == null) {
-            if (value.isDone()) variableInfo.setProperty(variableProperty, value);
-        } else {
-            assert current.isDone();
-            if (!current.equals(value) && (current.lt(value) || failWhenTryingToWriteALowerValue)) {
-                throw new IllegalStateException("Trying to write a different value " + value +
-                        ", already have " + current + ", property " + variableProperty +
-                        ", variable " + current().variable().fullyQualifiedName());
-            }
-        }
+        variableInfo.setProperty(variableProperty, value);
     }
 
     @Override

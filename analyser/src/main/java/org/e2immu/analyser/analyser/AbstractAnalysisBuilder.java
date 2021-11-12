@@ -60,10 +60,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public void setProperty(VariableProperty variableProperty, DV i) {
-        if (!properties.isSet(variableProperty)) {
+        if (!properties.isDone(variableProperty)) {
             if (i.isDone()) properties.put(variableProperty, i);
         } else {
-            DV current = properties.get(variableProperty);
+            DV current = properties.getOrDefaultNull(variableProperty);
             if (i.value() != current.value()) {
                 throw new UnsupportedOperationException("Trying to overwrite property " + variableProperty + " with value " + i + ", current value " + current);
             }

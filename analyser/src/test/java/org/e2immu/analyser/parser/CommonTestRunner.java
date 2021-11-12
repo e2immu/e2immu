@@ -245,7 +245,18 @@ public abstract class CommonTestRunner {
     public void assertDv(StatementAnalyserVariableVisitor.Data d, int delayedUpToIncluding, DV expect, VariableProperty property) {
         DV value = d.getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
-            assertNull(value, "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+            assertTrue(value == null || value.isDelayed(),
+                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        } else {
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        }
+    }
+
+    public void assertDv(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
+        DV value = d.getProperty(property);
+        if (d.iteration() <= delayedUpToIncluding) {
+            assertEquals(delayed, value.toString(),
+                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
         } else {
             assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
         }

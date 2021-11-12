@@ -184,23 +184,22 @@ public class ComputeLinkedVariables {
                     .reduce(Level.FALSE_DV, DV::max);
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
-            } else {
-                for (Variable variable : cluster) {
-                    VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
-                    if (vic != null) {
-                        VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
-                        if (vi.getProperty(variableProperty).isDelayed()) {
-                            try {
-                                vic.setProperty(variableProperty, summary, level);
-                            } catch (IllegalStateException ise) {
-                                LOGGER.error("Current cluster: {}", cluster);
-                                throw ise;
-                            }
-                        } /*
+            }
+            for (Variable variable : cluster) {
+                VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null) {
+                    VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
+                    if (vi.getProperty(variableProperty).isDelayed()) {
+                        try {
+                            vic.setProperty(variableProperty, summary, level);
+                        } catch (IllegalStateException ise) {
+                            LOGGER.error("Current cluster: {}", cluster);
+                            throw ise;
+                        }
+                    } /*
                          else: local copies make it hard to get all values on the same line
                          The principle is: once it gets a value, that's the one it keeps
                          */
-                    }
                 }
             }
         }

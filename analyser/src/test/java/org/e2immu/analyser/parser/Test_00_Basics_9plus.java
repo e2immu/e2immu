@@ -83,14 +83,15 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
 
                 ParameterAnalysis contains = d.parameterAnalyses().get(0);
-              // FIXME  assertEquals(MultiLevel.NOT_INVOLVED_DV, contains.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.NOT_INVOLVED_DV, contains.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
-                    // FIXME assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, VariableProperty.EXTERNAL_IMMUTABLE);
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                     assertEquals("contains:0,return test1:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }

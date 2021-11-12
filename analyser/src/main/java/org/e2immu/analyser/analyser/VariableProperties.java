@@ -14,21 +14,48 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.support.SetOnceMap;
+import org.e2immu.support.Freezable;
 
-public class VariableProperties extends SetOnceMap<VariableProperty, DV> {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
-    @Override
+public class VariableProperties extends Freezable {
+    private final Map<VariableProperty, DV> map = new HashMap<>();
+
+    public boolean isDone(VariableProperty variableProperty) {
+        DV v = map.get(variableProperty);
+        return v != null && v.isDone();
+    }
+
+    public DV getOrDefaultNull(VariableProperty variableProperty) {
+        Objects.requireNonNull(variableProperty);
+        return map.get(variableProperty);
+    }
+
+    public DV getOrDefault(VariableProperty variableProperty, DV defaultValue) {
+        Objects.requireNonNull(variableProperty);
+        Objects.requireNonNull(defaultValue);
+        return map.getOrDefault(variableProperty, defaultValue);
+    }
+
     public void put(VariableProperty variableProperty, DV dv) {
-        if (dv == null || dv.isDelayed()) {
-            throw new IllegalArgumentException("Setting delay for " + variableProperty);
-        }
-        DV inMap = super.getOrDefaultNull(variableProperty);
-        if (inMap == null) {
-            super.put(variableProperty, dv);
+        Objects.requireNonNull(dv);
+        Objects.requireNonNull(variableProperty);
+        DV inMap = map.get(variableProperty);
+        if (inMap == null || inMap.isDelayed()) {
+            map.put(variableProperty, dv);
         } else if (!inMap.equals(dv)) {
             throw new IllegalArgumentException("Changing value of " + variableProperty + " from " + inMap + " to " + dv);
         }
     }
 
+    public Stream<Map.Entry<VariableProperty, DV>> stream() {
+        return map.entrySet().stream();
+    }
+
+    public Map<VariableProperty, DV> toImmutableMap() {
+        return Map.copyOf(map);
+    }
 }

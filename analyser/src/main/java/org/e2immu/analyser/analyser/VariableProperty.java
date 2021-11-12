@@ -81,7 +81,7 @@ public enum VariableProperty {
     CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
             MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.CONTEXT_IMMUTABLE),
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
-            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, CauseOfDelay.Cause.EXT_IMM),
+            MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM),
 
     // internal, temporary
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",

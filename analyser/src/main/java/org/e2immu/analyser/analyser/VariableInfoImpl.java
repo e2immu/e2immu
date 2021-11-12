@@ -180,11 +180,6 @@ class VariableInfoImpl implements VariableInfo {
         return null;
     }
 
-    @Override
-    public boolean hasProperty(VariableProperty variableProperty) {
-        return properties.isSet(variableProperty);
-    }
-
     public Set<Integer> getReadAtStatementTimes() {
         return readAtStatementTimes;
     }

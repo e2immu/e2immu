@@ -54,10 +54,10 @@ public class ShallowFieldAnalyser {
         fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
 
         // unless annotated with something heavier, ...
-        if (enumField && !fieldAnalysisBuilder.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+        if (enumField && !fieldAnalysisBuilder.properties.isDone(VariableProperty.EXTERNAL_NOT_NULL)) {
             fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
-        if (!fieldAnalysisBuilder.properties.isSet(VariableProperty.CONTAINER)) {
+        if (!fieldAnalysisBuilder.properties.isDone(VariableProperty.CONTAINER)) {
             DV typeIsContainer;
             if (fieldAnalysisBuilder.bestType == null) {
                 typeIsContainer = Level.TRUE_DV;

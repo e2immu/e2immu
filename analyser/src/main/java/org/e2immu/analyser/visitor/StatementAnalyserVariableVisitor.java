@@ -42,7 +42,7 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         public boolean hasProperty(VariableProperty variableProperty) {
-            return properties.isSet(variableProperty);
+            return properties.isDone(variableProperty);
         }
 
         public DV getPropertyOfCurrentValue(VariableProperty variableProperty) {
