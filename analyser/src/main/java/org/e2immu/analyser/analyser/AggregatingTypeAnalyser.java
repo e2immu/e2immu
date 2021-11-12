@@ -104,7 +104,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
                     .reduce(variableProperty.bestDv, DV::min);
             if (value.isDelayed()) {
                 log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, typeInfo.fullyQualifiedName);
-                return new AnalysisStatus.Delayed(value);
+                return value.causesOfDelay();
             }
             log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(variableProperty, value);

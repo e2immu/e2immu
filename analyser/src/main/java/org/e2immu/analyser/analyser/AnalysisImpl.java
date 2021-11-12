@@ -52,7 +52,7 @@ public abstract class AnalysisImpl implements Analysis {
     @Override
     public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
         DV v = properties.getOrDefault(variableProperty, null);
-        if (v == null) return new DV.SingleDelay(location(), variableProperty.causeOfDelay());
+        if (v == null) return new CausesOfDelay.SimpleSet(location(), variableProperty.causeOfDelay());
         return v;
     }
 }

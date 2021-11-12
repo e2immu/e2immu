@@ -1005,7 +1005,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
-        return new AnalysisStatus.Delayed(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
+        return ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus);
     }
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,

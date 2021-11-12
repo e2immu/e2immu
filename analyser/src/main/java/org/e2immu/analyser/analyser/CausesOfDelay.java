@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public interface CausesOfDelay extends DV {
+public interface CausesOfDelay extends DV, AnalysisStatus {
 
     CausesOfDelay EMPTY = new SimpleSet(Set.of());
 
@@ -71,8 +71,18 @@ public interface CausesOfDelay extends DV {
         }
 
         @Override
+        public int pos() {
+            return 1;
+        }
+
+        @Override
         public boolean isDelayed() {
             return !causes.isEmpty();
+        }
+
+        @Override
+        public boolean isProgress() {
+            return false;
         }
 
         @Override
@@ -87,6 +97,14 @@ public interface CausesOfDelay extends DV {
 
         @Override
         public CausesOfDelay causesOfDelay() {
+            return this;
+        }
+
+        @Override
+        public AnalysisStatus addProgress(boolean progress) {
+            if (progress) {
+                return new ProgressWrapper(this);
+            }
             return this;
         }
 
@@ -134,6 +152,12 @@ public interface CausesOfDelay extends DV {
         @Override
         public String toString() {
             return causes.stream().map(CauseOfDelay::toString).collect(Collectors.joining(";"));
+        }
+
+        @Override
+        public AnalysisStatus combine(AnalysisStatus other) {
+            if (other instanceof NotDelayed) return this;
+            return merge(other.causesOfDelay()).addProgress(other.isProgress());
         }
     }
 }

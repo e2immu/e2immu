@@ -98,19 +98,6 @@ public class MethodLevelData {
                        MethodLevelData previous,
                        String previousIndex,
                        StateData stateData) {
-        String where(String component) {
-            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName
-                    + ":" + statementAnalysis.index + ":MLD:" + component;
-        }
-
-        String myStatement(String index) {
-            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
-        }
-
-        String myStatement() {
-            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName + ":" +
-                    statementAnalysis.index;
-        }
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -167,7 +154,7 @@ public class MethodLevelData {
 
         if (allDelayed.isDelayed()) {
             combinedPrecondition.setVariable(all);
-            return new AnalysisStatus.Delayed(allDelayed);
+            return allDelayed;
         }
 
         setFinalAllowEquals(combinedPrecondition, all);
@@ -191,7 +178,7 @@ public class MethodLevelData {
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayed.isDelayed()) {
             linksHaveBeenEstablished.setVariable(delayed);
-            return new AnalysisStatus.Delayed(delayed);
+            return delayed;
         }
         linksHaveBeenEstablished.setFinal(delayed);
         return DONE;

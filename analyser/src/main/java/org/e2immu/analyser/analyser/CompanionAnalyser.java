@@ -62,7 +62,7 @@ public class CompanionAnalyser {
         try {
             if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
                 if (iteration == 0) {
-                    return new AnalysisStatus.Delayed(new CauseOfDelay.SimpleCause(mainMethod.typeInfo, CauseOfDelay.Cause.ASPECT));
+                    return new CausesOfDelay.SimpleSet(mainMethod.typeInfo, CauseOfDelay.Cause.ASPECT);
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
@@ -75,7 +75,7 @@ public class CompanionAnalyser {
             if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
-                return new AnalysisStatus.Delayed(modifyingMainMethod.causesOfDelay());
+                return modifyingMainMethod.causesOfDelay();
             }
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod.valueIsTrue());
 
@@ -85,7 +85,7 @@ public class CompanionAnalyser {
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationResult.value().isDelayed()) {
-                return new AnalysisStatus.Delayed(new CauseOfDelay.SimpleCause(companionMethod, CauseOfDelay.Cause.VALUE));
+                return new CausesOfDelay.SimpleSet(companionMethod, CauseOfDelay.Cause.VALUE);
             }
             companionAnalysis.value.set(evaluationResult.value());
 

@@ -14,14 +14,16 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Location;
-
 import java.util.function.Function;
 
 public interface AnalysisStatus {
 
     static AnalysisStatus of(CausesOfDelay merge) {
-        return merge.isDelayed() ? new Delayed(merge) : DONE;
+        return merge.isDelayed() ? merge : DONE;
+    }
+
+    static AnalysisStatus of(DV merge) {
+        return merge.isDelayed() ? merge.causesOfDelay() : DONE;
     }
 
     int pos();
@@ -35,6 +37,8 @@ public interface AnalysisStatus {
     CausesOfDelay causesOfDelay();
 
     AnalysisStatus addProgress(boolean progress);
+
+    AnalysisStatus combine(AnalysisStatus other);
 
     record NotDelayed(int pos, String name) implements AnalysisStatus {
         @Override
@@ -66,31 +70,34 @@ public interface AnalysisStatus {
         public String toString() {
             return name;
         }
+
+        @Override
+        public AnalysisStatus combine(AnalysisStatus other) {
+            if (other instanceof NotDelayed notDelayed) return pos < other.pos() ? this : other;
+            return other;
+        }
     }
 
-    record Delayed(CausesOfDelay causesOfDelay, boolean progress) implements AnalysisStatus {
+    // delayed = 1; progress = 0
+    AnalysisStatus DONE = new NotDelayed(2, "DONE"); // done this one
+    AnalysisStatus RUN_AGAIN = new NotDelayed(3, "RUN_AGAIN"); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
+    AnalysisStatus DONE_ALL = new NotDelayed(3, "DONE_ALL"); // done this one, don't do any of the others
+    AnalysisStatus NOT_YET_EXECUTED = new NotDelayed(4, "NOT_YET_EXECUTED"); // initial value, always removed upon combining
 
-        public Delayed(DV dv) {
-            this(dv.causesOfDelay());
-            assert dv.isDelayed();
-        }
+    @FunctionalInterface
+    interface AnalysisResultSupplier<S> extends Function<S, AnalysisStatus> {
 
-        public Delayed(Location location, CauseOfDelay.Cause cause) {
-            this(new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(location, cause)));
-        }
+    }
 
-        public Delayed(CauseOfDelay cause) {
-            this(new CausesOfDelay.SimpleSet(cause), false);
-        }
+    record ProgressWrapper(CausesOfDelay causesOfDelay) implements AnalysisStatus {
 
-        public Delayed(CausesOfDelay causes) {
-            this(causes, false);
-            assert causes.isDelayed();
+        public ProgressWrapper {
+            assert causesOfDelay.isDelayed();
         }
 
         @Override
         public int pos() {
-            return progress ? 0 : 1;
+            return 0;
         }
 
         @Override
@@ -100,7 +107,7 @@ public interface AnalysisStatus {
 
         @Override
         public boolean isProgress() {
-            return progress;
+            return true;
         }
 
         @Override
@@ -109,35 +116,14 @@ public interface AnalysisStatus {
         }
 
         @Override
-        public CausesOfDelay causesOfDelay() {
-            return causesOfDelay;
+        public AnalysisStatus addProgress(boolean progress) {
+            return this;
         }
 
         @Override
-        public AnalysisStatus addProgress(boolean progress) {
-            if (this.progress || !progress) return this;
-            return new Delayed(causesOfDelay, true);
+        public AnalysisStatus combine(AnalysisStatus other) {
+            if (other instanceof NotDelayed) return this;
+            return new ProgressWrapper(causesOfDelay.merge(other.causesOfDelay()));
         }
-    }
-
-
-    // delayed = 1; progress = 0
-    AnalysisStatus DONE = new NotDelayed(2, "DONE"); // done this one
-    AnalysisStatus RUN_AGAIN = new NotDelayed(3, "RUN_AGAIN"); // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
-    AnalysisStatus DONE_ALL = new NotDelayed(3, "DONE_ALL"); // done this one, don't do any of the others
-    AnalysisStatus NOT_YET_EXECUTED = new NotDelayed(4, "NOT_YET_EXECUTED"); // initial value, always removed upon combining
-
-    default AnalysisStatus combine(AnalysisStatus other) {
-        if (other == null) return this;
-        if (other.pos() <= 1 && pos() <= 1) {
-            return new Delayed(causesOfDelay().merge(other.causesOfDelay()), pos() == 0 || other.pos() == 0);
-        }
-        if (other.pos() < pos()) return other;
-        return this;
-    }
-
-    @FunctionalInterface
-    interface AnalysisResultSupplier<S> extends Function<S, AnalysisStatus> {
-
     }
 }

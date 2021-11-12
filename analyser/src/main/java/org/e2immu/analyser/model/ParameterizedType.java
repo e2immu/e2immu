@@ -868,7 +868,7 @@ public class ParameterizedType {
     public DV isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return new DV.SingleDelay(new Location(typeBeingAnalysed),
+        if (hiddenContentTypes == null) return new CausesOfDelay.SimpleSet(new Location(typeBeingAnalysed),
                 CauseOfDelay.Cause.HIDDEN_CONTENT);
         return Level.fromBoolDv(hiddenContentTypes.contains(this));
     }
@@ -937,11 +937,8 @@ public class ParameterizedType {
         return typeAnalysis.getProperty(VariableProperty.CONTAINER);
     }
 
-    public static final int TYPE_ANALYSIS_NOT_AVAILABLE = Level.ILLEGAL_VALUE;
-
     private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
-        return new DV.SingleDelay(new CauseOfDelay.SimpleCause(bestType, CauseOfDelay.Cause.TYPE_ANALYSIS),
-                TYPE_ANALYSIS_NOT_AVAILABLE);
+        return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.TYPE_ANALYSIS);
     }
 
     public DV defaultIndependent(AnalysisProvider analysisProvider) {
@@ -991,7 +988,7 @@ public class ParameterizedType {
         }
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(this);
         if (hiddenContentTypes == null) {
-            return new DV.SingleDelay(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT);
+            return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT);
         }
         return hiddenContentTypes.types().stream()
                 .map(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
@@ -1035,7 +1032,7 @@ public class ParameterizedType {
             if (doSum.valueIsTrue()) {
                 DV paramValue = parameters.stream()
                         .map(pt -> pt.defaultImmutable(analysisProvider, true))
-                        .map(v -> v.value() == TYPE_ANALYSIS_NOT_AVAILABLE ? MultiLevel.MUTABLE_DV : v)
+                        .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 if (paramValue.isDelayed()) return paramValue;
                 return MultiLevel.sumImmutableLevels(dynamicBaseValue, paramValue);

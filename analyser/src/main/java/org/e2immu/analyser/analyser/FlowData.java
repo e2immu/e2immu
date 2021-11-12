@@ -27,7 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.InterruptsFlow.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -288,7 +289,7 @@ public class FlowData {
         if (executionInCurrentBlock.equals(NEVER)) return DONE_ALL;
         if (delayBasedOnExecutionAndLocalConditionManager.isDelayed())
             return delayBasedOnExecutionAndLocalConditionManager;
-        return executionInCurrentBlock.isDelayed() ? new Delayed(executionInCurrentBlock) : DONE;
+        return AnalysisStatus.of(executionInCurrentBlock);
     }
 
     public AnalysisStatus analyseInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
@@ -330,12 +331,12 @@ public class FlowData {
         }
 
         // all the obvious ones have been done; for the rest we need to ensure that blockExecution has been set already
-        if (!blockExecution.isSet()) return new Delayed(blockExecution.getFirst());
+        if (!blockExecution.isSet()) return blockExecution.getFirst();
 
         if (previousStatement != null && !previousStatement.flowData.interruptsFlowIsSet()) {
             log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
                     previousStatement.index());
-            return new Delayed(previousStatement.flowData.interruptsFlow.getFirst());
+            return previousStatement.flowData.interruptsFlow.getFirst();
         }
 
         // situation from the previous statement
@@ -349,7 +350,7 @@ public class FlowData {
                         subAnalyser.index());
                 CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.interruptsFlow.getFirst().causesOfDelay();
                 interruptsFlow.setFirst(delays);
-                return new Delayed(delays);
+                return delays;
             }
             Map<InterruptsFlow, DV> subInterrupts = subAnalyser.statementAnalysis.flowData.interruptsFlow.get();
             if (subInterrupts.isEmpty()) {
@@ -359,7 +360,7 @@ public class FlowData {
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
-                    return new Delayed(delays);
+                    return delays;
                 }
                 builder.put(NO, subAnalyser.statementAnalysis.flowData.blockExecution.get());
             } else for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
@@ -369,7 +370,7 @@ public class FlowData {
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} interruptsFlow",
                             subAnalyser.index());
                     interruptsFlow.setFirst(e.causesOfDelay());
-                    return new Delayed(e);
+                    return e.causesOfDelay();
                 }
                 // if we're a loop statement, we can accept the interrupt as being one for us (break, continue)
                 if (rejectInterrupt(statement, i)) {
@@ -380,7 +381,7 @@ public class FlowData {
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
-                    return new Delayed(delays);
+                    return delays;
                 }
                 builder.merge(i, subAnalyser.statementAnalysis.flowData.blockExecution.get(), (a, b) -> b.min(a));
             }
@@ -403,7 +404,7 @@ public class FlowData {
             return DONE;
         }
         this.blockExecution.setFirst(blockExecution.causesOfDelay());
-        return new Delayed(blockExecution);
+        return blockExecution.causesOfDelay();
     }
 
     private static boolean rejectInterrupt(Statement statement, InterruptsFlow interruptsFlow) {

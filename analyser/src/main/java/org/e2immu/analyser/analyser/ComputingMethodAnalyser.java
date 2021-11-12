@@ -225,7 +225,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         if (methodLevelData.combinedPrecondition.isVariable()) {
             methodAnalysis.precondition.setVariable(methodLevelData.combinedPrecondition.get());
-            return new AnalysisStatus.Delayed(methodLevelData.combinedPrecondition.get().expression().causesOfDelay());
+            return methodLevelData.combinedPrecondition.get().expression().causesOfDelay();
         }
         methodAnalysis.precondition.setFinal(methodLevelData.combinedPrecondition.get());
         return DONE;
@@ -238,7 +238,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 (TypeAnalysisImpl.Builder) typeAnalysis, analyserContext);
         MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
         if (eventual.causesOfDelay().isDelayed()) {
-            return new AnalysisStatus.Delayed(eventual.causesOfDelay());
+            return eventual.causesOfDelay();
         }
         methodAnalysis.setEventual(eventual);
         if (eventual == MethodAnalysis.NOT_EVENTUAL) {
@@ -267,7 +267,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (finalOverFields.isDelayed()) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
-                return new AnalysisStatus.Delayed(finalOverFields);
+                return finalOverFields.causesOfDelay();
             }
             if (finalOverFields.valueIsFalse()) {
                 // OK!
@@ -293,7 +293,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (haveEventuallyImmutableFields.isDelayed()) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
 
-                return new AnalysisStatus.Delayed(haveEventuallyImmutableFields);
+                return haveEventuallyImmutableFields.causesOfDelay();
             }
             if (haveEventuallyImmutableFields.valueIsTrue()) {
                 break;
@@ -316,7 +316,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (haveContentChangeableField.isDelayed()) {
                 log(DELAYED, "Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
-                return new AnalysisStatus.Delayed(haveContentChangeableField);
+                return haveContentChangeableField.causesOfDelay();
             }
             if (haveContentChangeableField.valueIsTrue()) {
                 break;
@@ -337,7 +337,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         if (methodAnalysis.precondition.isVariable()) {
             log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
-            return new AnalysisStatus.Delayed(methodAnalysis.precondition.get().expression().causesOfDelay());
+            return methodAnalysis.precondition.get().expression().causesOfDelay();
         }
         Precondition precondition = methodAnalysis.precondition.get();
         if (precondition.isEmpty()) {
@@ -353,7 +353,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         if (cm.stateIsDelayed().isDelayed()) {
                             log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index,
                                     methodInfo.fullyQualifiedName);
-                            return new AnalysisStatus.Delayed(cm.stateIsDelayed());
+                            return cm.stateIsDelayed();
                         }
                         Expression state = cm.state();
                         if (!state.isBoolValueTrue()) {
@@ -462,7 +462,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
                     value.debugOutput());
             if (variableInfo.isDelayed()) {
-                return new AnalysisStatus.Delayed(variableInfo.getValue().causesOfDelay());
+                return variableInfo.getValue().causesOfDelay();
             }
             throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
         }
@@ -474,7 +474,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
-                return new AnalysisStatus.Delayed(modified);
+                return modified.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
                 /*
@@ -484,7 +484,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                  */
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
-                    return new AnalysisStatus.Delayed(value.causesOfDelay());
+                    return value.causesOfDelay();
                 }
             }
         }
@@ -492,7 +492,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         DV notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
         if (notNull.isDelayed()) {
             log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-            return new AnalysisStatus.Delayed(notNull);
+            return notNull.causesOfDelay();
         }
         methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
 
@@ -506,7 +506,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (constantField.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
-                return new AnalysisStatus.Delayed(constantField);
+                return constantField.causesOfDelay();
             }
             valueIsConstantField = constantField.valueIsTrue();
         } else valueIsConstantField = false;
@@ -551,7 +551,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     private AnalysisStatus computeImmutable() {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE).isDone()) return DONE;
         DV immutable = computeImmutableValue();
-        if (immutable.isDelayed()) return new AnalysisStatus.Delayed(immutable);
+        if (immutable.isDelayed()) return immutable.causesOfDelay();
         methodAnalysis.setProperty(IMMUTABLE, immutable);
         log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
@@ -559,7 +559,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private DV computeImmutableValue() {
         DV formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
-        if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE)) {
+        if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
         }
 
@@ -665,7 +665,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
         // wait
 
-        return new AnalysisStatus.Delayed(modified);
+        return modified.causesOfDelay();
     }
 
     private AnalysisStatus computeModified() {
@@ -701,7 +701,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (contextModified.isDelayed()) {
             log(DELAYED, "Method {}: Not deciding on @Modified yet: no context modified",
                     methodInfo.distinguishingName());
-            return new AnalysisStatus.Delayed(contextModified);
+            return contextModified.causesOfDelay();
         }
 
         if (contextModified.valueIsFalse()) { // also in static cases, sometimes a modification is written to "this" (MethodCall)
@@ -711,7 +711,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 if (thisModified.isDelayed()) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
-                    return new AnalysisStatus.Delayed(thisModified);
+                    return thisModified.causesOfDelay();
                 }
                 contextModified = thisModified;
             }
@@ -725,7 +725,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             boolean circular = methodLevelData.getCallsPotentiallyCircularMethod();
             if (circular) {
                 DV haveModifying = findOtherModifyingElements();
-                if (haveModifying.isDelayed()) return new AnalysisStatus.Delayed(haveModifying);
+                if (haveModifying.isDelayed()) return haveModifying.causesOfDelay();
                 contextModified = haveModifying;
             }
         }
@@ -736,7 +736,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
                     log(DELAYED, "Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
-                    return new AnalysisStatus.Delayed(maxModified);
+                    return maxModified.causesOfDelay();
                 }
                 contextModified = maxModified;
             }
@@ -806,7 +806,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         ParameterizedType type = methodInspection.getReturnType();
         DV independent = computeIndependent(variableInfo, immutable, type, sharedState.evaluationContext().getCurrentType(),
                 analyserContext);
-        if (independent.isDelayed()) return new AnalysisStatus.Delayed(independent);
+        if (independent.isDelayed()) return independent.causesOfDelay();
         methodAnalysis.setProperty(INDEPENDENT, independent);
         return DONE;
     }

@@ -51,7 +51,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
         DV v = properties.getOrDefaultNull(variableProperty);
-        if (v == null) return new DV.SingleDelay(location(), variableProperty.causeOfDelay());
+        if (v == null) return new CausesOfDelay.SimpleSet(location(), variableProperty.causeOfDelay());
         return v;
     }
 

@@ -30,7 +30,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
@@ -137,7 +138,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
             // we wait until the other analyser has finished, since we need the properties it computes
-            return new Delayed(new CauseOfDelay.SimpleCause(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD));
+            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
         /*
          Because INDEPENDENT has not been set by ANALYSE_FIELD_ASSIGNMENTS, it cannot have been assigned to a field.
@@ -156,7 +157,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index);
-                    return new Delayed(new CauseOfDelay.VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
+                    return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
@@ -173,7 +174,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             .map(pt -> pt.defaultImmutable(analyserContext, false))
                             .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                     if (minHiddenContentImmutable.isDelayed()) {
-                        return new Delayed(minHiddenContentImmutable.causesOfDelay());
+                        return minHiddenContentImmutable.causesOfDelay();
                     }
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable.value());
                     DV independent = immutableLevel <= LEVEL_2_IMMUTABLE ? INDEPENDENT_1_DV :
@@ -244,7 +245,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new Delayed(new DV.SingleDelay(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD));
+            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
@@ -267,7 +268,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         }
 
         if (delays.isDelayed()) {
-            return new Delayed(delays, changed);
+            return delays.addProgress(changed);
         }
         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
             parameterAnalysis.freezeAssignedToField();
@@ -350,7 +351,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE);
 
         if (delays.isDelayed()) {
-            return new Delayed(delays, changed);
+            return delays.addProgress(changed);
         }
 
         // can be executed multiple times
@@ -475,7 +476,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new Delayed(new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION));
+            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION);
         }
 
         // context not null, context modified
@@ -501,7 +502,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
         }
         if (delayFromContext.isDelayed()) {
-            return new Delayed(delayFromContext.causesOfDelay(), changed);
+            return delayFromContext.causesOfDelay().addProgress( changed);
         }
         return DONE;
     }
@@ -509,7 +510,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private AnalysisStatus checkUnusedParameter(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new Delayed(new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION));
+            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION);
         }
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)

@@ -198,7 +198,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     private DV computeMethodImmutable() {
         ParameterizedType returnType = methodInspection.getReturnType();
         DV immutable = returnType.defaultImmutable(analyserContext, true);
-        if (immutable.value() == ParameterizedType.TYPE_ANALYSIS_NOT_AVAILABLE) {
+        if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
             messages.add(Message.newMessage(new Location(methodInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                     returnType.toString()));
             return MultiLevel.MUTABLE_DV;

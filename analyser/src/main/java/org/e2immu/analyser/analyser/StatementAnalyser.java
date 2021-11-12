@@ -424,7 +424,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
-                            ? new Delayed(new CausesOfDelay.SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT), true)
+                            ? new ProgressWrapper(new CausesOfDelay.SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
                             : DONE)
                     .build();
             analysisStatus = result.analysisStatus();
@@ -643,7 +643,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
         public AnalysisStatus combinedStatus() {
             CausesOfDelay delay = status.merge(ennStatus);
-            return delay.isDone() ? DONE : new Delayed(delay);
+            return AnalysisStatus.of(delay);
         }
     }
 
@@ -1356,17 +1356,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     log(PRECONDITION, "Escape with precondition {}", translated);
                     Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
                     statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed.isDelayed());
-                    return preconditionIsDelayed.isDelayed() ? new Delayed(preconditionIsDelayed) : DONE;
+                    return AnalysisStatus.of(preconditionIsDelayed);
                 }
             }
 
-            if (delays.isDelayed()) return new Delayed(delays);
+            if (delays.isDelayed()) return delays;
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert statement (subBlocks) or apply via a method call
             statementAnalysis.stateData.setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives));
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
-            return new Delayed(statementAnalysis.stateData.getPrecondition().expression().causesOfDelay());
+            return statementAnalysis.stateData.getPrecondition().expression().causesOfDelay();
         }
         return DONE;
     }
@@ -1629,7 +1629,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         we have to come back!
          */
         AnalysisStatus analysisStatus = expressionsFromLocalVariablesInLoop.isLeft()
-                ? new Delayed(expressionsFromLocalVariablesInLoop.getLeft()) : DONE;
+                ? expressionsFromLocalVariablesInLoop.getLeft() : DONE;
         if (expressionsFromLocalVariablesInLoop.isRight()) {
             expressionsFromInitAndUpdate.addAll(expressionsFromLocalVariablesInLoop.getRight());
         }
@@ -1651,7 +1651,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
                 Expression state = sharedState.localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state, state.isDelayed());
-                if (state.isDelayed()) return new Delayed(state.causesOfDelay());
+                if (state.isDelayed()) return state.causesOfDelay();
             } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext);
                 PrimaryTypeAnalyser primaryTypeAnalyser =
@@ -1707,7 +1707,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (!assignments.isBooleanConstant()) {
                     result = assignments.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
                     ApplyStatusAndEnnStatus assignmentResult = apply(sharedState, result);
-                    statusPost = new Delayed(assignmentResult.status.merge(analysisStatus.causesOfDelay()));
+                    statusPost = assignmentResult.status.merge(analysisStatus.causesOfDelay());
                     ennStatus = applyResult.ennStatus.merge(assignmentResult.ennStatus);
                 }
             }
@@ -1966,8 +1966,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private AnalysisStatus subBlocks(SharedState sharedState) {
         List<Optional<StatementAnalyser>> startOfBlocks = navigationData.blocks.get();
-        AnalysisStatus analysisStatus = sharedState.localConditionManager.isDelayed()
-                ? new Delayed(sharedState.localConditionManager().causesOfDelay()) : DONE;
+        AnalysisStatus analysisStatus = AnalysisStatus.of(sharedState.localConditionManager.causesOfDelay());
 
         if (!startOfBlocks.isEmpty()) {
             return haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
@@ -1992,7 +1991,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             if (expressionIsDelayed) {
-                analysisStatus = new Delayed(statementAnalysis.stateData.valueOfExpressionIsDelayed());
+                analysisStatus = statementAnalysis.stateData.valueOfExpressionIsDelayed();
             }
         }
 
@@ -2448,11 +2447,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkUselessAssignments() {
         if (!statementAnalysis.flowData.interruptsFlowIsSet()) {
             log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
-            return new Delayed(statementAnalysis.flowData.interruptStatus().causesOfDelay());
+            return statementAnalysis.flowData.interruptStatus().causesOfDelay();
         }
         InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData.bestAlwaysInterrupt();
         DV reached = statementAnalysis.flowData.getGuaranteedToBeReachedInMethod();
-        if (reached.isDelayed()) return new Delayed(reached);
+        if (reached.isDelayed()) return reached.causesOfDelay();
 
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
@@ -2554,14 +2553,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (identity.isDelayed()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
-                return new Delayed(identity);
+                return identity.causesOfDelay();
             }
             if (identity.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
             if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
-                return new Delayed(modified);
+                return modified.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
                 MethodInspection methodCallInspection = analyserContext.getMethodInspection(methodCall.methodInfo);
@@ -2581,7 +2580,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (delays.isDelayed()) {
                         log(DELAYED, "Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
                                 index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
-                        return new Delayed(delays);
+                        return delays;
                     }
                 }
 

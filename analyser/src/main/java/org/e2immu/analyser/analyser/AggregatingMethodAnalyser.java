@@ -108,7 +108,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
                     .map(a -> a.getSingleReturnValue().causesOfDelay())
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (delays.isDelayed()) {
-                return new AnalysisStatus.Delayed(delays);
+                return delays;
             }
             Expression singleValue = implementingAnalyses.get().stream().map(MethodAnalysis::getSingleReturnValue).findFirst().orElseThrow();
             // unless it is a constant, a parameter of the method, or statically assigned to a constructor (?) we can't do much
@@ -133,7 +133,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
                     .reduce(start, operator);
             if (value.isDelayed()) {
                 log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, methodInfo.fullyQualifiedName);
-                return new AnalysisStatus.Delayed(value);
+                return value.causesOfDelay();
             }
             log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, methodInfo.fullyQualifiedName);
             methodAnalysis.setProperty(variableProperty, value);

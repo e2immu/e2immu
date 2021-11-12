@@ -15,6 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
@@ -30,7 +31,7 @@ public class TestWeightedGraph {
     private static final DV one = new DV.NoDelay(1);
     private static final DV two = new DV.NoDelay(2);
 
-    private static final DV delay = new DV.SingleDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+    private static final DV delay = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
     
     @Test
     public void test1() {

@@ -16,12 +16,9 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /*
 Delayable Value
@@ -30,7 +27,7 @@ public interface DV extends WeightedGraph.Weight {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
-    DV MIN_INT_DV = new SingleDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
+    DV MIN_INT_DV = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
 
     int value();
 
@@ -70,6 +67,10 @@ public interface DV extends WeightedGraph.Weight {
 
     default boolean valueIsFalse() {
         return value() == Level.FALSE;
+    }
+
+    default boolean containsCauseOfDelay(CauseOfDelay.Cause cause) {
+        return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause);
     }
 
     record NoDelay(int value, String label) implements DV {
@@ -149,82 +150,6 @@ public interface DV extends WeightedGraph.Weight {
         @Override
         public int hashCode() {
             return Objects.hash(value);
-        }
-    }
-
-    record SingleDelay(CauseOfDelay causeOfDelay, int value) implements DV {
-
-        public SingleDelay(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-            this(new Location(withInspectionAndAnalysis), cause);
-        }
-
-        public SingleDelay(Location location, CauseOfDelay.Cause cause) {
-            this(new CauseOfDelay.SimpleCause(location, cause), Level.DELAY);
-        }
-
-        @Override
-        public CausesOfDelay causesOfDelay() {
-            return new CausesOfDelay.SimpleSet(causeOfDelay);
-        }
-
-        private DV merge(DV other) {
-            if (other instanceof SingleDelay sd && sd.causeOfDelay.equals(causeOfDelay)) return this;
-            return new CausesOfDelay.SimpleSet(Stream.concat(Stream.of(causeOfDelay),
-                    other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
-        }
-
-        @Override
-        public DV min(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            return this; // other is not a delay
-        }
-
-        @Override
-        public DV max(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            return this; // other is not a delay
-        }
-
-        @Override
-        public DV maxIgnoreDelay(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            return other; // other is not a delay
-        }
-
-        @Override
-        public boolean isDone() {
-            return false;
-        }
-
-        @Override
-        public boolean isDelayed() {
-            return true;
-        }
-
-        @Override
-        public DV replaceDelayBy(DV nonDelay) {
-            assert nonDelay.isDone();
-            return nonDelay;
-        }
-
-        @Override
-        public String toString() {
-            String s = causeOfDelay.toString();
-            if (value != Level.DELAY) {
-                return s + ":" + value;
-            }
-            return s;
-        }
-
-        @Override
-        public int compareTo(WeightedGraph.Weight o) {
-            return value - ((DV) o).value();
         }
     }
 }
