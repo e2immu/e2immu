@@ -523,13 +523,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         int formalLevel = MultiLevel.level(formalTypeImmutable);
         if (eventual.mark()) {
-            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeDv(formalLevel), MultiLevel.afterDv(formalLevel));
+            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
         }
         if (eventual.after() != null) {
             if (eventual.after()) {
-                return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.afterDv(formalLevel), MultiLevel.afterDv(formalLevel));
+                return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.afterImmutableDv(formalLevel), MultiLevel.afterImmutableDv(formalLevel));
             }
-            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeDv(formalLevel), MultiLevel.beforeDv(formalLevel));
+            return new ImmutableData(CausesOfDelay.EMPTY, MultiLevel.beforeImmutableDv(formalLevel), MultiLevel.beforeImmutableDv(formalLevel));
         }
         return NOT_EVENTUAL;
     }

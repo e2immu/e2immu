@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
-import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
@@ -181,8 +180,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
                     DV independent = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
                             MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    log(ANALYSER, "Assign {} to parameter {}", MultiLevel.niceIndependent(independent),
-                            parameterInfo.fullyQualifiedName());
+                    log(ANALYSER, "Assign {} to parameter {}", independent, parameterInfo.fullyQualifiedName());
                     parameterAnalysis.setProperty(INDEPENDENT, independent);
                     return DONE;
                 }
@@ -378,7 +376,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
                     return formallyImmutable;
                 }
-                return MultiLevel.compose(EVENTUAL_BEFORE, contractLevel);
+                return MultiLevel.composeImmutable(EVENTUAL_BEFORE, contractLevel);
             }
             messages.add(Message.newMessage(parameterAnalysis.location,
                     Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
@@ -396,7 +394,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
                 return formallyImmutable;
             }
-            return formalEffective == EVENTUAL ? MultiLevel.compose(EVENTUAL_AFTER, contractLevel) : contractImmutable;
+            return formalEffective == EVENTUAL ? MultiLevel.composeImmutable(EVENTUAL_AFTER, contractLevel) : contractImmutable;
         }
 
         if (contractImmutable.equals(MUTABLE_DV)) {
@@ -504,7 +502,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
         }
         if (delayFromContext.isDelayed()) {
-            return delayFromContext.causesOfDelay().addProgress( changed);
+            return delayFromContext.causesOfDelay().addProgress(changed);
         }
         return DONE;
     }

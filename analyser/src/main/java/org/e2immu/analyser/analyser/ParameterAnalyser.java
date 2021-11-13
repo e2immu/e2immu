@@ -110,8 +110,7 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
                 if (complain) {
                     String msg;
                     if (variableProperty == INDEPENDENT) {
-                        msg = "Have " + MultiLevel.niceIndependent(value) + ", expect "
-                                + MultiLevel.niceIndependent(valueFromOverrides);
+                        msg = "Have " + value.label() + ", expect " + valueFromOverrides.label();
                     } else {
                         msg = variableProperty.name + ", parameter " + parameterInfo.name;
                     }

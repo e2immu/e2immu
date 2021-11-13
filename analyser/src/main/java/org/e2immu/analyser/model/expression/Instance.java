@@ -217,7 +217,7 @@ public record Instance(
                     LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull),
                     notNull.causesOfDelay());
         }
-        DV notNullOfElement = MultiLevel.composeOneLevelLess(notNull);
+        DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(VariableProperty.NOT_NULL_EXPRESSION, notNullOfElement,
                         VariableProperty.IDENTITY, Level.FALSE_DV));

@@ -35,7 +35,7 @@ public class MultiLevel {
 
     public static Effective effectiveAtLevel(DV dv, Level target) {
         int level = MultiLevel.level(dv);
-        if(level < target.level) return FALSE;
+        if (level < target.level) return FALSE;
         return level > target.level ? MultiLevel.Effective.EFFECTIVE : MultiLevel.effective(dv);
     }
 
@@ -86,7 +86,7 @@ public class MultiLevel {
         ABSENT(-1),
         BASE(0),
         IMMUTABLE_1(0), IMMUTABLE_2(1), IMMUTABLE_3(2), IMMUTABLE_R(MAX_LEVEL),
-        INDEPENDENT_1(0), INDEPENDENT_R(MAX_LEVEL),
+        INDEPENDENT_1(0), INDEPENDENT_2(1), INDEPENDENT_R(MAX_LEVEL),
         NOT_NULL(0), NOT_NULL_1(1), NOT_NULL_2(2), NOT_NULL_3(3);
 
         public final int level;
@@ -105,22 +105,24 @@ public class MultiLevel {
 
     public static final DV DEPENDENT_DV = compose(Effective.FALSE, Level.INDEPENDENT_1, "dependent");
     public static final DV INDEPENDENT_1_DV = compose(EFFECTIVE, Level.INDEPENDENT_1, "independent1");
+    public static final DV INDEPENDENT_2_DV = compose(EFFECTIVE, Level.INDEPENDENT_2, "independent2");
     public static final DV INDEPENDENT_DV = compose(EFFECTIVE, Level.INDEPENDENT_R, "independent");
 
     // IMMUTABLE
-
-    public static final DV EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV =
-            compose(Effective.EVENTUAL_BEFORE, Level.IMMUTABLE_2, "eve2_before_mark");
     public static final DV EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV =
             compose(Effective.EVENTUAL_BEFORE, Level.IMMUTABLE_1, "eve1_before_mark");
+    public static final DV EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV =
+            compose(Effective.EVENTUAL_BEFORE, Level.IMMUTABLE_2, "eve2_before_mark");
+    public static final DV EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV =
+            compose(Effective.EVENTUAL_BEFORE, Level.IMMUTABLE_R, "everec_before_mark");
 
     public static final DV EVENTUALLY_E1IMMUTABLE_DV = compose(EVENTUAL, Level.IMMUTABLE_1, "eve1immutable");
     public static final DV EVENTUALLY_E2IMMUTABLE_DV = compose(EVENTUAL, Level.IMMUTABLE_2, "eve2immutable");
     public static final DV EVENTUALLY_RECURSIVELY_IMMUTABLE_DV = compose(EVENTUAL, Level.IMMUTABLE_R, "evrecimmutable");
 
-
-    public static final DV EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV = compose(EVENTUAL_AFTER, Level.IMMUTABLE_2, "eve2immutable_after");
     public static final DV EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV = compose(EVENTUAL_AFTER, Level.IMMUTABLE_1, "eve1immutable_after");
+    public static final DV EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV = compose(EVENTUAL_AFTER, Level.IMMUTABLE_2, "eve2immutable_after");
+    public static final DV EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV = compose(EVENTUAL_AFTER, Level.IMMUTABLE_R, "everecimmutable_after");
 
     public static final DV EFFECTIVELY_CONTENT2_NOT_NULL_DV = compose(EFFECTIVE, NOT_NULL_2, "content2_not_null");
     public static final DV EFFECTIVELY_CONTENT_NOT_NULL_DV = compose(EFFECTIVE, NOT_NULL_1, "content_not_null");
@@ -144,16 +146,27 @@ public class MultiLevel {
      * @param level     the level
      * @return the composite value
      */
-    public static DV compose(Effective effective, Level level, String label) {
+    private static DV compose(Effective effective, Level level, String label) {
         return new DV.NoDelay(effective.value + level.level * FACTOR, label);
     }
 
-    public static DV compose(Effective effective, Level level) {
-        return new DV.NoDelay(effective.value + level.level * FACTOR);
+    public static DV composeIndependent(Effective effective, Level level) {
+        return composeIndependent(effective, level.level);
     }
 
-    public static DV compose(Effective effective, int level) {
-        return new DV.NoDelay(effective.value + level * FACTOR);
+    public static DV composeIndependent(Effective effective, int level) {
+        assert effective == EFFECTIVE;
+        if (level == INDEPENDENT_1.level) return INDEPENDENT_1_DV;
+        if (level == INDEPENDENT_2.level) return INDEPENDENT_2_DV;
+        if (level == INDEPENDENT_R.level) return INDEPENDENT_DV;
+        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR, "independent_" + (level + 1));
+    }
+
+    public static DV composeImmutable(Effective effective, int level) {
+        if (effective == EVENTUAL_BEFORE) return beforeImmutableDv(level);
+        if (effective == EVENTUAL_AFTER) return afterImmutableDv(level);
+        if (effective == EFFECTIVE) return effectivelyImmutable(level);
+        return new DV.NoDelay(effective.value + level * FACTOR, effective.label + "_immutable" + (level + 1));
     }
 
     public static Effective effective(DV dv) {
@@ -188,20 +201,25 @@ public class MultiLevel {
         return dv.ge(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV);
     }
 
-    public static DV before(int level) {
-        return compose(EVENTUAL_BEFORE, level);
+    public static DV effectivelyImmutable(int level) {
+        if (level == IMMUTABLE_1.level) return EFFECTIVELY_E1IMMUTABLE_DV;
+        if (level == IMMUTABLE_2.level) return EFFECTIVELY_E2IMMUTABLE_DV;
+        if (level == IMMUTABLE_R.level) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR);
     }
 
-    public static DV beforeDv(int level) {
-        return compose(EVENTUAL_BEFORE, level);
+    public static DV beforeImmutableDv(int level) {
+        if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV;
+        if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV;
+        if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV;
+        return new DV.NoDelay(EVENTUAL_BEFORE.value + level * FACTOR);
     }
 
-    public static DV afterDv(int level) {
-        return compose(EVENTUAL_AFTER, level);
-    }
-
-    public static DV after(int level) {
-        return compose(EVENTUAL_AFTER, level);
+    public static DV afterImmutableDv(int level) {
+        if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV;
+        if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV;
+        if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV;
+        return new DV.NoDelay(EVENTUAL_AFTER.value + level * FACTOR);
     }
 
     public static boolean isAfterThrowWhenNotEventual(DV dv) {
@@ -226,48 +244,44 @@ public class MultiLevel {
         return effective == EVENTUAL_BEFORE || effective == EVENTUAL;
     }
 
-    public static DV composeOneLevelLess(DV dv) {
+    public static DV composeOneLevelLessIndependent(DV dv) {
         if (dv.isDelayed()) return dv;
         int level = level(dv);
-        if(level == 0) return dv;
+        if (level == 0) return dv;
         Effective effective = effective(dv);
         int newLevel = level == MAX_LEVEL ? level : level - 1;
-        return compose(effective, newLevel);
+        return composeIndependent(effective, newLevel);
     }
 
-    public static DV composeOneLevelMore(DV dv) {
+    public static DV composeOneLevelLessNotNull(DV dv) {
         if (dv.isDelayed()) return dv;
         int level = level(dv);
-        Effective effective = effective(dv);
-        int newLevel = level == MAX_LEVEL ? level : level + 1;
-        return compose(effective, newLevel);
+        if (level == 0) return dv;
+        int newLevel = level == MAX_LEVEL ? level : level - 1;
+        return composeNotNull(newLevel);
     }
 
-    public static String niceIndependent(DV dv) {
-        if (dv instanceof DV.NoDelay noDelay && noDelay.haveLabel()) {
-            return noDelay.label();
-        }
-        return "@Dependent" + (level(dv) + 1);
+    private static DV composeNotNull(int level) {
+        if (level == NOT_NULL.level) return EFFECTIVELY_NOT_NULL_DV;
+        if (level == NOT_NULL_1.level) return EFFECTIVELY_CONTENT_NOT_NULL_DV;
+        if (level == NOT_NULL_2.level) return EFFECTIVELY_CONTENT2_NOT_NULL_DV;
+        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR, "not_null_" + level);
     }
 
-    public static String niceImmutable(DV dv) {
-        if (dv instanceof DV.NoDelay noDelay && noDelay.haveLabel()) {
-            return noDelay.label();
-        }
+    public static DV composeOneLevelMoreNotNull(DV dv) {
+        if (dv.isDelayed()) return dv;
         int level = level(dv);
-        Effective effective = effective(dv);
-        String immutable = level == MultiLevel.MAX_LEVEL ? "@ERImmutable" : "@E" + (level + 1) + "Immutable";
-        return effective.label + " " + immutable;
+        int newLevel = level == MAX_LEVEL ? level : level + 1;
+        return composeNotNull(newLevel);
     }
-
 
     // ImmutableSet<T>. If T is E2, then combination is E3
     // ImmutableSet<Integer> -> MAX
     public static DV sumImmutableLevels(DV base, DV parameters) {
         int levelBase = level(base);
         int levelParams = level(parameters);
-        if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return compose(effective(base), MAX_LEVEL);
-        return compose(effective(base), levelBase + levelParams);
+        if (levelBase == MAX_LEVEL || levelParams == MAX_LEVEL) return composeImmutable(effective(base), MAX_LEVEL);
+        return composeImmutable(effective(base), levelBase + levelParams);
     }
 
     public static DV independentCorrespondingToImmutableLevelDv(int immutableLevel) {
@@ -279,7 +293,7 @@ public class MultiLevel {
         } else {
             level = immutableLevel - 1;
         }
-        return compose(EFFECTIVE, level);
+        return composeIndependent(EFFECTIVE, level);
     }
 
     public static boolean independentConsistentWithImmutable(DV independent, DV immutable) {

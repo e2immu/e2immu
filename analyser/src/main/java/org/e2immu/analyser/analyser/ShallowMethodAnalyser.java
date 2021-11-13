@@ -281,8 +281,8 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (overloads != DV.MAX_INT_DV && finalValue.lt(overloads)) {
             messages.add(Message.newMessage(new Location(methodInfo),
-                    Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT, MultiLevel.niceIndependent(finalValue) + " instead of " +
-                            MultiLevel.niceIndependent(overloads)));
+                    Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT,
+                    finalValue.label() + " instead of " + overloads.label()));
         }
     }
 

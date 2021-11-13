@@ -546,7 +546,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void simpleComputeIndependent(TypeAnalysisImpl.Builder builder) {
         DV immutable = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.IMMUTABLE);
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
-        DV independent = MultiLevel.composeOneLevelLess(immutable);
+        DV independent = MultiLevel.composeOneLevelLessIndependent(immutable);
         if (inMap.isDelayed()) {
             boolean allMethodsOnlyPrimitives =
                     builder.getTypeInfo().typeInspection.get()

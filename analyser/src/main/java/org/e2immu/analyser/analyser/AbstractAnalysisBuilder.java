@@ -272,7 +272,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (levelIndependent != MultiLevel.Level.ABSENT) {
-            DV value = MultiLevel.compose(MultiLevel.Effective.EFFECTIVE, levelIndependent);
+            DV value = MultiLevel.composeIndependent(MultiLevel.Effective.EFFECTIVE, levelIndependent);
             setProperty(VariableProperty.INDEPENDENT, value);
         }
         if (container) {
@@ -282,7 +282,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
-            DV value = MultiLevel.compose(MultiLevel.Effective.EFFECTIVE, levelImmutable);
+            DV value = MultiLevel.effectivelyImmutable(levelImmutable.level);
             setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull != null) {

@@ -53,6 +53,11 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
         }
 
         @Override
+        public String label() {
+            throw new UnsupportedOperationException("No label for delays");
+        }
+
+        @Override
         public CausesOfDelay merge(CausesOfDelay other) {
             if (other.isDone()) return this;
             if (isDone()) return other;

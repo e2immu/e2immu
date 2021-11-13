@@ -412,7 +412,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
             DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             log(INDEPENDENCE, "Field {} set to {}, direct correspondence to (dynamically) immutable",
-                    fieldInfo.fullyQualifiedName(), MultiLevel.niceIndependent(independent));
+                    fieldInfo.fullyQualifiedName(), independent);
             fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
             return DONE;
         }

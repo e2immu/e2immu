@@ -724,8 +724,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .min(valueFromMethodReturnValue)
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
-        log(INDEPENDENCE, "Set independence of type {} to {}", typeInfo.fullyQualifiedName,
-                MultiLevel.niceIndependent(finalValue));
+        log(INDEPENDENCE, "Set independence of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
         typeAnalysis.setProperty(VariableProperty.INDEPENDENT, finalValue);
         return DONE;
     }
@@ -1069,9 +1068,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }*/
 
         MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
-        DV finalValue = fromParentOrEnclosing.min(MultiLevel.compose(effective, minLevel));
-        log(IMMUTABLE_LOG, "Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName,
-                MultiLevel.niceImmutable(finalValue));
+        DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));
+        log(IMMUTABLE_LOG, "Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, finalValue);
         return DONE;
     }

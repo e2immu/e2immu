@@ -37,7 +37,7 @@ public class TestMultiLevel {
         assertEquals(805, INDEPENDENT_DV.value());
 
         assertEquals(13, EFFECTIVELY_CONTENT_NOT_NULL_DV.value());
-        assertEquals(2, compose(EVENTUAL, 0).value());
+        assertEquals(2, composeImmutable(EVENTUAL, 0).value());
         assertEquals(2, EVENTUALLY_E1IMMUTABLE_DV.value());
     }
 
@@ -98,8 +98,8 @@ public class TestMultiLevel {
 
     @Test
     public void testOneLevelLess() {
-        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV, composeOneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
-        assertEquals(EFFECTIVELY_NOT_NULL_DV, composeOneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL_DV));
-        assertEquals(EFFECTIVELY_E1IMMUTABLE_DV, composeOneLevelLess(EFFECTIVELY_E2IMMUTABLE_DV));
+        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL_DV, composeOneLevelLessNotNull(EFFECTIVELY_CONTENT2_NOT_NULL_DV));
+        assertEquals(EFFECTIVELY_NOT_NULL_DV, composeOneLevelLessNotNull(EFFECTIVELY_CONTENT_NOT_NULL_DV));
+        assertEquals(INDEPENDENT_1_DV, composeOneLevelLessIndependent(INDEPENDENT_2_DV));
     }
 }

@@ -144,7 +144,7 @@ public class ArrayInitializer extends ElementImpl implements Expression {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
             DV notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
             if (notNull.isDelayed()) return notNull;
-            return MultiLevel.composeOneLevelMore(notNull);
+            return MultiLevel.composeOneLevelMoreNotNull(notNull);
         }
         if (VariableProperty.EXTERNAL_IMMUTABLE == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
             // it is an array

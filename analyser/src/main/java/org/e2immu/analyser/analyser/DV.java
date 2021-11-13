@@ -72,6 +72,8 @@ public interface DV extends WeightedGraph.Weight {
         return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause);
     }
 
+    String label();
+
     record NoDelay(int value, String label) implements DV {
 
         public static final String COMPUTED = "computed";
