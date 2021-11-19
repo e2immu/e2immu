@@ -30,6 +30,7 @@ public class Basics_1 {
     }
 
     // this method is here to ensure that Set<String> does not become transparent
+    // the f1!=null ensures that f1 stays nullable
     public boolean contains(String s) {
         return f1 != null && f1.contains(s);
     }

@@ -93,8 +93,14 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertTrue(d.variableInfoContainer().isInitial());
                     assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertFalse(d.variableInfoContainer().hasMerge());
-                    assertDvInitial(d, "", 0, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+
+                    String expectValue = "instance type Basics_1";
+                    assertEquals(expectValue, d.currentValue().toString());
+
+                    assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
+                    assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(IMMUTABLE));
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+
                     assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {

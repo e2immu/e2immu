@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
@@ -364,7 +365,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (previous == null) {
             // at the beginning of a block
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
-                createReturnVariableAtBeginningOfEachBlock(evaluationContext);
+                Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
+                createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
             }
             if (parent == null) {
                 createParametersThisAndVariablesFromClosure(evaluationContext, currentMethod);
@@ -411,23 +413,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     copyVariableFromPreviousInIteration0(e,
                             true, null, true));
         }
-    }
-
-    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
-
-    private void createReturnVariableAtBeginningOfEachBlock(EvaluationContext evaluationContext) {
-        Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
-        READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
-                vic.setProperty(vp, vp.falseDv, INITIAL));
-        DV notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
-                MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
-        vic.setProperty(CONTEXT_NOT_NULL, notNull, INITIAL);
-        vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
-        vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV, INITIAL);
-        vic.setProperty(CONTEXT_MODIFIED, Level.FALSE_DV, INITIAL);
-        vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, INITIAL);
-        vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV, INITIAL);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
@@ -479,9 +464,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
         variables.toImmutableMap().values().forEach(vic -> {
-            fromTypeAnalyserIntoInitialThis(evaluationContext, vic);
+            VariableInfo variableInfo = vic.current();
+            if (variableInfo.variable() instanceof This thisVar) {
+                fromTypeAnalyserIntoInitialThis(evaluationContext, vic, thisVar);
+            }
             if (vic.isInitial()) {
-                fromFieldAnalyserIntoInitial(evaluationContext, vic);
+                if (variableInfo.variable() instanceof FieldReference fieldReference) {
+                    fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
+                }
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -552,16 +542,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
                         DV value = parameterAnalysis.getProperty(variableProperty);
-                        if (value.isDone()) {
-                            vic.setProperty(variableProperty, value, INITIAL);
-                        }
-                    }/*
-                    if(prevInitial.getProperty(IMMUTABLE) == Level.DELAY) {
-                        int immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
-                        if(immutable >= 0) {
-                            vic.setProperty(IMMUTABLE, immutable, INITIAL);
-                        }
-                    }*/
+                        vic.setProperty(variableProperty, value, INITIAL);
+                    }
                 });
     }
 
@@ -579,9 +561,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         DV currentImmutable = vi.getProperty(IMMUTABLE);
         if (currentImmutable.isDelayed()) {
             DV formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext, false);
-            if (formalImmutable.isDone()) {
-                vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
-            }
+            vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
         }
         // update @Independent
         TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
@@ -590,27 +570,24 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             DV currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
             if (currentIndependent.isDelayed()) {
                 DV independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (independent.isDone()) {
-                    vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
-                }
+                vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
             }
         }
     }
 
-    private void fromTypeAnalyserIntoInitialThis(EvaluationContext evaluationContext, VariableInfoContainer vic) {
-        VariableInfo variableInfo = vic.current();
-        if (!(variableInfo.variable() instanceof This thisVar)) return;
-        Map<VariableProperty, DV> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo, false);
-        map.forEach((k, v) -> {
-            if (v.isDone()) {
-                vic.setProperty(k, v, INITIAL);
-            }
-        });
+    private void fromTypeAnalyserIntoInitialThis(EvaluationContext evaluationContext,
+                                                 VariableInfoContainer vic,
+                                                 This thisVar) {
+        // only copy EXT_IMM
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(thisVar.typeInfo);
+        DV extImm = typeAnalysis.getProperty(IMMUTABLE);
+        vic.setProperty(EXTERNAL_IMMUTABLE, extImm, INITIAL);
     }
 
-    private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {
+    private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext,
+                                              VariableInfoContainer vic,
+                                              FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
-        if (!(viInitial.variable() instanceof FieldReference fieldReference)) return;
 
         // see if we can resolve a delay in statement time
         if (viInitial.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
@@ -1136,26 +1113,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
-            DV defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
-            vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE),
-                    LinkedVariables.EMPTY,
-                    Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE_DV), true);
-        } else if (variable instanceof This) {
-            vic.setValue(Instance.forCatchOrThis(index, variable, analyserContext), LinkedVariables.EMPTY,
-                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true),
-                    true);
-            vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV, INITIAL);
-            vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV, INITIAL);
-            vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV, INITIAL);
-            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, INITIAL);
+            initializeReturnVariable(vic, evaluationContext.getAnalyserContext(), returnVariable);
+
+        } else if (variable instanceof This thisVar) {
+            initializeThis(vic, evaluationContext.getAnalyserContext(), thisVar);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
-            Expression initial = initialValueOfParameter(evaluationContext, parameterInfo);
-            vic.setValue(initial, LinkedVariables.EMPTY,
-                    parameterPropertyMap(analyserContext, parameterInfo), true);
-            Map<VariableProperty, DV> valueProperties = evaluationContext.getValueProperties(initial);
-            valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
-            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, INITIAL);
+            initializeParameter(vic, evaluationContext, parameterInfo);
 
         } else if (variable instanceof FieldReference fieldReference) {
             Expression initialValue = initialValueOfField(evaluationContext, fieldReference, false);
@@ -1175,20 +1139,81 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic;
     }
 
-    private Expression initialValueOfParameter(EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
+    private void initializeReturnVariable(VariableInfoContainer vic, AnalyserContext analyserContext, ReturnVariable returnVariable) {
+        DV defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
+        Map<VariableProperty, DV> properties = sharedContext(defaultNotNull);
+        properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
+        properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+
+        properties.put(IDENTITY, IDENTITY.falseDv);
+        properties.put(CONTAINER, CONTAINER.falseDv);
+        properties.put(IMMUTABLE, MUTABLE_DV);
+
+        UnknownExpression value = new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
+    }
+
+    private void initializeThis(VariableInfoContainer vic, AnalyserContext analyserContext, This thisVar) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
+
+        // context properties
+        Map<VariableProperty, DV> properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+
+        // value properties
+        properties.put(CONTAINER, CONTAINER.falseDv);
+        properties.put(IMMUTABLE, IMMUTABLE.falseDv);
+        // we do not keep the @NotNull status of a type
+        properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+
+        // external: only one relevant
+        properties.put(EXTERNAL_IMMUTABLE, typeAnalysis.getProperty(IMMUTABLE));
+        properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+
+        Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
+    }
+
+    private void initializeParameter(VariableInfoContainer vic, EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+
+        // start with context properties
+        Map<VariableProperty, DV> properties = sharedContext(parameterInfo.parameterizedType.defaultNotNull());
+
+        // the value properties are not delayed (there's an assertion in the Instance factory method)
         DV notNull = parameterAnalysis.getProperty(NOT_NULL_PARAMETER)
                 .maxIgnoreDelay(parameterInfo.parameterizedType.defaultNotNull());
-        DV immutable = parameterAnalysis.getProperty(IMMUTABLE)
-                .max(parameterInfo.parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false))
-                .replaceDelayBy(MultiLevel.MUTABLE_DV);
-        DV independent = parameterAnalysis.getProperty(INDEPENDENT)
-                .max(parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext()))
+        properties.put(NOT_NULL_EXPRESSION, notNull);
+
+        DV formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+        DV immutable = parameterAnalysis.getProperty(IMMUTABLE).max(formallyImmutable)
+                .replaceDelayBy(MUTABLE_DV);
+        properties.put(IMMUTABLE, immutable);
+
+        DV formallyIndependent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+        DV independent = parameterAnalysis.getProperty(INDEPENDENT).max(formallyIndependent)
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV);
+        properties.put(INDEPENDENT, independent);
+
         DV container = parameterAnalysis.getProperty(CONTAINER);
-        assert container.isDone();
-        return Instance.initialValueOfParameter(parameterInfo, notNull, immutable, independent, container,
-                parameterInfo.index == 0);
+        properties.put(CONTAINER, container);
+
+        boolean identity = parameterInfo.index == 0;
+        properties.put(IDENTITY, Level.fromBoolDv(identity));
+
+        // th external properties are delayed, but they're delayed in the correct way!
+        DV extNotNull = parameterAnalysis.getProperty(EXTERNAL_NOT_NULL);
+        assert extNotNull.isDelayed();
+        properties.put(EXTERNAL_NOT_NULL, extNotNull);
+        DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
+        assert extImm.isDelayed();
+        properties.put(EXTERNAL_IMMUTABLE, extImm);
+        DV mom = parameterAnalysis.getProperty(MODIFIED_METHOD);
+        assert mom.isDelayed();
+        properties.put(MODIFIED_OUTSIDE_METHOD, mom);
+
+        Expression value = Instance.initialValueOfParameter(parameterInfo, notNull, immutable, independent, container, identity);
+        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -1208,43 +1233,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
     }
 
-    private static final Set<VariableProperty> FROM_TYPE_ANALYSER_TO_PROPERTIES
-            = Set.of(CONTAINER, IMMUTABLE);
-
-    private Map<VariableProperty, DV> typePropertyMap(AnalyserContext analyserContext,
-                                                      TypeInfo typeInfo,
-                                                      boolean addSharedContext) {
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
-        Map<VariableProperty, DV> result = addSharedContext ? sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV)
-                : new HashMap<>();
-
-        for (VariableProperty vp : FROM_TYPE_ANALYSER_TO_PROPERTIES) {
-            result.put(vp, vp.falseDv);
-        }
-        return result;
-    }
-
     private Map<VariableProperty, DV> sharedContext(DV contextNotNull) {
         Map<VariableProperty, DV> result = new HashMap<>();
         result.put(CONTEXT_NOT_NULL, contextNotNull);
-        result.put(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
+        result.put(CONTEXT_IMMUTABLE, MUTABLE_DV);
         result.put(CONTEXT_MODIFIED, Level.FALSE_DV);
         return result;
     }
-
-
-    private Map<VariableProperty, DV> parameterPropertyMap(AnalyserContext analyserContext,
-                                                           ParameterInfo parameterInfo) {
-        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-        Map<VariableProperty, DV> result = sharedContext(parameterInfo.parameterizedType.defaultNotNull());
-
-        for (VariableProperty vp : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
-            DV value = parameterAnalysis.getPropertyVerifyContracted(vp);
-            result.put(vp, value);
-        }
-        return result;
-    }
-
+    
     private Map<VariableProperty, DV> fieldPropertyMap(AnalyserContext analyserContext,
                                                        FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);

@@ -155,15 +155,14 @@ public class ComputeLinkedVariables {
     }
 
     public CausesOfDelay write(VariableProperty property, Map<Variable, DV> propertyValues) {
-        if (delaysInClustering.isDelayed()) {
-            return delaysInClustering;
-        }
+        /* context modified needs all linking to be done */
         if (VariableProperty.CONTEXT_MODIFIED == property) {
+            if (delaysInClustering.isDelayed()) {
+                return delaysInClustering;
+            }
             return writeProperty(clustersDependent, property, propertyValues);
         }
-        /* only CNN will immediately write, because the ENN of fields is needed to compute values of fields,
-         which in turn are needed to get rid of delays.
-         */
+        /* all other context properties can be written based on statically assigned values */
         try {
             return writeProperty(clustersStaticallyAssigned, property, propertyValues);
         } catch (IllegalStateException ise) {
