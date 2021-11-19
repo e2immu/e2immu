@@ -17,8 +17,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_03_CompanionMethods extends CommonTestRunner {
@@ -84,12 +85,12 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo size = collection.findUniqueMethod("size", 0);
-            int modified = size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
-            assertEquals(Level.FALSE, modified);
+            DV modified = size.methodAnalysis.get().getProperty(MODIFIED_METHOD);
+            assertEquals(Level.FALSE_DV, modified);
 
             TypeInfo list = typeMap.get(List.class);
             MethodInfo listSize = list.findUniqueMethod("size", 0);
-            assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, listSize.methodAnalysis.get().getProperty(MODIFIED_METHOD));
         };
 
         // two errors: two unused parameters
@@ -170,7 +171,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
                             d.currentValue().toString());
-                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(IMMUTABLE));
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
@@ -322,10 +323,10 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
                     if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                                d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                                d.getProperty(CONTEXT_NOT_NULL));
 
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
                 }
             }
@@ -334,11 +335,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && d.iteration() > 0) {
                 ParameterAnalysis param = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        param.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals(d.falseFrom1(), param.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, param.getProperty(CONTEXT_NOT_NULL));
+                assertDv(d.p(0), 0, Level.FALSE_DV, CONTEXT_MODIFIED);
             }
         };
 
@@ -363,11 +361,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
             assertNotNull(clearCompanion);
-            assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, clear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
-            assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, setClear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
             assertNotNull(annotatedAPI);

@@ -272,4 +272,13 @@ public abstract class CommonTestRunner {
             assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + actual);
         }
     }
+
+    public void assertDv(StatementAnalyserVisitor.Data d, int delayedUpToIncluding, AnalysisStatus expect, AnalysisStatus actual) {
+        if (d.iteration() <= delayedUpToIncluding) {
+            assertTrue(actual.isDelayed(),
+                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + actual);
+        } else {
+            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + actual);
+        }
+    }
 }

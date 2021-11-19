@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Warnings extends CommonTestRunner {
@@ -51,9 +51,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 Message message = d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE);
                 assertNotNull(message);
                 assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
-
-                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                assertEquals(expectStatus, d.result().analysisStatus());
+                assertDv(d, 0, AnalysisStatus.DONE, d.result().analysisStatus());
             }
         };
 
@@ -69,7 +67,6 @@ public class Test_04_Warnings extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
-
 
     @Test
     public void test1() throws IOException {
@@ -120,9 +117,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    FlowData.Execution expect = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION :
-                            FlowData.Execution.ALWAYS;
-                    assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 0, FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -173,8 +168,6 @@ public class Test_04_Warnings extends CommonTestRunner {
                         assertEquals("0" + E, assigned); // integers=, NOT integers[i]=
                         assertEquals("2" + E, read);
                         assertEquals("{1,2,3}", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
                         assertEquals("1" + E, assigned);
                         assertEquals("2" + E, read);
@@ -231,9 +224,8 @@ public class Test_04_Warnings extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.EXTERNAL_NOT_NULL);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
-            assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
+            assertEquals(Level.TRUE_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
 
             TypeInfo myself = typeMap.get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
@@ -284,16 +276,13 @@ public class Test_04_Warnings extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
-                    int extImm = d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-                    assertEquals(MultiLevel.NOT_INVOLVED, extImm); // b is never assigned to a field; in constructor
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE)); // b is never assigned to a field; in constructor
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
-                ParameterAnalysis b = d.methodAnalysis().getParameterAnalyses().get(1);
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectExtImm, b.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertDv(d.p(1), 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -314,9 +303,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     // because immutableOfHiddenContent = @ERContainer
                     assertEquals("this.set:0", d.variableInfo().getLinkedVariables().toString());
                     // we wait because of hidden content
-                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                    assertEquals(expectImm, d.getPropertyOfCurrentValue(VariableProperty.IMMUTABLE));
-                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
             }
         };
@@ -328,14 +315,12 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
-        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d ->
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
 
         testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -356,8 +341,8 @@ public class Test_04_Warnings extends CommonTestRunner {
             TypeInfo stream = typeMap.get(Stream.class);
             assertNotNull(stream);
             MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    of.methodAnalysis.get().getProperty(NOT_NULL_EXPRESSION));
         };
         final String T = "org.e2immu.analyser.testexample.Warnings_5.ChildClass.t";
 
@@ -366,12 +351,6 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:s>" : NULLABLE_INSTANCE_TYPE_STRING;
                     assertEquals(expectValue, d.currentValue().toString());
-                }
-            }
-            if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
-                if ("0".equals(d.statementId())) {
-                    // CMD can never be in a variable property!
-                    assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                 }
             }
             if ("apply".equals(d.methodInfo().name)) {
@@ -395,21 +374,17 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("ChildClass".equals(d.methodInfo().name)) {
-                int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                     if ("0".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectEnn, enn);
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectEnn, enn);
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
                     if ("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectEnn, enn);
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                 }
             }
@@ -429,14 +404,13 @@ public class Test_04_Warnings extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.NULLABLE_DV, parameterAnalysis.getProperty(NOT_NULL_EXPRESSION));
 
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertDv(d.p(0), 0, Level.FALSE_DV, MODIFIED_VARIABLE);
 
-                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -447,24 +421,25 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                if(d.iteration()==0) assertNull(d.methodAnalysis().getSingleReturnValue()); else
-                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else
+                    assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertEquals(d.falseFrom1(), d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                assertEquals(d.trueFrom1(), d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                assertDv(d, 0, Level.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 0, Level.TRUE_DV, FLUENT);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("t", d.fieldAnalysis().getValue().toString());
-                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
             if ("s".equals(d.fieldInfo().name)) {
                 assertTrue(d.fieldInfo().owner.isPrivate());
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("s", d.fieldAnalysis().getValue().toString());
-                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
         };
 
@@ -477,10 +452,10 @@ public class Test_04_Warnings extends CommonTestRunner {
         testClass("Warnings_5", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -496,8 +471,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test7() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
-                int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
+                assertDv(d, 0, Level.FALSE_DV, CONTAINER);
             }
         };
 
@@ -508,8 +482,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if ("MustBeContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertTrue(d.methodInfo().methodResolution.get().overrides().isEmpty());
 
-                    assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                    assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                    assertEquals(Level.FALSE_DV, p0.getProperty(MODIFIED_VARIABLE));
+                    assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
                 }
 
                 if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -517,11 +491,10 @@ public class Test_04_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    assertDv(d, 0, Level.TRUE_DV, MODIFIED_VARIABLE);
 
                     // whatever happens, the set remains independent (the int added is independent)
-                    assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                    assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
                 }
             }
         };
