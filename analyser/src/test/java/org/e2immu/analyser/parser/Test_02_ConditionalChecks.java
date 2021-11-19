@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Map;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
@@ -43,9 +44,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         final String RETURN_1_VALUE = "!a&&b?4:a&&!b?3:!a&&!b?2:a&&b?1:<return value>";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            FlowData.Execution inBlock = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
-            FlowData.Execution inMethod = d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod();
-            Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.getInterruptsFlow();
+            DV inBlock = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+            DV inMethod = d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod();
+            Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData.getInterruptsFlow();
 
             if ("method1".equals(d.methodInfo().name)) {
 
@@ -53,56 +54,56 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("a&&b", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("a&&b", d.absoluteState().toString());
-                    assertEquals(FlowData.Execution.ALWAYS, inBlock);
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.ALWAYS), interruptsFlow);
+                    assertEquals(FlowData.ALWAYS, inBlock);
+                    assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.ALWAYS), interruptsFlow);
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("!a||!b", d.state().toString());
-                    assertEquals(FlowData.Execution.ALWAYS, inBlock);
-                    assertEquals(FlowData.Execution.ALWAYS, inMethod);
-                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
+                    assertEquals(FlowData.ALWAYS, inBlock);
+                    assertEquals(FlowData.ALWAYS, inMethod);
+                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
                     assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!a&&!b", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("!a&&!b", d.absoluteState().toString());
-                    assertEquals(FlowData.Execution.ALWAYS, inBlock);
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                    assertEquals(FlowData.ALWAYS, inBlock);
+                    assertEquals(FlowData.CONDITIONALLY, inMethod);
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("(a||b)&&(!a||!b)", d.state().toString());
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                    assertEquals(FlowData.CONDITIONALLY, inBlock);
+                    assertEquals(FlowData.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("a&&!b", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     assertEquals("!a&&b", d.state().toString());
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                    assertEquals(FlowData.CONDITIONALLY, inBlock);
+                    assertEquals(FlowData.CONDITIONALLY, inMethod);
                 }
                 // constant condition
                 if ("3".equals(d.statementId())) {
                     assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     assertEquals("false", d.state().toString()); // after the statement...
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
-                    assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                    assertEquals(FlowData.CONDITIONALLY, inBlock);
+                    assertEquals(FlowData.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 // unreachable statement
                 if ("4".equals(d.statementId())) {
-                    assertEquals(FlowData.Execution.NEVER, inBlock);
-                    assertEquals(FlowData.Execution.NEVER, inMethod);
+                    assertEquals(FlowData.NEVER, inBlock);
+                    assertEquals(FlowData.NEVER, inMethod);
                     assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
                 }
                 if ("5".equals(d.statementId())) {
-                    assertEquals(FlowData.Execution.NEVER, inBlock);
-                    assertEquals(FlowData.Execution.NEVER, inMethod);
+                    assertEquals(FlowData.NEVER, inBlock);
+                    assertEquals(FlowData.NEVER, inMethod);
                     assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     VariableInfo ret = d.getReturnAsVariable();
                     assertNull(ret); // unreachable statement, no data have even been copied!
@@ -117,12 +118,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 // return 1;
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("1", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
                 // after if(a&&b) return 1
                 if ("0".equals(d.statementId())) {
                     assertEquals("a&&b?1:<return value>", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("2", d.currentValue().toString());
@@ -145,8 +146,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     // nothing is possible anymore
                     // we do NOT expect a regression to the ReturnVariable
                     assertEquals(RETURN_1_VALUE, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                 }
                 if ("4".equals(d.statementId())) {
                     fail("not reached!");
@@ -158,7 +159,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index);
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -178,7 +179,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     public void test1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.variable() instanceof ParameterInfo a && "a".equals(a.name) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                assertTrue(d.getProperty(VariableProperty.CONTEXT_NOT_NULL) != Level.DELAY);
+                assertTrue(d.getProperty(CONTEXT_NOT_NULL).isDone());
             }
         };
 
@@ -215,12 +216,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 if (d.iteration() > 0) {
                     for (int param : new int[]{0, 1}) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals(MultiLevel.DELAY,
-                                d.parameterAnalyses().get(param).getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                                d.parameterAnalyses().get(param).getProperty(CONTEXT_NOT_NULL));
+                        assertTrue(d.parameterAnalyses().get(param).getProperty(EXTERNAL_NOT_NULL).isDelayed());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                                d.parameterAnalyses().get(param).getProperty(NOT_NULL_PARAMETER));
                     }
                 }
                 assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
@@ -273,11 +273,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             }
             if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId()))
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
             }
             if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
             }
         };
@@ -311,8 +311,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     if (O5.equals(d.variableName())) {
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertEquals("nullable instance type Object/*@Identity*/", d.currentValue().toString());
                         assertEquals("o:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -329,24 +329,24 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
                         assertEquals("o/*(ConditionalChecks_4)*/", d.currentValue().toString());
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if (O5.equals(d.variableName())) {
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ? O_I_DELAYED : "instance type int";
                         assertEquals(expectValue, d.currentValue().debugOutput());
-                        assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
+                        assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
                                 "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
                                 RETURN_VALUE;
                         assertEquals(expectValue, d.currentValue().debugOutput());
-                        assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
+                        assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                 }
             }
@@ -367,17 +367,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
-                if ("3".equals(d.statementId())) {
-                    AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                    assertEquals(expectStatus, d.result().analysisStatus());
-                }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
             }
         };
 
@@ -385,22 +380,22 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("o==this", d.evaluationResult().value().toString());
-                    assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("true", d.evaluationResult().value().toString());
-                    assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
-                    assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                     assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     assertTrue(d.haveMarkRead(O5));
                     Variable o5 = d.evaluationResult().changeData().keySet().stream().filter(v -> v.simpleName().equals("o")).findFirst().orElseThrow();
                     assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).linkedVariables());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
-                    assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, CONTEXT_NOT_NULL));
                     assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
                     assertEquals("o/*(ConditionalChecks_4)*/", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
                     assertEquals("o/*(ConditionalChecks_4)*/", d.evaluationResult().value().toString());
@@ -410,7 +405,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                             ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
                             : RETURN_VALUE;
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
 
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
@@ -418,16 +413,16 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertTrue(d.haveMarkRead(I));
                         //assertTrue(d.haveMarkRead(I + "#o"));
                     }
-                    assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
-                    assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
+                    assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, CONTEXT_NOT_NULL));
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("i".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
             }
         };
 
@@ -435,7 +430,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

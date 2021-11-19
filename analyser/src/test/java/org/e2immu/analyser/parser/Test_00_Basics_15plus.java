@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Level;
@@ -29,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.e2immu.analyser.analyser.Property.CONTAINER;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_15plus extends CommonTestRunner {
@@ -82,15 +83,14 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             if ("setA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTAINER));
+                        assertEquals(Level.FALSE_DV, d.getProperty(CONTAINER));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1
                             ? "<vp:org.e2immu.analyser.testexample.Basics_18.A>" : "a";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }
             }
         };

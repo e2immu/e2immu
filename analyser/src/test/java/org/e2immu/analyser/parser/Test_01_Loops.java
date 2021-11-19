@@ -34,6 +34,9 @@ import java.time.chrono.ChronoLocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.FlowData.ALWAYS;
+import static org.e2immu.analyser.analyser.FlowData.CONDITIONALLY;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops extends CommonTestRunner {
@@ -112,10 +115,10 @@ public class Test_01_Loops extends CommonTestRunner {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("2".equals(d.statementId())) {
                 if (d.statementAnalysis().statement instanceof WhileStatement whileStatement) {
-                    FlowData.Execution exec = whileStatement.structure.statementExecution()
+                    DV exec = whileStatement.structure.statementExecution()
                             .apply(new BooleanConstant(d.statementAnalysis().primitives, true),
                                     d.evaluationContext());
-                    assertSame(ALWAYS, exec);
+                    assertEquals(ALWAYS, exec);
                 } else fail();
                 String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+instance type int>=n";
                 assertEquals(expectState, d.state().toString());
@@ -151,8 +154,8 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("2.0.2.0.0".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? "<v:i>>=n" : "1+i$2>=n";
                 assertEquals(expect, d.condition().toString());
-                FlowData.Execution expectExec = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
-                assertEquals(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+
+                assertDv(d, 0, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
         };
@@ -188,11 +191,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertTrue(d.iteration() > 0);
                     if ("2.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                     if ("2.0.2".equals(d.statementId())) {
                         assertEquals("-1-i$2+n>=1?\"abc\":nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                 }
                 if ("res2".equals(d.variableName())) {
@@ -212,8 +215,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>=1?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         // clearly, NNE has to follow the value rather than the actual assignment
-                        int expectNNE = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectNNE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";
@@ -225,11 +227,11 @@ public class Test_01_Loops extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                FlowData.Execution execution = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+                DV execution = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
                 if ("2.0.0".equals(d.statementId())) {
                     assertEquals("true", d.condition().debugOutput());
                     assertEquals("true", d.absoluteState().debugOutput());
-                    assertSame(ALWAYS, execution);
+                    assertEquals(ALWAYS, execution);
                 }
                 if ("2.0.1.0.0".equals(d.statementId())) {
                     String expectCondition = d.iteration() == 0 ? "<v:i>>=n" : "1+i$2>=n";
@@ -237,7 +239,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
                 }
                 if ("2.0.1".equals(d.statementId())) { // if (i>=n) break;
-                    assertSame(ALWAYS, execution);
+                    assertEquals(ALWAYS, execution);
 
                     // both are NO_VALUE in the first iteration, because we're showing the stateData
                     // and not the local condition manager
@@ -255,8 +257,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(expectState, d.localConditionManager().state().toString());
                     assertEquals(expectState, d.absoluteState().toString());
 
-                    FlowData.Execution expect = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
-                    assertSame(expect, execution);
+                    assertDv(d, 0, CONDITIONALLY, execution);
                 }
             }
         };
@@ -275,8 +276,8 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertEquals("{\"a\",\"b\",\"c\"}", d.evaluationResult().value().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.evaluationResult().value()
-                            .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.evaluationResult().value()
+                            .getProperty(d.evaluationResult().evaluationContext(), NOT_NULL_EXPRESSION, true));
                 }
                 if ("1.0.0".equals(d.statementId()) && d.iteration() > 0) {
                     assertEquals("s$1", d.evaluationResult().value().toString());
@@ -291,9 +292,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = "nullable instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
-
-                        int expectCnn = MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -301,8 +300,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        int expectCnn = MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
 
                         String expectLv = d.iteration() == 0 ? "res:0,s:0" : "res:0,s$1:1,s:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -312,14 +310,14 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertTrue(d.iteration() > 0);
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                 }
                 if ("res$1".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(IMMUTABLE));
                     }
                 }
                 if ("res".equals(d.variableName())) {
@@ -339,9 +337,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "res:0,return method:0,s:-1" : "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -352,9 +349,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "res:0,return method:0,s:-1" : "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
             }
@@ -404,10 +400,10 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
-                        FlowData.Execution exec = forEachStatement.structure.statementExecution()
+                        DV exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(),
                                         List.of(), d.statementAnalysis().primitives.stringParameterizedType), d.evaluationContext());
-                        assertSame(FlowData.Execution.NEVER, exec);
+                        assertSame(FlowData.NEVER, exec);
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
                         assertEquals("1.0.0", firstInBlock.index);
@@ -629,20 +625,19 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
 
                     assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
                     assertEquals("i", d.statementAnalysis().localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    FlowData.Execution expectExec = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
-                    assertSame(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertDv(d, 0, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
 
                     String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
                     assertEquals(expect, d.absoluteState().toString());
@@ -673,8 +668,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                 }
                 if ("1.0.3".equals(d.statementId())) {
-                    FlowData.Execution expectExec = d.iteration() == 0 ? DELAYED_EXECUTION : FlowData.Execution.NEVER;
-                    assertSame(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 0, FlowData.NEVER, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 }
             }
         };
@@ -752,22 +746,22 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("java.time.ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
 
-                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(Level.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
                 }
                 if ("result".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
                         assertEquals("return method:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if ("5".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
@@ -776,9 +770,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "entry:-1,key:-1,result:0,return method:0" : "result:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -796,13 +789,13 @@ public class Test_01_Loops extends CommonTestRunner {
             TypeInfo typeInfo = typeMap.get(LocalDateTime.class);
             MethodInfo now = typeInfo.findUniqueMethod("now", 0);
             assertTrue(now.methodInspection.get().isStatic());
-            assertEquals(Level.FALSE, now.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, now.methodAnalysis.get().getProperty(MODIFIED_METHOD));
             TypeInfo chrono = typeMap.get(ChronoLocalDateTime.class);
             MethodInfo toInstant = chrono.findUniqueMethod("toInstant", 1);
             assertFalse(toInstant.methodInspection.get().isStatic());
-            assertEquals(Level.FALSE, toInstant.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, toInstant.methodAnalysis.get().getProperty(MODIFIED_METHOD));
             ParameterAnalysis utc = toInstant.parameterAnalysis(0);
-            assertEquals(Level.TRUE, utc.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
 
         // potential null pointer exception
@@ -1035,9 +1028,8 @@ public class Test_01_Loops extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
-                assertEquals(MultiLevel.INDEPENDENT, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
             }
         };
 
@@ -1056,7 +1048,7 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1.0.1.0.1".equals(d.statementId())) {
                 EvaluationResult.ChangeData cd = d.findValueChangeByToString("container.read");
-                assertFalse(cd.properties().containsKey(VariableProperty.CONTEXT_NOT_NULL));
+                assertFalse(cd.properties().containsKey(CONTEXT_NOT_NULL));
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -1103,7 +1095,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         // must be nullable, because of the null check
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
             }

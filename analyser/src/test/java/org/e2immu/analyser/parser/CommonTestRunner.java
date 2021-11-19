@@ -27,6 +27,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.visitor.CommonVisitorData;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,6 +261,15 @@ public abstract class CommonTestRunner {
                     "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
         } else {
             assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+        }
+    }
+
+    public void assertDv(StatementAnalyserVisitor.Data d, int delayedUpToIncluding, DV expect, DV actual) {
+        if (d.iteration() <= delayedUpToIncluding) {
+            assertTrue(actual.isDelayed(),
+                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + actual);
+        } else {
+            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + actual);
         }
     }
 }

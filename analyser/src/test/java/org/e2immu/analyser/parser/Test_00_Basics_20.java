@@ -16,11 +16,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -30,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,7 +42,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirstC1".equals(d.methodInfo().name)) {
                 EvaluationResult.ChangeData cd = d.findValueChangeByToString("list");
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cd.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
 
                 EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
                 String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
@@ -102,7 +101,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertTrue(d.currentValue() instanceof PropertyWrapper);
-                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
+                        assertEquals(Level.TRUE_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
@@ -114,11 +113,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         // delayed because linking is delayed!
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-
-                        int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
+                        assertDv(d, 1, Level.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, Level.TRUE_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
@@ -127,13 +123,11 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
                     String expectLv = switch (d.iteration()) {
-                        case 0,1 -> "ci:0,i:-1,list:-1";
+                        case 0, 1 -> "ci:0,i:-1,list:-1";
                         default -> "ci:0,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.TRUE_DV, CONTEXT_MODIFIED);
                 }
                 if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
@@ -145,61 +139,48 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("list".equals(d.fieldInfo().name) && "C1".equals(d.fieldInfo().owner.simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d.p(0), 0, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
             if ("C2".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d.p(0), 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getFirstC1".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getFirstC2".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getListC2".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getListC1".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 0, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("I".equals(d.typeInfo().simpleName)) {
-                int expectIndependent = MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
             }
             if ("C2".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
-
-                assertTrue(d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertEquals(Level.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
             }
         };
 

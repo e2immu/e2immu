@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser;
 
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -59,7 +59,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
                     assertEquals("", cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
@@ -73,7 +73,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String expectLv = d.iteration() == 0 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
                 }
             }
         };
@@ -90,24 +90,21 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertDv(d, 0, Level.FALSE_DV, CONTEXT_MODIFIED);
 
-                        assertEquals(MultiLevel.MUTABLE, d.variableInfoContainer()
-                                .getPreviousOrInitial().getProperty(VariableProperty.CONTEXT_IMMUTABLE));
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
+                                .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     } else {
                         assertEquals("0", d.statementId());
-                        assertEquals(MultiLevel.MUTABLE, d.variableInfoContainer().getPreviousOrInitial()
-                                .getProperty(VariableProperty.CONTEXT_IMMUTABLE));
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer().getPreviousOrInitial()
+                                .getProperty(CONTEXT_IMMUTABLE));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-
+                        assertDv(d, 0, Level.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -116,13 +113,13 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copy".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() >= 1,
-                        d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                        d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -130,7 +127,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 }
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -141,8 +138,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
