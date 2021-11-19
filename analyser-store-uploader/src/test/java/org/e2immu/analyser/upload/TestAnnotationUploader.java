@@ -52,7 +52,7 @@ public class TestAnnotationUploader {
     public void test() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo string = typeMap.get(String.class);
-            assertEquals(Level.TRUE, string.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
+            assertEquals(Level.TRUE_DV, string.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
         };
 
         Configuration configuration = new Configuration.Builder()
