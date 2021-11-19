@@ -93,8 +93,8 @@ public interface Expression extends Element, Comparable<Expression> {
     // Use that method as the general way of obtaining a value for a property from a Value object
     // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
 
-    default DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        throw new UnsupportedOperationException("For type " + getClass() + ", property " + variableProperty);
+    default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        throw new UnsupportedOperationException("For type " + getClass() + ", property " + property);
     }
 
     default LinkedVariables linkedVariables(EvaluationContext evaluationContext) {

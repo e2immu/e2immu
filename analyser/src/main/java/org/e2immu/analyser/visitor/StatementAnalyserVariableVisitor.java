@@ -29,7 +29,7 @@ public interface StatementAnalyserVariableVisitor {
                 String variableName,
                 Variable variable,
                 Expression currentValue,
-                VariableProperties properties,
+                Properties properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) implements CommonVisitorData {
 
@@ -38,8 +38,8 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefaultNull(variableProperty);
+        public DV getProperty(Property property) {
+            return properties.getOrDefaultNull(property);
         }
     }
 

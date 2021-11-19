@@ -95,7 +95,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
             if (cd != null) {
-                DV inChangeData = cd.properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
+                DV inChangeData = cd.properties.getOrDefault(Property.CONTEXT_NOT_NULL, null);
                 if (inChangeData != null && inChangeData.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
             }
         }
@@ -117,7 +117,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                              boolean markAssignment,
                              Set<Integer> readAtStatementTime,
                              LinkedVariables linkedVariables,
-                             Map<VariableProperty, DV> properties) {
+                             Map<Property, DV> properties) {
         public ChangeData {
             Objects.requireNonNull(linkedVariables);
             Objects.requireNonNull(readAtStatementTime);
@@ -127,7 +127,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ChangeData merge(ChangeData other) {
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
-            Map<VariableProperty, DV> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
+            Map<Property, DV> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
             return new ChangeData(other.value == null ? value : other.value,
                     delays.merge(other.delays),
                     other.stateIsDelayed, // and not a merge!
@@ -138,15 +138,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public boolean haveContextMethodDelay() {
-            return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV).isDelayed();
+            return properties.getOrDefault(Property.CONTEXT_MODIFIED, Level.FALSE_DV).isDelayed();
         }
 
         public boolean havePropagationModificationDelay() {
-            return properties.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE_DV).isDelayed();
+            return properties.getOrDefault(Property.PROPAGATE_MODIFICATION, Level.FALSE_DV).isDelayed();
         }
 
-        public DV getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefault(variableProperty, variableProperty.falseDv);
+        public DV getProperty(Property property) {
+            return properties.getOrDefault(property, property.falseDv);
         }
 
         public boolean isMarkedRead() {
@@ -154,16 +154,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
     }
 
-    public DV getProperty(Expression expression, VariableProperty variableProperty) {
+    public DV getProperty(Expression expression, Property property) {
         if (expression instanceof VariableExpression ve) {
             ChangeData changeData = changeData().get(ve.variable());
             if (changeData != null) {
-                DV inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                DV inChangeData = changeData.properties.getOrDefault(property, null);
                 if (inChangeData != null) return inChangeData;
             }
-            return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), variableProperty, statementTime);
+            return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), property, statementTime);
         }
-        return expression.getProperty(evaluationContext, variableProperty, true);
+        return expression.getProperty(evaluationContext, property, true);
     }
 
     // lazy creation of lists
@@ -300,36 +300,36 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            DV notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            DV notNullValue = evaluationContext.getProperty(value, Property.NOT_NULL_EXPRESSION, true, false);
             //  if (notNullValue < notNullRequired) { // also do delayed values
             // so intrinsically we can have null.
             // if context not null is already high enough, don't complain
-            DV contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
+            DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             if (contextNotNull.equals(MultiLevel.NULLABLE_DV)) {
-                setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE_DV); // so we can raise an error
+                setProperty(variable, Property.IN_NOT_NULL_CONTEXT, Level.TRUE_DV); // so we can raise an error
             }
-            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
+            setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
             //  }
 
         }
 
         private DV getContainerFromInitial(Expression expression) {
             if (expression instanceof VariableExpression variableExpression) {
-                return getPropertyFromInitial(variableExpression.variable(), VariableProperty.CONTAINER);
+                return getPropertyFromInitial(variableExpression.variable(), Property.CONTAINER);
             }
-            return evaluationContext.getProperty(expression, VariableProperty.CONTAINER, true, false);
+            return evaluationContext.getProperty(expression, Property.CONTAINER, true, false);
         }
 
         /*
         it is important that the value is read from initial (-C), and not from evaluation (-E)
          */
-        private DV getPropertyFromInitial(Variable variable, VariableProperty variableProperty) {
+        private DV getPropertyFromInitial(Variable variable, Property property) {
             ChangeData changeData = valueChanges.get(variable);
             if (changeData != null) {
-                DV inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                DV inChangeData = changeData.properties.getOrDefault(property, null);
                 if (inChangeData != null) return inChangeData;
             }
-            return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
+            return evaluationContext.getPropertyFromPreviousOrInitial(variable, property, statementTime);
         }
 
         public Builder markRead(Variable variable) {
@@ -415,7 +415,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                DV nextImmutable) {
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
-            DV currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
+            DV currentImmutable = getPropertyFromInitial(variable, Property.CONTEXT_IMMUTABLE);
             if (currentImmutable.ge(MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV)) {
                 if (MultiLevel.isBeforeThrowWhenNotEventual(requiredImmutable)
                         && !MultiLevel.isBeforeThrowWhenNotEventual(currentImmutable)) {
@@ -426,7 +426,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 }
             }
             // everything proceeds as normal
-            setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE, nextImmutable);
+            setProperty(variable, Property.CONTEXT_IMMUTABLE, nextImmutable);
         }
 
         /**
@@ -436,14 +436,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markContextModified(Variable variable, DV modified) {
             assert evaluationContext != null;
             DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
-                    .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
+                    .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
                     : Level.FALSE_DV;
             if (!ignoreContentModifications.valueIsTrue()) {
                 log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
                 if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
-                    setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);
+                    setProperty(variable, Property.CONTEXT_MODIFIED, modified);
                 }
                     /*
                     The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
@@ -471,7 +471,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else if (container.isDelayed()) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 // FIXME does this make sense?
-                setProperty(variable, VariableProperty.CONTAINER, Level.TRUE_DV);
+                setProperty(variable, Property.CONTAINER, Level.TRUE_DV);
             }
         }
 
@@ -521,7 +521,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         // Used in transformation of parameter lists
-        public void setProperty(Variable variable, VariableProperty property, DV value) {
+        public void setProperty(Variable variable, Property property, DV value) {
             assert evaluationContext != null;
 
             ChangeData newEcd;
@@ -537,9 +537,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newEcd);
         }
 
-        private Map<VariableProperty, DV> mergeProperties
-                (Map<VariableProperty, DV> m1, Map<VariableProperty, DV> m2) {
-            Map<VariableProperty, DV> res = new HashMap<>(m1);
+        private Map<Property, DV> mergeProperties
+                (Map<Property, DV> m1, Map<Property, DV> m2) {
+            Map<Property, DV> res = new HashMap<>(m1);
             m2.forEach((vp, v) -> res.merge(vp, v, DV::max));
             return Map.copyOf(res);
         }

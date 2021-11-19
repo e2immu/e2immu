@@ -31,7 +31,6 @@ import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 public abstract class CommonAbstractValue {
     protected static TypeMapImpl.Builder TYPE_MAP_BUILDER;
@@ -225,16 +224,16 @@ public abstract class CommonAbstractValue {
 
         @Override
         public DV getProperty(Expression value,
-                               VariableProperty variableProperty,
+                               Property property,
                                boolean duringEvaluation,
                                boolean ignoreStateInConditionManager) {
-            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+            if (value instanceof VariableExpression ve && property == Property.NOT_NULL_EXPRESSION
                     && !"q".equals(ve.variable().simpleName())) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
                     return MultiLevel.NULLABLE_DV;
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
-            return value.getProperty(minimalEvaluationContext, variableProperty, true);
+            return value.getProperty(minimalEvaluationContext, property, true);
         }
 
         @Override

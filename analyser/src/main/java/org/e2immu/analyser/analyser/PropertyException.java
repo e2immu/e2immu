@@ -19,7 +19,7 @@ Internal safeguard against illegal property usage.
  */
 public class PropertyException extends RuntimeException {
 
-    public PropertyException(Analyser.AnalyserIdentification identification, VariableProperty variableProperty) {
-        super(variableProperty + " in " + identification);
+    public PropertyException(Analyser.AnalyserIdentification identification, Property property) {
+        super(property + " in " + identification);
     }
 }

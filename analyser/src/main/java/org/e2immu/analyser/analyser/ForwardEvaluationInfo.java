@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public record ForwardEvaluationInfo(Map<VariableProperty, DV> properties,
+public record ForwardEvaluationInfo(Map<Property, DV> properties,
                                     boolean notAssignmentTarget,
                                     Variable assignmentTarget) {
 
-    public ForwardEvaluationInfo(Map<VariableProperty, DV> properties, boolean notAssignmentTarget,
+    public ForwardEvaluationInfo(Map<Property, DV> properties, boolean notAssignmentTarget,
                                  Variable assignmentTarget) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
@@ -38,8 +38,8 @@ public record ForwardEvaluationInfo(Map<VariableProperty, DV> properties,
         return assignmentTarget instanceof FieldReference;
     }
 
-    public DV getProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.falseDv);
+    public DV getProperty(Property property) {
+        return properties.getOrDefault(property, property.falseDv);
     }
 
     public boolean isNotAssignmentTarget() {
@@ -54,32 +54,32 @@ public record ForwardEvaluationInfo(Map<VariableProperty, DV> properties,
     }
 
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), true, null);
+            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), true, null);
 
     public ForwardEvaluationInfo copyDefault() {
-        return new ForwardEvaluationInfo(Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), true, assignmentTarget);
+        return new ForwardEvaluationInfo(Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), true, assignmentTarget);
     }
 
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
+            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
             false, null);
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
+            Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
             true, null);
 
     public ForwardEvaluationInfo copyNotNull() {
         return new ForwardEvaluationInfo(
-                Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
+                Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
                 true, assignmentTarget);
     }
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
-        Map<VariableProperty, DV> map = new HashMap<>();
-        map.put(VariableProperty.CONTEXT_MODIFIED,
-                properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV));
-        map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        Map<Property, DV> map = new HashMap<>();
+        map.put(Property.CONTEXT_MODIFIED,
+                properties.getOrDefault(Property.CONTEXT_MODIFIED, Level.FALSE_DV));
+        map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return new ForwardEvaluationInfo(map, true, assignmentTarget);
     }
 

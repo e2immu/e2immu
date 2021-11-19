@@ -21,41 +21,41 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class VariableProperties extends Freezable {
-    private final Map<VariableProperty, DV> map = new HashMap<>();
+public class Properties extends Freezable {
+    private final Map<Property, DV> map = new HashMap<>();
 
-    public boolean isDone(VariableProperty variableProperty) {
-        DV v = map.get(variableProperty);
+    public boolean isDone(Property property) {
+        DV v = map.get(property);
         return v != null && v.isDone();
     }
 
-    public DV getOrDefaultNull(VariableProperty variableProperty) {
-        Objects.requireNonNull(variableProperty);
-        return map.get(variableProperty);
+    public DV getOrDefaultNull(Property property) {
+        Objects.requireNonNull(property);
+        return map.get(property);
     }
 
-    public DV getOrDefault(VariableProperty variableProperty, DV defaultValue) {
-        Objects.requireNonNull(variableProperty);
+    public DV getOrDefault(Property property, DV defaultValue) {
+        Objects.requireNonNull(property);
         Objects.requireNonNull(defaultValue);
-        return map.getOrDefault(variableProperty, defaultValue);
+        return map.getOrDefault(property, defaultValue);
     }
 
-    public void put(VariableProperty variableProperty, DV dv) {
+    public void put(Property property, DV dv) {
         Objects.requireNonNull(dv);
-        Objects.requireNonNull(variableProperty);
-        DV inMap = map.get(variableProperty);
+        Objects.requireNonNull(property);
+        DV inMap = map.get(property);
         if (inMap == null || inMap.isDelayed()) {
-            map.put(variableProperty, dv);
+            map.put(property, dv);
         } else if (!inMap.equals(dv)) {
-            throw new IllegalArgumentException("Changing value of " + variableProperty + " from " + inMap + " to " + dv);
+            throw new IllegalArgumentException("Changing value of " + property + " from " + inMap + " to " + dv);
         }
     }
 
-    public Stream<Map.Entry<VariableProperty, DV>> stream() {
+    public Stream<Map.Entry<Property, DV>> stream() {
         return map.entrySet().stream();
     }
 
-    public Map<VariableProperty, DV> toImmutableMap() {
+    public Map<Property, DV> toImmutableMap() {
         return Map.copyOf(map);
     }
 }

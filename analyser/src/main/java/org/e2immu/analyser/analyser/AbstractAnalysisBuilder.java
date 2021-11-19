@@ -40,7 +40,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final SetOnceMap<AnnotationExpression, AnnotationCheck> annotationChecks = new SetOnceMap<>();
 
-    public final VariableProperties properties = new VariableProperties();
+    public final Properties properties = new Properties();
     public final String simpleName; // for debugging purposes
     public final Primitives primitives;
 
@@ -49,23 +49,23 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         this.primitives = primitives;
     }
 
-    public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        DV v = properties.getOrDefaultNull(variableProperty);
-        if (v == null) return new CausesOfDelay.SimpleSet(location(), variableProperty.causeOfDelay());
+    public DV getPropertyFromMapDelayWhenAbsent(Property property) {
+        DV v = properties.getOrDefaultNull(property);
+        if (v == null) return new CausesOfDelay.SimpleSet(location(), property.causeOfDelay());
         return v;
     }
 
-    public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
+    public DV getPropertyFromMapNeverDelay(Property property) {
+        return properties.getOrDefault(property, property.valueWhenAbsent());
     }
 
-    public void setProperty(VariableProperty variableProperty, DV i) {
-        if (!properties.isDone(variableProperty)) {
-            if (i.isDone()) properties.put(variableProperty, i);
+    public void setProperty(Property property, DV i) {
+        if (!properties.isDone(property)) {
+            if (i.isDone()) properties.put(property, i);
         } else {
-            DV current = properties.getOrDefaultNull(variableProperty);
+            DV current = properties.getOrDefaultNull(property);
             if (i.value() != current.value()) {
-                throw new UnsupportedOperationException("Trying to overwrite property " + variableProperty + " with value " + i + ", current value " + current);
+                throw new UnsupportedOperationException("Trying to overwrite property " + property + " with value " + i + ", current value " + current);
             }
         }
     }
@@ -103,7 +103,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, boolean betterThanFormal) {
-        DV container = getProperty(VariableProperty.CONTAINER);
+        DV container = getProperty(Property.CONTAINER);
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysisImpl.Builder) this).typeInfo.isInterface();
@@ -178,9 +178,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression mark = null;
         AnnotationExpression testMark = null;
 
-        VariableProperty modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
-                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE
-                : VariableProperty.MODIFIED_METHOD;
+        Property modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
+                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? Property.MODIFIED_VARIABLE
+                : Property.MODIFIED_METHOD;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -214,7 +214,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.beforeMark.typeInfo() == t) {
-                    if (parameters.contract()) setProperty(VariableProperty.IMMUTABLE_BEFORE_CONTRACTED, trueFalse);
+                    if (parameters.contract()) setProperty(Property.IMMUTABLE_BEFORE_CONTRACTED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.nullable.typeInfo() == t) {
@@ -228,25 +228,25 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.modified.typeInfo() == t) {
                     setProperty(modified, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.effectivelyFinal.typeInfo() == t) {
-                    setProperty(VariableProperty.FINAL, trueFalse);
+                    setProperty(Property.FINAL, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.variableField.typeInfo() == t) {
-                    setProperty(VariableProperty.FINAL, falseTrue);
+                    setProperty(Property.FINAL, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.constant.typeInfo() == t) {
-                    setProperty(VariableProperty.CONSTANT, trueFalse);
+                    setProperty(Property.CONSTANT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.extensionClass.typeInfo() == t) {
-                    setProperty(VariableProperty.EXTENSION_CLASS, trueFalse);
+                    setProperty(Property.EXTENSION_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.fluent.typeInfo() == t) {
-                    setProperty(VariableProperty.FLUENT, trueFalse);
+                    setProperty(Property.FLUENT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.finalizer.typeInfo() == t) {
-                    setProperty(VariableProperty.FINALIZER, trueFalse);
+                    setProperty(Property.FINALIZER, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
-                    setProperty(VariableProperty.IDENTITY, trueFalse);
+                    setProperty(Property.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
-                    setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
+                    setProperty(Property.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_DV);
+                    setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
                 } else if (e2ImmuAnnotationExpressions.independent1.typeInfo() == t) {
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1;
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
@@ -256,9 +256,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.only.typeInfo() == t) {
                     only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.singleton.typeInfo() == t) {
-                    setProperty(VariableProperty.SINGLETON, trueFalse);
+                    setProperty(Property.SINGLETON, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
-                    setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
+                    setProperty(Property.UTILITY_CLASS, trueFalse);
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
@@ -273,17 +273,17 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (levelIndependent != MultiLevel.Level.ABSENT) {
             DV value = MultiLevel.composeIndependent(MultiLevel.Effective.EFFECTIVE, levelIndependent);
-            setProperty(VariableProperty.INDEPENDENT, value);
+            setProperty(Property.INDEPENDENT, value);
         }
         if (container) {
-            setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
+            setProperty(Property.CONTAINER, Level.TRUE_DV);
             if (levelImmutable == MultiLevel.Level.ABSENT) {
-                setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
+                setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
             }
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
             DV value = MultiLevel.effectivelyImmutable(levelImmutable.level);
-            setProperty(VariableProperty.IMMUTABLE, value);
+            setProperty(Property.IMMUTABLE, value);
         }
         if (notNull != null) {
             setProperty(analyserIdentification.notNull, notNull);

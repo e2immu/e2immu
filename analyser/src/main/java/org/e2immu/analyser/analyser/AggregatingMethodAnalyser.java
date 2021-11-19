@@ -57,12 +57,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, DV::max, DV.MIN_INT_DV))
-                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, DV::min, DV.MAX_INT_DV))
-                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, DV::min, DV.MAX_INT_DV))
-                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, DV::max, DV.MIN_INT_DV))
-                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, DV::min, DV.MAX_INT_DV))
-                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, DV::min, DV.MAX_INT_DV))
+                .add(MODIFIED, iteration -> this.aggregate(Property.MODIFIED_METHOD, DV::max, DV.MIN_INT_DV))
+                .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE, DV::min, DV.MAX_INT_DV))
+                .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT, DV::min, DV.MAX_INT_DV))
+                .add(FLUENT, iteration -> this.aggregate(Property.FLUENT, DV::max, DV.MIN_INT_DV))
+                .add(IDENTITY, iteration -> this.aggregate(Property.IDENTITY, DV::min, DV.MAX_INT_DV))
+                .add(NOT_NULL, iteration -> this.aggregate(Property.NOT_NULL_EXPRESSION, DV::min, DV.MAX_INT_DV))
                 .add(METHOD_VALUE, iteration -> this.aggregateMethodValue());
 
         analyserComponents = builder.build();
@@ -125,18 +125,18 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus aggregate(VariableProperty variableProperty, BinaryOperator<DV> operator, DV start) {
-        DV current = methodAnalysis.getProperty(variableProperty);
+    private AnalysisStatus aggregate(Property property, BinaryOperator<DV> operator, DV start) {
+        DV current = methodAnalysis.getProperty(property);
         if (current.isDelayed()) {
             DV value = implementingAnalyses.get().stream()
-                    .map(a -> a.getProperty(variableProperty))
+                    .map(a -> a.getProperty(property))
                     .reduce(start, operator);
             if (value.isDelayed()) {
-                log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, methodInfo.fullyQualifiedName);
+                log(DELAYED, "Delaying aggregate of {} for {}", property, methodInfo.fullyQualifiedName);
                 return value.causesOfDelay();
             }
-            log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, methodInfo.fullyQualifiedName);
-            methodAnalysis.setProperty(variableProperty, value);
+            log(ANALYSER, "Set aggregate of {} to {} for {}", property, value, methodInfo.fullyQualifiedName);
+            methodAnalysis.setProperty(property, value);
         }
         return DONE;
     }

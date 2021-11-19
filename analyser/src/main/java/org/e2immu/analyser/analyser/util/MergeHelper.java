@@ -154,13 +154,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     private Expression safe(EvaluationResult result) {
         if (result.getMessageStream().anyMatch(m -> true)) {
             // something gone wrong, retreat
-            Map<VariableProperty, DV> variableProperties = evaluationContext.getValueProperties(vi.getValue());
+            Map<Property, DV> variableProperties = evaluationContext.getValueProperties(vi.getValue());
             return noConclusion(variableProperties);
         }
         return result.value();
     }
 
-    public Expression noConclusion(Map<VariableProperty, DV> variableProperties) {
+    public Expression noConclusion(Map<Property, DV> variableProperties) {
         return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }
 

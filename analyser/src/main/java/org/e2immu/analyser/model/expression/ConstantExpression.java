@@ -46,8 +46,8 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        switch (variableProperty) {
+    default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        switch (property) {
             case CONTAINER:
                 return Level.TRUE_DV;
             case IMMUTABLE:
@@ -61,7 +61,7 @@ public interface ConstantExpression<T> extends Expression {
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }
-        throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
+        throw new UnsupportedOperationException("No info about " + property + " for value " + getClass());
     }
 
     static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {

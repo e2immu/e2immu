@@ -127,18 +127,18 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
     }
 
 
-    private static final Set<VariableProperty> CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED = Set.of(VariableProperty.IMMUTABLE,
-            VariableProperty.INDEPENDENT, VariableProperty.CONTAINER);
+    private static final Set<Property> CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED = Set.of(Property.IMMUTABLE,
+            Property.INDEPENDENT, Property.CONTAINER);
 
     private void checkWorseThanSpecifiedInInterfacesImplemented() {
-        for (VariableProperty variableProperty : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
-            DV valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, variableProperty);
-            DV value = typeAnalysis.getProperty(variableProperty);
+        for (Property property : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
+            DV valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, property);
+            DV value = typeAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = value.lt(valueFromOverrides);
                 if (complain) {
                     messages.add(Message.newMessage(new Location(typeInfo),
-                            Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, variableProperty.name));
+                            Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, property.name));
                 }
             }
         }

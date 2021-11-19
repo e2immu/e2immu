@@ -56,8 +56,8 @@ public class NullConstant implements ConstantExpression<Object> {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        DV max = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION).max(
-                forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        DV max = forwardEvaluationInfo.getProperty(Property.NOT_NULL_EXPRESSION).max(
+                forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
         if (max.gt(MultiLevel.NULLABLE_DV)) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
@@ -65,12 +65,12 @@ public class NullConstant implements ConstantExpression<Object> {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return switch (variableProperty) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS, IDENTITY, CONTAINER -> FALSE_DV;
             case IMMUTABLE, INDEPENDENT -> MultiLevel.NOT_INVOLVED_DV;
-            default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
+            default -> throw new UnsupportedOperationException("Asking for " + property);
         };
     }
 

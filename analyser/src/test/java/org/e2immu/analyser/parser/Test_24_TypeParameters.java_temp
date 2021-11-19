@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;

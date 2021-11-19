@@ -207,9 +207,9 @@ public class Lambda extends ElementImpl implements Expression {
                             srv.causesOfDelay());
                 }
             } else {
-                Map<VariableProperty, DV> valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         // FIXME need more here
-                        VariableProperty.IDENTITY, Level.FALSE_DV);
+                        Property.IDENTITY, Level.FALSE_DV);
                 result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);

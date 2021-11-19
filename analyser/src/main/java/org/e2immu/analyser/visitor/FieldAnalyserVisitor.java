@@ -17,7 +17,7 @@ package org.e2immu.analyser.visitor;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
@@ -37,8 +37,8 @@ public interface FieldAnalyserVisitor {
                 Supplier<Stream<Message>> messageStream,
                 Map<String, AnalysisStatus> statuses) implements CommonVisitorData {
 
-        public DV getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty, false, false);
+        public DV getProperty(Expression value, Property property) {
+            return evaluationContext.getProperty(value, property, false, false);
         }
 
         public String haveError(Message.Label message) {
@@ -50,8 +50,8 @@ public interface FieldAnalyserVisitor {
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return fieldAnalysis.getProperty(variableProperty);
+        public DV getProperty(Property property) {
+            return fieldAnalysis.getProperty(property);
         }
     }
 }

@@ -18,39 +18,37 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
-
 public class GroupPropertyValues {
 
-    public static final Set<VariableProperty> PROPERTIES = Set.of(
-            VariableProperty.CONTEXT_MODIFIED,
-            VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.EXTERNAL_NOT_NULL,
-            VariableProperty.EXTERNAL_IMMUTABLE,
-            VariableProperty.CONTEXT_IMMUTABLE);
+    public static final Set<Property> PROPERTIES = Set.of(
+            Property.CONTEXT_MODIFIED,
+            Property.CONTEXT_NOT_NULL,
+            Property.EXTERNAL_NOT_NULL,
+            Property.EXTERNAL_IMMUTABLE,
+            Property.CONTEXT_IMMUTABLE);
 
-    private final Map<VariableProperty, Map<Variable, DV>> map = new HashMap<>();
+    private final Map<Property, Map<Variable, DV>> map = new HashMap<>();
 
     public GroupPropertyValues() {
-        for (VariableProperty variableProperty : PROPERTIES) {
-            map.put(variableProperty, new HashMap<>());
+        for (Property property : PROPERTIES) {
+            map.put(property, new HashMap<>());
         }
     }
 
-    public Map<Variable, DV> getMap(VariableProperty variableProperty) {
-        return Objects.requireNonNull(map.get(variableProperty));
+    public Map<Variable, DV> getMap(Property property) {
+        return Objects.requireNonNull(map.get(property));
     }
 
-    public void set(VariableProperty variableProperty, Variable variable, DV value) {
-        getMap(variableProperty).put(variable, value);
+    public void set(Property property, Variable variable, DV value) {
+        getMap(property).put(variable, value);
     }
 
-    public DV get(VariableProperty variableProperty, Variable variable, DV defaultValue) {
-        return getMap(variableProperty).getOrDefault(variable, defaultValue);
+    public DV get(Property property, Variable variable, DV defaultValue) {
+        return getMap(property).getOrDefault(variable, defaultValue);
     }
 
-    public void setIfKeyAbsent(VariableProperty variableProperty, Variable variable, DV value) {
-        Map<Variable, DV> vpMap = getMap(variableProperty);
+    public void setIfKeyAbsent(Property property, Variable variable, DV value) {
+        Map<Variable, DV> vpMap = getMap(property);
         if (!vpMap.containsKey(variable)) {
             vpMap.put(variable, value);
         }

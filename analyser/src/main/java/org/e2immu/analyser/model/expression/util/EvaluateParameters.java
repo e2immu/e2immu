@@ -27,9 +27,9 @@ import java.util.Map;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
-    private static final Map<VariableProperty, DV> RECURSIVE_CALL =
-            Map.of(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV,
-                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
+    private static final Map<Property, DV> RECURSIVE_CALL =
+            Map.of(Property.CONTEXT_MODIFIED, Level.FALSE_DV,
+                    Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
                                                                              EvaluationContext evaluationContext,
@@ -63,7 +63,7 @@ public class EvaluateParameters {
                 }
                 // NOT_NULL, NOT_MODIFIED
                 DV independent;
-                Map<VariableProperty, DV> map;
+                Map<Property, DV> map;
                 try {
                     if (evaluationContext.getCurrentMethod() != null &&
                             evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
@@ -73,10 +73,10 @@ public class EvaluateParameters {
                         // copy from parameter into map used for forwarding
                         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
                         map = new HashMap<>();
-                        map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                        map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-                        map.put(VariableProperty.CONTAINER, parameterAnalysis.getProperty(VariableProperty.CONTAINER));
-                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                        map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
+                        map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
+                        map.put(Property.CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
+                        independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                     }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
@@ -88,30 +88,30 @@ public class EvaluateParameters {
                     if (independent.isDelayed()) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE_DV);
+                            map.put(Property.PROPAGATE_MODIFICATION, Level.FALSE_DV);
                         } else {
                             //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
                         }
                     } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-                        map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE_DV);
+                        map.put(Property.PROPAGATE_MODIFICATION, Level.TRUE_DV);
                     }
                 }
 
                 {
-                    DV contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, null);
+                    DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
                     if (contextModified == null) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
+                            map.put(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
                         } else {
                             //  map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
                             builder.causeOfContextModificationDelay(methodInfo, true);
                         }
                     }
                 }
-                DV contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
+                DV contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
                 if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
-                    map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
+                    map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
                 }
 
                 minNotNullOverParameters = minNotNullOverParameters.min(contextNotNull);
@@ -137,7 +137,7 @@ public class EvaluateParameters {
                 scopeObject != null &&
                 methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
-            builder.setProperty(scopeVariable.variable(), VariableProperty.CONTEXT_NOT_NULL,
+            builder.setProperty(scopeVariable.variable(), Property.CONTEXT_NOT_NULL,
                     MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
         }
         return new Pair<>(builder, parameterValues);

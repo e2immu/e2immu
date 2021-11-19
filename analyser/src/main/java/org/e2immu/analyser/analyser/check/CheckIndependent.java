@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
@@ -32,18 +32,18 @@ public class CheckIndependent {
                                   Class<?> annotation,
                                   AnnotationExpression annotationExpression,
                                   AbstractAnalysisBuilder analysis) {
-        checkLevel(messages, VariableProperty.INDEPENDENT, info, annotation,
+        checkLevel(messages, Property.INDEPENDENT, info, annotation,
                 annotationExpression, analysis);
     }
 
     static void checkLevel(Messages messages,
-                           VariableProperty variableProperty,
+                           Property property,
                            WithInspectionAndAnalysis info,
                            Class<?> annotation,
                            AnnotationExpression annotationExpression,
                            AbstractAnalysisBuilder analysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
-        String levelString = levelString(analysis, variableProperty);
+        String levelString = levelString(analysis, property);
 
         CheckLinks.checkAnnotationWithValue(messages,
                 analysis,
@@ -56,8 +56,8 @@ public class CheckIndependent {
                 new Location(info));
     }
 
-    static String levelString(AbstractAnalysisBuilder analysis, VariableProperty variableProperty) {
-        DV value = analysis.getProperty(variableProperty);
+    static String levelString(AbstractAnalysisBuilder analysis, Property property) {
+        DV value = analysis.getProperty(property);
         int level = MultiLevel.level(value);
         return level <= MultiLevel.Level.IMMUTABLE_2.level || level == MultiLevel.MAX_LEVEL
                 ? null : Integer.toString(level + 1);

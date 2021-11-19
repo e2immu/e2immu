@@ -99,18 +99,18 @@ public interface MethodAnalysis extends Analysis {
         return last.methodLevelData;
     }
 
-    default DV getMethodProperty(VariableProperty variableProperty) {
-        return switch (variableProperty) {
+    default DV getMethodProperty(Property property) {
+        return switch (property) {
             case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
-                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(variableProperty);
-            default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, variableProperty);
+                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT, FINALIZER -> getPropertyFromMapDelayWhenAbsent(property);
+            default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };
     }
 
-    default DV valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default DV valueFromOverrides(AnalysisProvider analysisProvider, Property property) {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
         return overrides.stream()
-                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(variableProperty))
+                .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
                 .reduce(Level.NOT_INVOLVED_DV, DV::max);
     }
 

@@ -109,8 +109,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
     a method call, and the result of the method should be used.
      */
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(property);
     }
 
     @Override
@@ -123,7 +123,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             Set<Variable> newVariables = new HashSet<>(result.getExpression().variables());
             boolean haveVariableFields = newVariables.stream()
                     .anyMatch(v -> v instanceof FieldReference fr && evaluationContext.getAnalyserContext()
-                            .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL).valueIsFalse());
+                            .getFieldAnalysis(fr.fieldInfo).getProperty(Property.FINAL).valueIsFalse());
             InlinedMethod newIm = new InlinedMethod(identifier, im.methodInfo(), result.getExpression(),
                     newVariables, haveVariableFields);
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
@@ -228,7 +228,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
                     FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                    DV effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                    DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
                     if (effectivelyFinal.valueIsTrue()) {
                         if (staticField) {
                             replace = false;
@@ -268,7 +268,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             }
             if (replace) {
                 if (replacement == null) {
-                    Map<VariableProperty, DV> valueProperties = valuePropertiesOfInstance(variable,
+                    Map<Property, DV> valueProperties = valuePropertiesOfInstance(variable,
                             evaluationContext.getAnalyserContext());
                     if (valueProperties == null) {
                         replacement = DelayedExpression.forMethod(methodInfo, variable.concreteReturnType(),
@@ -288,7 +288,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
         return Map.copyOf(builder);
     }
 
-    private Map<VariableProperty, DV> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
+    private Map<Property, DV> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
         throw new UnsupportedOperationException("To implement"); // FIXME
     }
 
@@ -419,20 +419,20 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public DV getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
-            return evaluationContext.getProperty(value, variableProperty, duringEvaluation, ignoreStateInConditionManager);
+        public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            return evaluationContext.getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
         }
 
         @Override
-        public DV getProperty(Variable variable, VariableProperty variableProperty) {
+        public DV getProperty(Variable variable, Property property) {
             ensureVariableIsKnown(variable);
-            return variableProperty.falseDv; // FIXME
+            return property.falseDv; // FIXME
         }
 
         @Override
-        public DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
             ensureVariableIsKnown(variable);
-            return variableProperty.falseDv; // FIXME
+            return property.falseDv; // FIXME
         }
 
         @Override
@@ -447,12 +447,12 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public Map<VariableProperty, DV> getValueProperties(Expression value) {
+        public Map<Property, DV> getValueProperties(Expression value) {
             return evaluationContext.getValueProperties(value);
         }
 
         @Override
-        public Map<VariableProperty, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        public Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
             return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
         }
 

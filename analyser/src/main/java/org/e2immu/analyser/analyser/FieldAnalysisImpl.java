@@ -41,7 +41,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               LinkedVariables variablesLinkedToMe,
                               Expression value,
                               Expression initialValue,
-                              Map<VariableProperty, DV> properties,
+                              Map<Property, DV> properties,
                               Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
@@ -76,8 +76,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty) {
-        return getFieldProperty(AnalysisProvider.DEFAULT_PROVIDER, fieldInfo, fieldInfo.type.bestTypeInfo(), variableProperty);
+    public DV getProperty(Property property) {
+        return getFieldProperty(AnalysisProvider.DEFAULT_PROVIDER, fieldInfo, fieldInfo.type.bestTypeInfo(), property);
     }
 
     @Override
@@ -98,7 +98,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public interface ValueAndPropertyProxy {
         Expression getValue();
 
-        DV getProperty(VariableProperty variableProperty);
+        DV getProperty(Property property);
 
         LinkedVariables getLinkedVariables();
 
@@ -188,8 +188,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return getFieldProperty(analysisProvider, fieldInfo, bestType, variableProperty);
+        public DV getProperty(Property property) {
+            return getFieldProperty(analysisProvider, fieldInfo, bestType, property);
         }
 
         @Override
@@ -219,9 +219,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-            DV effectivelyFinal = getProperty(VariableProperty.FINAL);
-            DV ownerImmutable = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
-            DV modified = getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
+            DV effectivelyFinal = getProperty(Property.FINAL);
+            DV ownerImmutable = typeAnalysisOfOwner.getProperty(Property.IMMUTABLE);
+            DV modified = getProperty(Property.MODIFIED_OUTSIDE_METHOD);
 
             // @Final(after=), @Final, @Variable
             if (effectivelyFinal.valueIsFalse() && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
@@ -250,11 +250,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL));
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             DV typeImmutable = typeImmutable();
-            DV fieldImmutable = getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+            DV fieldImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
             if (fieldImmutable.gt(typeImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, fieldImmutable, true);
             }
@@ -262,7 +262,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         private DV typeImmutable() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
-                    analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         }
 
         public boolean isDeclaredFunctionalInterface() {

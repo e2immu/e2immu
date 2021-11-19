@@ -758,12 +758,12 @@ public class ParameterizedType {
         return (typeParameter != null || typeInfo != null) && v.typeParameter == null && v.typeInfo == null;
     }
 
-    public DV getProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    public DV getProperty(AnalysisProvider analysisProvider, Property property) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType != null) {
-            return analysisProvider.getTypeAnalysis(bestType).getProperty(variableProperty);
+            return analysisProvider.getTypeAnalysis(bestType).getProperty(property);
         }
-        return variableProperty.falseDv;
+        return property.falseDv;
     }
 
     public TypeInfo bestTypeInfo() {
@@ -860,7 +860,7 @@ public class ParameterizedType {
     private DV isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) return Level.FALSE_DV;
-        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         return Level.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
     }
@@ -876,7 +876,7 @@ public class ParameterizedType {
     public DV canBeModifiedInThisClass(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) return Level.FALSE_DV;
-        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         return Level.fromBoolDv(canBeModified);
@@ -933,7 +933,7 @@ public class ParameterizedType {
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
         }
-        return typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        return typeAnalysis.getProperty(Property.CONTAINER);
     }
 
     private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
@@ -954,7 +954,7 @@ public class ParameterizedType {
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
         }
-        DV baseValue = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+        DV baseValue = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (baseValue.isDelayed()) return baseValue;
         if (MultiLevel.isAtLeastE2Immutable(baseValue) && !parameters.isEmpty()) {
             DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
@@ -1017,7 +1017,7 @@ public class ParameterizedType {
         if (typeAnalysis == null) {
             return typeAnalysisNotAvailable(bestType);
         }
-        DV baseValue = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        DV baseValue = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (baseValue.isDelayed()) {
             return baseValue;
         }

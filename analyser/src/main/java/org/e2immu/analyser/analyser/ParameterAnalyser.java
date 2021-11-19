@@ -22,7 +22,7 @@ import org.e2immu.annotation.*;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -92,27 +92,27 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
         parameterAnalysis.transferPropertiesToAnnotations(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
     }
 
-    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
+    private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
             CONTAINER, INDEPENDENT, IMMUTABLE);
 
     private void checkWorseThanParent() {
-        for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
+        for (Property property : CHECK_WORSE_THAN_PARENT) {
             DV valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
                     .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
-                            pi, variableProperty))
+                            pi, property))
                     .reduce(DV.MIN_INT_DV, DV::max);
-            DV value = parameterAnalysis.getProperty(variableProperty);
+            DV value = parameterAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
-                boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE
+                boolean complain = property == Property.MODIFIED_VARIABLE
                         ? value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
                     String msg;
-                    if (variableProperty == INDEPENDENT) {
+                    if (property == INDEPENDENT) {
                         msg = "Have " + value.label() + ", expect " + valueFromOverrides.label();
                     } else {
-                        msg = variableProperty.name + ", parameter " + parameterInfo.name;
+                        msg = property.name + ", parameter " + parameterInfo.name;
                     }
                     messages.add(Message.newMessage(parameterAnalysis.location,
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,

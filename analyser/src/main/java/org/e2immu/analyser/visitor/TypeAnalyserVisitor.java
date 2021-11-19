@@ -17,7 +17,7 @@ package org.e2immu.analyser.visitor;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
@@ -35,8 +35,8 @@ public interface TypeAnalyserVisitor {
                 Map<String, AnalysisStatus> statuses,
                 AnalysisProvider analysisProvider) implements CommonVisitorData {
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return typeAnalysis.getProperty(variableProperty);
+        public DV getProperty(Property property) {
+            return typeAnalysis.getProperty(property);
         }
     }
 }

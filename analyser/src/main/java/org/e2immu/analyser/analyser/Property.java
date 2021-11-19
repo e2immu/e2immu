@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 
-public enum VariableProperty {
+public enum Property {
 
     /*
     "short-lived" properties of the EvaluationResult
@@ -155,15 +155,15 @@ public enum VariableProperty {
     public final DV falseDv;
     public final CauseOfDelay.Cause cause;
 
-    VariableProperty(String name, CauseOfDelay.Cause cause) {
+    Property(String name, CauseOfDelay.Cause cause) {
         this(name, Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, cause);
     }
 
-    VariableProperty(String name,
-                     DV falseValue,
-                     DV best,
-                     DV valueWhenAbsent,
-                     CauseOfDelay.Cause cause) {
+    Property(String name,
+             DV falseValue,
+             DV best,
+             DV valueWhenAbsent,
+             CauseOfDelay.Cause cause) {
         this.name = name;
         this.valueWhenAbsentDv = valueWhenAbsent;
         this.bestDv = best;

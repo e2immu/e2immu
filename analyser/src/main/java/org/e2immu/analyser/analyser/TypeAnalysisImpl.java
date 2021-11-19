@@ -40,7 +40,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final boolean immutableCanBeIncreasedByTypeParameters;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
-                             Map<VariableProperty, DV> properties,
+                             Map<Property, DV> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
                              Map<FieldReference, Expression> approvedPreconditionsE1,
                              Map<FieldReference, Expression> approvedPreconditionsE2,
@@ -91,8 +91,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty) {
-        return getTypeProperty(variableProperty);
+    public DV getProperty(Property property) {
+        return getTypeProperty(property);
     }
 
     @Override
@@ -277,8 +277,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return getTypeProperty(variableProperty);
+        public DV getProperty(Property property) {
+            return getTypeProperty(property);
         }
 
         @Override
@@ -309,30 +309,30 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // @ExtensionClass
-            if (getProperty(VariableProperty.EXTENSION_CLASS).valueIsTrue()) {
+            if (getProperty(Property.EXTENSION_CLASS).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.extensionClass, true);
             }
 
             // @Finalizer
-            if (getProperty(VariableProperty.FINALIZER).valueIsTrue()) {
+            if (getProperty(Property.FINALIZER).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.finalizer, true);
             }
 
             // @UtilityClass
-            if (getProperty(VariableProperty.UTILITY_CLASS).valueIsTrue()) {
+            if (getProperty(Property.UTILITY_CLASS).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.utilityClass, true);
             }
 
             // @Singleton
-            if (getProperty(VariableProperty.SINGLETON).valueIsTrue()) {
+            if (getProperty(Property.SINGLETON).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.singleton, true);
             }
 
-            DV immutable = getProperty(VariableProperty.IMMUTABLE);
+            DV immutable = getProperty(Property.IMMUTABLE);
             doImmutableContainer(e2ImmuAnnotationExpressions, immutable, false);
 
             // @Independent
-            DV independent = getProperty(VariableProperty.INDEPENDENT);
+            DV independent = getProperty(Property.INDEPENDENT);
             doIndependent(e2ImmuAnnotationExpressions, independent, MultiLevel.NOT_INVOLVED_DV, immutable);
         }
 

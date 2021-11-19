@@ -15,10 +15,10 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 
 public interface CommonVisitorData {
-    DV getProperty(VariableProperty variableProperty);
+    DV getProperty(Property property);
 
     int iteration();
 }

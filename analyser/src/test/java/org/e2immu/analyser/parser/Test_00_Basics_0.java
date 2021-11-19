@@ -15,7 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_0 extends CommonTestRunner {
@@ -56,7 +56,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             FieldAnalysis fieldAnalysis = d.fieldAnalysis();
             if ("explicitlyFinal".equals(d.fieldInfo().name)) {
                 assertEquals("", fieldAnalysis.getLinkedVariables().toString());
-                assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(Property.FINAL));
                 assertEquals("\"abc\"", fieldAnalysis.getValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(fieldAnalysis.getValue(),
                         NOT_NULL_EXPRESSION));
@@ -120,7 +120,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             // quick check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
             assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                    stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+                    stringType.typeAnalysis.get().getProperty(Property.IMMUTABLE));
         };
 
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()

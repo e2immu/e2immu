@@ -28,7 +28,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public final Map<FieldInfo, DV> assignedToField;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
-                                  Map<VariableProperty, DV> properties,
+                                  Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
                                   Map<FieldInfo, DV> assignedToField) {
         super(properties, annotations);
@@ -37,8 +37,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty) {
-        return getParameterProperty(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
+    public DV getProperty(Property property) {
+        return getParameterProperty(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, property);
     }
 
     @Override
@@ -74,8 +74,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return getParameterProperty(analysisProvider, parameterInfo, variableProperty);
+        public DV getProperty(Property property) {
+            return getParameterProperty(analysisProvider, parameterInfo, property);
         }
 
         @Override
@@ -101,7 +101,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable
-            DV modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
+            DV modified = getProperty(Property.MODIFIED_VARIABLE);
             if (!parameterInfo.parameterizedType.canBeModifiedInThisClass(analysisProvider).valueIsTrue()) {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
@@ -109,11 +109,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER));
 
             // @Independent1; @Independent, @Dependent not shown
             DV independentType = parameterInfo.parameterizedType.defaultIndependent(analysisProvider);
-            DV independent = getProperty(VariableProperty.INDEPENDENT);
+            DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent, true);
             } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {

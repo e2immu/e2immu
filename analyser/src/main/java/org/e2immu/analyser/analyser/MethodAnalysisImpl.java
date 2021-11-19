@@ -55,7 +55,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Eventual eventual,
                                Precondition precondition,
                                AnalysisMode analysisMode,
-                               Map<VariableProperty, DV> properties,
+                               Map<Property, DV> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
                                Map<CompanionMethodName, MethodInfo> computedCompanions) {
@@ -154,8 +154,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty) {
-        return getMethodProperty(variableProperty);
+    public DV getProperty(Property property) {
+        return getMethodProperty(property);
     }
 
     @Override
@@ -282,16 +282,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return getMethodProperty(variableProperty);
+        public DV getProperty(Property property) {
+            return getMethodProperty(property);
         }
 
         private DV formalProperty() {
-            return returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
+            return returnType.getProperty(analysisProvider, Property.IMMUTABLE);
         }
 
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-            DV modified = getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modified = getProperty(Property.MODIFIED_METHOD);
 
             // @Precondition
             if (precondition.isFinal()) {
@@ -312,7 +312,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             DV formallyImmutable = formalProperty();
-            DV dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
+            DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
             if (dynamicallyImmutable.gt(formallyImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }
@@ -320,7 +320,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (Primitives.isVoidOrJavaLangVoid(returnType)) return;
 
             // @Identity
-            if (getProperty(VariableProperty.IDENTITY).valueIsTrue()) {
+            if (getProperty(Property.IDENTITY).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.identity, true);
             }
 
@@ -328,15 +328,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (Primitives.isPrimitiveExcludingVoid(returnType)) return;
 
             // @Fluent
-            if (getProperty(VariableProperty.FLUENT).valueIsTrue()) {
+            if (getProperty(Property.FLUENT).valueIsTrue()) {
                 annotations.put(e2ImmuAnnotationExpressions.fluent, true);
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_EXPRESSION));
 
             // @Dependent @Independent
-            DV independent = getProperty(VariableProperty.INDEPENDENT);
+            DV independent = getProperty(Property.INDEPENDENT);
             DV formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
             doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
         }

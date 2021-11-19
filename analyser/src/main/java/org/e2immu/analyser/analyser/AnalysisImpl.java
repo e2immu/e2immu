@@ -23,10 +23,10 @@ import java.util.stream.Stream;
 
 public abstract class AnalysisImpl implements Analysis {
 
-    public final Map<VariableProperty, DV> properties;
+    public final Map<Property, DV> properties;
     private final Map<AnnotationExpression, AnnotationCheck> annotations;
 
-    protected AnalysisImpl(Map<VariableProperty, DV> properties, Map<AnnotationExpression, AnnotationCheck> annotations) {
+    protected AnalysisImpl(Map<Property, DV> properties, Map<AnnotationExpression, AnnotationCheck> annotations) {
         this.annotations = annotations;
         this.properties = properties;
     }
@@ -45,14 +45,14 @@ public abstract class AnalysisImpl implements Analysis {
         return annotations.entrySet().stream();
     }
 
-    public DV getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
+    public DV getPropertyFromMapNeverDelay(Property property) {
+        return properties.getOrDefault(property, property.valueWhenAbsent());
     }
 
     @Override
-    public DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
-        DV v = properties.getOrDefault(variableProperty, null);
-        if (v == null) return new CausesOfDelay.SimpleSet(location(), variableProperty.causeOfDelay());
+    public DV getPropertyFromMapDelayWhenAbsent(Property property) {
+        DV v = properties.getOrDefault(property, null);
+        if (v == null) return new CausesOfDelay.SimpleSet(location(), property.causeOfDelay());
         return v;
     }
 }

@@ -165,19 +165,19 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         checkWorseThanOverriddenMethod();
     }
 
-    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(VariableProperty.NOT_NULL_EXPRESSION,
-            VariableProperty.MODIFIED_METHOD, VariableProperty.CONTAINER, VariableProperty.IDENTITY, VariableProperty.FLUENT);
+    private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(Property.NOT_NULL_EXPRESSION,
+            Property.MODIFIED_METHOD, Property.CONTAINER, Property.IDENTITY, Property.FLUENT);
 
     private void checkWorseThanOverriddenMethod() {
-        for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
-            DV valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
-            DV value = methodAnalysis.getProperty(variableProperty);
+        for (Property property : CHECK_WORSE_THAN_PARENT) {
+            DV valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, property);
+            DV value = methodAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
-                boolean complain = variableProperty == VariableProperty.MODIFIED_METHOD ?
+                boolean complain = property == Property.MODIFIED_METHOD ?
                         value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
                     messages.add(Message.newMessage(new Location(methodInfo),
-                            Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
+                            Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, property.name));
                 }
             }
         }

@@ -271,21 +271,21 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (bestType == null) return DONE;
         if (!bestType.isAbstract()) return DONE;
 
-        assert fieldAnalysis.getProperty(VariableProperty.CONTAINER).isDelayed();
+        assert fieldAnalysis.getProperty(Property.CONTAINER).isDelayed();
 
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
-        DV typeContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
         if (typeContainer.isDelayed()) return typeContainer.causesOfDelay();
         if (typeContainer.valueIsTrue()) {
-            fieldAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
             return DONE;
         }
 
         // only worth doing something when the field is statically not a container
         DV parameterModification = methodsForModification()
                 .flatMap(method -> method.getParameterAnalysers().stream())
-                .map(pa -> pa.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE))
-                .reduce(VariableProperty.MODIFIED_VARIABLE.falseDv, DV::max);
+                .map(pa -> pa.parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE))
+                .reduce(Property.MODIFIED_VARIABLE.falseDv, DV::max);
         if (parameterModification.isDelayed()) {
             log(MODIFICATION, "Delaying @Container on field {}, some parameters have no @Modified status yet",
                     fqn);
@@ -293,7 +293,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         boolean allParametersNotModified = parameterModification.valueIsFalse();
         log(MODIFICATION, "Set @Container on {} to {}", fqn, allParametersNotModified);
-        fieldAnalysis.setProperty(VariableProperty.CONTAINER, Level.fromBoolDv(allParametersNotModified));
+        fieldAnalysis.setProperty(Property.CONTAINER, Level.fromBoolDv(allParametersNotModified));
         return DONE;
     }
 
@@ -304,9 +304,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     for methods which only read, we only wait for not-null delays to be resolved.
      */
     private AnalysisStatus analyseNotNull() {
-        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL).isDone()) return DONE;
+        if (fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL).isDone()) return DONE;
 
-        DV isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (isFinal.isDelayed()) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fqn);
             return isFinal.causesOfDelay();
@@ -314,7 +314,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this primary type",
                     fqn);
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
             return DONE;
         }
 
@@ -324,7 +324,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         DV bestOverContext = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .map(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
+                .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
         if (bestOverContext.isDelayed()) {
             log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
@@ -339,7 +339,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             assert fieldAnalysis.getValues().size() > 0;
 
             DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
-                    .map(proxy -> proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION))
+                    .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                     .reduce(DV.MAX_INT_DV, DV::min);
             DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.NULLABLE_DV : worstOverValuesPrep;
             // IMPORTANT: we do not take delays into account!
@@ -350,7 +350,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fqn, finalNotNullValue);
 
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
+        fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, finalNotNullValue);
         return DONE;
     }
 
@@ -364,7 +364,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return DONE;
             }
         } else {
-            DV effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
             if (effectivelyFinal.valueIsFalse()) {
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
@@ -393,17 +393,17 @@ public class FieldAnalyser extends AbstractAnalyser {
     recursively immutable, and therefore also independent.
      */
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
-        if (fieldAnalysis.getProperty(VariableProperty.INDEPENDENT).isDone()) return DONE;
+        if (fieldAnalysis.getProperty(Property.INDEPENDENT).isDone()) return DONE;
 
         DV staticallyIndependent = fieldInfo.type.defaultIndependent(analyserContext);
         if (staticallyIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
             log(INDEPENDENCE, "Field {} set to @Independent: static type",
                     fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+            fieldAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             return DONE;
         }
 
-        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.EXTERNAL_IMMUTABLE);
+        DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) {
             log(DELAYED, "Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
             return immutable.causesOfDelay();
@@ -413,7 +413,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
             log(INDEPENDENCE, "Field {} set to {}, direct correspondence to (dynamically) immutable",
                     fieldInfo.fullyQualifiedName(), independent);
-            fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
+            fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
             return DONE;
         }
 
@@ -422,7 +422,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     fieldInfo.fullyQualifiedName(), fieldInfo.type);
             return staticallyIndependent.causesOfDelay();
         }
-        fieldAnalysis.setProperty(VariableProperty.INDEPENDENT, staticallyIndependent);
+        fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
         return DONE;
     }
 
@@ -430,9 +430,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     method modelled to that of analyseNotNull.
      */
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
-        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE).isDone()) return DONE;
+        if (fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE).isDone()) return DONE;
 
-        DV isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (isFinal.isDelayed()) {
             log(DELAYED, "Delaying @Immutable on {} until we know about @Final", fqn);
             return isFinal.causesOfDelay();
@@ -440,14 +440,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             log(NOT_NULL, "Field {} cannot be immutable: it is not @Final," +
                     " and it can be assigned to from outside this primary type", fqn);
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.MUTABLE_DV);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, MultiLevel.MUTABLE_DV);
             return DONE;
         }
 
         DV staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
         if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             log(IMMUTABLE_LOG, "Field {} is statically @ERImmutable", fqn);
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE; // cannot be improved
         }
 
@@ -468,7 +468,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
                 .filter(proxy -> !(proxy.getValue() instanceof NullConstant))
-                .map(proxy -> proxy.getProperty(VariableProperty.IMMUTABLE))
+                .map(proxy -> proxy.getProperty(Property.IMMUTABLE))
                 .reduce(DV.MAX_INT_DV, DV::min);
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;
         if (worstOverValues.isDelayed()) {
@@ -483,7 +483,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                    .map(vi -> vi.getProperty(VariableProperty.CONTEXT_IMMUTABLE))
+                    .map(vi -> vi.getProperty(Property.CONTEXT_IMMUTABLE))
                     .reduce(MultiLevel.MUTABLE_DV, DV::max);
             if (bestOverContext.isDelayed()) {
                 log(DELAYED, "Delay @Immutable on {}, waiting for context immutable", fqn);
@@ -499,11 +499,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (correctedImmutable.isDelayed()) {
             log(DELAYED, "Delay @Immutable on {}, waiting for exposure to decide on @BeforeMark", fqn);
             // still, we're already marking
-            fieldAnalysis.setProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE, finalImmutable);
+            fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, finalImmutable);
             return correctedImmutable.causesOfDelay();
         }
         log(IMMUTABLE_LOG, "Set immutable on field {} to value {}", fqn, correctedImmutable);
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, correctedImmutable);
+        fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable);
 
         return DONE;
     }
@@ -523,7 +523,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         CausesOfDelay delayLinkedVariables = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
                 .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue())
+                .filter(ma -> !ma.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())
                 .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayLinkedVariables.isDelayed()) {
@@ -534,7 +534,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean linkedToMe = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
                 .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue())
+                .filter(ma -> !ma.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())
                 .anyMatch(ma -> {
                     if (ma.methodInfo.hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
@@ -559,7 +559,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         int occurrenceCountForError = 0;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-            if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue() &&
+            if (methodAnalyser.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue() &&
                     (!methodAnalyser.methodInfo.isPrivate() ||
                             methodAnalyser.methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
@@ -578,8 +578,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
 
                         @Override
-                        public DV getProperty(VariableProperty variableProperty) {
-                            return vi.getProperty(variableProperty);
+                        public DV getProperty(Property property) {
+                            return vi.getProperty(property);
                         }
 
                         @Override
@@ -630,8 +630,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
 
                         @Override
-                        public DV getProperty(VariableProperty variableProperty) {
-                            return vi.getProperty(variableProperty);
+                        public DV getProperty(Property property) {
+                            return vi.getProperty(property);
                         }
 
                         @Override
@@ -678,8 +678,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
 
                 @Override
-                public DV getProperty(VariableProperty variableProperty) {
-                    return ec.getProperty(getValue(), variableProperty, false, false);
+                public DV getProperty(Property property) {
+                    return ec.getProperty(getValue(), property, false, false);
                 }
 
                 @Override
@@ -735,8 +735,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
 
                 @Override
-                public DV getProperty(VariableProperty variableProperty) {
-                    return getValue().getProperty(null, variableProperty, false);
+                public DV getProperty(Property property) {
+                    return getValue().getProperty(null, property, false);
                 }
 
                 @Override
@@ -766,7 +766,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseFinalValue() {
         assert fieldAnalysis.getValue().isDelayed();
 
-        if (!fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsTrue()) {
+        if (!fieldAnalysis.getProperty(Property.FINAL).valueIsTrue()) {
             fieldAnalysis.setValue(new UnknownExpression(fieldInfo.type, UnknownExpression.VARIABLE));
             return DONE;
         }
@@ -795,10 +795,10 @@ public class FieldAnalyser extends AbstractAnalyser {
             if ((constructorCall = expression.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
-                DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
                 if (immutable.isDelayed()) {
                     // see analyseImmutable, @BeforeMark
-                    immutable = fieldAnalysis.getProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE);
+                    immutable = fieldAnalysis.getProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE);
                 }
                 boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
@@ -809,12 +809,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
                 if (downgradeFromNewInstanceWithConstructor) {
-                    Map<VariableProperty, DV> valueProperties = Map.of(
-                            VariableProperty.NOT_NULL_EXPRESSION, proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
-                            VariableProperty.IMMUTABLE, proxy.getProperty(VariableProperty.IMMUTABLE),
-                            VariableProperty.INDEPENDENT, proxy.getProperty(VariableProperty.INDEPENDENT),
-                            VariableProperty.CONTAINER, proxy.getProperty(VariableProperty.CONTAINER),
-                            VariableProperty.IDENTITY, proxy.getProperty(VariableProperty.IDENTITY)
+                    Map<Property, DV> valueProperties = Map.of(
+                            Property.NOT_NULL_EXPRESSION, proxy.getProperty(Property.NOT_NULL_EXPRESSION),
+                            Property.IMMUTABLE, proxy.getProperty(Property.IMMUTABLE),
+                            Property.INDEPENDENT, proxy.getProperty(Property.INDEPENDENT),
+                            Property.CONTAINER, proxy.getProperty(Property.CONTAINER),
+                            Property.IDENTITY, proxy.getProperty(Property.IDENTITY)
                     );
                     effectivelyFinalValue = constructorCall.removeConstructor(valueProperties);
                 } else {
@@ -837,7 +837,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseConstant() {
-        if (fieldAnalysis.getProperty(VariableProperty.CONSTANT).isDone()) return DONE;
+        if (fieldAnalysis.getProperty(Property.CONSTANT).isDone()) return DONE;
 
         Expression value = fieldAnalysis.getValue();
         if (value.isDelayed()) {
@@ -847,12 +847,12 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (value.isUnknown()) {
             log(FINAL, "@Constant of {} false, because not final", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.CONSTANT, Level.FALSE_DV);
             return DONE;
         }
 
         boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
-        DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+        DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed() && !fieldOfOwnType) {
             log(DELAYED, "Waiting with @Constant until decision on @E2Immutable for {}",
                     fqn);
@@ -876,7 +876,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(FINAL, "Added @Constant annotation on field {}", fqn);
         }
-        fieldAnalysis.setProperty(VariableProperty.CONSTANT, recursivelyConstant);
+        fieldAnalysis.setProperty(Property.CONSTANT, recursivelyConstant);
         return DONE;
     }
 
@@ -892,7 +892,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
-                    DV immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE, false, false);
+                    DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
                     if (!MultiLevel.isEffectivelyNotNull(immutable)) return Level.FALSE_DV;
                     DV recursively = recursivelyConstant(parameter);
@@ -907,7 +907,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseLinked() {
         assert fieldAnalysis.linkedVariables.isVariable();
 
-        DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+        DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
             fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
             log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");
@@ -954,11 +954,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseFinal(SharedState sharedState) {
-        assert fieldAnalysis.getProperty(VariableProperty.FINAL).isDelayed();
+        assert fieldAnalysis.getProperty(Property.FINAL).isDelayed();
         assert sharedState.iteration == 0;
 
         if (fieldInfo.isExplicitlyFinal()) {
-            fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.FINAL, Level.TRUE_DV);
             return DONE;
         }
 
@@ -975,7 +975,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
         }
-        fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBoolDv(isFinal));
+        fieldAnalysis.setProperty(Property.FINAL, Level.fromBoolDv(isFinal));
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fqn);
 
@@ -983,7 +983,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
             if (bestType != null) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
-                if (typeAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue()) {
+                if (typeAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
                 }
             }
@@ -1008,18 +1008,18 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseModified() {
-        DV contract = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+        DV contract = fieldAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contract.isDone()) {
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contract);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contract);
             return DONE;
         }
-        assert fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD).isDelayed();
+        assert fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD).isDelayed();
 
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
             log(MODIFICATION, "Field {} is @NotModified, since it is final and primitive", fqn);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
             return DONE;
         }
 
@@ -1027,10 +1027,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
                 stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                         .filter(VariableInfo::isRead)
-                        .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED).valueIsTrue());
+                        .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
 
         if (modified) {
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.TRUE_DV);
             log(MODIFICATION, "Mark field {} as @Modified", fqn);
             return DONE;
         }
@@ -1041,11 +1041,11 @@ public class FieldAnalyser extends AbstractAnalyser {
             List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
-                    .map(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED).causesOfDelay());
+                    .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
         }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         if (contextModifications.isDone()) {
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
             log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
@@ -1055,7 +1055,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-        DV effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
             return DelayedVariableExpression.forField(fieldReference,
                     new CauseOfDelay.VariableCause(fieldReference, new Location(fieldInfo), CauseOfDelay.Cause.FIELD_FINAL));
@@ -1150,15 +1150,15 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public DV getProperty(Expression value,
-                              VariableProperty variableProperty,
+                              Property property,
                               boolean duringEvaluation,
                               boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                return getProperty(variable, variableProperty);
+                return getProperty(variable, property);
             }
             try {
-                return value.getProperty(this, variableProperty, true);
+                return value.getProperty(this, property, true);
             } catch (RuntimeException re) {
                 LOGGER.error("Caught exception while evaluating expression '{}'", value);
                 throw re;
@@ -1166,26 +1166,26 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public DV getProperty(Variable variable, VariableProperty variableProperty) {
+        public DV getProperty(Variable variable, Property property) {
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = replaceForFieldAnalyser(variableProperty);
+                Property vp = replaceForFieldAnalyser(property);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
-                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
-                        ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
+                Property vp = property == Property.NOT_NULL_EXPRESSION
+                        ? Property.NOT_NULL_PARAMETER : property;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             throw new UnsupportedOperationException("?? variable " + variable.fullyQualifiedName() + " of " + variable.getClass());
         }
 
-        private VariableProperty replaceForFieldAnalyser(VariableProperty variableProperty) {
-            if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return VariableProperty.EXTERNAL_NOT_NULL;
-            if (variableProperty == VariableProperty.IMMUTABLE) return VariableProperty.EXTERNAL_IMMUTABLE;
-            return variableProperty;
+        private Property replaceForFieldAnalyser(Property property) {
+            if (property == Property.NOT_NULL_EXPRESSION) return Property.EXTERNAL_NOT_NULL;
+            if (property == Property.IMMUTABLE) return Property.EXTERNAL_IMMUTABLE;
+            return property;
         }
 
         @Override

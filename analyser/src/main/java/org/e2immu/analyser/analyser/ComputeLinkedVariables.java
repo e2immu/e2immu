@@ -154,9 +154,9 @@ public class ComputeLinkedVariables {
         return result;
     }
 
-    public CausesOfDelay write(VariableProperty property, Map<Variable, DV> propertyValues) {
+    public CausesOfDelay write(Property property, Map<Variable, DV> propertyValues) {
         /* context modified needs all linking to be done */
-        if (VariableProperty.CONTEXT_MODIFIED == property) {
+        if (Property.CONTEXT_MODIFIED == property) {
             if (delaysInClustering.isDelayed()) {
                 return delaysInClustering;
             }
@@ -172,7 +172,7 @@ public class ComputeLinkedVariables {
     }
 
     private CausesOfDelay writeProperty(List<List<Variable>> clusters,
-                                        VariableProperty variableProperty,
+                                        Property property,
                                         Map<Variable, DV> propertyValues) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (List<Variable> cluster : clusters) {
@@ -188,9 +188,9 @@ public class ComputeLinkedVariables {
                 VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
                     VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
-                    if (vi.getProperty(variableProperty).isDelayed()) {
+                    if (vi.getProperty(property).isDelayed()) {
                         try {
-                            vic.setProperty(variableProperty, summary, level);
+                            vic.setProperty(property, summary, level);
                         } catch (IllegalStateException ise) {
                             LOGGER.error("Current cluster: {}", cluster);
                             throw ise;

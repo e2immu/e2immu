@@ -35,12 +35,12 @@ public interface MethodAnalyserVisitor {
                 Supplier<Stream<Message>> messageStream) implements CommonVisitorData {
 
         @Override
-        public DV getProperty(VariableProperty variableProperty) {
-            return methodAnalysis.getProperty(variableProperty);
+        public DV getProperty(Property property) {
+            return methodAnalysis.getProperty(property);
         }
 
-        public DV getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty, false, false);
+        public DV getProperty(Expression value, Property property) {
+            return evaluationContext.getProperty(value, property, false, false);
         }
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
@@ -67,8 +67,8 @@ public interface MethodAnalyserVisitor {
         public CommonVisitorData p(int i) {
             return new CommonVisitorData() {
                 @Override
-                public DV getProperty(VariableProperty variableProperty) {
-                    return parameterAnalyses.get(i).getProperty(variableProperty);
+                public DV getProperty(Property property) {
+                    return parameterAnalyses.get(i).getProperty(property);
                 }
 
                 @Override

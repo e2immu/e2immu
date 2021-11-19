@@ -57,7 +57,7 @@ public record ContractMark(Set<FieldInfo> fields) implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return Level.FALSE_DV;
     }
 

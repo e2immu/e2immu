@@ -63,7 +63,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         if (combined instanceof BooleanConstant boolValue) {
             return !boolValue.constant();
         }
-        DV nne = getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, true);
+        DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
         return MultiLevel.isEffectivelyNotNull(nne);
     }
 

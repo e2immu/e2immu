@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_1 extends CommonTestRunner {

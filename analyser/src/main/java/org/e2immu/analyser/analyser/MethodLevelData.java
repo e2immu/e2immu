@@ -174,7 +174,7 @@ public class MethodLevelData {
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned())
                 // FIXME break immutable removed temporarily
                 .map(vi -> vi.getLinkedVariables().causesOfDelay().merge(
-                        vi.getProperty(VariableProperty.CONTEXT_MODIFIED).causesOfDelay()))
+                        vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay()))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayed.isDelayed()) {
             linksHaveBeenEstablished.setVariable(delayed);

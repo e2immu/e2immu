@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -262,8 +262,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // FIRST CRITERION: is there a non-@Final field?
 
             DV finalOverFields = fieldAnalysesOfTypeInfo.stream()
-                    .map(fa -> fa.getProperty(VariableProperty.FINAL))
-                    .reduce(VariableProperty.FINAL.bestDv, DV::min);
+                    .map(fa -> fa.getProperty(Property.FINAL))
+                    .reduce(Property.FINAL.bestDv, DV::min);
             if (finalOverFields.isDelayed()) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
@@ -284,7 +284,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         boolean acceptDelay = concreteType == null || concreteType.typeInfo != null &&
                                 concreteType.typeInfo.topOfInterdependentClassHierarchy() !=
                                         fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
-                        DV immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                        DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
                         return acceptDelay && immutable.isDelayed() ? immutable :
                                 Level.fromBoolDv(MultiLevel.isEventuallyE1Immutable(immutable)
                                         || MultiLevel.isEventuallyE2Immutable(immutable));
@@ -305,7 +305,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     .map(fa -> {
                         DV transparent = fa.isTransparentType();
                         if (transparent.isDelayed()) return transparent;
-                        DV immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                        DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
 
                         boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
                                 && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
@@ -345,7 +345,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // code to detect the situation as in Lazy
             Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
-                if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsFalse()) {
+                if (fieldAnalyser.fieldAnalysis.getProperty(Property.FINAL).valueIsFalse()) {
                     FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo);
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
@@ -419,7 +419,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         return null;
     }
 
-    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(CONTAINER);
+    private final static Set<Property> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(CONTAINER);
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
@@ -431,7 +431,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // see Fluent_0 for one way, and Store_7 for the other direction
         ParameterizedType myType = methodInfo.typeInfo.asParameterizedType(analyserContext);
         if (!myType.isAssignableFromTo(analyserContext, methodInspection.getReturnType())) {
-            methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE_DV);
+            methodAnalysis.setProperty(Property.FLUENT, Level.FALSE_DV);
         }
 
         /*
@@ -440,7 +440,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (methodInspection.getParameters().isEmpty() ||
                 !methodInspection.getReturnType().isAssignableFromTo(analyserContext,
                         methodInspection.getParameters().get(0).parameterizedType)) {
-            methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE_DV);
+            methodAnalysis.setProperty(Property.IDENTITY, Level.FALSE_DV);
         }
 
         VariableInfo variableInfo = getReturnAsVariable();
@@ -451,12 +451,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // and no SRV
             if (noReturnStatementReachable()) {
                 methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
-                methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE_DV);
-                methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE_DV);
-                methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                methodAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
+                methodAnalysis.setProperty(Property.IDENTITY, Level.FALSE_DV);
+                methodAnalysis.setProperty(Property.FLUENT, Level.FALSE_DV);
+                methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
                 methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-                methodAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
+                methodAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
                 return DONE;
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
@@ -471,7 +471,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
-            DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return modified.causesOfDelay();
@@ -489,12 +489,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             }
         }
 
-        DV notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+        DV notNull = variableInfo.getProperty(Property.NOT_NULL_EXPRESSION);
         if (notNull.isDelayed()) {
             log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
             return notNull.causesOfDelay();
         }
-        methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
+        methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
 
         boolean valueIsConstantField;
         VariableExpression ve;
@@ -502,7 +502,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 && (ve = inlined.expression().asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            DV constantField = fieldAnalysis.getProperty(VariableProperty.CONSTANT);
+            DV constantField = fieldAnalysis.getProperty(Property.CONSTANT);
             if (constantField.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
@@ -521,14 +521,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         } else {
             methodAnalysis.annotations.put(e2.constant, false);
         }
-        methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBoolDv(isConstant));
+        methodAnalysis.setProperty(Property.CONSTANT, Level.fromBoolDv(isConstant));
         log(METHOD_ANALYSER, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
         VariableExpression vv;
         boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
-        methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBoolDv(isFluent));
+        methodAnalysis.setProperty(Property.FLUENT, Level.fromBoolDv(isFluent));
         log(METHOD_ANALYSER, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
@@ -539,10 +539,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             methodAnalysis.setProperty(IDENTITY, Level.fromBoolDv(isIdentity));
         }
         // this is pretty dangerous for IDENTITY / will work for CONTAINER
-        for (VariableProperty variableProperty : READ_FROM_RETURN_VALUE_PROPERTIES) {
-            DV v = variableInfo.getProperty(variableProperty, variableProperty.falseDv);
-            methodAnalysis.setProperty(variableProperty, v);
-            log(NOT_NULL, "Set {} of {} to value {}", variableProperty, methodInfo.fullyQualifiedName, v);
+        for (Property property : READ_FROM_RETURN_VALUE_PROPERTIES) {
+            DV v = variableInfo.getProperty(property, property.falseDv);
+            methodAnalysis.setProperty(property, v);
+            log(NOT_NULL, "Set {} of {} to value {}", property, methodInfo.fullyQualifiedName, v);
         }
 
         return DONE;
@@ -594,9 +594,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 fieldInfo = cvf.localCopyOf().fieldInfo;
             } else fieldInfo = null;
             if (fieldInfo != null) {
-                DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL);
+                DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
                 if (effectivelyFinal.isDelayed()) {
-                    return DelayedExpression.forFieldProperty(fieldInfo, VariableProperty.FINAL, effectivelyFinal.causesOfDelay());
+                    return DelayedExpression.forFieldProperty(fieldInfo, Property.FINAL, effectivelyFinal.causesOfDelay());
                 }
                 if (effectivelyFinal.valueIsFalse()) {
                     containsVariableFields = true;
@@ -632,7 +632,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         boolean isCycle = methodInfo.partOfCallCycle();
         if (!isCycle) return DONE;
 
-        DV modified = methodAnalysis.getProperty(VariableProperty.TEMP_MODIFIED_METHOD);
+        DV modified = methodAnalysis.getProperty(Property.TEMP_MODIFIED_METHOD);
         TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
         Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
         TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
@@ -640,13 +640,13 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // we decide for the group
         if (modified.valueIsTrue()) {
             if (!cycleInfo.modified.isSet()) cycleInfo.modified.set();
-            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE_DV);
+            methodAnalysis.setProperty(Property.MODIFIED_METHOD, Level.TRUE_DV);
             return DONE;
         }
 
         // others have decided for us
         if (cycleInfo.modified.isSet()) {
-            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE_DV);
+            methodAnalysis.setProperty(Property.MODIFIED_METHOD, Level.TRUE_DV);
             return DONE;
         }
 
@@ -654,13 +654,13 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (!cycleInfo.nonModified.contains(methodInfo)) cycleInfo.nonModified.add(methodInfo);
 
             if (cycleInfo.nonModified.size() == cycle.size()) {
-                methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE_DV);
+                methodAnalysis.setProperty(Property.MODIFIED_METHOD, Level.FALSE_DV);
                 return DONE;
             }
         }
         // we all agree
         if (cycleInfo.nonModified.size() == cycle.size()) {
-            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE_DV);
+            methodAnalysis.setProperty(Property.MODIFIED_METHOD, Level.FALSE_DV);
             return DONE;
         }
         // wait
@@ -670,9 +670,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private AnalysisStatus computeModified() {
         boolean isCycle = methodInfo.partOfCallCycle();
-        VariableProperty variableProperty = isCycle ? VariableProperty.TEMP_MODIFIED_METHOD : VariableProperty.MODIFIED_METHOD;
+        Property property = isCycle ? Property.TEMP_MODIFIED_METHOD : Property.MODIFIED_METHOD;
 
-        if (methodAnalysis.getProperty(variableProperty).isDone()) return DONE;
+        if (methodAnalysis.getProperty(property).isDone()) return DONE;
         if (methodInfo.isConstructor) {
             methodAnalysis.setProperty(MODIFIED_METHOD, Level.TRUE_DV);
             return DONE;
@@ -686,7 +686,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             log(MODIFICATION, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(variableProperty, Level.TRUE_DV);
+            methodAnalysis.setProperty(property, Level.TRUE_DV);
             return DONE;
         }
 
@@ -707,7 +707,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (contextModified.valueIsFalse()) { // also in static cases, sometimes a modification is written to "this" (MethodCall)
             VariableInfo thisVariable = getThisAsVariable();
             if (thisVariable != null) {
-                DV thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
+                DV thisModified = thisVariable.getProperty(Property.CONTEXT_MODIFIED);
                 if (thisModified.isDelayed()) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
@@ -731,7 +731,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
         if (contextModified.valueIsFalse()) {
             DV maxModified = methodLevelData.copyModificationStatusFrom.stream()
-                    .map(mi -> mi.getKey().methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD))
+                    .map(mi -> mi.getKey().methodAnalysis.get().getProperty(Property.MODIFIED_METHOD))
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
@@ -744,7 +744,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
                 contextModified.valueIsTrue() ? "@Modified" : "@NotModified");
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(variableProperty, contextModified);
+        methodAnalysis.setProperty(property, contextModified);
         return DONE;
     }
 
@@ -775,7 +775,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private DV modifiedOrNotTransparentAndDependent(MethodInfo methodInfo) {
         MethodAnalysis ma = analyserContext.getMethodAnalysis(methodInfo);
-        DV mm = ma.getProperty(VariableProperty.MODIFIED_METHOD);
+        DV mm = ma.getProperty(Property.MODIFIED_METHOD);
         if (!mm.valueIsFalse()) return mm;
         DV transparent = methodInfo.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo);
         if (transparent.isDelayed()) return transparent;
@@ -928,38 +928,38 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         @Override
-        public DV getProperty(Variable variable, VariableProperty variableProperty) {
+        public DV getProperty(Variable variable, Property property) {
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = external(variableProperty);
+                Property vp = external(property);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
-                        ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
+                Property vp = property == Property.NOT_NULL_EXPRESSION
+                        ? Property.NOT_NULL_PARAMETER : property;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             if (variable instanceof This thisVar) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
-                return typeAnalysis.getProperty(variableProperty);
+                return typeAnalysis.getProperty(property);
             }
             throw new UnsupportedOperationException("Variable: " + variable.fullyQualifiedName() + " type " + variable.getClass());
         }
 
-        private VariableProperty external(VariableProperty variableProperty) {
-            if (variableProperty == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
-            if (variableProperty == IMMUTABLE) return EXTERNAL_IMMUTABLE;
-            return variableProperty;
+        private Property external(Property property) {
+            if (property == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
+            if (property == IMMUTABLE) return EXTERNAL_IMMUTABLE;
+            return property;
         }
 
         @Override
         public DV getProperty(Expression value,
-                              VariableProperty variableProperty,
+                              Property property,
                               boolean duringEvaluation,
                               boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve) {
-                return getProperty(ve.variable(), variableProperty);
+                return getProperty(ve.variable(), property);
             }
-            return value.getProperty(this, variableProperty, true);
+            return value.getProperty(this, property, true);
         }
 
         // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression

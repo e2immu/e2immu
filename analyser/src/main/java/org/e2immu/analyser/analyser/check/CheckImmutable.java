@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;
 
@@ -48,7 +48,7 @@ public class CheckImmutable {
                 Integer i = ae.extract("level", null);
                 return i == null ? null : Integer.toString(i);
             };
-            String value2 = CheckIndependent.levelString(analysis, VariableProperty.IMMUTABLE);
+            String value2 = CheckIndependent.levelString(analysis, Property.IMMUTABLE);
             kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
         }
 
@@ -72,7 +72,7 @@ public class CheckImmutable {
     }
 
     private static String recursive(AbstractAnalysisBuilder analysis) {
-        DV immutable = analysis.getProperty(VariableProperty.IMMUTABLE);
+        DV immutable = analysis.getProperty(Property.IMMUTABLE);
         if (MultiLevel.level(immutable) == MultiLevel.MAX_LEVEL) return "true";
         return null;
     }

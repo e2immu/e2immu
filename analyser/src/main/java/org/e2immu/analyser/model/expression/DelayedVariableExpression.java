@@ -138,7 +138,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
             builder.compose(scopeResult);
         }
 
-        DV cnn = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (cnn.gt(MultiLevel.NULLABLE_DV)) {
             builder.variableOccursInNotNullContext(variable, this, cnn);
         }
@@ -151,8 +151,8 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty && Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        if (Property.NOT_NULL_EXPRESSION == property && Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
         return causesOfDelay;

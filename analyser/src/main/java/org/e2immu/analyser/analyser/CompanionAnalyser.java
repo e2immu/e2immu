@@ -71,7 +71,7 @@ public class CompanionAnalyser {
                 companionAnalysis.value.set(EmptyExpression.EMPTY_EXPRESSION);
                 return DONE;
             }
-            DV modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(Property.MODIFIED_METHOD);
             if (modifyingMainMethod.isDelayed() && !mainMethod.isConstructor) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
@@ -157,8 +157,8 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
-            return variableProperty.falseDv; // but no delay, see Equals.checkParameter
+        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
+            return property.falseDv; // but no delay, see Equals.checkParameter
         }
 
         @Override

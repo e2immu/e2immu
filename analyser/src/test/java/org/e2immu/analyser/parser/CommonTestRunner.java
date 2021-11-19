@@ -18,7 +18,7 @@ package org.e2immu.analyser.parser;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.Formatter;
@@ -223,17 +223,17 @@ public abstract class CommonTestRunner {
                 "Expected " + as + " for " + label + "; map is\n" + statuses)));
     }
 
-    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, DV expect, VariableProperty property) {
+    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, DV expect, Property property) {
         DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
         assertEquals(expect, value);
     }
 
-    public void assertDv(CommonVisitorData d, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, DV expect, Property property) {
         DV value = d.getProperty(property);
         assertEquals(expect, value);
     }
 
-    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
+    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, Property property) {
         DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
             assertEquals(delayed, value.causesOfDelay().toString(), value.isDone() ? "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property :
@@ -243,7 +243,7 @@ public abstract class CommonTestRunner {
         }
     }
 
-    public void assertDv(CommonVisitorData d, int delayedUpToIncluding, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, int delayedUpToIncluding, DV expect, Property property) {
         DV value = d.getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
             assertTrue(value == null || value.isDelayed(),
@@ -253,7 +253,7 @@ public abstract class CommonTestRunner {
         }
     }
 
-    public void assertDv(CommonVisitorData d, String delayed, int delayedUpToIncluding, DV expect, VariableProperty property) {
+    public void assertDv(CommonVisitorData d, String delayed, int delayedUpToIncluding, DV expect, Property property) {
         DV value = d.getProperty(property);
         if (d.iteration() <= delayedUpToIncluding) {
             assertEquals(delayed, value.toString(),

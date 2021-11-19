@@ -16,8 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Level;
@@ -55,8 +54,8 @@ public class StringConcat extends BinaryOperator {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return switch (variableProperty) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return switch (property) {
             case CONTAINER -> Level.TRUE_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;

@@ -90,22 +90,22 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
         ForwardEvaluationInfo scopeForward;
 
-        DV propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        DV propagateMod = forwardEvaluationInfo.getProperty(Property.PROPAGATE_MODIFICATION);
         if (propagateMod.valueIsTrue()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             DV contextModifiedDelay = Level.fromBoolDv(modified .isDelayed());
 
-            Map<VariableProperty, DV> map = Map.of(
-                    VariableProperty.CONTEXT_MODIFIED, modified,
-                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            Map<Property, DV> map = Map.of(
+                    Property.CONTEXT_MODIFIED, modified,
+                    Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
             scopeForward = new ForwardEvaluationInfo(map, true, forwardEvaluationInfo.assignmentTarget());
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {
                 This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-                builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
+                builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
             }
         } else {
             scopeForward = forwardEvaluationInfo.copyNotNull();
@@ -132,15 +132,15 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return switch (variableProperty) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTAINER -> Level.TRUE_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
             case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-            default -> throw new UnsupportedOperationException("Property: " + variableProperty);
+            default -> throw new UnsupportedOperationException("Property: " + property);
         };
     }
 }

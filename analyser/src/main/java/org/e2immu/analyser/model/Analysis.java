@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -85,16 +85,16 @@ public interface Analysis {
 
      getXXXProperty is then always implemented in XXXAnalysis
      */
-    DV getProperty(VariableProperty variableProperty);
+    DV getProperty(Property property);
 
     // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
-    DV getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty);
+    DV getPropertyFromMapDelayWhenAbsent(Property property);
 
     /**
      * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
      * Reverts to <code>variableProperty.valueWhenAbsent</code> when no value present in map.
      */
-    DV getPropertyFromMapNeverDelay(VariableProperty variableProperty);
+    DV getPropertyFromMapNeverDelay(Property property);
 
     Location location();
 
@@ -105,7 +105,7 @@ public interface Analysis {
     /*
     Has to return a (new) modifiable map for efficiency reasons
      */
-    default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) {
+    default Map<Property, Integer> getProperties(Set<Property> forwardPropertiesOnParameters) {
         return new HashMap<>();
     }
 

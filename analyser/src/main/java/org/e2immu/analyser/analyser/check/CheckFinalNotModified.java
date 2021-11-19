@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Final;
@@ -38,9 +38,9 @@ public class CheckFinalNotModified {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
         boolean isModifiedOrVariable;
         if (Final.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsFalse();
+            isModifiedOrVariable = fieldAnalysis.getProperty(Property.FINAL).valueIsFalse();
         } else if (NotModified.class.equals(annotation)) {
-            isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE).valueIsFalse();
+            isModifiedOrVariable = fieldAnalysis.getProperty(Property.MODIFIED_VARIABLE).valueIsFalse();
         } else throw new UnsupportedOperationException();
 
         String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;

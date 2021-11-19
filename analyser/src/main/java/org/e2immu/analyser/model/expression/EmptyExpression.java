@@ -69,8 +69,8 @@ public record EmptyExpression(String msg) implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return variableProperty.falseDv;
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return property.falseDv;
     }
 
     @Override

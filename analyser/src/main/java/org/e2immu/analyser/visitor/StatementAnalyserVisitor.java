@@ -45,8 +45,8 @@ public interface StatementAnalyserVisitor {
                     .orElse(null);
         }
 
-        public DV getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty, false, false);
+        public DV getProperty(Expression value, Property property) {
+            return evaluationContext.getProperty(value, property, false, false);
         }
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {

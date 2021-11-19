@@ -122,14 +122,14 @@ public interface VariableInfoContainer {
     // writing operations
     void setValue(Expression value,
                   LinkedVariables linkedVariables,
-                  Map<VariableProperty, DV> propertiesToSet,
+                  Map<Property, DV> propertiesToSet,
                   boolean initialOrEvaluation);
 
-    default void setProperty(VariableProperty variableProperty, DV value, Level level) {
-        setProperty(variableProperty, value, true, level);
+    default void setProperty(Property property, DV value, Level level) {
+        setProperty(property, value, true, level);
     }
 
-    void setProperty(VariableProperty variableProperty, DV value, boolean failWhenTryingToWriteALowerValue, Level level);
+    void setProperty(Property property, DV value, boolean failWhenTryingToWriteALowerValue, Level level);
 
     /*
     copy from one statement to the next.

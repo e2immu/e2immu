@@ -97,17 +97,17 @@ public interface TypeAnalysis extends Analysis {
                 }).collect(Collectors.toUnmodifiableSet()));
     }
 
-    default DV getTypeProperty(VariableProperty variableProperty) {
+    default DV getTypeProperty(Property property) {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
 
-        switch (variableProperty) {
+        switch (property) {
             case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
                 // ensure that we do not throw an exception
             }
-            default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, variableProperty);
+            default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
         }
-        return doNotDelay ? getPropertyFromMapNeverDelay(variableProperty)
-                : getPropertyFromMapDelayWhenAbsent(variableProperty);
+        return doNotDelay ? getPropertyFromMapNeverDelay(property)
+                : getPropertyFromMapDelayWhenAbsent(property);
     }
 
     /**
@@ -119,11 +119,11 @@ public interface TypeAnalysis extends Analysis {
         return getAspects().containsKey(aspect);
     }
 
-    default DV maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+    default DV maxValueFromInterfacesImplemented(AnalysisProvider analysisProvider, Property property) {
         Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream().filter(TypeInfo::isInterface);
         return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
-                .map(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty))
+                .map(typeAnalysis -> typeAnalysis.getTypeProperty(property))
                 .reduce(Level.NOT_INVOLVED_DV, DV::max);
     }
 

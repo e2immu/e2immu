@@ -121,7 +121,7 @@ public class TestLinkingExpression {
         // new ArrayList<>(v).get(0)
         //TypeInfo list = typeContext.getFullyQualified(List.class);
         MethodInfo listGet = arrayList.findUniqueMethod("get", 1);
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, listGet.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, listGet.methodAnalysis.get().getProperty(Property.INDEPENDENT));
 
         MethodCall get0 = new MethodCall(Identifier.CONSTANT, newObject, listGet,
                 List.of(newInt(0)));
@@ -131,7 +131,7 @@ public class TestLinkingExpression {
 
         // new ArrayList<>(v).subList(1, 2)
         MethodInfo listSubList = arrayList.findUniqueMethod("subList", 2);
-        assertEquals(MultiLevel.DEPENDENT_DV, listSubList.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.DEPENDENT_DV, listSubList.methodAnalysis.get().getProperty(Property.INDEPENDENT));
         MethodCall subList12 = new MethodCall(Identifier.CONSTANT, newObject, listSubList,
                 List.of(newInt(1), newInt(2)));
 
@@ -153,10 +153,10 @@ public class TestLinkingExpression {
         TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
         // see XML file
         MethodInfo addIndex = arrayList.findUniqueMethod("add", 2);
-        assertEquals(Level.TRUE_DV, addIndex.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.TRUE_DV, addIndex.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis p1 = addIndex.parameterAnalysis(1);
-        assertEquals(MultiLevel.INDEPENDENT_1_DV, p1.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, p1.getProperty(Property.INDEPENDENT));
 
         ParameterizedType arrayListInteger = new ParameterizedType(arrayList, List.of(integer()));
         Variable v = new LocalVariableReference(new LocalVariable("v", arrayListInteger));

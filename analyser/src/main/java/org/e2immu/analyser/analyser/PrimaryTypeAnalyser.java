@@ -122,7 +122,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                     methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                     // finalizers are done early, before the first assignments
                     if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                        typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE_DV);
+                        typeAnalyser.typeAnalysis.setProperty(Property.FINALIZER, Level.TRUE_DV);
                     }
                 }
             });

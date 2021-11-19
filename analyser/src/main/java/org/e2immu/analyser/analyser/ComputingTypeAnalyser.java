@@ -516,7 +516,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         CausesOfDelay modificationDelays = myMethodAnalysersExcludingSAMs.stream()
                 .filter(methodAnalyser -> !methodAnalyser.methodInfo.isAbstract())
                 .map(methodAnalyser -> methodAnalyser.methodAnalysis
-                        .getProperty(VariableProperty.MODIFIED_METHOD).causesOfDelay())
+                        .getProperty(Property.MODIFIED_METHOD).causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (modificationDelays.isDelayed()) {
             log(DELAYED, "Delaying only mark E2 in {}, modification delayed", typeInfo.fullyQualifiedName);
@@ -525,7 +525,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
 
         CausesOfDelay preconditionForEventualDelays = myMethodAnalysersExcludingSAMs.stream()
-                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD).valueIsTrue())
+                .filter(ma -> ma.methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsTrue())
                 .map(ma -> ma.methodAnalysis.preconditionForEventualStatus())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (preconditionForEventualDelays.isDelayed()) {
@@ -535,7 +535,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return preconditionForEventualDelays;
         }
         Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream()
-                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD).valueIsTrue() &&
+                .filter(ma -> ma.methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsTrue() &&
                         ma.methodAnalysis.preconditionForEventual.get().isEmpty())
                 .findFirst();
         if (optEmptyPreconditions.isPresent()) {
@@ -547,7 +547,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         Map<FieldReference, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            DV modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            DV modified = methodAnalyser.methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.valueIsTrue()) {
                 Optional<Precondition> precondition = methodAnalyser.methodAnalysis.preconditionForEventual.get();
                 if (precondition.isPresent()) {
@@ -612,14 +612,14 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     private AnalysisStatus analyseContainer() {
-        DV container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        DV container = typeAnalysis.getProperty(Property.CONTAINER);
         if (container.isDone()) return DONE;
 
-        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER);
+        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.CONTAINER);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
         CausesOfDelay fieldsReady = myFieldAnalysers.stream()
-                .map(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsFalse()
+                .map(fa -> fa.fieldAnalysis.getProperty(Property.FINAL).valueIsFalse()
                         ? CausesOfDelay.EMPTY : fa.fieldAnalysis.getValue().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (fieldsReady.isDelayed()) {
@@ -637,7 +637,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (!methodAnalyser.methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodAnalyser.methodInspection.getParameters()) {
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                    DV modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+                    DV modified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
                     if (modified.isDelayed() && methodAnalyser.hasCode()) {
                         log(DELAYED, "Delaying container, modification of parameter {} undecided",
                                 parameterInfo.fullyQualifiedName());
@@ -648,13 +648,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.methodInfo.distinguishingName());
-                        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE_DV);
+                        typeAnalysis.setProperty(Property.CONTAINER, Level.FALSE_DV);
                         return DONE;
                     }
                 }
             }
         }
-        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE_DV);
+        typeAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
         log(TYPE_ANALYSER, "Mark {} as @Container", typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -676,10 +676,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
      * @return true if a decision was made
      */
     private AnalysisStatus analyseIndependent() {
-        DV typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+        DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
 
-        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT);
+        MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
         DV valueFromFields = myFieldAnalysers.stream()
@@ -698,7 +698,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             valueFromMethodParameters = myMethodAndConstructorAnalysersExcludingSAMs.stream()
                     .filter(ma -> !ma.methodInfo.isPrivate(analyserContext))
                     .flatMap(ma -> ma.parameterAnalyses.stream())
-                    .map(pa -> pa.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT))
+                    .map(pa -> pa.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodParameters.isDelayed()) {
                 log(DELAYED, "Independence of type {} delayed, waiting for parameter independence",
@@ -712,7 +712,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         } else {
             valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
                     .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodInfo.hasReturnValue())
-                    .map(ma -> ma.methodAnalysis.getProperty(VariableProperty.INDEPENDENT))
+                    .map(ma -> ma.methodAnalysis.getProperty(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodReturnValue.isDelayed()) {
                 log(DELAYED, "Independence of type {} delayed, waiting for method independence",
@@ -725,12 +725,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .min(valueFromFields)
                 .min(valueFromMethodParameters);
         log(INDEPENDENCE, "Set independence of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
-        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, finalValue);
+        typeAnalysis.setProperty(Property.INDEPENDENT, finalValue);
         return DONE;
     }
 
     private DV independenceOfField(FieldAnalysis fieldAnalysis) {
-        DV immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+        DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         if (immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) return MultiLevel.DEPENDENT_DV;
         TypeInfo bestType = fieldAnalysis.getFieldInfo().type.bestTypeInfo(analyserContext);
@@ -746,21 +746,21 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
     private static final AnalysisStatus MARKER = new AnalysisStatus.NotDelayed(4, "MARKER"); // temporary marker
 
-    private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
+    private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(Property property) {
         DV[] propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> typeAnalysis.getProperty(variableProperty))
+                .map(typeAnalysis -> typeAnalysis.getProperty(property))
                 .toArray(DV[]::new);
-        if (propertyValues.length == 0) return new MaxValueStatus(variableProperty.bestDv, MARKER);
+        if (propertyValues.length == 0) return new MaxValueStatus(property.bestDv, MARKER);
         DV min = Arrays.stream(propertyValues).reduce(DV.MAX_INT_DV, DV::min);
         if (min.isDelayed()) {
             log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
-                    variableProperty, typeInfo.fullyQualifiedName);
+                    property, typeInfo.fullyQualifiedName);
             return new MaxValueStatus(min, min.causesOfDelay());
         }
-        if (min.equals(variableProperty.falseDv)) {
-            log(ANALYSER, "{} set to least value for {}, because of parent", typeInfo.fullyQualifiedName, variableProperty);
-            typeAnalysis.setProperty(variableProperty, variableProperty.falseDv);
-            return new MaxValueStatus(variableProperty.falseDv, DONE);
+        if (min.equals(property.falseDv)) {
+            log(ANALYSER, "{} set to least value for {}, because of parent", typeInfo.fullyQualifiedName, property);
+            typeAnalysis.setProperty(property, property.falseDv);
+            return new MaxValueStatus(property.falseDv, DONE);
         }
         return new MaxValueStatus(min, MARKER);
     }
@@ -768,7 +768,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private DV allMyFieldsFinal() {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
-            DV effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            DV effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(Property.FINAL);
             if (effectivelyFinal.isDelayed()) {
                 log(DELAYED, "Delay on type {}, field {} effectively final not known yet",
                         typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
@@ -799,7 +799,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
      * @return true if a change was made to typeAnalysis
      */
     private AnalysisStatus analyseEffectivelyEventuallyE2Immutable() {
-        DV typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        DV typeImmutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (typeImmutable.isDone()) return DONE; // we have a decision already
 
         // effectively E1
@@ -813,13 +813,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             parentEffective = MultiLevel.Effective.EFFECTIVE;
         } else {
             TypeInfo parentType = typeInspection.parentClass().typeInfo;
-            DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(VariableProperty.IMMUTABLE);
+            DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(Property.IMMUTABLE);
             parentEffective = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.Level.IMMUTABLE_1);
         }
 
         DV fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.IMMUTABLE))
-                .reduce(VariableProperty.IMMUTABLE.bestDv, DV::min);
+                .map(typeAnalysis -> typeAnalysis.getProperty(Property.IMMUTABLE))
+                .reduce(Property.IMMUTABLE.bestDv, DV::min);
         if (fromParentOrEnclosing.isDelayed()) {
             log(DELAYED, "Waiting with immutable on {} for parent or enclosing types", typeInfo.fullyQualifiedName);
             return fromParentOrEnclosing.causesOfDelay();
@@ -828,7 +828,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         if (fromParentOrEnclosing.equals(MultiLevel.MUTABLE_DV)) {
             log(IMMUTABLE_LOG, "{} is not an E1Immutable, E2Immutable class, because parent or enclosing is Mutable",
                     typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
+            typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
             return DONE;
         }
 
@@ -845,7 +845,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
             if (!isEventuallyE1 && parentEffective != MultiLevel.Effective.EVENTUAL) {
                 log(IMMUTABLE_LOG, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE_DV);
+                typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
                 return DONE;
             }
             myWhenEXFails = MultiLevel.EVENTUALLY_E1IMMUTABLE_DV;
@@ -896,7 +896,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
             // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
-            DV fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+            DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
             MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
 
             // field is of the type of the class being analysed... it will not make the difference.
@@ -931,7 +931,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
-                DV modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
+                DV modified = fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
                 if (!eventual && modified.isDelayed()) {
@@ -947,7 +947,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     } else {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
+                        typeAnalysis.setProperty(Property.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                 }
@@ -958,7 +958,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
+                        typeAnalysis.setProperty(Property.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                 } else {
@@ -979,7 +979,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
             for (MethodAnalyser constructor : myConstructors) {
                 for (ParameterAnalysis parameterAnalysis : constructor.parameterAnalyses) {
-                    DV independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                    DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                     if (independent.isDelayed()) {
                         log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
                                 constructor.methodInfo.distinguishingName());
@@ -988,7 +988,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     if (independent.equals(MultiLevel.DEPENDENT_DV)) {
                         log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is @Dependent",
                                 typeInfo.fullyQualifiedName, constructor.methodInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
+                        typeAnalysis.setProperty(Property.IMMUTABLE, whenEXFails);
                         return DONE;
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
@@ -998,11 +998,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
             for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
                 if (methodAnalyser.methodInfo.isVoid()) continue; // we're looking at return types
-                DV modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                DV modified = methodAnalyser.methodAnalysis.getProperty(Property.MODIFIED_METHOD);
                 // in the eventual case, we only need to look at the non-modifying methods
                 // calling a modifying method will result in an error
                 if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
-                    DV returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                    DV returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(Property.IMMUTABLE);
 
                     ParameterizedType returnType;
                     Expression srv = methodAnalyser.methodAnalysis.getSingleReturnValue();
@@ -1021,7 +1021,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
                     if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
-                        DV independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                        DV independent = methodAnalyser.methodAnalysis.getProperty(Property.INDEPENDENT);
                         if (independent.isDelayed()) {
                             if (returnType.typeInfo == typeInfo) {
                                 log(IMMUTABLE_LOG, "Cannot decide if method {} is independent, but given that its return type is a self reference, don't care",
@@ -1035,7 +1035,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         if (independent.equals(MultiLevel.DEPENDENT_DV)) {
                             log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                     typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenEXFails);
+                            typeAnalysis.setProperty(Property.IMMUTABLE, whenEXFails);
                             return DONE;
                         }
                         int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
@@ -1070,7 +1070,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));
         log(IMMUTABLE_LOG, "Set @Immutable of type {} to {}", typeInfo.fullyQualifiedName, finalValue);
-        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, finalValue);
+        typeAnalysis.setProperty(Property.IMMUTABLE, finalValue);
         return DONE;
     }
 
@@ -1095,7 +1095,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
      */
     private AnalysisStatus analyseSingleton() {
-        DV singleton = typeAnalysis.getProperty(VariableProperty.SINGLETON);
+        DV singleton = typeAnalysis.getProperty(Property.SINGLETON);
         if (singleton.isDone()) return DONE;
 
         // system 1: private constructors
@@ -1118,7 +1118,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 if (fieldsWithInitialiser == 1L) {
                     log(TYPE_ANALYSER, "Type {} is @Singleton, found exactly one new object creation in field initialiser",
                             typeInfo.fullyQualifiedName);
-                    typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.TRUE_DV);
+                    typeAnalysis.setProperty(Property.SINGLETON, Level.TRUE_DV);
                     return DONE;
                 }
             }
@@ -1162,7 +1162,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                             booleanConstant.getValue() == wantAssignmentToTrue) {
                         log(TYPE_ANALYSER, "Type {} is a  @Singleton, found boolean variable with precondition",
                                 typeInfo.fullyQualifiedName);
-                        typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.TRUE_DV);
+                        typeAnalysis.setProperty(Property.SINGLETON, Level.TRUE_DV);
                         return DONE;
                     }
                 }
@@ -1171,7 +1171,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         // no hit
         log(TYPE_ANALYSER, "Type {} is not a  @Singleton", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.FALSE_DV);
+        typeAnalysis.setProperty(Property.SINGLETON, Level.FALSE_DV);
         return DONE;
     }
 
@@ -1184,17 +1184,17 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     }
 
     private AnalysisStatus analyseExtensionClass() {
-        DV extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
+        DV extensionClass = typeAnalysis.getProperty(Property.EXTENSION_CLASS);
         if (extensionClass.isDone()) return DONE;
 
-        DV e2Immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        DV e2Immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (e2Immutable.isDelayed()) {
             log(DELAYED, "Extension class: don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return e2Immutable.causesOfDelay();
         }
         if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not an @ExtensionClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.EXTENSION_CLASS, Level.FALSE_DV);
             return DONE;
         }
 
@@ -1225,10 +1225,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 if (methodInfo.hasReturnValue()) {
                     if (parameters.isEmpty()) {
                         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
-                        notNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                        notNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
                     } else {
                         ParameterAnalysis p0 = analyserContext.getParameterAnalysis(parameters.get(0));
-                        notNull = p0.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+                        notNull = p0.getProperty(Property.NOT_NULL_PARAMETER);
                     }
                     if (notNull.isDelayed()) {
                         log(DELAYED, "Delaying @ExtensionClass of {} until @NotNull of {} known", typeInfo.fullyQualifiedName,
@@ -1246,24 +1246,24 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             }
         }
         boolean isExtensionClass = commonTypeOfFirstParameter != null && haveFirstParameter;
-        typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.fromBoolDv(isExtensionClass));
+        typeAnalysis.setProperty(Property.EXTENSION_CLASS, Level.fromBoolDv(isExtensionClass));
         log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName + " marked " + (isExtensionClass ? "" : "not ")
                 + "@ExtensionClass");
         return DONE;
     }
 
     private AnalysisStatus analyseUtilityClass() {
-        DV utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
+        DV utilityClass = typeAnalysis.getProperty(Property.UTILITY_CLASS);
         if (utilityClass.isDone()) return DONE;
 
-        DV e2Immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        DV e2Immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (e2Immutable.isDelayed()) {
             log(DELAYED, "Utility class: Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return e2Immutable.causesOfDelay();
         }
         if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
             return DONE;
         }
 
@@ -1271,7 +1271,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (!methodInfo.methodInspection.get().isStatic()) {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
-                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
                 return DONE;
             }
         }
@@ -1280,7 +1280,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (!constructor.isPrivate()) {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
-                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
                 return DONE;
             }
         }
@@ -1288,7 +1288,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         if (typeInspection.constructors().isEmpty()) {
             log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
-            typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
             return DONE;
         }
 
@@ -1298,12 +1298,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.methodInfo.fullyQualifiedName());
-                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
                 return DONE;
             }
         }
 
-        typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.TRUE_DV);
+        typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.TRUE_DV);
         log(TYPE_ANALYSER, "Type {} marked @UtilityClass", typeInfo.fullyQualifiedName);
         return DONE;
     }

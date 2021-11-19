@@ -131,27 +131,27 @@ public class ArrayInitializer extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (multiExpression.isEmpty()) {
-            return switch (variableProperty) {
+            return switch (property) {
                 case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                 case CONSTANT, CONTAINER -> Level.TRUE_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
-                default -> throw new UnsupportedOperationException("Property " + variableProperty);
+                default -> throw new UnsupportedOperationException("Property " + property);
             };
         }
-        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
-            DV notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
+        if (Property.NOT_NULL_EXPRESSION == property) {
+            DV notNull = multiExpression.getProperty(evaluationContext, property, duringEvaluation);
             if (notNull.isDelayed()) return notNull;
             return MultiLevel.composeOneLevelMoreNotNull(notNull);
         }
-        if (VariableProperty.EXTERNAL_IMMUTABLE == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
+        if (Property.EXTERNAL_IMMUTABLE == property || Property.IMMUTABLE == property) {
             // it is an array
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
         }
         // default is to refer to each of the components
-        return multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
+        return multiExpression.getProperty(evaluationContext, property, duringEvaluation);
     }
 
     @Override

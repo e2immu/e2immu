@@ -91,7 +91,7 @@ public record ConstructorCall(
     }
 
 
-    public Expression removeConstructor(Map<VariableProperty, DV> valueProperties) {
+    public Expression removeConstructor(Map<Property, DV> valueProperties) {
         assert arrayInitializer == null;
         return new Instance(identifier, parameterizedType, diamond, valueProperties);
     }
@@ -186,7 +186,7 @@ public record ConstructorCall(
                 assert parameterInfo.parameterInspection.get().isVarArgs();
             }
             ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-            DV independentOnParameter = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
             LinkedVariables sub = value.linkedVariables(evaluationContext);
             if (independentOnParameter.isDelayed()) {
                 result = result.mergeDelay(sub, independentOnParameter);
@@ -206,21 +206,21 @@ public record ConstructorCall(
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         ParameterizedType pt;
         if (anonymousClass != null) {
             pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
         } else {
             pt = parameterizedType;
         }
-        return switch (variableProperty) {
+        return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT -> pt.defaultIndependent(evaluationContext.getAnalyserContext());
             case IDENTITY -> Level.FALSE_DV;
             case IMMUTABLE -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
             case CONTAINER -> pt.defaultContainer(evaluationContext.getAnalyserContext());
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
-            default -> throw new UnsupportedOperationException("NewObject has no value for " + variableProperty);
+            default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };
     }
 
@@ -358,7 +358,7 @@ public record ConstructorCall(
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 
-        DV cImm = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }

@@ -89,7 +89,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 
@@ -165,7 +165,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
             }
         }
 
-        DV notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        DV notNullRequired = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         VariableExpression ve;
         if (notNullRequired.gt(MultiLevel.NULLABLE_DV) &&
                 (ve = builder.getExpression().asInstanceOf(VariableExpression.class)) != null) {

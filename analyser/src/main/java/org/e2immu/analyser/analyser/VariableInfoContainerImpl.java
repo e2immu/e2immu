@@ -140,9 +140,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value);
-        initial.setProperty(VariableProperty.IMMUTABLE, immutable);
-        initial.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        initial.setProperty(VariableProperty.IDENTITY, org.e2immu.analyser.model.Level.FALSE_DV);
+        initial.setProperty(Property.IMMUTABLE, immutable);
+        initial.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        initial.setProperty(Property.IDENTITY, org.e2immu.analyser.model.Level.FALSE_DV);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -156,7 +156,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             String assignedId,
                                                             String readId,
                                                             Expression value,
-                                                            Map<VariableProperty, DV> properties,
+                                                            Map<Property, DV> properties,
                                                             LinkedVariables linkedVariables,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location,
@@ -164,11 +164,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.setValue(value);
         properties.forEach(initial::setProperty);
-        initial.ensureProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
-        initial.ensureProperty(VariableProperty.CONTEXT_MODIFIED, org.e2immu.analyser.model.Level.FALSE_DV);
-        initial.ensureProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
-        initial.ensureProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
-        initial.ensureProperty(VariableProperty.CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
+        initial.ensureProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
+        initial.ensureProperty(Property.CONTEXT_MODIFIED, org.e2immu.analyser.model.Level.FALSE_DV);
+        initial.ensureProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+        initial.ensureProperty(Property.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        initial.ensureProperty(Property.CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
 
         initial.setLinkedVariables(linkedVariables);
         return new VariableInfoContainerImpl(lvr.variable.nature(),
@@ -261,7 +261,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void setValue(Expression value,
                          LinkedVariables linkedVariables,
-                         Map<VariableProperty, DV> propertiesToSet,
+                         Map<Property, DV> propertiesToSet,
                          boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
@@ -300,19 +300,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setProperty(VariableProperty variableProperty,
+    public void setProperty(Property property,
                             DV value,
                             boolean failWhenTryingToWriteALowerValue,
                             Level level) {
         ensureNotFrozen();
-        Objects.requireNonNull(variableProperty);
+        Objects.requireNonNull(property);
 
         if (Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
             // not writing on a previous
             return;
         }
         VariableInfoImpl variableInfo = getToWrite(level);
-        variableInfo.setProperty(variableProperty, value);
+        variableInfo.setProperty(property, value);
     }
 
     @Override
@@ -459,7 +459,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         eval.propertyStream()
                 .forEach(e -> {
-                    VariableProperty vp = e.getKey();
+                    Property vp = e.getKey();
                     DV value = e.getValue();
                     if (GroupPropertyValues.PROPERTIES.contains(vp)) {
                         groupPropertyValues.set(vp, v, value);
@@ -467,8 +467,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                         mergeImpl.setProperty(vp, value);
                     }
                 });
-        for (VariableProperty variableProperty : GroupPropertyValues.PROPERTIES) {
-            groupPropertyValues.setIfKeyAbsent(variableProperty, v, org.e2immu.analyser.model.Level.NOT_INVOLVED_DV);
+        for (Property property : GroupPropertyValues.PROPERTIES) {
+            groupPropertyValues.setIfKeyAbsent(property, v, org.e2immu.analyser.model.Level.NOT_INVOLVED_DV);
         }
         mergeImpl.setStatementTime(eval.getStatementTime());
     }

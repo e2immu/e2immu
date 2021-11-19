@@ -43,18 +43,18 @@ public interface FieldAnalysis extends Analysis {
     default DV getFieldProperty(AnalysisProvider analysisProvider,
                                 FieldInfo fieldInfo,
                                 TypeInfo bestType,
-                                VariableProperty variableProperty) {
-        DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, variableProperty);
+                                Property property) {
+        DV propertyFromType = ImplicitProperties.fromType(fieldInfo.type, property);
         if (propertyFromType != Level.NOT_INVOLVED_DV) return propertyFromType;
 
-        switch (variableProperty) {
+        switch (property) {
             case IMMUTABLE:
-                DV fieldImmutable = getPropertyFromMapDelayWhenAbsent(variableProperty);
+                DV fieldImmutable = getPropertyFromMapDelayWhenAbsent(property);
                 if (fieldImmutable.isDelayed() && !fieldInfo.owner.shallowAnalysis()) {
                     return fieldImmutable;
                 }
                 DV typeImmutable = fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
-                        analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+                        analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
                 // ignore delay OK because we're in shallow analysis
                 return typeImmutable.maxIgnoreDelay(fieldImmutable);
 
@@ -72,12 +72,12 @@ public interface FieldAnalysis extends Analysis {
                 break;
 
             default:
-                throw new PropertyException(Analyser.AnalyserIdentification.FIELD, variableProperty);
+                throw new PropertyException(Analyser.AnalyserIdentification.FIELD, property);
         }
         if (fieldInfo.owner.shallowAnalysis()) {
-            return getPropertyFromMapNeverDelay(variableProperty);
+            return getPropertyFromMapNeverDelay(property);
         }
-        return getPropertyFromMapDelayWhenAbsent(variableProperty);
+        return getPropertyFromMapDelayWhenAbsent(property);
     }
 
     Expression getInitializerValue();

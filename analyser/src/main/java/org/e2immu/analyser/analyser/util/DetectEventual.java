@@ -44,7 +44,7 @@ public record DetectEventual(MethodInfo methodInfo,
             return MethodAnalysis.delayedEventual(delaysE2);
         }
 
-        DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
         if (modified.isDelayed()) {
             log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(modified.causesOfDelay());

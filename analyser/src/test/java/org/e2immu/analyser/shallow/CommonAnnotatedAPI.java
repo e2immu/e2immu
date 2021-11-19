@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -79,18 +79,18 @@ public abstract class CommonAnnotatedAPI {
     }
 
     protected void testERContainerType(TypeAnalysis typeAnalysis) {
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(VariableProperty.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(VariableProperty.CONTAINER));
-        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(VariableProperty.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.SINGLETON));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(VariableProperty.FINALIZER));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
+        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
 
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.FLUENT));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.IDENTITY));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.FLUENT));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.IDENTITY));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
+        assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.MODIFIED_METHOD));
     }
 }

@@ -25,13 +25,13 @@ public interface Analyser {
 
     enum AnalyserIdentification {
         TYPE(null), // type does not have notNull
-        FIELD(VariableProperty.EXTERNAL_NOT_NULL),
-        PARAMETER(VariableProperty.NOT_NULL_PARAMETER),
-        METHOD(VariableProperty.NOT_NULL_EXPRESSION);
+        FIELD(Property.EXTERNAL_NOT_NULL),
+        PARAMETER(Property.NOT_NULL_PARAMETER),
+        METHOD(Property.NOT_NULL_EXPRESSION);
 
-        public final VariableProperty notNull;
+        public final Property notNull;
 
-        AnalyserIdentification(VariableProperty notNull) {
+        AnalyserIdentification(Property notNull) {
             this.notNull = notNull;
         }
     }

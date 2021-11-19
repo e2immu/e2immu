@@ -21,16 +21,16 @@ import org.e2immu.analyser.parser.Primitives;
 
 public class ImplicitProperties {
 
-    public static DV arrayProperties(VariableProperty variableProperty) {
-        return switch (variableProperty) {
+    public static DV arrayProperties(Property property) {
+        return switch (property) {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
             case CONTAINER -> Level.TRUE_DV;
             default -> Level.NOT_INVOLVED_DV;
         };
     }
 
-    public static DV primitiveProperties(VariableProperty variableProperty) {
-        return switch (variableProperty) {
+    public static DV primitiveProperties(Property property) {
+        return switch (property) {
             case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case CONTAINER -> Level.TRUE_DV;
@@ -40,13 +40,13 @@ public class ImplicitProperties {
         };
     }
 
-    public static DV fromType(ParameterizedType parameterizedType, VariableProperty variableProperty) {
+    public static DV fromType(ParameterizedType parameterizedType, Property property) {
         if (parameterizedType.arrays > 0) {
-            DV arrayPropertyValue = arrayProperties(variableProperty);
+            DV arrayPropertyValue = arrayProperties(property);
             if (arrayPropertyValue != Level.NOT_INVOLVED_DV) return arrayPropertyValue;
         }
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            DV primitivePropertyValue = primitiveProperties(variableProperty);
+            DV primitivePropertyValue = primitiveProperties(property);
             if (primitivePropertyValue != Level.NOT_INVOLVED_DV) return primitivePropertyValue;
         }
         return Level.NOT_INVOLVED_DV;

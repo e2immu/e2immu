@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
@@ -207,7 +207,7 @@ public class EvaluateMethodCall {
             if (delays.isDelayed()) {
                 methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
             } else {
-                Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
+                Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
                         IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE_DV);
                 methodValue = Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
@@ -249,7 +249,7 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            Map<VariableProperty, DV> valueProperties = Instance.primitiveValueProperties();
+            Map<Property, DV> valueProperties = Instance.primitiveValueProperties();
             return Instance.forGetInstance(identifier, primitives.stringParameterizedType, valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
@@ -265,7 +265,7 @@ public class EvaluateMethodCall {
             return DelayedExpression.forValueOf(parameterizedType, immutable.causesOfDelay()
                     .merge(independent.causesOfDelay()).merge(container.causesOfDelay()));
         }
-        Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+        Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                 IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE_DV);
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
@@ -303,7 +303,7 @@ public class EvaluateMethodCall {
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-                if (fieldAnalysis.getProperty(VariableProperty.FINAL).valueIsTrue()) {
+                if (fieldAnalysis.getProperty(Property.FINAL).valueIsTrue()) {
 
                     int i = 0;
                     List<ParameterAnalysis> parameterAnalyses = evaluationContext
@@ -353,7 +353,7 @@ public class EvaluateMethodCall {
 
     private DV modifying(Expression expression) {
         if (expression instanceof MethodCall) {
-            return evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD, false, false);
+            return evaluationContext.getProperty(expression, Property.MODIFIED_METHOD, false, false);
         }
         return Level.FALSE_DV;
     }
@@ -498,7 +498,7 @@ public class EvaluateMethodCall {
                                             MethodAnalysis methodAnalysis,
                                             Expression scope,
                                             Function<CausesOfDelay, LinkedVariables> linkedVariables) {
-        DV fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
+        DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         if (fluent.isDelayed() && methodAnalysis.isNotContracted()) {
             return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(fluent.causesOfDelay()),
                     fluent.causesOfDelay());
@@ -508,7 +508,7 @@ public class EvaluateMethodCall {
     }
 
 
-    private final static VariableProperty[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION, IMMUTABLE};
+    private final static Property[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION, IMMUTABLE};
 
     private static Expression computeIdentity(MethodInfo methodInfo,
                                               ParameterizedType concreteReturnType,
@@ -516,7 +516,7 @@ public class EvaluateMethodCall {
                                               List<Expression> parameters,
                                               Function<CausesOfDelay, LinkedVariables> linkedVariables,
                                               EvaluationContext evaluationContext) {
-        DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed() && methodAnalysis.isNotContracted()) {
             return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(identity.causesOfDelay()),
                     identity.causesOfDelay());
@@ -524,8 +524,8 @@ public class EvaluateMethodCall {
         if (!identity.valueIsTrue()) return null;
 
         Expression parameter = parameters.get(0);
-        Map<VariableProperty, DV> map = new HashMap<>();
-        for (VariableProperty property : PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
+        Map<Property, DV> map = new HashMap<>();
+        for (Property property : PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
             DV v = methodAnalysis.getProperty(property);
             DV p = evaluationContext.getProperty(parameter, property, true, true);
             if (v.isDone() && !v.equals(p)) map.put(property, v);

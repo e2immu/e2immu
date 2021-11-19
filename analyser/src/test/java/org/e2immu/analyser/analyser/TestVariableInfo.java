@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
-import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
+import static org.e2immu.analyser.analyser.Property.CONTAINER;
+import static org.e2immu.analyser.analyser.Property.IDENTITY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestVariableInfo extends CommonVariableInfo {

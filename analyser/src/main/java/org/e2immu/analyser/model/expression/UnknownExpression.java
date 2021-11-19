@@ -53,30 +53,30 @@ public class UnknownExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            return primitiveGetProperty(variableProperty);
+            return primitiveGetProperty(property);
         }
         TypeAnalysis typeAnalysis = parameterizedType.typeInfo == null ? null
                 : evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
-        switch (variableProperty) {
+        switch (property) {
             case IMMUTABLE:
-                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.IMMUTABLE);
             case INDEPENDENT:
-                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.INDEPENDENT);
             case CONTAINER:
-                return typeAnalysis == null ? Level.FALSE_DV : typeAnalysis.getProperty(VariableProperty.CONTAINER);
+                return typeAnalysis == null ? Level.FALSE_DV : typeAnalysis.getProperty(Property.CONTAINER);
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
             case IDENTITY:
                 return Level.FALSE_DV;
         }
-        throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
+        throw new UnsupportedOperationException("No info about " + property + " for primitive");
     }
 
-    public static DV primitiveGetProperty(VariableProperty variableProperty) {
-        switch (variableProperty) {
+    public static DV primitiveGetProperty(Property property) {
+        switch (property) {
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case CONTAINER:
@@ -89,7 +89,7 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }
-        throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
+        throw new UnsupportedOperationException("No info about " + property + " for primitive");
     }
 
     @Override

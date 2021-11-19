@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 class VariableInfoImpl implements VariableInfo {
@@ -51,7 +51,7 @@ class VariableInfoImpl implements VariableInfo {
     // ONLY set to values in iteration 0's evaluation
     private final Set<Integer> readAtStatementTimes;
 
-    private final VariableProperties properties = new VariableProperties();
+    private final Properties properties = new Properties();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
 
     // 20211023 needs to be frozen explicitly
@@ -121,7 +121,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Stream<Map.Entry<VariableProperty, DV>> propertyStream() {
+    public Stream<Map.Entry<Property, DV>> propertyStream() {
         return properties.stream();
     }
 
@@ -146,16 +146,16 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty, DV defaultValue) {
-        if(defaultValue == null) return properties.getOrDefaultNull(variableProperty);
-        return properties.getOrDefault(variableProperty, defaultValue);
+    public DV getProperty(Property property, DV defaultValue) {
+        if(defaultValue == null) return properties.getOrDefaultNull(property);
+        return properties.getOrDefault(property, defaultValue);
     }
 
     @Override
-    public DV getProperty(VariableProperty variableProperty) {
-        DV dv = properties.getOrDefaultNull(variableProperty);
+    public DV getProperty(Property property) {
+        DV dv = properties.getOrDefaultNull(property);
         if(dv == null) {
-            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, variableProperty.causeOfDelay()));
+            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, property.causeOfDelay()));
         }
         return dv;
     }
@@ -171,7 +171,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public VariableProperties getProperties() {
+    public Properties getProperties() {
         return properties;
     }
 
@@ -186,11 +186,11 @@ class VariableInfoImpl implements VariableInfo {
 
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
-    void setProperty(VariableProperty variableProperty, DV value) {
+    void setProperty(Property property, DV value) {
         try {
-            properties.put(variableProperty, value);
+            properties.put(property, value);
         } catch (RuntimeException e) {
-            LOGGER.error("Error setting property {} of {} to {}", variableProperty, variable.fullyQualifiedName(), value);
+            LOGGER.error("Error setting property {} of {} to {}", property, variable.fullyQualifiedName(), value);
             throw e;
         }
     }
@@ -236,15 +236,15 @@ class VariableInfoImpl implements VariableInfo {
     things to set for a new variable
      */
     public void newVariable(boolean notNull) {
-        setProperty(VariableProperty.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
+        setProperty(Property.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
                 .max(variable.parameterizedType().defaultNotNull()));
-        setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
+        setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
         setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
     }
 
-    public void ensureProperty(VariableProperty vp, DV dv) {
+    public void ensureProperty(Property vp, DV dv) {
         DV inMap = getProperty(vp, null);
         if (inMap == null) {
             setProperty(vp, dv);
@@ -253,7 +253,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // ***************************** MERGE RELATED CODE *********************************
 
-    private record MergeOp(VariableProperty variableProperty, BinaryOperator<DV> operator, DV initial) {
+    private record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }
 
     // it is important to note that the properties are NOT read off the value, but from the properties map
@@ -366,7 +366,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
-        Map<VariableProperty, DV> map = evaluationContext.getValueProperties(mergedValue, false);
+        Map<Property, DV> map = evaluationContext.getValueProperties(mergedValue, false);
         map.forEach(this::setProperty);
     }
 
@@ -442,41 +442,41 @@ class VariableInfoImpl implements VariableInfo {
 
             for (VariableInfo vi : list) {
                 if (vi != null) {
-                    DV value = vi.getProperty(mergeOp.variableProperty);
+                    DV value = vi.getProperty(mergeOp.property);
                     commonValue = mergeOp.operator.apply(commonValue, value);
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
-            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.variableProperty)) {
-                groupPropertyValues.set(mergeOp.variableProperty, previous.variable(), commonValue);
+            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.property)) {
+                groupPropertyValues.set(mergeOp.property, previous.variable(), commonValue);
             } else {
                 if (commonValue.isDone()) {
-                    setProperty(mergeOp.variableProperty, commonValue);
+                    setProperty(mergeOp.property, commonValue);
                 }
             }
         }
     }
 
     // used by change data
-    public static Map<VariableProperty, DV> mergeIgnoreAbsent(Map<VariableProperty, DV> m1, Map<VariableProperty, DV> m2) {
+    public static Map<Property, DV> mergeIgnoreAbsent(Map<Property, DV> m1, Map<Property, DV> m2) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
-        Map<VariableProperty, DV> map = new HashMap<>();
+        Map<Property, DV> map = new HashMap<>();
         for (MergeOp mergeOp : MERGE) {
-            DV v1 = m1.getOrDefault(mergeOp.variableProperty, null);
-            DV v2 = m2.getOrDefault(mergeOp.variableProperty, null);
+            DV v1 = m1.getOrDefault(mergeOp.property, null);
+            DV v2 = m2.getOrDefault(mergeOp.property, null);
 
             if (v1 == null) {
                 if (v2 != null) {
-                    map.put(mergeOp.variableProperty, v2);
+                    map.put(mergeOp.property, v2);
                 }
             } else {
                 if (v2 == null) {
-                    map.put(mergeOp.variableProperty, v1);
+                    map.put(mergeOp.property, v1);
                 } else {
                     DV v = mergeOp.operator.apply(v1, v2);
                     if (v.isDelayed()) {
-                        map.put(mergeOp.variableProperty, v);
+                        map.put(mergeOp.property, v);
                     }
                 }
             }
@@ -556,7 +556,7 @@ class VariableInfoImpl implements VariableInfo {
                 .reduce(DV.MIN_INT_DV, DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
-        Map<VariableProperty, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
+        Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
         // FIXME
         return mergeHelper.noConclusion(valueProperties);
     }

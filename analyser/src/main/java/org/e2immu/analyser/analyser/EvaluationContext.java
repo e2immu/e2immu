@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 
 /**
  * Defaults because of tests
@@ -108,38 +108,38 @@ public interface EvaluationContext {
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
-    default DV getProperty(Expression value, VariableProperty variableProperty,
+    default DV getProperty(Expression value, Property property,
                            boolean duringEvaluation,
                            boolean ignoreStateInConditionManager) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
-                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER : variableProperty;
+                Property vp = property == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER : property;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL : variableProperty;
+                Property vp = property == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL : property;
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
-                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(property);
             }
             if (variable instanceof PreAspectVariable pre) {
-                return pre.valueForProperties().getProperty(this, variableProperty, true);
+                return pre.valueForProperties().getProperty(this, property, true);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
         }
-        return value.getProperty(this, variableProperty, true); // will work in many cases
+        return value.getProperty(this, property, true); // will work in many cases
     }
 
     /*
      assumes that currentValue has been queried before!
      */
-    default DV getProperty(Variable variable, VariableProperty variableProperty) {
+    default DV getProperty(Variable variable, Property property) {
         throw new UnsupportedOperationException();
     }
 
-    default DV getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+    default DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
         throw new UnsupportedOperationException();
     }
 
@@ -164,19 +164,19 @@ public interface EvaluationContext {
     }
 
     // DO NOT change this set unless you adapt NewObject as well; it maintains a set of value properties
-    Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
+    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
             NOT_NULL_EXPRESSION, INDEPENDENT);
 
-    default Map<VariableProperty, DV> getValueProperties(Expression value) {
+    default Map<Property, DV> getValueProperties(Expression value) {
         return getValueProperties(value, false);
     }
 
     /*
     computed/copied during assignment. Critical that NNE is present!
      */
-    default Map<VariableProperty, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
-        Map<VariableProperty, DV> builder = new HashMap<>();
-        for (VariableProperty property : VALUE_PROPERTIES) {
+    default Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        Map<Property, DV> builder = new HashMap<>();
+        for (Property property : VALUE_PROPERTIES) {
             DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
             builder.put(property, v); // also put the -1's in, easier to detect if there are delays!
         }

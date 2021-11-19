@@ -60,21 +60,21 @@ public interface VariableInfo {
 
     boolean valueIsSet();
 
-    DV getProperty(VariableProperty variableProperty, DV delayValue);
+    DV getProperty(Property property, DV delayValue);
 
-    DV getProperty(VariableProperty variableProperty);
+    DV getProperty(Property property);
 
     /**
      * @return immutable copy of the properties map, for debugging mostly
      */
-    VariableProperties getProperties();
+    Properties getProperties();
 
     /**
      * @return an immutable copy, or the same object frozen
      */
     VariableInfo freeze();
 
-    Stream<Map.Entry<VariableProperty, DV>> propertyStream();
+    Stream<Map.Entry<Property, DV>> propertyStream();
 
     /*
     if statement time < 0, this means that statement time is irrelevant for this variable.

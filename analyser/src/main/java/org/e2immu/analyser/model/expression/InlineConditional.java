@@ -107,26 +107,26 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        if (property == Property.NOT_NULL_EXPRESSION) {
             if (Primitives.isPrimitiveExcludingVoid(returnType())) {
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
             Expression c = condition;
             EvaluationContext child = evaluationContext.child(c);
-            DV nneIfTrue = child.getProperty(ifTrue, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            DV nneIfTrue = child.getProperty(ifTrue, Property.NOT_NULL_EXPRESSION, true, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
                 return nneIfTrue;
             }
             Expression notC = Negation.negate(evaluationContext, c);
             EvaluationContext notChild = evaluationContext.child(notC);
-            DV nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            DV nneIfFalse = notChild.getProperty(ifFalse, Property.NOT_NULL_EXPRESSION, true, false);
             return nneIfFalse.min(nneIfTrue);
         }
-        if (EvaluationContext.VALUE_PROPERTIES.contains(variableProperty)) {
-            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
+        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
+            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
         }
-        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
     }
 
     @Override

@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
@@ -217,7 +217,7 @@ public class Filter {
         // @NotModified method returning a boolean
         if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
-            if (!methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD).valueIsFalse()) return null;
+            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) return null;
             // none of the arguments to the call can be a parameter
             if (mc.parameterExpressions.stream().flatMap(e -> e.variables().stream())
                     .anyMatch(arg -> arg instanceof ParameterInfo)) {
@@ -257,7 +257,7 @@ public class Filter {
         Expression v;
         if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
-            if (!methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD).valueIsFalse()) return null;
+            if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) return null;
             v = mc.object;
         } else {
             v = value;

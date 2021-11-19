@@ -15,18 +15,11 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
-import org.e2immu.analyser.analyser.PropertyException;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,7 +34,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.parser.CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.*;

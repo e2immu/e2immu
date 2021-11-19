@@ -212,7 +212,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         DV modified = evaluationContext.getAnalyserContext()
-                .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
+                .getMethodAnalysis(methodInfo).getProperty(Property.MODIFIED_METHOD);
         EvaluationResult mv = new EvaluateMethodCall(evaluationContext, this).methodValue(modified,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
@@ -278,12 +278,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             throw e;
         }
         // is the method modifying, do we need to wait?
-        DV modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
         DV modified = alwaysModifying ? Level.TRUE_DV : recursiveCall || partOfCallCycle ? Level.FALSE_DV : modifiedMethod;
         builder.causeOfContextModificationDelay(methodInfo, modified.isDelayed());
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
-        DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
         boolean contentNotNullRequired = notNullForward.equals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
 
         ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
@@ -295,15 +295,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Translate the modification to a 'this' variable
              */
             This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-            builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
+            builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
         }
 
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
-                VariableProperty.CONTEXT_NOT_NULL, notNullForward,
-                VariableProperty.CONTEXT_MODIFIED, modified,
-                VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
-                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true,
+                Property.CONTEXT_NOT_NULL, notNullForward,
+                Property.CONTEXT_MODIFIED, modified,
+                Property.CONTEXT_IMMUTABLE, immutableData.required,
+                Property.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true,
                 forwardEvaluationInfo.assignmentTarget()));
 
         // null scope
@@ -325,7 +325,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(ve.variable(), methodInfo);
             if (pointsToConcreteMethod != null) {
                 MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
-                DV modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                DV modifyingConcreteMethod = concreteMethodAnalysis.getProperty(Property.MODIFIED_METHOD);
                 builder.markContextModified(ve.variable(), modifyingConcreteMethod);
             }
             // TODO else propagate modification?
@@ -454,7 +454,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                    EvaluationResult.Builder builder,
                                    MethodAnalysis methodAnalysis,
                                    Expression objectValue) {
-        if (methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue()) {
+        if (methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
             if (objectValue instanceof IsVariableExpression ve) {
                 if (raiseErrorForFinalizer(evaluationContext, builder, ve.variable())) return false;
                 // check links of this variable
@@ -474,7 +474,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private boolean raiseErrorForFinalizer(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder, Variable variable) {
         if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
-                !evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER).valueIsTrue())) {
+                !evaluationContext.getCurrentMethod().methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())) {
             // ensure that the current method has been marked @Finalizer
             builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;
@@ -508,7 +508,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
         DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
-                .getProperty(VariableProperty.IMMUTABLE);
+                .getProperty(Property.IMMUTABLE);
         if (formalTypeImmutable.isDelayed()) {
             return new ImmutableData(formalTypeImmutable.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
         }
@@ -635,11 +635,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
                         objectValue.linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay);
             }
-            var valueProperties = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    VariableProperty.IMMUTABLE, immutable,
-                    VariableProperty.INDEPENDENT, independent,
-                    VariableProperty.CONTAINER, container,
-                    VariableProperty.IDENTITY, Level.FALSE_DV);
+            var valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    Property.IMMUTABLE, immutable,
+                    Property.INDEPENDENT, independent,
+                    Property.CONTAINER, container,
+                    Property.IDENTITY, Level.FALSE_DV);
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 
@@ -718,7 +718,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
-        DV modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
         if (modified.valueIsTrue() && evaluationContext.cannotBeModified(objectValue)) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
@@ -731,9 +731,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                    ForwardEvaluationInfo forwardEvaluationInfo,
                                                    boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
-            DV requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+            DV requiredNotNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
-                DV methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                DV methodNotNull = methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION);
                 if (methodNotNull.isDone()) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
@@ -774,20 +774,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
-            return variableProperty.bestDv;
+            return property.bestDv;
         }
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
-        DV formal = methodAnalysis.getProperty(variableProperty);
+        DV formal = methodAnalysis.getProperty(property);
         // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
-        if (VariableProperty.IMMUTABLE == variableProperty) {
+        if (Property.IMMUTABLE == property) {
             return dynamicImmutable(formal, methodAnalysis, evaluationContext);
         }
-        if (VariableProperty.INDEPENDENT == variableProperty) {
-            DV immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE, duringEvaluation);
+        if (Property.INDEPENDENT == property) {
+            DV immutable = getProperty(evaluationContext, Property.IMMUTABLE, duringEvaluation);
             if (immutable.isDelayed()) return immutable;
             int immutableLevel = MultiLevel.level(immutable);
             if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
@@ -798,16 +798,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private DV dynamicImmutable(DV formal, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
-        DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.isDelayed()) return identity;
         if (identity.valueIsTrue()) {
-            return evaluationContext.getProperty(parameterExpressions.get(0), VariableProperty.IMMUTABLE,
+            return evaluationContext.getProperty(parameterExpressions.get(0), Property.IMMUTABLE,
                     true, true);
         }
 
         if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
             // the independence of the result, and the immutable level of the hidden content, will determine the result
-            DV methodIndependent = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            DV methodIndependent = methodAnalysis.getProperty(Property.IMMUTABLE);
             if (methodIndependent.isDelayed()) return methodIndependent;
 
             assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
@@ -888,7 +888,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 
         // RULE 2: @Identity links to the 1st parameter
-        DV identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
             return parameterExpressions.get(0).linkedVariables(evaluationContext);
         }
@@ -909,7 +909,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 4: otherwise, we link to the scope, even if the scope is 'this'
         LinkedVariables linkedVariablesOfScope = object.linkedVariables(evaluationContext);
 
-        DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(VariableProperty.INDEPENDENT);
+        DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         if (methodIndependent.isDelayed()) {
             return linkedVariablesOfScope.changeToDelay(methodIndependent);
         }

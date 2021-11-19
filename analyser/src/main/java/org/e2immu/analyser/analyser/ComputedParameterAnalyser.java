@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -76,8 +76,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         assert sharedState.iteration == 0;
 
         if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
-                !parameterAnalysis.properties.isDone(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+                !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
+            parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
         }
 
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
@@ -98,19 +98,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             parameterAnalysis.properties.put(INDEPENDENT, contractIndependent);
         }
 
-        DV contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
-        if (contractModified.isDone() && !parameterAnalysis.properties.isDone(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
+        DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
+        if (contractModified.isDone() && !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
+            parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contractModified);
         }
 
         if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
-            if (!parameterAnalysis.properties.isDone(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, NOT_INVOLVED_DV); // not involved
+            if (!parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, NOT_INVOLVED_DV); // not involved
             }
         } else {
-            DV contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
-            if (contractNotNull.isDone() && !parameterAnalysis.properties.isDone(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+            DV contractNotNull = parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER);
+            if (contractNotNull.isDone() && !parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, contractNotNull);
             }
         }
 
@@ -212,7 +212,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 .map(mi -> {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
-                    return pa.getPropertyFromMapNeverDelay(VariableProperty.CONTAINER);
+                    return pa.getPropertyFromMapNeverDelay(Property.CONTAINER);
                 }).reduce(Level.FALSE_DV, DV::max);
     }
 
@@ -230,10 +230,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         }
     }
 
-    private static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
+    private static final Set<Property> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
             EXTERNAL_IMMUTABLE);
 
-    private static Set<VariableProperty> propertiesToCopy(DV assignedOrLinked) {
+    private static Set<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
         if (assignedOrLinked.equals(LinkedVariables.DEPENDENT_DV)) return Set.of(MODIFIED_OUTSIDE_METHOD);
         return Set.of();
@@ -276,31 +276,31 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         Map<FieldInfo, DV> map = parameterAnalysis.getAssignedToField();
 
-        Set<VariableProperty> propertiesDelayed = new HashSet<>();
+        Set<Property> propertiesDelayed = new HashSet<>();
         boolean notAssignedToField = true;
         for (Map.Entry<FieldInfo, DV> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             DV assignedOrLinked = e.getValue();
-            Set<VariableProperty> propertiesToCopy = propertiesToCopy(assignedOrLinked);
+            Set<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
             if (LinkedVariables.isAssigned(assignedOrLinked)) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
 
-                for (VariableProperty variableProperty : propertiesToCopy) {
-                    DV inField = fieldAnalysis.getProperty(variableProperty);
+                for (Property property : propertiesToCopy) {
+                    DV inField = fieldAnalysis.getProperty(property);
                     if (inField.isDone()) {
-                        if (!parameterAnalysis.properties.isDone(variableProperty)) {
+                        if (!parameterAnalysis.properties.isDone(property)) {
                             log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
-                            parameterAnalysis.setProperty(variableProperty, inField);
+                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), property);
+                            parameterAnalysis.setProperty(property, inField);
                             changed = true;
                         }
                     } else {
-                        propertiesDelayed.add(variableProperty);
+                        propertiesDelayed.add(property);
                         log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                                 "Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
-                                variableProperty, fieldInfo.name, parameterInfo.name);
+                                property, fieldInfo.name, parameterInfo.name);
                         delays = delays.merge(inField.causesOfDelay());
                     }
                 }
@@ -331,23 +331,23 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         }
 
 
-        for (VariableProperty variableProperty : PROPERTIES) {
-            if (!parameterAnalysis.properties.isDone(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
+        for (Property property : PROPERTIES) {
+            if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
-                if (isExternal(variableProperty) && notAssignedToField) {
+                if (isExternal(property) && notAssignedToField) {
                     v = NOT_INVOLVED_DV;
                 } else {
-                    v = variableProperty.falseDv;
+                    v = property.falseDv;
                 }
-                parameterAnalysis.setProperty(variableProperty, v);
+                parameterAnalysis.setProperty(property, v);
                 log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
-                        variableProperty);
+                        property);
                 changed = true;
             }
         }
 
-        assert delays.isDelayed() || parameterAnalysis.properties.isDone(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isDone(VariableProperty.EXTERNAL_NOT_NULL) &&
+        assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
+                parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
                 parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE);
 
         if (delays.isDelayed()) {
@@ -359,8 +359,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return DONE;
     }
 
-    private static boolean isExternal(VariableProperty variableProperty) {
-        return variableProperty == EXTERNAL_NOT_NULL || variableProperty == EXTERNAL_IMMUTABLE;
+    private static boolean isExternal(Property property) {
+        return property == EXTERNAL_NOT_NULL || property == EXTERNAL_IMMUTABLE;
     }
 
     private DV combineImmutable(DV formallyImmutable, DV contractImmutable, boolean contractedBefore) {
@@ -411,9 +411,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     private void noFieldsInvolved() {
-        for (VariableProperty variableProperty : PROPERTIES) {
-            if (!parameterAnalysis.properties.isDone(variableProperty)) {
-                parameterAnalysis.setProperty(variableProperty, NOT_INVOLVED_DV);
+        for (Property property : PROPERTIES) {
+            if (!parameterAnalysis.properties.isDone(property)) {
+                parameterAnalysis.setProperty(property, NOT_INVOLVED_DV);
             }
         }
         parameterAnalysis.freezeAssignedToField();
@@ -427,7 +427,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     private DV determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
-        DV effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        DV effFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effFinal.isDelayed()) {
             return effFinal;
         }
@@ -470,8 +470,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return linked.variables().getOrDefault(parameterInfo, LinkedVariables.NO_LINKING_DV);
     }
 
-    public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, CONTEXT_IMMUTABLE};
+    public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,
+            Property.CONTEXT_MODIFIED, CONTEXT_IMMUTABLE};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -485,17 +485,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         VariableInfo vi = lastStatement.getLatestVariableInfo(parameterInfo.fullyQualifiedName());
         CausesOfDelay delayFromContext = CausesOfDelay.EMPTY;
         boolean changed = false;
-        for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
-            if (!parameterAnalysis.properties.isDone(variableProperty)) {
-                DV value = vi.getProperty(variableProperty);
+        for (Property property : CONTEXT_PROPERTIES) {
+            if (!parameterAnalysis.properties.isDone(property)) {
+                DV value = vi.getProperty(property);
                 if (value.isDone()) {
-                    parameterAnalysis.setProperty(variableProperty, value);
-                    log(ANALYSER, "Set {} on parameter {} to {}", variableProperty,
+                    parameterAnalysis.setProperty(property, value);
+                    log(ANALYSER, "Set {} on parameter {} to {}", property,
                             parameterInfo.fullyQualifiedName(), value);
                     changed = true;
                 } else {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
-                            "Delays on {} not yet resolved for parameter {}, delaying", variableProperty,
+                            "Delays on {} not yet resolved for parameter {}, delaying", property,
                             parameterInfo.fullyQualifiedName());
                     delayFromContext = delayFromContext.merge(value.causesOfDelay());
                 }
@@ -519,17 +519,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
         if (vi == null || !vi.isRead()) {
             // unused variable
-            if (!parameterAnalysis.properties.isDone(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            if (!parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
             }
-            parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE_DV);
+            parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
 
             // @NotNull
             DV notNull = parameterInfo.parameterizedType.defaultNotNull();
-            if (!parameterAnalysis.properties.isDone(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull);
+            if (!parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
             }
-            parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, NULLABLE_DV);
+            parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, NULLABLE_DV);
 
             // @Container: handled separately
 

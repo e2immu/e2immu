@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Precondition;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -83,7 +83,7 @@ public class EvaluatePreconditionFromMethod {
                 Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (!nullClauseEntry.getValue().equalsNull()) {
-                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                        builder.setProperty(nullClauseEntry.getKey(), Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                     }
                 }
 

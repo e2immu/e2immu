@@ -508,9 +508,9 @@ public class And extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty,
+    public DV getProperty(EvaluationContext evaluationContext, Property property,
                           boolean duringEvaluation) {
-        return UnknownExpression.primitiveGetProperty(variableProperty);
+        return UnknownExpression.primitiveGetProperty(property);
     }
 
     @Override

@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.Variable;
@@ -41,11 +41,11 @@ public record MultiExpression(Expression... expressions) {
                 .orElse(ParameterizedType.NULL_CONSTANT);
     }
 
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
-                .map(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
-                .reduce(variableProperty.bestDv, DV::min);
+                .map(value -> evaluationContext.getProperty(value, property, duringEvaluation, false))
+                .reduce(property.bestDv, DV::min);
     }
 
     public Stream<Expression> stream() {

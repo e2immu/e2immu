@@ -183,7 +183,7 @@ public class UnaryOperator extends ElementImpl implements Expression {
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 

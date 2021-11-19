@@ -251,8 +251,8 @@ public record Or(Identifier identifier, Primitives primitives, List<Expression> 
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return UnknownExpression.primitiveGetProperty(variableProperty);
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return UnknownExpression.primitiveGetProperty(property);
     }
 
     @Override

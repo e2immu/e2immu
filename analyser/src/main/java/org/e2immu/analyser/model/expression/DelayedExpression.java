@@ -122,7 +122,7 @@ public record DelayedExpression(String msg,
     }
 
     /* temporary, in field analyser */
-    public static Expression forFieldProperty(FieldInfo fieldInfo, VariableProperty aFinal, CausesOfDelay causesOfDelay) {
+    public static Expression forFieldProperty(FieldInfo fieldInfo, Property aFinal, CausesOfDelay causesOfDelay) {
         return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type, LinkedVariables.EMPTY, causesOfDelay);
     }
 
@@ -177,8 +177,8 @@ public record DelayedExpression(String msg,
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION &&
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        if (property == Property.NOT_NULL_EXPRESSION &&
                 Primitives.isPrimitiveExcludingVoid(parameterizedType)) return EFFECTIVELY_NOT_NULL_DV;
         return causesOfDelay;
     }

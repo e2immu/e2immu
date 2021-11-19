@@ -47,9 +47,9 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
         typeAnalysis.freezeApprovedPreconditionsE2();
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE))
-                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT))
-                .add(CONTAINER, iteration -> this.aggregate(VariableProperty.CONTAINER));
+                .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
+                .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
+                .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER));
 
         analyserComponents = builder.build();
     }
@@ -96,18 +96,18 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
         return analyserComponents;
     }
 
-    private AnalysisStatus aggregate(VariableProperty variableProperty) {
-        DV current = typeAnalysis.getProperty(variableProperty);
+    private AnalysisStatus aggregate(Property property) {
+        DV current = typeAnalysis.getProperty(property);
         if (current.isDelayed()) {
             DV value = implementingAnalyses.get().stream()
-                    .map(a -> a.getProperty(variableProperty))
-                    .reduce(variableProperty.bestDv, DV::min);
+                    .map(a -> a.getProperty(property))
+                    .reduce(property.bestDv, DV::min);
             if (value.isDelayed()) {
-                log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, typeInfo.fullyQualifiedName);
+                log(DELAYED, "Delaying aggregate of {} for {}", property, typeInfo.fullyQualifiedName);
                 return value.causesOfDelay();
             }
-            log(ANALYSER, "Set aggregate of {} to {} for {}", variableProperty, value, typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(variableProperty, value);
+            log(ANALYSER, "Set aggregate of {} to {} for {}", property, value, typeInfo.fullyQualifiedName);
+            typeAnalysis.setProperty(property, value);
         }
         return DONE;
     }

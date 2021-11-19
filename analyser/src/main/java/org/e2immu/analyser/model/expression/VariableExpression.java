@@ -73,7 +73,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public DV getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
     }
 
@@ -184,11 +184,11 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
         }
 
-        DV notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (notNull.gt(MultiLevel.NULLABLE_DV)) {
             builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
         }
-        DV modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
+        DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
         if (!modified.isDelayed()) {
             builder.markContextModified(variable, modified);
             // do not check for implicit this!! otherwise, any x.y will also affect this.y
@@ -199,13 +199,13 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
         }
 
-        DV notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.CONTAINER);
+        DV notModified1 = forwardEvaluationInfo.getProperty(Property.CONTAINER);
         if (notModified1.valueIsTrue()) {
             builder.variableOccursInContainerContext(variable, adjustedScope);
         }
 
-        DV contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        DV nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
+        DV contextImmutable = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
+        DV nextImmutable = forwardEvaluationInfo.getProperty(Property.NEXT_CONTEXT_IMMUTABLE);
         if (contextImmutable.gt(MultiLevel.MUTABLE_DV)) {
             builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
         }

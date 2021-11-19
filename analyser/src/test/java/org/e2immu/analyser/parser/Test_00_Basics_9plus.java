@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -47,24 +47,24 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         d.evaluationResult().value().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
-                                VariableProperty.NOT_NULL_EXPRESSION, false, false));
+                                Property.NOT_NULL_EXPRESSION, false, false));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isFact".equals(d.methodInfo().name) || "isKnown".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER),
+                assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER),
                         "Method: " + d.methodInfo().name);
             }
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
                 assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
@@ -73,7 +73,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
             }
             if ("test1".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
 
@@ -83,15 +83,15 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
 
                 ParameterAnalysis contains = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.NOT_INVOLVED_DV, contains.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.NOT_INVOLVED_DV, contains.getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo contains && "contains".equals(contains.name)) {
-                    assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, VariableProperty.EXTERNAL_IMMUTABLE);
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                     assertEquals("contains:0,return test1:1", d.variableInfo().getLinkedVariables().toString());
                 }
             }

@@ -16,7 +16,7 @@ package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.Map;
@@ -32,9 +32,9 @@ public interface EvaluationResultVisitor {
                 StatementAnalysis statementAnalysis,
                 EvaluationResult evaluationResult) {
 
-        public boolean haveSetProperty(String variableName, VariableProperty variableProperty) {
+        public boolean haveSetProperty(String variableName, Property property) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)
-                    && e.getValue().properties().containsKey(variableProperty));
+                    && e.getValue().properties().containsKey(property));
         }
 
         public boolean haveMarkRead(String variableName) {

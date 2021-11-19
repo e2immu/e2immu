@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.*;
 
 import java.util.Map;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.Property.*;
 
 public interface ParameterAnalysis extends Analysis {
 
@@ -40,14 +40,14 @@ public interface ParameterAnalysis extends Analysis {
 
     default DV getParameterProperty(AnalysisProvider analysisProvider,
                                     ParameterInfo parameterInfo,
-                                    VariableProperty variableProperty) {
+                                    Property property) {
 
 
         // some absolutely trivial cases
-        DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, variableProperty);
+        DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property);
         if (propertyFromType != Level.NOT_INVOLVED_DV) return propertyFromType;
 
-        switch (variableProperty) {
+        switch (property) {
             case CONTAINER:
             case INDEPENDENT:
             case CONTEXT_MODIFIED:
@@ -78,9 +78,9 @@ public interface ParameterAnalysis extends Analysis {
                 DV imm = getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
                 if (imm.isDone()) return imm;
                 DV external = getPropertyFromMapDelayWhenAbsent(EXTERNAL_IMMUTABLE);
-                if (external.equals(variableProperty.bestDv)) return external;
+                if (external.equals(property.bestDv)) return external;
                 DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
-                if (context.equals(variableProperty.bestDv)) return context;
+                if (context.equals(property.bestDv)) return context;
                 DV formalImmutable = parameterInfo.parameterizedType.defaultImmutable(analysisProvider, true);
                 return formalImmutable.max(external.max(context));
             }
@@ -93,19 +93,19 @@ public interface ParameterAnalysis extends Analysis {
                 return cnn.max(enn);
             }
             default:
-                throw new PropertyException(Analyser.AnalyserIdentification.PARAMETER, variableProperty);
+                throw new PropertyException(Analyser.AnalyserIdentification.PARAMETER, property);
         }
-        return getPropertyFromMapDelayWhenAbsent(variableProperty);
+        return getPropertyFromMapDelayWhenAbsent(property);
     }
 
 
-    default DV getPropertyVerifyContracted(VariableProperty variableProperty) {
-        DV v = getProperty(variableProperty);
+    default DV getPropertyVerifyContracted(Property property) {
+        DV v = getProperty(property);
         // special code to catch contracted values
-        if (variableProperty == NOT_NULL_EXPRESSION) {
+        if (property == NOT_NULL_EXPRESSION) {
             return v.max(getProperty(NOT_NULL_PARAMETER));
         }
-        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
+        if (property == MODIFIED_OUTSIDE_METHOD) {
             return v.max(getProperty(MODIFIED_VARIABLE));
         }
         return v;

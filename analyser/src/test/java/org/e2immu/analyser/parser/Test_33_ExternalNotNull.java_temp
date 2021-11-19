@@ -15,7 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_NOT_NULL;
-import static org.e2immu.analyser.analyser.VariableProperty.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
