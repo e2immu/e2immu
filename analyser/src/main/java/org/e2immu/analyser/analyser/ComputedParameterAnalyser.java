@@ -525,9 +525,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
 
             // @NotNull
-            DV notNull = parameterInfo.parameterizedType.defaultNotNull();
             if (!parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
+                parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
             }
             parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, NULLABLE_DV);
 

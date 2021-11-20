@@ -331,6 +331,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return bestOverContext.causesOfDelay();
         }
 
+        // this condition works because only CNN can enforce @NN1 (content not null); it cannot be a value of the type
         if (bestOverContext.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
             if (fieldAnalysis.valuesStatus().isDelayed()) {
                 log(DELAYED, "Delay @NotNull until all values are known");
@@ -559,9 +560,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         int occurrenceCountForError = 0;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-            if (methodAnalyser.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue() &&
-                    (!methodAnalyser.methodInfo.isPrivate() ||
-                            methodAnalyser.methodInfo.isConstructor && !ignorePrivateConstructors)) {
+            DV finalizer = methodAnalyser.methodAnalysis.getProperty(Property.FINALIZER);
+            assert finalizer.isDone();
+            if (finalizer.valueIsFalse() && (!methodAnalyser.methodInfo.isPrivate() ||
+                    methodAnalyser.methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
                     Expression expression = vi.getValue();

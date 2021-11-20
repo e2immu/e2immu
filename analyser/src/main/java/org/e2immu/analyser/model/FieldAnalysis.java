@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.Instance;
 
 public interface FieldAnalysis extends Analysis {
 
@@ -81,4 +83,16 @@ public interface FieldAnalysis extends Analysis {
     }
 
     Expression getInitializerValue();
+
+    default Expression getValueForStatementAnalyser(){
+        Expression value = getValue();
+        if(value.isDelayed() || value.isConstant()) return value;
+        DV notNull = getProperty(Property.EXTERNAL_NOT_NULL);
+        DV immutable = getProperty(Property.EXTERNAL_IMMUTABLE);
+        DV container = getProperty(Property.CONTAINER);
+        DV independent = getProperty(Property.INDEPENDENT);
+        CausesOfDelay delay = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay()).merge(container.causesOfDelay());
+        if(delay.isDelayed()) return DelayedExpression.forDelayedValueProperties(getFieldInfo().type, LinkedVariables.EMPTY, delay);
+        return Instance.forField(getFieldInfo(), notNull, immutable, container, independent);
+    }
 }

@@ -34,7 +34,7 @@ public interface StatementAnalyserVisitor {
                 Expression absoluteState,
                 ConditionManager conditionManagerForNextStatement,
                 ConditionManager localConditionManager, // as at the start of the statement
-                Map<String, AnalysisStatus> statusesAsMap) {
+                Map<String, AnalysisStatus> statusesAsMap) implements CommonVisitorData {
 
         // shortcut
 
@@ -55,6 +55,16 @@ public interface StatementAnalyserVisitor {
 
         public VariableInfo getReturnAsVariable() {
             return statementAnalysis.getLatestVariableInfo(methodInfo.fullyQualifiedName());
+        }
+
+        @Override
+        public DV getProperty(Property property) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String label() {
+            return methodInfo.fullyQualifiedName + "_" + statementId;
         }
     }
 

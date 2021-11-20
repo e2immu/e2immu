@@ -51,7 +51,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 Message message = d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE);
                 assertNotNull(message);
                 assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
-                assertDv(d, 0, AnalysisStatus.DONE, d.result().analysisStatus());
+                assertDv(d, 1, AnalysisStatus.DONE, d.result().analysisStatus());
             }
         };
 
@@ -117,7 +117,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 0, FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -282,7 +282,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Warnings_3".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -303,7 +303,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     // because immutableOfHiddenContent = @ERContainer
                     assertEquals("this.set:0", d.variableInfo().getLinkedVariables().toString());
                     // we wait because of hidden content
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 }
             }
         };
@@ -315,7 +315,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -376,15 +376,15 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("ChildClass".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                 }
             }
@@ -408,7 +408,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals(MultiLevel.NULLABLE_DV, parameterAnalysis.getProperty(NOT_NULL_EXPRESSION));
 
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertDv(d.p(0), 0, Level.FALSE_DV, MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, Level.FALSE_DV, MODIFIED_VARIABLE);
 
                 assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
             }
@@ -425,8 +425,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 else
                     assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 0, Level.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, 0, Level.TRUE_DV, FLUENT);
+                assertDv(d, 1, Level.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 1, Level.TRUE_DV, FLUENT);
             }
         };
 
@@ -471,7 +471,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test7() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, Level.FALSE_DV, CONTAINER);
+                assertDv(d, 1, Level.FALSE_DV, CONTAINER);
             }
         };
 
@@ -491,7 +491,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 0, Level.TRUE_DV, MODIFIED_VARIABLE);
+                    assertDv(d, 1, Level.TRUE_DV, MODIFIED_VARIABLE);
 
                     // whatever happens, the set remains independent (the int added is independent)
                     assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));

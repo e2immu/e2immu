@@ -376,7 +376,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Eventual getEventual() {
-            return eventual.get();
+            return eventual.getOrDefaultNull();
         }
 
         public void setFirstStatement(StatementAnalysis firstStatement) {

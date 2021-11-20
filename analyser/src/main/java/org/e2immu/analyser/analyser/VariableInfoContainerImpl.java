@@ -231,10 +231,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl getToWrite(Level level) {
         return switch (level) {
-            case INITIAL -> {
-                assert previousOrInitial.isRight() : "Have previous for " + current().variable().fullyQualifiedName();
-                yield previousOrInitial.getRight();
-            }
+            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();
             case EVALUATION -> evaluation.get();
             case MERGE -> merge.get();
         };
@@ -295,6 +292,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setLinkedVariables(LinkedVariables linkedVariables, Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
+        assert level != Level.INITIAL;
         VariableInfoImpl variableInfo = getToWrite(level);
         variableInfo.setLinkedVariables(linkedVariables);
     }
@@ -308,8 +306,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(property);
 
         if (Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
-            // not writing on a previous
-            return;
+            // not writing on a previous FIXME why not? example: This external immutable, statement 1
+            //return;
         }
         VariableInfoImpl variableInfo = getToWrite(level);
         variableInfo.setProperty(property, value);

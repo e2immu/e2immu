@@ -324,4 +324,8 @@ public class LinkedVariables {
     public Map<Variable, DV> variables() {
         return variables;
     }
+
+    public boolean isDone() {
+        return causesOfDelay.isDone();
+    }
 }

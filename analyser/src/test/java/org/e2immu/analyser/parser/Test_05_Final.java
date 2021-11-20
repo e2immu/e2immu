@@ -107,7 +107,7 @@ public class Test_05_Final extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "s1+<f:s3>" : "s1+\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
                     //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(NOT_NULL_EXPRESSION));
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));

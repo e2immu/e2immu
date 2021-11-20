@@ -52,6 +52,7 @@ public class Location implements Comparable<Location> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Location location = (Location) o;
+        if(this == NOT_YET_SET || o == NOT_YET_SET) return false;
         return info.equals(location.info) && Objects.equals(statementIndexInMethod, location.statementIndexInMethod);
     }
 

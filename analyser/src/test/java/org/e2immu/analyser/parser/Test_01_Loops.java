@@ -155,7 +155,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? "<v:i>>=n" : "1+i$2>=n";
                 assertEquals(expect, d.condition().toString());
 
-                assertDv(d, 0, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
         };
@@ -215,7 +215,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>=1?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         // clearly, NNE has to follow the value rather than the actual assignment
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";
@@ -257,7 +257,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(expectState, d.localConditionManager().state().toString());
                     assertEquals(expectState, d.absoluteState().toString());
 
-                    assertDv(d, 0, CONDITIONALLY, execution);
+                    assertDv(d, 1, CONDITIONALLY, execution);
                 }
             }
         };
@@ -338,7 +338,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -349,7 +349,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "res:0,return method:0,s:-1" : "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
@@ -636,7 +636,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("i", d.statementAnalysis().localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 0, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                     assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
 
                     String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
@@ -668,7 +668,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                 }
                 if ("1.0.3".equals(d.statementId())) {
-                    assertDv(d, 0, FlowData.NEVER, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowData.NEVER, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 }
             }
         };
@@ -771,7 +771,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "entry:-1,key:-1,result:0,return method:0" : "result:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -1028,7 +1028,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Container".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
             }
         };

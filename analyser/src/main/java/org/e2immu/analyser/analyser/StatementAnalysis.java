@@ -38,8 +38,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -603,10 +603,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Map<Property, DV> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Map<Property, DV> combined = new HashMap<>(map);
         Expression initialValue;
+        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet
-            initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
+            initialValue =  fieldAnalysis.getValueForStatementAnalyser();
             Map<Property, DV> valueMap = evaluationContext.getValueProperties(initialValue);
             valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
 
@@ -644,7 +645,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES
-            = Set.of(FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD);
+            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD);
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
@@ -1113,7 +1114,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
-            initializeReturnVariable(vic, evaluationContext.getAnalyserContext(), returnVariable);
+            initializeReturnVariable(vic, returnVariable);
 
         } else if (variable instanceof This thisVar) {
             initializeThis(vic, evaluationContext.getAnalyserContext(), thisVar);
@@ -1122,24 +1123,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             initializeParameter(vic, evaluationContext, parameterInfo);
 
         } else if (variable instanceof FieldReference fieldReference) {
-            Expression initialValue = initialValueOfField(evaluationContext, fieldReference, false);
-
-            // from field analyser
-            // EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
-            // initialises CONTEXT*
-            Map<Property, DV> propertyMap = fieldPropertyMap(analyserContext, fieldReference.fieldInfo);
-
-            // from initial value
-            // IDENTITY, IMMUTABLE,CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
-            Map<Property, DV> valueProperties = evaluationContext.getValueProperties(initialValue);
-
-            vic.setValue(initialValue, LinkedVariables.EMPTY, propertyMap, true);
-            valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
+            initializeFieldReference(vic, evaluationContext, fieldReference);
+        } else {
+            throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
         }
         return vic;
     }
 
-    private void initializeReturnVariable(VariableInfoContainer vic, AnalyserContext analyserContext, ReturnVariable returnVariable) {
+    private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
         DV defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
         Map<Property, DV> properties = sharedContext(defaultNotNull);
         properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
@@ -1171,6 +1162,28 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
+        vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
+    }
+
+    private void initializeFieldReference(VariableInfoContainer vic, EvaluationContext evaluationContext, FieldReference fieldReference) {
+        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+
+        // start with context properties
+        Map<Property, DV> properties = sharedContext(fieldReference.fieldInfo.type.defaultNotNull());
+
+        // the value and its properties are taken from the field analyser
+        Expression value = fieldAnalysis.getValueForStatementAnalyser();
+        Map<Property, DV> valueProps = evaluationContext.getValueProperties(value);
+        properties.putAll(valueProps);
+
+        // the external properties
+        DV extNotNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
+        properties.put(EXTERNAL_NOT_NULL, extNotNull);
+        DV extImm = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
+        properties.put(EXTERNAL_IMMUTABLE, extImm);
+        DV mom = fieldAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
+        properties.put(MODIFIED_OUTSIDE_METHOD, mom);
+
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
@@ -1201,15 +1214,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean identity = parameterInfo.index == 0;
         properties.put(IDENTITY, Level.fromBoolDv(identity));
 
-        // th external properties are delayed, but they're delayed in the correct way!
+        // the external properties may be delayed, but if so they're delayed in the correct way!
         DV extNotNull = parameterAnalysis.getProperty(EXTERNAL_NOT_NULL);
-        assert extNotNull.isDelayed();
         properties.put(EXTERNAL_NOT_NULL, extNotNull);
         DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
-        assert extImm.isDelayed();
         properties.put(EXTERNAL_IMMUTABLE, extImm);
-        DV mom = parameterAnalysis.getProperty(MODIFIED_METHOD);
-        assert mom.isDelayed();
+        DV mom = parameterAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
         properties.put(MODIFIED_OUTSIDE_METHOD, mom);
 
         Expression value = Instance.initialValueOfParameter(parameterInfo, notNull, immutable, independent, container, identity);
@@ -1240,7 +1250,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         result.put(CONTEXT_MODIFIED, Level.FALSE_DV);
         return result;
     }
-    
+
     private Map<Property, DV> fieldPropertyMap(AnalyserContext analyserContext,
                                                FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
@@ -1257,56 +1267,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private boolean inPartOfConstruction() {
         return methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
-    }
-
-    // FIXME should be much simpler
-    private Expression initialValueOfField(EvaluationContext evaluationContext,
-                                           FieldReference fieldReference,
-                                           boolean selfReference) {
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-        // rather than fieldAnalysis.getLinkedVariables
-
-        boolean myOwn = fieldReference.scopeOwnerIs(methodAnalysis.getMethodInfo().typeInfo);
-
-        if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised
-            Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitializerValue();
-            if (initialValue.isDelayed()) { // initialiser value not yet evaluated
-                return initialValue;
-            }
-            if (initialValue.isConstant()) {
-                return initialValue;
-            }
-            if (initialValue.isInstanceOf(Instance.class)) return initialValue;
-
-            // TODO will crash when notNull==-1
-            return Instance.initialValueOfFieldPartOfConstruction(index, evaluationContext, fieldReference);
-        }
-
-        DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
-        if (effectivelyFinal.isDelayed() && !selfReference) {
-            return DelayedVariableExpression.forField(fieldReference, effectivelyFinal.causesOfDelay());
-        }
-        // when selfReference (as in this.x = other.x during construction), we never delay
-
-
-        Expression efv = fieldAnalysis.getValue();
-        if (efv.isDelayed()) {
-            if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isNotContracted() && !selfReference) {
-                return DelayedVariableExpression.forField(fieldReference, efv.causesOfDelay());
-            }
-        } else {
-            if (efv.isConstant()) {
-                return efv;
-            }
-            Instance instance;
-            if ((instance = efv.asInstanceOf(Instance.class)) != null) {
-                return instance;
-            }
-        }
-
-        DV notNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
-        return Instance.initialValueOfExternalVariableField(fieldReference, index, notNull, analyserContext);
     }
 
     public int statementTime(VariableInfoContainer.Level level) {
@@ -1481,8 +1441,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level) {
         return variables.stream()
-                // if in EVALUATION, ignore those that have a merge but no evaluation
-                .filter(e -> level != EVALUATION || e.getValue().hasEvaluation() || !e.getValue().hasMerge());
+                .filter(e -> switch (level) {
+                    case INITIAL -> throw new UnsupportedOperationException();
+                    case EVALUATION -> e.getValue().hasEvaluation();
+                    case MERGE -> true;
+                });
     }
 
 

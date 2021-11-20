@@ -118,8 +118,8 @@ public class Test_00_Basics_10plus extends CommonTestRunner {
             }
             if ("getString".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 
                     String expectValue = d.iteration() == 0 ? "<f:string>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -358,12 +358,12 @@ public class Test_00_Basics_10plus extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     } else {
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {

@@ -122,8 +122,9 @@ public record DelayedExpression(String msg,
     }
 
     /* temporary, in field analyser */
-    public static Expression forFieldProperty(FieldInfo fieldInfo, Property aFinal, CausesOfDelay causesOfDelay) {
-        return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type, LinkedVariables.EMPTY, causesOfDelay);
+    public static Expression forFieldProperty(FieldInfo fieldInfo, CausesOfDelay causesOfDelay) {
+        return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type,
+                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
     /*

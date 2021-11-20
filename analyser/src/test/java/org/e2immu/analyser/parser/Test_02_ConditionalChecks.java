@@ -372,7 +372,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
             }
         };
 

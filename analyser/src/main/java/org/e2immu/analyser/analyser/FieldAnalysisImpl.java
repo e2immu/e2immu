@@ -273,6 +273,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (delayed.isDelayed()) {
                 this.values.setFirst(delayed);
             } else {
+                assert values.size() > 0 : "Empty values?";
                 this.values.set(values);
             }
         }

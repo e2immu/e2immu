@@ -15,7 +15,8 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.Objects;
@@ -40,6 +41,11 @@ public interface StatementAnalyserVariableVisitor {
         @Override
         public DV getProperty(Property property) {
             return properties.getOrDefaultNull(property);
+        }
+
+        @Override
+        public String label() {
+            return methodInfo.fullyQualifiedName + "_" + statementId + ":" + variableName;
         }
     }
 

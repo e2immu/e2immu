@@ -165,6 +165,10 @@ public class MethodLevelData {
         return linksHaveBeenEstablished.isFinal();
     }
 
+    public CausesOfDelay getLinksHaveBeenEstablished() {
+        return linksHaveBeenEstablished.get();
+    }
+
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
         assert linksHaveBeenEstablished.isVariable();
 

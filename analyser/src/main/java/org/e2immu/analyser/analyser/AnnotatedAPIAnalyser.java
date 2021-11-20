@@ -475,7 +475,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
                     AnalysisStatus analysisStatus = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
                     if (analysisStatus != AnalysisStatus.DONE) {
-                        log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus,
+                        log(DELAYED, "{} in analysis of {}, computing method analyser", analysisStatus,
                                 methodInfo.fullyQualifiedName());
                         methodAnalysisStatus.set(analysisStatus);
                     }
@@ -525,6 +525,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
         typeAnalysisBuilder.setTransparentTypes(new SetOfTypes(typeParametersAsParameterizedTypes));
 
+        ensureImmutableAndContainerInShallowTypeAnalysis(typeAnalysisBuilder);
         simpleComputeIndependent(typeAnalysisBuilder);
 
         determineImmutableCanBeIncreasedByTypeParameters(typeInspection, typeAnalysisBuilder);
@@ -532,6 +533,17 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         // and close!
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
+    }
+
+    private void ensureImmutableAndContainerInShallowTypeAnalysis(TypeAnalysisImpl.Builder builder) {
+        DV immutable = builder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
+        if (immutable.isDelayed()) {
+            builder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+        }
+        DV container = builder.getProperty(Property.CONTAINER);
+        if (container.isDelayed()) {
+            builder.setProperty(Property.CONTAINER, Level.FALSE_DV);
+        }
     }
 
     private void determineImmutableCanBeIncreasedByTypeParameters(TypeInspection typeInspection,

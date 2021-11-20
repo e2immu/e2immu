@@ -533,4 +533,9 @@ public class And extends ElementImpl implements Expression {
     public List<Expression> getExpressions() {
         return expressions;
     }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return expressions.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+    }
 }

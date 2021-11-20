@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,9 +46,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
-    public static final String ORG_E2IMMU_SUPPORT = "org.e2immu.support";
-    public static final String ORG_E2IMMU_ANALYSER_UTIL = "org.e2immu.analyser.util";
-    public static final String ORG_E2IMMU_ANALYSER_OUTPUT = "org.e2immu.analyser.output";
     public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
 
@@ -186,6 +185,14 @@ public abstract class CommonTestRunner {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run().sourceSortedTypes();
+
+        if (!mustSee.isEmpty()) {
+            mustSee.forEach((label, iteration) -> {
+                LOGGER.error("MustSee: {} has only reached iteration {}", label, iteration);
+            });
+            assertEquals(0, mustSee.size());
+        }
+
         for (SortedType sortedType : types) {
             OutputBuilder outputBuilder = sortedType.primaryType().output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
@@ -234,51 +241,87 @@ public abstract class CommonTestRunner {
         assertEquals(expect, value);
     }
 
-    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedUpToIncluding, DV expect, Property property) {
+    public void assertDvInitial(StatementAnalyserVariableVisitor.Data d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.variableInfoContainer().getPreviousOrInitial().getProperty(property);
-        if (d.iteration() <= delayedUpToIncluding) {
-            assertEquals(delayed, value.causesOfDelay().toString(), value.isDone() ? "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property :
-                    "Expected delay " + delayed + ", but got " + value + " in iteration " + d.iteration() + "<=" + delayedUpToIncluding + " for property " + property);
+        if (d.iteration() < delayedBeforeIteration) {
+            assertEquals(delayed, value.causesOfDelay().toString(), value.isDone() ? "Expected delay in iteration " + d.iteration() + "<=" + delayedBeforeIteration + ", but got " + value + " for property " + property :
+                    "Expected delay " + delayed + ", but got " + value + " in iteration " + d.iteration() + "<" + delayedBeforeIteration + " for property " + property);
         } else {
-            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
     }
 
-    public void assertDv(CommonVisitorData d, int delayedUpToIncluding, DV expect, Property property) {
+    public void assertDv(CommonVisitorData d, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.getProperty(property);
-        if (d.iteration() <= delayedUpToIncluding) {
+        if (d.iteration() < delayedBeforeIteration) {
             assertTrue(value == null || value.isDelayed(),
-                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+                    "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         } else {
-            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
     }
 
-    public void assertDv(CommonVisitorData d, String delayed, int delayedUpToIncluding, DV expect, Property property) {
+    public void assertDv(CommonVisitorData d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
         DV value = d.getProperty(property);
-        if (d.iteration() <= delayedUpToIncluding) {
+        if (d.iteration() < delayedBeforeIteration) {
             assertEquals(delayed, value.toString(),
-                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+                    "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         } else {
-            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + value + " for property " + property);
+            assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
     }
 
-    public void assertDv(StatementAnalyserVisitor.Data d, int delayedUpToIncluding, DV expect, DV actual) {
-        if (d.iteration() <= delayedUpToIncluding) {
+    public void assertDv(StatementAnalyserVisitor.Data d, int delayedBeforeIteration, DV expect, DV actual) {
+        if (d.iteration() < delayedBeforeIteration) {
             assertTrue(actual.isDelayed(),
-                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + actual);
+                    "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + actual);
         } else {
-            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + actual);
+            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + actual);
         }
     }
 
-    public void assertDv(StatementAnalyserVisitor.Data d, int delayedUpToIncluding, AnalysisStatus expect, AnalysisStatus actual) {
-        if (d.iteration() <= delayedUpToIncluding) {
+    public void assertDv(StatementAnalyserVisitor.Data d, int delayedBeforeIteration, AnalysisStatus expect, AnalysisStatus actual) {
+        if (d.iteration() < delayedBeforeIteration) {
             assertTrue(actual.isDelayed(),
-                    "Expected delay in iteration " + d.iteration() + "<=" + delayedUpToIncluding + ", but got " + actual);
+                    "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + actual);
         } else {
-            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">" + delayedUpToIncluding + ", but got " + actual);
+            assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + actual);
         }
     }
+
+    public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(d.currentValue().isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + d.currentValue() + " for variable " + d.variableName());
+            assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());
+        } else {
+            assertTrue(d.currentValue().isDone());
+            assertEquals(value, d.currentValue().toString());
+        }
+    }
+
+    public void assertLinked(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
+        LinkedVariables linkedVariables = d.variableInfo().getLinkedVariables();
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(linkedVariables.isDelayed(), "Expected linked variables to be delayed in iteration "
+                    + d.iteration() + "<" + delayedBeforeIteration + " for variable " + d.variableName());
+            assertEquals(causesOfDelay, linkedVariables.causesOfDelay().toString());
+        } else {
+            assertTrue(linkedVariables.isDone(), "Expected linked variables to be done in iteration "
+                    + d.iteration() + "<" + delayedBeforeIteration + " for variable " + d.variableName() + ", got delays "
+                    + linkedVariables.causesOfDelay());
+            assertEquals(value, linkedVariables.toString());
+        }
+    }
+
+    private final Map<String, Integer> mustSee = new HashMap<>();
+
+    public void mustSeeIteration(CommonVisitorData cvd, int targetIteration) {
+        String label = cvd.label();
+        if (cvd.iteration() < targetIteration) {
+            mustSee.put(label, cvd.iteration());
+        } else {
+            mustSee.remove(label);
+        }
+    }
+
 }

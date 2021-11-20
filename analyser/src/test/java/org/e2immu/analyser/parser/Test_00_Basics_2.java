@@ -101,7 +101,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
 
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if (STRING_0.equals(d.variableName())) {
                 assertTrue(d.iteration() > 0);
@@ -127,7 +127,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
             }
             if (STRING_0.equals(d.variableName())) {
                 assertTrue(d.iteration() > 0);
@@ -138,7 +138,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:string>" : STRING_0;
                 assertEquals(expectValue, d.currentValue().toString());
                 assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
             }
         }
     };
@@ -149,7 +149,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
 
             if ("getString".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
 
                 assert fieldAsVariable != null;
                 assertTrue(fieldAsVariable.isRead());
@@ -164,7 +164,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertEquals(Level.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
             }
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
         }

@@ -90,7 +90,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 0, Level.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
                                 .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
@@ -104,7 +104,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 0, Level.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }

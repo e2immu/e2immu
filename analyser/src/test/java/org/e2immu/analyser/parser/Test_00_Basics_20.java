@@ -152,22 +152,22 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 0, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
             if ("C2".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getFirstC1".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getFirstC2".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getListC2".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
             }
             if ("getListC1".equals(d.methodInfo().name)) {
-                assertDv(d, 0, MultiLevel.DEPENDENT_DV, INDEPENDENT);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
 
@@ -176,10 +176,10 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
             }
             if ("C2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
                 assertEquals(Level.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
             }
         };

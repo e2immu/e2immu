@@ -39,6 +39,11 @@ public interface MethodAnalyserVisitor {
             return methodAnalysis.getProperty(property);
         }
 
+        @Override
+        public String label() {
+            return methodInfo.fullyQualifiedName;
+        }
+
         public DV getProperty(Expression value, Property property) {
             return evaluationContext.getProperty(value, property, false, false);
         }
@@ -74,6 +79,11 @@ public interface MethodAnalyserVisitor {
                 @Override
                 public int iteration() {
                     return iteration;
+                }
+
+                @Override
+                public String label() {
+                    return methodInfo().fullyQualifiedName + ":" + i;
                 }
             };
         }

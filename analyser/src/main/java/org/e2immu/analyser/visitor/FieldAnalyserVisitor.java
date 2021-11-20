@@ -50,6 +50,11 @@ public interface FieldAnalyserVisitor {
         }
 
         @Override
+        public String label() {
+            return fieldInfo.fullyQualifiedName();
+        }
+
+        @Override
         public DV getProperty(Property property) {
             return fieldAnalysis.getProperty(property);
         }

@@ -38,5 +38,10 @@ public interface TypeAnalyserVisitor {
         public DV getProperty(Property property) {
             return typeAnalysis.getProperty(property);
         }
+
+        @Override
+        public String label() {
+            return typeInfo.fullyQualifiedName;
+        }
     }
 }

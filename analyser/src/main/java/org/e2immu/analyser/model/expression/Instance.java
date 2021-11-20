@@ -245,6 +245,15 @@ public record Instance(
         assert internalChecks();
     }
 
+    public static Instance forField(FieldInfo fieldInfo, DV notNull, DV immutable, DV container, DV independent) {
+        return new Instance(fieldInfo.getIdentifier(), fieldInfo.type, Diamond.NO, Map.of(
+                Property.NOT_NULL_EXPRESSION, notNull,
+                Property.IMMUTABLE, immutable,
+                Property.CONTAINER, container,
+                Property.INDEPENDENT, independent,
+                Property.IDENTITY, Level.FALSE_DV));
+    }
+
     private boolean internalChecks() {
         assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
         assert valueProperties.values().stream().noneMatch(DV::isDelayed) : "Properties: " + valueProperties;

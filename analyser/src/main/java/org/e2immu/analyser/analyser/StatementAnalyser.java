@@ -1473,7 +1473,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     Instance instance = Instance.forLoopVariable(index(), lvr, valueProperties);
                     vic.setValue(instance, LinkedVariables.EMPTY, properties, true);
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
-                    vic.setLinkedVariables(LinkedVariables.EMPTY, INITIAL);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                     if (newVariable) {

@@ -21,4 +21,6 @@ public interface CommonVisitorData {
     DV getProperty(Property property);
 
     int iteration();
+
+    String label();
 }

@@ -482,10 +482,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                  fields and local loop variables. It'll depend on where they are expanded
                  whether the result is something sensible or not.
                  */
-                value = createInlinedMethod(value);
                 if (value.isDelayed()) {
                     return value.causesOfDelay();
                 }
+                value = createInlinedMethod(value);
             }
         }
 
@@ -583,6 +583,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     Create an inlined method based on the returned value
      */
     private Expression createInlinedMethod(Expression value) {
+        assert value.isDone();
+
         Set<Variable> variables = new HashSet<>();
         boolean containsVariableFields = false;
 
@@ -595,9 +597,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             } else fieldInfo = null;
             if (fieldInfo != null) {
                 DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
-                if (effectivelyFinal.isDelayed()) {
-                    return DelayedExpression.forFieldProperty(fieldInfo, Property.FINAL, effectivelyFinal.causesOfDelay());
-                }
+                assert effectivelyFinal.isDone();
                 if (effectivelyFinal.valueIsFalse()) {
                     containsVariableFields = true;
                 }

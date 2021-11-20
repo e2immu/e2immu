@@ -82,7 +82,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
                     // statement independent, as the only occurrence of input1 is in evaluation of "0", before "0.0.0" etc.
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                 }
                 if (THIS.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -114,7 +114,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                             assertEquals(INSTANCE_PRINT_STREAM, d.currentValue().toString());
                         }
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     } else if ("0.1.0".equals(d.statementId())) {
                         assertTrue(d.iteration() > 0);
                         assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
@@ -126,7 +126,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
 
                     // completely independent of the iterations, we always should have @NotNull because of context
@@ -218,7 +218,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
                             : "return getS:0,s$0:1,this.s:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                 }
@@ -228,7 +228,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // copied from S
-                    assertDv(d, 0, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
             }
@@ -309,9 +309,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 // TODO check value
-                assertDv(d.p(0), 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 
