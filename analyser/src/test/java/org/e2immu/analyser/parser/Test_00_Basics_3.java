@@ -15,7 +15,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -108,22 +111,21 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (OUT.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
-                        if (d.iteration() == 0) {
-                            assertTrue(d.currentValue().isDelayed());
-                        } else {
-                            assertEquals(INSTANCE_PRINT_STREAM, d.currentValue().toString());
-                        }
+                        assertCurrentValue(d, 1, "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     } else if ("0.1.0".equals(d.statementId())) {
+                        // NOT present in the first iteration!
                         assertTrue(d.iteration() > 0);
                         assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                     } else if ("0".equals(d.statementId())) {
-                        assertEquals(INSTANCE_PRINT_STREAM,
-                                d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
-                        String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : INSTANCE_PRINT_STREAM;
-                        assertEquals(expectValue, d.currentValue().debugOutput());
+                        assertInitialValue(d, 0, "", INSTANCE_PRINT_STREAM);
+
+                        assertCurrentValue(d, 1, "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertSame(d.variableInfo(), d.variableInfoContainer().best(VariableInfoContainer.Level.MERGE));
+
                         assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
@@ -136,8 +138,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertCurrentValue(d, 2, "initial@Field_s|ext_nn@Field_s", "nullable instance type String");
                         assertFalse(d.variableInfo().isAssigned());
                         if (d.iteration() == 0) {
                             assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
@@ -213,12 +214,12 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
-                    String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
-                    assertEquals(expectS, d.currentValue().toString());
+                    assertCurrentValue(d, 2, "initial@Field_s|ext_nn@Field_s", "nullable instance type String");
+
                     String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
                             : "return getS:0,s$0:1,this.s:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                 }
@@ -296,10 +297,12 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                String expect = d.iteration() == 0 ? "<f:s>,input2,null" : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
+                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1" : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
-                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+                // because the value is not known, the ENN cannot be either
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                // assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
                 assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(MODIFIED_OUTSIDE_METHOD));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
@@ -310,8 +313,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                // TODO check value
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
         };
 

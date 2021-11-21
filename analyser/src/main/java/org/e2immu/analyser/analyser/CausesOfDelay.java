@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
@@ -162,6 +161,8 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
         @Override
         public AnalysisStatus combine(AnalysisStatus other) {
             if (other instanceof NotDelayed) return this;
+            assert other.isDelayed();
+            assert isDelayed();
             return merge(other.causesOfDelay()).addProgress(other.isProgress());
         }
     }

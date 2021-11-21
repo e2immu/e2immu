@@ -111,7 +111,7 @@ public class StateData   {
     }
 
     public CausesOfDelay valueOfExpressionIsDelayed() {
-        if (valueOfExpression.isFinal()) return null;
+        if (valueOfExpression.isFinal()) return CausesOfDelay.EMPTY;
         return valueOfExpression.get().causesOfDelay();
     }
 }

@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -54,11 +54,16 @@ public class ShallowFieldAnalyser {
         fieldAnalysisBuilder.setProperty(Property.FINAL, Level.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
 
         // unless annotated with something heavier, ...
-        if (enumField && !fieldAnalysisBuilder.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
-            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        DV notNull;
+        if (!fieldAnalysisBuilder.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
+            notNull = enumField ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : fieldInfo.type.defaultNotNull();
+            fieldAnalysisBuilder.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
+        } else {
+            notNull = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.EXTERNAL_NOT_NULL);
         }
+
+        DV typeIsContainer;
         if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER)) {
-            DV typeIsContainer;
             if (fieldAnalysisBuilder.bestType == null) {
                 typeIsContainer = Level.TRUE_DV;
             } else {
@@ -74,19 +79,30 @@ public class ShallowFieldAnalyser {
                 }
             }
             fieldAnalysisBuilder.setProperty(Property.CONTAINER, typeIsContainer);
+        } else {
+            typeIsContainer = fieldAnalysisBuilder.properties.getOrDefaultNull(Property.CONTAINER);
         }
 
+        DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
+        DV formallyImmutable = fieldInfo.type.defaultImmutable(analysisProvider, false);
+        DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
+        DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
+        DV formallyIndependent = fieldInfo.type.defaultIndependent(analysisProvider);
+        DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
+
+        Expression value;
         if (fieldAnalysisBuilder.getProperty(Property.FINAL).valueIsTrue()
                 && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
-            Expression value;
             if (initialiser instanceof ConstantExpression<?> constantExpression) {
                 value = constantExpression;
             } else {
-                value = EmptyExpression.EMPTY_EXPRESSION; // IMPROVE
+                value = Instance.forField(fieldInfo, notNull, immutable, typeIsContainer, independent);
             }
-            fieldAnalysisBuilder.setValue(value);
+        } else {
+            value = Instance.forField(fieldInfo, notNull, immutable, typeIsContainer, independent);
         }
+        fieldAnalysisBuilder.setValue(value);
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
     }
 

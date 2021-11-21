@@ -298,6 +298,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         public String sortedValuesString() {
+            if(values.isFirst()) return values.getFirst().toString();
             return values.get().stream().map(p -> p.getValue().toString()).sorted().collect(Collectors.joining(","));
         }
 

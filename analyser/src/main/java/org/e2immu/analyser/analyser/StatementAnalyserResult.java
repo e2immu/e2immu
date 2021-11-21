@@ -32,6 +32,7 @@ public record StatementAnalyserResult(AnalysisStatus analysisStatus,
 
         public Builder add(StatementAnalyserResult other) {
             analysisStatus = analysisStatus == null ? other.analysisStatus : analysisStatus.combine(other.analysisStatus);
+            assert analysisStatus.isDelayed() || analysisStatus == AnalysisStatus.DONE;
             messages.addAll(other.messages);
             localAnalysers.addAll(other.localAnalysers);
             return this;
@@ -44,6 +45,7 @@ public record StatementAnalyserResult(AnalysisStatus analysisStatus,
 
         public Builder combineAnalysisStatus(AnalysisStatus other) {
             assert other != null;
+            assert analysisStatus.isDelayed() || analysisStatus == AnalysisStatus.DONE;
             analysisStatus = other.combine(analysisStatus);
             return this;
         }

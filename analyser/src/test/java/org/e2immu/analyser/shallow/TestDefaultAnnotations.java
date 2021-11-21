@@ -138,10 +138,6 @@ public class TestDefaultAnnotations {
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
 
-        if (typeAnalysis instanceof TypeAnalysisImpl typeAnalysisImpl) {
-            assertTrue(typeAnalysisImpl.properties.isEmpty());
-        } else fail();
-
         // METHOD 1
 
         MethodInfo size = collection.findUniqueMethod("size", 0);
@@ -309,11 +305,16 @@ public class TestDefaultAnnotations {
         assertEquals(Level.TRUE_DV, outAnalysis.getProperty(Property.FINAL));
         assertEquals(Level.FALSE_DV, outAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, outAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.NULLABLE_DV, outAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
 
         if (outAnalysis instanceof FieldAnalysisImpl outAnalysisImpl) {
             assertTrue(outAnalysisImpl.properties.containsKey(Property.FINAL));
             assertTrue(outAnalysisImpl.properties.containsKey(Property.CONTAINER));
-        }
+        } else fail();
+
+        Expression value = outAnalysis.getValue();
+        assertTrue(value.isDone());
+        assertEquals("nullable instance type PrintStream", value.toString());
     }
 
     @Test

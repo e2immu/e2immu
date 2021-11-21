@@ -607,7 +607,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet
-            initialValue =  fieldAnalysis.getValueForStatementAnalyser();
+            initialValue = fieldAnalysis.getValueForStatementAnalyser();
             Map<Property, DV> valueMap = evaluationContext.getValueProperties(initialValue);
             valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
 
@@ -871,7 +871,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         // VariableNature newNature = nature instanceof VariableNature.NormalLocalVariable
                         //        ? VariableNature.CREATED_IN_MERGE : nature;
                         destination = createVariable(evaluationContext, variable, statementTime, nature);
-                        if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
                     }
@@ -983,7 +982,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
-        return ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus);
+        return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
     }
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
@@ -1124,10 +1123,23 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         } else if (variable instanceof FieldReference fieldReference) {
             initializeFieldReference(vic, evaluationContext, fieldReference);
+
+        } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
+            // nothing spectacular; everything handled at the place of creation
+            initializeLocalOrDependentVariable(vic, variable);
         } else {
             throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
         }
         return vic;
+    }
+
+    private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
+        DV defaultNotNull = variable.parameterizedType().defaultNotNull();
+        Map<Property, DV> map = sharedContext(defaultNotNull);
+        map.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+        map.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
+                LinkedVariables.EMPTY, map, true);
     }
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {

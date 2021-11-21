@@ -62,8 +62,6 @@ public interface VariableInfoContainer {
 
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
-    void newVariableWithoutValue();
-
     boolean isPrevious();
 
     boolean has(Level level);

@@ -207,6 +207,9 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
         assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(Property.CONTAINER));
+        Expression value = fieldAnalysis.getValue();
+        assertTrue(value.isDone());
+        assertEquals("instance type PrintStream", value.toString());
     }
 
     @Test

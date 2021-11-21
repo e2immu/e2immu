@@ -29,6 +29,7 @@ public class UnknownExpression extends ElementImpl implements Expression {
 
     public static final String RETURN_VALUE = "return value";
     public static final String VARIABLE = "variable value";
+    public static final String NOT_YET_ASSIGNED = "not yet assigned";
 
     private final ParameterizedType parameterizedType;
     private final String msg;

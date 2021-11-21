@@ -40,9 +40,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
-import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -1214,24 +1214,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                  EvaluationResult.ChangeData changeData,
                                  int newStatementTime) {
         VariableInfoContainer vic;
-        VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
             assert variable.variableNature() instanceof VariableNature.NormalLocalVariable :
                     "Encountering variable " + variable.fullyQualifiedName() + " of nature " + variable.variableNature();
             vic = statementAnalysis.createVariable(evaluationContext, variable,
                     statementAnalysis.flowData.getInitialTime(), VariableNature.normal(variable, index()));
-            initial = vic.getPreviousOrInitial();
-            if (initial.variable().needsNewVariableWithoutValueCall()) {
-                vic.newVariableWithoutValue();
-            }
         } else {
             vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
-            initial = vic.getPreviousOrInitial();
+
         }
         String id = index() + EVALUATION;
+        VariableInfo initial = vic.getPreviousOrInitial();
         AssignmentIds assignmentIds = changeData.markAssignment() ? new AssignmentIds(id) : initial.getAssignmentIds();
         // we do not set readId to the empty set when markAssignment... we'd rather keep the old value
         // we will compare the recency anyway
+
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
@@ -1424,7 +1421,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (expression instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr;
                 VariableInfoContainer vic;
-                boolean newVariable;
                 String name = lvc.localVariable.name();
                 if (!statementAnalysis.variables.isSet(name)) {
 
@@ -1439,18 +1435,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     } else {
                         variableNature = new VariableNature.NormalLocalVariable(index());
                     }
-                    vic = VariableInfoContainerImpl.newVariable(getLocation(),
-                            lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            variableNature, statementAnalysis.navigationData.hasSubBlocks());
-                    newVariable = true;
+                    vic = statementAnalysis.createVariable(sharedState.evaluationContext,
+                            lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
                     }
-                    statementAnalysis.variables.put(name, vic);
                 } else {
                     vic = statementAnalysis.variables.get(name);
                     lvr = (LocalVariableReference) vic.current().variable();
-                    newVariable = false;
                 }
 
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
@@ -1475,9 +1467,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                 } else {
                     initialiserToEvaluate = lvc; // == expression
-                    if (newVariable) {
-                        vic.newVariableWithoutValue();
-                    }
                 }
             } else initialiserToEvaluate = expression;
 
@@ -1538,12 +1527,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
                             ve.variable() : null;
                     VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
-                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(getLocation(), lvr,
-                            VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            variableNature,
-                            statementAnalysis.navigationData.hasSubBlocks());
-                    vic.newVariableWithoutValue();
-                    statementAnalysis.variables.put(lvr.fullyQualifiedName(), vic);
+                    statementAnalysis.createVariable(sharedState.evaluationContext, lvr,
+                            VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
                 });
 
         // add assignments
@@ -1986,7 +1971,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             if (expressionIsDelayed) {
-                analysisStatus = statementAnalysis.stateData.valueOfExpressionIsDelayed();
+                analysisStatus = AnalysisStatus.of(statementAnalysis.stateData.valueOfExpressionIsDelayed());
             }
         }
 
@@ -2074,7 +2059,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                null, null, null);
+                                null, null, CausesOfDelay.EMPTY);
                     }
                     StatementAnalyserResult result = executionOfBlock.startOfBlock
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),
@@ -2300,7 +2285,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         Expression value = statementAnalysis.stateData.valueOfExpression.get();
         CausesOfDelay valueIsDelayed = statementAnalysis.stateData.valueOfExpressionIsDelayed();
-        assert value.isDone() || valueIsDelayed != null; // sanity check
+        assert value.isDone() || valueIsDelayed.isDelayed(); // sanity check
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 

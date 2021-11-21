@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -292,11 +293,41 @@ public abstract class CommonTestRunner {
     public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
         if (d.iteration() < delayedBeforeIteration) {
             assertTrue(d.currentValue().isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + d.currentValue() + " for variable " + d.variableName());
-            assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());
+            assertEquals(extract(causesOfDelay, d.iteration()), d.currentValue().causesOfDelay().toString());
         } else {
             assertTrue(d.currentValue().isDone(), "Expected current value to be done in iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + d.currentValue()
                     .causesOfDelay() + " for variable " + d.variableName());
             assertEquals(value, d.currentValue().toString());
+        }
+    }
+
+    /*
+    a -> a
+    a|b -> abbbb
+    a||b -> aabbbb
+    a|b||c -> abbccc
+     */
+    private static String extract(String causesOfDelay, int iteration) {
+        int pipe = causesOfDelay.indexOf('|');
+        if (pipe >= 0) {
+            String[] split = causesOfDelay.split("\\|");
+            if (iteration >= split.length) return split[split.length - 1];
+            int pos = iteration;
+            while (pos > 0 && split[pos].isEmpty()) pos--;
+            return split[pos];
+        }
+        return causesOfDelay;
+    }
+
+    public void assertInitialValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
+        Expression initialValue = d.variableInfoContainer().getPreviousOrInitial().getValue();
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(initialValue.isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + initialValue + " for variable " + d.variableName());
+            assertEquals(causesOfDelay, initialValue.causesOfDelay().toString());
+        } else {
+            assertTrue(initialValue.isDone(), "Expected current value to be done in iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + initialValue
+                    .causesOfDelay() + " for variable " + d.variableName());
+            assertEquals(value, initialValue.toString());
         }
     }
 

@@ -198,15 +198,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         this.levelForPrevious = levelForPrevious;
     }
 
-
-    @Override
-    public void newVariableWithoutValue() {
-        assert !hasMerge();
-        assert !hasEvaluation();
-        assert isInitial();
-        ((VariableInfoImpl) getPreviousOrInitial()).newVariable(false);
-    }
-
     @Override
     public VariableNature variableNature() {
         return variableNature;

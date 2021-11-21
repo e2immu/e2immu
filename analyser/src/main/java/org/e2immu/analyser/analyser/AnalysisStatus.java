@@ -73,7 +73,8 @@ public interface AnalysisStatus {
 
         @Override
         public AnalysisStatus combine(AnalysisStatus other) {
-            if (other instanceof NotDelayed notDelayed) return pos < other.pos() ? this : other;
+            if (other instanceof NotDelayed) return pos < other.pos() ? this : other;
+            assert other.isDelayed();
             return other;
         }
     }
@@ -123,6 +124,7 @@ public interface AnalysisStatus {
         @Override
         public AnalysisStatus combine(AnalysisStatus other) {
             if (other instanceof NotDelayed) return this;
+            assert other.isDelayed();
             return new ProgressWrapper(causesOfDelay.merge(other.causesOfDelay()));
         }
     }
