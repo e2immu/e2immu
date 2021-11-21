@@ -489,11 +489,24 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             }
         }
 
-        DV notNull = variableInfo.getProperty(Property.NOT_NULL_EXPRESSION);
-        if (notNull.isDelayed()) {
-            log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
-            return notNull.causesOfDelay();
+        DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
+        assert notNullExpression.isDone();
+
+        /* we already have a value for the value property NNE. We wait, however, until we have a value for ENN as well
+        if we take the non-constructing methods along for NNE computation.
+         */
+        DV externalNotNull;
+        if (analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
+                methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION) {
+            externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
+            if (externalNotNull.isDelayed()) {
+                log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
+                return externalNotNull.causesOfDelay();
+            }
+        } else {
+            externalNotNull = MultiLevel.NOT_INVOLVED_DV;
         }
+        DV notNull = notNullExpression.max(externalNotNull);
         methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, notNull);
 
         boolean valueIsConstantField;
@@ -816,7 +829,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                                  ParameterizedType type,
                                  TypeInfo currentType,
                                  AnalysisProvider analysisProvider) {
-        if (immutable.equals( MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
+        if (immutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return MultiLevel.INDEPENDENT_DV;
         }
         LinkedVariables linkedVariables = variableInfo.getLinkedVariables();

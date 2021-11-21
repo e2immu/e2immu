@@ -108,13 +108,13 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
-                .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
+                .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
+                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
+                .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
-                .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
-                .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
-                .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
+                .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -267,11 +267,14 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseContainer() {
-        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-        if (bestType == null) return DONE;
-        if (!bestType.isAbstract()) return DONE;
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER).isDone()) return DONE;
 
-        assert fieldAnalysis.getProperty(Property.CONTAINER).isDelayed();
+        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+        if (bestType == null || !bestType.isAbstract()) {
+            // value does not matter
+            fieldAnalysis.setProperty(Property.CONTAINER, Level.FALSE_DV);
+            return DONE;
+        }
 
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
         DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
@@ -297,12 +300,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    /*
-    not null has been intentionally decoupled from value and linked values
-
-    for methods/constructors with assignment to the variable, we wait for linked variables to be set AND for not null delays.
-    for methods which only read, we only wait for not-null delays to be resolved.
-     */
     private AnalysisStatus analyseNotNull() {
         if (fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL).isDone()) return DONE;
 
@@ -318,11 +315,22 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        DV finalNotNullValue;
+        /*
+        The choice here is between deciding the @NotNull based on the value and the context of
+        - the construction methods only
+        - all methods
 
-        // FIXME: delay breaking needs implementing!
+        There are cases to be made for both situations; we simply avoid making a decision here.
+        Note that as soon as bestOverContext is better that ENN, we still cannot skip the @NotNull of the values,
+        because the value would contain the contracted @NotNull at a parameter after assignment.
+         */
+        boolean computeContextPropertiesOverAllMethods = analyserContext.getConfiguration().analyserConfiguration()
+                .computeContextPropertiesOverAllMethods();
 
         DV bestOverContext = allMethodsAndConstructors(true)
+                .filter(m -> computeContextPropertiesOverAllMethods ||
+                        m.methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                .peek(m -> LOGGER.info("Considering " + m.methodInfo.fullyQualifiedName))
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
@@ -331,28 +339,25 @@ public class FieldAnalyser extends AbstractAnalyser {
             return bestOverContext.causesOfDelay();
         }
 
-        // this condition works because only CNN can enforce @NN1 (content not null); it cannot be a value of the type
-        if (bestOverContext.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
-            if (fieldAnalysis.valuesStatus().isDelayed()) {
-                log(DELAYED, "Delay @NotNull until all values are known");
-                return fieldAnalysis.valuesStatus();
-            }
-            assert fieldAnalysis.getValues().size() > 0;
-
-            DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
-                    .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
-                    .reduce(DV.MAX_INT_DV, DV::min);
-            DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.NULLABLE_DV : worstOverValuesPrep;
-            // IMPORTANT: we do not take delays into account!
-            finalNotNullValue = worstOverValues.max(bestOverContext);
-        } else {
-            finalNotNullValue = bestOverContext;
+        if (fieldAnalysis.valuesStatus().isDelayed()) {
+            log(DELAYED, "Delay @NotNull until all values are known");
+            return fieldAnalysis.valuesStatus();
         }
+        assert fieldAnalysis.getValues().size() > 0;
 
-        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fqn, finalNotNullValue);
+        DV worstOverValues = fieldAnalysis.getValues().stream()
+                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                .reduce(DV.MAX_INT_DV, DV::min);
+        assert worstOverValues != DV.MAX_INT_DV;
 
+        if (computeContextPropertiesOverAllMethods && worstOverValues.lt(bestOverContext)) {
+            // see Basics_2b; we need the setter to run before the add-method can be called
+            Message message = Message.newMessage(fieldAnalysis.location(), Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
+            messages.add(message);
+        }
+        DV finalNotNullValue = worstOverValues.max(bestOverContext);
         fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, finalNotNullValue);
-        return DONE;
+        return AnalysisStatus.of(finalNotNullValue.causesOfDelay());
     }
 
     private AnalysisStatus fieldErrors() {
@@ -830,10 +835,14 @@ public class FieldAnalyser extends AbstractAnalyser {
             effectivelyFinalValue = new MultiValue(fieldInfo.getIdentifier(), analyserContext, multiExpression, fieldInfo.type);
         }
 
+        if (effectivelyFinalValue.isDelayed()) {
+            log(FINAL, "Delaying final value of field {}", fieldInfo.fullyQualifiedName());
+            return effectivelyFinalValue.causesOfDelay();
+        }
+
         // check constant, but before we set the effectively final value
 
-        log(FINAL, "Setting initial value of effectively final of field {} to {}",
-                fqn, effectivelyFinalValue);
+        log(FINAL, "Setting final value of effectively final field {} to {}", fqn, effectivelyFinalValue);
         fieldAnalysis.setValue(effectivelyFinalValue);
         return DONE;
     }
@@ -908,7 +917,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus analyseLinked() {
         assert fieldAnalysis.linkedVariables.isVariable();
-
+/*
         DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
         if (MultiLevel.isAtLeastEffectivelyE2Immutable(immutable)) {
             fieldAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
@@ -916,7 +925,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             // finalizer check at assignment only
             return DONE;
         }
-
+*/
         // we ONLY look at the linked variables of fields that have been assigned to
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false)

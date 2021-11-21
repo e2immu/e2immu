@@ -16,10 +16,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_2 extends CommonTestRunner {
 
@@ -47,173 +49,173 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         super(true);
     }
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if (d.iteration() == 0) {
-            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                    FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_CONTAINER));
-            assertSubMap(expect, d.statuses());
-        }
-        if (d.iteration() == 1) {
-            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                    FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_CONTAINER,
-                    FieldAnalyser.ANALYSE_FINAL,
-                    FieldAnalyser.ANALYSE_FINAL_VALUE,
-                    FieldAnalyser.ANALYSE_NOT_NULL));
-            assertSubMap(expect, d.statuses());
-        }
-        if ("string".equals(d.fieldInfo().name)) {
-            assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-            assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+    @Test
+    public void test_2() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if (d.iteration() == 0) {
+                Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
+                        FieldAnalyser.EVALUATE_INITIALISER,
+                        FieldAnalyser.ANALYSE_CONTAINER));
+                assertSubMap(expect, d.statuses());
+            }
+            if (d.iteration() == 1) {
+                Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
+                        FieldAnalyser.EVALUATE_INITIALISER,
+                        FieldAnalyser.ANALYSE_CONTAINER,
+                        FieldAnalyser.ANALYSE_FINAL,
+                        FieldAnalyser.ANALYSE_FINAL_VALUE,
+                        FieldAnalyser.ANALYSE_NOT_NULL));
+                assertSubMap(expect, d.statuses());
+            }
+            if ("string".equals(d.fieldInfo().name)) {
+                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+                assertEquals("string:0", d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
 
-            assertEquals("string:0", d.fieldAnalysis().getLinkedVariables().toString());
-        }
-    };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo c && "collection".equals(c.simpleName()) && "0".equals(d.statementId())) {
+                    assertEquals(COLLECTION, d.variableName());
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("add".equals(d.methodInfo().name)) {
-            if (d.variable() instanceof ParameterInfo c && "collection".equals(c.simpleName()) && "0".equals(d.statementId())) {
-                assertEquals(COLLECTION, d.variableName());
+                    if (d.iteration() == 0) {
+                        assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertEquals("<p:collection>", d.currentValue().toString());
+                        assertTrue(d.currentValue().isDelayed());
+                        assertEquals("nullable instance type Collection<String>/*@Identity*/",
+                                d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+                    } else {
+                        assertTrue(d.currentValue() instanceof PropertyWrapper);
+                        assertEquals("nullable instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
+                                d.currentValue().toString());
+                    }
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(Level.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
 
-                if (d.iteration() == 0) {
-                    assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                    assertTrue(d.variableInfoContainer().hasEvaluation());
-                    assertEquals("<p:collection>", d.currentValue().toString());
-                    assertTrue(d.currentValue().isDelayed());
-                    assertEquals("nullable instance type Collection<String>/*@Identity*/",
-                            d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
-                } else {
-                    assertTrue(d.currentValue() instanceof PropertyWrapper);
-                    assertEquals("nullable instance type Collection<String>/*@Identity*//*this.contains(string$0)*/",
-                            d.currentValue().toString());
+                    // cannot be content linked to string, because string is recursively immutable
+                    assertEquals("collection:0", d.variableInfo().getLinkedVariables().toString());
                 }
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertEquals(Level.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    assertEquals(STRING_FIELD, d.variableName());
 
-                // cannot be content linked to string, because string is recursively immutable
-                assertEquals("collection:0", d.variableInfo().getLinkedVariables().toString());
-            }
-            if (STRING_FIELD.equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
-                assertEquals(expectValue, d.currentValue().toString());
-                // string occurs in a not-null context, even if its value is delayed
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertCurrentValue(d, 1, "initial@Field_string", "nullable instance type String");
+                    // string occurs in a not-null context, but one of the values is nullable
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
 
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-            }
-            if (STRING_0.equals(d.variableName())) {
-                assertTrue(d.iteration() > 0);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                }
+                if (STRING_0.equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
 
-                assertEquals("nullable instance type String", d.currentValue().toString());
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
-            }
-        }
-        if ("setString".equals(d.methodInfo().name)) {
-            if (STRING_FIELD.equals(d.variableName())) {
-                assertTrue(d.variableInfo().isAssigned());
-                assertEquals("string:0,this.string:0", d.variableInfo().getLinkedVariables().toString());
-            }
-        }
-        if ("getString".equals(d.methodInfo().name)) {
-            if (THIS.equals(d.variableName())) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
-            }
-            if (STRING_FIELD.equals(d.variableName())) {
-                assertTrue(d.variableInfo().isRead());
-                String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
-                assertEquals(expectValue, d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
-            }
-            if (STRING_0.equals(d.variableName())) {
-                assertTrue(d.iteration() > 0);
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
-            }
-            if (d.variable() instanceof ReturnVariable) {
-                String expectValue = d.iteration() == 0 ? "<f:string>" : STRING_0;
-                assertEquals(expectValue, d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
-            }
-        }
-    };
-
-    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
-            FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
-            VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
-
-            if ("getString".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
-
-                assert fieldAsVariable != null;
-                assertTrue(fieldAsVariable.isRead());
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-
-                // property of the field as variable info in the method
-                assertEquals(Level.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
+                    assertEquals("nullable instance type String", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
+                }
             }
             if ("setString".equals(d.methodInfo().name)) {
-                assert fieldAsVariable != null;
-                assertTrue(fieldAsVariable.isAssigned());
-                assertEquals(Level.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
+                if (STRING_FIELD.equals(d.variableName())) {
+                    assertTrue(d.variableInfo().isAssigned());
+                    assertEquals("string:0,this.string:0", d.variableInfo().getLinkedVariables().toString());
+                }
             }
-            if ("add".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+            if ("getString".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                }
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    assertTrue(d.variableInfo().isRead());
+                    String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                }
+                if (STRING_0.equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() == 0 ? "<f:string>" : STRING_0;
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                }
             }
-        }
-    };
+        };
 
-    EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            assertTrue(d.haveMarkRead(STRING_PARAMETER), d.evaluationResult().toString());
-            assertTrue(d.haveMarkRead(THIS));
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
+                FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
+                VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
 
-            EvaluationResult.ChangeData expressionChange = d.findValueChange(STRING_FIELD);
-            assertEquals("string", expressionChange.value().debugOutput());
+                if ("getString".equals(d.methodInfo().name)) {
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
 
-            EvaluationResult.ChangeData cd = d.findValueChange(STRING_FIELD);
-            assertEquals("string:0", cd.linkedVariables().toString());
-            assertEquals("string", d.evaluationResult().value().debugOutput());
-        }
-        if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
-            assertTrue(d.haveMarkRead(STRING_FIELD));
-            assertTrue(d.haveMarkRead(THIS));
-        }
-        if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            String expectEvalString = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
-            assertEquals(expectEvalString, d.evaluationResult().value().toString());
-        }
-    };
+                    assert fieldAsVariable != null;
+                    assertTrue(fieldAsVariable.isRead());
+                    assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        // check that the XML annotations have been read properly, and copied into the correct place
-        TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
-        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringType.typeAnalysis.get().getProperty(IMMUTABLE));
+                    // property of the field as variable info in the method
+                    assertEquals(Level.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
+                }
+                if ("setString".equals(d.methodInfo().name)) {
+                    assert fieldAsVariable != null;
+                    assertTrue(fieldAsVariable.isAssigned());
+                    assertEquals(Level.FALSE_DV, fieldAsVariable.getProperty(CONTEXT_MODIFIED));
+                }
+                if ("add".equals(d.methodInfo().name)) {
+                    assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                }
+            }
+        };
 
-        TypeInfo collection = typeMap.get(Collection.class);
-        MethodInfo add = collection.findUniqueMethod("add", 1);
-        ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                p0.parameterAnalysis.get().getProperty(NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE_DV, p0.parameterAnalysis.get().getProperty(MODIFIED_VARIABLE));
-        assertEquals(Level.TRUE_DV, add.methodAnalysis.get().getProperty(MODIFIED_METHOD));
-    };
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
+                assertTrue(d.haveMarkRead(STRING_PARAMETER), d.evaluationResult().toString());
+                assertTrue(d.haveMarkRead(THIS));
 
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (ADD.equals(d.methodInfo().fullyQualifiedName)) {
-            assertTrue(d.state().isBoolValueTrue());
-        }
-    };
+                EvaluationResult.ChangeData expressionChange = d.findValueChange(STRING_FIELD);
+                assertEquals("string", expressionChange.value().debugOutput());
 
-    @Test
-    public void test() throws IOException {
+                EvaluationResult.ChangeData cd = d.findValueChange(STRING_FIELD);
+                assertEquals("string:0", cd.linkedVariables().toString());
+                assertEquals("string", d.evaluationResult().value().debugOutput());
+            }
+            if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
+                assertTrue(d.haveMarkRead(STRING_FIELD));
+                assertTrue(d.haveMarkRead(THIS));
+            }
+            if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
+                String expectEvalString = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
+                assertEquals(expectEvalString, d.evaluationResult().value().toString());
+            }
+        };
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            // check that the XML annotations have been read properly, and copied into the correct place
+            TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, stringType.typeAnalysis.get().getProperty(IMMUTABLE));
+
+            TypeInfo collection = typeMap.get(Collection.class);
+            MethodInfo add = collection.findUniqueMethod("add", 1);
+            ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    p0.parameterAnalysis.get().getProperty(NOT_NULL_PARAMETER));
+            assertEquals(Level.FALSE_DV, p0.parameterAnalysis.get().getProperty(MODIFIED_VARIABLE));
+            assertEquals(Level.TRUE_DV, add.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if (ADD.equals(d.methodInfo().fullyQualifiedName)) {
+                assertTrue(d.state().isBoolValueTrue());
+            }
+        };
+
         testClass("Basics_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -224,4 +226,18 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_2b() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("string".equals(d.fieldInfo().name)) {
+                assertNotNull(d.haveError(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
+            }
+        };
+
+        testClass("Basics_2b", 0, 1, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(true)
+                .build());
+    }
 }

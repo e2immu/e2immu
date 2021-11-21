@@ -489,8 +489,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private EvaluationResult delayedMethod(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder,
                                            CausesOfDelay causesOfDelay) {
+        assert causesOfDelay.isDelayed();
+        LinkedVariables delayedLinkedVariables = linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay);
         builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
-                linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay));
+                delayedLinkedVariables, causesOfDelay));
         // set scope delay
         return builder.build();
     }

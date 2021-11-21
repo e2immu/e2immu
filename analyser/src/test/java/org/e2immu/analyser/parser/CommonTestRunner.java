@@ -294,7 +294,8 @@ public abstract class CommonTestRunner {
             assertTrue(d.currentValue().isDelayed(), "Expected current value to be delayed in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but was " + d.currentValue() + " for variable " + d.variableName());
             assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());
         } else {
-            assertTrue(d.currentValue().isDone());
+            assertTrue(d.currentValue().isDone(), "Expected current value to be done in iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + d.currentValue()
+                    .causesOfDelay() + " for variable " + d.variableName());
             assertEquals(value, d.currentValue().toString());
         }
     }

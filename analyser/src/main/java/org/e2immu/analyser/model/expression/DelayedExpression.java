@@ -35,13 +35,6 @@ public record DelayedExpression(String msg,
                                 LinkedVariables linkedVariables,
                                 CausesOfDelay causesOfDelay) implements Expression {
 
-    public static final String PRECONDITION = "<precondition>";
-
-    public DelayedExpression {
-        assert PRECONDITION.equals(msg) ||
-                linkedVariables.isDelayed() : "Linked variables of " + debug + " is not delayed!";
-    }
-
     public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables,
                                               CausesOfDelay causesOfDelay) {
@@ -80,7 +73,7 @@ public record DelayedExpression(String msg,
     }
 
     public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
-        return new DelayedExpression(PRECONDITION, PRECONDITION, primitives.booleanParameterizedType,
+        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
                 LinkedVariables.EMPTY, causes); // no need for linked variables
     }
 
@@ -118,13 +111,7 @@ public record DelayedExpression(String msg,
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo, LinkedVariables linkedVariables, CausesOfDelay causesOfDelay) {
-        return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type, linkedVariables, causesOfDelay);
-    }
-
-    /* temporary, in field analyser */
-    public static Expression forFieldProperty(FieldInfo fieldInfo, CausesOfDelay causesOfDelay) {
-        return new DelayedExpression(fieldInfo.name, fieldInfo.fullyQualifiedName(), fieldInfo.type,
-                LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
+        return new DelayedExpression("<f:" + fieldInfo.name + ">", fieldInfo.fullyQualifiedName(), fieldInfo.type, linkedVariables, causesOfDelay);
     }
 
     /*

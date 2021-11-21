@@ -16,7 +16,6 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.Container;
@@ -26,6 +25,7 @@ import java.util.Objects;
 
 @E2Container
 public record AnalyserConfiguration(boolean skipTransformations,
+                                    boolean computeContextPropertiesOverAllMethods,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
 
     public AnalyserConfiguration {
@@ -40,6 +40,10 @@ public record AnalyserConfiguration(boolean skipTransformations,
     @Container(builds = AnalyserConfiguration.class)
     public static class Builder {
         private boolean skipTransformations;
+
+        // see @NotNull in FieldAnalyser for an explanation
+        private boolean computeContextPropertiesOverAllMethods;
+
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
         public Builder setSkipTransformations(boolean skipTransformations) {
@@ -52,15 +56,23 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
+        public Builder setComputeContextPropertiesOverAllMethods(boolean computeContextPropertiesOverAllMethods) {
+            this.computeContextPropertiesOverAllMethods = computeContextPropertiesOverAllMethods;
+            return this;
+        }
+
         public AnalyserConfiguration build() {
-            return new AnalyserConfiguration(skipTransformations, patternMatcherProvider == null ?
-                    (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
+            return new AnalyserConfiguration(skipTransformations,
+                    computeContextPropertiesOverAllMethods,
+                    patternMatcherProvider == null ?
+                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
         }
     }
 
     @Override
     public String toString() {
         return "AnalyserConfiguration:" +
-                "\n    skipTransformations=" + skipTransformations;
+                "\n    skipTransformations=" + skipTransformations +
+                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods;
     }
 }
