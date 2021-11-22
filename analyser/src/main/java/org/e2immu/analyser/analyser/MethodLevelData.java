@@ -149,8 +149,7 @@ public class MethodLevelData {
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
                 .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 
-        CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays)
-                .merge(sharedState.stateData.getPrecondition().expression().causesOfDelay());
+        CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays);
 
         if (allDelayed.isDelayed()) {
             combinedPrecondition.setVariable(all);

@@ -820,10 +820,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // in the case of factory methods or indeed identity
             // see E2Immutable_11
             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
-            SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
             MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
 
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
+                if(typeAnalysis.hiddenContentTypeStatus().isDelayed()) {
+                    return typeAnalysis.hiddenContentTypeStatus();
+                }
+                SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
                 return factoryMethodDynamicallyImmutable(formal, hiddenContentTypes, evaluationContext);
             }
 

@@ -224,7 +224,7 @@ public class FlowData {
     at some point we need to make a distinction between different
      */
     public boolean alwaysEscapesViaException() {
-        return interruptsFlow.isSet() && interruptsFlow.get().get(ESCAPE).equals(ALWAYS);
+        return interruptsFlow.isSet() && ALWAYS.equals(interruptsFlow.get().get(ESCAPE));
     }
 
     public static final DV DEFAULT_EXECUTION = new DV.NoDelay(3);

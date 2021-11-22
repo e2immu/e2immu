@@ -36,7 +36,7 @@ public interface CauseOfDelay {
         FIELD_FINAL("final", "Effectively final has not yet been determined for this field"),
         ASPECT("aspect", "The type's aspect has not yet been determined"),
         MODIFIED_METHOD("mm", "The method's modification status has not yet been determined"),
-        ASSIGNED_TO_FIELD("assign_to_fied", "The component 'analyseFieldAssignments' has not yet finished"),
+        ASSIGNED_TO_FIELD("assign_to_field", "The component 'analyseFieldAssignments' has not yet finished"),
         IMMUTABLE("immutable_type", "Type's IMMUTABLE status has not yet been determined"),
         EXTERNAL_NOT_NULL("ext_not_null", "Variable's EXTERNAL_NOT_NULL value not yet determined"),
         TYPE_ANALYSIS("type_analysis", "Type analysis missing"),
