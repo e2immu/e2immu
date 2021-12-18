@@ -45,7 +45,7 @@ public interface ParameterAnalysis extends Analysis {
 
         // some absolutely trivial cases
         DV propertyFromType = ImplicitProperties.fromType(parameterInfo.parameterizedType, property);
-        if (propertyFromType != Level.NOT_INVOLVED_DV) return propertyFromType;
+        if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
 
         switch (property) {
             case CONTAINER:

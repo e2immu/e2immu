@@ -1469,7 +1469,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
                         if (vi.getValue() instanceof NullConstant) {
-                            return new Pair<>(vi, Level.NOT_INVOLVED_DV);
+                            return new Pair<>(vi, DV.MIN_INT_DV);
                         }
                         DV notNull = evaluationContext.getProperty(new VariableExpression(fieldReference),
                                 NOT_NULL_EXPRESSION, false, false);
@@ -1477,7 +1477,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     return null;
                 })
-                .filter(e -> e != null && (e.v.equals(Level.NOT_INVOLVED_DV) || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
+                .filter(e -> e != null && (e.v == DV.MIN_INT_DV || e.v.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)))
                 .map(e -> {
                     Expression equals = Equals.equals(evaluationContext, new VariableExpression(e.k.variable()),
                             NullConstant.NULL_CONSTANT);

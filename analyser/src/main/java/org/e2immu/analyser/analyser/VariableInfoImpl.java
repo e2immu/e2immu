@@ -171,8 +171,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Properties getProperties() {
-        return properties;
+    public Map<Property, DV> getProperties() {
+        return properties.toImmutableMap();
     }
 
     @Override
@@ -266,7 +266,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private static final List<MergeOp> MERGE = List.of(
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
             new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
@@ -285,7 +285,7 @@ class VariableInfoImpl implements VariableInfo {
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, Level.NOT_INVOLVED_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
 
             new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),

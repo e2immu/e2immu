@@ -112,7 +112,7 @@ public interface MethodAnalysis extends Analysis {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
         return overrides.stream()
                 .map(ma -> ma.getPropertyFromMapDelayWhenAbsent(property))
-                .reduce(Level.NOT_INVOLVED_DV, DV::max);
+                .reduce(DV.MIN_INT_DV, DV::max);
     }
 
     default boolean eventualIsSet() {

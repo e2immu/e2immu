@@ -25,7 +25,7 @@ public class ImplicitProperties {
         return switch (property) {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
             case CONTAINER -> Level.TRUE_DV;
-            default -> Level.NOT_INVOLVED_DV;
+            default -> DV.MIN_INT_DV;
         };
     }
 
@@ -36,19 +36,18 @@ public class ImplicitProperties {
             case CONTAINER -> Level.TRUE_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!
-            default -> Level.NOT_INVOLVED_DV;
+            default -> DV.MIN_INT_DV;
         };
     }
 
     public static DV fromType(ParameterizedType parameterizedType, Property property) {
         if (parameterizedType.arrays > 0) {
             DV arrayPropertyValue = arrayProperties(property);
-            if (arrayPropertyValue != Level.NOT_INVOLVED_DV) return arrayPropertyValue;
+            if (arrayPropertyValue != DV.MIN_INT_DV) return arrayPropertyValue;
         }
         if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            DV primitivePropertyValue = primitiveProperties(property);
-            if (primitivePropertyValue != Level.NOT_INVOLVED_DV) return primitivePropertyValue;
+            return primitiveProperties(property);
         }
-        return Level.NOT_INVOLVED_DV;
+        return DV.MIN_INT_DV;
     }
 }

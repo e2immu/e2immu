@@ -67,7 +67,7 @@ public interface VariableInfo {
     /**
      * @return immutable copy of the properties map, for debugging mostly
      */
-    Properties getProperties();
+    Map<Property, DV> getProperties();
 
     /**
      * @return an immutable copy, or the same object frozen

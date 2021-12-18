@@ -719,18 +719,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
                 Expression valueToWritePossiblyDelayed;
-                boolean valueToWritePossiblyDelayedIsDelayed;
                 if (valueToWriteIsDelayed) {
                     valueToWritePossiblyDelayed = valueToWrite;
-                    valueToWritePossiblyDelayedIsDelayed = true;
                 } else if (valuePropertiesIsDelayed.isDelayed()) {
                     valueToWritePossiblyDelayed = valueToWrite.createDelayedValue(sharedState.evaluationContext,
                             valuePropertiesIsDelayed);
-                    valueToWritePossiblyDelayedIsDelayed = true;
                 } else {
                     // no delays!
                     valueToWritePossiblyDelayed = valueToWrite;
-                    valueToWritePossiblyDelayedIsDelayed = false;
                 }
 
                 Map<Property, DV> merged = mergeAssignment(variable, valueProperties, changeData.properties(), groupPropertyValues);
@@ -779,7 +775,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // a modifying method caused an updated instance value
 
                     Map<Property, DV> merged = mergePreviousAndChange(sharedState.evaluationContext,
-                            variable, vi1.getProperties().toImmutableMap(),
+                            variable, vi1.getProperties(),
                             changeData.properties(), groupPropertyValues, true);
                     vic.setValue(changeData.value(), vi1.getLinkedVariables(), merged, false);
                 } else {
@@ -790,14 +786,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // so we must integrate set properties
                         Map<Property, DV> merged = mergePreviousAndChange(
                                 sharedState.evaluationContext,
-                                variable, vi1.getProperties().toImmutableMap(),
+                                variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, true);
                         vic.setValue(vi1.getValue(), vi1.getLinkedVariables(), merged, false);
                     } else {
                         // delayed situation; do not copy the value properties
                         Map<Property, DV> merged = mergePreviousAndChange(
                                 sharedState.evaluationContext,
-                                variable, vi1.getProperties().toImmutableMap(),
+                                variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, false);
                         merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
                     }
@@ -851,7 +847,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x ->
                 new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(x, getLocation(),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
-        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, false);
+        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> x.parameterizedType().defaultImmutable(analyserContext, false), false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE_DV, true);
 
@@ -1113,7 +1109,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         VariableInfo vi = vic.best(EVALUATION);
                         DV eval = vi.getProperty(property);
                         if (eval.isDelayed()) {
-                            map.put(vi.variable(), prev.max(falseValue.apply(vi.variable())));
+                            map.put(vi.variable(), prev.maxIgnoreDelay(falseValue.apply(vi.variable())));
                         } else {
                             map.put(vi.variable(), eval);
                         }
@@ -1575,7 +1571,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         loopCopy, assigned,
                         read,
                         newValue,
-                        mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
+                        mergeValueAndLoopVar(valueProps, vi.getProperties()),
                         LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV),
                         true);
                 statementAnalysis.variables.put(loopCopyFqn, newVic);

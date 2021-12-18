@@ -77,7 +77,7 @@ public class ComputeLinkedVariables {
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
-        WeightedGraph<Variable, DV> weightedGraph = new WeightedGraph<>(() -> Level.FALSE_DV);
+        WeightedGraph<Variable, DV> weightedGraph = new WeightedGraph<>(() -> LinkedVariables.STATICALLY_ASSIGNED_DV);
         Set<CauseOfDelay> delaysInClustering = new HashSet<>();
         List<Variable> variables = new ArrayList<>(statementAnalysis.variables.size());
 
@@ -206,7 +206,7 @@ public class ComputeLinkedVariables {
     }
 
     public void writeLinkedVariables() {
-        statementAnalysis.variableEntryStream(level)
+        statementAnalysis.variables.stream()
                 .forEach(e -> {
                     VariableInfoContainer vic = e.getValue();
 

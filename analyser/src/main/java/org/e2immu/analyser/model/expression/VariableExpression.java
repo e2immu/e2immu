@@ -185,30 +185,24 @@ public record VariableExpression(Variable variable, String name) implements Expr
         }
 
         DV notNull = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        if (notNull.gt(MultiLevel.NULLABLE_DV)) {
-            builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
-        }
-        DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
-        if (!modified.isDelayed()) {
-            builder.markContextModified(variable, modified);
-            // do not check for implicit this!! otherwise, any x.y will also affect this.y
+        builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
 
-            // if super is modified, then this should be modified to
-            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                builder.markContextModified(evaluationContext.currentThis(), modified);
-            }
+        DV modified = forwardEvaluationInfo.getProperty(Property.CONTEXT_MODIFIED);
+        builder.markContextModified(variable, modified);
+        // do not check for implicit this!! otherwise, any x.y will also affect this.y
+
+        // if super is modified, then this should be modified to
+        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+            builder.markContextModified(evaluationContext.currentThis(), modified);
         }
 
         DV notModified1 = forwardEvaluationInfo.getProperty(Property.CONTAINER);
-        if (notModified1.valueIsTrue()) {
-            builder.variableOccursInContainerContext(variable, adjustedScope);
-        }
+        builder.variableOccursInContainerContext(variable, adjustedScope, notModified1);
 
         DV contextImmutable = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(Property.NEXT_CONTEXT_IMMUTABLE);
-        if (contextImmutable.gt(MultiLevel.MUTABLE_DV)) {
-            builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
-        }
+        builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
+
 
         // having done all this, we do try for a shortcut
         if (scopeResult != null) {

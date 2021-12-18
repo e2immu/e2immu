@@ -124,7 +124,7 @@ public interface TypeAnalysis extends Analysis {
                 .stream().filter(TypeInfo::isInterface);
         return implementedInterfaces.map(analysisProvider::getTypeAnalysis)
                 .map(typeAnalysis -> typeAnalysis.getTypeProperty(property))
-                .reduce(Level.NOT_INVOLVED_DV, DV::max);
+                .reduce(DV.MIN_INT_DV, DV::max);
     }
 
     /*

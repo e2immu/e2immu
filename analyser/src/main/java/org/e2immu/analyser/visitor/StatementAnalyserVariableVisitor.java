@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.Map;
 import java.util.Objects;
 
 public interface StatementAnalyserVariableVisitor {
@@ -30,7 +31,7 @@ public interface StatementAnalyserVariableVisitor {
                 String variableName,
                 Variable variable,
                 Expression currentValue,
-                Properties properties,
+                Map<Property, DV> properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) implements CommonVisitorData {
 
@@ -40,7 +41,7 @@ public interface StatementAnalyserVariableVisitor {
 
         @Override
         public DV getProperty(Property property) {
-            return properties.getOrDefaultNull(property);
+            return properties.get(property);
         }
 
         @Override

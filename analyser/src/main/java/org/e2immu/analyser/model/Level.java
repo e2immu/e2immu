@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.annotation.UtilityClass;
 
@@ -31,9 +29,6 @@ public class Level {
         throw new UnsupportedOperationException();
     }
 
-    public static final DV NOT_INVOLVED_DV = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED);
-
-    // TERNARY SYSTEM
     public static final DV FALSE_DV = new DV.NoDelay(0, "false");
     public static final DV TRUE_DV = new DV.NoDelay(1, "true");
 

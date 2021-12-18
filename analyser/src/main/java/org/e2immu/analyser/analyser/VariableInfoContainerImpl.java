@@ -457,7 +457,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     }
                 });
         for (Property property : GroupPropertyValues.PROPERTIES) {
-            groupPropertyValues.setIfKeyAbsent(property, v, org.e2immu.analyser.model.Level.NOT_INVOLVED_DV);
+            // FIXME check that valueWhenAbsent is correct
+            groupPropertyValues.setIfKeyAbsent(property, v, property.valueWhenAbsent());
         }
         mergeImpl.setStatementTime(eval.getStatementTime());
     }

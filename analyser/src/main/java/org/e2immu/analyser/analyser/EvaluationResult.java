@@ -68,6 +68,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
+        boolean noMinInt = causes.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT);
+        assert noMinInt;
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
@@ -290,8 +292,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotNullContext(Variable variable, Expression value, DV notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
-            assert notNullRequired.gt(MultiLevel.NULLABLE_DV);
-
+            if (notNullRequired.equals(MultiLevel.NULLABLE_DV)) return;
+            if (notNullRequired.isDelayed()) {
+                // simply set the delay
+                setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
+                return;
+            }
             if (variable instanceof This) return; // nothing to be done here
 
             if (notNullRequired.equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
@@ -413,6 +419,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                                                Variable variable,
                                                                DV requiredImmutable,
                                                                DV nextImmutable) {
+            if (requiredImmutable.equals(MultiLevel.MUTABLE_DV) || requiredImmutable == DV.MIN_INT_DV) return;
+            if (requiredImmutable.isDelayed()) {
+                setProperty(variable, Property.CONTEXT_IMMUTABLE, requiredImmutable);
+                return;
+            }
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
             DV currentImmutable = getPropertyFromInitial(variable, Property.CONTEXT_IMMUTABLE);
@@ -443,7 +454,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
                 if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
-                    setProperty(variable, Property.CONTEXT_MODIFIED, modified);
+                    DV currentValue = cd == null ? null : cd.properties.get(Property.CONTEXT_MODIFIED);
+                    if (currentValue == null || !currentValue.valueIsTrue()) {
+                        setProperty(variable, Property.CONTEXT_MODIFIED, modified);
+                    }
                 }
                     /*
                     The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
@@ -459,9 +473,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void variableOccursInContainerContext(Variable variable, Expression currentExpression) {
+        public void variableOccursInContainerContext(Variable variable, Expression currentExpression, DV containerRequired) {
             assert evaluationContext != null;
 
+            if (containerRequired.isDelayed()) {
+                setProperty(variable, Property.CONTAINER, containerRequired);
+                return;
+            }
+            if (containerRequired.valueIsFalse()) return;
             if (currentExpression.isDelayed()) return; // not yet
             // if we already know that the variable is NOT @NotModified1, then we'll raise an error
             DV container = getContainerFromInitial(currentExpression);

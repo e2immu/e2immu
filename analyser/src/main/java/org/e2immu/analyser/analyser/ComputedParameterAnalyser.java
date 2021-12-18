@@ -90,12 +90,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 && !parameterAnalysis.properties.isDone(IMMUTABLE)) {
             DV combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore.valueIsTrue());
             assert combined.isDone();
-            parameterAnalysis.properties.put(IMMUTABLE, combined);
+            parameterAnalysis.setProperty(IMMUTABLE, combined);
         }
 
         DV contractIndependent = parameterAnalysis.getProperty(INDEPENDENT);
         if (contractIndependent.isDone() && !parameterAnalysis.properties.isDone(INDEPENDENT)) {
-            parameterAnalysis.properties.put(INDEPENDENT, contractIndependent);
+            parameterAnalysis.setProperty(INDEPENDENT, contractIndependent);
         }
 
         DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
@@ -321,7 +321,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         } else {
                             typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
                         }
-                        parameterAnalysis.properties.put(INDEPENDENT, typeIndependent);
+                        parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
                         log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
                                 parameterInfo.fullyQualifiedName(), fieldInfo.name);
                         changed = true;

@@ -506,13 +506,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private record ImmutableData(CausesOfDelay causes, DV required, DV next) {
     }
 
-    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(CausesOfDelay.EMPTY, Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
+    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(CausesOfDelay.EMPTY, DV.MIN_INT_DV, DV.MIN_INT_DV);
 
     private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
         DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
                 .getProperty(Property.IMMUTABLE);
         if (formalTypeImmutable.isDelayed()) {
-            return new ImmutableData(formalTypeImmutable.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
+            return new ImmutableData(formalTypeImmutable.causesOfDelay(), DV.MIN_INT_DV, DV.MIN_INT_DV);
         }
         MultiLevel.Effective effective = MultiLevel.effective(formalTypeImmutable);
         if (effective != MultiLevel.Effective.EVENTUAL) {
@@ -520,7 +520,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
         if (eventual.causesOfDelay().isDelayed()) {
-            return new ImmutableData(eventual.causesOfDelay(), Level.NOT_INVOLVED_DV, Level.NOT_INVOLVED_DV);
+            return new ImmutableData(eventual.causesOfDelay(), DV.MIN_INT_DV, DV.MIN_INT_DV);
         }
 
         int formalLevel = MultiLevel.level(formalTypeImmutable);

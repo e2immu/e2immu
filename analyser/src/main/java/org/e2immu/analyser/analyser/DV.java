@@ -38,6 +38,12 @@ public interface DV extends WeightedGraph.Weight {
 
     DV min(DV other);
 
+    /*
+    IMPORTANT: max does not treat MIN_INT_DV as a delay; it never returns it.
+
+    reduce(MIN_INT_DV, DV::max) is the correct way to find the maximal value, taking
+    delays into account, but having a value to check when there was nothing to reduce.
+     */
     DV max(DV other);
 
     DV maxIgnoreDelay(DV other);
@@ -100,6 +106,8 @@ public interface DV extends WeightedGraph.Weight {
 
         @Override
         public DV max(DV other) {
+            if (this == MIN_INT_DV) return other;
+            if (other == MIN_INT_DV) return this;
             if (other.value() >= value || other.isDelayed()) return other;
             return this;
         }
@@ -134,10 +142,6 @@ public interface DV extends WeightedGraph.Weight {
         @Override
         public int compareTo(WeightedGraph.Weight o) {
             return value - ((DV) o).value();
-        }
-
-        public boolean haveLabel() {
-            return !COMPUTED.equals(label);
         }
 
         @Override

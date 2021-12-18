@@ -22,11 +22,11 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -114,12 +114,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     // basic statement timing
     @Test
     public void test6() throws IOException {
-
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("field".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-            }
-        };
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
         final String FIELD_0 = "field$0";
@@ -137,6 +131,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                         assertEquals(expect, d.variableInfo().getStatementTime());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
@@ -170,11 +165,15 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
+                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0" // FIXME v2:0?
                                 : "field$0:1,this.field:0,v1:0,v2:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        // evaluation to write linked properties
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
@@ -188,13 +187,34 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
                                 : "field$0:1,this.field:0,v1:1,v2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                 }
+                if (FIELD.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
+                        assertEquals(expect, d.variableInfo().getStatementTime());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? "this.field:0,v1:0,v2:0"
+                                : "field$0:1,this.field:0,v1:0,v2:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (FIELD_1_FQN.equals(d.variableName())) {
+                    fail(); // statement time has not advanced!
+                }
                 if (FIELD_0_FQN.equals(d.variableName())) {
-                    assert d.iteration() > 0;
+                    assertTrue(d.iteration() > 0);
+                    assertEquals("nullable instance type String", d.currentValue().toString(),
+                            "Caused by delay? " + d.currentValue().causesOfDelay());
+                    assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+
                     if ("0".equals(d.statementId())) {
                         assertEquals("field$0:0,this.field:0,v1:1",
                                 d.variableInfo().getLinkedVariables().toString());
@@ -243,7 +263,10 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
-
+                if (d.variable() instanceof This) {
+                    assertDvInitial(d, "immutable@Class_Basics_6", 1, MultiLevel.MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.MUTABLE_DV, EXTERNAL_IMMUTABLE);
+                }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "field$0.toUpperCase()";
@@ -316,13 +339,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals(5, d.statementAnalysis().variables.size());
                     Expression valueV1 = d.statementAnalysis().variables.get("v1").current().getValue();
                     Expression valueV2 = d.statementAnalysis().variables.get("v2").current().getValue();
-                    assertTrue(valueV1 instanceof VariableExpression);
-                    assertTrue(valueV2 instanceof VariableExpression);
-                    Variable v1Redirected = ((VariableExpression) valueV1).variable();
-                    Variable v2Redirected = ((VariableExpression) valueV2).variable();
-                    assertEquals(v1Redirected, v2Redirected);
+                    if (valueV1 instanceof VariableExpression v1r && valueV2 instanceof VariableExpression v2r) {
+                        assertEquals(v1r.variable(), v2r.variable());
+                    } else fail();
                 }
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                    assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
+                    assertTrue(d.statementAnalysis().stateData.valueOfExpression.isFinal());
                     assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
@@ -388,6 +411,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
 
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertDv(d.p(0), 1, Level.FALSE_DV, MODIFIED_VARIABLE);
             }
@@ -397,8 +421,21 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("field".equals(d.fieldInfo().name)) {
+                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertTrue(d.fieldAnalysis().getValue() instanceof UnknownExpression);
+
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+            }
+        };
+
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                assertTrue(d.iteration() == 0 || d.evaluationResult().causes().isDone(),
+                        "Got " + d.evaluationResult().causes());
+
                 String expectValue = d.iteration() == 0 ? "<m:equals>" : "true";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
                 EvaluationResult.ChangeData changeDataV1 = d.findValueChange("v1");
@@ -409,14 +446,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     EvaluationResult.ChangeData cdField = d.findValueChange("v1");
-                    assertEquals("xx", cdField.getProperty(CONTEXT_NOT_NULL).causesOfDelay().toString());
+                    assertEquals("cnn@Parameter_s", cdField.getProperty(CONTEXT_NOT_NULL).causesOfDelay().toString());
                 }
             }
         };
 
-        // IMPROVE: at least one potential null pointer too many a t m, field+v1 in test3; we should report only one
-        // likely duplication because of inlining
-        TypeContext typeContext = testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -740,11 +775,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||

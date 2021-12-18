@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -48,6 +49,7 @@ public class LinkedVariables {
     public LinkedVariables(Map<Variable, DV> variables, CausesOfDelay otherCausesOfDelay) {
         assert variables != null;
         this.variables = Map.copyOf(variables);
+        assert variables.values().stream().noneMatch(dv -> dv == Level.FALSE_DV);
         CausesOfDelay causesOfDelay = variables.values().stream()
                 .map(DV::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);

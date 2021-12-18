@@ -15,7 +15,6 @@
 allprojects {
     repositories {
         mavenLocal()
-        jcenter()
         mavenCentral()
         maven {
             name = "GitHubPackages"
