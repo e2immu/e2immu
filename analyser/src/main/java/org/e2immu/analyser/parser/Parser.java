@@ -139,9 +139,12 @@ public class Parser {
         Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
 
-        Map<TypeInfo, ExpressionContext> expressionContexts = onDemandSourceInspection.typeContexts.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                        e -> ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters)));
+        // we're sorting the types for some stability in debugging
+        TreeMap<TypeInfo, ExpressionContext> expressionContexts = new TreeMap<>();
+        for (Map.Entry<TypeInfo, TypeContext> e : onDemandSourceInspection.typeContexts.entrySet()) {
+            ExpressionContext ec = ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters);
+            expressionContexts.put(e.getKey(), ec);
+        }
         List<SortedType> sortedPrimaryTypes = resolver.resolve(expressionContexts);
         messages.addAll(resolver.getMessageStream()
                 .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings));
@@ -287,9 +290,9 @@ public class Parser {
         assert types.stream()
                 .filter(TypeInfo::isPublic)
                 .allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
-                typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                        .filter(m -> m.methodInspection.get().isPublic())
-                        .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
+                        typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                                .filter(m -> m.methodInspection.get().isPublic())
+                                .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
     }
 
     private static boolean checkOnDuplicates(List<TypeInfo> types) {

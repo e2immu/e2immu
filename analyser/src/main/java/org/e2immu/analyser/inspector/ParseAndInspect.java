@@ -151,78 +151,107 @@ public record ParseAndInspect(Resources classPath,
             if (importDeclaration.isStatic()) {
                 // fields and methods; important: we do NOT add the type itself to the type context
                 if (importDeclaration.isAsterisk()) {
-                    TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
-                    log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
-                    typeContextOfFile.addImportStaticWildcard(typeInfo);
-                    // also, import the static sub-types
-                    TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
-                    if (inspection != null) {
-                        inspection.subTypes()
-                                .stream().filter(st -> typeContextOfFile.getTypeInspection(st).isStatic())
-                                .forEach(st -> typeContextOfFile.addToContext(st, true));
-                    }
+                    importStaticAsterisk(typeContextOfFile, fullyQualified);
                 } else {
-                    int dot = fullyQualified.lastIndexOf('.');
-                    String typeName = fullyQualified.substring(0, dot);
-                    String member = fullyQualified.substring(dot + 1);
-                    TypeInfo typeInfo = importTypeNoSubTypes(typeName);
-                    TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
-                    Optional<TypeInfo> subType = inspection.subTypes().stream()
-                            .filter(st -> st.simpleName.equals(member))
-                            .findFirst();
-                    if (subType.isPresent()) {
-                        typeContextOfFile.addToContext(subType.get(), true);
-                    } else {
-                        log(INSPECTOR, "Add import static member {} on class {}", typeName, member);
-                        typeContextOfFile.addImportStatic(typeInfo, member);
-                    }
+                    importStaticNamed(typeContextOfFile, fullyQualified);
                 }
             } else {
                 // types
                 if (importDeclaration.isAsterisk()) {
                     // lower priority names (so allowOverwrite = false)
-                    log(INSPECTOR, "Need to parse folder {}", fullyQualified);
-                    if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
-                        // we either have a type, a sub-type, or a package
-                        String[] fullyQualifiedSplit = fullyQualified.split("\\.");
-                        TypeInfo inSourceTypes = TypeMapImpl.fromTrie(sourceTypes, fullyQualifiedSplit);
-                        if (inSourceTypes != null) {
-                            importSubTypesIn(typeContextOfFile, inSourceTypes, fullyQualified);
-                        } else {
-                            // deal with package
-                            sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
-                                for (TypeInfo typeInfo : typeInfoList) {
-                                    if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
-                                        typeContextOfFile.addToContext(typeInfo, false);
-                                    }
-                                }
-                            });
-                        }
-                        classPath.expandLeaves(fullyQualified, ".class", (expansion, urls) -> {
-                            String leaf = expansion[expansion.length - 1];
-                            if (!leaf.contains("$")) {
-                                // primary type
-                                String simpleName = StringUtil.stripDotClass(leaf);
-                                String fqn = fullyQualified + "." + simpleName;
-                                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
-                                if (typeInfo == null) {
-                                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
-                                            .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
-                                    log(INSPECTOR, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
-                                    typeContextOfFile.addToContext(newTypeInfo, false);
-                                } else {
-                                    typeContextOfFile.addToContext(typeInfo, false);
-                                }
-                            }
-                        });
-                    }
+                    importAsterisk(typeContextOfFile, packageName, fullyQualified);
                 } else {
-                    // higher priority names, allowOverwrite = true
-                    log(INSPECTOR, "Import of {}", fullyQualified);
-                    TypeInfo typeInfo = importType(fullyQualified);
-                    typeContextOfFile.addToContext(typeInfo, true); // simple name for primary
+                    importNamed(typeContextOfFile, fullyQualified);
                 }
             }
+        }
+    }
+
+    private void importNamed(TypeContext typeContextOfFile, String fullyQualified) {
+        // higher priority names, allowOverwrite = true
+        log(INSPECTOR, "Import of {}", fullyQualified);
+        TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
+        // when a type is imported, its sub-types are accessible straight away
+        // (they might need disambiguation, but that's not the problem here)
+        TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
+        assert inspection != null;
+        inspection.subTypes().forEach(subType -> importTypeNoSubTypes(subType.fullyQualifiedName));
+
+        typeContextOfFile.addToContext(typeInfo, true); // simple name for primary
+    }
+
+    private void importAsterisk(TypeContext typeContextOfFile, String packageName, String fullyQualified) {
+        log(INSPECTOR, "Need to parse folder {}", fullyQualified);
+        if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
+            // we either have a type, a sub-type, or a package
+            String[] fullyQualifiedSplit = fullyQualified.split("\\.");
+            TypeInfo inSourceTypes = TypeMapImpl.fromTrie(sourceTypes, fullyQualifiedSplit);
+            if (inSourceTypes != null) {
+                importSubTypesIn(typeContextOfFile, inSourceTypes, fullyQualified);
+            } else {
+                // deal with package
+                sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
+                    for (TypeInfo typeInfo : typeInfoList) {
+                        if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
+                            typeContextOfFile.addToContext(typeInfo, false);
+                        }
+                    }
+                });
+            }
+            classPath.expandLeaves(fullyQualified, ".class", (expansion, urls) -> {
+                String leaf = expansion[expansion.length - 1];
+                if (!leaf.contains("$")) {
+                    // primary type
+                    String simpleName = StringUtil.stripDotClass(leaf);
+                    String fqn = fullyQualified + "." + simpleName;
+                    TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
+                    if (typeInfo == null) {
+                        TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
+                                .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
+                        log(INSPECTOR, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                        typeContextOfFile.addToContext(newTypeInfo, false);
+                    } else {
+                        typeContextOfFile.addToContext(typeInfo, false);
+                    }
+                }
+            });
+        }
+    }
+
+    private void importStaticNamed(TypeContext typeContextOfFile, String fullyQualified) {
+        int dot = fullyQualified.lastIndexOf('.');
+        String typeOrSubTypeName = fullyQualified.substring(0, dot);
+        String member = fullyQualified.substring(dot + 1);
+        TypeInfo typeInfo = importTypeNoSubTypes(typeOrSubTypeName);
+        TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
+        if (inspection == null) {
+            log(INSPECTOR, "We cannot know whether member '{}' is a sub-type, or a method/field in {}", member, typeOrSubTypeName);
+            typeContextOfFile.addImportStatic(typeInfo, member);
+            // FIXME this cannot be correct? member is not necessarily a field or method; could still be a subtype
+        } else {
+            Optional<TypeInfo> memberAsSubType = inspection.subTypes().stream()
+                    .filter(st -> st.simpleName.equals(member))
+                    .findFirst();
+            if (memberAsSubType.isPresent()) {
+                log(INSPECTOR, "Add import static sub-type {} of {}", member, typeOrSubTypeName);
+                typeContextOfFile.addToContext(memberAsSubType.get(), true);
+            } else {
+                log(INSPECTOR, "Add import static member {} on class {}", member, typeOrSubTypeName);
+                typeContextOfFile.addImportStatic(typeInfo, member);
+            }
+        }
+    }
+
+    private void importStaticAsterisk(TypeContext typeContextOfFile, String fullyQualified) {
+        TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
+        log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
+        typeContextOfFile.addImportStaticWildcard(typeInfo);
+        // also, import the static sub-types
+        TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
+        if (inspection != null) {
+            inspection.subTypes()
+                    .stream().filter(st -> typeContextOfFile.getTypeInspection(st).isStatic())
+                    .forEach(st -> typeContextOfFile.addToContext(st, true));
         }
     }
 
@@ -258,20 +287,6 @@ public record ParseAndInspect(Resources classPath,
         }
         return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
     }
-
-    /*
-    when a type is imported, its sub-types are accessible straight away (they might need disambiguation, but that's not
-    the problem here)
-     */
-    private TypeInfo importType(String fqn) {
-        TypeInfo typeInfo = importTypeNoSubTypes(fqn);
-        TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if (inspection != null) {
-            inspection.subTypes().forEach(subType -> importTypeNoSubTypes(subType.fullyQualifiedName));
-        }
-        return typeInfo;
-    }
-
 
     public static String fqnOfClassFile(String prefix, String[] suffixes) {
         String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");

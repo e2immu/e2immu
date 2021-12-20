@@ -27,7 +27,7 @@ import org.e2immu.support.SetOnce;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
+public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
 
     @NotNull
     public final String simpleName;
@@ -610,5 +610,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInfo enclosing = packageNameOrEnclosingType.getRight();
         if (enclosing.equals(target)) return true;
         return enclosing.nonStaticallyEnclosingTypesContains(target, inspectionProvider);
+    }
+
+    @Override
+    public int compareTo(TypeInfo o) {
+        return fullyQualifiedName.compareTo(o.fullyQualifiedName);
     }
 }

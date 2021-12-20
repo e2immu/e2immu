@@ -162,8 +162,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else if (object instanceof TypeExpression typeExpression) {
                 /*
                 we may or may not need to write the type here.
+                (we check methodInspection is set, because of debugOutput)
                  */
-                assert methodInfo.methodInspection.get().isStatic();
+                assert !methodInfo.methodInspection.isSet()
+                        || methodInfo.methodInspection.get().isStatic();
                 TypeInfo typeInfo = typeExpression.parameterizedType.typeInfo;
                 TypeName typeName = new TypeName(typeInfo, qualification.qualifierRequired(typeInfo));
                 outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
@@ -171,7 +173,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (guideGenerator != null) start = true;
             } else if ((ve = object.asInstanceOf(VariableExpression.class)) != null &&
                     ve.variable() instanceof This thisVar) {
-                assert !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
+                //     (we check methodInspection is set, because of debugOutput)
+                assert !methodInfo.methodInspection.isSet() ||
+                        !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
                         + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));

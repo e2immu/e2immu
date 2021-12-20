@@ -28,13 +28,10 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
 public class TestInspect {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInspect.class);
-
 
     @Test
     public void inspect() throws IOException {
@@ -43,6 +40,7 @@ public class TestInspect {
                 .addSources("src/main/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
+                .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
@@ -51,7 +49,7 @@ public class TestInspect {
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
-                .addDebugLogTargets(Stream.of(INSPECTOR, RESOLVER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets(Stream.of(RESOLVER).map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
