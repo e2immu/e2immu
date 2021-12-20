@@ -30,37 +30,46 @@ import java.util.List;
 public class RecordSynthetics {
 
     /*
-    Create one method per field;
+    Create one method per field, if it does not exist yet!
     for now, not writing the code for equals, hashCode, toString
      */
-    public static void create(ExpressionContext expressionContext,
-                              TypeInfo typeInfo,
-                              TypeInspectionImpl.Builder builder,
-                              List<FieldInfo> recordFields) {
+    public static void ensureAccessors(ExpressionContext expressionContext,
+                                       TypeInfo typeInfo,
+                                       TypeInspectionImpl.Builder builder,
+                                       List<FieldInfo> recordFields) {
 
         var primitives = expressionContext.typeContext.getPrimitives();
         var e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
 
         for (var fieldInfo : recordFields) {
-            builder.addMethod(createGetter(expressionContext, typeInfo, fieldInfo, notModifiedContract));
+            MethodInfo methodInfo = createAccessor(expressionContext, typeInfo, fieldInfo, notModifiedContract);
+            if (methodInfo != null) builder.addMethod(methodInfo);
         }
     }
 
-    private static MethodInfo createGetter(ExpressionContext expressionContext,
-                                           TypeInfo typeInfo,
-                                           FieldInfo fieldInfo,
-                                           AnnotationExpression notModifiedContract) {
-        var getter = new MethodInspectionImpl.Builder(typeInfo, fieldInfo.name)
+    private static MethodInfo createAccessor(ExpressionContext expressionContext,
+                                             TypeInfo typeInfo,
+                                             FieldInfo fieldInfo,
+                                             AnnotationExpression notModifiedContract) {
+        var accessor = new MethodInspectionImpl.Builder(typeInfo, fieldInfo.name)
                 .setSynthetic(true)
                 .setReturnType(fieldInfo.type)
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
-        getter.readyToComputeFQN(expressionContext.typeContext);
+        accessor.readyToComputeFQN(expressionContext.typeContext);
+        var distinguishingName = accessor.getDistinguishingName();
+        var typeMapBuilder = expressionContext.typeContext.typeMapBuilder;
+        var methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
+        if (methodInspection != null) {
+            // method is already there, we can skip this!
+            return null;
+        }
         var codeBlock = getterCodeBlock(expressionContext, fieldInfo);
-        getter.setInspectedBlock(codeBlock);
-        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(getter);
-        return getter.getMethodInfo();
+        accessor.setInspectedBlock(codeBlock);
+
+        typeMapBuilder.registerMethodInspection(accessor);
+        return accessor.getMethodInfo();
     }
 
     // return this.field;

@@ -69,7 +69,8 @@ public class MethodInspector {
         String name = amd.getNameAsString();
         log(INSPECTOR, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
+        assert builder != null;
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
@@ -84,13 +85,16 @@ public class MethodInspector {
         }
     }
 
-    private MethodInspectionImpl.Builder fqnIsKnown(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
+    private MethodInspectionImpl.Builder fqnIsKnown(InspectionProvider inspectionProvider,
+                                                    MethodInspectionImpl.Builder builder,
+                                                    boolean returnNullWhenExistsAndFullInspection) {
         builder.readyToComputeFQN(inspectionProvider);
         String distinguishingName = builder.getDistinguishingName();
         MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
-            log(INSPECTOR, "Inspecting method {}, already byte-code inspected", distinguishingName);
+            if (fullInspection && returnNullWhenExistsAndFullInspection) return null;
             assert !fullInspection;
+            log(INSPECTOR, "Inspecting method {}, already byte-code inspected", distinguishingName);
 
             builderOnceFQNIsKnown.set(existing);
             return existing;
@@ -119,8 +123,10 @@ public class MethodInspector {
 
     static MethodInspection findInSuperType(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(builder.owner);
-        MethodInspection parent = findMethodInSuperType(inspectionProvider, builder, typeInspection.parentClass());
-        if (parent != null) return parent;
+        if (typeInspection.parentClass() != null) {
+            MethodInspection parent = findMethodInSuperType(inspectionProvider, builder, typeInspection.parentClass());
+            if (parent != null) return parent;
+        }
         for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
             MethodInspection fromSuper = findMethodInSuperType(inspectionProvider, builder, interfaceImplemented);
             if (fromSuper != null) return fromSuper;
@@ -181,7 +187,7 @@ public class MethodInspector {
     /*
     Compact constructor for records
      */
-    public void inspect(CompactConstructorDeclaration ccd,
+    public boolean inspect(CompactConstructorDeclaration ccd,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         List<FieldInfo> fields) {
@@ -194,7 +200,12 @@ public class MethodInspector {
             pib.setVarArgs(false);
             tempBuilder.addParameter(pib);
         }
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder,
+                ccd == null);
+        if (builder == null) {
+            LOGGER.debug("Nothing to be done; there is no need for this compact constructor");
+            return false;
+        }
         builder.addModifier(MethodModifier.PUBLIC);
         if (ccd != null) {
             builder.addCompanionMethods(companionMethods);
@@ -209,6 +220,7 @@ public class MethodInspector {
             builder.setSynthetic(true);
         }
         typeMapBuilder.registerMethodInspection(builder);
+        return true;
     }
 
     /*
@@ -219,8 +231,9 @@ public class MethodInspector {
                         int staticBlockIdentifier) {
         MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(
                 Identifier.from(id), typeInfo, staticBlockIdentifier);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
         assert fullInspection : "? otherwise we would not see them";
+        assert builder != null;
         typeMapBuilder.registerMethodInspection(builder);
         builder.setBlock(id.getBody());
     }
@@ -236,7 +249,8 @@ public class MethodInspector {
                         boolean makePrivate) {
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
+        assert builder != null;
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
         if (makePrivate) {
             builder.addModifier(MethodModifier.PRIVATE);
@@ -280,7 +294,8 @@ public class MethodInspector {
             }
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
-            MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+            MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
+            assert builder != null;
             inspectParameters(md.getParameters(), builder.getParameterBuilders(), expressionContext);
             builder.makeParametersImmutable();
 

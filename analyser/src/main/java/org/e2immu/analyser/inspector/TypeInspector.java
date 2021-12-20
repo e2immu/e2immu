@@ -107,7 +107,7 @@ public class TypeInspector {
         } else {
             builder.setParentClass(typeImplemented);
         }
-        continueInspection(withSubTypes, members, false, false, null);
+        continueInspection(withSubTypes, members, false, false, null, null);
     }
 
     /**
@@ -167,10 +167,11 @@ public class TypeInspector {
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(fqn);
             builder.addAnnotation(ae);
         }
+        List<FieldInfo> recordFields = null;
         if (fullInspection) {
             try {
                 if (typeDeclaration instanceof RecordDeclaration rd) {
-                    doRecordDeclaration(expressionContext, rd);
+                    recordFields = doRecordDeclaration(expressionContext, rd);
                 } else if (typeDeclaration instanceof EnumDeclaration ed) {
                     doEnumDeclaration(expressionContext, ed);
                 } else if (typeDeclaration instanceof AnnotationDeclaration ad) {
@@ -198,12 +199,13 @@ public class TypeInspector {
                 boolean annotatedWithIndependent = isAnnotatedWithIndependent(typeParameter, expressionContext);
                 tp.setAnnotatedWithIndependent(annotatedWithIndependent);
                 TypeParameterImpl original = (TypeParameterImpl) builder.typeParameters().get(tpIndex);
-                if (original.isAnnotatedWithIndependent() == null) original.setAnnotatedWithIndependent(annotatedWithIndependent);
+                if (original.isAnnotatedWithIndependent() == null)
+                    original.setAnnotatedWithIndependent(annotatedWithIndependent);
                 tpIndex++;
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
-                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, dollarResolver);
+                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, recordFields, dollarResolver);
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration) {
@@ -221,14 +223,14 @@ public class TypeInspector {
         }
     }
 
-    private void doRecordDeclaration(ExpressionContext expressionContext,
-                                     RecordDeclaration recordDeclaration) {
+    private List<FieldInfo> doRecordDeclaration(ExpressionContext expressionContext,
+                                                RecordDeclaration recordDeclaration) {
         builder.setTypeNature(TypeNature.RECORD);
 
         doTypeParameters(expressionContext, recordDeclaration);
         doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes());
 
-        List<FieldInfo> recordFields = recordDeclaration.getParameters().stream().map(parameter -> {
+        return recordDeclaration.getParameters().stream().map(parameter -> {
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
             FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, parameter.getNameAsString(), typeInfo);
 
@@ -241,8 +243,6 @@ public class TypeInspector {
 
             return fieldInfo;
         }).toList();
-
-        RecordSynthetics.create(expressionContext, typeInfo, builder, recordFields);
     }
 
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
@@ -350,7 +350,8 @@ public class TypeInspector {
         builder.noParent(expressionContext.typeContext.getPrimitives());
         doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
-        continueInspection(expressionContext, cid.getMembers(), false, false, null);
+        continueInspection(expressionContext, cid.getMembers(), false, false,
+                null, null);
     }
 
     // only to be called on primary types
@@ -364,11 +365,12 @@ public class TypeInspector {
             NodeList<BodyDeclaration<?>> members,
             boolean isInterface,
             boolean haveFunctionalInterface,
+            List<FieldInfo> recordFields,
             DollarResolver dollarResolver) {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + typeInfo.fullyQualifiedName);
 
-        // 2 step approach: first, add these types to the expression context, without inspection
+        // 2-step approach: first, add these types to the expression context, without inspection
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifTypeDeclaration(cid -> prepareSubType(expressionContext, dollarResolver, cid.getNameAsString()));
         }
@@ -507,13 +509,25 @@ public class TypeInspector {
             builder.addConstructor(createEmptyConstructor(expressionContext.typeContext, privateEmptyConstructor));
         }
 
-        if (countCompactConstructors.get() == 0 && builder.typeNature() == TypeNature.RECORD) {
+        /*
+        Ensure a constructor when the type is a record and there are no compact constructors.
+        (those without arguments, as in 'public record SomeRecord(...) { public Record { this.field = } ... }' )
+        and also no default constructor override.
+        The latter condition is verified in the builder.ensureConstructor() method
+         */
+        if (TypeNature.RECORD == builder.typeNature() && countCompactConstructors.get() == 0) {
             MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                     fullInspection);
             List<FieldInfo> nonStaticFields = builder.fields().stream()
                     .filter(fieldInfo -> !fieldInfo.isStatic(expressionContext.typeContext)).toList();
-            methodInspector.inspect(null, subContext, companionMethodsWaiting, nonStaticFields);
-            builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
+            boolean created = methodInspector.inspect(null, subContext, companionMethodsWaiting, nonStaticFields);
+            if (created) {
+                builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
+            }
+        }
+        if (recordFields != null) {
+            assert TypeNature.RECORD == builder.typeNature();
+            RecordSynthetics.ensureAccessors(expressionContext, typeInfo, builder, recordFields);
         }
 
         log(INSPECTOR, "Setting type inspection of {}", typeInfo.fullyQualifiedName);

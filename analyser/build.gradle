@@ -22,7 +22,8 @@ jacocoTestReport {
     reports {
         xml.required = true
         csv.required = false
-        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+        html.required = false;
+        //html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
     }
 }
 
@@ -43,16 +44,16 @@ test {
 }
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.3.0'      // LGPL 3.0
+    implementation 'org.e2immu:e2immu-support:0.3.0'      // LGPL 3.0
 
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
-    implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
+    implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
+    implementation 'ch.qos.logback:logback-classic:1.2.8' // EPL v1.0 and the LGPL 2.1
+    implementation 'commons-io:commons-io:2.6'            // Apache License 2.0
 
-    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.22.2-SNAPSHOT'
+    implementation 'com.github.javaparser:javaparser-core:3.22.2-SNAPSHOT'
 
     // LGPL or Apache License 2.0
-    implementation group: 'org.ow2.asm', name: 'asm', version: '9.1'                  // 3-clause BSD permissive license
+    implementation 'org.ow2.asm:asm:9.2'                  // 3-clause BSD permissive license
 
     // TEST
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'                    // EPL v2.0
