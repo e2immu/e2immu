@@ -47,20 +47,20 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     public void test0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 0) {
-                assertFalse(d.evaluationResult().someValueWasDelayed());
+                assertFalse(d.evaluationResult().causes().isDelayed());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
             if ("test".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
@@ -84,9 +84,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
-
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -112,8 +110,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
             if ("values".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -134,8 +131,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                int expectImm = MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -172,7 +168,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
                     String expectValue = d.iteration() == 0 ? "1==<m:getCnt>" : "true";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
@@ -193,9 +189,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals("new Enum_4(1)", d.fieldAnalysis().getValue().toString());
-
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -212,16 +206,14 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 assertFalse(d.variableName().contains("name"));
                 if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

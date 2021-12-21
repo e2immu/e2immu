@@ -14,9 +14,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -28,7 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_30_SwitchStatement extends CommonTestRunner {
     public Test_30_SwitchStatement() {
@@ -144,10 +144,11 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}" : "{ONE,TWO,THREE,FOUR}";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(d.iteration() > 0, d.variableInfo().valueIsSet());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                    assertEquals(expectNne, d.currentValue()
-                            .getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
-                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    if (d.iteration() > 0) {
+                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.currentValue()
+                                .getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                    }
                 }
             }
         };

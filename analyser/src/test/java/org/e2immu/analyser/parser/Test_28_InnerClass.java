@@ -19,7 +19,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.jupiter.api.Test;
@@ -38,8 +37,7 @@ public class Test_28_InnerClass extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InnerClass_0".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId()) && "outerField".equals(d.variableName())) {
                 assertTrue(d.variable() instanceof ParameterInfo);
-                int notNull = d.properties().getOrDefault(Property.NOT_NULL_EXPRESSION, Level.DELAY);
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, notNull);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 

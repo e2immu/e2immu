@@ -15,11 +15,11 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
@@ -27,8 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
-import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -45,8 +44,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "r".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:r>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     // because NNE > 0, there cannot be a warning!
                 }
             }
@@ -87,47 +85,27 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
              */
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 2) {
-                ParameterAnalysis p1 = d.parameterAnalyses().get(0);
-                int expectEnnP1 = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnnP1, p1.getProperty(EXTERNAL_NOT_NULL));
-
-                ParameterAnalysis r1 = d.parameterAnalyses().get(1);
-                int expectEnnR1 = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectEnnR1, r1.getProperty(EXTERNAL_NOT_NULL));
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
-                ParameterAnalysis p2 = d.parameterAnalyses().get(0);
-                int expectEnnP2 = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnnP2, p2.getProperty(EXTERNAL_NOT_NULL));
-
-                ParameterAnalysis q2 = d.parameterAnalyses().get(1);
-                int expectEnnQ2 = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectEnnQ2, q2.getProperty(EXTERNAL_NOT_NULL));
-
-                ParameterAnalysis r2 = d.parameterAnalyses().get(2);
-                int expectEnnR2 = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectEnnR2, r2.getProperty(EXTERNAL_NOT_NULL));
-
-                ParameterAnalysis s2 = d.parameterAnalyses().get(3);
-                int expectEnnS2 = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectEnnS2, s2.getProperty(EXTERNAL_NOT_NULL));
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(2), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(3), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             // not involved, because q is @Variable
             if ("setQ".equals(d.methodInfo().name)) {
-                ParameterAnalysis qs = d.parameterAnalyses().get(0);
-                int expectEnnQs = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectEnnQs, qs.getProperty(EXTERNAL_NOT_NULL));
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
             // not involved, because r is not assigned, @Variable
             if ("setR".equals(d.methodInfo().name)) {
-                ParameterAnalysis rs = d.parameterAnalyses().get(0);
-                int expectEnnRs = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                assertEquals(expectEnnRs, rs.getProperty(EXTERNAL_NOT_NULL));
+                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
-            int effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
+            DV enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
+            DV effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
 
             if ("o".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, enn);
@@ -166,18 +144,15 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("5".equals(d.statementId()) && "ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
                 assertEquals("<no return value>", d.evaluationResult().value().toString());
-                assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
-            int effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
-
             if ("p".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, effFinal);
-                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnn, enn);
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+
                 if (d.iteration() == 0) {
                     assertNull(d.fieldAnalysis().getValue());
                 } else {
@@ -189,9 +164,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
-                ParameterAnalysis p1 = d.parameterAnalyses().get(0);
-                int expectEnnP1 = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnnP1, p1.getProperty(EXTERNAL_NOT_NULL));
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 
@@ -199,8 +172,8 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
                 if (d.variable() instanceof ParameterInfo p1 && "p1".equals(p1.name) && "5".equals(d.statementId())) {
-                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+
                     String expectValue = d.iteration() == 0 ? "<p:p1>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -208,17 +181,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 4) {
                 if (d.variable() instanceof ParameterInfo p2 && "p2".equals(p2.name)) {
                     if ("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
-                        int expectCnn = MultiLevel.NULLABLE;
-                        assertEquals(expectCnn, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name) && "5".equals(d.statementId())) {
-                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
-                    int expectCnn = MultiLevel.NULLABLE;
-                    assertEquals(expectCnn, d.getProperty(CONTEXT_NOT_NULL));
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, 0, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                 }
             }
         };

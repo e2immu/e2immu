@@ -152,8 +152,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

@@ -60,8 +60,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectExtImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -69,15 +68,13 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
-
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -100,7 +97,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$0<=2";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
                 }
             }
         };
@@ -122,9 +119,9 @@ public class Test_26_Enum extends CommonTestRunner {
                         assertEquals("instance type Enum_1", d.currentValue().toString());
                         assertTrue(d.variableInfo().valueIsSet());
 
-                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
-                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_NOT_NULL));
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(Property.CONTEXT_IMMUTABLE));
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.CONTEXT_IMMUTABLE));
                         assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                 }
@@ -160,9 +157,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 // FIXME implement @StaticSideEffect (current system is not stable (switches TRUE/FALSE)
-                // assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 
@@ -250,8 +245,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectConstant, d.methodAnalysis().getProperty(Property.CONSTANT));
+                assertDv(d, 1, Level.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -276,10 +270,8 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
 
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-            assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
-        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d ->
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
 
         // expect an "always true" warning on the assert
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
@@ -325,15 +317,14 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     // the result of the hard-coded method call valueOf
                     assertEquals("instance type Enum_5", d.currentValue().toString());
-                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                    assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             // shallow analyser
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(Level.DELAY, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertTrue(d.methodAnalysis().getProperty(Property.IMMUTABLE).isDelayed());
                 assertEquals(0, d.iteration());
             }
         };

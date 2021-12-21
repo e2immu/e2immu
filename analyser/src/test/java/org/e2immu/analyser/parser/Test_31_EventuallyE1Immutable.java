@@ -61,8 +61,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    int notNull = d.getProperty(Property.NOT_NULL_EXPRESSION);
-                    assertNotEquals(MultiLevel.NULLABLE_DV, notNull);
+                    assertNotEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -89,8 +88,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 int expectSize = d.iteration() == 0 ? 0 : 1;
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
 
-                int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
-                assertEquals(expectImmu, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
                 String expectFields = d.iteration() == 0 ? "" : "string";
                 assertEquals(expectFields, d.typeAnalysis().marksRequiredForImmutable().stream()
@@ -155,8 +153,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 int expectSize = d.iteration() == 0 ? 0 : 1;
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
                 assertEquals(0, d.typeAnalysis().getApprovedPreconditionsE2().size());
-                int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
-                assertEquals(expectImmu, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EVENTUALLY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
