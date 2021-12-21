@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Stream_2 {
+public class Lambda_2 {
 
     interface I {
         List<String> strings();

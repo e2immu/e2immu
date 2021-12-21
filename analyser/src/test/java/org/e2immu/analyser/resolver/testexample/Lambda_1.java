@@ -16,7 +16,7 @@ package org.e2immu.analyser.resolver.testexample;
 
 import java.util.stream.Stream;
 
-public class Stream_1<T> {
+public class Lambda_1<T> {
 
     public String test(T input) {
         return Stream.of(input).map(s2 -> s2 == null ? "null" : s2 + "something").findAny().get();

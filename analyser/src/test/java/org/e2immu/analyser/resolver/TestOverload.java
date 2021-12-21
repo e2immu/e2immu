@@ -25,28 +25,19 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
-public class TestStream extends CommonTest {
+public class TestOverload extends CommonTest {
 
     @Test
     public void test_0() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Stream_0.class);
-        TypeInfo typeInfo = typeMap.get(Stream_0.class);
+        TypeMap typeMap = inspectAndResolve(Overload_0.class);
+        TypeInfo typeInfo = typeMap.get(Overload_0.class);
         assertNotNull(typeInfo);
     }
-
 
     @Test
     public void test_1() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Stream_1.class);
-        TypeInfo typeInfo = typeMap.get(Stream_1.class);
+        TypeMap typeMap = inspectAndResolve(Overload_1.class);
+        TypeInfo typeInfo = typeMap.get(Overload_1.class);
         assertNotNull(typeInfo);
     }
-
-    @Test
-    public void test_2() throws IOException {
-        TypeMap typeMap = inspectAndResolve(Stream_2.class);
-        TypeInfo typeInfo = typeMap.get(Stream_2.class);
-        assertNotNull(typeInfo);
-    }
-
 }
