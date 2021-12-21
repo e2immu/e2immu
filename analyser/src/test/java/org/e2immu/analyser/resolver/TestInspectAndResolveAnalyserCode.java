@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspection;
+package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
-public class TestInspect {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestInspect.class);
+public class TestInspectAndResolveAnalyserCode {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestInspectAndResolveAnalyserCode.class);
 
     @Test
     public void inspect() throws IOException {

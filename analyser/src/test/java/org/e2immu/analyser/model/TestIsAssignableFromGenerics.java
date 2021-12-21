@@ -18,6 +18,8 @@ import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
@@ -668,4 +670,16 @@ public class TestIsAssignableFromGenerics {
         assertFalse(cMyList1ExtendsNode.isAssignableFrom(IP, cMyList1ExtendsSub1));
     }
 
+    private static void print(List<Expression> expressions) {
+        expressions.forEach(System.out::println);
+    }
+
+    void tmp() {
+        List<MemberValuePair> mvps = List.of(new MemberValuePair(new NullConstant()));
+        // Generics are invariant: FAILS: List<Expression> expressions = mvps;
+        // Generics are invariant: print(mvps);
+        // however, the List.of( ) can be influenced by the position: if turned into variable,
+        // the list becomes a List<Expression>
+        print(List.of(new MemberValuePair(new NullConstant())));
+    }
 }
