@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -78,15 +77,13 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNotNull, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -119,8 +116,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "map.get(label3)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, 1, "?", "");
                 }
             }
         };

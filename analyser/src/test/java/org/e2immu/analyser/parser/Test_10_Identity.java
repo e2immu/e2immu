@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -82,15 +82,13 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("return idem:0,s:0", d.variableInfo().getLinkedVariables().toString());
 
-                    int expectNotNullExpression = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNotNullExpression, d.getProperty(Property.NOT_NULL_PARAMETER));
+                    assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
                 } else fail();
             }
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ReturnVariable) {
                 if ("1".equals(d.statementId())) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         };
@@ -103,18 +101,13 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
-            if (d.iteration() > 0) {
+            if (d.iteration() > 1) {
                 if ("idem".equals(d.methodInfo().name)) {
-                    VariableInfo vi = d.getReturnAsVariable();
-                    assertFalse(vi.hasProperty(Property.MODIFIED_VARIABLE));
-
-                    if (d.iteration() > 1) {
-                        assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
-                        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                                methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
-                        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.IDENTITY));
-                    }
+                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                            methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.IDENTITY));
                 }
             }
         };
@@ -149,8 +142,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // because the @NotNull situation of the parameter of idem has not been resolved yet, there cannot be a
                         // delay resolved here
-                        int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectContextNotNull, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
             }
@@ -164,28 +156,24 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectIdentity, d.methodAnalysis().getProperty(Property.IDENTITY));
+                assertDv(d, 1, Level.TRUE_DV, Property.IDENTITY);
                 if (d.iteration() > 0) {
                     assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 }
-                int expectParamNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectParamNotNull, d.parameterAnalyses().get(0).getProperty(Property.NOT_NULL_PARAMETER));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectIdentity, d.methodAnalysis().getProperty(Property.IDENTITY));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, Level.TRUE_DV, Property.IDENTITY);
+
                 if (d.iteration() >= 1) {
                     assertEquals("s/*@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 }
-                int expectParamNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectParamNotNull, d.parameterAnalyses().get(0).getProperty(Property.NOT_NULL_PARAMETER));
+                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };
 
@@ -209,8 +197,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -247,14 +234,11 @@ public class Test_10_Identity extends CommonTestRunner {
                 }
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("idem".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+
             }
         };
 
@@ -278,11 +262,9 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem4".equals(d.methodInfo().name)) {
-                assertEquals(d.falseFrom1(), methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectIdentity, methodAnalysis.getProperty(Property.IDENTITY));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, Level.TRUE_DV, Property.IDENTITY);
             }
         };
 

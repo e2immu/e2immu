@@ -61,9 +61,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("contains".equals(d.methodInfo().name)) {
-                ParameterAnalysis v = d.parameterAnalyses().get(0);
-                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNnp, v.getProperty(Property.NOT_NULL_PARAMETER));
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() <= 1) {
@@ -86,8 +84,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add$Modification$Size".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
-                    int expectNnc = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNnc, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
         };

@@ -166,8 +166,6 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertEquals(INTEGER, d.variableName());
                     if ("0.0.1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
-                        // that system only works for ==null, not for !=null
-                        assertEquals(Level.DELAY, d.getProperty(Property.CONTEXT_NOT_NULL_FOR_PARENT_DELAY));
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
@@ -192,8 +190,6 @@ public class Test_14_Precondition extends CommonTestRunner {
                         } else {
                             assertEquals("ii", d.currentValue().toString());
                         }
-                        int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expected, d.getPropertyOfCurrentValue(Property.NOT_NULL_EXPRESSION));
                     }
                 }
             }

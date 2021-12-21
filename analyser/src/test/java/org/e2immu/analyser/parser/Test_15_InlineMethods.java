@@ -72,7 +72,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
             }
         };
         testClass("InlineMethods_2", 0, 0, new DebugConfiguration.Builder()
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
