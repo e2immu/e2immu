@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.inspector;
 
-import org.e2immu.analyser.inspector.expr.ParseMethodCallExpr;
+import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
@@ -277,7 +277,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
-                                                    ParseMethodCallExpr.ScopeNature scopeNature) {
+                                                    Scope.ScopeNature scopeNature) {
         recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic,
                 typeMap, result, new HashSet<>(), false, scopeNature);
     }
@@ -290,7 +290,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                      List<MethodCandidate> result,
                                                      Set<TypeInfo> visited,
                                                      boolean staticOnly,
-                                                     ParseMethodCallExpr.ScopeNature scopeNature) {
+                                                     Scope.ScopeNature scopeNature) {
         List<TypeInfo> multipleTypeInfoObjects = extractTypeInfo(typeOfObject, typeMap);
         // more than one: only in the rare situation of multiple type bounds
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
@@ -319,7 +319,7 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     private void resolveOverloadedMethodsSingleType(TypeInfo typeInfo,
                                                     boolean staticOnly,
-                                                    ParseMethodCallExpr.ScopeNature scopeNature,
+                                                    Scope.ScopeNature scopeNature,
                                                     String methodName,
                                                     int parametersPresented,
                                                     boolean decrementWhenNotStatic,
@@ -355,8 +355,8 @@ public class TypeContext implements TypeAndInspectionProvider {
         if (typeInfo.packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
             boolean onlyStatic = staticOnly || typeInspection.isStatic();
-            if (onlyStatic && scopeNature != ParseMethodCallExpr.ScopeNature.INSTANCE ||
-                    !onlyStatic && scopeNature != ParseMethodCallExpr.ScopeNature.STATIC) {
+            if (onlyStatic && scopeNature != Scope.ScopeNature.INSTANCE ||
+                    !onlyStatic && scopeNature != Scope.ScopeNature.STATIC) {
                 ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
                 recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
                         joinMaps(typeMap, enclosingType), result, visited, onlyStatic, scopeNature);

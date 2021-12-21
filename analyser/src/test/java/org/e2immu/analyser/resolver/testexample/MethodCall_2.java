@@ -26,19 +26,6 @@ public class MethodCall_2 {
         void set(String s);
     }
 
-    static class GetOnly implements Get {
-        private final String s;
-
-        public GetOnly(String s) {
-            this.s = s;
-        }
-
-        @Override
-        public String get() {
-            return s;
-        }
-    }
-
     static class Both implements Set {
         private String s;
 
@@ -63,7 +50,6 @@ public class MethodCall_2 {
 
     public void test() {
         // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
-        accept(List.of(new GetOnly("hello")));
-        //  accept(List.of(new Both("hello")));
+        accept(List.of(new Both("hello")));
     }
 }

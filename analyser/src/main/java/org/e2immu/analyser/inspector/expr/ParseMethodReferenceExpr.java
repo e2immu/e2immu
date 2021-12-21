@@ -45,8 +45,8 @@ public class ParseMethodReferenceExpr {
 
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
-        ParseMethodCallExpr.ScopeNature scopeNature = scopeIsAType ? ParseMethodCallExpr.ScopeNature.STATIC :
-                ParseMethodCallExpr.ScopeNature.INSTANCE;
+        Scope.ScopeNature scopeNature = scopeIsAType ? Scope.ScopeNature.STATIC :
+                Scope.ScopeNature.INSTANCE;
         ParameterizedType parameterizedType = scope.returnType();
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
@@ -179,7 +179,7 @@ public class ParseMethodReferenceExpr {
             typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
                     methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false,
                     parameterizedType.initialTypeParameterMap(typeContext), methodCandidates,
-                    ParseMethodCallExpr.ScopeNature.INSTANCE);
+                    Scope.ScopeNature.INSTANCE);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());

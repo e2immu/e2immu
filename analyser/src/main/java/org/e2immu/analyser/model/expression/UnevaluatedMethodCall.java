@@ -27,36 +27,23 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Immutable
-public record UnevaluatedMethodCall(String methodName) implements Expression {
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UnevaluatedMethodCall that = (UnevaluatedMethodCall) o;
-        return Objects.equals(methodName, that.methodName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(methodName);
-    }
+public record UnevaluatedMethodCall(String methodName, int numArgs) implements Expression {
 
     // this is NOT a functional interface, merely the return type of the lambda
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException("Unevaluated: " + methodName);
+        throw new UnsupportedOperationException(toString());
     }
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", "<unevaluated method call to " + methodName + ">"));
+        return new OutputBuilder().add(new Text("", toString()));
     }
 
     @Override
     public String toString() {
-        return minimalOutput();
+        return "<unevaluated method call to " + methodName + ", " + numArgs + " args>";
     }
 
     @Override
@@ -66,7 +53,7 @@ public record UnevaluatedMethodCall(String methodName) implements Expression {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        throw new UnsupportedOperationException("Types referenced of " + methodName);
+        throw new UnsupportedOperationException("Types referenced of " + this);
     }
 
     @Override

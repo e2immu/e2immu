@@ -68,15 +68,16 @@ public class ParseObjectCreationExpr {
                 parameterizedType.initialTypeParameterMap(typeContext);
         List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(formalType, parameterizedType,
                 objectCreationExpr.getArguments().size(), parameterizedType == null ? Map.of() : typeMap);
-        List<Expression> newParameterExpressions = new ArrayList<>();
 
         MethodTypeParameterMap singleAbstractMethod = impliedParameterizedType == null ? null :
                 impliedParameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-        MethodTypeParameterMap method = new ParseMethodCallExpr(typeContext)
+        ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo("constructor",
+                parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
+
+        ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
-                        newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
-                        parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
-        if (method == null) {
+                        singleAbstractMethod, errorInfo);
+        if (candidate == null) {
             if (parameterizedType == null) {
                 return new UnevaluatedObjectCreation(formalType);
             }
@@ -87,7 +88,7 @@ public class ParseObjectCreationExpr {
             // there's only one method left, so we can derive the parameterized type from the parameters
             Set<ParameterizedType> typeParametersResolved = new HashSet<>(formalType.parameters);
             finalParameterizedType = tryToResolveTypeParameters(expressionContext.typeContext,
-                    formalType, method, typeParametersResolved, newParameterExpressions);
+                    formalType, candidate.method(), typeParametersResolved, candidate.newParameterExpressions());
             if (finalParameterizedType == null) {
                 return new UnevaluatedObjectCreation(formalType);
             }
@@ -96,8 +97,8 @@ public class ParseObjectCreationExpr {
         }
         // IMPORTANT: every newly created object is different from each other, UNLESS we're a record, then
         // we can check the constructors... See EqualityMode
-        return ConstructorCall.objectCreation(Identifier.generate(), method.methodInspection.getMethodInfo(),
-                finalParameterizedType, diamond, newParameterExpressions);
+        return ConstructorCall.objectCreation(Identifier.generate(), candidate.method().methodInspection.getMethodInfo(),
+                finalParameterizedType, diamond, candidate.newParameterExpressions());
     }
 
     private static ParameterizedType tryToResolveTypeParameters(InspectionProvider inspectionProvider,

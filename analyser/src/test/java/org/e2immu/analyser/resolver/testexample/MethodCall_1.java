@@ -22,38 +22,11 @@ public class MethodCall_1 {
         String get();
     }
 
-    interface Set extends Get {
-        void set(String s);
-    }
-
-    static class GetOnly implements Get {
-        private final String s;
-
-        public GetOnly(String s) {
-            this.s = s;
-        }
+    record GetOnly(String s) implements Get {
 
         @Override
         public String get() {
             return s;
-        }
-    }
-
-    static class Both implements Set {
-        private String s;
-
-        public Both(String s) {
-            this.s = s;
-        }
-
-        @Override
-        public String get() {
-            return s;
-        }
-
-        @Override
-        public void set(String s) {
-            this.s = s;
         }
     }
 
@@ -64,6 +37,5 @@ public class MethodCall_1 {
     public void test() {
         // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
         accept(List.of(new GetOnly("hello")));
-        //  accept(List.of(new Both("hello")));
     }
 }
