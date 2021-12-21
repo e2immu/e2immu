@@ -16,18 +16,17 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.visitor.CommonVisitorData;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.BeforeAll;
@@ -343,6 +342,20 @@ public abstract class CommonTestRunner {
         } else {
             assertTrue(linkedVariables.isDone(), "Expected linked variables to be done in iteration "
                     + d.iteration() + "<" + delayedBeforeIteration + " for variable " + d.variableName() + ", got delays "
+                    + linkedVariables.causesOfDelay());
+            assertEquals(value, linkedVariables.toString());
+        }
+    }
+
+    public void assertLinked(FieldAnalyserVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
+        LinkedVariables linkedVariables = d.fieldAnalysis().getLinkedVariables();
+        if (d.iteration() < delayedBeforeIteration) {
+            assertTrue(linkedVariables.isDelayed(), "Expected linked variables to be delayed in iteration "
+                    + d.iteration() + "<" + delayedBeforeIteration + " for field " + d.fieldInfo().name);
+            assertEquals(causesOfDelay, linkedVariables.causesOfDelay().toString());
+        } else {
+            assertTrue(linkedVariables.isDone(), "Expected linked variables to be done in iteration "
+                    + d.iteration() + "<" + delayedBeforeIteration + " for field " + d.fieldInfo().name + ", got delays "
                     + linkedVariables.causesOfDelay());
             assertEquals(value, linkedVariables.toString());
         }

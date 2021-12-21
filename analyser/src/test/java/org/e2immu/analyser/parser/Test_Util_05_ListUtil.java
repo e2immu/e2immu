@@ -17,10 +17,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -61,20 +59,18 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                 if ("it2".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("values2.iterator()", d.currentValue().toString());
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<v:it2>" : "instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                        assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "values1.isEmpty()?values2.iterator():<v:it2>"
                                 : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
-                        int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                        assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }

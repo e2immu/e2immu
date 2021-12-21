@@ -64,14 +64,14 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
             }
         };
@@ -88,24 +88,24 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
                 ParameterAnalysis position = d.parameterAnalyses().get(1);
                 int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectContextModified, position.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(expectContextModified, position.getProperty(Property.CONTEXT_MODIFIED));
                 int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, position.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, position.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                 int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModifiedVar, position.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(expectModifiedVar, position.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("START".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
                 int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
             if ("position".equals(d.fieldInfo().name)) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
@@ -122,7 +122,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -137,18 +137,18 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
                     // this one must wait for Position to become @E2Immutable
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(expectModified, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
             }
         };
@@ -165,11 +165,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
                 ParameterAnalysis position = d.parameterAnalyses().get(1);
                 int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectContextModified, position.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(expectContextModified, position.getProperty(Property.CONTEXT_MODIFIED));
                 int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, position.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, position.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                 int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModifiedVar, position.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(expectModifiedVar, position.getProperty(Property.MODIFIED_VARIABLE));
             }
             if ("trace".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -178,31 +178,31 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                     assertEquals("\"/*\"+position.msg+\"*/\"", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("msg".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
 
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
                 int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());
 
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
@@ -231,7 +231,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("GuideSimplified_5".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "position".equals(p.name)) {
                     if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
             }
@@ -247,7 +247,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
             if ("position".equals(d.methodInfo().name)) {
                 int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectNne, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
             }
         };
 

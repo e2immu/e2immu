@@ -61,12 +61,12 @@ public class Test_36_Cast extends CommonTestRunner {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
                         () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -76,7 +76,7 @@ public class Test_36_Cast extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE; // = int
-                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "instance type T";
@@ -85,7 +85,7 @@ public class Test_36_Cast extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -98,26 +98,26 @@ public class Test_36_Cast extends CommonTestRunner {
                 assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
                         "Counter".equals(Objects.requireNonNull(pw.castType().typeInfo).simpleName));
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE; // = Counter
-                assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(expectMom, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("Cast_1".equals(d.methodInfo().name)) {
                 ParameterAnalysis input = d.parameterAnalyses().get(0);
                 int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, input.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, input.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 

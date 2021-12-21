@@ -47,23 +47,23 @@ public class Test_29_TryStatement extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertTrue(d.currentValue() instanceof StringConcat);
                     assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertTrue(d.currentValue() instanceof StringConstant);
                     assertEquals("\"Null\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("0.2.0".equals(d.statementId())) {
                     assertTrue(d.currentValue() instanceof StringConstant);
                     assertEquals("\"Not a number\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("0".equals(d.statementId())) {
                     // meaning: no idea, but not null
                     assertTrue(d.currentValue() instanceof Instance);
                     assertEquals("instance type String", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -139,7 +139,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
             }
         };
 
@@ -163,14 +163,14 @@ public class Test_29_TryStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forward".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.simpleName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
             }

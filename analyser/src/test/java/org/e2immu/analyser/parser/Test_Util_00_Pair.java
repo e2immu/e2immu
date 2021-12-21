@@ -17,9 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.Pair;
@@ -41,9 +39,9 @@ public class Test_Util_00_Pair extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("k".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().isTransparentType());
+                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
                 } else {
-                    assertTrue(d.fieldAnalysis().isTransparentType());
+                    assertTrue(d.fieldAnalysis().isTransparentType().isDone());
                     assertEquals("k", d.fieldAnalysis().getValue().toString());
                     if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                         assertTrue(ve.variable() instanceof ParameterInfo pi && "k".equals(pi.name));
@@ -52,9 +50,9 @@ public class Test_Util_00_Pair extends CommonTestRunner {
             }
             if ("v".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().isTransparentType());
+                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
                 } else {
-                    assertTrue(d.fieldAnalysis().isTransparentType());
+                    assertTrue(d.fieldAnalysis().isTransparentType().isDone());
                     assertEquals("v", d.fieldAnalysis().getValue().toString());
                     if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                         assertTrue(ve.variable() instanceof ParameterInfo pi && "v".equals(pi.name));
@@ -65,25 +63,20 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getV".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("Pair".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
 
         // fields k and v do not link to the constructor's parameters because they are transparent
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             assertEquals("Type param K, Type param V", d.typeAnalysis().getTransparentTypes().toString());
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
 
-            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-            assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
         };
 
         testSupportAndUtilClasses(List.of(Pair.class), 0, 0, new DebugConfiguration.Builder()

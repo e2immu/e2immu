@@ -40,23 +40,23 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_0".equals(d.typeInfo().simpleName)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(expectIndependent, d.typeAnalysis().getProperty(Property.INDEPENDENT));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isAbc".equals(d.methodInfo().name)) {
-                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(Property.INDEPENDENT));
             }
             if ("E2Immutable_0".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
 
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(expectIndependent, p0.getProperty(Property.INDEPENDENT));
 
                 ParameterAnalysis p1 = d.parameterAnalyses().get(1);
-                assertEquals(MultiLevel.INDEPENDENT, p1.getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT, p1.getProperty(Property.INDEPENDENT));
             }
         };
 
@@ -96,7 +96,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
                     int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                    assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImmutable, d.getProperty(Property.IMMUTABLE));
                 }
             }
         };
@@ -141,14 +141,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_3() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("strings4".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                        d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImmutable,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.CONTAINER));
+                        d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONTAINER));
             }
         };
 
@@ -158,7 +158,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
                 VariableInfo vi = d.getFieldAsVariable(strings4);
                 assert vi != null;
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
@@ -167,14 +167,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     VariableInfo vi = d.getFieldAsVariable(strings4);
                     assert vi != null;
 
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                            vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                            vi.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 // this method returns the input parameter
                 int expectMethodNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectMethodNN, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
 
-                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(Property.INDEPENDENT));
             }
 
             if ("getStrings4".equals(d.methodInfo().name)) {
@@ -185,7 +185,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 // method not null
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectNN, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
 
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -195,7 +195,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
 
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -203,12 +203,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
                     "strings4".equals(fieldReference.fieldInfo.name)) {
                 assertEquals("Set.copyOf(input4)", d.currentValue().toString());
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 // Set<String>, E2 -> ER
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImmutable, d.getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.getProperty(Property.IMMUTABLE));
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(expectIndependent, d.getProperty(Property.INDEPENDENT));
 
                 assertEquals("this.strings4:0", d.variableInfo().getLinkedVariables().toString());
             }
@@ -216,7 +216,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
                     "strings4".equals(fr.fieldInfo.name)) {
                 int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectExtImm, d.getProperty(Property.EXTERNAL_IMMUTABLE));
 
                 assertEquals("return getStrings4:0,this.strings4:0", d.variableInfo().getLinkedVariables().toString());
             }
@@ -236,7 +236,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
-            assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(Property.IMMUTABLE));
         };
 
         testClass("E2Immutable_3", 0, 0, new DebugConfiguration.Builder()
@@ -320,10 +320,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("getI".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -351,7 +351,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_9".equals(d.typeInfo().simpleName)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -374,12 +374,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     assertEquals("this.sub:0", d.variableInfo().getLinkedVariables().toString());
 
                     int expectBreakDelay = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    //assertEquals(expectBreakDelay, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));
+                    //assertEquals(expectBreakDelay, d.getProperty(Property.EXTERNAL_IMMUTABLE_BREAK_DELAY));
 
-                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
 
                     int imm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                    assertEquals(imm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(imm, d.getProperty(Property.IMMUTABLE));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     // no linked variables
@@ -392,7 +392,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Sub".equals(d.typeInfo().simpleName)) {
                 int imm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(imm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(imm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -426,7 +426,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
-                        .getProperty(v, VariableProperty.IMMUTABLE, true, true));
+                        .getProperty(v, Property.IMMUTABLE, true, true));
             }
 
             if ("stream".equals(d.methodInfo().name)) {
@@ -438,14 +438,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
-                        .getProperty(v, VariableProperty.IMMUTABLE, true, true));
+                        .getProperty(v, Property.IMMUTABLE, true, true));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -477,14 +477,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>", v.returnType().toString());
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
-                        .getProperty(v, VariableProperty.IMMUTABLE, true, true));
+                        .getProperty(v, Property.IMMUTABLE, true, true));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("stream".equals(d.methodInfo().name)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 

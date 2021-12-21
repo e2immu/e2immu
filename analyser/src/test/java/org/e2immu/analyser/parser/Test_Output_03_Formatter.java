@@ -1,3 +1,4 @@
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -14,34 +15,38 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.AnalyserConfiguration;
-import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Test_56_Fluent_AAPI extends CommonTestRunner {
-    public Test_56_Fluent_AAPI() {
+public class Test_Output_03_Formatter extends CommonTestRunner {
+
+    public Test_Output_03_Formatter() {
         super(true);
     }
 
     @Test
-    public void test_0() throws IOException {
-        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+    public void test() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("$2".equals(d.methodInfo().typeInfo.simpleName) && "apply".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable && "0.0.2.0.2".equals(d.statementId())) {
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                }
+            }
+        };
+        testSupportAndUtilClasses(List.of(Formatter.class, ElementarySpace.class, OutputElement.class, FormattingOptions.class, Guide.class),
+                0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
     }
 
 }

@@ -79,14 +79,14 @@ public class Test_12_IfStatement extends CommonTestRunner {
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"
                         : "null==map.get(label1)?defaultValue1:map.get(label1)";
                 assertEquals(expected, d.currentValue().toString());
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectNotNull, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
         };
 

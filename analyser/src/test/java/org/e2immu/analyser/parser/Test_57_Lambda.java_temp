@@ -96,13 +96,13 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 int expected = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expected, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(expected, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("k".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             }
         };
 

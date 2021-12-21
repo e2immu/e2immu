@@ -79,7 +79,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                         // result of merging: FIXME <v:string$0> should not be a delayed variable, but sth else
                         assertEquals("b?nullable instance type String:<v:string$0>", d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
 
                     // second read copy
 
@@ -98,7 +98,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                     } else fail("Statement " + d.statementId());
 
                     // inherited from the previous read copy:
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
 
                 } else if (d.variableName().endsWith("string$2")) {
                     assertEquals("1", d.statementId());

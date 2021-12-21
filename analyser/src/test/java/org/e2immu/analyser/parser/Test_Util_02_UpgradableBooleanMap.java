@@ -44,23 +44,17 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.Map.Entry<T,java.lang.Boolean>, Type param T, Type param T, Type param T, Type param T, Type param T, Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
-
-                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("$1".equals(d.typeInfo().simpleName)) {
                 assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1", d.typeInfo().fullyQualifiedName);
-
-                int expectImmutable = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("$2".equals(d.typeInfo().simpleName)) {
                 assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1.$2", d.typeInfo().fullyQualifiedName);
-
-                int expectImmutable = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -76,40 +70,35 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("put".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("stream".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("putAll".equals(d.methodInfo().name)) {
                 assertEquals("put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
 
             // uses putAll as a method reference
             if ("combiner".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
 
             // accumulator
             if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
             }
 
             // finisher
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
 
             // putAll
             if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 

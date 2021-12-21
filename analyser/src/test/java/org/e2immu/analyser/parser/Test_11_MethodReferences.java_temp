@@ -41,7 +41,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
             assertNotNull(collection);
             MethodInfo stream = collection.findUniqueMethod("stream", 0);
 
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, stream.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         testClass("MethodReferences_0", 0, 0, new DebugConfiguration.Builder()
@@ -60,9 +60,9 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
             MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, forEach.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("MethodReferences_2", 0, 0, new DebugConfiguration.Builder()
@@ -79,20 +79,20 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.evaluationResult().evaluationContext()
-                        .getProperty(d.evaluationResult().value(), VariableProperty.IMMUTABLE, true, true));
+                        .getProperty(d.evaluationResult().value(), Property.IMMUTABLE, true, true));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT, p0.getProperty(Property.INDEPENDENT));
             }
             if ("stream".equals(d.methodInfo().name)) {
                 int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()

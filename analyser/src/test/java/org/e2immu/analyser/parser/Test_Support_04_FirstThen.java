@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
@@ -65,7 +65,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         }
         if ("equals".equals(d.methodInfo().name) && "o".equals(d.variableName())) {
             if ("2".equals(d.statementId())) {
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(Level.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
             }
         }
     };
@@ -93,33 +93,27 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             VariableInfo vi = d.getFieldAsVariable(first);
             assert vi != null;
             assertTrue(vi.isRead());
-            assertEquals(Level.DELAY, vi.getProperty(VariableProperty.METHOD_CALLED));
+            assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
 
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
         }
 
         if ("equals".equals(name)) {
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-
-            ParameterAnalysis o = d.parameterAnalyses().get(0);
-            int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-            assertEquals(expectMv, o.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+            assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
         }
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         assertEquals("Type param S,Type param T", d.typeAnalysis().getTransparentTypes().types()
                 .stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
-        assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsStatus(false));
+        assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsStatus(false).isDone());
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
         ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
-        assertEquals(Level.FALSE, objectsParam.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.FALSE_DV, objectsParam.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
     };
 
     @Test

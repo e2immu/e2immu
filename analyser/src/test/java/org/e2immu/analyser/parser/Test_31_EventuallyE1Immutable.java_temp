@@ -48,12 +48,12 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.haveMarkRead(STRING));
                     VariableInfoContainer stringVic = d.statementAnalysis().variables.get(STRING);
-                    assertEquals(Level.FALSE, stringVic.getPreviousOrInitial().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE_DV, stringVic.getPreviousOrInitial().getProperty(Property.CONTEXT_MODIFIED));
                     assertTrue(stringVic.hasEvaluation());
                     assertFalse(stringVic.hasMerge());
                     assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
                     assertEquals("this.string:0", stringVic.current().getLinkedVariables().toString());
-                    assertEquals(Level.FALSE, stringVic.current().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(Level.FALSE_DV, stringVic.current().getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -61,8 +61,8 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    int notNull = d.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-                    assertNotEquals(MultiLevel.NULLABLE, notNull);
+                    int notNull = d.getProperty(Property.NOT_NULL_EXPRESSION);
+                    assertNotEquals(MultiLevel.NULLABLE_DV, notNull);
                 }
             }
         };
@@ -90,7 +90,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
 
                 int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
-                assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmu, d.typeAnalysis().getProperty(Property.IMMUTABLE));
 
                 String expectFields = d.iteration() == 0 ? "" : "string";
                 assertEquals(expectFields, d.typeAnalysis().marksRequiredForImmutable().stream()
@@ -156,7 +156,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
                 assertEquals(0, d.typeAnalysis().getApprovedPreconditionsE2().size());
                 int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
-                assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmu, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 

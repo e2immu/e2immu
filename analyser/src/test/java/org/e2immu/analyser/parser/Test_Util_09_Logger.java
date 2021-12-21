@@ -41,8 +41,8 @@ public class Test_Util_09_Logger extends CommonTestRunner {
             if ("log".equals(d.methodInfo().name) && d.methodAnalysis().getParameterAnalyses().size() == 4) {
                 ParameterAnalysis p3 = d.methodAnalysis().getParameterAnalyses().get(3);
                 // ignore mods not explicitly set, but because it is an abstract method in java.util.function
-                assertEquals(Level.TRUE, p3.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
-                assertEquals(Level.FALSE, p3.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(Level.TRUE_DV, p3.getProperty(Property.IGNORE_MODIFICATIONS));
+                assertEquals(Level.FALSE_DV, p3.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 

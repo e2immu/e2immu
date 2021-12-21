@@ -108,20 +108,20 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("1", nlv.parentBlockIndex);
                     } else fail();
                     assertEquals("instance type IOException", d.currentValue().toString());
-                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.MUTABLE, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("ioe".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("e", d.currentValue().toString());
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(Property.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
-                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(Property.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -151,7 +151,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo ioException = typeMap.get(IOException.class);
             TypeAnalysis ioExceptionAnalysis = ioException.typeAnalysis.get();
-            assertEquals(MultiLevel.MUTABLE, ioExceptionAnalysis.getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(MultiLevel.MUTABLE, ioExceptionAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         testClass("VariableScope_2", 0, 0, new DebugConfiguration.Builder()
@@ -203,14 +203,14 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("e".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                 }
                 if ("ioe".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("e", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                 }
             }

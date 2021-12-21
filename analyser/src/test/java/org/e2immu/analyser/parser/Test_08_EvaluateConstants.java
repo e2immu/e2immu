@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
@@ -59,8 +60,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 VariableInfo vi = d.getReturnAsVariable();
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+
                 if (d.iteration() == 0) {
                     assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
@@ -70,7 +71,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
             }
         };
@@ -83,17 +84,17 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 } else {
                     assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
                             srv.debugOutput());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                            d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis()
-                        .getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis()
+                        .getProperty(Property.EXTERNAL_NOT_NULL));
                 assertEquals("in", d.fieldAnalysis().getValue().toString());
             }
         };
@@ -147,7 +148,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertTrue(d.statementAnalysis().variableStream().filter(vi -> vi.variable() instanceof FieldReference)
                             .allMatch(VariableInfo::linkedVariablesIsSet));
-                    assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                    assertTrue(methodLevelData.linksHaveBeenEstablished());
                 }
             }
             if ("print2".equals(d.methodInfo().name)) {
@@ -164,8 +165,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
                     assertEquals("false", srv.toString());
-                    int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD);
-                    assertEquals(Level.FALSE, modified);
+                    DV modified = d.methodAnalysis().getProperty(Property.MODIFIED_METHOD);
+                    assertEquals(Level.FALSE_DV, modified);
                 }
             }
             if ("print".equals(d.methodInfo().name)) {

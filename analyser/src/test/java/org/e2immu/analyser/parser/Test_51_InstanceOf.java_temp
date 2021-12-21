@@ -69,7 +69,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
                     assertEquals("in instanceof Number&&null!=in?in:3.14", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
                     assertEquals("in", d.currentValue().toString());

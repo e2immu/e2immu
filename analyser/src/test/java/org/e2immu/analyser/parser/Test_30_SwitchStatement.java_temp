@@ -66,8 +66,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -108,7 +108,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
                 assertEquals("instance type String", d.currentValue().toString());
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -123,9 +123,9 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                        d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -146,8 +146,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     assertEquals(d.iteration() > 0, d.variableInfo().valueIsSet());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                     assertEquals(expectNne, d.currentValue()
-                            .getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                            .getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
+                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
         };

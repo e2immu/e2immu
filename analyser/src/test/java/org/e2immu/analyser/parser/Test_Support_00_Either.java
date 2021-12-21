@@ -15,10 +15,13 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -47,7 +50,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
+                    assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
@@ -59,29 +62,28 @@ public class Test_Support_00_Either extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
                             "null==left?orElse/*@NotNull*/:left";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
         }
         if ("Either".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("left")) {
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                 assertEquals("a", d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
             if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("right")) {
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                 assertEquals("b", d.currentValue().toString());
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
             if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
             if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
             }
         }
     };
@@ -116,28 +118,24 @@ public class Test_Support_00_Either extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
                     "null==left?orElse/*@NotNull*/:left";
             assertEquals(expectValue, conditionalValue.toString());
-            int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            assertEquals(expected, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
         }
         if ("Either".equals(d.methodInfo().name)) {
             assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
                     d.methodAnalysis().getPrecondition().expression().toString());
-            ParameterAnalysis a = d.parameterAnalyses().get(0);
-            int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            ParameterAnalysis b = d.parameterAnalyses().get(1);
-            assertEquals(expectNnp, b.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+            assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("left".equals(d.fieldInfo().name)) {
             assertEquals("a", d.fieldAnalysis().getValue().toString());
-            assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
         }
         if ("right".equals(d.fieldInfo().name)) {
             assertEquals("b", d.fieldAnalysis().getValue().toString());
-            assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
         }
     };
 

@@ -117,7 +117,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p0 && "list".equals(p0.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
             }
@@ -126,8 +126,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forward".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.NULLABLE, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-                assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+                assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 
@@ -171,7 +171,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                                     "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE;
                             default -> throw new UnsupportedOperationException("? " + d.variableName());
                         };
-                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL), d.variableName());
+                        assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL), d.variableName());
                     }
                 }
             }
@@ -180,7 +180,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("guide".equals(d.fieldInfo().name)) {
                 int expectEnn = MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(expectEnn, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
             }
         };
 
@@ -255,7 +255,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING
                                 : "(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
@@ -275,10 +275,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                            assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                     } else fail();
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
@@ -305,7 +305,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "<f:guide>" : "instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -368,7 +368,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("pos".equals(d.fieldInfo().name)) {
                 assertEquals("pos", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("guide".equals(d.fieldInfo().name)) {
                 assertEquals("guide", d.fieldAnalysis().getValue().toString());
@@ -378,28 +378,28 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("Guide".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
-                assertEquals(Level.FALSE, indexAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("GuideOnStack".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo stack = typeMap.get(Stack.class);
             MethodInfo peek = stack.findUniqueMethod("peek", 0);
-            assertEquals(Level.FALSE, peek.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, peek.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("FormatterSimplified_9", 0, 1, new DebugConfiguration.Builder()

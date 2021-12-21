@@ -50,7 +50,7 @@ public class Test_45_Project extends CommonTestRunner {
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
-                    assertEquals(Level.DELAY, changeData.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(Level.DELAY, changeData.getProperty(Property.CONTEXT_NOT_NULL));
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -70,9 +70,9 @@ public class Test_45_Project extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if ((CONTAINER + ".value#prev").equals(d.variable().fullyQualifiedName())) {
                     if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
@@ -80,12 +80,12 @@ public class Test_45_Project extends CommonTestRunner {
                             "null==kvStore.get(key)?null:kvStore.get(key).value";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(expected, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-                assertTrue(cnn <= MultiLevel.NULLABLE, "Problem: " + d.statementId() + " in " + d.methodInfo().name);
+                int cnn = d.getProperty(Property.CONTEXT_NOT_NULL);
+                assertTrue(cnn <= MultiLevel.NULLABLE_DV, "Problem: " + d.statementId() + " in " + d.methodInfo().name);
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
@@ -149,20 +149,20 @@ public class Test_45_Project extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
-            assertEquals(MultiLevel.NULLABLE, get.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
 
             MethodInfo putInMap = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE, putInMap.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashMap = typeMap.get(HashMap.class);
             MethodInfo put = hashMap.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE, put.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
                 int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(expectEnn, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
             }
         };
 
@@ -212,18 +212,18 @@ public class Test_45_Project extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, p0.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(expectCm, p0.getProperty(Property.CONTEXT_MODIFIED));
                 int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 
@@ -249,14 +249,14 @@ public class Test_45_Project extends CommonTestRunner {
             MethodInfo get = map.findUniqueMethod("get", 1);
             ParameterInfo p0 = get.methodInspection.get().getParameters().get(0);
             ParameterAnalysis p0a = p0.parameterAnalysis.get();
-            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.IDENTITY)); // first property
+            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.IDENTITY)); // first property
 
-            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.MODIFIED_VARIABLE));
-            assertEquals(MultiLevel.NULLABLE, p0a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(VariableProperty.INDEPENDENT));
+            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
+            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(Property.INDEPENDENT));
 
-            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.CONTAINER));
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(Property.IMMUTABLE));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)

@@ -59,17 +59,17 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals("Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
-                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
                 int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -87,9 +87,9 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 String expect = "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
-                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
                 int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 
@@ -124,8 +124,8 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 String expect = "new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
-                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                assertEquals(MultiLevel.MUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.MUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 

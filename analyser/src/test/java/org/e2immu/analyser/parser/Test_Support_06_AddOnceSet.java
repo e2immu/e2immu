@@ -44,8 +44,8 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo keySet = map.findUniqueMethod("keySet", 0);
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                    keySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                    keySet.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -63,7 +63,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("contains".equals(d.methodInfo().name)) {
                 ParameterAnalysis v = d.parameterAnalyses().get(0);
                 int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNnp, v.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                assertEquals(expectNnp, v.getProperty(Property.NOT_NULL_PARAMETER));
             }
             if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() <= 1) {
@@ -87,7 +87,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("add$Modification$Size".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
                     int expectNnc = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNnc, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(expectNnc, d.getProperty(Property.CONTEXT_NOT_NULL));
                 }
             }
         };

@@ -59,16 +59,16 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         int expectExtImm = MultiLevel.NOT_INVOLVED;
-                        assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                        assertEquals(expectExtImm, d.getProperty(Property.EXTERNAL_IMMUTABLE));
 
                         int expectExtNN = MultiLevel.NOT_INVOLVED;
-                        assertEquals(expectExtNN, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        assertEquals(expectExtNN, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "o1".equals(p.name)) {
-                    assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY));
+                    assertEquals(Level.DELAY, d.getProperty(Property.CONTEXT_IMMUTABLE_DELAY));
 
-                    int cImm = d.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+                    int cImm = d.getProperty(Property.CONTEXT_IMMUTABLE);
                     if ("0".equals(d.statementId())) {
                         String expectedValue = d.iteration() <= 1 ? "<p:o1>" : "nullable instance type OutputBuilderSimplified_2/*@Identity*/";
                         assertEquals(expectedValue, d.currentValue().toString());
@@ -77,20 +77,20 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         int expectContextMod = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectContextMod, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectContextMod, d.getProperty(Property.CONTEXT_MODIFIED));
 
                         // links have not been established
                         int expectContextImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
                         assertEquals(expectContextImm, cImm);
                     }
                     int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
                 }
 
                 if (d.variable() instanceof ParameterInfo p && "o2".equals(p.name)) {
-                    assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY));
+                    assertEquals(Level.DELAY, d.getProperty(Property.CONTEXT_IMMUTABLE_DELAY));
 
-                    int cImm = d.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+                    int cImm = d.getProperty(Property.CONTEXT_IMMUTABLE);
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.MUTABLE, cImm);
 
@@ -105,7 +105,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
                         int expectContextMod = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectContextMod, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectContextMod, d.getProperty(Property.CONTEXT_MODIFIED));
 
                         // links have not been established
                         int expectContextImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
@@ -116,7 +116,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
                     }
                     int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
 
                 }
             }
@@ -125,7 +125,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_2".equals(d.typeInfo().simpleName)) {
                 int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -134,18 +134,18 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 for (ParameterAnalysis param : d.parameterAnalyses()) {
                     // no direct link with a parameter which has to be/will be dynamically immutable
-                    assertEquals(MultiLevel.NOT_INVOLVED, param.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.NOT_INVOLVED, param.getProperty(Property.EXTERNAL_IMMUTABLE));
 
                     int expectContextImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.MUTABLE;
-                    assertEquals(expectContextImm, param.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                    assertEquals(expectContextImm, param.getProperty(Property.CONTEXT_IMMUTABLE));
 
                     int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                    assertEquals(expectImm, param.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, param.getProperty(Property.IMMUTABLE));
                 }
             }
             if ("isEmpty".equals(d.methodInfo().name)) {
                 int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 
@@ -202,7 +202,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                             assertTrue(d.iteration() > 0);
                             // question 1: why does a.list appear while the evaluation is still <m:isEmpty> ?
                             // because a.list has been identified, but aspects of .isEmpty() have not been cleared yet
-                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                         }
                     }
                 }
@@ -223,24 +223,24 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("j2".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
-                //  assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                //  assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("j1".equals(d.methodInfo().name)) {
                 // single statement: return j2(); links have not been established
-                // assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                // assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 //  assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
-                //   assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                //   assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-                //   assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                //   assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
         testClass("OutputBuilderSimplified_4", 0, 0, new DebugConfiguration.Builder()
@@ -253,11 +253,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_5() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("j2".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("null", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("j1".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
         testClass("OutputBuilderSimplified_5", 0, 0, new DebugConfiguration.Builder()
@@ -287,30 +287,30 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     // FIXME which component is not immutable?
                     int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                    assertEquals(expectImm, d.variableInfo().getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.variableInfo().getProperty(Property.IMMUTABLE));
                 }
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 ParameterAnalysis p1 = d.parameterAnalyses().get(1);
-                assertEquals(MultiLevel.NOT_INVOLVED, p1.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.NOT_INVOLVED, p1.getProperty(Property.EXTERNAL_IMMUTABLE));
                 int cImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(cImm, p1.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                assertEquals(cImm, p1.getProperty(Property.CONTEXT_IMMUTABLE));
 
                 int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, p1.getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, p1.getProperty(Property.IMMUTABLE));
             }
             if ("combiner".equals(d.methodInfo().name)) {
                 // FIXME
                 int expectImm = d.iteration() <= 30 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
@@ -334,7 +334,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
         testClass("OutputBuilderSimplified_9", 0, 0, new DebugConfiguration.Builder()
@@ -355,29 +355,29 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_11() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputBuilderSimplified_11".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("$1".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("$2".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
 

@@ -67,7 +67,7 @@ public class Test_15_InlineMethods_AAPI extends CommonTestRunner {
             TypeInfo random = typeMap.get(Random.class);
             MethodInfo nextInt = random.findUniqueMethod("nextInt", 0);
             MethodAnalysis nextIntAnalysis = nextInt.methodAnalysis.get();
-            assertEquals(Level.TRUE, nextIntAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, nextIntAnalysis.getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("InlineMethods_3", 0, 0, new DebugConfiguration.Builder()

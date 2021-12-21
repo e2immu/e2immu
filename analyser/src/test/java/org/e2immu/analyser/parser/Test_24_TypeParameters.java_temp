@@ -38,8 +38,8 @@ public class Test_24_TypeParameters extends CommonTestRunner {
         TypeInfo collection = typeMap.get(Collection.class);
         assertNotNull(collection);
         MethodInfo stream = collection.typeInspection.get().methods().stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
-        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                stream.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
     };
 
     @Test

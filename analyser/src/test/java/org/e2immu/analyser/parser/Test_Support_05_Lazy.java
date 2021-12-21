@@ -48,8 +48,6 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
                         assertEquals("supplier.get()/*@NotNull*/", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals(1, d.currentValue().variables().size());
                     }
                 }
@@ -60,10 +58,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         int iteration = d.iteration();
         if ("t".equals(d.fieldInfo().name) && iteration > 0) {
-            assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
         }
         if ("supplier".equals(d.fieldInfo().name)) {
-            assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             if (iteration > 0) assertNotNull(d.fieldAnalysis().getValue());
         }
     };
@@ -98,8 +96,8 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
             VariableInfo ret = d.getReturnAsVariable();
             if (d.iteration() >= 1) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, ret.getProperty(Property.NOT_NULL_EXPRESSION));
+                assertTrue(methodLevelData.linksHaveBeenEstablished());
             }
         }
     };

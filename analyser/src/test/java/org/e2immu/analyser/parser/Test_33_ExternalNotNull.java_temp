@@ -46,7 +46,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:r>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     // because NNE > 0, there cannot be a warning!
                 }
             }
@@ -127,28 +127,28 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             int enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
-            int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+            int effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
 
             if ("o".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.NULLABLE, enn);
-                assertEquals(Level.TRUE, effFinal);
+                assertEquals(MultiLevel.NULLABLE_DV, enn);
+                assertEquals(Level.TRUE_DV, effFinal);
                 assertEquals("[null,\"hello\"]", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("p".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, enn);
-                assertEquals(Level.TRUE, effFinal);
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
+                assertEquals(Level.TRUE_DV, effFinal);
                 assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
 
             }
             if ("q".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.NULLABLE, enn);
-                assertEquals(Level.FALSE, effFinal);
+                assertEquals(MultiLevel.NULLABLE_DV, enn);
+                assertEquals(Level.FALSE_DV, effFinal);
                 assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("r".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, enn);
-                assertEquals(Level.FALSE, effFinal);
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
+                assertEquals(Level.FALSE_DV, effFinal);
                 assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -172,10 +172,10 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             int enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
-            int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+            int effFinal = d.fieldAnalysis().getProperty(Property.FINAL);
 
             if ("p".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE, effFinal);
+                assertEquals(Level.TRUE_DV, effFinal);
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectEnn, enn);
                 if (d.iteration() == 0) {

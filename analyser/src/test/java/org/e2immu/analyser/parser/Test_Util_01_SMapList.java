@@ -15,13 +15,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.FlowData.Execution.CONDITIONALLY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_01_SMapList extends CommonTestRunner {
@@ -68,18 +67,18 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
 
                     // <return value> is nullable
-                    assertEquals(MultiLevel.NULLABLE, d.currentValue().getProperty(d.evaluationContext(),
-                            VariableProperty.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.currentValue().getProperty(d.evaluationContext(),
+                            Property.NOT_NULL_EXPRESSION, true));
 
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if ("3".equals(d.statementId())) {
                     assertEquals("null==map.get(a)?List.of():map.get(a)", d.currentValue().toString());
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                            d.currentValue().getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
 
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
 
@@ -95,29 +94,29 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("1".equals(d.statementId())) {
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
             }
             if ("3".equals(d.statementId())) {
-                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
-            int paramMod = d.evaluationContext().getCurrentMethod()
-                    .parameterAnalyses.get(1).getProperty(VariableProperty.CONTEXT_MODIFIED);
+            DV paramMod = d.evaluationContext().getCurrentMethod()
+                    .parameterAnalyses.get(1).getProperty(Property.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, paramMod);
+                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
+                else assertEquals(Level.FALSE_DV, paramMod);
             }
             if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, paramMod);
+                if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
+                else assertEquals(Level.FALSE_DV, paramMod);
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
-            if("3".equals(d.statementId())) {
+            if ("3".equals(d.statementId())) {
                 assertEquals("bs:3,list:0", d.variableInfo().getLinkedVariables().toString());
             } else {
                 assertEquals("list:0", d.variableInfo().getLinkedVariables().toString());
@@ -146,15 +145,14 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<v:change>||null==<m:get>" : "change$1||null==destination.get(e$1.getKey())";
                     assertEquals("true", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 // merge of the two above
@@ -162,8 +160,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<m:addAll>||null==<m:get>"
                             : "instance type boolean||null==destination.get(e$1.getKey())";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     assertEquals("change:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -179,8 +176,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:copyOf>" : COPY_OF_TMP;
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 }
             }
         }
@@ -210,10 +206,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         }
         if ("addAll".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                assertEquals(FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                assertSame(CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                assertEquals(FlowData.CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
                 String expectCondition = d.iteration() == 0 ? "null!=<m:get>"
@@ -230,31 +226,24 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             VariableInfo returnValue1 = d.getReturnAsVariable();
             assertEquals("null==map.get(a)?List.of():map.get(a)",
                     d.getReturnAsVariable().getValue().toString());
-            int retValNotNull = returnValue1.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, retValNotNull);
+            DV retValNotNull = returnValue1.getProperty(Property.NOT_NULL_EXPRESSION);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, retValNotNull);
 
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
         }
         if ("copy".equals(name)) {
             VariableInfo returnValue = d.getReturnAsVariable();
-            int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-            assertEquals(expected, returnValue.getProperty(VariableProperty.IMMUTABLE));
+            assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
         }
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
             if ("bs".equals(parameterInfo.name)) {
-                int expectCmBs = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                int modified = d.parameterAnalyses().get(2).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                assertEquals(expectCmBs, modified);
-                int expectCmA = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                int modifiedA = d.parameterAnalyses().get(1).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                assertEquals(expectCmA, modifiedA);
+                assertDv(d.p(1), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("b".equals(parameterInfo.name)) {
-                int expectCmB = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                int modifiedB = d.parameterAnalyses().get(1).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                assertEquals(expectCmB, modifiedB);
+                assertDv(d.p(1), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {
@@ -263,18 +252,17 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             } else {
                 assertEquals(COPY_OF_TMP, d.methodAnalysis().getSingleReturnValue().toString());
             }
-            int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
         }
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo map = typeMap.get(Map.class);
         MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
-        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                entrySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
+                entrySet.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
         MethodInfo copyOf = map.findUniqueMethod("copyOf", 1);
-        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, copyOf.methodAnalysis.get().getProperty(Property.IMMUTABLE));
     };
 
     @Test

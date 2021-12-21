@@ -39,7 +39,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
                 if ("s".equals(d.variableName()) && "0".equals(d.statementId())) {
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
@@ -71,15 +71,15 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
             List<ParameterInfo> parameters = arrayCopy.methodInspection.get().getParameters();
 
             ParameterAnalysis p0 = parameters.get(0).parameterAnalysis.get();
-            assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
             ParameterAnalysis p2 = parameters.get(2).parameterAnalysis.get();
-            assertEquals(Level.TRUE, p2.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
 
             TypeInfo integer = typeMap.get(Integer.class);
             MethodInfo toString = integer.findUniqueMethod("toString", 1);
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, toString.methodAnalysis.get()
-                    .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, toString.methodAnalysis.get()
+                    .getProperty(Property.NOT_NULL_EXPRESSION));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

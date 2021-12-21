@@ -15,7 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -45,8 +44,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.function.Function<K,V>, Type param K, Type param V",
                         d.typeAnalysis().getTransparentTypes().toString());
-                int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
+                assertDv(d, 4, Level.TRUE_DV, Property.CONTAINER);
             }
         };
 
@@ -60,15 +58,15 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     };
                     assertEquals(expect, d.statementAnalysis().stateData.getPrecondition().expression().toString());
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
                 if ("3".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
                 if ("4".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
                 }
             }
         };
@@ -84,10 +82,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
                     String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                    assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
-                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertLinked(d, 2, "TODO", "");
+                    assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
@@ -95,8 +91,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
@@ -107,10 +102,8 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
-                        int expectCm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertLinked(d, 2, "TODO", "");
+                        assertDv(d, 3, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
@@ -121,28 +114,23 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("3.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertLinked(d, 2, "TODO", "");
+                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         assertEquals("nullable instance type V", d.currentValue().toString());
-                        String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, 2, "TODO", "");
                     }
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, 2, "TODO", "");
                     }
                 }
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -153,56 +141,45 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
             }
             if ("put".equals(d.methodInfo().name) && "SetOnceMap".equals(d.methodInfo().typeInfo.simpleName)) {
-
                 assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 2, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                ParameterAnalysis k = d.parameterAnalyses().get(0);
-                int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, k.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, k.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
+                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, Level.FALSE_DV, Property.IDENTITY);
 
-                ParameterAnalysis k = d.parameterAnalyses().get(0);
-                int expectCm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, k.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, k.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashMap<K,V>", d.fieldAnalysis().getValue().toString());
             }
         };

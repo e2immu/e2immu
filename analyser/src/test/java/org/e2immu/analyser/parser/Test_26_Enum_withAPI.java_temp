@@ -54,30 +54,30 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
             if ("test".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
             }
         };
 
@@ -86,7 +86,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
 
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 
@@ -101,19 +101,19 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name)) {
                 // predicate implements "test"
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
                 assertEquals("(instance type String).equals(name)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
                     assertEquals("Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("values".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -121,7 +121,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -135,7 +135,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
                 int expectImm = MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -150,8 +150,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);
         MethodAnalysis nameAnalysis = name.methodAnalysis.get();
-        assertEquals(Level.FALSE, nameAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nameAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        assertEquals(Level.FALSE_DV, nameAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, nameAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
     }
 
     @Test
@@ -159,7 +159,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo math = typeMap.get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            assertEquals(Level.FALSE, max.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
@@ -181,7 +181,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getCnt".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -195,7 +195,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertEquals("new Enum_4(1)", d.fieldAnalysis().getValue().toString());
 
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(expectImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 
@@ -213,7 +213,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertFalse(d.variableName().contains("name"));
                 if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -221,7 +221,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 

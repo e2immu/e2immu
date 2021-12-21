@@ -43,10 +43,9 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
     public void test() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("isSet".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
-                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
@@ -59,14 +58,13 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
                     assertEquals("this.isSet:0", d.variableInfo().getLinkedVariables().toString());
                 }
