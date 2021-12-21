@@ -14,25 +14,16 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class MethodCall_0 {
-
-    record Get(String s) {
-        String get() {
-            return s;
-        }
+public class MethodCall_4 {
+    private static List<String> copy(List<String> list) {
+        return new ArrayList<>(list);
     }
 
-    public void accept(List<Get> list) {
-        list.forEach(get -> System.out.println(get.get()));
+    public static int length(List<String> list) {
+        return copy(list).size();
     }
 
-    public void test() {
-        accept(List.of(new Get("hello")));
-    }
-
-    public void test2() {
-        accept(null);
-    }
 }

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.resolver;
 
-import org.e2immu.analyser.resolver.testexample.*;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -22,6 +21,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,5 +70,10 @@ public class TestMethodCall extends CommonTest {
     public void test_3() throws IOException {
         inspectAndResolve(MethodCall_3.class,
                 "Type java.util.List<org.e2immu.analyser.resolver.testexample.MethodCall_3.Get>");
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(MethodCall_4.class);
     }
 }
