@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.ParameterizedType.Mode.COVARIANT;
@@ -62,12 +63,12 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 errorInfo);
 
         if (candidate == null) {
-            log(METHOD_CALL, "Creating unevaluated method call for {} after failing to choose a candidate", methodName);
+            log(METHOD_CALL, "Creating unevaluated method call for {} after failing to " +
+                    "choose a candidate; this object will be re-evaluated later", methodName);
             return new UnevaluatedMethodCall(methodName, numArguments);
         }
 
         Expression newScope = scope.newExpression(candidate.method.methodInspection, inspectionProvider, expressionContext);
-
         return new MethodCall(Identifier.from(methodCallExpr),
                 scope.objectIsImplicit(),
                 newScope,
@@ -89,14 +90,16 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     }
 
     record ErrorInfo(String methodName, ParameterizedType type, Position position) {
-
     }
 
     /**
      * Return object of the main selection method <code>chooseCandidateAndEvaluateCall</code>.
      *
      * @param newParameterExpressions parameter expressions, now evaluated in the "correct" context
-     * @param mapExpansion            FIXME EXPLAIN
+     * @param mapExpansion            Type parameters involving the method call receive their concrete value.
+     *                                Examples:
+     *                                MethodCall_0 forEach(lambda) maps T as #0 in Consumer to Type MethodCall_0.Get.
+     *                                MethodCall_4 copy(string list) maps E as #0 in List to Type String.
      * @param method                  the candidate, consisting of a MethodInfo object, and a type map
      */
     record Candidate(List<Expression> newParameterExpressions,
@@ -104,7 +107,6 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                      MethodTypeParameterMap method) {
 
         ParameterizedType returnType() {
-            // TODO check that getConcreteReturnType() is correct here (20201204)
             return mapExpansion.isEmpty()
                     ? method.getConcreteReturnType()
                     : method.expand(mapExpansion).getConcreteReturnType();
@@ -138,7 +140,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
 
 
-        List<Expression> newParameterExpressions = evaluateExpressionsInContextOfMethod(
+        List<Expression> newParameterExpressions = retryUnevaluatedExpressions(
                 expressionContext, expressions, singleAbstractMethod, errorInfo,
                 filterResult.evaluatedExpressions, method);
         Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions);
@@ -191,7 +193,12 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         return mapExpansion;
     }
 
-    private List<Expression> evaluateExpressionsInContextOfMethod(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, MethodTypeParameterMap singleAbstractMethod, ErrorInfo errorInfo, Map<Integer, Expression> evaluatedExpressions, MethodTypeParameterMap method) {
+    private List<Expression> retryUnevaluatedExpressions(ExpressionContext expressionContext,
+                                                         List<com.github.javaparser.ast.expr.Expression> expressions,
+                                                         MethodTypeParameterMap singleAbstractMethod,
+                                                         ErrorInfo errorInfo,
+                                                         Map<Integer, Expression> evaluatedExpressions,
+                                                         MethodTypeParameterMap method) {
         List<Expression> newParameterExpressions = new ArrayList<>();
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
@@ -235,40 +242,75 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
         while (!methodCandidates.isEmpty() && evaluatedExpressions.size() < expressions.size()) {
-            Expression evaluatedExpression = null;
-            // we know that all method candidates have an identical amount of parameters (or varargs)
-            Integer pos = nextParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, evaluatedExpressions.keySet());
-            if (pos == null) {
-                // so one of the candidates will have a functional interface
-                pos = nextParameterWhereUnevaluatedLambdaWillHelp(expressions, methodCandidates, evaluatedExpressions.keySet());
-                if (pos == null) {
-                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(methodCandidates,
-                            evaluatedExpressions.keySet());
-                    if (pair != null) {
-                        pos = pair.v;
-                        ForwardReturnTypeInfo info = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
-                        evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), info);
-                    } else {
-                        // still nothing... just take the next one
-                        pos = IntStream.range(0, expressions.size()).filter(i -> !evaluatedExpressions.containsKey(i)).findFirst().orElseThrow();
-                    }
-                }
-            }
-            // we have a parameter where normal evaluation will help
-            if (evaluatedExpression == null) {
-                // we'll try to do a bit of type forwarding here to resolve generics for constructors; this is probably not systematic enough
-                // IMPROVE a more systematic approach might be to send multiple candidates
-                ParameterizedType commonType = commonTypeInCandidatesOnParameter(methodCandidates, pos);
-                ParameterizedType impliedParameterizedType = Primitives.isJavaLangObject(commonType) ? null : commonType;
-                ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(impliedParameterizedType,
-                        singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
-                evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), newForward);
-            }
-            evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
-            filterCandidatesByParameter(evaluatedExpression, pos, methodCandidates, compatibilityScore);
+            NextParameter next = nextParameter(expressionContext, methodCandidates, expressions,
+                    singleAbstractMethod, evaluatedExpressions);
+            evaluatedExpressions.put(next.pos, Objects.requireNonNull(next.expression));
+            filterCandidatesByParameter(next, methodCandidates, compatibilityScore);
         }
         return new FilterResult(evaluatedExpressions, compatibilityScore);
     }
+
+    private record NextParameter(Expression expression, int pos) {
+    }
+
+    /**
+     * Compute the next parameter to be used to discriminate between the method candidates.
+     * This method dispatches to three different "types" of parameter position selectors.
+     *
+     * @param expressionContext    the current expression context, needed to evaluate expressions
+     * @param methodCandidates     the remaining candidates
+     * @param expressions          the JavaParser expressions to be evaluated
+     * @param singleAbstractMethod information from the context of this method call
+     * @param evaluatedExpressions the map of expressions by position, previously evaluated
+     * @return the next parameter position + evaluated expression; never null.
+     */
+    private NextParameter nextParameter(ExpressionContext expressionContext,
+                                        List<TypeContext.MethodCandidate> methodCandidates,
+                                        List<com.github.javaparser.ast.expr.Expression> expressions,
+                                        MethodTypeParameterMap singleAbstractMethod,
+                                        Map<Integer, Expression> evaluatedExpressions) {
+        // we know that all method candidates have an identical amount of parameters (or varargs)
+        Set<Integer> ignore = evaluatedExpressions.keySet();
+        Integer pos = nextParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, ignore);
+        if (pos == null) {
+            // so one of the candidates will have a functional interface
+            pos = nextParameterWhereUnevaluatedLambdaWillHelp(expressions, methodCandidates, ignore);
+            if (pos == null) {
+                Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(methodCandidates,
+                        ignore);
+                if (pair != null) {
+                    pos = pair.v;
+                    ForwardReturnTypeInfo info = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
+                    return new NextParameter(expressionContext.parseExpression(expressions.get(pos), info), pos);
+                } else {
+                    // still nothing... just take the next one
+                    pos = IntStream.range(0, expressions.size()).filter(i -> !evaluatedExpressions.containsKey(i)).findFirst().orElseThrow();
+                }
+            }
+        }
+        /*
+         We have a parameter where normal evaluation will help. We must send along the formal type of the parameter in
+         the method candidates, as this can influence the evaluation.
+
+         See e.g. MethodCall_5, where GetOnly implements Get; and you cannot write List<GetOnly> l2 = ...; List<Get> list = l2
+         because generics are INVARIANT.
+
+         public void accept(List<Get> list) { list.forEach(get -> System.out.println(get.get())); }
+         public void accept(Set<Get> set) { set.forEach(get -> System.out.println(get.get())); }
+
+         ... here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
+         accept(List.of(new GetOnly("hello")));
+
+         If we're in the context of a SAM, we send the SAM along
+         */
+
+        ParameterizedType type = commonTypeInCandidatesOnParameter(methodCandidates, pos);
+        ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(type,
+                singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
+        Expression evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), newForward);
+        return new NextParameter(evaluatedExpression, pos);
+    }
+
 
     /*
     StringBuilder.length is in public interface CharSequence and private type AbstractStringBuilder
@@ -372,14 +414,22 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         }
     }
 
-    // File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with a different number of parameters
-    // (fileFilter takes 1, fileNameFilter takes 2)
-    // in this case, evaluating the expression will work
+    /**
+     * File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with
+     * a different number of parameters (fileFilter takes 1, fileNameFilter takes 2).
+     * In this case, evaluating the expression will work.
+     *
+     * @param expressions      original JavaParser expressions
+     * @param methodCandidates the remaining method candidates
+     * @param ignore           the positions used earlier to reduce the method candidate list
+     * @return the position containing parameters of functional interface type, or null when this does not exist
+     */
+
     private Integer nextParameterWhereUnevaluatedLambdaWillHelp(
             List<com.github.javaparser.ast.expr.Expression> expressions,
             List<TypeContext.MethodCandidate> methodCandidates,
             Set<Integer> ignore) {
-        if (methodCandidates.isEmpty()) return null;
+        assert !methodCandidates.isEmpty();
         MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
 
         for (int i = 0; i < mi0.getParameters().size(); i++) {
@@ -441,6 +491,17 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         return null;
     }
 
+    /**
+     * This is the "basic" method, which searches for a parameter position that does not hold a functional interface on
+     * any of the method candidates.
+     * This method will return position 0 when ignore is empty, and the two method candidates are, for example,
+     * StringBuilder.append(String) and StringBuilder.append(Integer). Position 0 does not hold a functional
+     * interface on either candidate.
+     *
+     * @param methodCandidates the remaining candidates
+     * @param ignore           the positions already taken
+     * @return a new position, or null when we cannot find one
+     */
     private Integer nextParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(
             List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
@@ -468,12 +529,11 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         return null;
     }
 
-    private void filterCandidatesByParameter(Expression evaluatedExpression,
-                                             Integer pos,
+    private void filterCandidatesByParameter(NextParameter next,
                                              List<TypeContext.MethodCandidate> methodCandidates,
                                              Map<MethodInfo, Integer> compatibilityScore) {
         methodCandidates.removeIf(mc -> {
-            int score = compatibleParameter(evaluatedExpression, pos, mc.method().methodInspection);
+            int score = compatibleParameter(next.expression, next.pos, mc.method().methodInspection);
             if (score >= 0) {
                 Integer inMap = compatibilityScore.get(mc.method().methodInspection.getMethodInfo());
                 inMap = inMap == null ? score : score + inMap;
@@ -488,26 +548,26 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     // 2: pos == params.size()-1: method(p, "abc")
     // 3: pos == params.size()-1: method(p, new String[] { "a", "b"} )
     // 4: pos >= params.size(): method(p, "a", "b")  -> we need the base type
-    private int compatibleParameter(Expression evaluatedExpression, Integer pos, MethodInspection methodInspection) {
-        assert evaluatedExpression != EmptyExpression.EMPTY_EXPRESSION : "Should we return NOT_ASSIGNABLE?";
+    private int compatibleParameter(Expression expression, int pos, MethodInspection methodInspection) {
+        assert expression != EmptyExpression.EMPTY_EXPRESSION : "Should we return NOT_ASSIGNABLE?";
         List<ParameterInfo> params = methodInspection.getParameters();
 
         if (pos >= params.size()) {
             ParameterInfo lastParameter = params.get(params.size() - 1);
             assert lastParameter.parameterInspection.get().isVarArgs();
             ParameterizedType typeOfParameter = lastParameter.parameterizedType.copyWithOneFewerArrays();
-            return compatibleParameter(evaluatedExpression, typeOfParameter);
+            return compatibleParameter(expression, typeOfParameter);
         }
         ParameterInfo parameterInfo = params.get(pos);
         if (pos == params.size() - 1 && parameterInfo.parameterInspection.get().isVarArgs()) {
-            int withArrays = compatibleParameter(evaluatedExpression, parameterInfo.parameterizedType);
-            int withoutArrays = compatibleParameter(evaluatedExpression, parameterInfo.parameterizedType.copyWithOneFewerArrays());
+            int withArrays = compatibleParameter(expression, parameterInfo.parameterizedType);
+            int withoutArrays = compatibleParameter(expression, parameterInfo.parameterizedType.copyWithOneFewerArrays());
             if (withArrays == -1) return withoutArrays;
             if (withoutArrays == -1) return withArrays;
             return Math.min(withArrays, withoutArrays);
         }
         // the normal situation
-        return compatibleParameter(evaluatedExpression, parameterInfo.parameterizedType);
+        return compatibleParameter(expression, parameterInfo.parameterizedType);
     }
 
     private int compatibleParameter(Expression evaluatedExpression, ParameterizedType typeOfParameter) {
