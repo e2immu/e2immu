@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -45,18 +45,15 @@ public class Test_39_PropagateModification extends CommonTestRunner {
     public void test_0() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name) && "PropagateModification_0".equals(d.methodInfo().typeInfo.simpleName)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, p0.getProperty(Property.CONTEXT_MODIFIED));
-                assertEquals(expectCm, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -70,9 +67,9 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 Consumer_0.class.getCanonicalName() + ".MyConsumer", true);
         MethodInfo methodInfo = myConsumer.findUniqueMethod("accept", 1);
         assertTrue(methodInfo.isAbstract());
-        assertEquals(Level.DELAY, methodInfo.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        assertTrue(methodInfo.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD).isDelayed());
         ParameterAnalysis p0 = methodInfo.methodInspection.get().getParameters().get(0).parameterAnalysis.get();
-        assertEquals(Level.DELAY, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertTrue(p0.getProperty(Property.MODIFIED_VARIABLE).isDelayed());
     }
 
     @Test
@@ -82,12 +79,10 @@ public class Test_39_PropagateModification extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -95,16 +90,13 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
-                ParameterAnalysis myConsumer = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, myConsumer.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ClassWithConsumer".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -174,7 +166,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                     assertTrue(ve.variable() instanceof ParameterInfo);
                 } else fail();
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV,
                         d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
             }
@@ -190,14 +182,12 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                             default -> "myConsumer.name";
                         };
                         assertEquals(expect, d.currentValue().toString());
-                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "<m:getName>" : "myConsumer.name";
                         assertEquals(expect, d.currentValue().toString());
-                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "name".equals(fr.fieldInfo.name)) {
@@ -215,24 +205,19 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
 
-                    int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION),
-                            "Statement " + d.statementId());
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "<m:getName>" : "myConsumer.name";
                         assertEquals(expect, d.currentValue().toString());
-                        int imm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                        assertEquals(imm, d.getProperty(Property.IMMUTABLE));
-                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }

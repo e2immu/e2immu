@@ -67,13 +67,10 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
 
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(Property.INDEPENDENT));
+                assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
 
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectPm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectPm, p0.getProperty(Property.MODIFIED_VARIABLE));
-                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                assertEquals(expectNnp, p0.getProperty(Property.NOT_NULL_PARAMETER));
+                assertDv(d.p(0), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
 
             if ("of".equals(d.methodInfo().name)) {

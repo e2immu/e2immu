@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -58,18 +59,16 @@ public class Test_40_Dependent1 extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo list = typeMap.get(List.class);
             MethodInfo add = list.findUniqueMethod("add", 1);
-            int methodIndependent = add.methodAnalysis.get().getProperty(Property.INDEPENDENT);
-            assertEquals(MultiLevel.DEPENDENT, methodIndependent);
-            int paramIndependent = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get()
+            DV methodIndependent = add.methodAnalysis.get().getProperty(Property.INDEPENDENT);
+            assertEquals(MultiLevel.DEPENDENT_DV, methodIndependent);
+            DV paramIndependent = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get()
                     .getProperty(Property.INDEPENDENT);
-            assertEquals(MultiLevel.INDEPENDENT_1, paramIndependent);
+            assertEquals(MultiLevel.INDEPENDENT_1_DV, paramIndependent);
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add2".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, p0.getProperty(Property.INDEPENDENT));
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
 
@@ -85,14 +84,10 @@ public class Test_40_Dependent1 extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, p0.getProperty(Property.INDEPENDENT));
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
             if ("addWithMessage".equals(d.methodInfo().name)) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectIndependent = d.iteration() <= 2 ? Level.DELAY : MultiLevel.INDEPENDENT_1;
-                assertEquals(expectIndependent, p0.getProperty(Property.INDEPENDENT));
+                assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
 

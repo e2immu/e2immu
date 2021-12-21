@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -60,13 +59,11 @@ public class Test_36_Cast extends CommonTestRunner {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty(),
                         () -> "Have " + d.typeAnalysis().getTransparentTypes().toString());
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
 
             if ("Counter".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -75,17 +72,14 @@ public class Test_36_Cast extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE; // = int
-                    assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "instance type T";
                     assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? "return incrementedT:-1,this.t:0" : "this.t:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -97,27 +91,22 @@ public class Test_36_Cast extends CommonTestRunner {
                 assertEquals("t/*(Counter)*/", d.currentValue().toString());
                 assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
                         "Counter".equals(Objects.requireNonNull(pw.castType().typeInfo).simpleName));
-                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE; // = Counter
-                assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("Cast_1".equals(d.methodInfo().name)) {
-                ParameterAnalysis input = d.parameterAnalyses().get(0);
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, input.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d.p(0), 2, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

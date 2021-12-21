@@ -15,10 +15,12 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -68,10 +70,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("EventuallyE2Immutable_0".equals(d.typeInfo().simpleName)) {
                 String expect = d.iteration() == 0 ? "{}" : "{t=null==t}";
                 assertEquals(expect, d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsStatus(true));
-
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(d.iteration() >= 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
+                assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -112,7 +112,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
                     String expected = d.iteration() == 1 ? "<f:t>" : "nullable instance type T";
                     assertEquals(expected, d.currentValue().toString());
-                    String expectedDelay = d.iteration() == 1 ? LinkedVariables.DELAY_STRING : "";
+                    String expectedDelay = d.iteration() == 1 ? "?" : "";
                     assertEquals(expectedDelay, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -141,7 +141,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                String expectLinked = d.iteration() == 0 ? "?" : "";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -151,10 +151,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 // String expect = "{}" : "{t=null==t}";
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 assertEquals("{}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
-                assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsStatus(true));
-
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsStatus(true).isDone());
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -185,33 +183,27 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyInto".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMv, p0.getProperty(Property.CONTEXT_MODIFIED));
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("copyInto".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof ParameterInfo other && "other".equals(other.name)) {
-                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         testClass("EventuallyE2Immutable_2", 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -247,16 +239,15 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         String expectValue = d.iteration() <= 1 ? "<p:other>"
                                 : "instance type EventuallyE2Immutable_3<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
-                        int expectCImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
-                        assertEquals(expectCImm, d.getProperty(Property.CONTEXT_IMMUTABLE));
+                        assertDv(d, 4, MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }
         };
 
         testClass("EventuallyE2Immutable_3", 4, 0, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -331,9 +322,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().isTransparentType());
+                    assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
                 } else {
-                    assertFalse(d.fieldAnalysis().isTransparentType());
+                    assertEquals(Level.TRUE_DV, d.fieldAnalysis().isTransparentType());
                 }
             }
         };

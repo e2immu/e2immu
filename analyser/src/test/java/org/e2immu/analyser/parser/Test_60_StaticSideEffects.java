@@ -84,13 +84,11 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                                 ? "null==<f:counter>?new AtomicInteger():<f:counter>"
                                 : "null==counter?new AtomicInteger():nullable instance type AtomicInteger";
                         assertEquals(expectedValue, d.currentValue().toString());
-                        int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expected, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
@@ -133,8 +131,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("counter".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.IGNORE_MODIFICATIONS));
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -144,7 +141,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "null==<f:guide>" : "false";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
                 }
             }
         };
@@ -155,8 +152,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals(d.iteration() > 1, d.statementAnalysis().flowData.interruptsFlowIsSet());
                 }
                 if ("0.0.1".equals(d.statementId())) {
-                    FlowData.Execution expect = d.iteration() <= 1 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.NEVER;
-                    assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    DV exec = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+                    if(d.iteration()<=1) {
+                        assertTrue(exec.isDelayed());
+                    } else {
+                        assertEquals(FlowData.NEVER, exec);
+                    }
                 }
             }
         };
@@ -165,10 +166,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        int expectCnn = switch (d.variableName()) {
-                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL;
+                        DV expectCnn = switch (d.variableName()) {
+                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                             case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo",
-                                    "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE;
+                                    "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE_DV;
                             default -> throw new UnsupportedOperationException("? " + d.variableName());
                         };
                         assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL), d.variableName());
@@ -179,8 +180,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("guide".equals(d.fieldInfo().name)) {
-                int expectEnn = MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectEnn, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
@@ -214,8 +214,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
      */
     @Test
     public void test_9() throws IOException {
-        int BIG = 20;
-
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
@@ -229,13 +227,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "9==<m:index>&&null!=<f:forwardInfo>" :
                             "9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<instanceOf:Guide>" :
                             "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
                 }
             }
         };
@@ -243,7 +241,6 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
 
                 if ("fwdInfo".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -252,10 +249,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
-                        String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING
+                        String expectLv = d.iteration() == 0 ? "?"
                                 : "(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
@@ -275,10 +272,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                            assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail();
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
@@ -304,8 +301,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals("instance type ForwardInfo", fr.scope.toString());
                     String expect = d.iteration() == 0 ? "<f:guide>" : "instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -368,7 +364,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("pos".equals(d.fieldInfo().name)) {
                 assertEquals("pos", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue() instanceof VariableExpression);
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
             if ("guide".equals(d.fieldInfo().name)) {
                 assertEquals("guide", d.fieldAnalysis().getValue().toString());
@@ -378,21 +374,19 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("OutputElement".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("Guide".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
                 assertEquals(Level.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("GuideOnStack".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 

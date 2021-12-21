@@ -62,14 +62,13 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
             }
         };
 
@@ -88,8 +87,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
 
@@ -125,7 +123,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-                assertEquals(MultiLevel.MUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.MUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
             }
         };
 

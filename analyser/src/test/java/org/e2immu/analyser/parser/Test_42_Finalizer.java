@@ -42,8 +42,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Finalizer_0".equals(d.typeInfo().simpleName)) {
                 assertEquals(Level.TRUE_DV, d.typeAnalysis().getProperty(Property.FINALIZER));
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                assertEquals(expectImm, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -51,10 +50,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     if ("2".equals(d.statementId())) {
-                        int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
-                        assertEquals(expectImm, d.getProperty(Property.IMMUTABLE));
-
-                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                     }
                 }
             }

@@ -50,7 +50,7 @@ public class Test_45_Project extends CommonTestRunner {
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
-                    assertEquals(Level.DELAY, changeData.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertTrue(changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
@@ -71,21 +71,19 @@ public class Test_45_Project extends CommonTestRunner {
                 if ((CONTAINER + ".value#prev").equals(d.variable().fullyQualifiedName())) {
                     if ("2".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "null==<m:get>?null:<f:value>" :
                             "null==kvStore.get(key)?null:kvStore.get(key).value";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expected, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
-                int cnn = d.getProperty(Property.CONTEXT_NOT_NULL);
-                assertTrue(cnn <= MultiLevel.NULLABLE_DV, "Problem: " + d.statementId() + " in " + d.methodInfo().name);
+                // FIXME could also be delayed?
+                assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
@@ -161,8 +159,7 @@ public class Test_45_Project extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("read".equals(d.fieldInfo().name)) {
-                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectEnn, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
@@ -199,31 +196,17 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("set".equals(d.methodInfo().name)) {
-                int done = "1".equals(d.statementId()) ? 0 : 2;
-                if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    String expect = d.iteration() <= done ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString(), d.statementId());
-                }
-            }
-        };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, p0.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, p0.getProperty(Property.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         };
 
@@ -231,7 +214,6 @@ public class Test_45_Project extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -253,10 +235,10 @@ public class Test_45_Project extends CommonTestRunner {
 
             assertEquals(Level.TRUE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
-            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(Property.INDEPENDENT));
+            assertEquals(MultiLevel.DEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
             assertEquals(Level.TRUE_DV, p0a.getProperty(Property.CONTAINER));
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)

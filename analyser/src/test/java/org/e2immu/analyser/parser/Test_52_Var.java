@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -83,10 +84,7 @@ public class Test_52_Var extends CommonTestRunner {
                 } else fail();
 
                 // @NotNull on parameter of apply
-                ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
-                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNnp, p0.getProperty(Property.NOT_NULL_PARAMETER));
-
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("repeater".equals(d.methodInfo().name)) {
@@ -132,19 +130,19 @@ public class Test_52_Var extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("sw.toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                     assertEquals("sw.toString()", d.currentValue().toString());
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertEquals("\"Error!\"", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.getProperty(Property.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo typeInfo = typeMap.get(String.class);
-            int imm = typeInfo.typeAnalysis.get().getProperty(Property.IMMUTABLE);
-            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, imm);
+            DV imm = typeInfo.typeAnalysis.get().getProperty(Property.IMMUTABLE);
+            assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, imm);
         };
 
         testClass("Var_5", 0, 0, new DebugConfiguration.Builder()

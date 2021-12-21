@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -63,8 +62,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     public void test_3() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -86,13 +84,9 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
-                ParameterAnalysis position = d.parameterAnalyses().get(1);
-                int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectContextModified, position.getProperty(Property.CONTEXT_MODIFIED));
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, position.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModifiedVar, position.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -100,12 +94,10 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
-                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -121,8 +113,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -136,8 +127,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     // this one must wait for Position to become @E2Immutable
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectModified, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -163,13 +153,9 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
-                ParameterAnalysis position = d.parameterAnalyses().get(1);
-                int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectContextModified, position.getProperty(Property.CONTEXT_MODIFIED));
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, position.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModifiedVar, position.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("trace".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -177,32 +163,25 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 } else { // independent of delays/modification of the fields
                     assertEquals("\"/*\"+position.msg+\"*/\"", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("msg".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());
-
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -246,8 +225,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("position".equals(d.methodInfo().name)) {
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 

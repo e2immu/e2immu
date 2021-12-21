@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
@@ -59,7 +59,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                                 "Have " + d.currentValue().getClass());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         String expect = "instance instanceof Fluent_0&&null!=instance?instance:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                         // <return value> is nullable
@@ -71,18 +71,17 @@ public class Test_56_Fluent extends CommonTestRunner {
                                 INSTANCE_TYPE_BUILDER_BUILD;
                         assertEquals(expect, d.currentValue().toString());
 
-                        String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "instance";
+                        String expectLinks = d.iteration() == 0 ? "?" : "instance";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
             if ("from".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo i && "instance".equals(i.name)) {
-                    int cm = d.getProperty(Property.CONTEXT_MODIFIED);
+                    DV cm = d.getProperty(Property.CONTEXT_MODIFIED);
                     if ("0".equals(d.statementId())) {
                         assertEquals(Level.FALSE_DV, cm);
                     }
@@ -96,8 +95,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copyOf".equals(d.methodInfo().name)) {
                 // @NotModified
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
 
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -105,24 +103,15 @@ public class Test_56_Fluent extends CommonTestRunner {
                     assertEquals(INSTANCE_TYPE_BUILDER_BUILD, d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
-                int expectFluent = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectFluent, d.methodAnalysis().getProperty(Property.FLUENT));
-
-                // @NotNull
-                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
-                // @Independent
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(Property.INDEPENDENT));
+                assertDv(d, 2, Level.FALSE_DV, Property.FLUENT);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(Property.INDEPENDENT));
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("from".equals(d.methodInfo().name)) {
@@ -131,18 +120,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                 } else {
                     assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-
-                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectFluent, d.methodAnalysis().getProperty(Property.FLUENT));
-
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectModified, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-
-                // a fluent method is dependent
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
-                assertEquals(expectIndependent, d.methodAnalysis().getProperty(Property.INDEPENDENT));
+                assertDv(d, 1, Level.TRUE_DV, Property.FLUENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -153,15 +134,15 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
             if ("IFluent_0".equals(d.typeInfo().simpleName)) {
                 // property has been contracted in the code: there is no computing
-                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 assertTrue(d.typeInfo().typePropertiesAreContracted());
             }
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -171,12 +152,10 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
-                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImmutable, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
         };
@@ -186,8 +165,8 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.FLUENT));
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
-                assertEquals(MultiLevel.INDEPENDENT, d.methodAnalysis().getProperty(Property.INDEPENDENT));
-                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE, d.methodAnalysis().getProperty(Property.IMMUTABLE));
+                assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
+                assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("identity".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
@@ -203,8 +182,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
             if ("from".equals(d.methodInfo().name)) {
                 // STEP 1 links have not been established
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectMom, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -242,8 +220,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         // STEP 3 value of 0 not set because no linked variables set for return variable
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {

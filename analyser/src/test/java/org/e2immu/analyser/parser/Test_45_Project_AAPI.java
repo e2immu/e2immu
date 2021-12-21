@@ -59,18 +59,14 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
-            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(Property.IMMUTABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMom, p0.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectCm, p0.getProperty(Property.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -87,8 +83,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         // for(Map.Entry entry: ... .entrySet())
-                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                        assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("entry$0".equals(d.variableName())) {

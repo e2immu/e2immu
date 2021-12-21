@@ -95,8 +95,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals("x.k>=3?x.k*i$1:3", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                int expected = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expected, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
