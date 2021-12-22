@@ -15,7 +15,6 @@
 package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
@@ -23,7 +22,6 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Basics_0;
 import org.e2immu.analyser.resolver.testexample.Basics_1;
-import org.e2immu.analyser.resolver.testexample.CommonTest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

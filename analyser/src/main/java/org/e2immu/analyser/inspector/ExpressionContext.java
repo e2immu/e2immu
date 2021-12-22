@@ -81,7 +81,7 @@ public class ExpressionContext {
                                                                @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
-                ForwardReturnTypeInfo.NO_INFO, null,
+                ForwardReturnTypeInfo.expectVoid(typeContext), null,
                 null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(null, new HashMap<>()),
@@ -95,7 +95,7 @@ public class ExpressionContext {
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
                 null,
-                ForwardReturnTypeInfo.NO_INFO,
+                ForwardReturnTypeInfo.expectVoid(expressionContextOfType.typeContext),
                 null, null,
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(expressionContextOfType.typeContext),
@@ -163,14 +163,14 @@ public class ExpressionContext {
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, null,
-                null, ForwardReturnTypeInfo.NO_INFO, null, null, primaryType,
+                null, ForwardReturnTypeInfo.expectVoid(typeContext), null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for {}", reason);
         return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
-                ForwardReturnTypeInfo.NO_INFO,
+                ForwardReturnTypeInfo.expectVoid(typeContext),
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }

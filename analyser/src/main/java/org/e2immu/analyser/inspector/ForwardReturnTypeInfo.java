@@ -17,10 +17,16 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Objects;
+
 /*
 Information about the return-type of an expression, passed on in a forwarding way.
  */
 public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
+
+    public ForwardReturnTypeInfo {
+        assert erasure || type != null;
+    }
 
     public ForwardReturnTypeInfo(ParameterizedType type) {
         this(type, false);
@@ -33,11 +39,9 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
                 .boxedBooleanTypeInfo.asSimpleParameterizedType(), false);
     }
 
-    public static ForwardReturnTypeInfo expectString(TypeContext typeContext) {
-        return new ForwardReturnTypeInfo(typeContext.getPrimitives().stringParameterizedType, false);
+    public static ForwardReturnTypeInfo expectVoid(TypeContext typeContext) {
+        return new ForwardReturnTypeInfo(typeContext.getPrimitives().voidParameterizedType, false);
     }
-
-    public static final ForwardReturnTypeInfo NO_INFO = new ForwardReturnTypeInfo(null, false);
 
     public MethodTypeParameterMap computeSAM(TypeContext typeContext) {
         if (type == null || Primitives.isVoid(type)) return null;

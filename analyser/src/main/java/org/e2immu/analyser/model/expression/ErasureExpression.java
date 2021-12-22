@@ -17,10 +17,32 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.Set;
+import java.util.function.*;
 
 public interface ErasureExpression extends Expression {
 
     Set<ParameterizedType> erasureTypes(TypeContext typeContext);
+
+    /*
+   we make no distinction between Function<X, Boolean> and Predicate<X>, and the various
+   variants using primitives.
+    */
+    static ParameterizedType erasureType(int numberOfParameters, boolean isVoid, TypeContext typeContext) {
+        Class<?> clazz = switch (numberOfParameters) {
+            case 0 -> isVoid ? Runnable.class : Supplier.class;
+            case 1 -> isVoid ? Consumer.class : Function.class;
+            case 2 -> isVoid ? BiConsumer.class : BiFunction.class;
+            default -> null;
+        };
+        TypeInfo typeInfo;
+        if (clazz == null) {
+            typeInfo = typeContext.typeMapBuilder.syntheticFunction(numberOfParameters, isVoid);
+        } else {
+            typeInfo = typeContext.getFullyQualified(clazz);
+        }
+        return typeInfo.asParameterizedType(typeContext);
+    }
 }

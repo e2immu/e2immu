@@ -121,6 +121,12 @@ public class Parser {
         return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
     }
 
+    public TypeMapImpl.Builder inspectOnlyForTesting() {
+        inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
+                configuration.annotatedAPIConfiguration().reportWarnings(), true);
+        return input.globalTypeContext().typeMapBuilder;
+    }
+
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                               boolean reportWarnings,
                                               boolean shallowResolver) {

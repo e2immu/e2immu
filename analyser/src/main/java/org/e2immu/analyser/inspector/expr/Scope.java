@@ -54,9 +54,9 @@ public record Scope(Expression expression,
         return expression == null;
     }
 
-    public Expression newExpression(MethodInspection methodInspection,
-                                    InspectionProvider inspectionProvider,
-                                    ExpressionContext expressionContext) {
+    public Expression ensureExplicit(MethodInspection methodInspection,
+                                     InspectionProvider inspectionProvider,
+                                     ExpressionContext expressionContext) {
         if (objectIsImplicit()) {
             if (methodInspection.isStatic()) {
                 return new TypeExpression(methodInspection.getMethodInfo()

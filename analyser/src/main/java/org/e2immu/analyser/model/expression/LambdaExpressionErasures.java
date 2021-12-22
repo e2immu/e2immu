@@ -21,14 +21,13 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.*;
 import java.util.stream.Collectors;
 
 /**
@@ -101,21 +100,7 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        return counts.stream().map(count -> erasureType(count, typeContext)).collect(Collectors.toUnmodifiableSet());
-    }
-
-    /*
-    we make no distinction between Function<X, Boolean> and Predicate<X>, and the various
-    variants using primitives.
-     */
-    private static ParameterizedType erasureType(Count count, TypeContext typeContext) {
-        Class<?> clazz = switch (count.parameters) {
-            case 0 -> count.isVoid ? Runnable.class : Supplier.class;
-            case 1 -> count.isVoid ? Consumer.class : Function.class;
-            case 2 -> count.isVoid ? BiConsumer.class : BiFunction.class;
-            default -> throw new UnsupportedOperationException("To implement");
-        };
-        TypeInfo typeInfo = typeContext.getFullyQualified(clazz);
-        return typeInfo.asParameterizedType(typeContext);
+        return counts.stream().map(count -> typeContext.typeMapBuilder.syntheticFunction(count.parameters, count.isVoid)
+                .asParameterizedType(InspectionProvider.DEFAULT)).collect(Collectors.toUnmodifiableSet());
     }
 }

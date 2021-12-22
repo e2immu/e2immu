@@ -172,7 +172,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     }
 
     private int sameNoNullTypeInfo(Mode mode) {
-        if(mode == Mode.COVARIANT_ERASURE) return SAME_UNDERLYING_TYPE;
+        if (mode == Mode.COVARIANT_ERASURE) return SAME_UNDERLYING_TYPE;
 
         // List<E> <-- List<String>
         if (target.parameters.isEmpty()) {
@@ -196,12 +196,38 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     }
 
     private int differentNonNullTypeInfo(Mode mode) {
+        if (from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
+            // two functional interfaces, yet different TypeInfo objects
+            return functionalInterface(mode);
+        }
         return switch (mode) {
             case COVARIANT, COVARIANT_ERASURE -> hierarchy(target, from, mode);
             case CONTRAVARIANT -> hierarchy(from, target, mode);
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
+    }
+
+    /*
+    either COVARIANT_ERASURE, which means we simply have to test the number of parameters and isVoid,
+    or INVARIANT... all type parameters identical
+     */
+    private int functionalInterface(Mode mode) {
+        MethodInspection mTarget = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
+        MethodInspection mFrom = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
+        if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
+        boolean targetIsVoid = Primitives.isVoid(mTarget.getReturnType());
+        boolean fromIsVoid = Primitives.isVoid(mFrom.getReturnType());
+        if (targetIsVoid != fromIsVoid) return NOT_ASSIGNABLE;
+        if (mode == Mode.COVARIANT_ERASURE) return SAME_UNDERLYING_TYPE;
+        int i = 0;
+        for (ParameterInfo t : mTarget.getParameters()) {
+            ParameterInfo f = mFrom.getParameters().get(i);
+            if (!t.parameterizedType.equals(f.parameterizedType)) return NOT_ASSIGNABLE;
+            i++;
+        }
+        if (targetIsVoid && !mTarget.getReturnType().equals(mFrom.getReturnType())) return NOT_ASSIGNABLE;
+        return EQUALS;
     }
 
     private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode) {

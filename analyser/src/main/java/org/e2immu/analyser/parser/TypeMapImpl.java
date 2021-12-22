@@ -16,10 +16,7 @@ package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.NotFoundInClassPathException;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
@@ -35,6 +32,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.model.ParameterizedType.WildCard.NONE;
 
 public class TypeMapImpl implements TypeMap {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeMapImpl.class);
@@ -422,6 +420,44 @@ public class TypeMapImpl implements TypeMap {
         // we can probably do without this method; then the mutable versions will be used more
         public void makeParametersImmutable() {
             methodInspections.values().forEach(MethodInspectionImpl.Builder::makeParametersImmutable);
+        }
+
+        public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
+            String name = (isVoid ? "SyntheticConsumer" : "SyntheticFunction") + numberOfParameters;
+            String fqn = "_internal_." + name;
+            TypeInfo existing = get(fqn);
+            if (existing != null) return existing;
+
+            TypeInfo typeInfo = new TypeInfo("_internal_", name);
+            TypeInspectionImpl.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
+
+            builder.setParentClass(primitives.objectParameterizedType);
+            builder.setTypeNature(TypeNature.INTERFACE);
+            List<TypeParameter> tps = new ArrayList<>();
+            for (int i = 0; i < numberOfParameters + (isVoid ? 0 : 1); i++) {
+                TypeParameterImpl typeParameter = new TypeParameterImpl(typeInfo, "P" + i, i);
+                typeParameter.setTypeBounds(List.of());
+                builder.addTypeParameter(typeParameter);
+                tps.add(typeParameter);
+            }
+            builder.addTypeModifier(TypeModifier.PUBLIC);
+            builder.addAnnotation(primitives.functionalInterfaceAnnotationExpression);
+
+            MethodInspectionImpl.Builder m = new MethodInspectionImpl.Builder(typeInfo, isVoid ? "accept" : "apply");
+            m.setReturnType(isVoid ? primitives.voidParameterizedType :
+                    new ParameterizedType(tps.get(numberOfParameters), 0, NONE));
+            for (int i = 0; i < numberOfParameters; i++) {
+                m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                        new ParameterizedType(tps.get(i), 0, NONE), "p" + i, i));
+            }
+            m.readyToComputeFQN(this);
+            m.addModifier(MethodModifier.PUBLIC);
+            MethodInspection mi = m.build(this);
+            registerMethodInspection(m);
+            builder.addMethod(mi.getMethodInfo());
+
+            typeInfo.typeInspection.set(builder.build());
+            return typeInfo;
         }
     }
 }
