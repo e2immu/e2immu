@@ -23,17 +23,15 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.e2immu.analyser.model.ParameterizedType.Mode.COVARIANT;
-import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
+import static org.e2immu.analyser.model.IsAssignableFrom.Mode.COVARIANT;
+import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -432,6 +430,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         assert !methodCandidates.isEmpty();
         MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
 
+        outer:
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             com.github.javaparser.ast.expr.Expression expression = expressions.get(i);
             if (!ignore.contains(i) && (expression.isLambdaExpr() || expression.isMethodReferenceExpr())) {
@@ -444,7 +443,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                         MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
                         int numberOfParameters = singleAbstractMethod.methodInspection.getParameters().size();
                         boolean added = numberOfParametersInFunctionalInterface.add(numberOfParameters);
-                        assert added;
+                        if (!added) continue outer;
                     }
                 }
                 return i;
@@ -462,17 +461,18 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             if (!ignore.contains(i)) {
                 ParameterizedType functionalInterface = null;
                 TypeContext.MethodCandidate mcOfFunctionalInterface = null;
+                MethodTypeParameterMap singleAbstractMethod = null;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method().methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
                         boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(inspectionProvider);
                         if (isFunctionalInterface) {
-                            assert functionalInterface == null;
-
-                            functionalInterface = pi.parameterizedType;
-                            mcOfFunctionalInterface = mc;
-                           /* } else {
+                            if (functionalInterface == null) {
+                                functionalInterface = pi.parameterizedType;
+                                mcOfFunctionalInterface = mc;
+                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
+                            } else {
                                 MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
                                 if (!singleAbstractMethod.isAssignableFrom(sam2)) {
                                     log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
@@ -481,7 +481,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                                     functionalInterface = null;
                                     break;
                                 }
-                            }*/
+                            }
                         }
                     }
                 }
@@ -603,8 +603,8 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface(inspectionProvider);
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
-        return typeOfParameter.numericIsAssignableFrom(inspectionProvider, returnType,
-                false, COVARIANT, reverseParameters);
+        return new IsAssignableFrom(inspectionProvider, typeOfParameter, returnType)
+                .execute(false, COVARIANT, reverseParameters);
     }
 
     /*

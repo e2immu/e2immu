@@ -430,7 +430,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
         // see Fluent_0 for one way, and Store_7 for the other direction
         ParameterizedType myType = methodInfo.typeInfo.asParameterizedType(analyserContext);
-        if (!myType.isAssignableFromTo(analyserContext, methodInspection.getReturnType())) {
+        if (myType.isNotAssignableFromTo(analyserContext, methodInspection.getReturnType())) {
             methodAnalysis.setProperty(Property.FLUENT, Level.FALSE_DV);
         }
 
@@ -438,7 +438,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         down-or-upcast allowed
          */
         if (methodInspection.getParameters().isEmpty() ||
-                !methodInspection.getReturnType().isAssignableFromTo(analyserContext,
+                methodInspection.getReturnType().isNotAssignableFromTo(analyserContext,
                         methodInspection.getParameters().get(0).parameterizedType)) {
             methodAnalysis.setProperty(Property.IDENTITY, Level.FALSE_DV);
         }

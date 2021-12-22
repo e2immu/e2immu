@@ -14,38 +14,27 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public class MethodCall_5 {
+/*
+A bit contrived
+ */
+public class MethodCall_8<A, B> {
 
-    interface Get {
-        String get();
+    public void method(List<A> list1, List<A> list2, List<A> list3) {
     }
 
-    record GetOnly(String s) implements Get {
-
-        @Override
-        public String get() {
-            return s;
-        }
+    public void method(List<B> list1, Set<A> set2, List<B> list3) {
     }
 
-    public void accept(List<Get> list) {
-        list.forEach(get -> System.out.println(get.get()));
+    public void method(Set<A> set1, List<B> list2, List<B> list3) {
     }
 
-    public void accept(Set<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Collection<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void test() {
-        // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
-        accept(List.of(new GetOnly("hello")));
+    public void test(A a, B b) {
+        method(List.of(a), List.of(a), List.of(a));
+        //compilation error: method(List.of(b), List.of(a),  List.of(a));
+        method(List.of(b), Set.of(a), List.of(b));
+        method(Set.of(a), List.of(b), List.of(b));
     }
 }

@@ -14,38 +14,27 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.function.Function;
 
-public class MethodCall_5 {
+public class MethodCall_6 {
 
-    interface Get {
-        String get();
+    interface  A {}
+    interface  B extends A {}
+
+    public A accept(Function<B, A> f, B b) {
+        return f.apply(b);
     }
-
-    record GetOnly(String s) implements Get {
-
-        @Override
-        public String get() {
-            return s;
-        }
-    }
-
-    public void accept(List<Get> list) {
-        list.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Set<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Collection<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
+    public B accept(Function<A, B> f, A a) {
+        return f.apply(a);
     }
 
     public void test() {
-        // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
-        accept(List.of(new GetOnly("hello")));
+        A a = new A() {
+        };
+        B b = new B() {
+        };
+        // CAUSES "Ambiguous method call": accept(bb -> bb, b);
+        accept((B bb) -> bb, b);
+        accept(aa -> (B)aa, a);
     }
 }

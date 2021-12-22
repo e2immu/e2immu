@@ -14,38 +14,21 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-public class MethodCall_5 {
+public class MethodCall_7<A, B, AA extends A, BB extends B> {
 
-    interface Get {
-        String get();
+    public void method(List<B> list, Consumer<B> b) {
+        b.accept(list.get(0));
     }
 
-    record GetOnly(String s) implements Get {
-
-        @Override
-        public String get() {
-            return s;
-        }
+    public void method(List<A> list, BiConsumer<A, B> a) {
+        a.accept(list.get(0), null);
     }
 
-    public void accept(List<Get> list) {
-        list.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Set<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Collection<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void test() {
-        // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
-        accept(List.of(new GetOnly("hello")));
+    public void test(A a, B b, BB bb) {
+        method(List.of(bb), System.out::println);
     }
 }

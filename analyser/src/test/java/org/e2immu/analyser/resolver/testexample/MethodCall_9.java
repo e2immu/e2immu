@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public class MethodCall_5 {
+public class MethodCall_9 {
 
     interface Get {
         String get();
@@ -32,20 +32,13 @@ public class MethodCall_5 {
         }
     }
 
-    public void accept(List<Get> list) {
-        list.forEach(get -> System.out.println(get.get()));
-    }
-
-    public void accept(Set<Get> set) {
-        set.forEach(get -> System.out.println(get.get()));
-    }
-
     public void accept(Collection<Get> set) {
         set.forEach(get -> System.out.println(get.get()));
     }
 
     public void test() {
-        // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'
+        // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'; then, it is compatible
+        // with Collection<Get>
         accept(List.of(new GetOnly("hello")));
     }
 }

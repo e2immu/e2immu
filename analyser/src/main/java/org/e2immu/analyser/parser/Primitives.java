@@ -27,7 +27,7 @@ import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
-import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
+import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class Primitives {
     public static final String JAVA_LANG = "java.lang";

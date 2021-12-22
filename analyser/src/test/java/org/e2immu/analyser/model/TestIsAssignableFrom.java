@@ -149,7 +149,7 @@ public class TestIsAssignableFrom {
 
         assertFalse(stringPt.isAssignableFrom(typeContext, typeParam));
         assert typeParam.typeParameter != null;
-        assertEquals(100, stringPt.numericIsAssignableFrom(typeContext, typeParam, false,
-                ParameterizedType.Mode.COVARIANT, Set.of(typeParam.typeParameter)));
+        assertEquals(100, new IsAssignableFrom(typeContext, stringPt, typeParam)
+                .execute(false, IsAssignableFrom.Mode.COVARIANT, Set.of(typeParam.typeParameter)));
     }
 }
