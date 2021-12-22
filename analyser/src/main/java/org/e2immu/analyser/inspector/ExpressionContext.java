@@ -339,7 +339,7 @@ public class ExpressionContext {
                     } else {
                         // case X: case Y:
                         for (com.github.javaparser.ast.expr.Expression labelExpr : switchEntry.getLabels()) {
-                            ForwardReturnTypeInfo info = ForwardReturnTypeInfo.computeSAM(selector.returnType(), typeContext);
+                            ForwardReturnTypeInfo info = new ForwardReturnTypeInfo(selector.returnType());
                             Expression parsedLabel = expressionContextWithEnums.parseExpression(labelExpr, info);
                             var switchLabel = new SwitchStatementOldStyle.SwitchLabel(parsedLabel, from);
                             labels.add(switchLabel);
@@ -638,6 +638,9 @@ public class ExpressionContext {
             }
             if (expression.isObjectCreationExpr()) {
                 ObjectCreationExpr objectCreationExpr = (ObjectCreationExpr) expression;
+                if (forwardReturnTypeInfo.erasure()) {
+                    return ParseObjectCreationExpr.erasure(this, objectCreationExpr);
+                }
                 return ParseObjectCreationExpr.parse(this, objectCreationExpr, forwardReturnTypeInfo);
             }
             if (expression.isVariableDeclarationExpr()) {
@@ -654,7 +657,7 @@ public class ExpressionContext {
                 } else {
                     parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
                     initializer = var.getInitializer()
-                            .map(i -> parseExpression(i, ForwardReturnTypeInfo.computeSAM(parameterizedType, typeContext)))
+                            .map(i -> parseExpression(i, new ForwardReturnTypeInfo(parameterizedType)))
                             .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 }
                 LocalVariable.Builder localVariable = new LocalVariable.Builder()
@@ -669,7 +672,7 @@ public class ExpressionContext {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
                 org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(),
-                        ForwardReturnTypeInfo.computeSAM(target.returnType(), typeContext));
+                        new ForwardReturnTypeInfo(target.returnType()));
                 if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
@@ -680,15 +683,21 @@ public class ExpressionContext {
                 return new Assignment(identifier, typeContext.getPrimitives(), target, value);
             }
             if (expression.isMethodCallExpr()) {
+                if (forwardReturnTypeInfo.erasure()) {
+                    return new ParseMethodCallExpr(typeContext).erasure(this, expression.asMethodCallExpr());
+                }
                 return new ParseMethodCallExpr(typeContext).parse(this, expression.asMethodCallExpr(), forwardReturnTypeInfo);
             }
             if (expression.isMethodReferenceExpr()) {
+                if (forwardReturnTypeInfo.erasure()) {
+                    return ParseMethodReferenceExpr.erasure(this, expression.asMethodReferenceExpr());
+                }
                 return ParseMethodReferenceExpr.parse(this, expression.asMethodReferenceExpr(), forwardReturnTypeInfo);
             }
             if (expression.isConditionalExpr()) {
                 ConditionalExpr conditionalExpr = (ConditionalExpr) expression;
                 org.e2immu.analyser.model.Expression condition = parseExpression(conditionalExpr.getCondition(),
-                        new ForwardReturnTypeInfo(typeContext.typeMapBuilder.getPrimitives().booleanParameterizedType, null));
+                        ForwardReturnTypeInfo.expectBoolean(typeContext));
                 org.e2immu.analyser.model.Expression ifTrue = parseExpression(conditionalExpr.getThenExpr(),
                         forwardReturnTypeInfo);
                 org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr(),
@@ -699,6 +708,9 @@ public class ExpressionContext {
                 return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr());
             }
             if (expression.isLambdaExpr()) {
+                if (forwardReturnTypeInfo.erasure()) {
+                    return ParseLambdaExpr.erasure(this, expression.asLambdaExpr());
+                }
                 return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), forwardReturnTypeInfo);
             }
             if (expression.isSwitchExpr()) {

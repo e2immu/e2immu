@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -28,40 +29,31 @@ import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
-public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
-                                          Boolean nonVoid,
-                                          Location location) implements Expression {
-    public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid, Location location) {
-        this.numberOfParameters = Set.copyOf(numberOfParameters);
-        this.nonVoid = nonVoid;
-        this.location = location;
-    }
+public record ConstructorCallErasure(ParameterizedType formalType) implements ErasureExpression {
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        UnevaluatedLambdaExpression that = (UnevaluatedLambdaExpression) o;
-        return numberOfParameters.equals(that.numberOfParameters) &&
-                Objects.equals(nonVoid, that.nonVoid);
+        ConstructorCallErasure that = (ConstructorCallErasure) o;
+        return Objects.equals(formalType, that.formalType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(numberOfParameters, nonVoid);
+        return Objects.hash(formalType);
     }
 
     // this is NOT a functional interface, merely the return type of the lambda
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
+        return formalType;
     }
-
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("", "<unevaluated lambda with " + numberOfParameters + " parameters>"));
+        return new OutputBuilder().add(new Text("", "<constructor call erasure, type " + formalType + ">"));
     }
 
     @Override
@@ -71,22 +63,22 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
 
     @Override
     public Precedence precedence() {
-        return Precedence.BOTTOM;
+        return Precedence.TOP;
     }
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -97,5 +89,10 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
     @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT;
+    }
+
+    @Override
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
+        return Set.of(formalType);
     }
 }

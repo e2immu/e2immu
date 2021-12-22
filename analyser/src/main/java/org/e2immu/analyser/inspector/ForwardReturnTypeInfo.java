@@ -18,29 +18,40 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.Primitives;
 
 /*
-Information about the return type of an expression, passed on in a forwarding way.
+Information about the return-type of an expression, passed on in a forwarding way.
  */
-public record ForwardReturnTypeInfo(ParameterizedType type, MethodTypeParameterMap sam) {
+public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
+
+    public ForwardReturnTypeInfo(ParameterizedType type) {
+        this(type, false);
+    }
 
     // we'd rather have java.lang.Boolean, because as soon as type parameters are involved, primitives
     // are boxed
     public static ForwardReturnTypeInfo expectBoolean(TypeContext typeContext) {
         return new ForwardReturnTypeInfo(typeContext.getPrimitives()
-                .boxedBooleanTypeInfo.asSimpleParameterizedType(), null);
+                .boxedBooleanTypeInfo.asSimpleParameterizedType(), false);
     }
 
-    public static final ForwardReturnTypeInfo NO_INFO = new ForwardReturnTypeInfo(null, null);
+    public static ForwardReturnTypeInfo expectString(TypeContext typeContext) {
+        return new ForwardReturnTypeInfo(typeContext.getPrimitives().stringParameterizedType, false);
+    }
 
-    public static ForwardReturnTypeInfo computeSAM(ParameterizedType type, TypeContext typeContext) {
-        if (type == null || Primitives.isVoid(type)) return NO_INFO;
+    public static final ForwardReturnTypeInfo NO_INFO = new ForwardReturnTypeInfo(null, false);
+
+    public MethodTypeParameterMap computeSAM(TypeContext typeContext) {
+        if (type == null || Primitives.isVoid(type)) return null;
         MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
         if (sam != null) {
-            sam = sam.expand(type.initialTypeParameterMap(typeContext));
+            return sam.expand(type.initialTypeParameterMap(typeContext));
         }
-        return new ForwardReturnTypeInfo(type, sam);
+        return null;
     }
 
-    public boolean isVoid() {
-        return type != null && Primitives.isVoid(type) || sam != null && Primitives.isVoid(sam.getConcreteReturnType());
+    public boolean isVoid(TypeContext typeContext) {
+        if (type == null) return false;
+        if (Primitives.isVoid(type)) return true;
+        MethodTypeParameterMap sam = computeSAM(typeContext);
+        return sam.methodInspection != null && Primitives.isVoid(sam.getConcreteReturnType());
     }
 }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Finalizer;
 
 import java.util.List;
@@ -103,5 +104,9 @@ public interface MethodInspection extends Inspection {
         assert isStatic();
         if (getParameters().isEmpty()) return false;
         return getReturnType().typeInfo != null && getReturnType().typeInfo == getMethodInfo().typeInfo;
+    }
+
+    default boolean isVoid() {
+        return Primitives.isVoid(getReturnType());
     }
 }

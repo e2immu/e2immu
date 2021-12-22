@@ -18,12 +18,22 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.UnevaluatedObjectCreation;
+import org.e2immu.analyser.model.expression.ConstructorCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 
 public class ParseObjectCreationExpr {
+
+    public static Expression erasure(ExpressionContext expressionContext,
+                                     ObjectCreationExpr objectCreationExpr) {
+        TypeContext typeContext = expressionContext.typeContext;
+        ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(expressionContext.typeContext);
+
+        return new ConstructorCallErasure(formalType);
+    }
+
     public static Expression parse(ExpressionContext expressionContext,
                                    ObjectCreationExpr objectCreationExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
@@ -38,22 +48,15 @@ public class ParseObjectCreationExpr {
         ParameterizedType impliedParameterizedType = forwardReturnTypeInfo.type();
         ParameterizedType parameterizedType;
         if (diamond == Diamond.YES) {
-            if (impliedParameterizedType != null) {
-                parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext, impliedParameterizedType);
-            } else {
-                // we cannot infer (this can happen, when we're choosing a method candidate among many candidates)
-                // e.g. map.put(key, new LinkedList<>()) -> we first need to know which "put" method to choose
-                // then there'll be a re-evaluation with an implied parameter of "V"
-                parameterizedType = null;
-            }
+            assert impliedParameterizedType != null : "Can only be null when computing erasure";
+            parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext,
+                    impliedParameterizedType);
         } else {
             parameterizedType = typeAsIs;
         }
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
-            if (parameterizedType == null) {
-                return new UnevaluatedObjectCreation(formalType);
-            }
+            assert parameterizedType != null;
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType,
                     expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
             typeContext.typeMapBuilder.add(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
@@ -77,12 +80,7 @@ public class ParseObjectCreationExpr {
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         singleAbstractMethod, errorInfo);
-        if (candidate == null) {
-            if (parameterizedType == null) {
-                return new UnevaluatedObjectCreation(formalType);
-            }
-            return new UnevaluatedObjectCreation(parameterizedType);
-        }
+        assert candidate != null;
         ParameterizedType finalParameterizedType;
         if (parameterizedType == null) {
             // there's only one method left, so we can derive the parameterized type from the parameters
@@ -90,7 +88,7 @@ public class ParseObjectCreationExpr {
             finalParameterizedType = tryToResolveTypeParameters(expressionContext.typeContext,
                     formalType, candidate.method(), typeParametersResolved, candidate.newParameterExpressions());
             if (finalParameterizedType == null) {
-                return new UnevaluatedObjectCreation(formalType);
+                return new ConstructorCallErasure(formalType);
             }
         } else {
             finalParameterizedType = parameterizedType;

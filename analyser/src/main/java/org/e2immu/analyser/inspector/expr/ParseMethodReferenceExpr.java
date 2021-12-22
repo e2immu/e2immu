@@ -20,9 +20,9 @@ import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
@@ -36,11 +36,9 @@ public class ParseMethodReferenceExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    MethodReferenceExpr methodReferenceExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
-        if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
-            log(METHOD_CALL, "Start parsing unevaluated method reference {}", methodReferenceExpr);
-            return unevaluated(expressionContext, methodReferenceExpr);
-        }
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(expressionContext.typeContext);
+        assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
+
         log(METHOD_CALL, "Start parsing method reference {}", methodReferenceExpr);
 
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
@@ -160,7 +158,7 @@ public class ParseMethodReferenceExpr {
                 haveInstance.contains(mc.method().methodInspection.getMethodInfo().typeInfo));
     }
 
-    private static Expression unevaluated(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {
+    public static Expression erasure(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         ParameterizedType parameterizedType = scope.returnType();
         String methodName = methodReferenceExpr.getIdentifier();
@@ -182,20 +180,22 @@ public class ParseMethodReferenceExpr {
                     Scope.ScopeNature.INSTANCE);
         }
         if (methodCandidates.isEmpty()) {
-            throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());
+            throw new UnsupportedOperationException("Cannot find a candidate for " +
+                    (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());
         }
-        Set<Integer> numberOfParameters = new HashSet<>();
+        Set<LambdaExpressionErasures.Count> erasures = new HashSet<>();
         for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
             log(METHOD_CALL, "Found method reference candidate, this can work: {}",
                     methodCandidate.method().methodInspection.getDistinguishingName());
             MethodInspection methodInspection = methodCandidate.method().methodInspection;
             boolean scopeIsType = scopeIsAType(scope);
-            boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic(); // && !methodInspection.returnType.isPrimitive();
+            boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic();
             int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
-            numberOfParameters.add(n);
+            boolean isVoid = methodInspection.isVoid();
+            erasures.add(new LambdaExpressionErasures.Count(n, isVoid));
         }
-        log(METHOD_CALL, "End parsing unevaluated method reference {}, found parameter set {}", methodReferenceExpr, numberOfParameters);
-        return new UnevaluatedLambdaExpression(numberOfParameters, null, expressionContext.getLocation());
+        log(METHOD_CALL, "End parsing unevaluated method reference {}, found counts {}", methodReferenceExpr, erasures);
+        return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 
     private static MethodReference arrayConstruction(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
@@ -210,4 +210,6 @@ public class ParseMethodReferenceExpr {
     public static boolean scopeIsAType(Expression scope) {
         return scope instanceof TypeExpression;
     }
+
+
 }

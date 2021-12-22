@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -24,12 +25,11 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Objects;
+import java.util.Set;
 
 @E2Immutable
-public record UnevaluatedMethodCall(String methodName, int numArgs) implements Expression {
+public record MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) implements ErasureExpression {
 
-    // this is NOT a functional interface, merely the return type of the lambda
     @Override
     @NotNull
     public ParameterizedType returnType() {
@@ -43,7 +43,7 @@ public record UnevaluatedMethodCall(String methodName, int numArgs) implements E
 
     @Override
     public String toString() {
-        return "<unevaluated method call to " + methodName + ", " + numArgs + " args>";
+        return "<method call erasure of " + methodName + ", returning " + returnTypes + ">";
     }
 
     @Override
@@ -74,5 +74,10 @@ public record UnevaluatedMethodCall(String methodName, int numArgs) implements E
     @Override
     public Identifier getIdentifier() {
         return Identifier.CONSTANT;
+    }
+
+    @Override
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
+        return returnTypes;
     }
 }

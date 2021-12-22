@@ -18,6 +18,7 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -38,9 +39,9 @@ import static org.e2immu.analyser.util.Logger.log;
  * @param typeMap    The generic-to-concrete type map for the scope expression, if present
  */
 public record Scope(Expression expression,
-             ParameterizedType type,
-             ScopeNature nature,
-             Map<NamedType, ParameterizedType> typeMap) {
+                    ParameterizedType type,
+                    ScopeNature nature,
+                    Map<NamedType, ParameterizedType> typeMap) {
 
     public enum ScopeNature {
         ABSENT,
@@ -67,14 +68,17 @@ public record Scope(Expression expression,
         return expression;
     }
 
-    public MethodTypeParameterMap sam(ForwardReturnTypeInfo forwardReturnTypeInfo) {
+    public MethodTypeParameterMap sam(ForwardReturnTypeInfo forwardReturnTypeInfo, TypeContext typeContext) {
         // the return type of the method is not used to make a selection
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext);
         return singleAbstractMethod == null ? new MethodTypeParameterMap(null, typeMap) :
                 singleAbstractMethod.expand(typeMap);
     }
 
-    static Scope computeScope(ExpressionContext expressionContext, InspectionProvider inspectionProvider, MethodCallExpr methodCallExpr) {
+    static Scope computeScope(ExpressionContext expressionContext,
+                              ForwardReturnTypeInfo forwardReturnTypeInfo,
+                              InspectionProvider inspectionProvider,
+                              MethodCallExpr methodCallExpr) {
         Expression scope = methodCallExpr.getScope().map(expressionContext::parseExpression).orElse(null);
         // depending on the object, we'll need to find the method somewhere
         ParameterizedType scopeType;

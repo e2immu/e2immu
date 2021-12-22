@@ -20,8 +20,8 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
-import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
-import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
+import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
+import org.e2immu.analyser.model.expression.MethodCallErasure;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -39,13 +39,24 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseLambdaExpr {
 
+    public static Expression erasure(ExpressionContext expressionContext,
+                                     LambdaExpr asLambdaExpr) {
+        // we need to find the generic functional interface which fits
+        int parameters = asLambdaExpr.getParameters().size();
+        // it is pretty hard to find out if there is a return statement, but simply computationally heavy.
+        // we're not doing this at the moment, and decide to issue a serious inspection warning instead, if we cannot
+        // determine a method overload because of the void/non-void difference!
+        Set<LambdaExpressionErasures.Count> erasures = Set.of(new LambdaExpressionErasures.Count(parameters, true),
+                new LambdaExpressionErasures.Count(parameters, false));
+        return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
+    }
+
     public static Expression parse(ExpressionContext expressionContext,
                                    LambdaExpr lambdaExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
-        if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
-            return partiallyParse(lambdaExpr, expressionContext.getLocation());
-        }
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(expressionContext.typeContext);
+        assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
+
         log(LAMBDA, "Start parsing lambda {}, single abstract method context {}", lambdaExpr, singleAbstractMethod);
 
         VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
@@ -106,12 +117,10 @@ public class ParseLambdaExpr {
                 newVariableContext);
 
         ParameterizedType returnTypeOfLambda = singleAbstractMethod.getConcreteReturnType();
-        ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(returnTypeOfLambda, null);
+        ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(returnTypeOfLambda);
 
         Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, newForward, inspectionProvider);
-        if (evaluation == null) {
-            return partiallyParse(lambdaExpr, expressionContext.getLocation());
-        }
+        assert evaluation != null;
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
@@ -138,13 +147,13 @@ public class ParseLambdaExpr {
             Expression expr = lambdaExpr.getExpressionBody()
                     .map(e -> newExpressionContext.parseExpression(e, forwardReturnTypeInfo))
                     .orElse(EmptyExpression.EMPTY_EXPRESSION);
-            if (expr instanceof UnevaluatedMethodCall) {
+            if (expr instanceof MethodCallErasure) {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return null;
             }
             Identifier identifier = Identifier.from(lambdaExpr);
             ParameterizedType inferredReturnType = expr.returnType();
-            if (forwardReturnTypeInfo.isVoid()) {
+            if (forwardReturnTypeInfo.isVoid(newExpressionContext.typeContext)) {
                 // we don't expect/want a value, even if the inferredReturnType provides one
                 return new Evaluation(new Block.BlockBuilder(identifier)
                         .addStatement(new ExpressionAsStatement(identifier, expr)).build(),
@@ -162,12 +171,6 @@ public class ParseLambdaExpr {
         return new Evaluation(block, block.mostSpecificReturnType(inspectionProvider));
     }
 
-    // experimental: we look at the parameters, and return an expression which is superficial, with only
-    // the return type as functional type of importance
-    private static Expression partiallyParse(LambdaExpr lambdaExpr, Location location) {
-        return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()),
-                lambdaExpr.getExpressionBody().isPresent() ? true : null, location);
-    }
 
     private static MethodInspectionImpl.Builder createAnonymousTypeAndApplyMethod(String name,
                                                                                   TypeInfo enclosingType, int nextId) {

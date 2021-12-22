@@ -52,6 +52,6 @@ public class AnnotationInspector {
         MethodInfo methodInfo = typeInspection.methods().stream()
                 .filter(m -> m.name.equals(methodName)).findFirst().orElseThrow();
         MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
-        return ForwardReturnTypeInfo.computeSAM(methodInspection.getReturnType(), expressionContext.typeContext);
+        return new ForwardReturnTypeInfo(methodInspection.getReturnType());
     }
 }

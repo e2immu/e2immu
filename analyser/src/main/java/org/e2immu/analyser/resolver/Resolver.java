@@ -315,7 +315,7 @@ public class Resolver {
         if (expression != FieldInspectionImpl.EMPTY) {
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-            ForwardReturnTypeInfo forwardReturnTypeInfo = ForwardReturnTypeInfo.computeSAM(fieldInfo.type, expressionContext.typeContext);
+            ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(fieldInfo.type);
             ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo, forwardReturnTypeInfo);
 
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression);
@@ -525,8 +525,7 @@ public class Resolver {
                          BlockStmt block,
                          Block.BlockBuilder blockBuilder) {
         try {
-            ForwardReturnTypeInfo forwardReturnTypeInfo = ForwardReturnTypeInfo.computeSAM(methodInspection.getReturnType(),
-                    expressionContext.typeContext);
+            ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(methodInspection.getReturnType());
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, forwardReturnTypeInfo);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
