@@ -203,42 +203,29 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
     private int differentNonNullTypeInfo(Mode mode, Set<TypeParameter> reverseParameters) {
         return switch (mode) {
-            case COVARIANT -> {
-                TypeInspection otherTypeInspection = inspectionProvider.getTypeInspection(from.typeInfo);
-                for (ParameterizedType interfaceImplemented : otherTypeInspection.interfacesImplemented()) {
-                    ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, interfaceImplemented);
-                    int scoreInterface = new IsAssignableFrom(inspectionProvider, target, concreteType)
-                            .execute(true, mode, reverseParameters);
-                    if (scoreInterface != NOT_ASSIGNABLE) yield IN_HIERARCHY + scoreInterface;
-                }
-                ParameterizedType parentClass = otherTypeInspection.parentClass();
-                if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
-                    ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, parentClass);
-                    int scoreParent = new IsAssignableFrom(inspectionProvider, target, concreteType)
-                            .execute(true, mode, reverseParameters);
-                    if (scoreParent != NOT_ASSIGNABLE) yield IN_HIERARCHY + scoreParent;
-                }
-                yield NOT_ASSIGNABLE;
-            }
-            case CONTRAVARIANT -> {
-                TypeInspection typeInspection = inspectionProvider.getTypeInspection(target.typeInfo);
-                for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
-                    int scoreInterface = new IsAssignableFrom(inspectionProvider, interfaceImplemented, from)
-                            .execute(true, mode, reverseParameters);
-                    if (scoreInterface != NOT_ASSIGNABLE) yield IN_HIERARCHY + scoreInterface;
-                }
-                ParameterizedType parentClass = typeInspection.parentClass();
-                if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
-                    int scoreParent = new IsAssignableFrom(inspectionProvider, parentClass, from)
-                            .execute(true, mode, reverseParameters);
-                    if (scoreParent != NOT_ASSIGNABLE) yield IN_HIERARCHY + scoreParent;
-                }
-                yield NOT_ASSIGNABLE;
-            }
+            case COVARIANT -> hierarchy(target, from, mode, reverseParameters);
+            case CONTRAVARIANT -> hierarchy(from, target, mode, reverseParameters);
             case INVARIANT -> NOT_ASSIGNABLE;
-
             case ANY -> throw new UnsupportedOperationException("?");
         };
+    }
+
+    private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode, Set<TypeParameter> reverseParameters) {
+        TypeInspection otherTypeInspection = inspectionProvider.getTypeInspection(from.typeInfo);
+        for (ParameterizedType interfaceImplemented : otherTypeInspection.interfacesImplemented()) {
+            ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, interfaceImplemented);
+            int scoreInterface = new IsAssignableFrom(inspectionProvider, target, concreteType)
+                    .execute(true, mode, reverseParameters);
+            if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
+        }
+        ParameterizedType parentClass = otherTypeInspection.parentClass();
+        if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
+            ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, parentClass);
+            int scoreParent = new IsAssignableFrom(inspectionProvider, target, concreteType)
+                    .execute(true, mode, reverseParameters);
+            if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
+        }
+        return NOT_ASSIGNABLE;
     }
 
     private boolean compatibleWildcards(Mode mode, ParameterizedType.WildCard w1, ParameterizedType.WildCard w2) {
