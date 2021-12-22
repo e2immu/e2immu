@@ -21,10 +21,10 @@ public class MethodCall_6 {
     interface  A {}
     interface  B extends A {}
 
-    public A accept(Function<B, A> f, B b) {
+    public A method(Function<B, A> f, B b) {
         return f.apply(b);
     }
-    public B accept(Function<A, B> f, A a) {
+    public B method(Function<A, B> f, A a) {
         return f.apply(a);
     }
 
@@ -34,7 +34,7 @@ public class MethodCall_6 {
         B b = new B() {
         };
         // CAUSES "Ambiguous method call": accept(bb -> bb, b);
-        accept((B bb) -> bb, b);
-        accept(aa -> (B)aa, a);
+        method((B bb) -> bb, b);
+        method(aa -> (B)aa, a);
     }
 }

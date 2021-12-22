@@ -440,10 +440,6 @@ public class ParameterizedType {
                 && !new IsAssignableFrom(inspectionProvider, type, this).execute();
     }
 
-    public int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
-        return new IsAssignableFrom(inspectionProvider, this, type).execute(false, IsAssignableFrom.Mode.COVARIANT, null);
-    }
-
     public boolean isAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
         return new IsAssignableFrom(inspectionProvider, this, type).execute();
     }

@@ -36,6 +36,10 @@ public class MethodCall_9 {
         set.forEach(get -> System.out.println(get.get()));
     }
 
+    public void accept(Set<Get> set) {
+        set.forEach(get -> System.out.println(get.get()));
+    }
+
     public void test() {
         // here, List.of(...) becomes a List<Get> because of the context of 'accept(...)'; then, it is compatible
         // with Collection<Get>

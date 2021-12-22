@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class MethodCall_7<A, B, AA extends A, BB extends B> {
+public class MethodCall_7<A, B, BB extends B> {
 
     public void method(List<B> list, Consumer<B> b) {
         b.accept(list.get(0));
@@ -28,7 +28,8 @@ public class MethodCall_7<A, B, AA extends A, BB extends B> {
         a.accept(list.get(0), null);
     }
 
-    public void test(A a, B b, BB bb) {
+    public void test(A a, BB bb) {
         method(List.of(bb), System.out::println);
+        method(List.of(a), (x, y) -> System.out.println(x + " " + y));
     }
 }

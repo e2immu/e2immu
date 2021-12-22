@@ -20,7 +20,6 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.IntBinaryOperator;
 
 /**
@@ -44,7 +43,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     public static final int NOT_ASSIGNABLE = -1;
 
     public boolean execute() {
-        return execute(false, Mode.COVARIANT, null) != NOT_ASSIGNABLE;
+        return execute(false, Mode.COVARIANT) != NOT_ASSIGNABLE;
     }
 
     private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
@@ -62,16 +61,16 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         COVARIANT, // allow assignment of sub-types: Number <-- Integer; List<Integer> <-- IntegerList
         CONTRAVARIANT, // allow for super-types:  Integer <-- Number; IntegerList <-- List<Integer>
         ANY, // accept everything
+        COVARIANT_ERASURE, // covariant, but ignore all type parameters
     }
 
     /**
-     * @param ignoreArrays      do the comparison, ignoring array information
-     * @param mode              the comparison mode
-     * @param reverseParameters FIXME explain; ignored when null
+     * @param ignoreArrays do the comparison, ignoring array information
+     * @param mode         the comparison mode
      * @return a numeric "nearness", the lower, the better and the more specific
      */
 
-    public int execute(boolean ignoreArrays, Mode mode, Set<TypeParameter> reverseParameters) {
+    public int execute(boolean ignoreArrays, Mode mode) {
         if (target == from || target.equals(from) || ignoreArrays && target.equalsIgnoreArrays(from)) return EQUALS;
 
         // NULL
@@ -94,7 +93,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 }
                 if (target.arrays > 0) {
                     // recurse without the arrays; target and from remain the same
-                    return execute(true, Mode.COVARIANT, reverseParameters);
+                    return execute(true, Mode.COVARIANT);
                 }
             }
 
@@ -114,17 +113,11 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
             // two different types, so they must be in a hierarchy
             if (target.typeInfo != from.typeInfo) {
-                return differentNonNullTypeInfo(mode, reverseParameters);
+                return differentNonNullTypeInfo(mode);
             }
             // identical base type, so look at type parameters
-            return sameNoNullTypeInfo(mode, reverseParameters);
+            return sameNoNullTypeInfo(mode);
 
-        }
-
-        // target is a concrete type, the from is a type parameter
-        // Number vs [T extends Number]
-        if (reverseParameters != null && from.typeParameter != null && reverseParameters.contains(from.typeParameter)) {
-            return new IsAssignableFrom(inspectionProvider, from, target).execute(true, mode, reverseParameters);
         }
 
         if (target.typeInfo != null && from.typeParameter != null) {
@@ -133,19 +126,19 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 return Primitives.isJavaLangObject(target.typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)
-                            .execute(true, mode, reverseParameters))
+                            .execute(true, mode))
                     .min().orElseThrow();
         }
 
         // I am a type parameter
         if (target.typeParameter != null) {
-            return targetIsATypeParameter(mode, reverseParameters);
+            return targetIsATypeParameter(mode);
         }
         // if wildcard is unbound, I am <?>; anything goes
         return target.wildCard == ParameterizedType.WildCard.UNBOUND ? UNBOUND_WILDCARD : NOT_ASSIGNABLE;
     }
 
-    private int targetIsATypeParameter(Mode mode, Set<TypeParameter> reverseParameters) {
+    private int targetIsATypeParameter(Mode mode) {
         assert target.typeParameter != null;
 
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();
@@ -155,7 +148,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         // other is a type
         if (from.typeInfo != null) {
             return targetTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, bound, target)
-                            .execute(true, mode, reverseParameters))
+                            .execute(true, mode))
                     .min().orElseThrow();
         }
         if (from.typeParameter != null) {
@@ -168,7 +161,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             for (ParameterizedType myBound : targetTypeBounds) {
                 for (ParameterizedType otherBound : fromTypeBounds) {
                     int value = new IsAssignableFrom(inspectionProvider, myBound, otherBound)
-                            .execute(true, mode, reverseParameters);
+                            .execute(true, mode);
                     if (value < min) min = value;
                 }
             }
@@ -178,7 +171,9 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         return NOT_ASSIGNABLE;
     }
 
-    private int sameNoNullTypeInfo(Mode mode, Set<TypeParameter> reverseParameters) {
+    private int sameNoNullTypeInfo(Mode mode) {
+        if(mode == Mode.COVARIANT_ERASURE) return SAME_UNDERLYING_TYPE;
+
         // List<E> <-- List<String>
         if (target.parameters.isEmpty()) {
             // ? extends Type <-- Type ; Type <- ? super Type; ...
@@ -196,33 +191,32 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                                 case NONE -> Mode.INVARIANT;
                                 case UNBOUND -> Mode.ANY;
                             };
-                    return new IsAssignableFrom(inspectionProvider, p.k, p.v).execute(true, newMode,
-                            reverseParameters);
+                    return new IsAssignableFrom(inspectionProvider, p.k, p.v).execute(true, newMode);
                 }).reduce(0, REDUCER);
     }
 
-    private int differentNonNullTypeInfo(Mode mode, Set<TypeParameter> reverseParameters) {
+    private int differentNonNullTypeInfo(Mode mode) {
         return switch (mode) {
-            case COVARIANT -> hierarchy(target, from, mode, reverseParameters);
-            case CONTRAVARIANT -> hierarchy(from, target, mode, reverseParameters);
+            case COVARIANT, COVARIANT_ERASURE -> hierarchy(target, from, mode);
+            case CONTRAVARIANT -> hierarchy(from, target, mode);
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
     }
 
-    private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode, Set<TypeParameter> reverseParameters) {
+    private int hierarchy(ParameterizedType target, ParameterizedType from, Mode mode) {
         TypeInspection otherTypeInspection = inspectionProvider.getTypeInspection(from.typeInfo);
         for (ParameterizedType interfaceImplemented : otherTypeInspection.interfacesImplemented()) {
             ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, interfaceImplemented);
             int scoreInterface = new IsAssignableFrom(inspectionProvider, target, concreteType)
-                    .execute(true, mode, reverseParameters);
+                    .execute(true, mode);
             if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
         }
         ParameterizedType parentClass = otherTypeInspection.parentClass();
         if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
             ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, parentClass);
             int scoreParent = new IsAssignableFrom(inspectionProvider, target, concreteType)
-                    .execute(true, mode, reverseParameters);
+                    .execute(true, mode);
             if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
         }
         return NOT_ASSIGNABLE;

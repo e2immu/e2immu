@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.IsAssignableFrom.Mode.COVARIANT;
+import static org.e2immu.analyser.model.IsAssignableFrom.Mode.COVARIANT_ERASURE;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
@@ -348,6 +349,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType(inspectionProvider);
             // we should expect type parameters of the return type to be present in the SAM; the ones of the formal type are in the AIM
             Map<NamedType, ParameterizedType> newMap = new HashMap<>();
+            assert abstractInterfaceMethod.sam() != null;
             for (Map.Entry<NamedType, ParameterizedType> entry : abstractInterfaceMethod.sam().concreteTypes.entrySet()) {
                 ParameterizedType typeParameter = entry.getValue();
                 ParameterizedType best = null;
@@ -604,7 +606,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
         return new IsAssignableFrom(inspectionProvider, typeOfParameter, returnType)
-                .execute(false, COVARIANT, reverseParameters);
+                .execute(false, COVARIANT_ERASURE);
     }
 
     /*

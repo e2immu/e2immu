@@ -140,16 +140,4 @@ public class TestIsAssignableFrom {
         TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMapBuilder.get(name), "Cannot find " + name);
         return Objects.requireNonNull(typeInfo.asParameterizedType(typeContext));
     }
-
-    @Test
-    public void testReverse() {
-        ParameterizedType stringPt = type(JAVA_LANG_STRING);
-        ParameterizedType listPt = type(JAVA_UTIL_LIST);
-        ParameterizedType typeParam = listPt.parameters.get(0);
-
-        assertFalse(stringPt.isAssignableFrom(typeContext, typeParam));
-        assert typeParam.typeParameter != null;
-        assertEquals(100, new IsAssignableFrom(typeContext, stringPt, typeParam)
-                .execute(false, IsAssignableFrom.Mode.COVARIANT, Set.of(typeParam.typeParameter)));
-    }
 }
