@@ -66,7 +66,6 @@ public record Scope(Expression expression,
     }
 
     static Scope computeScope(ExpressionContext expressionContext,
-                              ForwardReturnTypeInfo forwardReturnTypeInfo,
                               InspectionProvider inspectionProvider,
                               MethodCallExpr methodCallExpr) {
         Expression scope = methodCallExpr.getScope().map(expressionContext::parseExpression).orElse(null);
@@ -82,7 +81,6 @@ public record Scope(Expression expression,
             scopeNature = scope instanceof TypeExpression ? Scope.ScopeNature.STATIC : Scope.ScopeNature.INSTANCE;
         }
         Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap(inspectionProvider);
-        log(METHOD_CALL, "Type map of method call {} is {}", methodCallExpr.getNameAsString(), scopeTypeMap);
         return new Scope(scope, scopeType, scopeNature, scopeTypeMap);
     }
 

@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Constructor_0;
 import org.e2immu.analyser.resolver.testexample.Constructor_1;
 import org.e2immu.analyser.resolver.testexample.Constructor_2;
+import org.e2immu.analyser.resolver.testexample.Constructor_3;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -62,6 +63,13 @@ public class TestConstructor extends CommonTest {
     public void test_2() throws IOException {
         TypeMap typeMap = inspectAndResolve(Constructor_2.class);
         TypeInfo typeInfo = typeMap.get(Constructor_2.class);
+        assertNotNull(typeInfo);
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_3.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_3.class);
         assertNotNull(typeInfo);
     }
 }

@@ -72,9 +72,6 @@ public class ParseObjectCreationExpr {
         List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(formalType, parameterizedType,
                 objectCreationExpr.getArguments().size(), parameterizedType == null ? Map.of() : typeMap);
 
-        MethodTypeParameterMap singleAbstractMethod = impliedParameterizedType == null ? null :
-                impliedParameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo("constructor",
                 parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
 

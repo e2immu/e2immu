@@ -46,8 +46,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Start computing erasure of method call {}, method name {}, {} args", methodCallExpr,
                 methodName, numArguments);
 
-        Scope scope = Scope.computeScope(expressionContext, new ForwardReturnTypeInfo(null, true),
-                typeContext, methodCallExpr);
+        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr);
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         FilterResult filterResult = filterMethodCandidatesInErasureMode(expressionContext, methodCandidates,
@@ -75,7 +74,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args", methodCallExpr,
                 methodName, numArguments);
 
-        Scope scope = Scope.computeScope(expressionContext, forwardReturnTypeInfo, typeContext, methodCallExpr);
+        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr);
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         ErrorInfo errorInfo = new ErrorInfo("method " + methodName, scope.type(),
@@ -237,8 +236,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
             if (e instanceof ErasureExpression) {
-                log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}, outside context {}, scope {}",
-                        errorInfo.methodName, i, outsideContext, scopeContext);
+                log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}", errorInfo.methodName, i);
                 ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
@@ -360,15 +358,17 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 }
                 pos++;
             }
-            int steps = stepsInHierarchy(methodCandidate.method().methodInspection, scopeContext);
-            sumScore += IsAssignableFrom.IN_HIERARCHY * steps;
             if (!foundCombination) {
                 sumScore = -1; // to be removed immediately
-            } else if (acceptedErasedTypesCombination == null) {
-                acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
-            } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
-                log(METHOD_CALL, "Looks like multiple, different, combinations? {} to {}", acceptedErasedTypesCombination,
-                        thisAcceptedErasedTypesCombination);
+            } else {
+                int steps = stepsInHierarchy(methodCandidate.method().methodInspection, scopeContext);
+                sumScore += IsAssignableFrom.IN_HIERARCHY * steps;
+                if (acceptedErasedTypesCombination == null) {
+                    acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
+                } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
+                    log(METHOD_CALL, "Looks like multiple, different, combinations? {} to {}", acceptedErasedTypesCombination,
+                            thisAcceptedErasedTypesCombination);
+                }
             }
             compatibilityScore.put(methodCandidate.method().methodInspection.getMethodInfo(), sumScore);
         }
@@ -383,7 +383,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     private int stepsInHierarchy(MethodInspection methodInspection, ParameterizedType scopeContext) {
-        if (scopeContext != null && scopeContext.typeInfo != null && !Primitives.isVoid(scopeContext)) {
+        if (!methodInspection.isStatic() &&
+                scopeContext != null && scopeContext.typeInfo != null && !Primitives.isVoid(scopeContext)) {
             int steps = scopeContext.typeInfo.stepsInHierarchy(methodInspection.getMethodInfo().typeInfo, typeContext);
             assert steps != Integer.MAX_VALUE :
                     "Could not find " + methodInspection.getMethodInfo().typeInfo + " in hierarchy of " + scopeContext.typeInfo;
@@ -530,13 +531,13 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Objects.requireNonNull(method);
         ParameterizedType parameterType = method.getConcreteTypeOfParameter(p);
         if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
-            log(METHOD_CALL, "Cannot do better than {}, have no outside context", parameterType);
+            // Cannot do better than parameter type, have no outside context;
             return new ForwardReturnTypeInfo(parameterType, false);
         }
         Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
         Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
         if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
-            log(METHOD_CALL, "No type parameters to fill in {} or to extract {}", parameterType, outsideContext);
+            // No type parameters to fill in or to extract
             return new ForwardReturnTypeInfo(parameterType, false);
         }
         Map<NamedType, ParameterizedType> translate = new HashMap<>();
@@ -560,11 +561,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             }
         }
         if (translate.isEmpty()) {
-            log(METHOD_CALL, "Nothing to translate for {}", parameterType);
+            // Nothing to translate
             return new ForwardReturnTypeInfo(parameterType, false);
         }
         ParameterizedType translated = parameterType.applyTranslation(translate);
-        log(METHOD_CALL, "Translated context {} and parameter {} to {}", outsideContext, parameterType, translated);
+        // Translated context and parameter
         return new ForwardReturnTypeInfo(translated, false);
     }
 

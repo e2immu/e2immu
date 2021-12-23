@@ -57,7 +57,7 @@ public class ParseLambdaExpr {
         MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(expressionContext.typeContext);
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
 
-        log(LAMBDA, "Start parsing lambda {}, single abstract method context {}", lambdaExpr, singleAbstractMethod);
+        log(LAMBDA, "Start parsing lambda at {}", lambdaExpr.getBegin());
 
         VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
         int cnt = 0;
