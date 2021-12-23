@@ -143,7 +143,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                              ErrorInfo errorInfo) {
 
 
-        FilterResult filterResult = filterCandidatesByParameters(expressionContext, methodCandidates, expressions);
+        FilterResult filterResult = filterCandidatesByParameters(expressionContext, methodCandidates, expressions,
+                scopeContext);
 
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
@@ -266,7 +267,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private FilterResult filterCandidatesByParameters(ExpressionContext expressionContext,
                                                       List<TypeContext.MethodCandidate> methodCandidates,
-                                                      List<com.github.javaparser.ast.expr.Expression> expressions) {
+                                                      List<com.github.javaparser.ast.expr.Expression> expressions,
+                                                      ParameterizedType scopeContext) {
         Map<Integer, Expression> evaluatedExpressions = new TreeMap<>();
         int i = 0;
         ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
@@ -345,6 +347,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 }
                 pos++;
             }
+            int steps = stepsInHierarchy(methodCandidate.method().methodInspection, scopeContext);
+            sumScore += IsAssignableFrom.IN_HIERARCHY * steps;
             if (!foundCombination) {
                 sumScore = -1; // to be removed immediately
             } else if (acceptedErasedTypesCombination == null) {
@@ -363,6 +367,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         });
 
         return new FilterResult(evaluatedExpressions, compatibilityScore);
+    }
+
+    private int stepsInHierarchy(MethodInspection methodInspection, ParameterizedType scopeContext) {
+        if (scopeContext != null && scopeContext.typeInfo != null && !Primitives.isVoid(scopeContext)) {
+            int steps = scopeContext.typeInfo.stepsInHierarchy(methodInspection.getMethodInfo().typeInfo, typeContext);
+            assert steps != Integer.MAX_VALUE :
+                    "Could not find " + methodInspection.getMethodInfo().typeInfo + " in hierarchy of " + scopeContext.typeInfo;
+            return steps;
+        }
+        return 0;
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,

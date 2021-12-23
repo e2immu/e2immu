@@ -53,8 +53,8 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     private static final int SAME_UNDERLYING_TYPE = 1;
     private static final int BOXING_TO_PRIMITIVE = 1;
     private static final int BOXING_FROM_PRIMITIVE = 1;
-    private static final int IN_HIERARCHY = 100;
-    private static final int UNBOUND_WILDCARD = 1000;
+    public static final int IN_HIERARCHY = 10;
+    private static final int UNBOUND_WILDCARD = 100;
 
     public enum Mode {
         INVARIANT, // everything has to be identical, there is no leeway with respect to hierarchy

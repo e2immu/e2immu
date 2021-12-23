@@ -616,4 +616,24 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public int compareTo(TypeInfo o) {
         return fullyQualifiedName.compareTo(o.fullyQualifiedName);
     }
+
+    public int stepsInHierarchy(TypeInfo target, InspectionProvider inspectionProvider) {
+        if (equals(target)) return 0;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        ParameterizedType parent = inspection.parentClass();
+        int bestSteps = Integer.MAX_VALUE;
+        if (parent != null && !Primitives.isJavaLangObject(parent)) {
+            int steps = parent.typeInfo.stepsInHierarchy(target, inspectionProvider);
+            if (steps != Integer.MAX_VALUE) {
+                bestSteps = steps + 1;
+            }
+        }
+        for (ParameterizedType implemented : inspection.interfacesImplemented()) {
+            int steps = implemented.typeInfo.stepsInHierarchy(target, inspectionProvider);
+            if (steps != Integer.MAX_VALUE) {
+                bestSteps = Math.min(bestSteps, steps + 1);
+            }
+        }
+        return bestSteps;
+    }
 }
