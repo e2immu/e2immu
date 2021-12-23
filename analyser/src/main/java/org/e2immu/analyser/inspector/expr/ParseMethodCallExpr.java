@@ -288,19 +288,42 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             int pos = 0;
             Map<Integer, ParameterizedType> thisAcceptedErasedTypesCombination = new TreeMap<>();
             for (ParameterInfo parameterInfo : parameters) {
-                ParameterizedType formalType = parameterInfo.parameterizedType;
+
                 Set<ParameterizedType> acceptedErased = acceptedErasedTypes.get(pos);
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
 
-                if(parameterInfo.parameterInspection.get().isVarArgs()) {
-                    if(acceptedErased == null) {
+                ParameterizedType formalType;
+                if (parameterInfo.parameterInspection.get().isVarArgs()) {
+                    if (acceptedErased == null) {
                         // the parameter is a varargs, and we have the empty array
                         assert parameters.size() == expressions.size() + 1;
                         break;
                     }
+                    if (pos == parameters.size() - 1) {
+                        // this one can be either the array matching the type, an element of the array
+                        ParameterizedType arrayType = parameterInfo.parameterizedType;
+
+                        // here comes a bit of code duplication...
+                        for (ParameterizedType actualType : acceptedErased) {
+                            int compatible = callIsAssignableFrom(actualType, arrayType);
+                            if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
+                                bestCompatible = compatible;
+                                bestAcceptedType = actualType;
+                            }
+                        }
+
+                        // and break off the code duplication, because we cannot set foundCombination to false
+                        if (bestCompatible >= 0) {
+                            sumScore += bestCompatible;
+                            thisAcceptedErasedTypesCombination.put(pos, bestAcceptedType);
+                            break;
+                        } // else: we have another one to try!
+                    }
+                    formalType = parameterInfo.parameterizedType.copyWithOneFewerArrays();
                 } else {
                     assert acceptedErased != null;
+                    formalType = parameterInfo.parameterizedType;
                 }
 
 
@@ -465,8 +488,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
      */
 
     /**
-     *
-     * @param method the map linked to chosen method; currently without/with concrete type mapping FIXME
+     * @param method               the map linked to chosen method; currently without/with concrete type mapping FIXME
      * @param p
      * @param singleAbstractMethod the functional interface context
      * @return
