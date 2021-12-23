@@ -17,16 +17,13 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Objects;
-
-/*
-Information about the return-type of an expression, passed on in a forwarding way.
+/**
+ * Information about the return-type of an expression, passed on in a forwarding way.
+ *
+ * @param type    can be null for a constructor, or when erasure is true
+ * @param erasure true when method or constructor argument parser is in erasure mode
  */
 public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
-
-    public ForwardReturnTypeInfo {
-        assert erasure || type != null;
-    }
 
     public ForwardReturnTypeInfo(ParameterizedType type) {
         this(type, false);

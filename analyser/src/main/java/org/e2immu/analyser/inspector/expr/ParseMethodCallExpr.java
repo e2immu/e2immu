@@ -163,7 +163,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
 
 
-        List<Expression> newParameterExpressions = retryUnevaluatedExpressions(
+        List<Expression> newParameterExpressions = reEvaluateErasedExpression(
                 expressionContext, expressions, singleAbstractMethod, errorInfo,
                 filterResult.evaluatedExpressions, method);
         Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions);
@@ -222,12 +222,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return mapExpansion;
     }
 
-    private List<Expression> retryUnevaluatedExpressions(ExpressionContext expressionContext,
-                                                         List<com.github.javaparser.ast.expr.Expression> expressions,
-                                                         MethodTypeParameterMap singleAbstractMethod,
-                                                         ErrorInfo errorInfo,
-                                                         Map<Integer, Expression> evaluatedExpressions,
-                                                         MethodTypeParameterMap method) {
+    private List<Expression> reEvaluateErasedExpression(ExpressionContext expressionContext,
+                                                        List<com.github.javaparser.ast.expr.Expression> expressions,
+                                                        MethodTypeParameterMap singleAbstractMethod,
+                                                        ErrorInfo errorInfo,
+                                                        Map<Integer, Expression> evaluatedExpressions,
+                                                        MethodTypeParameterMap method) {
         List<Expression> newParameterExpressions = new ArrayList<>();
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
@@ -292,6 +292,18 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 Set<ParameterizedType> acceptedErased = acceptedErasedTypes.get(pos);
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
+
+                if(parameterInfo.parameterInspection.get().isVarArgs()) {
+                    if(acceptedErased == null) {
+                        // the parameter is a varargs, and we have the empty array
+                        assert parameters.size() == expressions.size() + 1;
+                        break;
+                    }
+                } else {
+                    assert acceptedErased != null;
+                }
+
+
                 for (ParameterizedType actualType : acceptedErased) {
                     int compatible = callIsAssignableFrom(actualType, formalType);
                     if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
@@ -398,9 +410,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                                  int i,
                                                                  MethodTypeParameterMap singleAbstractMethod) {
         ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
+        return abstractInterfaceMethod;
+        /*
         ParameterizedType abstractType = method.methodInspection.formalParameterType(i);
         return new ForwardReturnTypeInfo(abstractType, false);
-        /*
+
         if (abstractInterfaceMethod != null) {
             assert singleAbstractMethod != null;
             ParameterizedType returnTypeOfMethod = method.methodInspection.getReturnType();
