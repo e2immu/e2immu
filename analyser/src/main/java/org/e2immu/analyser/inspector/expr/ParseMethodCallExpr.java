@@ -16,10 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.ErasureExpression;
@@ -80,11 +77,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         ErrorInfo errorInfo = new ErrorInfo("method " + methodName, scope.type(),
                 methodCallExpr.getBegin().orElseThrow());
 
+        TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
+
         Candidate candidate = chooseCandidateAndEvaluateCall(expressionContext,
                 methodCandidates,
                 methodCallExpr.getArguments(),
                 forwardReturnTypeInfo.type(),
                 scope.type(),
+                extra,
                 errorInfo);
 
         assert candidate != null : "Should have found a unique candidate for " + errorInfo;
@@ -104,7 +104,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                                       String methodName) {
         List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();
         typeContext.recursivelyResolveOverloadedMethods(scope.type(), methodName,
-                numArguments, false, scope.typeMap(), methodCandidates,
+                numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
         assert !methodCandidates.isEmpty() : "Compilation error!";
         return methodCandidates;
@@ -137,13 +137,13 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     Candidate chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,
                                              List<TypeContext.MethodCandidate> methodCandidates,
                                              List<com.github.javaparser.ast.expr.Expression> expressions,
-                                             ParameterizedType outsideContext,
+                                             ParameterizedType returnType,
                                              ParameterizedType scopeContext,
+                                             TypeParameterMap extra,
                                              ErrorInfo errorInfo) {
 
-
         FilterResult filterResult = filterCandidatesByParameters(expressionContext, methodCandidates, expressions,
-                scopeContext);
+                extra, scopeContext);
 
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
@@ -166,7 +166,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
 
         List<Expression> newParameterExpressions = reEvaluateErasedExpression(
-                expressionContext, expressions, outsideContext, scopeContext, errorInfo,
+                expressionContext, expressions, returnType, scopeContext, extra, errorInfo,
                 filterResult.evaluatedExpressions, method);
         Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions);
         return new Candidate(newParameterExpressions, mapExpansion, method);
@@ -228,6 +228,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                         List<com.github.javaparser.ast.expr.Expression> expressions,
                                                         ParameterizedType outsideContext,
                                                         ParameterizedType scopeContext,
+                                                        TypeParameterMap extra,
                                                         ErrorInfo errorInfo,
                                                         Map<Integer, Expression> evaluatedExpressions,
                                                         MethodTypeParameterMap method) {
@@ -237,7 +238,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             assert e != null;
             if (e instanceof ErasureExpression) {
                 log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}", errorInfo.methodName, i);
-                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext);
+                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext, extra);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
                 assert !(reParsed instanceof ErasureExpression);
@@ -263,9 +264,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     }
 
+
     private FilterResult filterCandidatesByParameters(ExpressionContext expressionContext,
                                                       List<TypeContext.MethodCandidate> methodCandidates,
                                                       List<com.github.javaparser.ast.expr.Expression> expressions,
+                                                      TypeParameterMap typeParameterMap,
                                                       ParameterizedType scopeContext) {
         Map<Integer, Expression> evaluatedExpressions = new TreeMap<>();
         int i = 0;
@@ -278,9 +281,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 evaluatedExpressions.entrySet().stream()
                         .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
                             if (e.getValue() instanceof ErasureExpression erasure) {
-                                return erasure.erasureTypes(typeContext);
+                                return typeParameterMap.replaceKeys(erasure.erasureTypes(typeContext));
                             }
-                            return Map.of(e.getValue().returnType(), ErasureExpression.MethodStatic.IGNORE);
+                            return Map.of(e.getValue().returnType().applyTranslation(typeParameterMap.map()),
+                                    ErasureExpression.MethodStatic.IGNORE);
                         }));
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
@@ -452,20 +456,77 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     // FIXME work here!
 
+
+    /*
+    This method is about aligning the type parameters of the functional interface of the current method chain (the returnType)
+    with the functional interface of the current method parameter.
+    The example situation is the following (in DependencyGraph.java)
+
+        Map.Entry<T, Node<T>> toRemove = map.entrySet().stream().min(Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow();
+
+    The result of stream() is a Stream<Map.Entry<T, Node<T>>
+    min() operates on any stream, and takes as argument a Comparator<T> (that's a different T)
+    the comparingInt method has the signature: static <U> Comparator<U> comparingInt(ToIntFunction<? super U> keyExtractor);
+    Its single abstract method in ToIntFunction<R> is int applyInt(R r)
+
+    This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
+     */
+
+
     /**
      * Build the correct ForwardReturnTypeInfo to properly evaluate the argument at position i
      *
      * @param method         the method candidate that won the selection, so that the formal parameter type can be determined
      * @param i              the position of the argument
      * @param outsideContext contextual information to be merged with the formal parameter type
+     * @param extra
      * @return the contextual information merged with the formal parameter type info, so that evaluation can start
      */
     private ForwardReturnTypeInfo determineForwardReturnTypeInfo(MethodTypeParameterMap method,
                                                                  int i,
                                                                  ParameterizedType outsideContext,
-                                                                 ParameterizedType scopeContext) {
-        ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, outsideContext);
-        return abstractInterfaceMethod;
+                                                                 ParameterizedType scopeContext,
+                                                                 TypeParameterMap extra) {
+        Objects.requireNonNull(method);
+        ParameterizedType parameterType = method.getConcreteTypeOfParameter(i);
+        if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
+            // Cannot do better than parameter type, have no outside context;
+            return new ForwardReturnTypeInfo(parameterType, false, extra);
+        }
+        Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
+        Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
+        if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
+            // No type parameters to fill in or to extract
+            return new ForwardReturnTypeInfo(parameterType, false, extra);
+        }
+        Map<NamedType, ParameterizedType> translate = new HashMap<>();
+        for (TypeParameter typeParameter : typeParameters) {
+            // can we match? if both are functional interfaces, we know exactly which parameter to match
+
+            // otherwise, we're in a bit of a bind -- they need not necessarily agree
+            // List.of(E) --> return is List<E>
+            ParameterizedType inMap = outsideMap.get(typeParameter);
+            if (inMap != null) {
+                translate.put(typeParameter, inMap);
+            } else if (typeParameter.isMethodTypeParameter()) {
+                // return type is List<E> where E is the method type param; need to match to the type's type param
+                TypeParameter typeTypeParameter = tryToFindTypeTypeParameter(method, typeParameter);
+                if (typeTypeParameter != null) {
+                    ParameterizedType inMap2 = outsideMap.get(typeTypeParameter);
+                    if (inMap2 != null) {
+                        translate.put(typeParameter, inMap2);
+                    }
+                }
+            }
+        }
+        if (translate.isEmpty()) {
+            // Nothing to translate
+            return new ForwardReturnTypeInfo(parameterType, false, extra);
+        }
+        ParameterizedType translated = parameterType.applyTranslation(translate);
+        // Translated context and parameter
+        return new ForwardReturnTypeInfo(translated, false, extra);
+
         /*
         ParameterizedType abstractType = method.methodInspection.formalParameterType(i);
         return new ForwardReturnTypeInfo(abstractType, false);
@@ -504,70 +565,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
 
-    /*
-    This method is about aligning the type parameters of the functional interface of the current method chain (the returnType)
-    with the functional interface of the current method parameter.
-    The example situation is the following (in DependencyGraph.java)
-
-        Map.Entry<T, Node<T>> toRemove = map.entrySet().stream().min(Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow();
-
-    The result of stream() is a Stream<Map.Entry<T, Node<T>>
-    min() operates on any stream, and takes as argument a Comparator<T> (that's a different T)
-    the comparingInt method has the signature: static <U> Comparator<U> comparingInt(ToIntFunction<? super U> keyExtractor);
-    Its single abstract method in ToIntFunction<R> is int applyInt(R r)
-
-    This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
-     */
-
-    /**
-     * @param method         the map linked to chosen method; currently without/with concrete type mapping FIXME
-     * @param p
-     * @param outsideContext the functional interface context
-     * @return
-     */
-    private ForwardReturnTypeInfo determineAbstractInterfaceMethod(MethodTypeParameterMap method,
-                                                                   int p,
-                                                                   ParameterizedType outsideContext) {
-        Objects.requireNonNull(method);
-        ParameterizedType parameterType = method.getConcreteTypeOfParameter(p);
-        if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
-            // Cannot do better than parameter type, have no outside context;
-            return new ForwardReturnTypeInfo(parameterType, false);
-        }
-        Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
-        Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
-        if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
-            // No type parameters to fill in or to extract
-            return new ForwardReturnTypeInfo(parameterType, false);
-        }
-        Map<NamedType, ParameterizedType> translate = new HashMap<>();
-        for (TypeParameter typeParameter : typeParameters) {
-            // can we match? if both are functional interfaces, we know exactly which parameter to match
-
-            // otherwise, we're in a bit of a bind -- they need not necessarily agree
-            // List.of(E) --> return is List<E>
-            ParameterizedType inMap = outsideMap.get(typeParameter);
-            if (inMap != null) {
-                translate.put(typeParameter, inMap);
-            } else if (typeParameter.isMethodTypeParameter()) {
-                // return type is List<E> where E is the method type param; need to match to the type's type param
-                TypeParameter typeTypeParameter = tryToFindTypeTypeParameter(method, typeParameter);
-                if (typeTypeParameter != null) {
-                    ParameterizedType inMap2 = outsideMap.get(typeTypeParameter);
-                    if (inMap2 != null) {
-                        translate.put(typeParameter, inMap2);
-                    }
-                }
-            }
-        }
-        if (translate.isEmpty()) {
-            // Nothing to translate
-            return new ForwardReturnTypeInfo(parameterType, false);
-        }
-        ParameterizedType translated = parameterType.applyTranslation(translate);
-        // Translated context and parameter
-        return new ForwardReturnTypeInfo(translated, false);
-    }
 
     private TypeParameter tryToFindTypeTypeParameter(MethodTypeParameterMap method, TypeParameter methodTypeParameter) {
         ParameterizedType formalReturnType = method.methodInspection.getReturnType();

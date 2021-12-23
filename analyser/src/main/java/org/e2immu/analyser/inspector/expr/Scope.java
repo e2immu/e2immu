@@ -16,7 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
+import org.e2immu.analyser.inspector.TypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -26,8 +26,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Map;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * @param expression The scope expression
@@ -38,7 +36,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public record Scope(Expression expression,
                     ParameterizedType type,
                     ScopeNature nature,
-                    Map<NamedType, ParameterizedType> typeMap) {
+                    TypeParameterMap typeParameterMap) {
 
     public enum ScopeNature {
         ABSENT,
@@ -81,7 +79,7 @@ public record Scope(Expression expression,
             scopeNature = scope instanceof TypeExpression ? Scope.ScopeNature.STATIC : Scope.ScopeNature.INSTANCE;
         }
         Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap(inspectionProvider);
-        return new Scope(scope, scopeType, scopeNature, scopeTypeMap);
+        return new Scope(scope, scopeType, scopeNature, new TypeParameterMap(scopeTypeMap));
     }
 
 }

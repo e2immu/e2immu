@@ -18,16 +18,41 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Map;
+
 /**
  * Information about the return-type of an expression, passed on in a forwarding way.
+ * <p>
+ * Simple cases: when created at an expression as a statement, 'void' is passed on as the type: we're not expecting any result.
  *
- * @param type    can be null for a constructor, or when erasure is true
+ * <p>
+ * In the following example,
+ * <code>map.entrySet().stream().map(e -> new KV(e.getKey(), e.getValue().toString()).collect(...)</code>
+ * the Lambda in map(...) has the concrete type
+ * <code>Function&lt;Map.Entry&lt;String,Object&gt;, ? extends R&gt</code>.
+ * When computing the erased type of "e.getKey()", we will find "K", the formal type of Map.Entry.
+ * The lambda expression is evaluated with R as the expected return type, so "type" will be "R",
+ * and the "extra" map will contain "K maps to String", and "V maps to String".
+ * <p>
+ * We could have made "extra" a MethodTypeParameterMap but are trying to simply use a map first.
+ * <p>
+ * Essentially moving from map(...) to the evaluation of the expression in function of e, we go from the
+ * functional interface to the 2nd type parameter in "type" and the concrete map of the 1st type parameter in extra.
+ *
+ * @param type    can be null for a constructor, or when erasure is true.
+ *                Represents the expected return type of the expression to be evaluated.
  * @param erasure true when method or constructor argument parser is in erasure mode
+ * @param extra   Sometimes we must pass on extra information that is not about the return type, but about the type
+ *                parameters of the parameters of the SAM we're defining.
  */
-public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
+public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, TypeParameterMap extra) {
 
     public ForwardReturnTypeInfo(ParameterizedType type) {
-        this(type, false);
+        this(type, false, new TypeParameterMap());
+    }
+
+    public ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
+        this(type, erasure, new TypeParameterMap());
     }
 
     // we'd rather have java.lang.Boolean, because as soon as type parameters are involved, primitives

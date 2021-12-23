@@ -76,9 +76,10 @@ public class ParseObjectCreationExpr {
                 parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
 
         ParameterizedType voidType = typeContext.getPrimitives().voidParameterizedType;
+        ParameterizedType forward = impliedParameterizedType == null ? voidType : impliedParameterizedType;
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
-                        impliedParameterizedType == null ? voidType : impliedParameterizedType, voidType, errorInfo);
+                        forward, voidType, forwardReturnTypeInfo.extra(), errorInfo);
         assert candidate != null;
         ParameterizedType finalParameterizedType;
         if (parameterizedType == null) {
