@@ -74,12 +74,14 @@ public class ParseObjectCreationExpr {
 
         MethodTypeParameterMap singleAbstractMethod = impliedParameterizedType == null ? null :
                 impliedParameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo("constructor",
                 parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
 
+        ParameterizedType voidType = typeContext.getPrimitives().voidParameterizedType;
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
-                        singleAbstractMethod, errorInfo);
+                        impliedParameterizedType == null ? voidType : impliedParameterizedType, voidType, errorInfo);
         assert candidate != null;
         ParameterizedType finalParameterizedType;
         if (parameterizedType == null) {

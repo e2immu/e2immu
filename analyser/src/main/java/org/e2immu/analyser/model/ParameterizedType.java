@@ -20,12 +20,10 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
-import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -887,4 +885,35 @@ public class ParameterizedType {
                 && bestType.isAbstract(inspectionProvider);
     }
 
+    public Set<TypeParameter> extractTypeParameters() {
+        if (typeParameter != null) return Set.of(typeParameter);
+        if (typeInfo != null) {
+            return parameters.stream().flatMap(p -> p.extractTypeParameters().stream()).collect(Collectors.toUnmodifiableSet());
+        }
+        return Set.of();
+    }
+
+    /**
+     * IMPORTANT: code copied from MethodTypeParameterMap
+     *
+     * @param translate
+     * @return
+     */
+    public ParameterizedType applyTranslation(Map<NamedType, ParameterizedType> translate) {
+        ParameterizedType pt = this;
+        while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
+            ParameterizedType newPt = translate.get(pt.typeParameter);
+            if (newPt.equals(pt)) break;
+            pt = newPt;
+        }
+        final ParameterizedType stablePt = pt;
+        if (stablePt.parameters.isEmpty()) return stablePt;
+        List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
+                .map(x -> x == stablePt || x == this ? stablePt : x.applyTranslation(translate))
+                .collect(Collectors.toList());
+        if (stablePt.typeInfo == null) {
+            throw new UnsupportedOperationException("? input " + stablePt + " has no type");
+        }
+        return new ParameterizedType(stablePt.typeInfo, recursivelyMappedParameters);
+    }
 }

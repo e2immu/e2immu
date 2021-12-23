@@ -53,6 +53,6 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
         if (type == null) return false;
         if (Primitives.isVoid(type)) return true;
         MethodTypeParameterMap sam = computeSAM(typeContext);
-        return sam.methodInspection != null && Primitives.isVoid(sam.getConcreteReturnType());
+        return sam != null && sam.methodInspection != null && Primitives.isVoid(sam.getConcreteReturnType());
     }
 }

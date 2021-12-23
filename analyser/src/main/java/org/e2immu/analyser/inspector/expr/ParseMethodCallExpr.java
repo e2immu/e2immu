@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.ErasureExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodCallErasure;
+import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,14 +78,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Scope scope = Scope.computeScope(expressionContext, forwardReturnTypeInfo, typeContext, methodCallExpr);
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
-        MethodTypeParameterMap combinedSingleAbstractMethod = scope.sam(forwardReturnTypeInfo, typeContext);
         ErrorInfo errorInfo = new ErrorInfo("method " + methodName, scope.type(),
                 methodCallExpr.getBegin().orElseThrow());
 
         Candidate candidate = chooseCandidateAndEvaluateCall(expressionContext,
                 methodCandidates,
                 methodCallExpr.getArguments(),
-                combinedSingleAbstractMethod,
+                forwardReturnTypeInfo.type(),
+                scope.type(),
                 errorInfo);
 
         assert candidate != null : "Should have found a unique candidate for " + errorInfo;
@@ -137,7 +138,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     Candidate chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,
                                              List<TypeContext.MethodCandidate> methodCandidates,
                                              List<com.github.javaparser.ast.expr.Expression> expressions,
-                                             MethodTypeParameterMap singleAbstractMethod,
+                                             ParameterizedType outsideContext,
+                                             ParameterizedType scopeContext,
                                              ErrorInfo errorInfo) {
 
 
@@ -164,7 +166,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
 
         List<Expression> newParameterExpressions = reEvaluateErasedExpression(
-                expressionContext, expressions, singleAbstractMethod, errorInfo,
+                expressionContext, expressions, outsideContext, scopeContext, errorInfo,
                 filterResult.evaluatedExpressions, method);
         Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions);
         return new Candidate(newParameterExpressions, mapExpansion, method);
@@ -224,7 +226,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private List<Expression> reEvaluateErasedExpression(ExpressionContext expressionContext,
                                                         List<com.github.javaparser.ast.expr.Expression> expressions,
-                                                        MethodTypeParameterMap singleAbstractMethod,
+                                                        ParameterizedType outsideContext,
+                                                        ParameterizedType scopeContext,
                                                         ErrorInfo errorInfo,
                                                         Map<Integer, Expression> evaluatedExpressions,
                                                         MethodTypeParameterMap method) {
@@ -233,9 +236,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
             if (e instanceof ErasureExpression) {
-                log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}, single abstract method {}",
-                        errorInfo.methodName, i, singleAbstractMethod);
-                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, singleAbstractMethod);
+                log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}, outside context {}, scope {}",
+                        errorInfo.methodName, i, outsideContext, scopeContext);
+                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
                 assert !(reParsed instanceof ErasureExpression);
@@ -424,15 +427,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     /**
      * Build the correct ForwardReturnTypeInfo to properly evaluate the argument at position i
      *
-     * @param method               the method candidate that won the selection, so that the formal parameter type can be determined
-     * @param i                    the position of the argument
-     * @param singleAbstractMethod contextual information to be merged with the formal parameter type
+     * @param method         the method candidate that won the selection, so that the formal parameter type can be determined
+     * @param i              the position of the argument
+     * @param outsideContext contextual information to be merged with the formal parameter type
      * @return the contextual information merged with the formal parameter type info, so that evaluation can start
      */
     private ForwardReturnTypeInfo determineForwardReturnTypeInfo(MethodTypeParameterMap method,
                                                                  int i,
-                                                                 MethodTypeParameterMap singleAbstractMethod) {
-        ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
+                                                                 ParameterizedType outsideContext,
+                                                                 ParameterizedType scopeContext) {
+        ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, outsideContext);
         return abstractInterfaceMethod;
         /*
         ParameterizedType abstractType = method.methodInspection.formalParameterType(i);
@@ -488,23 +492,71 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
      */
 
     /**
-     * @param method               the map linked to chosen method; currently without/with concrete type mapping FIXME
+     * @param method         the map linked to chosen method; currently without/with concrete type mapping FIXME
      * @param p
-     * @param singleAbstractMethod the functional interface context
+     * @param outsideContext the functional interface context
      * @return
      */
     private ForwardReturnTypeInfo determineAbstractInterfaceMethod(MethodTypeParameterMap method,
                                                                    int p,
-                                                                   MethodTypeParameterMap singleAbstractMethod) {
+                                                                   ParameterizedType outsideContext) {
         Objects.requireNonNull(method);
         ParameterizedType parameterType = method.getConcreteTypeOfParameter(p);
+        if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
+            log(METHOD_CALL, "Cannot do better than {}, have no outside context", parameterType);
+            return new ForwardReturnTypeInfo(parameterType, false);
+        }
+        Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
+        Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
+        if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
+            log(METHOD_CALL, "No type parameters to fill in {} or to extract {}", parameterType, outsideContext);
+            return new ForwardReturnTypeInfo(parameterType, false);
+        }
+        Map<NamedType, ParameterizedType> translate = new HashMap<>();
+        for (TypeParameter typeParameter : typeParameters) {
+            // can we match? if both are functional interfaces, we know exactly which parameter to match
+
+            // otherwise, we're in a bit of a bind -- they need not necessarily agree
+            // List.of(E) --> return is List<E>
+            ParameterizedType inMap = outsideMap.get(typeParameter);
+            if (inMap != null) {
+                translate.put(typeParameter, inMap);
+            } else if (typeParameter.isMethodTypeParameter()) {
+                // return type is List<E> where E is the method type param; need to match to the type's type param
+                TypeParameter typeTypeParameter = tryToFindTypeTypeParameter(method, typeParameter);
+                if (typeTypeParameter != null) {
+                    ParameterizedType inMap2 = outsideMap.get(typeTypeParameter);
+                    if (inMap2 != null) {
+                        translate.put(typeParameter, inMap2);
+                    }
+                }
+            }
+        }
+        if (translate.isEmpty()) {
+            log(METHOD_CALL, "Nothing to translate for {}", parameterType);
+            return new ForwardReturnTypeInfo(parameterType, false);
+        }
+        ParameterizedType translated = parameterType.applyTranslation(translate);
+        log(METHOD_CALL, "Translated context {} and parameter {} to {}", outsideContext, parameterType, translated);
+        return new ForwardReturnTypeInfo(translated, false);
+    }
+
+    private TypeParameter tryToFindTypeTypeParameter(MethodTypeParameterMap method, TypeParameter methodTypeParameter) {
+        ParameterizedType formalReturnType = method.methodInspection.getReturnType();
+        Map<NamedType, ParameterizedType> map = formalReturnType.initialTypeParameterMap(typeContext);
+        // map points from E as 0 in List to E as 0 in List.of()
+        return map.entrySet().stream().filter(e -> methodTypeParameter.equals(e.getValue().typeParameter))
+                .map(e -> (TypeParameter) e.getKey()).findFirst().orElse(null);
+    }
+
+        /*
         MethodTypeParameterMap abstractInterfaceMethod
                 = parameterType.findSingleAbstractMethodOfInterface(typeContext);
         log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}",
                 p, method.methodInspection.getFullyQualifiedName(), abstractInterfaceMethod);
 
         if (abstractInterfaceMethod == null) return new ForwardReturnTypeInfo(parameterType, false);
-
+        MethodTypeParameterMap singleAbstractMethod = outsideContext.findSingleAbstractMethodOfInterface(typeContext);
         if (singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
                 && singleAbstractMethod.methodInspection.getMethodInfo().typeInfo
                 .equals(method.methodInspection.getMethodInfo().typeInfo)) {
@@ -526,7 +578,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         //abstractInterfaceMethod
         return new ForwardReturnTypeInfo(parameterType, false);
     }
-
+*/
 
     /*
         private Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method,

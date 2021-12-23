@@ -17,8 +17,6 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -36,7 +34,6 @@ import static org.e2immu.analyser.util.Logger.log;
  * @param type       The concrete type of the scope expression, or the formal type of the context of the method call
  *                   It cannot be the method's return type, because we don't know the method yet.
  * @param nature     The scope nature: ABSENT when no expression, STATIC when the scope is a TypeExpression
- * @param typeMap    The generic-to-concrete type map for the scope expression, if present
  */
 public record Scope(Expression expression,
                     ParameterizedType type,
@@ -66,13 +63,6 @@ public record Scope(Expression expression,
             return new VariableExpression(thisVariable);
         }
         return expression;
-    }
-
-    public MethodTypeParameterMap sam(ForwardReturnTypeInfo forwardReturnTypeInfo, TypeContext typeContext) {
-        // the return type of the method is not used to make a selection
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext);
-        return singleAbstractMethod == null ? new MethodTypeParameterMap(null, typeMap) :
-                singleAbstractMethod.expand(typeMap);
     }
 
     static Scope computeScope(ExpressionContext expressionContext,
