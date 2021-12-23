@@ -15,6 +15,7 @@
 package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 /**
@@ -40,11 +41,11 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
         return new ForwardReturnTypeInfo(typeContext.getPrimitives().voidParameterizedType, false);
     }
 
-    public MethodTypeParameterMap computeSAM(TypeContext typeContext) {
+    public MethodTypeParameterMap computeSAM(InspectionProvider inspectionProvider) {
         if (type == null || Primitives.isVoid(type)) return null;
-        MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
+        MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(inspectionProvider);
         if (sam != null) {
-            return sam.expand(type.initialTypeParameterMap(typeContext));
+            return sam.expand(type.initialTypeParameterMap(inspectionProvider));
         }
         return null;
     }
@@ -54,5 +55,9 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
         if (Primitives.isVoid(type)) return true;
         MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
         return sam != null && sam.methodInspection != null && Primitives.isVoid(sam.getConcreteReturnType());
+    }
+
+    public String toString(InspectionProvider inspectionProvider) {
+        return "[FWD: " + (type == null ? "null" : type.detailedString(inspectionProvider) + ", erasure: " + erasure + "]");
     }
 }

@@ -71,8 +71,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             ForwardReturnTypeInfo forwardReturnTypeInfo) {
         String methodName = methodCallExpr.getName().asString();
         int numArguments = methodCallExpr.getArguments().size();
-        log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args", methodCallExpr,
-                methodName, numArguments);
+        log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
+                methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext));
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr);
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);

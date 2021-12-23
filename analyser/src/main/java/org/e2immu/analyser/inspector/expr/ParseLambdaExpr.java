@@ -54,16 +54,16 @@ public class ParseLambdaExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    LambdaExpr lambdaExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(expressionContext.typeContext);
+        InspectionProvider inspectionProvider = expressionContext.typeContext;
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(inspectionProvider);
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
 
-        log(LAMBDA, "Start parsing lambda at {}", lambdaExpr.getBegin());
+        log(LAMBDA, "Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
 
         VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
         int cnt = 0;
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
-        InspectionProvider inspectionProvider = expressionContext.typeContext;
 
         MethodInspectionImpl.Builder applyMethodInspectionBuilder =
                 createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
@@ -127,7 +127,7 @@ public class ParseLambdaExpr {
         continueCreationOfAnonymousType(expressionContext.typeContext.typeMapBuilder,
                 applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
-                functionalType, anonymousType.fullyQualifiedName);
+                functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
 
         expressionContext.addNewlyCreatedType(anonymousType);
 
