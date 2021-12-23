@@ -17,6 +17,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMap;
 
@@ -32,6 +33,7 @@ public abstract class CommonTest {
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api") // in Constructor_2
                 .addRestrictSourceToPackages(clazz.getCanonicalName())
                 .build();
         Configuration configuration = new Configuration.Builder()

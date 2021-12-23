@@ -248,19 +248,21 @@ public class MethodInspector {
                         TypeInspector.DollarResolver dollarResolver,
                         boolean makePrivate) {
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
-        addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
+        ExpressionContext newContext = addTypeParameters(cd, expressionContext, tempBuilder);
+
+        addParameters(tempBuilder, cd.getParameters(), newContext, dollarResolver);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(newContext.typeContext, tempBuilder, false);
         assert builder != null;
-        inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
+        inspectParameters(cd.getParameters(), builder.getParameterBuilders(), newContext);
         if (makePrivate) {
             builder.addModifier(MethodModifier.PRIVATE);
         }
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
-        addAnnotations(builder, cd.getAnnotations(), expressionContext);
+        addAnnotations(builder, cd.getAnnotations(), newContext);
         if (fullInspection) {
             addModifiers(builder, cd.getModifiers());
-            addExceptionTypes(builder, cd.getThrownExceptions(), expressionContext.typeContext);
+            addExceptionTypes(builder, cd.getThrownExceptions(), newContext.typeContext);
 
             typeMapBuilder.registerMethodInspection(builder);
 
@@ -283,15 +285,7 @@ public class MethodInspector {
             MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl
                     .Builder(Identifier.from(md), typeInfo, methodName);
 
-            int tpIndex = 0;
-            ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
-                    expressionContext.newTypeContext("Method type parameters");
-            for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
-                TypeParameterImpl tp = new TypeParameterImpl(typeParameter.getNameAsString(), tpIndex++);
-                tempBuilder.addTypeParameter(tp);
-                newContext.typeContext.addToContext(tp);
-                tp.inspect(newContext.typeContext, typeParameter);
-            }
+            ExpressionContext newContext = addTypeParameters(md, expressionContext, tempBuilder);
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
             MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder, false);
@@ -320,6 +314,21 @@ public class MethodInspector {
             LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;
         }
+    }
+
+    private ExpressionContext addTypeParameters(CallableDeclaration<?> md,
+                                                ExpressionContext expressionContext,
+                                                MethodInspectionImpl.Builder tempBuilder) {
+        int tpIndex = 0;
+        ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
+                expressionContext.newTypeContext("Method type parameters");
+        for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
+            TypeParameterImpl tp = new TypeParameterImpl(typeParameter.getNameAsString(), tpIndex++);
+            tempBuilder.addTypeParameter(tp);
+            newContext.typeContext.addToContext(tp);
+            tp.inspect(newContext.typeContext, typeParameter);
+        }
+        return newContext;
     }
 
     private static void addAnnotations(MethodInspectionImpl.Builder builder,

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -103,7 +104,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public String debug() {
-        if(scope == null) return simpleName();
+        if (scope == null) return simpleName();
         return scope.debugOutput() + "." + simpleName();
     }
 
@@ -116,6 +117,9 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public String fullyQualifiedName() {
         if (isStatic || scopeIsThis()) {
             return fieldInfo.fullyQualifiedName();
+        }
+        if (scope instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+            return fieldInfo.fullyQualifiedName() + "#" + cc.anonymousClass().fullyQualifiedName();
         }
         return fieldInfo.fullyQualifiedName() + "#" + scope.output(Qualification.FULLY_QUALIFIED_NAME);
     }

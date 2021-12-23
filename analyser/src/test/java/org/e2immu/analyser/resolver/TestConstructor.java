@@ -15,24 +15,53 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.resolver.testexample.Constructor_0;
 import org.e2immu.analyser.resolver.testexample.Constructor_1;
-import org.e2immu.analyser.resolver.testexample.Varargs_0;
+import org.e2immu.analyser.resolver.testexample.Constructor_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestConstructor extends CommonTest {
+
+    @Test
+    public void test_0() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_0.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_0.class);
+        assertNotNull(typeInfo);
+    }
 
     @Test
     public void test_1() throws IOException {
         TypeMap typeMap = inspectAndResolve(Constructor_1.class);
         TypeInfo typeInfo = typeMap.get(Constructor_1.class);
         assertNotNull(typeInfo);
+
+        TypeInfo parameterized = typeMap.getTypeInspection(typeInfo).subTypes().get(0);
+        assertNotNull(parameterized);
+
+        MethodInfo constructor = parameterized.findConstructor(2);
+        assertNotNull(constructor);
+        assertEquals("org.e2immu.analyser.resolver.testexample.Constructor_1.Parametrized.Parametrized(T,java.util.List<T>)",
+                constructor.fullyQualifiedName);
+        MethodInspection constructorInspection = typeMap.getMethodInspection(constructor);
+        TypeParameter t = constructorInspection.getTypeParameters().get(0);
+        assertEquals("T as #0 in org.e2immu.analyser.resolver.testexample.Constructor_1.Parametrized.Parametrized(T,java.util.List<T>)", t.toString());
+        assertSame(constructor, t.getOwner().getRight());
     }
 
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_2.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_2.class);
+        assertNotNull(typeInfo);
+    }
 }

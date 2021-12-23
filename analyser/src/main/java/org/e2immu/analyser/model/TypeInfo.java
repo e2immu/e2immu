@@ -622,7 +622,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         ParameterizedType parent = inspection.parentClass();
         int bestSteps = Integer.MAX_VALUE;
-        if (parent != null && !Primitives.isJavaLangObject(parent)) {
+        if (parent != null) {
             int steps = parent.typeInfo.stepsInHierarchy(target, inspectionProvider);
             if (steps != Integer.MAX_VALUE) {
                 bestSteps = steps + 1;
