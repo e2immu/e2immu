@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.junit.jupiter.api.Test;
 
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -34,8 +35,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSynthetics {
 
@@ -55,6 +55,11 @@ public class TestSynthetics {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         TypeMapImpl.Builder typeMap = parser.inspectOnlyForTesting();
+        parser.preload("java.io");
+        TypeInfo fileNameFilter = typeMap.get(FilenameFilter.class);
+        assertNotNull(fileNameFilter);
+        ParameterizedType ffPt = fileNameFilter.asParameterizedType(typeMap);
+        assertTrue(ffPt.isFunctionalInterface(typeMap));
 
         {
             TypeInfo t3 = typeMap.syntheticFunction(3, true);
@@ -91,6 +96,27 @@ public class TestSynthetics {
             // important! the synthetic FI is assignable in both directions from BiFunction
             assertEquals(1, new IsAssignableFrom(typeMap, pt, biPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
             assertEquals(1, new IsAssignableFrom(typeMap, biPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+
+            // important! the synthetic FI is assignable in both directions from FilenameFilter
+            assertEquals(1, new IsAssignableFrom(typeMap, pt, ffPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(1, new IsAssignableFrom(typeMap, ffPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+
+        }
+        {
+            TypeInfo f1 = typeMap.syntheticFunction(1, false);
+            assertEquals("_internal_.SyntheticFunction1", f1.fullyQualifiedName);
+            ParameterizedType pt = f1.asParameterizedType(typeMap);
+            assertEquals("Type _internal_.SyntheticFunction1<P0,P1>", pt.toString());
+            assertEquals(2, f1.typeInspection.get().typeParameters().size());
+
+            MethodInfo m1 = f1.findUniqueMethod("apply", 1);
+            assertEquals("_internal_.SyntheticFunction1.apply(P0)", m1.fullyQualifiedName);
+            assertTrue(pt.isFunctionalInterface(typeMap));
+            assertEquals("Type param P1", m1.returnType().toString());
+
+            // important! the synthetic FI is not assignable in both directions from FilenameFilter, which is a BiFunction!
+            assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, pt, ffPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, ffPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
         }
     }
 }

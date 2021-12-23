@@ -48,6 +48,7 @@ public class ParseLambdaExpr {
         // determine a method overload because of the void/non-void difference!
         Set<LambdaExpressionErasures.Count> erasures = Set.of(new LambdaExpressionErasures.Count(parameters, true),
                 new LambdaExpressionErasures.Count(parameters, false));
+        log(LAMBDA, "Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 

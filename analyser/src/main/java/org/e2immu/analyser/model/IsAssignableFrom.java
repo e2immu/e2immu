@@ -214,7 +214,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
      */
     private int functionalInterface(Mode mode) {
         MethodInspection mTarget = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
-        MethodInspection mFrom = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
+        MethodInspection mFrom = from.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
         boolean targetIsVoid = Primitives.isVoid(mTarget.getReturnType());
         boolean fromIsVoid = Primitives.isVoid(mFrom.getReturnType());
