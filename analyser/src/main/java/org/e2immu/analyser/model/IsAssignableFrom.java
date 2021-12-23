@@ -50,7 +50,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
     private static final int EQUALS = 0;
     private static final int ASSIGN_TO_NULL = 0;
-    private static final int SAME_UNDERLYING_TYPE = 1;
+    public static final int SAME_UNDERLYING_TYPE = 1;
     private static final int BOXING_TO_PRIMITIVE = 1;
     private static final int BOXING_FROM_PRIMITIVE = 1;
     public static final int IN_HIERARCHY = 10;
@@ -218,15 +218,18 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
         boolean targetIsVoid = Primitives.isVoid(mTarget.getReturnType());
         boolean fromIsVoid = Primitives.isVoid(mFrom.getReturnType());
-        if (targetIsVoid != fromIsVoid) return NOT_ASSIGNABLE;
+        // target void -> fromIsVoid is unimportant, we can assign a function to a consumer
+        if (!targetIsVoid && fromIsVoid) return NOT_ASSIGNABLE;
+
         if (mode == Mode.COVARIANT_ERASURE) return SAME_UNDERLYING_TYPE;
+        // now, ensure that all type parameters have equal values
         int i = 0;
         for (ParameterInfo t : mTarget.getParameters()) {
             ParameterInfo f = mFrom.getParameters().get(i);
             if (!t.parameterizedType.equals(f.parameterizedType)) return NOT_ASSIGNABLE;
             i++;
         }
-        if (targetIsVoid && !mTarget.getReturnType().equals(mFrom.getReturnType())) return NOT_ASSIGNABLE;
+        if (!mTarget.getReturnType().equals(mFrom.getReturnType())) return NOT_ASSIGNABLE;
         return EQUALS;
     }
 

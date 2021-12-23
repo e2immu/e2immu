@@ -21,11 +21,11 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,11 +43,10 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
         Objects.requireNonNull(location);
     }
 
-    public Set<Integer> numberOfParameters() {
-        return counts.stream().map(c -> c.parameters).collect(Collectors.toUnmodifiableSet());
-    }
-
-    public record Count(int parameters, boolean isVoid) {
+    public record Count(int parameters, boolean isVoid, MethodStatic methodStatic) {
+        public Count {
+            Objects.requireNonNull(methodStatic);
+        }
     }
 
     // this is NOT a functional interface, merely the return type of the lambda
@@ -99,8 +98,10 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
     }
 
     @Override
-    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        return counts.stream().map(count -> typeContext.typeMapBuilder.syntheticFunction(count.parameters, count.isVoid)
-                .asParameterizedType(InspectionProvider.DEFAULT)).collect(Collectors.toUnmodifiableSet());
+    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+        return counts.stream().collect(Collectors.toUnmodifiableMap(count -> typeContext.typeMapBuilder
+                        .syntheticFunction(count.parameters, count.isVoid).asParameterizedType(typeContext),
+                Count::methodStatic));
+
     }
 }

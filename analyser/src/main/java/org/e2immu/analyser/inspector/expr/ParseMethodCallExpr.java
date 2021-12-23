@@ -276,13 +276,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Expression evaluated = expressionContext.parseExpression(expr, forward);
             evaluatedExpressions.put(i++, evaluated);
         }
-        Map<Integer, Set<ParameterizedType>> acceptedErasedTypes = evaluatedExpressions.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
-                    if (e.getValue() instanceof ErasureExpression erasure) {
-                        return erasure.erasureTypes(typeContext);
-                    }
-                    return Set.of(e.getValue().returnType());
-                }));
+        Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
+                evaluatedExpressions.entrySet().stream()
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
+                            if (e.getValue() instanceof ErasureExpression erasure) {
+                                return erasure.erasureTypes(typeContext);
+                            }
+                            return Map.of(e.getValue().returnType(), ErasureExpression.MethodStatic.IGNORE);
+                        }));
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
 
@@ -294,7 +295,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Map<Integer, ParameterizedType> thisAcceptedErasedTypesCombination = new TreeMap<>();
             for (ParameterInfo parameterInfo : parameters) {
 
-                Set<ParameterizedType> acceptedErased = acceptedErasedTypes.get(pos);
+                Map<ParameterizedType, ErasureExpression.MethodStatic> acceptedErased = acceptedErasedTypes.get(pos);
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
 
@@ -310,11 +311,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         ParameterizedType arrayType = parameterInfo.parameterizedType;
 
                         // here comes a bit of code duplication...
-                        for (ParameterizedType actualType : acceptedErased) {
-                            int compatible = callIsAssignableFrom(actualType, arrayType);
-                            if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
-                                bestCompatible = compatible;
-                                bestAcceptedType = actualType;
+                        for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
+                            ParameterizedType actualType = e.getKey();
+                            ErasureExpression.MethodStatic methodStatic = e.getValue();
+                            if (methodStatic.test(methodCandidate.method().methodInspection)) {
+                                int compatible = callIsAssignableFrom(actualType, arrayType);
+
+                                if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
+                                    bestCompatible = compatible;
+                                    bestAcceptedType = actualType;
+                                }
                             }
                         }
 
@@ -332,11 +338,18 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 }
 
 
-                for (ParameterizedType actualType : acceptedErased) {
-                    int compatible = callIsAssignableFrom(actualType, formalType);
-                    if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
-                        bestCompatible = compatible;
-                        bestAcceptedType = actualType;
+                for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
+                    ParameterizedType actualType = e.getKey();
+                    ErasureExpression.MethodStatic methodStatic = e.getValue();
+                    if (methodStatic.test(methodCandidate.method().methodInspection)) {
+                        int compatible = callIsAssignableFrom(actualType, formalType);
+                        if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
+                            bestCompatible = compatible;
+                            bestAcceptedType = actualType;
+                        }
+                    } else {
+                        log(METHOD_CALL, "Skipping parameter {}, {}, candidate {}", pos, methodStatic,
+                                methodCandidate.method().methodInspection.getMethodInfo().fullyQualifiedName);
                     }
                 }
                 if (bestCompatible < 0) {
@@ -712,8 +725,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private int compatibleParameter(Expression evaluatedExpression, ParameterizedType typeOfParameter) {
         if (evaluatedExpression instanceof ErasureExpression erasureExpression) {
-            Set<ParameterizedType> types = erasureExpression.erasureTypes(typeContext);
-            return types.stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
+            Map<ParameterizedType, ErasureExpression.MethodStatic> types = erasureExpression.erasureTypes(typeContext);
+            return types.keySet().stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
                     .min().orElse(NOT_ASSIGNABLE);
         }
 

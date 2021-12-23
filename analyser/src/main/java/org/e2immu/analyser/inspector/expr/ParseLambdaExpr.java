@@ -18,10 +18,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Lambda;
-import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
-import org.e2immu.analyser.model.expression.MethodCallErasure;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -34,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.e2immu.analyser.model.expression.ErasureExpression.MethodStatic.IGNORE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -46,8 +44,9 @@ public class ParseLambdaExpr {
         // it is pretty hard to find out if there is a return statement, but simply computationally heavy.
         // we're not doing this at the moment, and decide to issue a serious inspection warning instead, if we cannot
         // determine a method overload because of the void/non-void difference!
-        Set<LambdaExpressionErasures.Count> erasures = Set.of(new LambdaExpressionErasures.Count(parameters, true),
-                new LambdaExpressionErasures.Count(parameters, false));
+        Set<LambdaExpressionErasures.Count> erasures = Set.of(
+                new LambdaExpressionErasures.Count(parameters, true, IGNORE),
+                new LambdaExpressionErasures.Count(parameters, false, IGNORE));
         log(LAMBDA, "Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }

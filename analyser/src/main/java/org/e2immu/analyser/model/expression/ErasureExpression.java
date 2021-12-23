@@ -16,33 +16,30 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
 
-import java.util.Set;
-import java.util.function.*;
+import java.util.Map;
 
 public interface ErasureExpression extends Expression {
 
-    Set<ParameterizedType> erasureTypes(TypeContext typeContext);
+    enum MethodStatic {
+        YES, NO, IGNORE;
 
-    /*
-   we make no distinction between Function<X, Boolean> and Predicate<X>, and the various
-   variants using primitives.
-    */
-    static ParameterizedType erasureType(int numberOfParameters, boolean isVoid, TypeContext typeContext) {
-        Class<?> clazz = switch (numberOfParameters) {
-            case 0 -> isVoid ? Runnable.class : Supplier.class;
-            case 1 -> isVoid ? Consumer.class : Function.class;
-            case 2 -> isVoid ? BiConsumer.class : BiFunction.class;
-            default -> null;
-        };
-        TypeInfo typeInfo;
-        if (clazz == null) {
-            typeInfo = typeContext.typeMapBuilder.syntheticFunction(numberOfParameters, isVoid);
-        } else {
-            typeInfo = typeContext.getFullyQualified(clazz);
+        public static MethodStatic from(MethodInspection methodInspection) {
+            return methodInspection.isStatic() ? YES : NO;
         }
-        return typeInfo.asParameterizedType(typeContext);
+
+        public boolean test(MethodInspection methodInspection) {
+            return switch (this) {
+                case IGNORE -> true;
+                case YES -> methodInspection.isStatic();
+                case NO -> !methodInspection.isStatic();
+            };
+
+        }
     }
+
+    Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext);
+
 }

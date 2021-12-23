@@ -30,9 +30,12 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
+import static org.e2immu.analyser.model.IsAssignableFrom.SAME_UNDERLYING_TYPE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,7 +75,8 @@ public class TestSynthetics {
             assertEquals("_internal_.SyntheticConsumer3.accept(P0,P1,P2)", m3.fullyQualifiedName);
             assertTrue(pt.isFunctionalInterface(typeMap));
             MethodTypeParameterMap map = new MethodTypeParameterMap(m3.methodInspection.get(),
-                    Map.of(t3.typeInspection.get().typeParameters().get(0), typeMap.getPrimitives().stringParameterizedType));
+                    Map.of(t3.typeInspection.get().typeParameters().get(0),
+                            typeMap.getPrimitives().stringParameterizedType));
             assertTrue(map.isSingleAbstractMethod());
             ParameterizedType c = map.getConcreteTypeOfParameter(0);
             assertEquals("Type java.lang.String", c.toString());
@@ -94,12 +98,16 @@ public class TestSynthetics {
             assertTrue(biPt.isFunctionalInterface(typeMap));
 
             // important! the synthetic FI is assignable in both directions from BiFunction
-            assertEquals(1, new IsAssignableFrom(typeMap, pt, biPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
-            assertEquals(1, new IsAssignableFrom(typeMap, biPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(SAME_UNDERLYING_TYPE, new IsAssignableFrom(typeMap, pt, biPt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(SAME_UNDERLYING_TYPE, new IsAssignableFrom(typeMap, biPt, pt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
 
             // important! the synthetic FI is assignable in both directions from FilenameFilter
-            assertEquals(1, new IsAssignableFrom(typeMap, pt, ffPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
-            assertEquals(1, new IsAssignableFrom(typeMap, ffPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(SAME_UNDERLYING_TYPE, new IsAssignableFrom(typeMap, pt, ffPt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(SAME_UNDERLYING_TYPE, new IsAssignableFrom(typeMap, ffPt, pt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
 
         }
         {
@@ -115,8 +123,19 @@ public class TestSynthetics {
             assertEquals("Type param P1", m1.returnType().toString());
 
             // important! the synthetic FI is not assignable in both directions from FilenameFilter, which is a BiFunction!
-            assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, pt, ffPt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
-            assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, ffPt, pt).execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, pt, ffPt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, ffPt, pt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+
+            TypeInfo consumer = typeMap.get(Consumer.class);
+            ParameterizedType consumerPt = consumer.asParameterizedType(typeMap);
+
+            // the synthetic f1 is assignable to a consumer, but not the other way around
+            assertEquals(NOT_ASSIGNABLE, new IsAssignableFrom(typeMap, pt, consumerPt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
+            assertEquals(SAME_UNDERLYING_TYPE, new IsAssignableFrom(typeMap, consumerPt, pt)
+                    .execute(true, IsAssignableFrom.Mode.COVARIANT_ERASURE));
         }
     }
 }
