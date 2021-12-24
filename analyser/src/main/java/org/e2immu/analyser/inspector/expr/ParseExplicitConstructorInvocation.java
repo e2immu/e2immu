@@ -73,7 +73,6 @@ public class ParseExplicitConstructorInvocation {
                 methodCandidates,
                 arguments,
                 typeContext.getPrimitives().voidParameterizedType,
-                typeContext.getPrimitives().voidParameterizedType,
                 extra,
                 errorInfo);
 

@@ -83,7 +83,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 methodCandidates,
                 methodCallExpr.getArguments(),
                 forwardReturnTypeInfo.type(),
-                scope.type(),
                 extra,
                 errorInfo);
 
@@ -138,12 +137,18 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                              List<TypeContext.MethodCandidate> methodCandidates,
                                              List<com.github.javaparser.ast.expr.Expression> expressions,
                                              ParameterizedType returnType,
-                                             ParameterizedType scopeContext,
                                              TypeParameterMap extra,
                                              ErrorInfo errorInfo) {
 
-        FilterResult filterResult = filterCandidatesByParameters(expressionContext, methodCandidates, expressions,
-                extra, scopeContext);
+        Map<Integer, Expression> evaluatedExpressions = new TreeMap<>();
+        int i = 0;
+        ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
+        for (com.github.javaparser.ast.expr.Expression expr : expressions) {
+            Expression evaluated = expressionContext.parseExpression(expr, forward);
+            evaluatedExpressions.put(i++, evaluated);
+        }
+
+        FilterResult filterResult = filterCandidatesByParameters(methodCandidates, evaluatedExpressions, extra);
 
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
@@ -165,9 +170,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
 
 
-        List<Expression> newParameterExpressions = reEvaluateErasedExpression(
-                expressionContext, expressions, returnType, scopeContext, extra, errorInfo,
-                filterResult.evaluatedExpressions, method);
+        List<Expression> newParameterExpressions = reEvaluateErasedExpression(expressionContext, expressions,
+                returnType, extra, errorInfo, filterResult.evaluatedExpressions, method);
         Map<NamedType, ParameterizedType> mapExpansion = computeMapExpansion(method, newParameterExpressions);
         return new Candidate(newParameterExpressions, mapExpansion, method);
     }
@@ -227,7 +231,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private List<Expression> reEvaluateErasedExpression(ExpressionContext expressionContext,
                                                         List<com.github.javaparser.ast.expr.Expression> expressions,
                                                         ParameterizedType outsideContext,
-                                                        ParameterizedType scopeContext,
                                                         TypeParameterMap extra,
                                                         ErrorInfo errorInfo,
                                                         Map<Integer, Expression> evaluatedExpressions,
@@ -238,7 +241,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             assert e != null;
             if (e.isInstanceOf(ErasureExpression.class)) {
                 log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}", errorInfo.methodName, i);
-                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext, extra);
+                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, extra);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
                 assert !(reParsed.isInstanceOf(ErasureExpression.class));
@@ -265,18 +268,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
 
-    private FilterResult filterCandidatesByParameters(ExpressionContext expressionContext,
-                                                      List<TypeContext.MethodCandidate> methodCandidates,
-                                                      List<com.github.javaparser.ast.expr.Expression> expressions,
-                                                      TypeParameterMap typeParameterMap,
-                                                      ParameterizedType scopeContext) {
-        Map<Integer, Expression> evaluatedExpressions = new TreeMap<>();
-        int i = 0;
-        ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
-        for (com.github.javaparser.ast.expr.Expression expr : expressions) {
-            Expression evaluated = expressionContext.parseExpression(expr, forward);
-            evaluatedExpressions.put(i++, evaluated);
-        }
+    private FilterResult filterCandidatesByParameters(List<TypeContext.MethodCandidate> methodCandidates,
+                                                      Map<Integer, Expression> evaluatedExpressions,
+                                                      TypeParameterMap typeParameterMap) {
         Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
                 evaluatedExpressions.entrySet().stream()
                         .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
@@ -307,7 +301,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 if (parameterInfo.parameterInspection.get().isVarArgs()) {
                     if (acceptedErased == null) {
                         // the parameter is a varargs, and we have the empty array
-                        assert parameters.size() == expressions.size() + 1;
+                        assert parameters.size() == evaluatedExpressions.size() + 1;
                         break;
                     }
                     if (pos == parameters.size() - 1) {
@@ -348,7 +342,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     if (methodStatic.test(methodCandidate.method().methodInspection)) {
                         int compatible;
 
-                        if (isFreeTypeParameter(actualType, typeParameterMap)) {
+                        if (isFreeTypeParameter(actualType)) {
                             /*
                             See test Lambda_6, and Lambda_7
 
@@ -402,7 +396,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return new FilterResult(evaluatedExpressions, compatibilityScore);
     }
 
-    private boolean isFreeTypeParameter(ParameterizedType actualType, TypeParameterMap typeParameterMap) {
+    private boolean isFreeTypeParameter(ParameterizedType actualType) {
         return actualType.typeParameter != null && actualType.typeParameter.isMethodTypeParameter();
     }
 
@@ -488,13 +482,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
      * @param method         the method candidate that won the selection, so that the formal parameter type can be determined
      * @param i              the position of the argument
      * @param outsideContext contextual information to be merged with the formal parameter type
-     * @param extra
+     * @param extra          information about type parameters gathered earlier
      * @return the contextual information merged with the formal parameter type info, so that evaluation can start
      */
     private ForwardReturnTypeInfo determineForwardReturnTypeInfo(MethodTypeParameterMap method,
                                                                  int i,
                                                                  ParameterizedType outsideContext,
-                                                                 ParameterizedType scopeContext,
                                                                  TypeParameterMap extra) {
         Objects.requireNonNull(method);
         ParameterizedType parameterType = method.getConcreteTypeOfParameter(i);

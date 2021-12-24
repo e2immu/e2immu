@@ -79,7 +79,7 @@ public class ParseObjectCreationExpr {
         ParameterizedType forward = impliedParameterizedType == null ? voidType : impliedParameterizedType;
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
-                        forward, voidType, forwardReturnTypeInfo.extra(), errorInfo);
+                        forward, forwardReturnTypeInfo.extra(), errorInfo);
         assert candidate != null : "No candidate for constructor of type "+typeAsIs.detailedString(typeContext);
 
         ParameterizedType finalParameterizedType;
