@@ -371,7 +371,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     private MethodInfo findConstructor(InspectionProvider inspectionProvider,
                                        List<Expression> parameterExpressions,
                                        boolean allowPrivate) {
-        MethodInfo constructor = typeInspection.get().constructors().stream()
+        MethodInfo constructor = inspectionProvider.getTypeInspection(this).constructors().stream()
                 .filter(mi -> allowPrivate || !mi.isPrivate(inspectionProvider))
                 .filter(mi -> compatibleParameters(inspectionProvider, parameterExpressions, mi))
                 .findFirst().orElse(null);

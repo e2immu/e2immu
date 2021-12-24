@@ -244,7 +244,15 @@ public class TypeContext implements TypeAndInspectionProvider {
         return typeMapBuilder.getPrimitives();
     }
 
+
     public record MethodCandidate(MethodTypeParameterMap method, Set<Integer> parameterIndicesOfFunctionalInterfaces) {
+    }
+
+    public List<MethodCandidate> resolveConstructorInvocation(TypeInfo startingPoint,
+                                                              int parametersPresented,
+                                                              int typeParametersPresented) {
+        ParameterizedType type = startingPoint.asParameterizedType(this);
+        return resolveConstructor(type, type, parametersPresented, Map.of());
     }
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;

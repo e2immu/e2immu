@@ -464,10 +464,7 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement explicitConstructorInvocation(ExplicitConstructorInvocationStmt statement,
                                                                               Identifier identifier) {
-        List<org.e2immu.analyser.model.Expression> parameterExpressions = statement.getArguments()
-                .stream().map(this::parseExpression).collect(Collectors.toList());
-        MethodInfo constructor = enclosingType.findConstructor(typeContext, parameterExpressions);
-        return new ExplicitConstructorInvocation(identifier, !statement.isThis(), constructor, parameterExpressions);
+        return ParseExplicitConstructorInvocation.parse(this, enclosingType, statement, identifier);
     }
 
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement,
