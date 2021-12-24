@@ -135,4 +135,9 @@ public class TestMethodCall extends CommonTest {
                 "Type java.util.Collection<org.e2immu.analyser.resolver.testexample.MethodCall_9.Get>");
     }
 
+    @Test
+    public void test_10() throws IOException {
+        inspectAndResolve(MethodCall_10.class);
+    }
+
 }

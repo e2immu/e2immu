@@ -245,7 +245,10 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
 
-    public record MethodCandidate(MethodTypeParameterMap method, Set<Integer> parameterIndicesOfFunctionalInterfaces) {
+    public record MethodCandidate(MethodTypeParameterMap method, int distance) {
+        public MethodCandidate(MethodTypeParameterMap method) {
+            this(method, 0);
+        }
     }
 
     public List<MethodCandidate> resolveConstructorInvocation(TypeInfo startingPoint,
@@ -267,15 +270,14 @@ public class TypeContext implements TypeAndInspectionProvider {
         TypeInspection typeInspection = getTypeInspection(typeInfo);
         if (parametersPresented == 0) {
             if (typeInspection.constructors().isEmpty()) {
-                return List.of(new MethodCandidate(new MethodTypeParameterMap(createEmptyConstructor(typeInfo), Map.of()), Set.of()));
+                return List.of(new MethodCandidate(new MethodTypeParameterMap(createEmptyConstructor(typeInfo), Map.of())));
             }
         }
         return typeInspection.constructors().stream()
                 .map(this::getMethodInspection)
                 .filter(methodInspection -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(methodInspection, parametersPresented))
-                .map(methodInspection -> new MethodCandidate(new MethodTypeParameterMap(methodInspection, typeMap),
-                        findIndicesOfFunctionalInterfaces(methodInspection)))
+                .map(methodInspection -> new MethodCandidate(new MethodTypeParameterMap(methodInspection, typeMap)))
                 .collect(Collectors.toList());
     }
 
@@ -287,7 +289,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     List<MethodCandidate> result,
                                                     Scope.ScopeNature scopeNature) {
         recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic,
-                typeMap, result, new HashSet<>(), false, scopeNature);
+                typeMap, result, new HashSet<>(), false, scopeNature, 0);
     }
 
     private void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
@@ -298,14 +300,15 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                      List<MethodCandidate> result,
                                                      Set<TypeInfo> visited,
                                                      boolean staticOnly,
-                                                     Scope.ScopeNature scopeNature) {
+                                                     Scope.ScopeNature scopeNature,
+                                                     int distance) {
         List<TypeInfo> multipleTypeInfoObjects = extractTypeInfo(typeOfObject, typeMap);
         // more than one: only in the rare situation of multiple type bounds
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
                 resolveOverloadedMethodsSingleType(typeInfo, staticOnly, scopeNature, methodName, parametersPresented,
-                        decrementWhenNotStatic, typeMap, result, visited);
+                        decrementWhenNotStatic, typeMap, result, visited, distance + 2);
             }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
@@ -313,7 +316,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
                 resolveOverloadedMethodsSingleType(typeInfo, true, scopeNature, methodName,
-                        parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
+                        parametersPresented, decrementWhenNotStatic, typeMap, result, visited, distance + 1);
             }
         }
         // or import by name
@@ -321,7 +324,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         if (byName != null && !visited.contains(byName)) {
             visited.add(byName);
             resolveOverloadedMethodsSingleType(byName, true, scopeNature, methodName,
-                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
+                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited, distance);
         }
     }
 
@@ -333,7 +336,8 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
-                                                    Set<TypeInfo> visited) {
+                                                    Set<TypeInfo> visited,
+                                                    int distance) {
         TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(typeInfo));
         typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
@@ -343,21 +347,24 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +
                                 (!m.isStatic() && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap),
-                        findIndicesOfFunctionalInterfaces(m)))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();
         boolean isJLO = Primitives.isJavaLangObject(typeInfo);
         assert isJLO || parentClass != null :
                 "Parent class of " + typeInfo.fullyQualifiedName + " is null";
+        int numInterfaces = typeInspection.interfacesImplemented().size();
         if (!isJLO) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic,
-                    joinMaps(typeMap, parentClass), result, visited, staticOnly, scopeNature);
+                    joinMaps(typeMap, parentClass), result, visited, staticOnly, scopeNature, distance + numInterfaces + 1);
         }
+        int count = 0;
         for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
-                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly, scopeNature);
+                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly,
+                    scopeNature, distance + count);
+            ++count;
         }
         // See UtilityClass_2 for an example where we should go to the static methods of the enclosing type
         if (typeInfo.packageNameOrEnclosingType.isRight()) {
@@ -367,25 +374,9 @@ public class TypeContext implements TypeAndInspectionProvider {
                     !onlyStatic && scopeNature != Scope.ScopeNature.STATIC) {
                 ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
                 recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
-                        joinMaps(typeMap, enclosingType), result, visited, onlyStatic, scopeNature);
+                        joinMaps(typeMap, enclosingType), result, visited, onlyStatic, scopeNature, distance + numInterfaces);
             }
         }
-    }
-
-    private Set<Integer> findIndicesOfFunctionalInterfaces(MethodInspection m) {
-        Set<Integer> res = new HashSet<>();
-        int i = 0;
-        for (ParameterInfo parameterInfo : m.getParameters()) {
-            if (parameterInfo.parameterizedType.typeInfo != null) {
-                TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(parameterInfo.parameterizedType.typeInfo));
-                if (typeInspection.typeNature() == TypeNature.INTERFACE && typeInspection.hasAnnotation(
-                        getPrimitives().functionalInterfaceAnnotationExpression)) {
-                    res.add(i);
-                }
-            }
-            i++;
-        }
-        return res;
     }
 
     private boolean compatibleNumberOfParameters(MethodInspection m, int parametersPresented) {

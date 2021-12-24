@@ -151,6 +151,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             return noCandidatesError(errorInfo, filterResult.evaluatedExpressions);
         }
 
+        // FIXME methodcall 10 sibling implementations, use leftmost
         if (methodCandidates.size() > 1) {
             trimMethodsWithBestScore(methodCandidates, filterResult.compatibilityScore);
             if (methodCandidates.size() > 1) {
@@ -365,8 +366,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             if (!foundCombination) {
                 sumScore = -1; // to be removed immediately
             } else {
-                int steps = stepsInHierarchy(methodCandidate.method().methodInspection, scopeContext);
-                sumScore += IsAssignableFrom.IN_HIERARCHY * steps;
+                sumScore += IsAssignableFrom.IN_HIERARCHY * methodCandidate.distance();
                 if (acceptedErasedTypesCombination == null) {
                     acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
                 } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
@@ -384,17 +384,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         });
 
         return new FilterResult(evaluatedExpressions, compatibilityScore);
-    }
-
-    private int stepsInHierarchy(MethodInspection methodInspection, ParameterizedType scopeContext) {
-        if (!methodInspection.isStatic() &&
-                scopeContext != null && scopeContext.typeInfo != null && !Primitives.isVoid(scopeContext)) {
-            int steps = scopeContext.typeInfo.stepsInHierarchy(methodInspection.getMethodInfo().typeInfo, typeContext);
-            assert steps != Integer.MAX_VALUE :
-                    "Could not find " + methodInspection.getMethodInfo().typeInfo + " in hierarchy of " + scopeContext.typeInfo;
-            return steps;
-        }
-        return 0;
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,

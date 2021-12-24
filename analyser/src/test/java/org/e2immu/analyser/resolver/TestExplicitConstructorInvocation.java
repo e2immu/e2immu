@@ -42,4 +42,11 @@ public class TestExplicitConstructorInvocation extends CommonTest {
         assertNotNull(typeInfo);
     }
 
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(ExplicitConstructorInvocation_2.class);
+        TypeInfo typeInfo = typeMap.get(ExplicitConstructorInvocation_2.class);
+        assertNotNull(typeInfo);
+    }
+
 }
