@@ -80,7 +80,14 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         }
 
         // Assignment to Object: everything can be assigned to object!
-        if (Primitives.isJavaLangObject(target)) return IN_HIERARCHY;
+        if (ignoreArrays) {
+            if (target.typeInfo != null && Primitives.isJavaLangObject(target.typeInfo)) {
+                return IN_HIERARCHY;
+            }
+        } else if (Primitives.isJavaLangObject(target)) {
+            return IN_HIERARCHY;
+        }
+
 
         // TWO TYPES, POTENTIALLY WITH PARAMETERS, but not TYPE PARAMETERS
         // List<T> vs LinkedList; int vs double, but not T vs LinkedList

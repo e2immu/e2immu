@@ -97,4 +97,15 @@ public class EnclosedExpression extends ElementImpl implements Expression {
     public Expression inner() {
         return inner;
     }
+
+    @Override
+    public boolean isInstanceOf(Class<? extends Expression> clazz) {
+        return inner.isInstanceOf(clazz);
+    }
+
+    @Override
+    public <T extends Expression> T asInstanceOf(Class<T> clazz) {
+        return inner.asInstanceOf(clazz);
+    }
+
 }

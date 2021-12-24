@@ -62,4 +62,10 @@ public class TestLambda extends CommonTest {
         assertNotNull(typeInfo);
     }
 
+    @Test
+    public void test_5() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Lambda_5.class);
+        TypeInfo typeInfo = typeMap.get(Lambda_5.class);
+        assertNotNull(typeInfo);
+    }
 }

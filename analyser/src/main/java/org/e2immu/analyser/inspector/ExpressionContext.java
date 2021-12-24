@@ -721,7 +721,8 @@ public class ExpressionContext {
                         .map(this::parseExpression).collect(Collectors.toList()), forwardReturnTypeInfo.type());
             }
             if (expression.isEnclosedExpr()) {
-                return new EnclosedExpression(identifier, parseExpression(((EnclosedExpr) expression).getInner()));
+                Expression inner = parseExpression(((EnclosedExpr) expression).getInner(), forwardReturnTypeInfo);
+                return new EnclosedExpression(identifier, inner);
             }
             if (expression.isLongLiteralExpr()) {
                 String value = expression.asLongLiteralExpr().getValue();

@@ -56,7 +56,8 @@ public class ParseLambdaExpr {
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
         InspectionProvider inspectionProvider = expressionContext.typeContext;
         MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(inspectionProvider);
-        assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
+        assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
+                : "No SAM at " + lambdaExpr.getBegin();
 
         log(LAMBDA, "Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
 

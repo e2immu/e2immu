@@ -57,7 +57,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         sortRemainingCandidatesByShallowPublic(methodCandidates);
 
         Set<ParameterizedType> types = methodCandidates.stream()
-                .map(mc ->  mc.method().methodInspection.getReturnType().applyTranslation(scope.typeParameterMap().map()))
+                .map(mc -> mc.method().methodInspection.getReturnType().applyTranslation(scope.typeParameterMap().map()))
                 .collect(Collectors.toUnmodifiableSet());
         log(METHOD_CALL, "Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
@@ -237,12 +237,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
-            if (e instanceof ErasureExpression) {
+            if (e.isInstanceOf(ErasureExpression.class)) {
                 log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}", errorInfo.methodName, i);
                 ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, scopeContext, extra);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
-                assert !(reParsed instanceof ErasureExpression);
+                assert !(reParsed.isInstanceOf(ErasureExpression.class));
                 newParameterExpressions.add(reParsed);
             } else {
                 newParameterExpressions.add(e);
@@ -281,7 +281,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
                 evaluatedExpressions.entrySet().stream()
                         .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
-                            if (e.getValue() instanceof ErasureExpression erasure) {
+                            ErasureExpression erasure;
+                            // NOTE: that EnclosedExpression(ErasureExpression) is possible
+                            if ((erasure = e.getValue().asInstanceOf(ErasureExpression.class)) != null) {
                                 return typeParameterMap.replaceKeys(erasure.erasureTypes(typeContext));
                             }
                             return Map.of(e.getValue().returnType().applyTranslation(typeParameterMap.map()),
@@ -552,7 +554,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
         return new ForwardReturnTypeInfo(singleAbstractMethod.applyMap(abstractType), false);*/
     }
-
 
 
     private TypeParameter tryToFindTypeTypeParameter(MethodTypeParameterMap method, TypeParameter methodTypeParameter) {

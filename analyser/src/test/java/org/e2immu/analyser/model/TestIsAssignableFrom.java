@@ -37,6 +37,8 @@ public class TestIsAssignableFrom {
     public static final String JAVA_LANG_STRING = "java.lang.String";
     public static final String JAVA_LANG_INTEGER = "java.lang.Integer";
     public static final String JAVA_UTIL_LIST = "java.util.List";
+    public static final String JAVA_LANG_OBJECT = "java.lang.Object";
+
     private static TypeContext typeContext;
     private static Primitives primitives;
 
@@ -72,23 +74,38 @@ public class TestIsAssignableFrom {
     }
 
     // CharSequence[] <- String[] should be allowed
+    // Object[] <- CharSequence[], <- String[] should be allowed, not the other way around
     @Test
     public void testArray() {
         ParameterizedType stringPt = type(JAVA_LANG_STRING);
         ParameterizedType charSeqPt = type(JAVA_LANG_CHAR_SEQUENCE);
+        ParameterizedType objectPt = type(JAVA_LANG_OBJECT);
+
         assertFalse(stringPt.isAssignableFrom(typeContext, charSeqPt));
         assertTrue(charSeqPt.isAssignableFrom(typeContext, stringPt));
+        assertTrue(objectPt.isAssignableFrom(typeContext, charSeqPt));
+        assertTrue(objectPt.isAssignableFrom(typeContext, stringPt));
+        assertFalse(stringPt.isAssignableFrom(typeContext, objectPt));
+        assertFalse(charSeqPt.isAssignableFrom(typeContext, objectPt));
 
         ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_STRING)), 1);
         ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_CHAR_SEQUENCE)), 1);
+        ParameterizedType objectArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_OBJECT)), 1);
 
         CharSequence[] sequences = new String[]{"a", "b"};
         for (CharSequence sequence : sequences) {
             assertEquals(1, sequence.length());
         }
+
         assertFalse(stringArrayPt.isAssignableFrom(typeContext, charSeqArrayPt));
         assertTrue(charSeqArrayPt.isAssignableFrom(typeContext, stringArrayPt));
         assertTrue(charSeqArrayPt.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
+
+        assertTrue(objectArrayPt.isAssignableFrom(typeContext, charSeqArrayPt));
+        assertTrue(objectArrayPt.isAssignableFrom(typeContext, stringArrayPt));
+
+        assertFalse(stringArrayPt.isAssignableFrom(typeContext, objectArrayPt));
+        assertFalse(charSeqArrayPt.isAssignableFrom(typeContext, objectArrayPt));
     }
 
     // String <- null should be allowed, but int <- null should fail
