@@ -57,7 +57,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         sortRemainingCandidatesByShallowPublic(methodCandidates);
 
         Set<ParameterizedType> types = methodCandidates.stream()
-                .map(mc -> mc.method().methodInspection.getReturnType().applyTranslation(scope.typeParameterMap().map()))
+                .map(mc -> {
+                    TypeParameterMap map = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
+                            .merge(scope.typeParameterMap());
+                    ParameterizedType returnType = mc.method().methodInspection.getReturnType();
+                    return returnType.applyTranslation(map.map());
+                })
                 .collect(Collectors.toUnmodifiableSet());
         log(METHOD_CALL, "Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
@@ -72,30 +77,36 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext));
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, forwardReturnTypeInfo.extra());
-        List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         ErrorInfo errorInfo = new ErrorInfo("method " + methodName, scope.type(),
                 methodCallExpr.getBegin().orElseThrow());
 
-        TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
+        try {
+            List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
-        Candidate candidate = chooseCandidateAndEvaluateCall(expressionContext,
-                methodCandidates,
-                methodCallExpr.getArguments(),
-                forwardReturnTypeInfo.type(),
-                extra,
-                errorInfo);
+            TypeParameterMap extra = forwardReturnTypeInfo.extra().merge(scope.typeParameterMap());
 
-        assert candidate != null : "Should have found a unique candidate for " + errorInfo;
-        log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
+            Candidate candidate = chooseCandidateAndEvaluateCall(expressionContext,
+                    methodCandidates,
+                    methodCallExpr.getArguments(),
+                    forwardReturnTypeInfo.type(),
+                    extra,
+                    errorInfo);
 
-        Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
-        return new MethodCall(Identifier.from(methodCallExpr),
-                scope.objectIsImplicit(),
-                newScope,
-                candidate.method.methodInspection.getMethodInfo(),
-                candidate.returnType(),
-                candidate.newParameterExpressions);
+            assert candidate != null : "Should have found a unique candidate for " + errorInfo;
+            log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
+
+            Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
+            return new MethodCall(Identifier.from(methodCallExpr),
+                    scope.objectIsImplicit(),
+                    newScope,
+                    candidate.method.methodInspection.getMethodInfo(),
+                    candidate.returnType(),
+                    candidate.newParameterExpressions);
+        } catch (Throwable rte) {
+            LOGGER.error("Exception at {}", errorInfo);
+            throw rte;
+        }
     }
 
     private List<TypeContext.MethodCandidate> initialMethodCandidates(Scope scope,
@@ -105,7 +116,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         typeContext.recursivelyResolveOverloadedMethods(scope.type(), methodName,
                 numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
-        assert !methodCandidates.isEmpty() : "Compilation error!";
+        assert !methodCandidates.isEmpty() : "No candidates at all for method name " + methodName + ", " + numArguments + " args";
         return methodCandidates;
     }
 
@@ -262,9 +273,50 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         return null;
     }
 
+    // FIXME check that this method doesn't do exactly the same as mapExpansion
+
     private record FilterResult(Map<Integer, Expression> evaluatedExpressions,
                                 Map<MethodInfo, Integer> compatibilityScore) {
 
+        public TypeParameterMap typeParameterMap(TypeContext typeContext,
+                                                 MethodInspection candidate) {
+            Map<NamedType, ParameterizedType> result = new HashMap<>();
+            int i = 0;
+            for (ParameterInfo parameterInfo : candidate.getParameters()) {
+                if (i >= evaluatedExpressions.size()) break;
+                Expression expression = evaluatedExpressions.get(i);
+                // we have a match between the return type of the expression, and the type of the parameter
+                // expression: MethodCallErasure, with Collector<T,?,Set<T>> as concrete type
+                // parameter type: Collector<? super T,A,R>   (T belongs to Stream, A,R to the collect method)
+                // we want to add R --> Set<T> to the type map
+                ErasureExpression erasureExpression;
+                Map<NamedType, ParameterizedType> map = new HashMap<>();
+                if ((erasureExpression = expression.asInstanceOf(ErasureExpression.class)) != null) {
+                    for (ParameterizedType pt : erasureExpression.erasureTypes(typeContext).keySet()) {
+                        map.putAll(pt.initialTypeParameterMap(typeContext));
+                    }
+                } else {
+                    map.putAll(expression.returnType().initialTypeParameterMap(typeContext));
+                }
+                // we now have R as #2 in Collector mapped to Set<T>, and we need to replace that by the
+                // actual type parameter of the formal type of parameterInfo
+                //result.putAll( parameterInfo.parameterizedType.translateMap(typeContext, map));
+                int j = 0;
+                for (ParameterizedType tp : parameterInfo.parameterizedType.parameters) {
+                    if (tp.typeParameter != null) {
+                        int index = j;
+                        map.entrySet().stream()
+                                .filter(e -> e.getKey() instanceof TypeParameter t && t.getIndex() == index)
+                                .map(Map.Entry::getValue)
+                                .findFirst()
+                                .ifPresent(inMap -> result.put(tp.typeParameter, inMap));
+                    }
+                    j++;
+                }
+                i++;
+            }
+            return new TypeParameterMap(result);
+        }
     }
 
 
