@@ -20,10 +20,7 @@ import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.Constructor_0;
-import org.e2immu.analyser.resolver.testexample.Constructor_1;
-import org.e2immu.analyser.resolver.testexample.Constructor_2;
-import org.e2immu.analyser.resolver.testexample.Constructor_3;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -70,6 +67,14 @@ public class TestConstructor extends CommonTest {
     public void test_3() throws IOException {
         TypeMap typeMap = inspectAndResolve(Constructor_3.class);
         TypeInfo typeInfo = typeMap.get(Constructor_3.class);
+        assertNotNull(typeInfo);
+    }
+
+
+    @Test
+    public void test_4() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_4.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_4.class);
         assertNotNull(typeInfo);
     }
 }

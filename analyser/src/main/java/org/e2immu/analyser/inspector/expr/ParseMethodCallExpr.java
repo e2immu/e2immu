@@ -57,7 +57,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         sortRemainingCandidatesByShallowPublic(methodCandidates);
 
         Set<ParameterizedType> types = methodCandidates.stream()
-                .map(mc -> mc.method().methodInspection.getReturnType())
+                .map(mc ->  mc.method().methodInspection.getReturnType().applyTranslation(scope.typeParameterMap().map()))
                 .collect(Collectors.toUnmodifiableSet());
         log(METHOD_CALL, "Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
