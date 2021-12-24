@@ -66,7 +66,7 @@ public class ParseExplicitConstructorInvocation {
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo(isThis ? "this()" : "super()",
                 enclosingType.asParameterizedType(typeContext), position);
 
-        TypeParameterMap extra = new TypeParameterMap(); // TODO
+        TypeParameterMap extra = TypeParameterMap.EMPTY; // TODO
 
         ParseMethodCallExpr parser = new ParseMethodCallExpr(typeContext);
         ParseMethodCallExpr.Candidate candidate = parser.chooseCandidateAndEvaluateCall(expressionContext,

@@ -48,11 +48,11 @@ import java.util.Map;
 public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, TypeParameterMap extra) {
 
     public ForwardReturnTypeInfo(ParameterizedType type) {
-        this(type, false, new TypeParameterMap());
+        this(type, false,  TypeParameterMap.EMPTY);
     }
 
     public ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
-        this(type, erasure, new TypeParameterMap());
+        this(type, erasure,  TypeParameterMap.EMPTY);
     }
 
     // we'd rather have java.lang.Boolean, because as soon as type parameters are involved, primitives

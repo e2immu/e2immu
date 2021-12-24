@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.TypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -65,8 +66,10 @@ public record Scope(Expression expression,
 
     static Scope computeScope(ExpressionContext expressionContext,
                               InspectionProvider inspectionProvider,
-                              MethodCallExpr methodCallExpr) {
-        Expression scope = methodCallExpr.getScope().map(expressionContext::parseExpression).orElse(null);
+                              MethodCallExpr methodCallExpr,
+                              TypeParameterMap extra) {
+        ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, false, extra);
+        Expression scope = methodCallExpr.getScope().map(e -> expressionContext.parseExpression(e, forward)).orElse(null);
         // depending on the object, we'll need to find the method somewhere
         ParameterizedType scopeType;
         Scope.ScopeNature scopeNature;

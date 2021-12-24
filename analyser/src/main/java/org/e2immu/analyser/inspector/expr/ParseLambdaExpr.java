@@ -129,7 +129,6 @@ public class ParseLambdaExpr {
                 new TypeParameterMap(extra));
 
         Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, newForward, inspectionProvider);
-        assert evaluation != null;
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
@@ -156,10 +155,7 @@ public class ParseLambdaExpr {
             Expression expr = lambdaExpr.getExpressionBody()
                     .map(e -> newExpressionContext.parseExpression(e, forwardReturnTypeInfo))
                     .orElse(EmptyExpression.EMPTY_EXPRESSION);
-            if (expr instanceof MethodCallErasure) {
-                log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
-                return null;
-            }
+
             Identifier identifier = Identifier.from(lambdaExpr);
             ParameterizedType inferredReturnType = expr.returnType();
             if (forwardReturnTypeInfo.isVoid(newExpressionContext.typeContext)) {

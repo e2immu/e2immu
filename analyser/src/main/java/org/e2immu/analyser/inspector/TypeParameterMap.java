@@ -26,7 +26,9 @@ import java.util.stream.Collectors;
  */
 public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
 
-    public TypeParameterMap() {
+    public static final TypeParameterMap EMPTY = new TypeParameterMap();
+
+    private TypeParameterMap() {
         this(Map.of());
     }
 

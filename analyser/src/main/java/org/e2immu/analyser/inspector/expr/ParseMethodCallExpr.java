@@ -43,7 +43,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Start computing erasure of method call {}, method name {}, {} args", methodCallExpr,
                 methodName, numArguments);
 
-        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr);
+        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, TypeParameterMap.EMPTY);
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         FilterResult filterResult = filterMethodCandidatesInErasureMode(expressionContext, methodCandidates,
@@ -71,7 +71,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
                 methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext));
 
-        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr);
+        Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, forwardReturnTypeInfo.extra());
         List<TypeContext.MethodCandidate> methodCandidates = initialMethodCandidates(scope, numArguments, methodName);
 
         ErrorInfo errorInfo = new ErrorInfo("method " + methodName, scope.type(),
@@ -151,7 +151,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             return noCandidatesError(errorInfo, filterResult.evaluatedExpressions);
         }
 
-        // FIXME methodcall 10 sibling implementations, use leftmost
         if (methodCandidates.size() > 1) {
             trimMethodsWithBestScore(methodCandidates, filterResult.compatibilityScore);
             if (methodCandidates.size() > 1) {
@@ -347,7 +346,22 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     ParameterizedType actualType = e.getKey();
                     ErasureExpression.MethodStatic methodStatic = e.getValue();
                     if (methodStatic.test(methodCandidate.method().methodInspection)) {
-                        int compatible = callIsAssignableFrom(actualType, formalType);
+                        int compatible;
+
+                        if (isFreeTypeParameter(actualType, typeParameterMap)) {
+                            /*
+                            See test Lambda_6, and Lambda_7
+
+                            situation: the formal type is a normal TypeInfo, the actual type is a method type parameter
+                            representing the method result; we should add the actual<-formal to the extra when evaluating.
+
+                            Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
+                            this condition doesn't occur too often
+                             */
+                            compatible = 5;   // FIXME should we actually forward the actual <- formal mapping?
+                        } else {
+                            compatible = callIsAssignableFrom(actualType, formalType);
+                        }
                         if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                             bestCompatible = compatible;
                             bestAcceptedType = actualType;
@@ -386,6 +400,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         });
 
         return new FilterResult(evaluatedExpressions, compatibilityScore);
+    }
+
+    private boolean isFreeTypeParameter(ParameterizedType actualType, TypeParameterMap typeParameterMap) {
+        return actualType.typeParameter != null && actualType.typeParameter.isMethodTypeParameter();
     }
 
     private FilterResult filterMethodCandidatesInErasureMode(ExpressionContext expressionContext,

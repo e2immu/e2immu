@@ -80,7 +80,8 @@ public class ParseObjectCreationExpr {
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         forward, voidType, forwardReturnTypeInfo.extra(), errorInfo);
-        assert candidate != null;
+        assert candidate != null : "No candidate for constructor of type "+typeAsIs.detailedString(typeContext);
+
         ParameterizedType finalParameterizedType;
         if (parameterizedType == null) {
             // there's only one method left, so we can derive the parameterized type from the parameters
