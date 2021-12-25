@@ -128,7 +128,7 @@ public record ParseAndInspect(Resources classPath,
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = importTypeNoSubTypes(fqn); // no subtypes, they appear individually in the classPath
+                TypeInfo typeInfo = loadTypeDoNotImport(fqn); // no subtypes, they appear individually in the classPath
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
@@ -170,12 +170,12 @@ public record ParseAndInspect(Resources classPath,
     private void importNamed(TypeContext typeContextOfFile, String fullyQualified) {
         // higher priority names, allowOverwrite = true
         log(INSPECTOR, "Import of {}", fullyQualified);
-        TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
+        TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified);
         // when a type is imported, its sub-types are accessible straight away
         // (they might need disambiguation, but that's not the problem here)
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
         assert inspection != null : "Type inspection of " + typeInfo.fullyQualifiedName + " not found";
-        inspection.subTypes().forEach(subType -> importTypeNoSubTypes(subType.fullyQualifiedName));
+        inspection.subTypes().forEach(subType -> loadTypeDoNotImport(subType.fullyQualifiedName));
 
         typeContextOfFile.addToContext(typeInfo, true); // simple name for primary
     }
@@ -222,7 +222,7 @@ public record ParseAndInspect(Resources classPath,
         int dot = fullyQualified.lastIndexOf('.');
         String typeOrSubTypeName = fullyQualified.substring(0, dot);
         String member = fullyQualified.substring(dot + 1);
-        TypeInfo typeInfo = importTypeNoSubTypes(typeOrSubTypeName);
+        TypeInfo typeInfo = loadTypeDoNotImport(typeOrSubTypeName);
         TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
         if (inspection == null) {
             log(INSPECTOR, "We cannot know whether member '{}' is a sub-type, or a method/field in {}", member, typeOrSubTypeName);
@@ -242,16 +242,21 @@ public record ParseAndInspect(Resources classPath,
         }
     }
 
+    /*
+    Imports both sub-types, fields, and methods.
+    If an explicit import of one of these sub-types comes later, it does override, see Import_2
+    Import_1 shows that static imports do NOT import the types before the *
+     */
     private void importStaticAsterisk(TypeContext typeContextOfFile, String fullyQualified) {
-        TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
+        TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified);
         log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
         typeContextOfFile.addImportStaticWildcard(typeInfo);
-        // also, import the static sub-types
+        // also, import the static sub-types, but with lower priority (overwrite false)
         TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
         if (inspection != null) {
             inspection.subTypes()
                     .stream().filter(st -> typeContextOfFile.getTypeInspection(st).isStatic())
-                    .forEach(st -> typeContextOfFile.addToContext(st, true));
+                    .forEach(st -> typeContextOfFile.addToContext(st, false));
         }
     }
 
@@ -269,7 +274,7 @@ public record ParseAndInspect(Resources classPath,
         }
     }
 
-    private TypeInfo importTypeNoSubTypes(String fqn) {
+    private TypeInfo loadTypeDoNotImport(String fqn) {
         TypeInfo inMap = typeMapBuilder.get(fqn);
         if (inMap != null) return inMap;
         // we don't know it... so we don't know the boundary between primary and sub-type

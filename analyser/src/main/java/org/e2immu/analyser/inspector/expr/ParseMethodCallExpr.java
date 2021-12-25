@@ -116,7 +116,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         typeContext.recursivelyResolveOverloadedMethods(scope.type(), methodName,
                 numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
-        assert !methodCandidates.isEmpty() : "No candidates at all for method name " + methodName + ", " + numArguments + " args";
+        assert !methodCandidates.isEmpty() : "No candidates at all for method name " + methodName + ", "
+                + numArguments + " args in type "+scope.type().detailedString(typeContext);
         return methodCandidates;
     }
 

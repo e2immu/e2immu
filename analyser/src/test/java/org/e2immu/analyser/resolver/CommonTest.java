@@ -28,17 +28,19 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public abstract class CommonTest {
-    protected static TypeMap inspectAndResolve(Class<?> clazz) throws IOException {
-        InputConfiguration inputConfiguration = new InputConfiguration.Builder()
+    protected static TypeMap inspectAndResolve(Class<?> clazz, String... extraSources) throws IOException {
+        InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api") // in Constructor_2
-                .addRestrictSourceToPackages(clazz.getCanonicalName())
-                .build();
+                .addRestrictSourceToPackages(clazz.getCanonicalName());
+        for (String source : extraSources) {
+            inputConfigurationBuilder.addRestrictSourceToPackages(source);
+        }
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
-                .setInputConfiguration(inputConfiguration)
+                .setInputConfiguration(inputConfigurationBuilder.build())
                 .addDebugLogTargets(Stream.of(RESOLVER, LAMBDA, METHOD_CALL).map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
