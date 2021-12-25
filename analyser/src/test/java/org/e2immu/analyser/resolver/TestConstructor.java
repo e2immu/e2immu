@@ -77,4 +77,9 @@ public class TestConstructor extends CommonTest {
         TypeInfo typeInfo = typeMap.get(Constructor_4.class);
         assertNotNull(typeInfo);
     }
+
+    @Test
+    public void test_5() throws IOException {
+        inspectAndResolve(Constructor_5.class);
+    }
 }

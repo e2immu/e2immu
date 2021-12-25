@@ -64,6 +64,8 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
+
+            // FIXME why are we not resolving it right now, in the correct expression context?
             return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
         }
 
