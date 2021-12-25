@@ -254,12 +254,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
-            if (e.isInstanceOf(ErasureExpression.class)) {
+            if (e.containsErasedExpressions()) {
                 log(METHOD_CALL, "Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
                 ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, extra);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
-                assert !(reParsed.isInstanceOf(ErasureExpression.class));
+                assert !reParsed.containsErasedExpressions();
                 newParameterExpressions.add(reParsed);
             } else {
                 newParameterExpressions.add(e);
@@ -293,10 +293,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 // expression: MethodCallErasure, with Collector<T,?,Set<T>> as concrete type
                 // parameter type: Collector<? super T,A,R>   (T belongs to Stream, A,R to the collect method)
                 // we want to add R --> Set<T> to the type map
-                ErasureExpression erasureExpression;
                 Map<NamedType, ParameterizedType> map = new HashMap<>();
-                if ((erasureExpression = expression.asInstanceOf(ErasureExpression.class)) != null) {
-                    for (ParameterizedType pt : erasureExpression.erasureTypes(typeContext).keySet()) {
+                if (expression.containsErasedExpressions()) {
+                    for (ParameterizedType pt : expression.erasureTypes(typeContext).keySet()) {
                         map.putAll(pt.initialTypeParameterMap(typeContext));
                     }
                 } else {
@@ -328,16 +327,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                       Map<Integer, Expression> evaluatedExpressions,
                                                       TypeParameterMap typeParameterMap) {
         Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
-                evaluatedExpressions.entrySet().stream()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> {
-                            ErasureExpression erasure;
-                            // NOTE: that EnclosedExpression(ErasureExpression) is possible
-                            if ((erasure = e.getValue().asInstanceOf(ErasureExpression.class)) != null) {
-                                return typeParameterMap.replaceKeys(erasure.erasureTypes(typeContext));
-                            }
-                            return Map.of(e.getValue().returnType().applyTranslation(typeParameterMap.map()),
-                                    ErasureExpression.MethodStatic.IGNORE);
-                        }));
+                evaluatedExpressions.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e ->
+                        typeParameterMap.replaceKeys(e.getValue().erasureTypes(typeContext))));
+
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
 
@@ -779,8 +771,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     private int compatibleParameter(Expression evaluatedExpression, ParameterizedType typeOfParameter) {
-        if (evaluatedExpression instanceof ErasureExpression erasureExpression) {
-            Map<ParameterizedType, ErasureExpression.MethodStatic> types = erasureExpression.erasureTypes(typeContext);
+        if (evaluatedExpression.containsErasedExpressions()) {
+            Map<ParameterizedType, ErasureExpression.MethodStatic> types = evaluatedExpression.erasureTypes(typeContext);
             return types.keySet().stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
                     .min().orElse(NOT_ASSIGNABLE);
         }

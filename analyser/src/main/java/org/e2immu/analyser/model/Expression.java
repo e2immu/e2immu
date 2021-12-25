@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -236,5 +237,36 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isDone() {
         return causesOfDelay().isDone();
+    }
+
+    default Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+        return Map.of(returnType(), MethodStatic.IGNORE);
+    }
+
+    default boolean isErased() {
+        return false;
+    }
+
+    default boolean containsErasedExpressions() {
+        if (isErased()) return true;
+        return subElements().stream().anyMatch(e ->
+                e instanceof Expression expression && expression.containsErasedExpressions());
+    }
+
+    enum MethodStatic {
+        YES, NO, IGNORE;
+
+        public static MethodStatic from(MethodInspection methodInspection) {
+            return methodInspection.isStatic() ? YES : NO;
+        }
+
+        public boolean test(MethodInspection methodInspection) {
+            return switch (this) {
+                case IGNORE -> true;
+                case YES -> methodInspection.isStatic();
+                case NO -> !methodInspection.isStatic();
+            };
+
+        }
     }
 }

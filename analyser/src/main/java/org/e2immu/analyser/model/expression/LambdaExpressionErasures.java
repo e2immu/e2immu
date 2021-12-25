@@ -102,6 +102,5 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
         return counts.stream().collect(Collectors.toUnmodifiableMap(count -> typeContext.typeMapBuilder
                         .syntheticFunction(count.parameters, count.isVoid).asParameterizedType(typeContext),
                 Count::methodStatic));
-
     }
 }

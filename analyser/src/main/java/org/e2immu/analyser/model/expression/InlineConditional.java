@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -219,6 +221,18 @@ public class InlineConditional extends ElementImpl implements Expression {
         }
         if (ifFalse.isNull()) return box(ifTrue.returnType());
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
+    }
+
+    @Override
+    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+        if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
+        if (ifTrue.isNull()) {
+            return ifFalse.erasureTypes(typeContext);
+        }
+        if (ifFalse.isNull()) return ifTrue.erasureTypes(typeContext);
+        var t = new HashMap<>(ifTrue.erasureTypes(typeContext));
+        t.putAll(ifFalse.erasureTypes(typeContext));
+        return Map.copyOf(t);
     }
 
     private ParameterizedType box(ParameterizedType returnType) {

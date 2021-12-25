@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
-import org.e2immu.analyser.model.expression.MethodCallErasure;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -31,7 +30,7 @@ import org.e2immu.analyser.parser.TypeMapImpl;
 
 import java.util.*;
 
-import static org.e2immu.analyser.model.expression.ErasureExpression.MethodStatic.IGNORE;
+import static org.e2immu.analyser.model.Expression.MethodStatic.IGNORE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 

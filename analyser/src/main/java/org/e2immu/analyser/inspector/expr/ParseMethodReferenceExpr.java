@@ -20,7 +20,6 @@ import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ErasureExpression;
 import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -193,7 +192,7 @@ public class ParseMethodReferenceExpr {
             boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic();
             int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
             boolean isVoid = methodInspection.isVoid();
-            erasures.add(new LambdaExpressionErasures.Count(n, isVoid, ErasureExpression.MethodStatic.from(methodInspection)));
+            erasures.add(new LambdaExpressionErasures.Count(n, isVoid, Expression.MethodStatic.from(methodInspection)));
         }
         log(METHOD_CALL, "End parsing unevaluated method reference {}, found counts {}", methodReferenceExpr, erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());

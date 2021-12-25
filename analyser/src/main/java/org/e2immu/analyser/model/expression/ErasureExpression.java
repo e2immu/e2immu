@@ -14,32 +14,15 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInspection;
-import org.e2immu.analyser.model.ParameterizedType;
 
-import java.util.Map;
-
+/*
+marker interface
+ */
 public interface ErasureExpression extends Expression {
 
-    enum MethodStatic {
-        YES, NO, IGNORE;
-
-        public static MethodStatic from(MethodInspection methodInspection) {
-            return methodInspection.isStatic() ? YES : NO;
-        }
-
-        public boolean test(MethodInspection methodInspection) {
-            return switch (this) {
-                case IGNORE -> true;
-                case YES -> methodInspection.isStatic();
-                case NO -> !methodInspection.isStatic();
-            };
-
-        }
+    @Override
+    default boolean isErased() {
+        return true;
     }
-
-    Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext);
-
 }

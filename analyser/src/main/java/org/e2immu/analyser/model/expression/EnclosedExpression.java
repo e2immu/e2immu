@@ -18,12 +18,14 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @E2Container
@@ -108,4 +110,8 @@ public class EnclosedExpression extends ElementImpl implements Expression {
         return inner.asInstanceOf(clazz);
     }
 
+    @Override
+    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+        return inner.erasureTypes(typeContext);
+    }
 }
