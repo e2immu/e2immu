@@ -174,7 +174,7 @@ public record ParseAndInspect(Resources classPath,
         // when a type is imported, its sub-types are accessible straight away
         // (they might need disambiguation, but that's not the problem here)
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
-        assert inspection != null;
+        assert inspection != null : "Type inspection of " + typeInfo.fullyQualifiedName + " not found";
         inspection.subTypes().forEach(subType -> importTypeNoSubTypes(subType.fullyQualifiedName));
 
         typeContextOfFile.addToContext(typeInfo, true); // simple name for primary

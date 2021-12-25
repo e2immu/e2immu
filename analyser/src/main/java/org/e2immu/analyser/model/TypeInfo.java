@@ -364,47 +364,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
                 .findFirst().orElseThrow();
     }
 
-    public MethodInfo findConstructor(InspectionProvider inspectionProvider, List<Expression> parameterExpressions) {
-        return findConstructor(inspectionProvider, parameterExpressions, true);
-    }
-
-    private MethodInfo findConstructor(InspectionProvider inspectionProvider,
-                                       List<Expression> parameterExpressions,
-                                       boolean allowPrivate) {
-        MethodInfo constructor = inspectionProvider.getTypeInspection(this).constructors().stream()
-                .filter(mi -> allowPrivate || !mi.isPrivate(inspectionProvider))
-                .filter(mi -> compatibleParameters(inspectionProvider, parameterExpressions, mi))
-                .findFirst().orElse(null);
-        if (constructor != null) return constructor;
-        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        if (inspection.parentClass() != null) {
-            return inspection.parentClass().typeInfo.findConstructor(inspectionProvider, parameterExpressions, false);
-        }
-        throw new UnsupportedOperationException("Could not find correct constructor");
-    }
-
-    private boolean compatibleParameters(InspectionProvider inspectionProvider,
-                                         List<Expression> parameterExpressions,
-                                         MethodInfo methodInfo) {
-        MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
-        int nFormal = inspection.getParameters().size();
-        if (nFormal == parameterExpressions.size() || nFormal > 0 && nFormal < parameterExpressions.size()
-                && inspection.getParameters().get(nFormal - 1).parameterInspection.get().isVarArgs()) {
-            int i = 0;
-            for (ParameterInfo parameterInfo : inspection.getParameters()) {
-                Expression expression = parameterExpressions.get(i);
-                ParameterizedType formalType = parameterInfo.parameterizedType;
-                ParameterizedType concreteType = expression.returnType();
-                if (!formalType.isAssignableFrom(inspectionProvider, concreteType)) {
-                    return false;
-                }
-                i++;
-            }
-            return true;
-        }
-        return false;
-    }
-
     public boolean isPrimaryType() {
         return packageNameOrEnclosingType.isLeft();
     }
@@ -615,25 +574,5 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     @Override
     public int compareTo(TypeInfo o) {
         return fullyQualifiedName.compareTo(o.fullyQualifiedName);
-    }
-
-    public int stepsInHierarchy(TypeInfo target, InspectionProvider inspectionProvider) {
-        if (equals(target)) return 0;
-        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        ParameterizedType parent = inspection.parentClass();
-        int bestSteps = Integer.MAX_VALUE;
-        if (parent != null) {
-            int steps = parent.typeInfo.stepsInHierarchy(target, inspectionProvider);
-            if (steps != Integer.MAX_VALUE) {
-                bestSteps = steps + 1;
-            }
-        }
-        for (ParameterizedType implemented : inspection.interfacesImplemented()) {
-            int steps = implemented.typeInfo.stepsInHierarchy(target, inspectionProvider);
-            if (steps != Integer.MAX_VALUE) {
-                bestSteps = Math.min(bestSteps, steps + 1);
-            }
-        }
-        return bestSteps;
     }
 }

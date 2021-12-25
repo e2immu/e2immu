@@ -850,9 +850,9 @@ public class Resolver {
         Stream<FieldInfo> localStream = typeInspection.fields().stream()
                 .filter(fieldInfo -> acceptField(inspectionProvider, fieldInfo, inSameCompilationUnit, inSamePackage));
 
-        // my enclosing type's fields
+        // my enclosing type's fields, but only when I'm not a static nested type!
         Stream<FieldInfo> enclosingStream;
-        if (typeInfo.packageNameOrEnclosingType.isRight()) {
+        if (typeInfo.packageNameOrEnclosingType.isRight() && !typeInspection.isStatic()) {
             enclosingStream = accessibleFieldsStream(inspectionProvider,
                     typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName);
         } else {
