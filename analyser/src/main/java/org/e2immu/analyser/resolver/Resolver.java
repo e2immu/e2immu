@@ -330,7 +330,7 @@ public class Resolver {
                     ConstructorCall newObject = constructorCalls.stream()
                             .filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
                     TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
-                    sam = anonymousType.findOverriddenSingleAbstractMethod();
+                    sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
                 } else {
                     // implicit anonymous type
                     // no point in creating something that we cannot (yet) deal with...
@@ -339,7 +339,7 @@ public class Resolver {
                         sam = null;
                     } else if (parsedExpression instanceof Lambda lambda) {
                         assert lambda.implementation.typeInfo != null; // to keep IntelliJ happy
-                        sam = lambda.implementation.typeInfo.findOverriddenSingleAbstractMethod();
+                        sam = lambda.implementation.typeInfo.findOverriddenSingleAbstractMethod(inspectionProvider);
                     } else if (parsedExpression instanceof MethodReference) {
                         sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
@@ -360,7 +360,7 @@ public class Resolver {
                 artificial = false;
             }
             fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
-            Element toVisit = sam != null ? sam.methodInspection.get().getMethodBody() : parsedExpression;
+            Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);

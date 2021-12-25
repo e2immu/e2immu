@@ -128,7 +128,7 @@ public class ExpressionContext {
     public ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
         return new ExpressionContext(resolver, enclosingType, null,
-                methodInfo, forwardReturnTypeInfo, null, null,
+                methodInfo, forwardReturnTypeInfo, null, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
@@ -151,6 +151,15 @@ public class ExpressionContext {
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
     }
 
+    public ExpressionContext newSwitchExpressionContext(ForwardReturnTypeInfo typeOfEnclosingSwitchExpression) {
+        log(EXPRESSION_CONTEXT, "Creating a new switch expression context");
+        return new ExpressionContext(resolver, enclosingType, uninspectedEnclosingType,
+                enclosingMethod,
+                forwardReturnTypeInfo,
+                enclosingField, typeOfEnclosingSwitchExpression,
+                primaryType, typeContext, variableContext,
+                anonymousTypeCounters);
+    }
 
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);

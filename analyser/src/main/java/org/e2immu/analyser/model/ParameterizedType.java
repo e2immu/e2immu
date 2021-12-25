@@ -354,6 +354,7 @@ public class ParameterizedType {
             // concrete type is the super type, we MUST work towards the supertype!
             formalMap = typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, concreteType);
         }
+        if(formalMap == null) return mapOfConcreteType;
         return TypeInfo.combineMaps(mapOfConcreteType, formalMap);
     }
 

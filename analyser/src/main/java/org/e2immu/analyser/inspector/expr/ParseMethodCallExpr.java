@@ -387,7 +387,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                     ParameterizedType actualType = e.getKey();
                     ErasureExpression.MethodStatic methodStatic = e.getValue();
-                    if (methodStatic.test(methodCandidate.method().methodInspection)) {
+                    if (methodStatic != Expression.MethodStatic.YES) {
                         int compatible;
 
                         if (isFreeTypeParameter(actualType)) {
@@ -408,10 +408,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             bestCompatible = compatible;
                             bestAcceptedType = actualType;
                         }
-                    } else {
-                        log(METHOD_CALL, "Skipping parameter {}, {}, candidate {}", pos, methodStatic,
-                                methodCandidate.method().methodInspection.getMethodInfo().fullyQualifiedName);
-                    }
+                    } // else skip
                 }
                 if (bestCompatible < 0) {
                     foundCombination = false;

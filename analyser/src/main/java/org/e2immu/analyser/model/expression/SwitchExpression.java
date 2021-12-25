@@ -113,7 +113,7 @@ public class SwitchExpression extends ElementImpl implements Expression, HasSwit
                 builder.composeIgnoreExpression(entryResult);
                 newYieldExpressions.add(entryResult.getExpression());
             } else {
-                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry.structure.statements());
+                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry);
                 newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
             }
         }

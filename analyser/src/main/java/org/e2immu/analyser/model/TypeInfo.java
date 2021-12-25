@@ -343,9 +343,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
     // this type implements a functional interface, and we need to find the single abstract method
 
-    public MethodInfo findOverriddenSingleAbstractMethod() {
+    public MethodInfo findOverriddenSingleAbstractMethod(InspectionProvider inspectionProvider) {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .map(mi -> mi.methodInspection.get())
+                .map(inspectionProvider::getMethodInspection)
                 .filter(mi -> !mi.isDefault() && !mi.isStatic())
                 .findFirst().orElseThrow().getMethodInfo();
     }

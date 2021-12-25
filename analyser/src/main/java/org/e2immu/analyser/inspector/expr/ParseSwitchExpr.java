@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.SwitchExpression;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -32,16 +33,13 @@ public class ParseSwitchExpr {
 
     public static Expression parse(ExpressionContext expressionContext, SwitchExpr switchExpr) {
         Expression selector = expressionContext.parseExpression(switchExpr.getSelector());
-        ExpressionContext newExpressionContext;
+        ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(expressionContext.forwardReturnTypeInfo);
         TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
         TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
         if (enumType != null) {
-            newExpressionContext = expressionContext.newVariableContext("switch-expression");
             enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext.add(
                             new FieldReference(expressionContext.typeContext, fieldInfo)));
-        } else {
-            newExpressionContext = expressionContext;
         }
         List<SwitchEntry> entries = switchExpr.getEntries()
                 .stream()
@@ -58,10 +56,15 @@ public class ParseSwitchExpr {
     }
 
     private static Expression[] extractYieldsFromEntries(List<SwitchEntry> entries) {
-        return entries.stream().flatMap(e -> extractYields(e.structure.statements()).stream()).toArray(Expression[]::new);
+        return entries.stream().flatMap(e -> extractYields(e).stream()).toArray(Expression[]::new);
     }
 
-    public static List<Expression> extractYields(List<Statement> statements) {
+    public static List<Expression> extractYields(SwitchEntry e) {
+        Structure structure = e.structure;
+        while(structure.statements() == null && structure.block() != null) {
+           structure = structure.block().structure;
+        }
+        List<Statement> statements = structure.statements();
         if (statements.size() == 1) {
             Statement statement = statements.get(0);
             if (statement instanceof ExpressionAsStatement eas) {
