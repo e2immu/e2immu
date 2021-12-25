@@ -848,7 +848,8 @@ public class Resolver {
 
         // my own field
         Stream<FieldInfo> localStream = typeInspection.fields().stream()
-                .filter(fieldInfo -> acceptField(inspectionProvider, fieldInfo, inSameCompilationUnit, inSamePackage));
+                .filter(fieldInfo -> acceptFieldInHierarchy(inspectionProvider, fieldInfo, inSameCompilationUnit,
+                        inSamePackage));
 
         // my enclosing type's fields, but only when I'm not a static nested type!
         Stream<FieldInfo> enclosingStream;
@@ -881,12 +882,14 @@ public class Resolver {
         return joint;
     }
 
-    private static boolean acceptField(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
-                                       boolean inSameCompilationUnit, boolean inSamePackage) {
+    // all the fields to accept are from the type itself, or from super-types.
+    private static boolean acceptFieldInHierarchy(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
+                                                  boolean inSameCompilationUnit, boolean inSamePackage) {
         if (inSameCompilationUnit) return true;
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
-        return inspection.getAccess() == FieldModifier.PUBLIC ||
-                inSamePackage && inspection.getAccess() == FieldModifier.PACKAGE ||
-                !inSamePackage && inspection.getAccess() == FieldModifier.PROTECTED;
+        FieldModifier access = inspection.getAccess();
+        return access == FieldModifier.PUBLIC ||
+                inSamePackage && access != FieldModifier.PRIVATE ||
+                !inSamePackage && access == FieldModifier.PROTECTED;
     }
 }

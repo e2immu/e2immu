@@ -15,24 +15,30 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.FieldAccess_0;
-import org.e2immu.analyser.resolver.testexample.Varargs_0;
+import org.e2immu.analyser.resolver.testexample.FieldAccess_1;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-
 public class TestFieldAccess extends CommonTest {
 
     @Test
     public void test_0() throws IOException {
-        TypeMap typeMap = inspectAndResolve(FieldAccess_0.class);
-        TypeInfo typeInfo = typeMap.get(FieldAccess_0.class);
-        assertNotNull(typeInfo);
+        inspectAndResolve(FieldAccess_0.class);
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        TypeMap typeMap = inspectAndResolve(FieldAccess_1.class, TestImport.IMPORT_HELPER);
+        TypeInfo subType = typeMap.get(FieldAccess_1.ComputedParameterAnalyser.class);
+        MethodInfo method = subType.findUniqueMethod("method", 0);
+        assertNotNull(method);
     }
 
 }

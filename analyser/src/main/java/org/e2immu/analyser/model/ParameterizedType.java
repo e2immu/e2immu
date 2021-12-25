@@ -345,6 +345,7 @@ public class ParameterizedType {
         Map<NamedType, ParameterizedType> mapOfConcreteType = concreteType.initialTypeParameterMap(inspectionProvider);
         Map<NamedType, ParameterizedType> formalMap;
         if (typeInfo == concreteType.typeInfo) {
+            // see Lambda_8 Stream<R>, R from flatmap -> Stream<T>
             formalMap = forwardTypeParameterMap(inspectionProvider);
         } else if (concreteTypeIsAssignableToThis) {
             // this is the super type (Set), concrete type is the sub-type (HashSet)
