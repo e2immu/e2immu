@@ -75,7 +75,6 @@ public class ConvertMethodReference {
         MethodInfo methodInfo = methodBuilder.getMethodInfo();
 
         builder.addMethod(methodInfo);
-        expressionContext.addNewlyCreatedType(typeInfo);
         return methodInfo;
     }
 

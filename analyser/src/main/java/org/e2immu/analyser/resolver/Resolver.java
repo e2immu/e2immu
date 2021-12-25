@@ -252,7 +252,7 @@ public class Resolver {
 
             log(RESOLVER, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
-            ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(typeInfo, primaryType, expressionContextOfType);
+            ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
             TypeContext typeContext = expressionContextForBody.typeContext;
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);
@@ -319,10 +319,6 @@ public class Resolver {
             ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo, forwardReturnTypeInfo);
 
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression);
-            // here we decide how to resolve the anonymous types created as we go along
-            // the current implementation treats the anonymous types as subtypes in the current type, which is what we want to do
-            subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext,
-                    methodFieldSubTypeGraph));
 
             MethodInfo sam;
             boolean artificial;
@@ -531,13 +527,6 @@ public class Resolver {
             log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);
             methodInspection.setInspectedBlock(parsedBlock);
-
-            newContext.streamNewlyCreatedTypes().forEach(anonymousType -> {
-                Resolver resolver = new Resolver(this, inspectionProvider, e2ImmuAnnotationExpressions, false);
-                resolver.resolve(Map.of(anonymousType, newContext));
-                // result can be ignored, because it is stored in the anonymousType's TypeResolution
-            });
-
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));
             throw rte;

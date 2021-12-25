@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotModified;
@@ -41,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION_CONTEXT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -66,21 +66,16 @@ public class ExpressionContext {
     public final FieldInfo enclosingField; // terminology ~ assigning field, field that we're assigning to
     public final ForwardReturnTypeInfo typeOfEnclosingSwitchExpression;
 
-    private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
+    public final Resolver resolver;
 
-    public void addNewlyCreatedType(TypeInfo anonymousType) {
-        newlyCreatedTypes.add(anonymousType);
-    }
-
-    public Stream<TypeInfo> streamNewlyCreatedTypes() {
-        return newlyCreatedTypes.stream();
-    }
-
-    public static ExpressionContext forInspectionOfPrimaryType(@NotNull @NotModified TypeInfo typeInfo,
-                                                               @NotNull @NotModified TypeContext typeContext,
-                                                               @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
+    public static ExpressionContext forInspectionOfPrimaryType(
+            Resolver resolver,
+            @NotNull @NotModified TypeInfo typeInfo,
+            @NotNull @NotModified TypeContext typeContext,
+            @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
+        return new ExpressionContext(resolver, Objects.requireNonNull(typeInfo),
+                null, null,
                 ForwardReturnTypeInfo.expectVoid(typeContext), null,
                 null, typeInfo,
                 Objects.requireNonNull(typeContext),
@@ -88,12 +83,14 @@ public class ExpressionContext {
                 Objects.requireNonNull(anonymousTypeCounters));
     }
 
-    public static ExpressionContext forTypeBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
-                                                       @NotNull @NotModified TypeInfo primaryType,
-                                                       @NotNull @NotModified ExpressionContext expressionContextOfType) {
+    public static ExpressionContext forTypeBodyParsing(
+            Resolver resolver,
+            @NotNull @NotModified TypeInfo enclosingType,
+            @NotNull @NotModified TypeInfo primaryType,
+            @NotNull @NotModified ExpressionContext expressionContextOfType) {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
+        return new ExpressionContext(resolver, Objects.requireNonNull(enclosingType), null,
                 null,
                 ForwardReturnTypeInfo.expectVoid(expressionContextOfType.typeContext),
                 null, null,
@@ -103,16 +100,19 @@ public class ExpressionContext {
                 Objects.requireNonNull(expressionContextOfType.anonymousTypeCounters));
     }
 
-    private ExpressionContext(TypeInfo enclosingType,
-                              TypeInfo uninspectedEnclosingType,
-                              MethodInfo enclosingMethod,
-                              ForwardReturnTypeInfo forwardReturnTypeInfo,
-                              FieldInfo enclosingField,
-                              ForwardReturnTypeInfo typeOfEnclosingSwitchExpression,
-                              TypeInfo primaryType,
-                              TypeContext typeContext,
-                              VariableContext variableContext,
-                              AnonymousTypeCounters anonymousTypeCounters) {
+    private ExpressionContext(
+            Resolver resolver,
+            TypeInfo enclosingType,
+            TypeInfo uninspectedEnclosingType,
+            MethodInfo enclosingMethod,
+            ForwardReturnTypeInfo forwardReturnTypeInfo,
+            FieldInfo enclosingField,
+            ForwardReturnTypeInfo typeOfEnclosingSwitchExpression,
+            TypeInfo primaryType,
+            TypeContext typeContext,
+            VariableContext variableContext,
+            AnonymousTypeCounters anonymousTypeCounters) {
+        this.resolver = resolver;
         this.typeContext = typeContext;
         this.primaryType = primaryType;
         this.enclosingType = enclosingType;
@@ -127,14 +127,14 @@ public class ExpressionContext {
 
     public ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
-        return new ExpressionContext(enclosingType, null,
+        return new ExpressionContext(resolver, enclosingType, null,
                 methodInfo, forwardReturnTypeInfo, null, null,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, uninspectedEnclosingType,
+        return new ExpressionContext(resolver, enclosingType, uninspectedEnclosingType,
                 enclosingMethod,
                 forwardReturnTypeInfo,
                 enclosingField, typeOfEnclosingSwitchExpression,
@@ -144,7 +144,7 @@ public class ExpressionContext {
 
     public ExpressionContext newVariableContextForEachLoop(@NotNull VariableContext newVariableContext) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for for-each loop");
-        return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
+        return new ExpressionContext(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 forwardReturnTypeInfo,
                 enclosingField,
                 typeOfEnclosingSwitchExpression,
@@ -154,7 +154,7 @@ public class ExpressionContext {
 
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
-        return new ExpressionContext(enclosingType, subType, enclosingMethod,
+        return new ExpressionContext(resolver, enclosingType, subType, enclosingMethod,
                 forwardReturnTypeInfo,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 typeContext, variableContext, anonymousTypeCounters);
@@ -162,14 +162,14 @@ public class ExpressionContext {
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
-        return new ExpressionContext(subType, null,
+        return new ExpressionContext(resolver, subType, null,
                 null, ForwardReturnTypeInfo.expectVoid(typeContext), null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
+        return new ExpressionContext(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 ForwardReturnTypeInfo.expectVoid(typeContext),
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
@@ -177,7 +177,7 @@ public class ExpressionContext {
 
     public ExpressionContext newTypeContext(FieldInfo fieldInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
-        return new ExpressionContext(enclosingType, null, null,
+        return new ExpressionContext(resolver, enclosingType, null, null,
                 forwardReturnTypeInfo,
                 fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
@@ -242,7 +242,6 @@ public class ExpressionContext {
             } else if (statement.isBlockStmt()) {
                 ExpressionContext context = newVariableContext("block");
                 newStatement = context.parseBlockOrStatement(statement, labelOfStatement);
-                inherit(context);
             } else if (statement.isIfStmt()) {
                 newStatement = ifThenElseStatement((IfStmt) statement, identifier);
             } else if (statement.isSynchronizedStmt()) {
@@ -305,15 +304,12 @@ public class ExpressionContext {
         }
         if (switchStmt.getEntries().stream().anyMatch(e ->
                 e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
-            var res = switchStatementOldStyle(newExpressionContext, selector, switchStmt, identifier);
-            inherit(newExpressionContext);
-            return res;
+            return switchStatementOldStyle(newExpressionContext, selector, switchStmt, identifier);
         }
         List<SwitchEntry> entries = switchStmt.getEntries()
                 .stream()
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))
                 .collect(Collectors.toList());
-        inherit(newExpressionContext);
         return new SwitchStatementNewStyle(identifier, selector, entries);
     }
 
@@ -395,7 +391,7 @@ public class ExpressionContext {
         Expression condition = forStmt.getCompare().map(newExpressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
         List<Expression> updaters = forStmt.getUpdate().stream().map(newExpressionContext::parseExpression).collect(Collectors.toList());
         Block block = newExpressionContext.parseBlockOrStatement(forStmt.getBody());
-        inherit(newExpressionContext);
+
         return new ForStatement(identifier, label, initializers, condition, updaters, block);
     }
 
@@ -414,7 +410,7 @@ public class ExpressionContext {
             resources.add(localVariableCreation);
         }
         Block tryBlock = tryExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
-        inherit(tryExpressionContext);
+
         List<Pair<TryStatement.CatchParameter, Block>> catchClauses = new ArrayList<>();
         for (CatchClause catchClause : tryStmt.getCatchClauses()) {
             Parameter parameter = catchClause.getParameter();
@@ -439,7 +435,6 @@ public class ExpressionContext {
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
-            inherit(catchExpressionContext);
             catchClauses.add(new Pair<>(catchParameter, block));
         }
         Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.emptyBlock(Identifier.generate()));
@@ -450,14 +445,12 @@ public class ExpressionContext {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         ExpressionContext context = newVariableContext("while-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
-        inherit(context);
         return new WhileStatement(identifier, label, expression, block);
     }
 
     private org.e2immu.analyser.model.Statement doStatement(String label, DoStmt statement, Identifier identifier) {
         ExpressionContext context = newVariableContext("do-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
-        inherit(context);
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         return new DoStatement(identifier, label, expression, block);
     }
@@ -477,7 +470,6 @@ public class ExpressionContext {
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         typeContext.addToContext(localName, typeInfo, true);
-        addNewlyCreatedType(typeInfo);
         return new LocalClassDeclaration(identifier, typeInfo);
     }
 
@@ -485,12 +477,7 @@ public class ExpressionContext {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getExpression());
         ExpressionContext context = newVariableContext("synchronized-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
-        inherit(context);
         return new SynchronizedStatement(identifier, expression, block);
-    }
-
-    private void inherit(ExpressionContext context) {
-        newlyCreatedTypes.addAll(context.newlyCreatedTypes);
     }
 
     private org.e2immu.analyser.model.Statement forEachStatement(String label, ForEachStmt forEachStmt) {
@@ -502,12 +489,10 @@ public class ExpressionContext {
                 ForwardReturnTypeInfo.expectBoolean(typeContext));
         ExpressionContext ifContext = newVariableContext("if-block");
         Block ifBlock = ifContext.parseBlockOrStatement(statement.getThenStmt());
-        inherit(ifContext);
         Block elseBlock;
         if (statement.getElseStmt().isPresent()) {
             ExpressionContext elseContext = newVariableContext("else-block");
             elseBlock = elseContext.parseBlockOrStatement(statement.getElseStmt().get());
-            inherit(elseContext);
         } else {
             elseBlock = Block.emptyBlock(identifier);
         }

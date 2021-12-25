@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.*;
 
@@ -135,8 +136,6 @@ public class ParseLambdaExpr {
                 applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
-
-        expressionContext.addNewlyCreatedType(anonymousType);
 
         return new Lambda(Identifier.from(lambdaExpr), inspectionProvider,
                 functionalType, anonymousType.asParameterizedType(inspectionProvider), outputVariants);

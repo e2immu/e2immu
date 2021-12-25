@@ -24,6 +24,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
@@ -57,7 +58,9 @@ public record ParseAndInspect(Resources classPath,
      * @param sourceCode        the source code to parse
      * @return the list of primary types found in the source code
      */
-    public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) throws ParseException {
+    public List<TypeInfo> run(Resolver resolver,
+                              TypeContext typeContextOfFile,
+                              String fileName, String sourceCode) throws ParseException {
         log(INSPECTOR, "Parsing compilation unit {}", fileName);
 
         JavaParser javaParser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_16));
@@ -106,7 +109,7 @@ public record ParseAndInspect(Resources classPath,
             // add the subtypes, because record declarations can have subtype names in their parameter lists
             TypeInspection typeInspection = typeContextOfFile.getTypeInspection(typeInfo);
             typeInspection.subTypes().forEach(typeContext::addToContext);
-            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
+            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(resolver, typeInfo,
                     typeContext, anonymousTypeCounters);
             try {
                 List<TypeInfo> primaryTypes = tia.typeInspector.inspect(false, null,

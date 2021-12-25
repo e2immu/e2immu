@@ -15,10 +15,14 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MethodInspection;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeParameter;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.IfElseStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -80,6 +84,26 @@ public class TestConstructor extends CommonTest {
 
     @Test
     public void test_5() throws IOException {
-        inspectAndResolve(Constructor_5.class);
+        TypeMap typeMap = inspectAndResolve(Constructor_5.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_5.class);
+        assertNotNull(typeInfo);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
+        Block block = typeMap.getMethodInspection(methodInfo).getMethodBody();
+        if (block.structure.statements().get(1) instanceof IfElseStatement ifElse) {
+            if (ifElse.structure.block().structure.statements().get(1) instanceof ExpressionAsStatement eas) {
+                if (eas.expression instanceof MethodCall methodCall) {
+                    Expression p0 = methodCall.parameterExpressions.get(0);
+                    if (p0 instanceof ConstructorCall constructorCall) {
+                        TypeInfo subType = constructorCall.anonymousClass();
+                        MethodInfo get = subType.findUniqueMethod("get", 0);
+                        assertNotNull(get);
+                        Block getBlock = typeMap.getMethodInspection(get).getMethodBody();
+                        if(getBlock.structure.statements().get(0) instanceof ReturnStatement rs) {
+                            assertEquals("\"abc \"+s.toLowerCase()", rs.expression.toString());
+                        } else fail();
+                    } else fail("Have "+p0.getClass());
+                } else fail();
+            } else fail();
+        } else fail();
     }
 }

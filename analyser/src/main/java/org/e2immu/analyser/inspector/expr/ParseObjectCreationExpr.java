@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.ConstructorCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.*;
 
@@ -63,9 +64,11 @@ public class ParseObjectCreationExpr {
             TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
-            expressionContext.addNewlyCreatedType(anonymousType);
 
-            // FIXME why are we not resolving it right now, in the correct expression context?
+            Resolver resolver = new Resolver(expressionContext.resolver, expressionContext.typeContext,
+                    expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
+            resolver.resolve(Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
+
             return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
         }
 

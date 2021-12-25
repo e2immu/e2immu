@@ -107,7 +107,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     returnType,
                     candidate.newParameterExpressions);
         } catch (Throwable rte) {
-            LOGGER.error("Exception at {}", errorInfo);
+            LOGGER.error("Exception at {}, at {}", errorInfo.methodName, errorInfo.position);
             throw rte;
         }
     }

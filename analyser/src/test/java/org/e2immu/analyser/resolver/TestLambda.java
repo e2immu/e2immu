@@ -15,14 +15,20 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestLambda extends CommonTest {
@@ -67,6 +73,18 @@ public class TestLambda extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Lambda_5.class);
         TypeInfo typeInfo = typeMap.get(Lambda_5.class);
         assertNotNull(typeInfo);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 1);
+        Block block = methodInfo.methodInspection.get().getMethodBody();
+        if (block.structure.statements().get(0) instanceof ExpressionAsStatement eas) {
+            if (eas.expression instanceof MethodCall forEach) {
+                Expression p0 = forEach.parameterExpressions.get(0);
+                if (p0 instanceof Lambda lambda) {
+                    if (lambda.block.structure.getStatements().get(0) instanceof ExpressionAsStatement s) {
+                        assertEquals("System.out.println(\"xx \"+s)", s.expression.toString());
+                    }
+                } else fail();
+            } else fail();
+        } else fail();
     }
 
     @Test
@@ -89,5 +107,10 @@ public class TestLambda extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Lambda_8.class);
         TypeInfo typeInfo = typeMap.get(Lambda_8.class);
         assertNotNull(typeInfo);
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        inspectAndResolve(Lambda_9.class);
     }
 }

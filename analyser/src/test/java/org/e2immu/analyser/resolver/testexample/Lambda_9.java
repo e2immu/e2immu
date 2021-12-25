@@ -14,35 +14,20 @@
 
 package org.e2immu.analyser.resolver.testexample;
 
-import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-/*
-Test because the if(b) statements messes up the variable contexts.
- */
-public class Constructor_5 {
+public class Lambda_9 {
 
-    interface X {
-        String get();
-
-        void accept(int j);
+    record DV(int i) {
+        public DV max(DV other) {
+            return i > other.i ? this : other;
+        }
     }
 
-    // do NOT change the code of this method lightly, severely inspected in the test
-    public void method(List<X> xs) {
-        boolean b = xs.isEmpty();
-        if(b) {
-            String s = "abc";
-            xs.add(new X() {
-                @Override
-                public String get() {
-                    return "abc " + s.toLowerCase();
-                }
-
-                @Override
-                public void accept(int j) {
-                    System.out.println(s.toUpperCase() + ";" + j);
-                }
-            });
-        }
+    public Map<String, DV> method(Map<String, DV> map) {
+        return map.entrySet().stream()
+                .filter(e -> e.getValue().i > 10)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
     }
 }

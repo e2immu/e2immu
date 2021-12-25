@@ -130,8 +130,11 @@ public class Parser {
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                               boolean reportWarnings,
                                               boolean shallowResolver) {
+        Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
+                input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
+
         TypeMapImpl.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder;
-        InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport);
+        InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);
         typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
 
         // trigger the on-demand detection
@@ -141,14 +144,13 @@ public class Parser {
         if (!shallowResolver) {
             typeMapBuilder.makeParametersImmutable();
         }
-        // phase 2: resolve methods and fields
-        Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
-                input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
 
+        // phase 2: resolve methods and fields
         // we're sorting the types for some stability in debugging
         TreeMap<TypeInfo, ExpressionContext> expressionContexts = new TreeMap<>();
         for (Map.Entry<TypeInfo, TypeContext> e : onDemandSourceInspection.typeContexts.entrySet()) {
-            ExpressionContext ec = ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters);
+            ExpressionContext ec = ExpressionContext.forInspectionOfPrimaryType(resolver,
+                    e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
         }
         List<SortedType> sortedPrimaryTypes = resolver.resolve(expressionContexts);
@@ -161,9 +163,11 @@ public class Parser {
         private final Map<TypeInfo, TypeContext> typeContexts = new HashMap<>();
         private final Map<TypeInfo, URL> urls;
         private final Trie<TypeInfo> typesForWildcardImport;
+        private final Resolver resolver;
 
-        InspectWithJavaParserImpl(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport) {
+        InspectWithJavaParserImpl(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport, Resolver resolver) {
             this.urls = urls;
+            this.resolver = resolver;
             this.typesForWildcardImport = typesForWildcardImport;
         }
 
@@ -185,7 +189,7 @@ public class Parser {
                 String source = IOUtils.toString(isr);
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
                         input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters);
-                List<TypeInfo> primaryTypes = parseAndInspect.run(inspectionTypeContext, url.toString(), source);
+                List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
 
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
