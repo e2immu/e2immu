@@ -97,11 +97,6 @@ public class This implements Variable {
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return typeAsParameterizedType;
-    }
-
-    @Override
     public String simpleName() {
         String superOrThis = writeSuper ? "super" : "this";
         if (explicitlyWriteType != null) return explicitlyWriteType.simpleName + "+" + superOrThis;

@@ -41,8 +41,6 @@ public interface Variable extends OneVariable {
         return dependencies.stream().map(Variable::fullyQualifiedName).collect(Collectors.joining("; "));
     }
 
-    ParameterizedType concreteReturnType();
-
     ParameterizedType parameterizedType();
 
     /**

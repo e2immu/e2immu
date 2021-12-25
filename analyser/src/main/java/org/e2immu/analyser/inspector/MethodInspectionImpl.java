@@ -235,6 +235,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             this.isConstructor = isConstructor;
             this.compactConstructor = isCompact;
             this.staticBlockIdentifier = staticBlockIdentifier;
+            if(isConstructor || isStaticBlock()) returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
         }
 
         @Override
@@ -351,11 +352,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             makeParametersImmutable();
 
             // we have a method object now...
-            if (methodInfo.isConstructor || isStaticBlock()) {
-                returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
-            } else {
-                Objects.requireNonNull(returnType);
-            }
+             Objects.requireNonNull(returnType);
+
             MethodType methodType;
             if (isDefault()) {
                 methodType = MethodType.DEFAULT_METHOD;
@@ -494,6 +492,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         public boolean isVoid() {
+            assert returnType != null : "Method " + fullyQualifiedName + " has no return type yet";
             return Primitives.isVoidOrJavaLangVoid(returnType);
         }
 

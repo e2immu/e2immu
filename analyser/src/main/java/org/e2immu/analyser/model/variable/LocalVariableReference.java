@@ -31,8 +31,7 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     public LocalVariableReference(LocalVariable localVariable,
                                   Expression assignmentExpression) {
-        super(assignmentExpression == EmptyExpression.EMPTY_EXPRESSION
-                ? localVariable.parameterizedType() : assignmentExpression.returnType());
+        super(localVariable.parameterizedType());
         this.variable = Objects.requireNonNull(localVariable);
         this.assignmentExpression = Objects.requireNonNull(assignmentExpression);
     }
@@ -53,11 +52,6 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     @Override
     public int hashCode() {
         return Objects.hash(variable);
-    }
-
-    @Override
-    public ParameterizedType parameterizedType() {
-        return variable.parameterizedType();
     }
 
     @Override

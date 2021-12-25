@@ -425,11 +425,15 @@ public class ParameterizedType {
     We therefore want to apply a type parameter map on f's formal type. This map should go from the A's formal type parameters
     to the concrete type parameters of A or a type assignable to A.
     Note that it is perfectly possible that f's formal type is not parameterized at all (that's the most common situation)!
+
+    in MethodCall_12, pair.k from pair 1st to K
      */
     public ParameterizedType inferConcreteFieldTypeFromConcreteScope(InspectionProvider inspectionProvider,
                                                                      ParameterizedType formalScopeType,
                                                                      ParameterizedType concreteScopeType) {
-        if (parameters.isEmpty()) return this;
+        if(typeParameter != null) {
+
+        } else if (parameters.isEmpty()) return this;
 
         Map<NamedType, ParameterizedType> typeParameterMap = formalScopeType.translateMap(inspectionProvider, concreteScopeType, true);
         return MethodTypeParameterMap.apply(typeParameterMap, this);

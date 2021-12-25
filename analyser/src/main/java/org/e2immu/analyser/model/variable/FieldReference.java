@@ -93,11 +93,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public ParameterizedType parameterizedType() {
-        return fieldInfo.type;
-    }
-
-    @Override
     public String simpleName() {
         return fieldInfo.name;
     }

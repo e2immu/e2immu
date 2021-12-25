@@ -30,11 +30,6 @@ public record PreAspectVariable(ParameterizedType returnType,
                                 Expression valueForProperties) implements Variable {
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return returnType;
-    }
-
-    @Override
     public ParameterizedType parameterizedType() {
         return returnType;
     }

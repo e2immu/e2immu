@@ -111,7 +111,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     @Override
     public ParameterizedType returnType() {
-        return variable.concreteReturnType();
+        return variable.parameterizedType();
     }
 
     @Override

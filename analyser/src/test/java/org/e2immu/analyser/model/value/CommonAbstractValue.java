@@ -115,11 +115,6 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
-            public ParameterizedType concreteReturnType() {
-                return parameterizedType();
-            }
-
-            @Override
             public String simpleName() {
                 return name;
             }

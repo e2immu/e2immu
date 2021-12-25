@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -89,7 +90,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
-        boolean primitive = Primitives.isPrimitiveExcludingVoid(switchVariableAsExpression.variables().get(0).concreteReturnType());
+        Variable variable = switchVariableAsExpression.variables().get(0);
+        boolean primitive = Primitives.isPrimitiveExcludingVoid(variable.parameterizedType());
         return primitive ? primitives.equalsOperatorInt : primitives.equalsOperatorObject;
     }
 

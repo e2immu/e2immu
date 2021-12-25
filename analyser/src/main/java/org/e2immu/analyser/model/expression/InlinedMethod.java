@@ -271,7 +271,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     Map<Property, DV> valueProperties = valuePropertiesOfInstance(variable,
                             evaluationContext.getAnalyserContext());
                     if (valueProperties == null) {
-                        replacement = DelayedExpression.forMethod(methodInfo, variable.concreteReturnType(),
+                        replacement = DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
                                 evaluationContext.linkedVariables(variable)
                                         .changeAllToDelay(new CausesOfDelay.SimpleSet(methodInfo, CauseOfDelay.Cause.TO_IMPLEMENT)),
                                 CausesOfDelay.EMPTY); // FIXME

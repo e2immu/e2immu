@@ -34,7 +34,6 @@ import java.util.Objects;
  * method(a, b)[i], with null arrayVariable, and dependent variables a, b, i
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
-    public final ParameterizedType parameterizedType;
     public final TypeInfo owningType;
     public final String name;
     public final String simpleName;
@@ -48,7 +47,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
                              @NotNull1 List<Variable> dependencies,         // all variables on which this one depends
                              Variable arrayVariable) {     // can be null!
         super(parameterizedType);
-        this.parameterizedType = parameterizedType;
         this.name = name;
         this.simpleName = simpleName;
         this.arrayVariable = arrayVariable;
@@ -82,11 +80,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     @Override
     public int hashCode() {
         return Objects.hash(name);
-    }
-
-    @Override
-    public ParameterizedType parameterizedType() {
-        return parameterizedType;
     }
 
     @Override

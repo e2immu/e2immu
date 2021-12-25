@@ -12,31 +12,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model.variable;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.annotation.NotNull;
+import java.util.Map;
+import java.util.stream.Stream;
 
-import java.util.Objects;
+public record FieldAccess_2(Container c) {
 
-// see ExpressionWithMethodReferenceResolution, try to do something similar
-
-public abstract class VariableWithConcreteReturnType implements Variable {
-
-    public final ParameterizedType parameterizedType;
-
-    protected VariableWithConcreteReturnType(@NotNull ParameterizedType parameterizedType) {
-        this.parameterizedType = Objects.requireNonNull(parameterizedType);
+    interface VIC {
+        String current();
     }
 
-    @Override
-    public ParameterizedType parameterizedType() {
-        return parameterizedType;
+    record Variables(Map<String, VIC> variables) {
+        Stream<Map.Entry<String, VIC>> stream() {
+            return variables.entrySet().stream();
+        }
     }
 
-    @Override
-    public String toString() {
-        return output(Qualification.EMPTY).toString();
+    record Container(Variables v) {
+
+    }
+
+    public void test() {
+        c.v.stream().map(Map.Entry::getValue).forEach(vic -> System.out.println(vic.current()));
     }
 }

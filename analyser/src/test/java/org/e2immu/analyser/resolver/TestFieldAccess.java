@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.FieldAccess_0;
 import org.e2immu.analyser.resolver.testexample.FieldAccess_1;
+import org.e2immu.analyser.resolver.testexample.FieldAccess_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -41,4 +42,8 @@ public class TestFieldAccess extends CommonTest {
         assertNotNull(method);
     }
 
+    @Test
+    public void test_2() throws IOException {
+        inspectAndResolve(FieldAccess_2.class);
+    }
 }

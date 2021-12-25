@@ -89,11 +89,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return parameterizedType; // there's nothing more we can know; we're NOT treating it as a local variable!!!
-    }
-
-    @Override
     public String name() {
         return name;
     }

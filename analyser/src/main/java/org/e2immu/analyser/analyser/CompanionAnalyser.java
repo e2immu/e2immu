@@ -125,7 +125,7 @@ public class CompanionAnalyser {
                 if (parameterInMain != null && parameterInfo.parameterizedType().equalsErased(parameterInMain.parameterizedType())) {
                     value = new VariableExpression(parameterInMain);
                 } else if (parameterInfo.index == numIndices - 1 && !mainMethod.isVoid() &&
-                        parameterInfo.concreteReturnType().equalsErased(mainMethod.returnType())) {
+                        parameterInfo.parameterizedType().equalsErased(mainMethod.returnType())) {
                     value = new VariableExpression(new ReturnVariable(mainMethod));
                 } else {
                     throw new UnsupportedOperationException("Cannot map parameter " + parameterInfo.index + " of " +

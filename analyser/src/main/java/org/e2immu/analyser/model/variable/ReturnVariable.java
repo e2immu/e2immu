@@ -54,11 +54,6 @@ public class ReturnVariable implements Variable {
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return returnType;
-    }
-
-    @Override
     public ParameterizedType parameterizedType() {
         return returnType;
     }
