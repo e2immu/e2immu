@@ -49,9 +49,13 @@ public class ParseObjectCreationExpr {
         ParameterizedType impliedParameterizedType = forwardReturnTypeInfo.type();
         ParameterizedType parameterizedType;
         if (diamond == Diamond.YES) {
-            assert impliedParameterizedType != null : "Can only be null when computing erasure";
-            parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext,
-                    impliedParameterizedType);
+            // it is still possible that impliedParameterizedType is null, as in "assert new HashSet<>(coll).size()>1"
+            if(impliedParameterizedType == null) {
+                parameterizedType = null;
+            } else {
+                parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext,
+                        impliedParameterizedType);
+            }
         } else {
             parameterizedType = typeAsIs;
         }
@@ -85,7 +89,7 @@ public class ParseObjectCreationExpr {
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         forward, forwardReturnTypeInfo.extra(), errorInfo);
-        assert candidate != null : "No candidate for constructor of type "+typeAsIs.detailedString(typeContext);
+        assert candidate != null : "No candidate for constructor of type " + typeAsIs.detailedString(typeContext);
 
         ParameterizedType finalParameterizedType;
         if (parameterizedType == null) {
