@@ -833,13 +833,17 @@ public class Resolver {
 
 
     public static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo primaryType) {
-        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName());
+        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), false);
     }
 
+    /*
+    The order in which we add is important! First come, first served.
+     */
     private static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider,
                                                             TypeInfo typeInfo,
                                                             TypeInfo startingPoint,
-                                                            String startingPointPackageName) {
+                                                            String startingPointPackageName,
+                                                            boolean staticFieldsOnly) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         TypeInfo primaryType = typeInfo.primaryType();
 
@@ -849,17 +853,7 @@ public class Resolver {
         // my own field
         Stream<FieldInfo> localStream = typeInspection.fields().stream()
                 .filter(fieldInfo -> acceptFieldInHierarchy(inspectionProvider, fieldInfo, inSameCompilationUnit,
-                        inSamePackage));
-
-        // my enclosing type's fields, but only when I'm not a static nested type!
-        Stream<FieldInfo> enclosingStream;
-        if (typeInfo.packageNameOrEnclosingType.isRight() && !typeInspection.isStatic()) {
-            enclosingStream = accessibleFieldsStream(inspectionProvider,
-                    typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName);
-        } else {
-            enclosingStream = Stream.empty();
-        }
-        Stream<FieldInfo> joint = Stream.concat(localStream, enclosingStream);
+                        inSamePackage, staticFieldsOnly));
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
@@ -867,26 +861,38 @@ public class Resolver {
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
-                    startingPoint, startingPointPackageName);
+                    startingPoint, startingPointPackageName, staticFieldsOnly);
         } else parentStream = Stream.empty();
-        joint = Stream.concat(joint, parentStream);
+        Stream<FieldInfo> joint = Stream.concat(localStream, parentStream);
 
         // my interfaces' fields
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             assert interfaceType.typeInfo != null;
             Stream<FieldInfo> fromInterface = accessibleFieldsStream(inspectionProvider, interfaceType.typeInfo,
-                    startingPoint, startingPointPackageName);
+                    startingPoint, startingPointPackageName, staticFieldsOnly);
             joint = Stream.concat(joint, fromInterface);
         }
 
-        return joint;
+        // my enclosing type's fields, but statics only when I'm a static nested type!
+        Stream<FieldInfo> enclosingStream;
+        if (typeInfo.packageNameOrEnclosingType.isRight()) {
+            enclosingStream = accessibleFieldsStream(inspectionProvider,
+                    typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName,
+                    typeInspection.isStatic());
+        } else {
+            enclosingStream = Stream.empty();
+        }
+        return Stream.concat(joint, enclosingStream);
     }
 
     // all the fields to accept are from the type itself, or from super-types.
     private static boolean acceptFieldInHierarchy(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
-                                                  boolean inSameCompilationUnit, boolean inSamePackage) {
+                                                  boolean inSameCompilationUnit,
+                                                  boolean inSamePackage,
+                                                  boolean staticFieldsOnly) {
         if (inSameCompilationUnit) return true;
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
+        if (staticFieldsOnly && !inspection.isStatic()) return false;
         FieldModifier access = inspection.getAccess();
         return access == FieldModifier.PUBLIC ||
                 inSamePackage && access != FieldModifier.PRIVATE ||
