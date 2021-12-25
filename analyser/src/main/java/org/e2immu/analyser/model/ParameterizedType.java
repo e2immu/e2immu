@@ -343,9 +343,10 @@ public class ParameterizedType {
         }
 
         Map<NamedType, ParameterizedType> mapOfConcreteType = concreteType.initialTypeParameterMap(inspectionProvider);
-        if (typeInfo == concreteType.typeInfo) return mapOfConcreteType;
         Map<NamedType, ParameterizedType> formalMap;
-        if (concreteTypeIsAssignableToThis) {
+        if (typeInfo == concreteType.typeInfo) {
+            formalMap = forwardTypeParameterMap(inspectionProvider);
+        } else if (concreteTypeIsAssignableToThis) {
             // this is the super type (Set), concrete type is the sub-type (HashSet)
             formalMap = concreteType.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, this);
         } else {

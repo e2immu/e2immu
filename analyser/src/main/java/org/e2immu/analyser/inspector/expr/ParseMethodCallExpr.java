@@ -97,11 +97,14 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
+            ParameterizedType returnType = candidate.returnType();
+            log(METHOD_CALL, "Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
+
             return new MethodCall(Identifier.from(methodCallExpr),
                     scope.objectIsImplicit(),
                     newScope,
                     candidate.method.methodInspection.getMethodInfo(),
-                    candidate.returnType(),
+                    returnType,
                     candidate.newParameterExpressions);
         } catch (Throwable rte) {
             LOGGER.error("Exception at {}", errorInfo);
@@ -117,7 +120,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 numArguments, false, scope.typeParameterMap().map(), methodCandidates,
                 scope.nature());
         assert !methodCandidates.isEmpty() : "No candidates at all for method name " + methodName + ", "
-                + numArguments + " args in type "+scope.type().detailedString(typeContext);
+                + numArguments + " args in type " + scope.type().detailedString(typeContext);
         return methodCandidates;
     }
 
@@ -252,7 +255,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
             if (e.isInstanceOf(ErasureExpression.class)) {
-                log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}", errorInfo.methodName, i);
+                log(METHOD_CALL, "Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
                 ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, extra);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);

@@ -83,6 +83,6 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
     }
 
     public String toString(InspectionProvider inspectionProvider) {
-        return "[FWD: " + (type == null ? "null" : type.detailedString(inspectionProvider) + ", erasure: " + erasure + "]");
+        return "[FWD: " + (type == null ? "null" : type.detailedString(inspectionProvider)) + ", erasure: " + erasure + "]";
     }
 }
