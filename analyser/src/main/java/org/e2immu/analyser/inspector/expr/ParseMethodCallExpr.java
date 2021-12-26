@@ -782,9 +782,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
          are allowed in a reverse way (expect List<String>, accept List<T> with T a type parameter of the method,
          as long as T <- String).
         */
-        if(evaluatedExpression instanceof ConstantExpression constantExpression) {
-            return IsAssignableFrom.isAssignableFrom(typeOfParameter, constantExpression);
-        }
         return callIsAssignableFrom(evaluatedExpression.returnType(), typeOfParameter);
     }
 

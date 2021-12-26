@@ -112,7 +112,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 if (Primitives.isPrimitiveExcludingVoid(target)) {
                     // use a dedicated method in Primitives
                     return inspectionProvider.getPrimitives().isAssignableFromTo(from, target,
-                            mode == Mode.COVARIANT);
+                            mode == Mode.COVARIANT || mode == Mode.COVARIANT_ERASURE);
                 }
                 return checkBoxing(target.typeInfo, from.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
             }
@@ -269,18 +269,5 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     private boolean checkBoxing(TypeInfo targetInfo, TypeInfo fromPrimitiveType) {
         TypeInfo boxed = fromPrimitiveType.asParameterizedType(inspectionProvider).toBoxed(inspectionProvider.getPrimitives());
         return boxed == targetInfo;
-    }
-
-    public static int isAssignableFrom(ParameterizedType from, ConstantExpression<?> constant) {
-        TypeInfo typeInfo = from.typeInfo;
-        if (typeInfo != null) {
-            if (constant instanceof CharConstant && (Primitives.isInt(typeInfo) || Primitives.isChar(typeInfo) || Primitives.isCharacter(typeInfo))) {
-                return EQUALS;
-            }
-            if (constant instanceof IntConstant && (Primitives.isInt(typeInfo) || Primitives.isChar(typeInfo) || Primitives.isInteger(typeInfo))) {
-                return EQUALS;
-            }
-        }
-        return NOT_ASSIGNABLE;
     }
 }

@@ -87,12 +87,6 @@ public class TestIsAssignableFrom {
 
         assertFalse(integerPt.isAssignableFrom(typeContext, primitives.charParameterizedType));
         assertFalse(characterPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
-
-        CharConstant c = new CharConstant(primitives, '.');
-        assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, IsAssignableFrom.isAssignableFrom(integerPt, c));
-        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(primitives.intParameterizedType, c));
-        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(primitives.charParameterizedType, c));
-        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(characterPt, c));
     }
 
     // CharSequence[] <- String[] should be allowed
