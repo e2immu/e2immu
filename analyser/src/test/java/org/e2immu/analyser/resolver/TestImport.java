@@ -17,9 +17,7 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.Import_0;
-import org.e2immu.analyser.resolver.testexample.Import_1;
-import org.e2immu.analyser.resolver.testexample.Import_2;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -54,6 +52,16 @@ public class TestImport extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Import_2.class, IMPORT_HELPER);
         TypeInfo typeInfo = typeMap.get(Import_2.class);
         assertNotNull(typeInfo);
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        inspectAndResolve(Import_3.class, IMPORT_HELPER);
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(Import_4.class, IMPORT_HELPER);
     }
 
 }

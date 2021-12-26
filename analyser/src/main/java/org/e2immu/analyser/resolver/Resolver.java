@@ -595,10 +595,10 @@ public class Resolver {
         boolean allowsInterrupt;
         boolean delays;
         if (methodInspection.getModifiers().contains(MethodModifier.PRIVATE)) {
-            allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate() ||
+            allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate(inspectionProvider) ||
                     methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
                     builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
-            delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate() &&
+            delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate(inspectionProvider) &&
                     builders.containsKey(reached) &&
                     !builders.get(reached).allowsInterrupts.isSet());
             if (!allowsInterrupt) {

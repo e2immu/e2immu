@@ -18,13 +18,13 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.Optional;
@@ -49,32 +49,53 @@ public class ParseFieldAccessExpr {
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
             return new TypeExpression(objectType, Diamond.NO);
         }
-        return createFieldAccess(expressionContext, object, name, fieldAccessExpr.getBegin().orElseThrow());
+        return createFieldAccess(expressionContext.typeContext(), object, name, fieldAccessExpr.getBegin().orElseThrow());
     }
 
-    public static Expression createFieldAccess(ExpressionContext expressionContext, Expression object, String name, Position positionForErrorReporting) {
+    public static Expression createFieldAccess(InspectionProvider inspectionProvider,
+                                               Expression object,
+                                               String name,
+                                               Position positionForErrorReporting) {
         ParameterizedType objectType = object.returnType();
-        InspectionProvider inspectionProvider = expressionContext.typeContext();
         if (objectType.arrays > 0 && "length".equals(name)) {
             return new ArrayLength(inspectionProvider.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(inspectionProvider,
-                    objectType.typeInfo, objectType.typeInfo.primaryType())
-                    .filter(f -> name.equals(f.name)).findFirst();
-            if (oFieldInfo.isPresent()) {
-                return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object));
+            Expression res = findFieldOrSubType(objectType.typeInfo, object, name, inspectionProvider);
+            if (res == null) {
+                throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
+                        + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
             }
-            TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(objectType.typeInfo);
-            Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
-            if (oSubType.isPresent()) {
-                return new TypeExpression(oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
-            }
-            throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
-                    + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
+            return res;
         } else {
             throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
         }
+    }
+
+    private static Expression findFieldOrSubType(TypeInfo typeInfo,
+                                                 Expression object,
+                                                 String name,
+                                                 InspectionProvider inspectionProvider) {
+        Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo.primaryType())
+                .filter(f -> name.equals(f.name)).findFirst();
+        if (oFieldInfo.isPresent()) {
+            return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object));
+        }
+        TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
+        if (oSubType.isPresent()) {
+            return new TypeExpression(oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
+        }
+        ParameterizedType parent = objectTypeInspection.parentClass();
+        if(parent != null && !Primitives.isJavaLangObject(parent)) {
+            Expression res = findFieldOrSubType(parent.typeInfo, object, name, inspectionProvider);
+            if(res != null) return res;
+        }
+        for (ParameterizedType interfaceImplemented : objectTypeInspection.interfacesImplemented()) {
+            Expression res = findFieldOrSubType(interfaceImplemented.typeInfo, object, name, inspectionProvider);
+            if(res != null) return res;
+        }
+        return null;
     }
 
 }

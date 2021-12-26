@@ -576,7 +576,8 @@ public record ExpressionContext(Resolver resolver,
                             ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
                             scope = new TypeExpression(parameterizedType, Diamond.NO);
                         }
-                        return ParseFieldAccessExpr.createFieldAccess(this, scope, cit.getNameAsString(), expression.getBegin().orElseThrow());
+                        return ParseFieldAccessExpr.createFieldAccess(typeContext, scope, cit.getNameAsString(),
+                                expression.getBegin().orElseThrow());
                     }
                     // there is a real possibility that the type expression is NOT a type but a local field...
                     // therefore we check the variable context first
