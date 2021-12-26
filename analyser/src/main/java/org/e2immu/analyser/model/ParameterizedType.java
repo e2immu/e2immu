@@ -162,6 +162,12 @@ public class ParameterizedType {
         return new ParameterizedType(this.typeInfo, 0, wildCard, parameters, typeParameter);
     }
 
+    private ParameterizedType copyWithFewerArrays(int arrays) {
+        int newArrays = this.arrays - arrays;
+        assert newArrays >= 0 : "Trying to remove " + arrays + " arrays from " + this;
+        return new ParameterizedType(this.typeInfo, newArrays, wildCard, parameters, typeParameter);
+    }
+
     public OutputBuilder output(Qualification qualification) {
         return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, qualification, this,
                 false, Diamond.SHOW_ALL, false);
@@ -341,7 +347,18 @@ public class ParameterizedType {
                                                           boolean concreteTypeIsAssignableToThis) {
         if (parameters.isEmpty()) {
             if (isTypeParameter()) {
-                // T <-- String
+                if (arrays > 0) {
+                    if (concreteType.isFunctionalInterface(inspectionProvider)) {
+                        // T[], Expression[]::new == IntFunction<Expression>
+                        ParameterizedType arrayType = concreteType.findSingleAbstractMethodOfInterface(inspectionProvider)
+                                .getConcreteReturnType(inspectionProvider.getPrimitives());
+                        return Map.of(this.typeParameter, arrayType.copyWithFewerArrays(arrays));
+                    }
+                    // T <-- String,  T[],String[] -> T <-- String, T[],String[][] -> T <- String[]
+                    if (concreteType.arrays > 0) {
+                        return Map.of(this.typeParameter, concreteType.copyWithFewerArrays(arrays));
+                    }
+                }
                 return Map.of(this.typeParameter, concreteType);
             }
             // String <-- String, no translation map
@@ -534,12 +551,12 @@ public class ParameterizedType {
     }
 
     public boolean isFunctionalInterface() {
-        if (typeInfo == null) return false;
+        if (typeInfo == null || arrays > 0) return false;
         return typeInfo.typeInspection.get(typeInfo.fullyQualifiedName).isFunctionalInterface();
     }
 
     public boolean isFunctionalInterface(InspectionProvider inspectionProvider) {
-        if (typeInfo == null) return false;
+        if (typeInfo == null || arrays > 0) return false;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         return typeInspection.isFunctionalInterface();
     }
@@ -927,7 +944,7 @@ public class ParameterizedType {
      * @return
      */
     public ParameterizedType applyTranslation(Map<NamedType, ParameterizedType> translate) {
-        if(translate.isEmpty()) return this;
+        if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = translate.get(pt.typeParameter);

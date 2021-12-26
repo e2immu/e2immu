@@ -123,4 +123,14 @@ public class TestLambda extends CommonTest {
     public void test_11() throws IOException {
         inspectAndResolve(Lambda_11.class);
     }
+
+    @Test
+    public void test_12() throws IOException {
+        inspectAndResolve(Lambda_12.class);
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        inspectAndResolve(Lambda_13.class);
+    }
 }
