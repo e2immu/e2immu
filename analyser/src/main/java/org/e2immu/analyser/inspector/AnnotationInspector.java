@@ -25,20 +25,21 @@ import java.util.List;
 public class AnnotationInspector {
 
     public static AnnotationExpression inspect(ExpressionContext expressionContext, com.github.javaparser.ast.expr.AnnotationExpr ae) {
-        TypeInfo typeInfo = (TypeInfo) expressionContext.typeContext.get(ae.getNameAsString(), true);
-        TypeInspection typeInspection = expressionContext.typeContext.getTypeInspection(typeInfo);
+        TypeContext typeContext = expressionContext.typeContext();
+        TypeInfo typeInfo = (TypeInfo) typeContext.get(ae.getNameAsString(), true);
+        TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
 
         List<Expression> analyserExpressions;
         if (ae instanceof NormalAnnotationExpr) {
             analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : ((NormalAnnotationExpr) ae).getPairs()) {
                 String methodName = mvp.getNameAsString();
-                ForwardReturnTypeInfo expectedType = expectedType(expressionContext, methodName, typeInspection);
+                ForwardReturnTypeInfo expectedType = expectedType(typeContext, methodName, typeInspection);
                 Expression value = expressionContext.parseExpression(mvp.getValue(), expectedType);
                 analyserExpressions.add(new MemberValuePair(methodName, value));
             }
         } else if (ae instanceof SingleMemberAnnotationExpr) {
-            ForwardReturnTypeInfo expectedType = expectedType(expressionContext, "value", typeInspection);
+            ForwardReturnTypeInfo expectedType = expectedType(typeContext, "value", typeInspection);
             Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue(),
                     expectedType);
             analyserExpressions = List.of(new MemberValuePair("value", value));
@@ -46,12 +47,12 @@ public class AnnotationInspector {
         return new AnnotationExpressionImpl(typeInfo, analyserExpressions);
     }
 
-    private static ForwardReturnTypeInfo expectedType(ExpressionContext expressionContext,
+    private static ForwardReturnTypeInfo expectedType(TypeContext typeContext,
                                                       String methodName,
                                                       TypeInspection typeInspection) {
         MethodInfo methodInfo = typeInspection.methods().stream()
                 .filter(m -> m.name.equals(methodName)).findFirst().orElseThrow();
-        MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+        MethodInspection methodInspection = typeContext.getMethodInspection(methodInfo);
         return new ForwardReturnTypeInfo(methodInspection.getReturnType());
     }
 }

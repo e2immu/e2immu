@@ -55,7 +55,7 @@ public class ParseExplicitConstructorInvocation {
                                           boolean isThis,
                                           NodeList<Type> typeParameters,
                                           Position position) {
-        TypeContext typeContext = expressionContext.typeContext;
+        TypeContext typeContext = expressionContext.typeContext();
 
         TypeInfo startingPoint = isThis ? enclosingType
                 : typeContext.getTypeInspection(enclosingType).parentClass().typeInfo;

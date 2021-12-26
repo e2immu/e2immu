@@ -208,7 +208,7 @@ public class Resolver {
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext, typeInfo, null)
+                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext(), typeInfo, null)
                         .stream().map(TypeInfo::primaryType).toList()) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
                         .map(TypeInfo::primaryType)
@@ -237,12 +237,12 @@ public class Resolver {
                                   ExpressionContext expressionContextOfType,
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
-            TypeInspection typeInspection = expressionContextOfType.typeContext.getTypeInspection(typeInfo);
+            TypeInspection typeInspection = expressionContextOfType.typeContext().getTypeInspection(typeInfo);
             if (typeInspection.getInspectionState().le(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
                 // no need to inspect this method, we'll never use it
                 return List.of(typeInfo);
             }
-            typeInspection.subTypes().forEach(expressionContextOfType.typeContext::addToContext);
+            typeInspection.subTypes().forEach(expressionContextOfType.typeContext()::addToContext);
 
             // recursion, do sub-types first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
@@ -253,7 +253,8 @@ public class Resolver {
             log(RESOLVER, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
-            TypeContext typeContext = expressionContextForBody.typeContext;
+
+            TypeContext typeContext = expressionContextForBody.typeContext();
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);
 
@@ -262,7 +263,7 @@ public class Resolver {
 
             // add visible fields to variable context
             accessibleFieldsStream(typeContext, typeInfo, primaryType).forEach(fieldInfo ->
-                    expressionContextForBody.variableContext.add(new FieldReference(typeContext, fieldInfo)));
+                    expressionContextForBody.variableContext().add(new FieldReference(typeContext, fieldInfo)));
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
@@ -289,7 +290,7 @@ public class Resolver {
                           Set<TypeInfo> restrictToType) {
         typeInspection.fields().forEach(fieldInfo -> {
             FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder)
-                    expressionContext.typeContext.getFieldInspection(fieldInfo);
+                    expressionContext.typeContext().getFieldInspection(fieldInfo);
             if (!fieldInspection.fieldInitialiserIsSet() && fieldInspection.getInitialiserExpression() != null) {
                 doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
             } else {
@@ -316,13 +317,13 @@ public class Resolver {
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
             ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(fieldInfo.type);
-            ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo, forwardReturnTypeInfo);
+            ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo);
 
-            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression);
+            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, forwardReturnTypeInfo);
 
             MethodInfo sam;
             boolean artificial;
-            if (fieldInfo.type.isFunctionalInterface(subContext.typeContext)) {
+            if (fieldInfo.type.isFunctionalInterface(subContext.typeContext())) {
                 List<ConstructorCall> constructorCalls = parsedExpression.collect(ConstructorCall.class);
                 artificial = constructorCalls.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
 
@@ -379,7 +380,7 @@ public class Resolver {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
-            MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+            MethodInspection methodInspection = expressionContext.typeContext().getMethodInspection(methodInfo);
             assert methodInspection != null :
                     "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
             boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
@@ -387,7 +388,7 @@ public class Resolver {
                 log(RESOLVER, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
 
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
-                    MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
+                    MethodInspection companionMethodInspection = expressionContext.typeContext().getMethodInspection(companionMethod);
                     try {
                         doMethodOrConstructor(typeInspection, companionMethod, (MethodInspectionImpl.Builder)
                                 companionMethodInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
@@ -428,7 +429,7 @@ public class Resolver {
         } else {
             subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
                     methodInfo.name);
-            typeParameters.forEach(subContext.typeContext::addToContext);
+            typeParameters.forEach(subContext.typeContext()::addToContext);
         }
 
         // BODY
@@ -438,7 +439,7 @@ public class Resolver {
             BlockStmt block = methodInspection.getBlock();
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ? Identifier.generate() : Identifier.from(block));
             if (methodInspection.compactConstructor) {
-                addCompactConstructorSyntheticAssignments(expressionContext.typeContext, blockBuilder,
+                addCompactConstructorSyntheticAssignments(expressionContext.typeContext(), blockBuilder,
                         typeInspection, methodInspection);
             }
             if (block != null && !block.getStatements().isEmpty()) {
@@ -452,7 +453,7 @@ public class Resolver {
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
 
         // finally, we build the method inspection and set it in the methodInfo object
-        methodInspection.build(expressionContext.typeContext);
+        methodInspection.build(expressionContext.typeContext());
 
         if (methodInspection.staticBlockIdentifier > 0) {
             // add a dependency to the previous one!
@@ -523,8 +524,8 @@ public class Resolver {
         try {
             ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(methodInspection.getReturnType());
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, forwardReturnTypeInfo);
-            methodInspection.getParameters().forEach(newContext.variableContext::add);
-            log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
+            methodInspection.getParameters().forEach(newContext.variableContext()::add);
+            log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext());
             Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);
             methodInspection.setInspectedBlock(parsedBlock);
         } catch (RuntimeException rte) {

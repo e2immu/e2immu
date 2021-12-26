@@ -29,9 +29,9 @@ public class ParseObjectCreationExpr {
 
     public static Expression erasure(ExpressionContext expressionContext,
                                      ObjectCreationExpr objectCreationExpr) {
-        TypeContext typeContext = expressionContext.typeContext;
+        TypeContext typeContext = expressionContext.typeContext();
         ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
-        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(expressionContext.typeContext);
+        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContext);
 
         return new ConstructorCallErasure(formalType);
     }
@@ -39,10 +39,10 @@ public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    ObjectCreationExpr objectCreationExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        TypeContext typeContext = expressionContext.typeContext;
+        TypeContext typeContext = expressionContext.typeContext();
 
         ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
-        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(expressionContext.typeContext);
+        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(typeContext);
 
         Diamond diamond = objectCreationExpr.getType().getTypeArguments()
                 .map(list -> list.isEmpty() ? Diamond.YES : Diamond.SHOW_ALL).orElse(Diamond.NO);
@@ -54,7 +54,7 @@ public class ParseObjectCreationExpr {
             if (impliedParameterizedType == null || Primitives.isVoid(impliedParameterizedType)) {
                 parameterizedType = null;
             } else {
-                parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext,
+                parameterizedType = formalType.inferDiamondNewObjectCreation(typeContext,
                         impliedParameterizedType);
             }
         } else {
@@ -63,15 +63,15 @@ public class ParseObjectCreationExpr {
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             assert parameterizedType != null;
-            TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType,
-                    expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
+            TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType(),
+                    expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
             typeContext.typeMapBuilder.add(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
             TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
 
-            Resolver resolver = new Resolver(expressionContext.resolver, expressionContext.typeContext,
-                    expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
+            Resolver resolver = new Resolver(expressionContext.resolver(), typeContext,
+                    typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
             resolver.resolve(Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
             return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
@@ -96,8 +96,8 @@ public class ParseObjectCreationExpr {
         if (parameterizedType == null) {
             // there's only one method left, so we can derive the parameterized type from the parameters
             Set<ParameterizedType> typeParametersResolved = new HashSet<>(formalType.parameters);
-            finalParameterizedType = tryToResolveTypeParameters(expressionContext.typeContext,
-                    formalType, candidate.method(), typeParametersResolved, candidate.newParameterExpressions());
+            finalParameterizedType = tryToResolveTypeParameters(typeContext, formalType, candidate.method(),
+                    typeParametersResolved, candidate.newParameterExpressions());
             if (finalParameterizedType == null) {
                 return new ConstructorCallErasure(formalType);
             }

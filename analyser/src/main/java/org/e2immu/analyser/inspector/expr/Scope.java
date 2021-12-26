@@ -58,7 +58,7 @@ public record Scope(Expression expression,
                 return new TypeExpression(methodInspection.getMethodInfo()
                         .typeInfo.asParameterizedType(inspectionProvider), Diamond.NO);
             }
-            Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType);
+            Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType());
             return new VariableExpression(thisVariable);
         }
         return expression;
@@ -75,7 +75,7 @@ public record Scope(Expression expression,
         Scope.ScopeNature scopeNature;
 
         if (scope == null) {
-            scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
+            scopeType = new ParameterizedType(expressionContext.enclosingType(), 0);
             scopeNature = Scope.ScopeNature.ABSENT; // could be static, could be object instance
         } else {
             scopeType = scope.returnType();

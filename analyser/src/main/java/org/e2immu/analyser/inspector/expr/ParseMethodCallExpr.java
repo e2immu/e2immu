@@ -72,7 +72,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         String methodName = methodCallExpr.getName().asString();
         int numArguments = methodCallExpr.getArguments().size();
         log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
-                methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext));
+                methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext()));
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, forwardReturnTypeInfo.extra());
 

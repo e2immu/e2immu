@@ -29,10 +29,7 @@ package org.e2immu.analyser.model.util;
   };
 */
 
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -43,9 +40,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.util.Logger;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
@@ -58,17 +53,19 @@ public class ConvertMethodReference {
                                                                  TypeInfo enclosingType,
                                                                  MethodReference methodReference,
                                                                  ExpressionContext expressionContext) {
-        MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-        TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
-        TypeInspectionImpl.Builder builder = expressionContext.typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.BY_HAND);
+        TypeContext typeContext = expressionContext.typeContext();
+        MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeContext);
+        int index = expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType());
+        TypeInfo typeInfo = new TypeInfo(enclosingType, index);
+        TypeInspectionImpl.Builder builder = typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.BY_HAND);
 
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);
-        builder.noParent(expressionContext.typeContext.getPrimitives());
+        builder.noParent(typeContext.getPrimitives());
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
-        MethodInspectionImpl.Builder methodBuilder = method.buildCopy(expressionContext.typeContext, typeInfo);
-        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(methodBuilder);
+        MethodInspectionImpl.Builder methodBuilder = method.buildCopy(typeContext, typeInfo);
+        typeContext.typeMapBuilder.registerMethodInspection(methodBuilder);
 
         Block block = methodContent(methodBuilder, methodReference, expressionContext);
         methodBuilder.setInspectedBlock(block);
@@ -83,7 +80,8 @@ public class ConvertMethodReference {
                                        ExpressionContext expressionContext) {
 
         // compose the content of the method...
-        MethodInspection methodReferenceInspection = expressionContext.typeContext.getMethodInspection(methodReference.methodInfo);
+        MethodInspection methodReferenceInspection = expressionContext.typeContext()
+                .getMethodInspection(methodReference.methodInfo);
         Expression newReturnExpression;
         if (methodReferenceInspection.isStatic() || !(methodReference.scope instanceof TypeExpression)) {
             newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReferenceInspection, methodBuilder);
@@ -113,21 +111,13 @@ public class ConvertMethodReference {
     }
 
     /*
-    exclusively used for creating an anonymous type from a method reference in field initialisers.
+    exclusively used for creating an anonymous type from a method reference in field initializers.
      */
-    private static Expression methodCallCopyAllParameters(Expression scope, MethodInspection concreteMethod, MethodInspection interfaceMethod) {
+    private static Expression methodCallCopyAllParameters(Expression scope,
+                                                          MethodInspection concreteMethod,
+                                                          MethodInspection interfaceMethod) {
         List<Expression> parameterExpressions = interfaceMethod
                 .getParameters().stream().map(VariableExpression::new).collect(Collectors.toList());
-        Map<NamedType, ParameterizedType> concreteTypes = new HashMap<>();
-        int i = 0;
-        for (ParameterInfo parameterInfo : concreteMethod.getParameters()) {
-            ParameterInfo interfaceParameter = interfaceMethod.getParameters().get(i);
-            if (interfaceParameter.parameterizedType.isTypeParameter()) {
-                concreteTypes.put(interfaceParameter.parameterizedType.typeParameter, parameterInfo.parameterizedType);
-            }
-            i++;
-        }
-        // FIXME concreteTypes should be used somehow
         return new MethodCall(Identifier.generate(), scope, concreteMethod.getMethodInfo(), parameterExpressions);
     }
 

@@ -35,14 +35,14 @@ public class ParseSwitchExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    SwitchExpr switchExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        Expression selector = expressionContext.parseExpression(switchExpr.getSelector());
+        Expression selector = expressionContext.parseExpressionStartVoid(switchExpr.getSelector());
         ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(forwardReturnTypeInfo);
         TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
-        TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
+        TypeInspection enumInspection = expressionContext.typeContext().getTypeInspection(enumType);
         if (enumType != null) {
             enumInspection.fields()
-                    .forEach(fieldInfo -> newExpressionContext.variableContext.add(
-                            new FieldReference(expressionContext.typeContext, fieldInfo)));
+                    .forEach(fieldInfo -> newExpressionContext.variableContext().add(
+                            new FieldReference(expressionContext.typeContext(), fieldInfo)));
         }
         List<SwitchEntry> entries = switchExpr.getEntries()
                 .stream()
@@ -53,7 +53,7 @@ public class ParseSwitchExpr {
         // in the latter case, we can grab a value.
         // if the entry is a BlockEntry, we must look at the yield statement
         MultiExpression yieldExpressions = new MultiExpression(extractYieldsFromEntries(entries));
-        ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext);
+        ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext());
         return new SwitchExpression(Identifier.from(switchExpr),
                 selector, entries, parameterizedType, yieldExpressions);
     }

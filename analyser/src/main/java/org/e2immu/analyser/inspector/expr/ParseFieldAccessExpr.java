@@ -18,11 +18,13 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.Optional;
@@ -39,11 +41,11 @@ public class ParseFieldAccessExpr {
         if (object instanceof PackagePrefixExpression) {
             PackagePrefix packagePrefix = ((PackagePrefixExpression) object).packagePrefix();
             PackagePrefix combined = packagePrefix.append(name);
-            if (expressionContext.typeContext.isPackagePrefix(combined)) {
+            if (expressionContext.typeContext().isPackagePrefix(combined)) {
                 return new PackagePrefixExpression(combined);
             }
             String fullyQualifiedName = String.join(".", packagePrefix.prefix()) + "." + name;
-            TypeInfo typeInfo = expressionContext.typeContext.getFullyQualified(fullyQualifiedName, true);
+            TypeInfo typeInfo = expressionContext.typeContext().getFullyQualified(fullyQualifiedName, true);
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
             return new TypeExpression(objectType, Diamond.NO);
         }
@@ -52,22 +54,24 @@ public class ParseFieldAccessExpr {
 
     public static Expression createFieldAccess(ExpressionContext expressionContext, Expression object, String name, Position positionForErrorReporting) {
         ParameterizedType objectType = object.returnType();
+        InspectionProvider inspectionProvider = expressionContext.typeContext();
         if (objectType.arrays > 0 && "length".equals(name)) {
-            return new ArrayLength(expressionContext.typeContext.getPrimitives(), object);
+            return new ArrayLength(inspectionProvider.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(expressionContext.typeContext,
+            Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(inspectionProvider,
                     objectType.typeInfo, objectType.typeInfo.primaryType())
                     .filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {
-                return new VariableExpression(new FieldReference(expressionContext.typeContext, oFieldInfo.get(), object));
+                return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object));
             }
-            TypeInspection objectTypeInspection = expressionContext.typeContext.getTypeInspection(objectType.typeInfo);
+            TypeInspection objectTypeInspection = inspectionProvider.getTypeInspection(objectType.typeInfo);
             Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
             if (oSubType.isPresent()) {
-                return new TypeExpression(oSubType.get().asParameterizedType(expressionContext.typeContext), Diamond.NO);
+                return new TypeExpression(oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
             }
-            throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type " + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
+            throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type "
+                    + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
         } else {
             throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
         }

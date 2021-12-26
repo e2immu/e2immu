@@ -47,6 +47,10 @@ import java.util.Map;
  */
 public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, TypeParameterMap extra) {
 
+    public ForwardReturnTypeInfo() {
+        this(null, false, TypeParameterMap.EMPTY);
+    }
+
     public ForwardReturnTypeInfo(ParameterizedType type) {
         this(type, false,  TypeParameterMap.EMPTY);
     }

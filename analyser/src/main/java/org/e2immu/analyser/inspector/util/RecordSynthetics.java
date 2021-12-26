@@ -39,8 +39,8 @@ public class RecordSynthetics {
                                        TypeInspectionImpl.Builder builder,
                                        List<TypeInspector.RecordField> recordFields) {
 
-        var primitives = expressionContext.typeContext.getPrimitives();
-        var e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
+        var primitives = expressionContext.typeContext().getPrimitives();
+        var e2 = expressionContext.typeContext().typeMapBuilder.getE2ImmuAnnotationExpressions();
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
 
         for (var fieldInfo : recordFields) {
@@ -59,9 +59,9 @@ public class RecordSynthetics {
                 .setReturnType(fieldInfo.type)
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
-        accessor.readyToComputeFQN(expressionContext.typeContext);
+        accessor.readyToComputeFQN(expressionContext.typeContext());
         var distinguishingName = accessor.getDistinguishingName();
-        var typeMapBuilder = expressionContext.typeContext.typeMapBuilder;
+        var typeMapBuilder = expressionContext.typeContext().typeMapBuilder;
         var methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
         if (methodInspection != null) {
             // method is already there, we can skip this!
@@ -77,7 +77,7 @@ public class RecordSynthetics {
     // return this.field;
     private static Block getterCodeBlock(ExpressionContext expressionContext, FieldInfo fieldInfo) {
         var returnStatement = new ReturnStatement(Identifier.generate(),
-                new VariableExpression(new FieldReference(expressionContext.typeContext, fieldInfo)));
+                new VariableExpression(new FieldReference(expressionContext.typeContext(), fieldInfo)));
         return new Block.BlockBuilder(Identifier.generate()).addStatement(returnStatement).build();
     }
 }

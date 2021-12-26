@@ -24,22 +24,22 @@ import org.e2immu.analyser.model.variable.Variable;
 public class ParseNameExpr {
     public static Expression parse(ExpressionContext expressionContext, NameExpr nameExpr) {
         String name = nameExpr.getNameAsString();
-        NamedType namedType = expressionContext.typeContext.get(name, false);
+        NamedType namedType = expressionContext.typeContext().get(name, false);
         if (namedType instanceof TypeInfo) {
             return new TypeExpression(new ParameterizedType((TypeInfo) namedType, 0), Diamond.SHOW_ALL);
         }
         if (namedType instanceof TypeParameter) {
             throw new UnsupportedOperationException("How is this possible?");
         }
-        Variable variable = expressionContext.variableContext.get(name, false);
+        Variable variable = expressionContext.variableContext().get(name, false);
         if (variable != null) {
             return new VariableExpression(variable);
         }
         PackagePrefix packagePrefix = new PackagePrefix(new String[]{name});
-        if (expressionContext.typeContext.isPackagePrefix(packagePrefix)) {
+        if (expressionContext.typeContext().isPackagePrefix(packagePrefix)) {
             return new PackagePrefixExpression(packagePrefix);
         }
         throw new UnsupportedOperationException("Unknown name " + name + " at " + nameExpr.getBegin() +
-                "; variable context is " + expressionContext.variableContext);
+                "; variable context is " + expressionContext.variableContext());
     }
 }

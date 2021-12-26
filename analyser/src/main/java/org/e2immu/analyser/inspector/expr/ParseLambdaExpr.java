@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
-import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.*;
 
@@ -54,22 +53,22 @@ public class ParseLambdaExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    LambdaExpr lambdaExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        InspectionProvider inspectionProvider = expressionContext.typeContext;
+        InspectionProvider inspectionProvider = expressionContext.typeContext();
         MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(inspectionProvider);
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
                 : "No SAM at " + lambdaExpr.getBegin();
 
         log(LAMBDA, "Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
 
-        VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
+        VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext());
         int cnt = 0;
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
 
         MethodInspectionImpl.Builder applyMethodInspectionBuilder =
                 createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
-                        expressionContext.enclosingType,
-                        expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
+                        expressionContext.enclosingType(),
+                        expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
         List<Lambda.OutputVariant> outputVariants = new ArrayList<>(lambdaExpr.getParameters().size());
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
@@ -80,7 +79,7 @@ public class ParseLambdaExpr {
                 outputVariant = "var".equals(typeAsString) ? Lambda.OutputVariant.VAR :
                         !typeAsString.isEmpty() ? Lambda.OutputVariant.TYPED : Lambda.OutputVariant.EMPTY;
                 if (outputVariant == Lambda.OutputVariant.TYPED) {
-                    parameterType = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
+                    parameterType = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType());
                 }
             } else {
                 outputVariant = Lambda.OutputVariant.EMPTY;
@@ -132,7 +131,7 @@ public class ParseLambdaExpr {
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
-        continueCreationOfAnonymousType(expressionContext.typeContext.typeMapBuilder,
+        continueCreationOfAnonymousType(expressionContext.typeContext().typeMapBuilder,
                 applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
@@ -156,7 +155,7 @@ public class ParseLambdaExpr {
 
             Identifier identifier = Identifier.from(lambdaExpr);
             ParameterizedType inferredReturnType = expr.returnType();
-            if (forwardReturnTypeInfo.isVoid(newExpressionContext.typeContext)) {
+            if (forwardReturnTypeInfo.isVoid(newExpressionContext.typeContext())) {
                 // we don't expect/want a value, even if the inferredReturnType provides one
                 return new Evaluation(new Block.BlockBuilder(identifier)
                         .addStatement(new ExpressionAsStatement(identifier, expr)).build(),

@@ -27,17 +27,18 @@ import java.util.stream.Collectors;
 
 public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
-        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, arrayCreationExpr.createdType());
+        TypeContext typeContext = expressionContext.typeContext();
+        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, arrayCreationExpr.createdType());
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
-                new ArrayInitializer(expressionContext.typeContext,
+                new ArrayInitializer(typeContext,
                         i.getValues().stream()
-                                .map(expressionContext::parseExpression).collect(Collectors.toList()),
+                                .map(expressionContext::parseExpressionStartVoid).collect(Collectors.toList()),
                         parameterizedType.copyWithOneFewerArrays())).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
-                .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
-                        .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());
+                .stream().map(level -> level.getDimension().map(expressionContext::parseExpressionStartVoid)
+                        .orElse(new IntConstant(typeContext.getPrimitives(), 0))).collect(Collectors.toList());
         return ConstructorCall.withArrayInitialiser(
-                createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
+                createArrayCreationConstructor(typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer);
     }
 

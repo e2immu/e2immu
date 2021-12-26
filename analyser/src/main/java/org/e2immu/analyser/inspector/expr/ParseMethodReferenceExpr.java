@@ -36,12 +36,13 @@ public class ParseMethodReferenceExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    MethodReferenceExpr methodReferenceExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(expressionContext.typeContext);
+        TypeContext typeContext = expressionContext.typeContext();
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext);
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
 
         log(METHOD_CALL, "Start parsing method reference {}", methodReferenceExpr);
 
-        Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
+        Expression scope = expressionContext.parseExpressionStartVoid(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
         Scope.ScopeNature scopeNature = scopeIsAType ? Scope.ScopeNature.STATIC :
                 Scope.ScopeNature.INSTANCE;
@@ -49,13 +50,12 @@ public class ParseMethodReferenceExpr {
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
-        TypeContext typeContext = expressionContext.typeContext;
         int parametersPresented = singleAbstractMethod.methodInspection.getParameters().size();
         List<TypeContext.MethodCandidate> methodCandidates;
         String methodNameForErrorReporting;
         if (constructor) {
             if (parameterizedType.arrays > 0) {
-                return arrayConstruction(expressionContext, parameterizedType);
+                return arrayConstruction(typeContext, parameterizedType);
             }
             methodNameForErrorReporting = "constructor";
             methodCandidates = typeContext.resolveConstructor(parameterizedType, parameterizedType,
@@ -76,7 +76,8 @@ public class ParseMethodReferenceExpr {
                     methodCandidates, scopeNature);
         }
         if (methodCandidates.isEmpty()) {
-            throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
+            throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting
+                    + " at " + methodReferenceExpr.getBegin());
         }
         if (methodCandidates.size() > 1) {
             // check types of parameters in SAM
@@ -159,16 +160,16 @@ public class ParseMethodReferenceExpr {
     }
 
     public static Expression erasure(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {
-        Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
+        Expression scope = expressionContext.parseExpressionStartVoid(methodReferenceExpr.getScope());
         ParameterizedType parameterizedType = scope.returnType();
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
-        TypeContext typeContext = expressionContext.typeContext;
+        TypeContext typeContext = expressionContext.typeContext();
         List<TypeContext.MethodCandidate> methodCandidates;
         if (constructor) {
             if (parameterizedType.arrays > 0) {
-                return arrayConstruction(expressionContext, parameterizedType);
+                return arrayConstruction(typeContext, parameterizedType);
             }
             methodCandidates = typeContext.resolveConstructor(parameterizedType, parameterizedType,
                     TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
@@ -198,9 +199,9 @@ public class ParseMethodReferenceExpr {
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 
-    private static MethodReference arrayConstruction(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
-        MethodInfo arrayConstructor = ParseArrayCreationExpr.createArrayCreationConstructor(expressionContext.typeContext, parameterizedType);
-        TypeInfo intFunction = expressionContext.typeContext.typeMapBuilder.get("java.util.function.IntFunction");
+    private static MethodReference arrayConstruction(TypeContext typeContext, ParameterizedType parameterizedType) {
+        MethodInfo arrayConstructor = ParseArrayCreationExpr.createArrayCreationConstructor(typeContext, parameterizedType);
+        TypeInfo intFunction = typeContext.typeMapBuilder.get("java.util.function.IntFunction");
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
         return new MethodReference(Identifier.generate(),
