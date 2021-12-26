@@ -155,20 +155,17 @@ public interface TypeInspection extends Inspection {
 
     TypeInspectionImpl.InspectionState getInspectionState();
 
-    default boolean haveNonStaticNonDefaultMethods(InspectionProvider inspectionProvider) {
-        if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(m -> {
+    default int countNonStaticNonDefaultMethods(InspectionProvider inspectionProvider) {
+        int sum = (int) methodStream(Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> {
                     MethodInspection inspection = inspectionProvider.getMethodInspection(m);
                     return !inspection.isStatic() && !inspection.isDefault();
-                }))
-            return true;
+                }).count();
         for (ParameterizedType superInterface : interfacesImplemented()) {
-            assert superInterface.typeInfo != null && superInterface.typeInfo.hasBeenInspected();
-            if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods(inspectionProvider)) {
-                return true;
-            }
+            TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
+            sum += typeInspectionOfSuperType.countNonStaticNonDefaultMethods(inspectionProvider);
         }
-        return false;
+        return sum;
     }
 
     /**

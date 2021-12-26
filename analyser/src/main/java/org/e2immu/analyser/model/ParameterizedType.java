@@ -556,8 +556,14 @@ public class ParameterizedType {
         return findSingleAbstractMethodOfInterface(inspectionProvider, true);
     }
 
+    /**
+     * @param inspectionProvider necessary to find super types and methods
+     * @param complain           If false, accept that we're in a functional interface, and do not complain. Only used in the recursion.
+     *                           If true, then starting point of the recursion. We need a functional interface, and will complain at the end.
+     * @return the combination of method and initial type parameter map
+     */
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
-        if (!isFunctionalInterface(inspectionProvider)) return null;
+        if (complain && !isFunctionalInterface(inspectionProvider)) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<MethodInspection> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .map(inspectionProvider::getMethodInspection)

@@ -418,8 +418,8 @@ public class TypeInspector {
 
         // add @FunctionalInterface interface if needed
 
-        if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && fullInspection) {
-            ensureFunctionalInterfaceAnnotation(typeContext);
+        if (!haveFunctionalInterface && fullInspection) {
+            ensureFunctionalInterfaceAnnotation(typeContext, countNonStaticNonDefaultIfInterface.get());
         }
 
         // add empty constructor if needed
@@ -581,17 +581,13 @@ public class TypeInspector {
         }
     }
 
-    private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext) {
-        boolean haveNonStaticNonDefaultsInSuperType = false;
+    private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext, int nonStaticNonDefaultMethods) {
+        int sum = nonStaticNonDefaultMethods;
         for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
             assert superInterface.typeInfo != null;
-            if (typeContext.getTypeInspection(superInterface.typeInfo)
-                    .haveNonStaticNonDefaultMethods(typeContext)) {
-                haveNonStaticNonDefaultsInSuperType = true;
-                break;
-            }
+            sum += typeContext.getTypeInspection(superInterface.typeInfo).countNonStaticNonDefaultMethods(typeContext);
         }
-        if (!haveNonStaticNonDefaultsInSuperType) {
+        if (sum == 1) {
             builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
         }
     }

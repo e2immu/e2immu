@@ -160,4 +160,9 @@ public class TestMethodCall extends CommonTest {
     public void test_14() throws IOException {
         inspectAndResolve(MethodCall_14.class);
     }
+
+    @Test
+    public void test_15() throws IOException {
+        inspectAndResolve(MethodCall_15.class, "Type java.lang.String");
+    }
 }
