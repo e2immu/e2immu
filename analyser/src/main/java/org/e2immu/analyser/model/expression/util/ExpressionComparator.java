@@ -42,6 +42,8 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_SHIFT_RIGHT = 49;
     public static final int ORDER_UNSIGNED_SHIFT_RIGHT = 50;
 
+    public static final int ORDER_BOOLEAN_XOR = 51;
+
     // variables, types
     public static final int ORDER_PRIMITIVE = 60;
     public static final int ORDER_ARRAY = 61;

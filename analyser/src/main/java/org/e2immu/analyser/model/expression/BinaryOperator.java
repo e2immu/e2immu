@@ -227,6 +227,9 @@ public class BinaryOperator extends ElementImpl implements Expression {
 
         // more obscure operators
 
+        if (operator == primitives.xorOperatorBool) {
+            return BooleanXor.booleanXor(identifier, evaluationContext, l, r);
+        }
         if (operator == primitives.bitwiseAndOperatorInt) {
             return BitwiseAnd.bitwiseAnd(identifier, evaluationContext, l, r);
         }
@@ -312,6 +315,8 @@ public class BinaryOperator extends ElementImpl implements Expression {
         }
         if (widestType == primitives.booleanTypeInfo || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
             switch (operator) {
+                case XOR:
+                    return primitives.xorOperatorBool;
                 case OR:
                     return primitives.orOperatorBool;
                 case AND:
@@ -424,6 +429,9 @@ public class BinaryOperator extends ElementImpl implements Expression {
         }
         if (primitives.orOperatorBool == methodInfo) {
             return LOGICAL_OR;
+        }
+        if (primitives.xorOperatorBool == methodInfo) {
+            return XOR;
         }
         throw new UnsupportedOperationException("? unknown operator " + methodInfo.distinguishingName());
     }

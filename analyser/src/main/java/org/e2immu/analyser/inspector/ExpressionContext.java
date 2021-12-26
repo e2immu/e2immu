@@ -125,8 +125,8 @@ public record ExpressionContext(Resolver resolver,
 
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
-        return new ExpressionContext(resolver, enclosingType, subType, enclosingMethod,
-                enclosingField, typeOfEnclosingSwitchExpression, primaryType,
+        return new ExpressionContext(resolver, enclosingType, subType, null,
+                null, null, primaryType,
                 typeContext, variableContext, anonymousTypeCounters);
     }
 
@@ -162,7 +162,6 @@ public record ExpressionContext(Resolver resolver,
     }
 
     public Block parseBlockOrStatement(Statement stmt) {
-        assert enclosingMethod != null || enclosingField != null;
         return parseBlockOrStatement(stmt, null);
     }
 
@@ -195,9 +194,12 @@ public record ExpressionContext(Resolver resolver,
             if (statement.isReturnStmt()) {
                 Expression expression = statement.asReturnStmt().getExpression()
                         .map(e -> {
-                            ParameterizedType returnType = typeContext.getMethodInspection(enclosingMethod).getReturnType();
-                            ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(returnType);
-                            return parseExpression(e, forward);
+                            if(enclosingMethod != null) {
+                                ParameterizedType returnType = typeContext.getMethodInspection(enclosingMethod).getReturnType();
+                                ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(returnType);
+                                return parseExpression(e, forward);
+                            } // else: this is possible, when we're parsing a lambda
+                            return parseExpressionStartVoid(e);
                         }).orElse(EmptyExpression.EMPTY_EXPRESSION);
                 newStatement = new ReturnStatement(identifier, expression);
             } else if (statement.isYieldStmt()) {
