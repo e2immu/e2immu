@@ -275,11 +275,16 @@ public class ParameterizedType {
         // linkedHashMap to maintain an order for testing
         Map<NamedType, ParameterizedType> map = new LinkedHashMap<>();
         for (ParameterizedType parameter : originalType.parameters) {
+            ParameterizedType recursive;
             if (parameter.isTypeParameter()) {
-                map.put(parameter.typeParameter, parameters.get(i));
+                recursive = parameters.get(i);
+                map.put(parameter.typeParameter, recursive);
             } else if (parameter.isType()) {
-                Map<NamedType, ParameterizedType> recursive = parameter.initialTypeParameterMap(inspectionProvider);
-                map.putAll(recursive);
+                recursive = parameter;
+            } else throw new UnsupportedOperationException();
+            if (recursive != null && recursive.isType()) {
+                Map<NamedType, ParameterizedType> recursiveMap = recursive.initialTypeParameterMap(inspectionProvider);
+                map.putAll(recursiveMap);
             }
             i++;
         }
@@ -354,7 +359,7 @@ public class ParameterizedType {
             // concrete type is the super type, we MUST work towards the supertype!
             formalMap = typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, concreteType);
         }
-        if(formalMap == null) return mapOfConcreteType;
+        if (formalMap == null) return mapOfConcreteType;
         return TypeInfo.combineMaps(mapOfConcreteType, formalMap);
     }
 
@@ -431,9 +436,7 @@ public class ParameterizedType {
     public ParameterizedType inferConcreteFieldTypeFromConcreteScope(InspectionProvider inspectionProvider,
                                                                      ParameterizedType formalScopeType,
                                                                      ParameterizedType concreteScopeType) {
-        if(typeParameter != null) {
-
-        } else if (parameters.isEmpty()) return this;
+        if (typeParameter == null && parameters.isEmpty()) return this;
 
         Map<NamedType, ParameterizedType> typeParameterMap = formalScopeType.translateMap(inspectionProvider, concreteScopeType, true);
         return MethodTypeParameterMap.apply(typeParameterMap, this);
