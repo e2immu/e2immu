@@ -927,6 +927,7 @@ public class ParameterizedType {
      * @return
      */
     public ParameterizedType applyTranslation(Map<NamedType, ParameterizedType> translate) {
+        if(translate.isEmpty()) return this;
         ParameterizedType pt = this;
         while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = translate.get(pt.typeParameter);

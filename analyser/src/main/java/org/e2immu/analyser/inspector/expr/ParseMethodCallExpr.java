@@ -18,7 +18,10 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.ErasureExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.MethodCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
@@ -254,22 +257,46 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                         ErrorInfo errorInfo,
                                                         Map<Integer, Expression> evaluatedExpressions,
                                                         MethodTypeParameterMap method) {
-        List<Expression> newParameterExpressions = new ArrayList<>();
+        Expression[] newParameterExpressions = new Expression[evaluatedExpressions.size()];
+        TypeParameterMap cumulative = extra;
+        List<Integer> positionsToDo = new ArrayList<>(evaluatedExpressions.size());
+
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
             if (e.containsErasedExpressions()) {
-                log(METHOD_CALL, "Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
-                ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, extra);
-
-                Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
-                assert !reParsed.containsErasedExpressions();
-                newParameterExpressions.add(reParsed);
+                positionsToDo.add(i);
             } else {
-                newParameterExpressions.add(e);
+                newParameterExpressions[i] = e;
+                Map<NamedType, ParameterizedType> learned = e.returnType().initialTypeParameterMap(typeContext);
+                List<ParameterInfo> parameters = method.methodInspection.getParameters();
+                ParameterizedType formal = i < parameters.size() ? parameters.get(i).parameterizedType :
+                        parameters.get(parameters.size() - 1).parameterizedType.copyWithOneFewerArrays();
+                Map<NamedType, ParameterizedType> inMethod = formal.forwardTypeParameterMap(typeContext);
+                Map<NamedType, ParameterizedType> combined = TypeInfo.combineMaps(learned, inMethod);
+                if (!combined.isEmpty()) {
+                    cumulative = cumulative.merge(new TypeParameterMap(combined));
+                }
             }
         }
-        return newParameterExpressions;
+
+        for (int i : positionsToDo) {
+            Expression e = evaluatedExpressions.get(i);
+            assert e != null;
+
+            log(METHOD_CALL, "Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
+            ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, cumulative);
+
+            Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
+            assert !reParsed.containsErasedExpressions();
+            newParameterExpressions[i] = reParsed;
+
+            Map<NamedType, ParameterizedType> learned = reParsed.returnType().initialTypeParameterMap(typeContext);
+            if (!learned.isEmpty()) {
+                cumulative = cumulative.merge(new TypeParameterMap(learned));
+            }
+        }
+        return Arrays.stream(newParameterExpressions).toList();
     }
 
     private Candidate noCandidatesError(ErrorInfo errorInfo, Map<Integer, Expression> evaluatedExpressions) {
@@ -363,15 +390,15 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         // here comes a bit of code duplication...
                         for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                             ParameterizedType actualType = e.getKey();
-                           // ErasureExpression.MethodStatic methodStatic = e.getValue();
-                          //  if (methodStatic.test(methodCandidate.method().methodInspection)) {
-                                int compatible = callIsAssignableFrom(actualType, arrayType);
+                            // ErasureExpression.MethodStatic methodStatic = e.getValue();
+                            //  if (methodStatic.test(methodCandidate.method().methodInspection)) {
+                            int compatible = callIsAssignableFrom(actualType, arrayType);
 
-                                if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
-                                    bestCompatible = compatible;
-                                    bestAcceptedType = actualType;
-                                }
-                          //  }
+                            if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
+                                bestCompatible = compatible;
+                                bestAcceptedType = actualType;
+                            }
+                            //  }
                         }
 
                         // and break off the code duplication, because we cannot set foundCombination to false
@@ -391,10 +418,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                     ParameterizedType actualType = e.getKey();
                     ErasureExpression.MethodStatic methodStatic = e.getValue();
-                  //  if (methodStatic != Expression.MethodStatic.YES) {
-                        int compatible;
+                    //  if (methodStatic != Expression.MethodStatic.YES) {
+                    int compatible;
 
-                        if (isFreeTypeParameter(actualType)) {
+                    if (isFreeTypeParameter(actualType)) {
                             /*
                             See test Lambda_6, and Lambda_7
 
@@ -404,15 +431,15 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             Lambda_7 shows that we have to be very careful to get rid of type parameters to ensure that
                             this condition doesn't occur too often
                              */
-                            compatible = 5;   // FIXME should we actually forward the actual <- formal mapping?
-                        } else {
-                            compatible = callIsAssignableFrom(actualType, formalType);
-                        }
-                        if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
-                            bestCompatible = compatible;
-                            bestAcceptedType = actualType;
-                        }
-                   // } // else skip
+                        compatible = 5;   // FIXME should we actually forward the actual <- formal mapping?
+                    } else {
+                        compatible = callIsAssignableFrom(actualType, formalType);
+                    }
+                    if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
+                        bestCompatible = compatible;
+                        bestAcceptedType = actualType;
+                    }
+                    // } // else skip
                 }
                 if (bestCompatible < 0) {
                     foundCombination = false;
@@ -542,15 +569,17 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         ParameterizedType parameterType = method.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
         if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
             // Cannot do better than parameter type, have no outside context;
-            return new ForwardReturnTypeInfo(parameterType, false, extra);
+            ParameterizedType translated = parameterType.applyTranslation(extra.map());
+            return new ForwardReturnTypeInfo(translated, false, extra);
         }
         Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
         Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
         if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
             // No type parameters to fill in or to extract
-            return new ForwardReturnTypeInfo(parameterType, false, extra);
+            ParameterizedType translated = parameterType.applyTranslation(extra.map());
+            return new ForwardReturnTypeInfo(translated, false, extra);
         }
-        Map<NamedType, ParameterizedType> translate = new HashMap<>();
+        Map<NamedType, ParameterizedType> translate = new HashMap<>(extra.map());
         for (TypeParameter typeParameter : typeParameters) {
             // can we match? if both are functional interfaces, we know exactly which parameter to match
 

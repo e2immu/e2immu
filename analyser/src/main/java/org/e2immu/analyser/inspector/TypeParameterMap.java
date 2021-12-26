@@ -36,7 +36,7 @@ public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
         if (other.isEmpty()) return this;
         if (isEmpty()) return other;
         Map<NamedType, ParameterizedType> newMap = new HashMap<>(map);
-        map.putAll(other.map);
+        newMap.putAll(other.map);
         return new TypeParameterMap(Map.copyOf(newMap));
     }
 

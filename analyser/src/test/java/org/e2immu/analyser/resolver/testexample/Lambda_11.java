@@ -33,7 +33,7 @@ public class Lambda_11 {
             consumer.accept(this);
         }
 
-        default <T extends Element> void visit(Consumer<T> consumer, Class<T> clazz) {
+        default <T extends Element> void loop(Consumer<T> consumer, Class<T> clazz) {
             visit(element -> {
                 if (clazz.isAssignableFrom(element.getClass())) consumer.accept((T) element);
             });
@@ -50,7 +50,7 @@ public class Lambda_11 {
 
     public List<Element> method(Statement statement) {
         List<Element> yields = new ArrayList<>();
-        statement.visit(e -> yields.add(e.main), YieldStatement.class);
+        statement.loop(e -> yields.add(e.main), YieldStatement.class);
         return yields;
     }
 }
