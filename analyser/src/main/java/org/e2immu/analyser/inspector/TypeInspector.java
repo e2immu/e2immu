@@ -167,7 +167,7 @@ public class TypeInspector {
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(fqn);
             builder.addAnnotation(ae);
         }
-        List<FieldInfo> recordFields = null;
+        List<RecordField> recordFields = null;
         if (fullInspection) {
             try {
                 if (typeDeclaration instanceof RecordDeclaration rd) {
@@ -205,7 +205,8 @@ public class TypeInspector {
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
-                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, recordFields, dollarResolver);
+                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, recordFields,
+                dollarResolver);
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration) {
@@ -223,15 +224,19 @@ public class TypeInspector {
         }
     }
 
-    private List<FieldInfo> doRecordDeclaration(ExpressionContext expressionContext,
-                                                RecordDeclaration recordDeclaration) {
+    public record RecordField(FieldInfo fieldInfo, boolean varargs) {
+    }
+
+    private List<RecordField> doRecordDeclaration(ExpressionContext expressionContext,
+                                                  RecordDeclaration recordDeclaration) {
         builder.setTypeNature(TypeNature.RECORD);
 
         doTypeParameters(expressionContext, recordDeclaration);
         doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes());
 
         return recordDeclaration.getParameters().stream().map(parameter -> {
-            ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
+            boolean varargs = parameter.isVarArgs();
+            ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType(), varargs, null);
             FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, parameter.getNameAsString(), typeInfo);
 
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
@@ -241,7 +246,7 @@ public class TypeInspector {
             expressionContext.typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
 
-            return fieldInfo;
+            return new RecordField(fieldInfo, varargs);
         }).toList();
     }
 
@@ -365,7 +370,7 @@ public class TypeInspector {
             NodeList<BodyDeclaration<?>> members,
             boolean isInterface,
             boolean haveFunctionalInterface,
-            List<FieldInfo> recordFields,
+            List<RecordField> recordFields,
             DollarResolver dollarResolver) {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + typeInfo.fullyQualifiedName);
@@ -445,10 +450,8 @@ public class TypeInspector {
             bodyDeclaration.ifCompactConstructorDeclaration(ccd -> {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
-                List<FieldInfo> nonStaticFields = builder.fields().stream()
-                        .filter(fieldInfo -> !fieldInfo.isStatic(expressionContext.typeContext))
-                        .toList();
-                methodInspector.inspect(ccd, subContext, companionMethodsWaiting, nonStaticFields);
+                assert recordFields != null;
+                methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
                 builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
                 countCompactConstructors.incrementAndGet();
@@ -516,11 +519,10 @@ public class TypeInspector {
         The latter condition is verified in the builder.ensureConstructor() method
          */
         if (TypeNature.RECORD == builder.typeNature() && countCompactConstructors.get() == 0) {
+            assert recordFields != null;
             MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                     fullInspection);
-            List<FieldInfo> nonStaticFields = builder.fields().stream()
-                    .filter(fieldInfo -> !fieldInfo.isStatic(expressionContext.typeContext)).toList();
-            boolean created = methodInspector.inspect(null, subContext, companionMethodsWaiting, nonStaticFields);
+            boolean created = methodInspector.inspect(null, subContext, companionMethodsWaiting, recordFields);
             if (created) {
                 builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
             }

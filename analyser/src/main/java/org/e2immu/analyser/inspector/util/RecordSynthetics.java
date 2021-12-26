@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector.util;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
@@ -36,7 +37,7 @@ public class RecordSynthetics {
     public static void ensureAccessors(ExpressionContext expressionContext,
                                        TypeInfo typeInfo,
                                        TypeInspectionImpl.Builder builder,
-                                       List<FieldInfo> recordFields) {
+                                       List<TypeInspector.RecordField> recordFields) {
 
         var primitives = expressionContext.typeContext.getPrimitives();
         var e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
@@ -50,8 +51,9 @@ public class RecordSynthetics {
 
     private static MethodInfo createAccessor(ExpressionContext expressionContext,
                                              TypeInfo typeInfo,
-                                             FieldInfo fieldInfo,
+                                             TypeInspector.RecordField recordField,
                                              AnnotationExpression notModifiedContract) {
+        var fieldInfo = recordField.fieldInfo();
         var accessor = new MethodInspectionImpl.Builder(typeInfo, fieldInfo.name)
                 .setSynthetic(true)
                 .setReturnType(fieldInfo.type)

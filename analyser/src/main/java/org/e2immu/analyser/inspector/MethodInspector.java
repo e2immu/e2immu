@@ -190,14 +190,14 @@ public class MethodInspector {
     public boolean inspect(CompactConstructorDeclaration ccd,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
-                        List<FieldInfo> fields) {
+                        List<TypeInspector.RecordField> fields) {
         MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder
                 .compactConstructor(Identifier.from(ccd), typeInfo);
         int i = 0;
-        for (FieldInfo fieldInfo : fields) {
+        for (TypeInspector.RecordField recordField : fields) {
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
-                    fieldInfo.type, fieldInfo.name, i++);
-            pib.setVarArgs(false);
+                  recordField.fieldInfo().type, recordField.fieldInfo().name, i++);
+            pib.setVarArgs(recordField.varargs());
             tempBuilder.addParameter(pib);
         }
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder,
