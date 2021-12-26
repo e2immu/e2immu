@@ -165,25 +165,27 @@ public class TestParameterizedType {
 
     @Test
     public void test_0() {
-        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType,
-                primitives.intParameterizedType));
+        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+
+        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType, integerPt));
         Map<NamedType, ParameterizedType> translation = mapStringInteger.initialTypeParameterMap(IP);
-        assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type int}", translation.toString());
+        assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type java.lang.Integer}", translation.toString());
 
         // true or false, does not matter because both have the same typeInfo
         Map<NamedType, ParameterizedType> translation2 = map.asParameterizedType(IP).translateMap(IP, mapStringInteger, true);
         assertEquals(translation, translation2);
 
         ParameterizedType hashMapStringInteger = new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType,
-                primitives.intParameterizedType));
+                integerPt));
         Map<NamedType, ParameterizedType> translation3 = hashMapStringInteger.initialTypeParameterMap(IP);
-        assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type int}", translation3.toString());
+        assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type java.lang.Integer}", translation3.toString());
     }
 
     @Test
     public void test_1() {
-        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType,
-                primitives.integerTypeInfo.asSimpleParameterizedType()));
+        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+
+        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType, integerPt));
         ParameterizedType functionMapToBoolean = new ParameterizedType(function, List.of(mapStringInteger, primitives.boxedBooleanTypeInfo.asSimpleParameterizedType()));
         Map<NamedType, ParameterizedType> translation = functionMapToBoolean.initialTypeParameterMap(IP);
         assertEquals("{T as #0 in org.e2immu.Map=Type org.e2immu.Map<java.lang.String,java.lang.Integer>, " +
@@ -213,13 +215,15 @@ public class TestParameterizedType {
     public void test_2B() {
         // FIELD TYPE BASED ON SCOPE
 
+        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+
         /* we simulate
         class A<K, V> { private Map<K, V> field = ... } scope = new A<String, Boolean>()  scope.field
         */
         ParameterizedType field = new ParameterizedType(map, List.of(
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(0), 0, NONE),
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(1), 0, NONE)));
-        ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType, primitives.intParameterizedType));
+        ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType, integerPt));
         ParameterizedType concreteField = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope);
         assertEquals("Type org.e2immu.Map<java.lang.String,int>", concreteField.toString());
 

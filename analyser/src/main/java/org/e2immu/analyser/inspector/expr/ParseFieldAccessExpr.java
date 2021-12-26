@@ -67,9 +67,8 @@ public class ParseFieldAccessExpr {
                         + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
             }
             return res;
-        } else {
-            throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
         }
+        throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
     }
 
     private static Expression findFieldOrSubType(TypeInfo typeInfo,

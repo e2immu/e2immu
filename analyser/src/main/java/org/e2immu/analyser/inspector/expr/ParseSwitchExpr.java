@@ -80,9 +80,7 @@ public class ParseSwitchExpr {
 
     private static List<Expression> extractYields(Statement statement) {
         List<Expression> yields = new ArrayList<>();
-        statement.visit(e -> {
-            yields.add(e.expression);
-        }, YieldStatement.class);
+        statement.visit(e -> yields.add(e.expression), YieldStatement.class);
         return yields;
     }
 }

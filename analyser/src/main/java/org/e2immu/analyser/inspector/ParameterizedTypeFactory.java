@@ -19,6 +19,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -82,21 +83,9 @@ public class ParameterizedTypeFactory {
                     return parameters.isEmpty() ? new ParameterizedType(typeInfo, arrays) : new ParameterizedType(typeInfo, parameters);
                 }
                 ParameterizedType scopePt = from(context, scopeType);
-                // name probably is a sub type in scopePt...
+                // name probably is a sub-type in scopePt...
                 if (scopePt.typeInfo != null) {
-                    TypeInspection scopeInspection = context.getTypeInspection(scopePt.typeInfo);
-                    if (scopeInspection != null) {
-                        Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
-                        if (subType.isPresent()) {
-                            return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
-                        }
-                        Optional<FieldInfo> field = scopeInspection.fields().stream().filter(f -> f.name.equals(name)).findFirst();
-                        if (field.isPresent()) return field.get().type;
-                        throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
-                    }
-                    // we're going to assume that we're creating a subtype
-                    TypeInfo subType = context.typeMapBuilder.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
-                    return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
+                    return findFieldOrSubType(context, arrays, name, parameters, scopePt);
                 }
             }// else {
             // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
@@ -124,5 +113,35 @@ public class ParameterizedTypeFactory {
 
         throw new UnsupportedOperationException("Unknown type: " + name + " at line "
                 + baseType.getBegin() + " of " + baseType.getClass());
+    }
+
+    private static ParameterizedType findFieldOrSubType(TypeContext typeContext,
+                                                        int arrays,
+                                                        String name,
+                                                        List<ParameterizedType> parameters,
+                                                        ParameterizedType scopePt) {
+        TypeInspection scopeInspection = typeContext.getTypeInspection(scopePt.typeInfo);
+        if (scopeInspection != null) {
+            Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
+            if (subType.isPresent()) {
+                return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
+            }
+            Optional<FieldInfo> field = scopeInspection.fields().stream().filter(f -> f.name.equals(name)).findFirst();
+            if (field.isPresent()) return field.get().type;
+
+            ParameterizedType parent = scopeInspection.parentClass();
+            if (parent != null && !Primitives.isJavaLangObject(parent)) {
+                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, parent);
+                if (res != null) return res;
+            }
+            for (ParameterizedType implementedInterface : scopeInspection.interfacesImplemented()) {
+                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, implementedInterface);
+                if (res != null) return res;
+            }
+            throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
+        }
+        // we're going to assume that we're creating a subtype
+        TypeInfo subType = typeContext.typeMapBuilder.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
+        return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
     }
 }

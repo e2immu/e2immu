@@ -56,6 +56,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     public static final int SAME_UNDERLYING_TYPE = 1;
     private static final int BOXING_TO_PRIMITIVE = 1;
     private static final int BOXING_FROM_PRIMITIVE = 1;
+    public static final int TYPE_BOUND = 5;
     public static final int IN_HIERARCHY = 10;
     private static final int UNBOUND_WILDCARD = 100;
 
@@ -153,18 +154,18 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();
         if (targetTypeBounds.isEmpty()) {
-            return IN_HIERARCHY;
+            return TYPE_BOUND;
         }
         // other is a type
         if (from.typeInfo != null) {
             return targetTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, bound, target)
                             .execute(true, mode))
-                    .min().orElseThrow();
+                    .min().orElseThrow() + TYPE_BOUND;
         }
         if (from.typeParameter != null) {
             List<ParameterizedType> fromTypeBounds = from.typeParameter.getTypeBounds();
             if (fromTypeBounds.isEmpty()) {
-                return IN_HIERARCHY;
+                return TYPE_BOUND;
             }
             // we both have type bounds; we go for the best combination
             int min = Integer.MAX_VALUE;
@@ -175,7 +176,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                     if (value < min) min = value;
                 }
             }
-            return min;
+            return min + TYPE_BOUND;
 
         }
         return NOT_ASSIGNABLE;
