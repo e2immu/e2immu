@@ -18,10 +18,9 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.IfElseStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -97,10 +96,10 @@ public class TestConstructor extends CommonTest {
                         MethodInfo get = subType.findUniqueMethod("get", 0);
                         assertNotNull(get);
                         Block getBlock = typeMap.getMethodInspection(get).getMethodBody();
-                        if(getBlock.structure.statements().get(0) instanceof ReturnStatement rs) {
+                        if (getBlock.structure.statements().get(0) instanceof ReturnStatement rs) {
                             assertEquals("\"abc \"+s.toLowerCase()", rs.expression.toString());
                         } else fail();
-                    } else fail("Have "+p0.getClass());
+                    } else fail("Have " + p0.getClass());
                 } else fail();
             } else fail();
         } else fail();
@@ -115,5 +114,25 @@ public class TestConstructor extends CommonTest {
     @Test
     public void test_7() throws IOException {
         inspectAndResolve(Constructor_7.class);
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Constructor_8.class);
+        TypeInfo typeInfo = typeMap.get(Constructor_8.class);
+        assertNotNull(typeInfo);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("method", 0);
+        Block block = typeMap.getMethodInspection(methodInfo).getMethodBody();
+        if (block.structure.statements().get(0) instanceof StatementWithExpression eas) {
+            if (eas.expression instanceof MethodCall mc) {
+                if (mc.object instanceof VariableExpression ve) {
+                    if (ve.variable() instanceof FieldReference fr) {
+                        assertEquals("new Pair<>(\"3\",3)", fr.scope.toString());
+                        // important: test that the 2nd type parameter is Integer rather than int
+                        assertEquals("org.e2immu.analyser.resolver.testexample.Constructor_8.Pair<java.lang.String,java.lang.Integer>", fr.scope.returnType().detailedString(typeMap));
+                    }
+                } else fail();
+            } else fail();
+        } else fail();
     }
 }

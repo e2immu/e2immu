@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -208,6 +209,10 @@ public class Block extends StatementWithStructure {
             if (statement instanceof ReturnStatement returnStatement) {
                 if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(primitives.voidParameterizedType);
+                } else if (returnStatement.expression instanceof NullConstant) {
+                    if (mostSpecific.get() == null) {
+                        mostSpecific.set(primitives.objectParameterizedType);
+                    }
                 } else {
                     ParameterizedType returnType = returnStatement.expression.returnType();
                     mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(inspectionProvider, returnType));

@@ -78,7 +78,7 @@ public class TestSynthetics {
                     Map.of(t3.typeInspection.get().typeParameters().get(0),
                             typeMap.getPrimitives().stringParameterizedType));
             assertTrue(map.isSingleAbstractMethod());
-            ParameterizedType c = map.getConcreteTypeOfParameter(0);
+            ParameterizedType c = map.getConcreteTypeOfParameter(typeMap.getPrimitives(), 0);
             assertEquals("Type java.lang.String", c.toString());
         }
         {

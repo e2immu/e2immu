@@ -100,6 +100,12 @@ public class ParameterizedType {
         this.typeParameter = null;
         this.arrays = 0;
         this.wildCard = WildCard.NONE;
+        assert checkParametersForPrimitives();
+    }
+
+    private boolean checkParametersForPrimitives() {
+        assert parameters.stream().noneMatch(Primitives::isPrimitiveExcludingVoid) : "Type parameters contain primitives: " + parameters;
+        return true;
     }
 
     // all-in method used by the ParameterizedTypeFactory in byte code inspector
@@ -109,6 +115,7 @@ public class ParameterizedType {
         this.wildCard = wildCard;
         this.parameters = List.copyOf(typeParameters);
         this.typeParameter = null;
+        assert checkParametersForPrimitives();
     }
 
     private ParameterizedType(TypeInfo typeInfo, int arrays, WildCard wildCard, List<ParameterizedType> typeParameters, TypeParameter typeParameter) {
@@ -117,6 +124,7 @@ public class ParameterizedType {
         this.wildCard = wildCard;
         this.parameters = typeParameters;
         this.typeParameter = typeParameter;
+        assert checkParametersForPrimitives();
     }
 
     public Set<ParameterizedType> components(boolean includeMySelf) {
@@ -364,9 +372,10 @@ public class ParameterizedType {
     }
 
     // TODO write tests!
-    private Map<NamedType, ParameterizedType> translationMapForFunctionalInterfaces(InspectionProvider inspectionProvider,
-                                                                                    ParameterizedType concreteType,
-                                                                                    boolean concreteTypeIsAssignableToThis) {
+    private Map<NamedType, ParameterizedType> translationMapForFunctionalInterfaces
+    (InspectionProvider inspectionProvider,
+     ParameterizedType concreteType,
+     boolean concreteTypeIsAssignableToThis) {
         Map<NamedType, ParameterizedType> res = new HashMap<>();
         MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);
         List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspection.getParameters();
@@ -379,14 +388,16 @@ public class ParameterizedType {
                     methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
                     concreteTypeMap.methodInspection.getFullyQualifiedName());
         }
+        Primitives primitives = inspectionProvider.getPrimitives();
         for (int i = 0; i < methodParams.size(); i++) {
             ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
-            ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(i);
-            res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter, concreteTypeIsAssignableToThis));
+            ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(primitives, i);
+            res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter,
+                    concreteTypeIsAssignableToThis));
         }
         // and now the return type
-        ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType();
-        ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType();
+        ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType(primitives);
+        ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType(primitives);
         res.putAll(myReturnType.translateMap(inspectionProvider, concreteReturnType, concreteTypeIsAssignableToThis));
         return res;
     }
@@ -410,7 +421,7 @@ public class ParameterizedType {
         if (typeInfo == concreteType.typeInfo) return concreteType;
 
         Map<NamedType, ParameterizedType> typeParameterMap = translateMap(inspectionProvider, concreteType, false);
-        return MethodTypeParameterMap.apply(typeParameterMap, this);
+        return MethodTypeParameterMap.apply(inspectionProvider.getPrimitives(), typeParameterMap, this);
     }
 
     /*
@@ -439,7 +450,7 @@ public class ParameterizedType {
         if (typeParameter == null && parameters.isEmpty()) return this;
 
         Map<NamedType, ParameterizedType> typeParameterMap = formalScopeType.translateMap(inspectionProvider, concreteScopeType, true);
-        return MethodTypeParameterMap.apply(typeParameterMap, this);
+        return MethodTypeParameterMap.apply(inspectionProvider.getPrimitives(), typeParameterMap, this);
     }
 
 
@@ -925,5 +936,12 @@ public class ParameterizedType {
             throw new UnsupportedOperationException("? input " + stablePt + " has no type");
         }
         return new ParameterizedType(stablePt.typeInfo, recursivelyMappedParameters);
+    }
+
+    public ParameterizedType ensureBoxed(Primitives primitives) {
+        if (Primitives.isPrimitiveExcludingVoid(this)) {
+            return toBoxed(primitives).asSimpleParameterizedType();
+        }
+        return this;
     }
 }

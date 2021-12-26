@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -28,7 +29,9 @@ import java.util.Optional;
 
 public class ParseFieldAccessExpr {
     public static Expression parse(ExpressionContext expressionContext, FieldAccessExpr fieldAccessExpr) {
-        Expression object = expressionContext.parseExpression(fieldAccessExpr.getScope());
+        ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, false,
+                expressionContext.forwardReturnTypeInfo.extra());
+        Expression object = expressionContext.parseExpression(fieldAccessExpr.getScope(), forward);
         String name = fieldAccessExpr.getName().asString();
 
         if (object instanceof PackagePrefixExpression) {

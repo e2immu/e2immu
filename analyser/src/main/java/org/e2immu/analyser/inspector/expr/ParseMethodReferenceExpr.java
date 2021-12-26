@@ -83,7 +83,7 @@ public class ParseMethodReferenceExpr {
             // see if the method candidate's type fits the SAMs
             for (int i = 0; i < singleAbstractMethod.methodInspection.getParameters().size(); i++) {
                 final int index = i;
-                ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
+                ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
                 log(METHOD_CALL, "Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
                         methodCandidates.size(), concreteType.detailedString(), i);
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
@@ -127,7 +127,7 @@ public class ParseMethodReferenceExpr {
         types.add(parameterizedType);
         method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext,
-                types, method.getConcreteReturnType());
+                types, method.getConcreteReturnType(typeContext.getPrimitives()));
         log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting,
                 method.methodInspection.getDistinguishingName());
         return new MethodReference(Identifier.from(methodReferenceExpr),

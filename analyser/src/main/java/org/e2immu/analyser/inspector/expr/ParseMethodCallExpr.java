@@ -95,7 +95,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
-            ParameterizedType returnType = candidate.returnType();
+            ParameterizedType returnType = candidate.returnType(typeContext.getPrimitives());
             log(METHOD_CALL, "Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
             return new MethodCall(Identifier.from(methodCallExpr),
@@ -145,10 +145,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                      Map<NamedType, ParameterizedType> mapExpansion,
                      MethodTypeParameterMap method) {
 
-        ParameterizedType returnType() {
+        ParameterizedType returnType(Primitives primitives) {
             return mapExpansion.isEmpty()
-                    ? method.getConcreteReturnType()
-                    : method.expand(mapExpansion).getConcreteReturnType();
+                    ? method.getConcreteReturnType(primitives)
+                    : method.expand(mapExpansion).getConcreteReturnType(primitives);
         }
     }
 
@@ -220,7 +220,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
             Map<NamedType, ParameterizedType> translated = formalParameterType
                     .translateMap(typeContext, concreteParameterType, true);
-            ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
+            ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
 
             translated.forEach((k, v) -> {
                 // we can go in two directions here.
@@ -539,7 +539,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                                  ParameterizedType outsideContext,
                                                                  TypeParameterMap extra) {
         Objects.requireNonNull(method);
-        ParameterizedType parameterType = method.getConcreteTypeOfParameter(i);
+        ParameterizedType parameterType = method.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
         if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
             // Cannot do better than parameter type, have no outside context;
             return new ForwardReturnTypeInfo(parameterType, false, extra);

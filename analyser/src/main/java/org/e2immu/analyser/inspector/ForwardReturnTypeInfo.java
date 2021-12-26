@@ -79,7 +79,8 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
         if (type == null) return false;
         if (Primitives.isVoid(type)) return true;
         MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
-        return sam != null && sam.methodInspection != null && Primitives.isVoid(sam.getConcreteReturnType());
+        return sam != null && sam.methodInspection != null
+                && Primitives.isVoid(sam.getConcreteReturnType(typeContext.getPrimitives()));
     }
 
     public String toString(InspectionProvider inspectionProvider) {

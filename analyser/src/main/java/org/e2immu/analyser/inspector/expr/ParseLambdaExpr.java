@@ -89,7 +89,7 @@ public class ParseLambdaExpr {
 
             if (parameterType == null) {
                 // the type hint is an interface with exactly one abstract method (not "default", not static)
-                parameterType = singleAbstractMethod.getConcreteTypeOfParameter(cnt);
+                parameterType = singleAbstractMethod.getConcreteTypeOfParameter(inspectionProvider.getPrimitives(), cnt);
             }
             // cases
             if (parameterType == null) {
@@ -117,7 +117,7 @@ public class ParseLambdaExpr {
         ExpressionContext newExpressionContext = expressionContext.newLambdaContext(anonymousType,
                 newVariableContext);
 
-        ParameterizedType returnTypeOfLambda = singleAbstractMethod.getConcreteReturnType();
+        ParameterizedType returnTypeOfLambda = singleAbstractMethod.getConcreteReturnType(inspectionProvider.getPrimitives());
 
         // add all formal -> concrete of the parameters of the SAM, without the return type
         Map<NamedType, ParameterizedType> extra = new HashMap<>();

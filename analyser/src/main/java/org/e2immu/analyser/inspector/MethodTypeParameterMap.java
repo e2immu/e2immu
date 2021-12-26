@@ -56,26 +56,22 @@ public class MethodTypeParameterMap {
         return methodInspection != null;
     }
 
-    public MethodTypeParameterMap copyWithoutMethod() {
-        return new MethodTypeParameterMap(null, concreteTypes);
-    }
-
-    public ParameterizedType getConcreteReturnType() {
+    public ParameterizedType getConcreteReturnType(Primitives primitives) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         ParameterizedType returnType = methodInspection.getReturnType();
-        return apply(concreteTypes, returnType);
+        return apply(primitives, concreteTypes, returnType);
     }
 
-    public ParameterizedType getConcreteTypeOfParameter(int i) {
+    public ParameterizedType getConcreteTypeOfParameter(Primitives primitives, int i) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         int n = methodInspection.getParameters().size();
         if (i >= n) {
             // varargs
-            return apply(concreteTypes, methodInspection.getParameters().get(n - 1).parameterizedType);
+            return apply(primitives, concreteTypes, methodInspection.getParameters().get(n - 1).parameterizedType);
         }
-        return apply(concreteTypes, methodInspection.getParameters().get(i).parameterizedType);
+        return apply(primitives, concreteTypes, methodInspection.getParameters().get(i).parameterizedType);
     }
 
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
@@ -84,21 +80,15 @@ public class MethodTypeParameterMap {
         return new MethodTypeParameterMap(methodInspection, Map.copyOf(join));
     }
 
-    public ParameterizedType applyMap(TypeParameter typeParameter) {
-        return concreteTypes.get(typeParameter);
-    }
-
-
-    public ParameterizedType applyMap(ParameterizedType formalParameterType) {
-        return apply(concreteTypes, formalParameterType);
-    }
 
     // also used for fields
 
     // [Type java.util.function.Function<E, ?>], concrete type java.util.stream.Stream<R>, mapExpansion
     // {R as #0 in java.util.stream.Stream.map(Function<? super T, ? extends R>)=Type java.util.function.Function<E, ? extends R>,
     // T as #0 in java.util.function.Function=Type param E}
-    public static ParameterizedType apply(Map<NamedType, ParameterizedType> concreteTypes, ParameterizedType input) {
+    public static ParameterizedType apply(Primitives primitives,
+                                          Map<NamedType, ParameterizedType> concreteTypes,
+                                          ParameterizedType input) {
         ParameterizedType pt = input;
         while (pt.isTypeParameter() && concreteTypes.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = concreteTypes.get(pt.typeParameter);
@@ -108,7 +98,8 @@ public class MethodTypeParameterMap {
         final ParameterizedType stablePt = pt;
         if (stablePt.parameters.isEmpty()) return stablePt;
         List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
-                .map(x -> x == stablePt || x == input ? stablePt : apply(concreteTypes, x))
+                .map(x -> x == stablePt || x == input ? stablePt : apply(primitives, concreteTypes, x))
+                .map(x -> x.ensureBoxed(primitives))
                 .collect(Collectors.toList());
         if (stablePt.typeInfo == null) {
             throw new UnsupportedOperationException("? input " + stablePt + " has no type");
@@ -144,18 +135,21 @@ public class MethodTypeParameterMap {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         if (typeInspection.typeParameters().isEmpty()) return List.of();
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        return typeInspection.typeParameters().stream().map(typeParameter -> {
-            int cnt = 0;
-            for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
-                if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
-                    return types.get(cnt); // this is one we know!
-                }
-                cnt++;
-            }
-            if (methodInspection.getReturnType().typeParameter == typeParameter)
-                return inferredReturnType;
-            return new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
-        }).collect(Collectors.toList());
+        return typeInspection.typeParameters().stream()
+                .map(typeParameter -> {
+                    int cnt = 0;
+                    for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
+                        if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
+                            return types.get(cnt); // this is one we know!
+                        }
+                        cnt++;
+                    }
+                    if (methodInspection.getReturnType().typeParameter == typeParameter)
+                        return inferredReturnType;
+                    return new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
+                })
+                .map(pt -> pt.ensureBoxed(inspectionProvider.getPrimitives()))
+                .collect(Collectors.toList());
     }
 
 
@@ -185,13 +179,13 @@ public class MethodTypeParameterMap {
         for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInspectionImpl.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
                     Identifier.generate(),
-                    getConcreteTypeOfParameter(p.index), p.name, p.index);
+                    getConcreteTypeOfParameter(inspectionProvider.getPrimitives(), p.index), p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);
             }
             copy.addParameter(newParameterBuilder);
         }
-        copy.setReturnType(getConcreteReturnType());
+        copy.setReturnType(getConcreteReturnType(inspectionProvider.getPrimitives()));
         copy.readyToComputeFQN(inspectionProvider);
         return copy;
     }
