@@ -62,7 +62,7 @@ public class ExpressionContext {
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final AnonymousTypeCounters anonymousTypeCounters;
     public final MethodInfo enclosingMethod;
-    public final ForwardReturnTypeInfo forwardReturnTypeInfo;
+    private final ForwardReturnTypeInfo forwardReturnTypeInfo;
     public final FieldInfo enclosingField; // terminology ~ assigning field, field that we're assigning to
     public final ForwardReturnTypeInfo typeOfEnclosingSwitchExpression;
 
@@ -696,7 +696,7 @@ public class ExpressionContext {
                 return new InlineConditional(identifier, typeContext, condition, ifTrue, ifFalse);
             }
             if (expression.isFieldAccessExpr()) {
-                return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr());
+                return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr(), forwardReturnTypeInfo);
             }
             if (expression.isLambdaExpr()) {
                 if (forwardReturnTypeInfo.erasure()) {
@@ -705,7 +705,7 @@ public class ExpressionContext {
                 return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), forwardReturnTypeInfo);
             }
             if (expression.isSwitchExpr()) {
-                return ParseSwitchExpr.parse(this, expression.asSwitchExpr());
+                return ParseSwitchExpr.parse(this, expression.asSwitchExpr(), forwardReturnTypeInfo);
             }
             if (expression.isArrayCreationExpr()) {
                 return ParseArrayCreationExpr.parse(this, expression.asArrayCreationExpr());

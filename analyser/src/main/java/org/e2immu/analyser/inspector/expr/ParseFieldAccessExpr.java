@@ -28,9 +28,11 @@ import org.e2immu.analyser.resolver.Resolver;
 import java.util.Optional;
 
 public class ParseFieldAccessExpr {
-    public static Expression parse(ExpressionContext expressionContext, FieldAccessExpr fieldAccessExpr) {
+    public static Expression parse(ExpressionContext expressionContext,
+                                   FieldAccessExpr fieldAccessExpr,
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
         ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, false,
-                expressionContext.forwardReturnTypeInfo.extra());
+                forwardReturnTypeInfo.extra());
         Expression object = expressionContext.parseExpression(fieldAccessExpr.getScope(), forward);
         String name = fieldAccessExpr.getName().asString();
 

@@ -24,22 +24,45 @@ public class MethodCall_14 {
         E make();
     }
 
+    static class VII implements VI {
+
+        @Override
+        public E make() {
+            return null;
+        }
+    }
+
     interface E {
+        boolean test();
     }
 
-    public void accept(E... values) {
+    static class EE implements E {
+
+        @Override
+        public boolean test() {
+            return false;
+        }
     }
 
-    public void method(boolean b, boolean c, VI... vis) {
-        accept(Arrays.stream(vis)
+    public void accept(boolean b, E... values) {
+    }
+
+    // sort of mirrors the notNullValuesAsExpression method in StatementAnalysis
+    public void method(VI b, E e, VI... vis) {
+        accept(true, Arrays.stream(vis)
+                .filter(vi -> vi.getClass().toString().contains("e"))
                 .map(vi -> {
-                    if (b) {
-                        return new Pair<>(vi.make(), "ab");
+                    if (b instanceof VII vii) {
+                        if (e instanceof EE ee) {
+                            return new Pair<>(vi, e.test() + "xxx");
+                        }
+                        String s = "ab";
+                        return new Pair<>(vi, s);
                     }
                     return null;
                 })
-                .filter(p -> p != null && p.v.length() > 1)
-                .map(p -> p.k)
+                .filter(p -> p != null && p.k.make() != null && p.v.length() == 4)
+                .map(p -> p.k.make())
                 .toArray(E[]::new));
     }
 }

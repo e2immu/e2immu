@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.SwitchExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.SwitchExpression;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -31,9 +32,11 @@ import java.util.stream.Collectors;
 
 public class ParseSwitchExpr {
 
-    public static Expression parse(ExpressionContext expressionContext, SwitchExpr switchExpr) {
+    public static Expression parse(ExpressionContext expressionContext,
+                                   SwitchExpr switchExpr,
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
         Expression selector = expressionContext.parseExpression(switchExpr.getSelector());
-        ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(expressionContext.forwardReturnTypeInfo);
+        ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(forwardReturnTypeInfo);
         TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
         TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
         if (enumType != null) {
