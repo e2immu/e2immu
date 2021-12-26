@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.expression.CharConstant;
+import org.e2immu.analyser.model.expression.ConstantExpression;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -48,7 +51,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
     private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
 
-    private static final int EQUALS = 0;
+    public static final int EQUALS = 0;
     private static final int ASSIGN_TO_NULL = 0;
     public static final int SAME_UNDERLYING_TYPE = 1;
     private static final int BOXING_TO_PRIMITIVE = 1;
@@ -266,5 +269,18 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     private boolean checkBoxing(TypeInfo targetInfo, TypeInfo fromPrimitiveType) {
         TypeInfo boxed = fromPrimitiveType.asParameterizedType(inspectionProvider).toBoxed(inspectionProvider.getPrimitives());
         return boxed == targetInfo;
+    }
+
+    public static int isAssignableFrom(ParameterizedType from, ConstantExpression<?> constant) {
+        TypeInfo typeInfo = from.typeInfo;
+        if (typeInfo != null) {
+            if (constant instanceof CharConstant && (Primitives.isInt(typeInfo) || Primitives.isChar(typeInfo) || Primitives.isCharacter(typeInfo))) {
+                return EQUALS;
+            }
+            if (constant instanceof IntConstant && (Primitives.isInt(typeInfo) || Primitives.isChar(typeInfo) || Primitives.isInteger(typeInfo))) {
+                return EQUALS;
+            }
+        }
+        return NOT_ASSIGNABLE;
     }
 }

@@ -12,20 +12,26 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver.testexample;
+package org.e2immu.analyser.resolver;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
 
-public class Constructor_7 {
+import org.e2immu.analyser.resolver.testexample.MethodReference_0;
 
-    private Map<String, Integer> make(Supplier<Map<String, Integer>> supplier) {
-        return supplier.get();
+import org.e2immu.analyser.resolver.testexample.MethodReference_1;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
+
+public class TestMethodReference extends CommonTest {
+
+    @Test
+    public void test_0() throws IOException {
+         inspectAndResolve(MethodReference_0.class);
+    }
+    @Test
+    public void test_1() throws IOException {
+        inspectAndResolve(MethodReference_1.class);
     }
 
-    public void method() {
-        Map<String, Integer> map = make(HashMap::new);
-        map.put("a", 1);
-    }
 }

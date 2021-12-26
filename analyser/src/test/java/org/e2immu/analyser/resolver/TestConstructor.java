@@ -17,7 +17,6 @@ package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -109,11 +108,6 @@ public class TestConstructor extends CommonTest {
 
     @Test
     public void test_6() throws IOException {
-        inspectAndResolve(Constructor_6.class);
-    }
-
-    @Test
-    public void test_7() throws IOException {
         inspectAndResolve(Constructor_6.class);
     }
 }

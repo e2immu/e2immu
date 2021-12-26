@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.expression.CharConstant;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +36,7 @@ public class TestIsAssignableFrom {
     public static final String JAVA_LANG_CHAR_SEQUENCE = "java.lang.CharSequence";
     public static final String JAVA_LANG_STRING = "java.lang.String";
     public static final String JAVA_LANG_INTEGER = "java.lang.Integer";
+    public static final String JAVA_LANG_CHARACTER = "java.lang.Character";
     public static final String JAVA_UTIL_LIST = "java.util.List";
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
@@ -60,10 +61,17 @@ public class TestIsAssignableFrom {
     }
 
     // int <- String should fail, int <- Integer should not
+    // int <- char
+    // char <-/-/- int, but char <- integer constant
+
+    // Character <- char
+    // Character <-/-/- int, but Character <- int constant
+    // Integer <-/-/- char
     @Test
     public void test() {
         ParameterizedType stringPt = type(JAVA_LANG_STRING);
         ParameterizedType integerPt = type(JAVA_LANG_INTEGER);
+        ParameterizedType characterPt = type(JAVA_LANG_CHARACTER);
 
         assertTrue(integerPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
         assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
@@ -71,6 +79,20 @@ public class TestIsAssignableFrom {
 
         assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, stringPt));
         assertFalse(stringPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+
+        assertTrue(characterPt.isAssignableFrom(typeContext, primitives.charParameterizedType));
+
+        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.charParameterizedType));
+        assertFalse(primitives.charParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
+
+        assertFalse(integerPt.isAssignableFrom(typeContext, primitives.charParameterizedType));
+        assertFalse(characterPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+
+        CharConstant c = new CharConstant(primitives, '.');
+        assertEquals(IsAssignableFrom.NOT_ASSIGNABLE, IsAssignableFrom.isAssignableFrom(integerPt, c));
+        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(primitives.intParameterizedType, c));
+        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(primitives.charParameterizedType, c));
+        assertEquals(IsAssignableFrom.EQUALS, IsAssignableFrom.isAssignableFrom(characterPt, c));
     }
 
     // CharSequence[] <- String[] should be allowed

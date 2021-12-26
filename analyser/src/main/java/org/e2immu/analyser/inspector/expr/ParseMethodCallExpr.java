@@ -18,10 +18,8 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.ErasureExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.MethodCallErasure;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +91,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     extra,
                     errorInfo);
 
-            assert candidate != null : "Should have found a unique candidate for " + errorInfo;
+            assert candidate != null : "Should have found a unique candidate for " + errorInfo.toString(typeContext);
             log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
@@ -125,6 +123,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     }
 
     record ErrorInfo(String methodName, ParameterizedType type, Position position) {
+        public String toString(InspectionProvider inspectionProvider) {
+            return "[methodName='" + methodName + '\'' +
+                    ", type=" + type.detailedString(inspectionProvider) +
+                    ", position=" + position +
+                    ']';
+        }
     }
 
     /**
@@ -273,7 +277,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         evaluatedExpressions.forEach((i, expr) ->
                 LOGGER.error("  {} = {}", i, (expr == null ? null : expr.debugOutput())));
         LOGGER.error("No candidate found for {} in type {} at position {}", errorInfo.methodName,
-                errorInfo.type.detailedString(), errorInfo.position);
+                errorInfo.type.detailedString(typeContext), errorInfo.position);
         return null;
     }
 
@@ -359,15 +363,15 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         // here comes a bit of code duplication...
                         for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                             ParameterizedType actualType = e.getKey();
-                            ErasureExpression.MethodStatic methodStatic = e.getValue();
-                            if (methodStatic.test(methodCandidate.method().methodInspection)) {
+                           // ErasureExpression.MethodStatic methodStatic = e.getValue();
+                          //  if (methodStatic.test(methodCandidate.method().methodInspection)) {
                                 int compatible = callIsAssignableFrom(actualType, arrayType);
 
                                 if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                                     bestCompatible = compatible;
                                     bestAcceptedType = actualType;
                                 }
-                            }
+                          //  }
                         }
 
                         // and break off the code duplication, because we cannot set foundCombination to false
@@ -387,7 +391,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                     ParameterizedType actualType = e.getKey();
                     ErasureExpression.MethodStatic methodStatic = e.getValue();
-                    if (methodStatic != Expression.MethodStatic.YES) {
+                  //  if (methodStatic != Expression.MethodStatic.YES) {
                         int compatible;
 
                         if (isFreeTypeParameter(actualType)) {
@@ -408,7 +412,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             bestCompatible = compatible;
                             bestAcceptedType = actualType;
                         }
-                    } // else skip
+                   // } // else skip
                 }
                 if (bestCompatible < 0) {
                     foundCombination = false;
@@ -778,6 +782,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
          are allowed in a reverse way (expect List<String>, accept List<T> with T a type parameter of the method,
          as long as T <- String).
         */
+        if(evaluatedExpression instanceof ConstantExpression constantExpression) {
+            return IsAssignableFrom.isAssignableFrom(typeOfParameter, constantExpression);
+        }
         return callIsAssignableFrom(evaluatedExpression.returnType(), typeOfParameter);
     }
 
