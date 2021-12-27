@@ -162,10 +162,15 @@ public class ParameterizedType {
         return new ParameterizedType(this.typeInfo, 0, wildCard, parameters, typeParameter);
     }
 
-    private ParameterizedType copyWithFewerArrays(int arrays) {
+    public ParameterizedType copyWithFewerArrays(int arrays) {
         int newArrays = this.arrays - arrays;
         assert newArrays >= 0 : "Trying to remove " + arrays + " arrays from " + this;
         return new ParameterizedType(this.typeInfo, newArrays, wildCard, parameters, typeParameter);
+    }
+
+    public ParameterizedType copyWithArrays(int arrays) {
+        assert arrays >= 0;
+        return new ParameterizedType(this.typeInfo, arrays, wildCard, parameters, typeParameter);
     }
 
     public OutputBuilder output(Qualification qualification) {
@@ -438,7 +443,7 @@ public class ParameterizedType {
         if (typeInfo == concreteType.typeInfo) return concreteType;
 
         Map<NamedType, ParameterizedType> typeParameterMap = translateMap(inspectionProvider, concreteType, false);
-        return MethodTypeParameterMap.apply(inspectionProvider.getPrimitives(), typeParameterMap, this);
+        return applyTranslation(inspectionProvider.getPrimitives(), typeParameterMap);
     }
 
     /*
@@ -467,7 +472,7 @@ public class ParameterizedType {
         if (typeParameter == null && parameters.isEmpty()) return this;
 
         Map<NamedType, ParameterizedType> typeParameterMap = formalScopeType.translateMap(inspectionProvider, concreteScopeType, true);
-        return MethodTypeParameterMap.apply(inspectionProvider.getPrimitives(), typeParameterMap, this);
+        return applyTranslation(inspectionProvider.getPrimitives(), typeParameterMap);
     }
 
 
@@ -943,18 +948,23 @@ public class ParameterizedType {
      * @param translate
      * @return
      */
-    public ParameterizedType applyTranslation(Map<NamedType, ParameterizedType> translate) {
+    public ParameterizedType applyTranslation(Primitives primitives, Map<NamedType, ParameterizedType> translate) {
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = translate.get(pt.typeParameter);
             if (newPt.equals(pt)) break;
-            pt = newPt;
+            if (pt.arrays > newPt.arrays) {
+                pt = newPt.copyWithArrays(pt.arrays);
+            } else {
+                pt = newPt;
+            }
         }
         final ParameterizedType stablePt = pt;
         if (stablePt.parameters.isEmpty()) return stablePt;
         List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
-                .map(x -> x == stablePt || x == this ? stablePt : x.applyTranslation(translate))
+                .map(x -> x == stablePt || x == this ? stablePt : x.applyTranslation(primitives, translate))
+                .map(x -> x.ensureBoxed(primitives))
                 .collect(Collectors.toList());
         if (stablePt.typeInfo == null) {
             throw new UnsupportedOperationException("? input " + stablePt + " has no type");

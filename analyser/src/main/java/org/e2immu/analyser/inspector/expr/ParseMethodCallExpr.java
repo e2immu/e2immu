@@ -62,7 +62,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     TypeParameterMap map = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
                             .merge(scope.typeParameterMap());
                     ParameterizedType returnType = mc.method().methodInspection.getReturnType();
-                    return returnType.applyTranslation(map.map());
+                    return returnType.applyTranslation(typeContext().getPrimitives(), map.map());
                 })
                 .collect(Collectors.toUnmodifiableSet());
         log(METHOD_CALL, "Erasure types: {}", types);
@@ -359,7 +359,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                       TypeParameterMap typeParameterMap) {
         Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
                 evaluatedExpressions.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e ->
-                        typeParameterMap.replaceKeys(e.getValue().erasureTypes(typeContext))));
+                        typeParameterMap.replaceKeys(typeContext.getPrimitives(), e.getValue().erasureTypes(typeContext))));
 
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
@@ -392,8 +392,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             ParameterizedType actualType = e.getKey();
                             // ErasureExpression.MethodStatic methodStatic = e.getValue();
                             //  if (methodStatic.test(methodCandidate.method().methodInspection)) {
-                            int compatible = callIsAssignableFrom(actualType, arrayType);
-
+                            int compatible;
+                            if(isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
+                                compatible = 5; // FIXME
+                            } else {
+                                 compatible = callIsAssignableFrom(actualType, arrayType);
+                            }
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                                 bestCompatible = compatible;
                                 bestAcceptedType = actualType;
@@ -566,17 +570,18 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                                  ParameterizedType outsideContext,
                                                                  TypeParameterMap extra) {
         Objects.requireNonNull(method);
-        ParameterizedType parameterType = method.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
+        Primitives primitives = typeContext.getPrimitives();
+        ParameterizedType parameterType = method.getConcreteTypeOfParameter(primitives, i);
         if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
             // Cannot do better than parameter type, have no outside context;
-            ParameterizedType translated = parameterType.applyTranslation(extra.map());
+            ParameterizedType translated = parameterType.applyTranslation(primitives, extra.map());
             return new ForwardReturnTypeInfo(translated, false, extra);
         }
         Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
         Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
         if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
             // No type parameters to fill in or to extract
-            ParameterizedType translated = parameterType.applyTranslation(extra.map());
+            ParameterizedType translated = parameterType.applyTranslation(primitives, extra.map());
             return new ForwardReturnTypeInfo(translated, false, extra);
         }
         Map<NamedType, ParameterizedType> translate = new HashMap<>(extra.map());
@@ -603,7 +608,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             // Nothing to translate
             return new ForwardReturnTypeInfo(parameterType, false, extra);
         }
-        ParameterizedType translated = parameterType.applyTranslation(translate);
+        ParameterizedType translated = parameterType.applyTranslation(primitives, translate);
         // Translated context and parameter
         return new ForwardReturnTypeInfo(translated, false, extra);
 

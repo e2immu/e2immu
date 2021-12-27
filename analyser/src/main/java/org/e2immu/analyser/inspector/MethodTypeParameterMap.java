@@ -60,18 +60,23 @@ public class MethodTypeParameterMap {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         ParameterizedType returnType = methodInspection.getReturnType();
-        return apply(primitives, concreteTypes, returnType);
+        return returnType.applyTranslation(primitives, concreteTypes);
     }
 
     public ParameterizedType getConcreteTypeOfParameter(Primitives primitives, int i) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         int n = methodInspection.getParameters().size();
+        int index;
         if (i >= n) {
             // varargs
-            return apply(primitives, concreteTypes, methodInspection.getParameters().get(n - 1).parameterizedType);
+            index = n - 1;
+        } else {
+            index = i;
         }
-        return apply(primitives, concreteTypes, methodInspection.getParameters().get(i).parameterizedType);
+
+        ParameterizedType parameterizedType = methodInspection.getParameters().get(index).parameterizedType;
+        return parameterizedType.applyTranslation(primitives, concreteTypes);
     }
 
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
@@ -80,32 +85,6 @@ public class MethodTypeParameterMap {
         return new MethodTypeParameterMap(methodInspection, Map.copyOf(join));
     }
 
-
-    // also used for fields
-
-    // [Type java.util.function.Function<E, ?>], concrete type java.util.stream.Stream<R>, mapExpansion
-    // {R as #0 in java.util.stream.Stream.map(Function<? super T, ? extends R>)=Type java.util.function.Function<E, ? extends R>,
-    // T as #0 in java.util.function.Function=Type param E}
-    public static ParameterizedType apply(Primitives primitives,
-                                          Map<NamedType, ParameterizedType> concreteTypes,
-                                          ParameterizedType input) {
-        ParameterizedType pt = input;
-        while (pt.isTypeParameter() && concreteTypes.containsKey(pt.typeParameter)) {
-            ParameterizedType newPt = concreteTypes.get(pt.typeParameter);
-            if (newPt.equals(pt)) break;
-            pt = newPt;
-        }
-        final ParameterizedType stablePt = pt;
-        if (stablePt.parameters.isEmpty()) return stablePt;
-        List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
-                .map(x -> x == stablePt || x == input ? stablePt : apply(primitives, concreteTypes, x))
-                .map(x -> x.ensureBoxed(primitives))
-                .collect(Collectors.toList());
-        if (stablePt.typeInfo == null) {
-            throw new UnsupportedOperationException("? input " + stablePt + " has no type");
-        }
-        return new ParameterizedType(stablePt.typeInfo, recursivelyMappedParameters);
-    }
 
     @Override
     public String toString() {

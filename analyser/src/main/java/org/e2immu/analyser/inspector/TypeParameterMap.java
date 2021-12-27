@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +45,8 @@ public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
         return map.isEmpty();
     }
 
-    public <T> Map<ParameterizedType, T> replaceKeys(Map<ParameterizedType, T> types) {
-        return types.entrySet().stream().collect(Collectors.toUnmodifiableMap(e -> e.getKey().applyTranslation(map), Map.Entry::getValue));
+    public <T> Map<ParameterizedType, T> replaceKeys(Primitives primitives, Map<ParameterizedType, T> types) {
+        return types.entrySet().stream().collect(Collectors.toUnmodifiableMap(
+                e -> e.getKey().applyTranslation(primitives, map), Map.Entry::getValue));
     }
 }
