@@ -390,8 +390,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         // here comes a bit of code duplication...
                         for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                             ParameterizedType actualType = e.getKey();
-                            // ErasureExpression.MethodStatic methodStatic = e.getValue();
-                            //  if (methodStatic.test(methodCandidate.method().methodInspection)) {
+
                             int compatible;
                             if(isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
                                 compatible = 5; // FIXME
@@ -402,7 +401,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 bestCompatible = compatible;
                                 bestAcceptedType = actualType;
                             }
-                            //  }
                         }
 
                         // and break off the code duplication, because we cannot set foundCombination to false
@@ -421,10 +419,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
                 for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
                     ParameterizedType actualType = e.getKey();
-                    ErasureExpression.MethodStatic methodStatic = e.getValue();
-                    //  if (methodStatic != Expression.MethodStatic.YES) {
-                    int compatible;
 
+                    int compatible;
                     if (isFreeTypeParameter(actualType)) {
                             /*
                             See test Lambda_6, and Lambda_7
@@ -443,7 +439,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         bestCompatible = compatible;
                         bestAcceptedType = actualType;
                     }
-                    // } // else skip
                 }
                 if (bestCompatible < 0) {
                     foundCombination = false;
@@ -485,32 +480,17 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                              List<com.github.javaparser.ast.expr.Expression> expressions) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
+        int pos=0;
         while (!methodCandidates.isEmpty() && evaluatedExpressions.size() < expressions.size()) {
-            NextParameter next = nextParameterErasureMode(expressionContext, methodCandidates, expressions, evaluatedExpressions);
-            if (next == null) break;// we give up, becomes too complicated
-            evaluatedExpressions.put(next.pos, Objects.requireNonNull(next.expression));
-            filterCandidatesByParameter(next, methodCandidates, compatibilityScore);
+            ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
+            Expression evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), forward);
+            evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
+            filterCandidatesByParameter(evaluatedExpression, pos, methodCandidates, compatibilityScore);
+            pos++;
         }
         return new FilterResult(evaluatedExpressions, compatibilityScore);
     }
 
-    private record NextParameter(Expression expression, int pos) {
-    }
-
-    private NextParameter nextParameterErasureMode(ExpressionContext expressionContext,
-                                                   List<TypeContext.MethodCandidate> methodCandidates,
-                                                   List<com.github.javaparser.ast.expr.Expression> expressions,
-                                                   Map<Integer, Expression> evaluatedExpressions) {
-        // we know that all method candidates have an identical amount of parameters (or varargs)
-        Set<Integer> ignore = evaluatedExpressions.keySet();
-        Integer pos = nextParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, ignore);
-        if (pos == null) {
-            return null; // give up
-        }
-        ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
-        Expression evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), forward);
-        return new NextParameter(evaluatedExpression, pos);
-    }
 
     /**
      * StringBuilder.length() is in public interface CharSequence and in the private type AbstractStringBuilder.
@@ -612,41 +592,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         // Translated context and parameter
         return new ForwardReturnTypeInfo(translated, false, extra);
 
-        /*
-        ParameterizedType abstractType = method.methodInspection.formalParameterType(i);
-        return new ForwardReturnTypeInfo(abstractType, false);
-
-        if (abstractInterfaceMethod != null) {
-            assert singleAbstractMethod != null;
-            ParameterizedType returnTypeOfMethod = method.methodInspection.getReturnType();
-            assert returnTypeOfMethod.typeInfo != null;
-            // a type with its own formal parameters, we try to jump from the concrete value in the AIM (entry.getValue) to
-            // the type parameter in the method's return type (tpInReturnType) to the type parameter in the method's formal return type (tpInFormalReturnType)
-            // to the value in the SAM (best)
-            ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType(typeContext);
-            // we should expect type parameters of the return type to be present in the SAM; the ones of the formal type are in the AIM
-            Map<NamedType, ParameterizedType> newMap = new HashMap<>();
-
-            MethodTypeParameterMap sam = abstractInterfaceMethod.computeSAM(typeContext);
-            assert sam != null;
-            for (Map.Entry<NamedType, ParameterizedType> entry : sam.concreteTypes.entrySet()) {
-                ParameterizedType typeParameter = entry.getValue();
-                ParameterizedType best = null;
-                ParameterizedType tpInReturnType = returnTypeOfMethod.parameters.stream().filter(pt -> pt.typeParameter == typeParameter.typeParameter).findFirst().orElse(null);
-                if (tpInReturnType != null) {
-                    assert tpInReturnType.typeParameter != null;
-                    ParameterizedType tpInFormalReturnType = formalReturnTypeOfMethod.parameters.get(tpInReturnType.typeParameter.getIndex());
-                    best = MethodTypeParameterMap.apply(singleAbstractMethod.concreteTypes, tpInFormalReturnType);
-                }
-                if (best == null) {
-                    best = entry.getValue();
-                }
-                newMap.put(entry.getKey(), best);
-            }
-            MethodTypeParameterMap map = new MethodTypeParameterMap(sam.methodInspection, newMap);
-            return new ForwardReturnTypeInfo(map.applyMap(abstractType), false);
-        }
-        return new ForwardReturnTypeInfo(singleAbstractMethod.applyMap(abstractType), false);*/
     }
 
 
@@ -658,55 +603,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 .map(e -> (TypeParameter) e.getKey()).findFirst().orElse(null);
     }
 
-        /*
-        MethodTypeParameterMap abstractInterfaceMethod
-                = parameterType.findSingleAbstractMethodOfInterface(typeContext);
-        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}",
-                p, method.methodInspection.getFullyQualifiedName(), abstractInterfaceMethod);
-
-        if (abstractInterfaceMethod == null) return new ForwardReturnTypeInfo(parameterType, false);
-        MethodTypeParameterMap singleAbstractMethod = outsideContext.findSingleAbstractMethodOfInterface(typeContext);
-        if (singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
-                && singleAbstractMethod.methodInspection.getMethodInfo().typeInfo
-                .equals(method.methodInspection.getMethodInfo().typeInfo)) {
-            Map<NamedType, ParameterizedType> links = new HashMap<>();
-            int pos = 0;
-            TypeInspection typeInspection = typeContext.getTypeInspection(singleAbstractMethod
-                    .methodInspection.getMethodInfo().typeInfo);
-            for (TypeParameter key : typeInspection.typeParameters()) {
-                MethodInspection methodInspection = typeContext.getMethodInspection(method
-                        .methodInspection.getMethodInfo());
-                NamedType abstractTypeInCandidate = methodInspection.getReturnType().parameters.get(pos).typeParameter;
-                ParameterizedType valueOfKey = singleAbstractMethod.applyMap(key);
-                links.put(abstractTypeInCandidate, valueOfKey);
-                pos++;
-            }
-            MethodTypeParameterMap newSam = abstractInterfaceMethod.expand(links);
-            return new ForwardReturnTypeInfo(parameterType, false);
-        }
-        //abstractInterfaceMethod
-        return new ForwardReturnTypeInfo(parameterType, false);
-    }
-*/
-
-    /*
-        private Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method,
-                                                                     int i,
-                                                                     MethodTypeParameterMap singleAbstractMethod) {
-            ParameterInfo parameterInfo = method.methodInspection.getParameters().get(i);
-            ParameterizedType parameterizedType = parameterInfo.parameterizedType; // Collector<T,A,R>, with T linked to T0 of Stream
-            assert parameterizedType.typeInfo != null;
-            ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType(inspectionProvider);
-            Map<NamedType, ParameterizedType> newMap = new HashMap<>();
-            int pos = 0;
-            for (ParameterizedType typeParameter : formalParameterizedType.parameters) {
-                ParameterizedType best = MethodTypeParameterMap.apply(singleAbstractMethod.concreteTypes, parameterizedType.parameters.get(pos));
-                newMap.put(typeParameter.typeParameter, best);
-                pos++;
-            }
-            return newMap;
-        }
-    */
     private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
         int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method().methodInspection.getMethodInfo(), 0)).min().orElseThrow();
         if (min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
@@ -724,51 +620,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
     }
 
-    /**
-     * This is the "basic" method to quickly filter method candidates in erasure mode.
-     * <p>
-     * It searches for a parameter position that does not hold a functional interface on
-     * any of the method candidates.
-     * This method will return position 0 when ignore is empty, and the two method candidates are, for example,
-     * StringBuilder.append(String) and StringBuilder.append(Integer). Position 0 does not hold a functional
-     * interface on either candidate.
-     *
-     * @param methodCandidates the remaining candidates
-     * @param alreadyDone      the positions already taken
-     * @return a new position, or null when we cannot find one
-     */
-    private Integer nextParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(
-            List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> alreadyDone) {
-        if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
-        for (int i = 0; i < mi0.getParameters().size(); i++) {
-            if (!alreadyDone.contains(i)) {
-                boolean ok = true;
-                for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method().methodInspection;
-                    if (i < mi.getParameters().size()) {
-                        ParameterInfo pi = mi.getParameters().get(i);
-                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(typeContext);
-                        if (isFunctionalInterface) {
-                            ok = false;
-                            break;
-                        }
-                    } else {
-                        // we have more parameters than mi, which is using a varargs
-                        ok = false;
-                    }
-                }
-                if (ok) return i;
-            }
-        }
-        return null;
-    }
-
-    private void filterCandidatesByParameter(NextParameter next,
+    private void filterCandidatesByParameter(Expression expression,
+                                             int pos,
                                              List<TypeContext.MethodCandidate> methodCandidates,
                                              Map<MethodInfo, Integer> compatibilityScore) {
         methodCandidates.removeIf(mc -> {
-            int score = compatibleParameter(next.expression, next.pos, mc.method().methodInspection);
+            int score = compatibleParameter(expression, pos, mc.method().methodInspection);
             if (score >= 0) {
                 Integer inMap = compatibilityScore.get(mc.method().methodInspection.getMethodInfo());
                 inMap = inMap == null ? score : score + inMap;
@@ -809,7 +666,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         if (evaluatedExpression.containsErasedExpressions()) {
             Map<ParameterizedType, ErasureExpression.MethodStatic> types = evaluatedExpression.erasureTypes(typeContext);
             return types.keySet().stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
-                    .min().orElse(NOT_ASSIGNABLE);
+                    .reduce(NOT_ASSIGNABLE, (v0, v1) -> {
+                        if(v0 < 0) return v1;
+                        if(v1 < 0) return v0;
+                        return Math.min(v0, v1);
+                    });
         }
 
         /* If the evaluated expression is a method with type parameters, then these type parameters
