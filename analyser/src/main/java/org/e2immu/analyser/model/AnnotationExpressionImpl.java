@@ -101,7 +101,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         for (Expression expression : expressions) {
             if (expression instanceof MemberValuePair mvp) {
                 if (mvp.name().equals(fieldName)) {
-                    if (mvp.value() instanceof ArrayInitializer ai) {
+                    if (mvp.value().get() instanceof ArrayInitializer ai) {
                         return Arrays.stream(ai.multiExpression.expressions())
                                 .mapToInt(e -> ((IntConstant) e).constant()).toArray();
                     } else throw new UnsupportedOperationException();
@@ -117,7 +117,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         for (Expression expression : expressions) {
             if (expression instanceof MemberValuePair mvp) {
                 if (mvp.name().equals(fieldName)) {
-                    return (T) returnValueOfAnnotationExpression(fieldName, mvp.value());
+                    return (T) returnValueOfAnnotationExpression(fieldName, mvp.value().get());
                 }
             } else if ("value".equals(fieldName)) {
                 return (T) returnValueOfAnnotationExpression(fieldName, expression);

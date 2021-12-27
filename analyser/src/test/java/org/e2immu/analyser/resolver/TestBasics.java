@@ -14,23 +14,25 @@
 
 package org.e2immu.analyser.resolver;
 
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Basics_0;
 import org.e2immu.analyser.resolver.testexample.Basics_1;
 import org.e2immu.analyser.resolver.testexample.Basics_2;
+import org.e2immu.analyser.resolver.testexample.Basics_3;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBasics extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
@@ -43,7 +45,7 @@ public class TestBasics extends CommonTest {
         if (block.structure.statements().get(0) instanceof ExpressionAsStatement eas) {
             if (eas.expression instanceof MethodCall methodCall) {
                 LOGGER.info("Accept: {}", methodCall);
-               assertEquals(methodFqn, methodCall.methodInfo.fullyQualifiedName);
+                assertEquals(methodFqn, methodCall.methodInfo.fullyQualifiedName);
             } else fail();
         } else fail();
     }
@@ -61,5 +63,28 @@ public class TestBasics extends CommonTest {
     @Test
     public void test_2() throws IOException {
         inspectAndResolve(Basics_2.class);
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Basics_3.class);
+        TypeInfo typeInfo = typeMap.get(Basics_3.class);
+        TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);
+        ensureNoUnevaluatedAnnotationParameterValues(typeInspection.getAnnotations());
+
+        MethodInfo method = typeInfo.findUniqueMethod("method", 0);
+        MethodInspection methodInspection = typeMap.getMethodInspection(method);
+        ensureNoUnevaluatedAnnotationParameterValues(methodInspection.getAnnotations());
+
+        FieldInfo fieldInfo = typeInfo.getFieldByName("field", true);
+        FieldInspection fieldInspection = typeMap.getFieldInspection(fieldInfo);
+        ensureNoUnevaluatedAnnotationParameterValues(fieldInspection.getAnnotations());
+    }
+
+    private void ensureNoUnevaluatedAnnotationParameterValues(List<AnnotationExpression> expressions) {
+        List<Expression> memberValuePairs = expressions.stream().flatMap(ae -> ae.expressions().stream()).toList();
+        assertFalse(memberValuePairs.isEmpty());
+        assertFalse(memberValuePairs.stream()
+                .anyMatch(e -> ((MemberValuePair) e).value().get() instanceof UnevaluatedAnnotationParameterValue));
     }
 }

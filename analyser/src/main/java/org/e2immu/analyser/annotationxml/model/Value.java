@@ -35,7 +35,7 @@ public class Value {
             val = expression.minimalOutput(); // "abc", 3.14, true, 'C'
         } else if (expression instanceof MemberValuePair mvp) {
             name = mvp.name();
-            val = mvp.value().minimalOutput(); // Constant, VariableExpression, FieldAccess
+            val = mvp.value().get().minimalOutput(); // Constant, VariableExpression, FieldAccess
         } else throw new UnsupportedOperationException("Did not expect expression of type " + expression.getClass());
     }
 }

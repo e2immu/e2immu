@@ -431,7 +431,7 @@ public class TypeInspector {
         }
 
         // then, do fields (relies on @FI to be present)
-
+        // FIXME but some annotations on methods may rely on fields to be done already...?
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifFieldDeclaration(fd -> fieldDeclaration(expressionContext, isInterface, typeContext, fd));
         }

@@ -24,12 +24,13 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.EventuallyFinal;
 
 import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public record MemberValuePair(String name, Expression value) implements Expression {
+public record MemberValuePair(String name, EventuallyFinal<Expression> value) implements Expression {
 
     public static final String VALUE = "value";
 
@@ -38,8 +39,8 @@ public record MemberValuePair(String name, Expression value) implements Expressi
     }
 
     public MemberValuePair(@NotNull String name, @NotNull Expression value) {
-        this.value = Objects.requireNonNull(value);
-        this.name = Objects.requireNonNull(name);
+        this(name, new EventuallyFinal<>());
+        this.value.setFinal(value);
     }
 
     @Override
@@ -58,18 +59,18 @@ public record MemberValuePair(String name, Expression value) implements Expressi
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(value);
+        return List.of(value.get());
     }
 
     @Override
     public ParameterizedType returnType() {
-        return value.returnType();
+        return value.get().returnType();
     }
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        if (VALUE.equals(name)) return new OutputBuilder().add(value.output(qualification));
-        return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.output(qualification));
+        if (VALUE.equals(name)) return new OutputBuilder().add(value.get().output(qualification));
+        return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.get().output(qualification));
     }
 
     @Override
