@@ -299,9 +299,4 @@ public class Equals extends BinaryOperator {
     public int order() {
         return ExpressionComparator.ORDER_EQUALS;
     }
-
-    @Override
-    public ParameterizedType returnType() {
-        return primitives.booleanParameterizedType;
-    }
 }

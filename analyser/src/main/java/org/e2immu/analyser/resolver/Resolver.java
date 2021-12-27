@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.processing.Generated;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,6 +57,7 @@ public class Resolver {
     private final InspectionProvider inspectionProvider;
     private final Resolver parent;
     private final AnonymousTypeCounters anonymousTypeCounters;
+    private final AtomicInteger typeCounterForDebugging = new AtomicInteger();
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
@@ -250,7 +252,7 @@ public class Resolver {
                 doType(subType, expressionContextOfType, methodFieldSubTypeGraph);
             });
 
-            log(RESOLVER, "Resolving type {}", typeInfo.fullyQualifiedName);
+            log(RESOLVER, "Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
 

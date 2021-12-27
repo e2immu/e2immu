@@ -440,9 +440,11 @@ public class BinaryOperator extends ElementImpl implements Expression {
     @Override
     public ParameterizedType returnType() {
         Precedence precedence = precedence();
-        if (!precedence.greaterThan(RELATIONAL)) return primitives.booleanParameterizedType;
-        if (precedence == STRING_CONCAT) return primitives.stringParameterizedType;
-        return primitives.widestType(lhs.returnType(), rhs.returnType());
+        return switch (precedence) {
+            case RELATIONAL, LOGICAL_AND, LOGICAL_OR, EQUALITY, INSTANCE_OF -> primitives.booleanParameterizedType;
+            case STRING_CONCAT -> primitives.stringParameterizedType;
+            default -> primitives.widestType(lhs.returnType(), rhs.returnType());
+        };
     }
 
     @Override
