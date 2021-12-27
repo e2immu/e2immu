@@ -27,6 +27,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @E2Container
 public class EnclosedExpression extends ElementImpl implements Expression {
@@ -111,7 +112,7 @@ public class EnclosedExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return inner.erasureTypes(typeContext);
     }
 }

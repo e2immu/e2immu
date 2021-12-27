@@ -44,9 +44,4 @@ public record TypeParameterMap(Map<NamedType, ParameterizedType> map) {
     private boolean isEmpty() {
         return map.isEmpty();
     }
-
-    public <T> Map<ParameterizedType, T> replaceKeys(Primitives primitives, Map<ParameterizedType, T> types) {
-        return types.entrySet().stream().collect(Collectors.toUnmodifiableMap(
-                e -> e.getKey().applyTranslation(primitives, map), Map.Entry::getValue));
-    }
 }

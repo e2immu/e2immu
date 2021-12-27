@@ -29,6 +29,7 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -239,8 +240,8 @@ public interface Expression extends Element, Comparable<Expression> {
         return causesOfDelay().isDone();
     }
 
-    default Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
-        return Map.of(returnType(), MethodStatic.IGNORE);
+    default Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
+        return Set.of(returnType());
     }
 
     default boolean isErased() {
@@ -251,22 +252,5 @@ public interface Expression extends Element, Comparable<Expression> {
         if (isErased()) return true;
         return subElements().stream().anyMatch(e ->
                 e instanceof Expression expression && expression.containsErasedExpressions());
-    }
-
-    enum MethodStatic {
-        YES, NO, IGNORE;
-
-        public static MethodStatic from(MethodInspection methodInspection) {
-            return methodInspection.isStatic() ? YES : NO;
-        }
-
-        public boolean test(MethodInspection methodInspection) {
-            return switch (this) {
-                case IGNORE -> true;
-                case YES -> methodInspection.isStatic();
-                case NO -> !methodInspection.isStatic();
-            };
-
-        }
     }
 }

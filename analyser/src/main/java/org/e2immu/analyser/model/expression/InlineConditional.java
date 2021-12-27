@@ -25,11 +25,12 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.SetUtil;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -224,15 +225,13 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     @Override
-    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
         if (ifTrue.isNull()) {
             return ifFalse.erasureTypes(typeContext);
         }
         if (ifFalse.isNull()) return ifTrue.erasureTypes(typeContext);
-        var t = new HashMap<>(ifTrue.erasureTypes(typeContext));
-        t.putAll(ifFalse.erasureTypes(typeContext));
-        return Map.copyOf(t);
+        return SetUtil.immutableUnion(ifTrue.erasureTypes(typeContext), ifFalse.erasureTypes(typeContext));
     }
 
     private ParameterizedType box(ParameterizedType returnType) {

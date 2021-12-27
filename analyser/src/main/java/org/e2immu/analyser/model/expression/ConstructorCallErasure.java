@@ -25,8 +25,8 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @E2Immutable
 public record ConstructorCallErasure(ParameterizedType formalType) implements ErasureExpression {
@@ -92,7 +92,7 @@ public record ConstructorCallErasure(ParameterizedType formalType) implements Er
     }
 
     @Override
-    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
-        return Map.of(formalType, MethodStatic.IGNORE);
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
+        return Set.of(formalType);
     }
 }

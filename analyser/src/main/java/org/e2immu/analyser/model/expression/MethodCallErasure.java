@@ -79,7 +79,7 @@ public record MethodCallErasure(Set<ParameterizedType> returnTypes, String metho
     }
 
     @Override
-    public Map<ParameterizedType, MethodStatic> erasureTypes(TypeContext typeContext) {
-        return returnTypes.stream().collect(Collectors.toUnmodifiableMap(r -> r, r -> MethodStatic.IGNORE));
+    public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
+        return returnTypes;
     }
 }

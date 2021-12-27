@@ -328,7 +328,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 // we want to add R --> Set<T> to the type map
                 Map<NamedType, ParameterizedType> map = new HashMap<>();
                 if (expression.containsErasedExpressions()) {
-                    for (ParameterizedType pt : expression.erasureTypes(typeContext).keySet()) {
+                    for (ParameterizedType pt : expression.erasureTypes(typeContext)) {
                         map.putAll(pt.initialTypeParameterMap(typeContext));
                     }
                 } else {
@@ -359,9 +359,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     private FilterResult filterCandidatesByParameters(List<TypeContext.MethodCandidate> methodCandidates,
                                                       Map<Integer, Expression> evaluatedExpressions,
                                                       TypeParameterMap typeParameterMap) {
-        Map<Integer, Map<ParameterizedType, ErasureExpression.MethodStatic>> acceptedErasedTypes =
+        Map<Integer, Set<ParameterizedType>> acceptedErasedTypes =
                 evaluatedExpressions.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e ->
-                        typeParameterMap.replaceKeys(typeContext.getPrimitives(), e.getValue().erasureTypes(typeContext))));
+                        e.getValue().erasureTypes(typeContext).stream()
+                                .map(pt -> pt.applyTranslation(typeContext.getPrimitives(), typeParameterMap.map()))
+                                .collect(Collectors.toUnmodifiableSet())));
 
         Map<Integer, ParameterizedType> acceptedErasedTypesCombination = null;
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
@@ -374,7 +376,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Map<Integer, ParameterizedType> thisAcceptedErasedTypesCombination = new TreeMap<>();
             for (ParameterInfo parameterInfo : parameters) {
 
-                Map<ParameterizedType, ErasureExpression.MethodStatic> acceptedErased = acceptedErasedTypes.get(pos);
+                Set<ParameterizedType> acceptedErased = acceptedErasedTypes.get(pos);
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
 
@@ -390,8 +392,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         ParameterizedType arrayType = parameterInfo.parameterizedType;
 
                         // here comes a bit of code duplication...
-                        for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
-                            ParameterizedType actualType = e.getKey();
+                        for (ParameterizedType actualType: acceptedErased) {
 
                             int compatible;
                             if (isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
@@ -419,9 +420,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 }
 
 
-                for (Map.Entry<ParameterizedType, ErasureExpression.MethodStatic> e : acceptedErased.entrySet()) {
-                    ParameterizedType actualType = e.getKey();
-
+                for (ParameterizedType actualType : acceptedErased) {
                     int compatible;
                     if (isFreeTypeParameter(actualType)) {
                             /*
@@ -666,8 +665,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
 
     private int compatibleParameter(Expression evaluatedExpression, ParameterizedType typeOfParameter) {
         if (evaluatedExpression.containsErasedExpressions()) {
-            Map<ParameterizedType, ErasureExpression.MethodStatic> types = evaluatedExpression.erasureTypes(typeContext);
-            return types.keySet().stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
+            Set<ParameterizedType> types = evaluatedExpression.erasureTypes(typeContext);
+            return types.stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
                     .reduce(NOT_ASSIGNABLE, (v0, v1) -> {
                         if (v0 < 0) return v1;
                         if (v1 < 0) return v0;

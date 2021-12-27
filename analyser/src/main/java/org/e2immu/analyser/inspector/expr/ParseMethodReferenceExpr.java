@@ -193,7 +193,7 @@ public class ParseMethodReferenceExpr {
             boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic();
             int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
             boolean isVoid = !constructor && methodInspection.isVoid();
-            erasures.add(new LambdaExpressionErasures.Count(n, isVoid, Expression.MethodStatic.from(methodInspection)));
+            erasures.add(new LambdaExpressionErasures.Count(n, isVoid));
         }
         log(METHOD_CALL, "End parsing unevaluated method reference {}, found counts {}", methodReferenceExpr, erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());

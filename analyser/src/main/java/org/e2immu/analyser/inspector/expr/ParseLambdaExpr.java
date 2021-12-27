@@ -30,7 +30,6 @@ import org.e2immu.analyser.parser.TypeMapImpl;
 
 import java.util.*;
 
-import static org.e2immu.analyser.model.Expression.MethodStatic.IGNORE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -44,8 +43,8 @@ public class ParseLambdaExpr {
         // we're not doing this at the moment, and decide to issue a serious inspection warning instead, if we cannot
         // determine a method overload because of the void/non-void difference!
         Set<LambdaExpressionErasures.Count> erasures = Set.of(
-                new LambdaExpressionErasures.Count(parameters, true, IGNORE),
-                new LambdaExpressionErasures.Count(parameters, false, IGNORE));
+                new LambdaExpressionErasures.Count(parameters, true),
+                new LambdaExpressionErasures.Count(parameters, false));
         log(LAMBDA, "Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
