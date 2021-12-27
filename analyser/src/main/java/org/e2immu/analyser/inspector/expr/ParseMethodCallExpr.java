@@ -57,6 +57,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         }
         sortRemainingCandidatesByShallowPublic(methodCandidates);
 
+        assert !methodCandidates.isEmpty() : "Have no method candidates remaining in erasure mode for " + methodName + ", " + numArguments;
+
         Set<ParameterizedType> types = methodCandidates.stream()
                 .map(mc -> {
                     TypeParameterMap map = filterResult.typeParameterMap(typeContext, mc.method().methodInspection)
@@ -392,10 +394,10 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             ParameterizedType actualType = e.getKey();
 
                             int compatible;
-                            if(isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
+                            if (isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
                                 compatible = 5; // FIXME
                             } else {
-                                 compatible = callIsAssignableFrom(actualType, arrayType);
+                                compatible = callIsAssignableFrom(actualType, arrayType);
                             }
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE || compatible < bestCompatible)) {
                                 bestCompatible = compatible;
@@ -480,7 +482,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                                              List<com.github.javaparser.ast.expr.Expression> expressions) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
-        int pos=0;
+        int pos = 0;
         while (!methodCandidates.isEmpty() && evaluatedExpressions.size() < expressions.size()) {
             ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(null, true);
             Expression evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), forward);
@@ -667,8 +669,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Map<ParameterizedType, ErasureExpression.MethodStatic> types = evaluatedExpression.erasureTypes(typeContext);
             return types.keySet().stream().mapToInt(type -> callIsAssignableFrom(type, typeOfParameter))
                     .reduce(NOT_ASSIGNABLE, (v0, v1) -> {
-                        if(v0 < 0) return v1;
-                        if(v1 < 0) return v0;
+                        if (v0 < 0) return v1;
+                        if (v1 < 0) return v0;
                         return Math.min(v0, v1);
                     });
         }

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
 public class TestInspectAndResolveAnalyserCode {

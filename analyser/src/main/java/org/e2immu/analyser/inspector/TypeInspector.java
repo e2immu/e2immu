@@ -254,6 +254,9 @@ public class TypeInspector {
 
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
+
+        doImplementedTypes(expressionContext, enumDeclaration.getImplementedTypes());
+
         List<FieldInfo> enumFields = new ArrayList<>();
 
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
