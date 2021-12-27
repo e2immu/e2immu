@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Basics_0;
 import org.e2immu.analyser.resolver.testexample.Basics_1;
+import org.e2immu.analyser.resolver.testexample.Basics_2;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,5 +56,10 @@ public class TestBasics extends CommonTest {
     @Test
     public void test_1() throws IOException {
         inspectAndResolve(Basics_1.class, "java.io.PrintStream.println(int)");
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        inspectAndResolve(Basics_2.class);
     }
 }

@@ -956,15 +956,15 @@ public class ParameterizedType {
     /**
      * IMPORTANT: code copied from MethodTypeParameterMap
      *
-     * @param translate
-     * @return
+     * @param translate the map to be applied on the type parameters of this
+     * @return a newly created ParameterizedType
      */
     public ParameterizedType applyTranslation(Primitives primitives, Map<NamedType, ParameterizedType> translate) {
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = translate.get(pt.typeParameter);
-            if (newPt.equals(pt)) break;
+            if (newPt.equals(pt) || newPt.isTypeParameter() && pt.typeParameter.equals(newPt.typeParameter)) break;
             if (pt.arrays > newPt.arrays) {
                 pt = newPt.copyWithArrays(pt.arrays);
             } else {

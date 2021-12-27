@@ -39,7 +39,7 @@ public class TestInspectAndResolveAnalyserCode {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/main/java")
-                //  .addSources("src/test/java")
+                .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
