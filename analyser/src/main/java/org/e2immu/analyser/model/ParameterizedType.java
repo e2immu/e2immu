@@ -285,9 +285,20 @@ public class ParameterizedType {
 
     /*
      Given a concrete type (List<String>) make a map from the type's abstract parameters to its concrete ones (E -> String)
+
+     If the abstract type contains self-references, we cannot recurse, because their type parameters have the same name...
+     With visited, the method returns K=Integer, V=Map<Integer,String> when presented with Map<Integer,Map<Integer,String>>,
+     without visited, it would recurse and return K=Integer, V=String
      */
     public Map<NamedType, ParameterizedType> initialTypeParameterMap(InspectionProvider inspectionProvider) {
         if (!isType()) return Map.of();
+        if (parameters.isEmpty()) return Map.of();
+        return initialTypeParameterMap(inspectionProvider, new HashSet<>());
+    }
+
+    private Map<NamedType, ParameterizedType> initialTypeParameterMap(InspectionProvider inspectionProvider, Set<TypeInfo> visited) {
+        if (!isType()) return Map.of();
+        visited.add(typeInfo);
         if (parameters.isEmpty()) return Map.of();
         ParameterizedType originalType = typeInfo.asParameterizedType(inspectionProvider);
         int i = 0;
@@ -301,8 +312,8 @@ public class ParameterizedType {
             } else if (parameter.isType()) {
                 recursive = parameter;
             } else throw new UnsupportedOperationException();
-            if (recursive != null && recursive.isType()) {
-                Map<NamedType, ParameterizedType> recursiveMap = recursive.initialTypeParameterMap(inspectionProvider);
+            if (recursive != null && recursive.isType() && !visited.contains(recursive.typeInfo)) {
+                Map<NamedType, ParameterizedType> recursiveMap = recursive.initialTypeParameterMap(inspectionProvider, visited);
                 map.putAll(recursiveMap);
             }
             i++;

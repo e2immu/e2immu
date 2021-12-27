@@ -19,7 +19,6 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.ErasureExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;

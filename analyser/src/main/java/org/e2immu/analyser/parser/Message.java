@@ -20,9 +20,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public record Message(Location location,
-                      org.e2immu.analyser.parser.Message.Label message,
-                      String extra) {
+public record Message(Location location, Label message, String extra) {
 
     public static int SORT(Message m1, Message m2) {
         int c = m1.location.compareTo(m2.location);
