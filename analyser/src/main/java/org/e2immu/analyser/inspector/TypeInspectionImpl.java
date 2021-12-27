@@ -20,10 +20,9 @@ import com.github.javaparser.ast.expr.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
@@ -48,6 +47,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<ParameterizedType> interfacesImplemented;
     public final TypeModifier access;
     public final Inspector inspector;
+    public final boolean functionalInterface;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
                                TypeNature typeNature,
@@ -63,7 +63,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<TypeInfo> permittedWhenSealed,
                                List<AnnotationExpression> annotations,
                                Inspector inspector,
-                               boolean synthetic) {
+                               boolean synthetic,
+                               boolean functionalInterface) {
         super(annotations, synthetic);
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -77,7 +78,13 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.subTypes = subTypes;
         this.access = access;
         this.permittedWhenSealed = permittedWhenSealed;
+        this.functionalInterface = functionalInterface;
         this.inspector = inspector;
+    }
+
+    @Override
+    public boolean isFunctionalInterface() {
+        return functionalInterface;
     }
 
     @Override
@@ -208,11 +215,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final TypeInfo typeInfo;
         private final Inspector inspector;
         private InspectionState inspectionState;
+        private Boolean functionalInterface;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
             this.inspectionState = inspectionState;
             this.inspector = inspectionState.getInspector();
+        }
+
+        public Builder setFunctionalInterface(boolean functionalInterface) {
+            this.functionalInterface = functionalInterface;
+            return this;
+        }
+
+        @Override
+        public boolean isFunctionalInterface() {
+            return Objects.requireNonNull(functionalInterface, "No FI info for " + typeInfo.fullyQualifiedName);
         }
 
         @Override
@@ -361,7 +379,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     permittedWhenSealed(),
                     getAnnotations(),
                     inspector,
-                    isSynthetic());
+                    isSynthetic(),
+                    isFunctionalInterface());
         }
 
         @Override

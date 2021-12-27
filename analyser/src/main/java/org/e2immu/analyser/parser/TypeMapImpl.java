@@ -146,10 +146,12 @@ public class TypeMapImpl implements TypeMap {
         public Builder(Resources classPath) {
             this.classPath = classPath;
             for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
-                add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
+                if (!typeInfo.typeInspection.isSet())
+                    add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
             }
             for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
-                add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
+                if (!typeInfo.typeInspection.isSet())
+                    add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
         }
@@ -300,6 +302,7 @@ public class TypeMapImpl implements TypeMap {
             if (inMap != null) {
                 throw new UnsupportedOperationException();
             }
+            assert !typeInfo.typeInspection.isSet() : "type " + typeInfo.fullyQualifiedName;
             TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
             typeInspections.put(typeInfo, ti);
             return ti;
@@ -347,6 +350,10 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+            if(typeInfo.typeInspection.isSet()) {
+                // primitives, etc.
+                return typeInfo.typeInspection.get();
+            }
             TypeInspectionImpl.Builder typeInspection = typeInspections.get(typeInfo);
             if (typeInspection == null) {
                 return null;
@@ -454,8 +461,7 @@ public class TypeMapImpl implements TypeMap {
             m.addModifier(MethodModifier.PUBLIC);
             MethodInspection mi = m.build(this);
             registerMethodInspection(m);
-            builder.addMethod(mi.getMethodInfo());
-
+            builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(true);
             typeInfo.typeInspection.set(builder.build());
             return typeInfo;
         }

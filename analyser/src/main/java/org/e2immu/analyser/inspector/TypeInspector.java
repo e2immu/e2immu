@@ -107,7 +107,7 @@ public class TypeInspector {
         } else {
             builder.setParentClass(typeImplemented);
         }
-        continueInspection(withSubTypes, members, false, false, null, null);
+        continueInspection(withSubTypes, members, false, null, null);
     }
 
     /**
@@ -160,12 +160,8 @@ public class TypeInspector {
         }
         typeContext.addToContext(typeInfo);
 
-        boolean haveFunctionalInterface = false;
-
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
             AnnotationExpression ae = AnnotationInspector.inspect(expressionContext, annotationExpr);
-            String fqn = ae.typeInfo().fullyQualifiedName;
-            haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(fqn);
             builder.addAnnotation(ae);
         }
         List<RecordField> recordFields = null;
@@ -206,7 +202,7 @@ public class TypeInspector {
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
-                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, recordFields,
+                builder.typeNature() == TypeNature.INTERFACE, recordFields,
                 dollarResolver);
     }
 
@@ -360,8 +356,7 @@ public class TypeInspector {
         builder.noParent(expressionContext.typeContext().getPrimitives());
         doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
-        continueInspection(expressionContext, cid.getMembers(), false, false,
-                null, null);
+        continueInspection(expressionContext, cid.getMembers(), false, null, null);
     }
 
     // only to be called on primary types
@@ -374,7 +369,6 @@ public class TypeInspector {
             ExpressionContext expressionContext,
             NodeList<BodyDeclaration<?>> members,
             boolean isInterface,
-            boolean haveFunctionalInterface,
             List<RecordField> recordFields,
             DollarResolver dollarResolver) {
         TypeContext typeContext = expressionContext.typeContext();
@@ -394,17 +388,10 @@ public class TypeInspector {
                     cid.getNameAsString(), cid.asTypeDeclaration()));
         }
 
-        // then, do fields
-
-        for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifFieldDeclaration(fd -> fieldDeclaration(expressionContext, isInterface, typeContext, fd));
-        }
-
         // finally, do constructors and methods
 
         log(INSPECTOR, "Variable context after parsing fields of type {}: {}", typeInfo.fullyQualifiedName, subContext.variableContext());
 
-        AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
         AtomicInteger countCompactConstructors = new AtomicInteger();
         AtomicInteger countStaticBlocks = new AtomicInteger();
@@ -416,13 +403,19 @@ public class TypeInspector {
             bodyDeclaration.ifConstructorDeclaration(cd -> constructorDeclaration(expressionContext, dollarResolver,
                     subContext, companionMethodsWaiting, cd));
             bodyDeclaration.ifMethodDeclaration(md -> methodDeclaration(expressionContext, isInterface,
-                    dollarResolver, subContext, countNonStaticNonDefaultIfInterface, companionMethodsWaiting, md));
+                    dollarResolver, subContext, companionMethodsWaiting, md));
         }
 
         // add @FunctionalInterface interface if needed
 
-        if (!haveFunctionalInterface && fullInspection) {
-            ensureFunctionalInterfaceAnnotation(typeContext, countNonStaticNonDefaultIfInterface.get());
+        if (fullInspection) {
+            ensureFunctionalInterfaceAnnotation(typeContext, builder);
+        }
+
+        // then, do fields (relies on @FI to be present)
+
+        for (BodyDeclaration<?> bodyDeclaration : members) {
+            bodyDeclaration.ifFieldDeclaration(fd -> fieldDeclaration(expressionContext, isInterface, typeContext, fd));
         }
 
         // add empty constructor if needed
@@ -430,6 +423,7 @@ public class TypeInspector {
             boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
             builder.addConstructor(createEmptyConstructor(typeContext, privateEmptyConstructor));
         }
+
 
         /*
         Ensure a constructor when the type is a record and there are no compact constructors.
@@ -545,7 +539,6 @@ public class TypeInspector {
                                    boolean isInterface,
                                    DollarResolver dollarResolver,
                                    ExpressionContext subContext,
-                                   AtomicInteger countNonStaticNonDefaultIfInterface,
                                    Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting,
                                    MethodDeclaration md) {
         // NOTE: it is possible that the return type is unknown at this moment: it can be one of the type
@@ -560,9 +553,6 @@ public class TypeInspector {
                 companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
         MethodInspection methodInspection = methodInspector.getBuilder();
         MethodInfo methodInfo = methodInspection.getMethodInfo();
-        if (isInterface && !methodInspection.isStatic() && !methodInspection.isDefault()) {
-            countNonStaticNonDefaultIfInterface.incrementAndGet();
-        }
         if (companionMethodName != null) {
             companionMethodsWaiting.put(companionMethodName, methodInspector.getBuilder()); // will be built with its main method
         } else {
@@ -584,14 +574,14 @@ public class TypeInspector {
         }
     }
 
-    private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext, int nonStaticNonDefaultMethods) {
-        int sum = nonStaticNonDefaultMethods;
-        for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
-            assert superInterface.typeInfo != null;
-            sum += typeContext.getTypeInspection(superInterface.typeInfo).countNonStaticNonDefaultMethods(typeContext);
-        }
-        if (sum == 1) {
+    private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext,
+                                                     TypeInspectionImpl.Builder builder) {
+        int count = builder.countNonStaticNonDefaultMethods(typeContext);
+        if (count == 1 && builder.typeNature() == TypeNature.INTERFACE) {
             builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
+            builder.setFunctionalInterface(true);
+        } else {
+            builder.setFunctionalInterface(false);
         }
     }
 

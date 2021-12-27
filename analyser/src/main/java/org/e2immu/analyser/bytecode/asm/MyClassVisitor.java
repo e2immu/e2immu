@@ -480,7 +480,10 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
                 if (typeInspectionBuilder == null)
                     throw new UnsupportedOperationException("? was expecting a type inspection builder");
-                typeInspectionBuilder.setInspectionState(FINISHED_BYTECODE);
+
+                typeInspectionBuilder
+                        .setFunctionalInterface(functionalInterface())
+                        .setInspectionState(FINISHED_BYTECODE);
                 types.add(currentType);
                 currentType = null;
                 typeInspectionBuilder = null;
@@ -489,6 +492,14 @@ public class MyClassVisitor extends ClassVisitor {
                 throw rte;
             }
         }
+    }
+
+    private boolean functionalInterface() {
+        if (typeInspectionBuilder.typeNature() == TypeNature.INTERFACE) {
+            int countMethods = typeInspectionBuilder.countNonStaticNonDefaultMethods(typeContext);
+            return countMethods == 1;
+        }
+        return false;
     }
 
     private void errorStateForType(String pathCausingFailure) {

@@ -109,4 +109,16 @@ public interface MethodInspection extends Inspection {
     default boolean isVoid() {
         return Primitives.isVoid(getReturnType());
     }
+
+    /**
+     * in a functional interface, we need exactly one non-static, non-default method, but you can always
+     * add equals() or hashCode() or any other method from java.lang.Object() to the overload list...
+     *
+     * @return true for equals, hashCode etc.
+     */
+    default boolean isOverloadOfJLOMethod() {
+        if ("equals".equals(getMethodInfo().name) && getParameters().size() == 1) return true;
+        if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
+        return false;
+    }
 }

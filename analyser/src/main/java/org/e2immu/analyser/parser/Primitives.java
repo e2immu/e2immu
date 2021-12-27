@@ -334,6 +334,7 @@ public class Primitives {
         for (TypeInfo ti : boxed) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.CLASS)
+                    .setFunctionalInterface(false)
                     .noParent(this)
                     .build());
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
@@ -354,6 +355,7 @@ public class Primitives {
         for (TypeInfo ti : primitives) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.PRIMITIVE)
+                    .setFunctionalInterface(false)
                     .noParent(this)
                     .build());
             primitiveByName.put(ti.simpleName, ti);
@@ -384,6 +386,7 @@ public class Primitives {
 
         functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ANNOTATION)
+                .setFunctionalInterface(false)
                 .noParent(this)
                 .build());
 
@@ -429,6 +432,7 @@ public class Primitives {
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
+                .setFunctionalInterface(false)
                 .noParent(this)
                 .addMethod(valueOf)
                 .addMethod(name);

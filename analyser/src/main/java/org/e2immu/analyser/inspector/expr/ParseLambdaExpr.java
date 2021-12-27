@@ -196,11 +196,11 @@ public class ParseLambdaExpr {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
-                TypeInspectionImpl.InspectionState.BY_HAND);
-        typeInspectionBuilder.noParent(typeMapBuilder.getPrimitives());
-        typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
-        typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
-        typeInspectionBuilder.addMethod(methodInfo);
+                        TypeInspectionImpl.InspectionState.BY_HAND)
+                .noParent(typeMapBuilder.getPrimitives())
+                .setTypeNature(TypeNature.CLASS)
+                .addInterfaceImplemented(functionalInterfaceType)
+                .addMethod(methodInfo).setFunctionalInterface(true);
         TypeInspection builtTypeInspection = typeInspectionBuilder.build();
         typeInfo.typeInspection.set(builtTypeInspection);
     }

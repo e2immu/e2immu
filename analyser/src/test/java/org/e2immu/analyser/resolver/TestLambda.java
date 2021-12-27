@@ -27,6 +27,10 @@ import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -100,6 +104,14 @@ public class TestLambda extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Lambda_7.class);
         TypeInfo typeInfo = typeMap.get(Lambda_7.class);
         assertNotNull(typeInfo);
+
+        for (Class<?> clazz : new Class[]{BiConsumer.class, BiFunction.class,
+                Comparable.class,
+                Comparator.class,
+                BinaryOperator.class}) {
+            TypeInfo ti = typeMap.get(clazz);
+            assertTrue(typeMap.getTypeInspection(ti).isFunctionalInterface(), clazz.toString());
+        }
     }
 
     @Test

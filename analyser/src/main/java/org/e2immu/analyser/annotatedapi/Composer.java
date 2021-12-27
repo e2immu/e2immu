@@ -88,7 +88,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         }
         return buildersPerPackage.values().stream()
                 .map(builder -> {
-                    TypeInspection inspection = builder.build();
+                    TypeInspection inspection = builder.setFunctionalInterface(false).build();
                     TypeInfo typeInfo = inspection.typeInfo();
                     typeInfo.typeInspection.set(inspection);
                     return typeInfo;
@@ -120,7 +120,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             }
         }
 
-        TypeInspection builtType = typeBuilder.build();
+        TypeInspection builtType = typeBuilder.setFunctionalInterface(false).build();
         TypeInfo typeInfo = builtType.typeInfo();
         typeInfo.typeInspection.set(builtType);
         packageBuilder.addSubType(typeInfo);

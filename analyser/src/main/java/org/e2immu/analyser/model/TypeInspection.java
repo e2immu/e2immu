@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -64,19 +63,7 @@ public interface TypeInspection extends Inspection {
      */
     List<TypeInfo> permittedWhenSealed();
 
-    default boolean isFunctionalInterface() {
-        if (typeNature() != TypeNature.INTERFACE) {
-            return false;
-        }
-        return getAnnotations().stream().anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
-    }
-
-    default boolean onlyHasPrivateMethods() {
-        return Stream.concat(methodStream(Methods.THIS_TYPE_ONLY),
-                        typeInfo().typeResolution.get().superTypesExcludingJavaLangObject().stream()
-                                .flatMap(t -> methodStream(Methods.THIS_TYPE_ONLY)))
-                .allMatch(MethodInfo::isPrivate);
-    }
+    boolean isFunctionalInterface();
 
     enum Methods {
 
@@ -159,7 +146,7 @@ public interface TypeInspection extends Inspection {
         int sum = (int) methodStream(Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> {
                     MethodInspection inspection = inspectionProvider.getMethodInspection(m);
-                    return !inspection.isStatic() && !inspection.isDefault();
+                    return !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
                 }).count();
         for (ParameterizedType superInterface : interfacesImplemented()) {
             TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);

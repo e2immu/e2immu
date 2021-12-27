@@ -38,8 +38,8 @@ public class ParseSwitchExpr {
         Expression selector = expressionContext.parseExpressionStartVoid(switchExpr.getSelector());
         ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(forwardReturnTypeInfo);
         TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
-        TypeInspection enumInspection = expressionContext.typeContext().getTypeInspection(enumType);
         if (enumType != null) {
+            TypeInspection enumInspection = expressionContext.typeContext().getTypeInspection(enumType);
             enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext().add(
                             new FieldReference(expressionContext.typeContext(), fieldInfo)));
