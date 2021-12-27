@@ -119,6 +119,6 @@ public interface MethodInspection extends Inspection {
     default boolean isOverloadOfJLOMethod() {
         if ("equals".equals(getMethodInfo().name) && getParameters().size() == 1) return true;
         if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
-        return false;
+        return "toString".equals(getMethodInfo().name) && getParameters().size() == 0;
     }
 }
