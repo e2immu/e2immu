@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.IOUtil;
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
@@ -186,9 +186,10 @@ public class Parser {
 
                 InputStreamReader isr = new InputStreamReader(url.openStream(),
                         configuration.inputConfiguration().sourceEncoding());
-                String source = IOUtils.toString(isr);
+                String source = IOUtil.toString(isr);
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
-                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters);
+                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters,
+                        configuration.annotatedAPIConfiguration().disabled());
                 List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
 

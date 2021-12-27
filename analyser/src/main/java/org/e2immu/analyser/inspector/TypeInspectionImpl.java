@@ -444,10 +444,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public void recursivelyAddToTypeStore(boolean parentIsPrimaryType,
                                               boolean parentIsDollarType,
                                               TypeMapImpl.Builder typeStore,
-                                              TypeDeclaration<?> typeDeclaration) {
+                                              TypeDeclaration<?> typeDeclaration,
+                                              boolean dollarTypesAreNormalTypes) {
             typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
                 TypeInspector.DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
-                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
+                        typeDeclaration, parentIsPrimaryType, parentIsDollarType, dollarTypesAreNormalTypes);
 
                 TypeInspectionImpl.InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
                         STARTING_JAVA_PARSER;
@@ -457,7 +458,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 }
                 log(INSPECTOR, "Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
 
-                subTypeBuilder.recursivelyAddToTypeStore(false, res.isDollarType(), typeStore, cid);
+                subTypeBuilder.recursivelyAddToTypeStore(false, res.isDollarType(), typeStore, cid,
+                        dollarTypesAreNormalTypes);
             }));
         }
     }
@@ -470,8 +472,9 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     private static TypeInspector.DollarResolverResult subTypeInfo(TypeInfo enclosingType, String simpleName,
                                                                   TypeDeclaration<?> typeDeclaration,
                                                                   boolean isPrimaryType,
-                                                                  boolean parentIsDollarType) {
-        if (simpleName.endsWith("$")) {
+                                                                  boolean parentIsDollarType,
+                                                                  boolean dollarTypesAreNormalTypes) {
+        if (!dollarTypesAreNormalTypes && simpleName.endsWith("$")) {
             if (!isPrimaryType) throw new UnsupportedOperationException();
             String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {

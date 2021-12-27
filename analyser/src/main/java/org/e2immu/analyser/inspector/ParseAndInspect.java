@@ -43,7 +43,8 @@ import static org.e2immu.analyser.util.Logger.log;
 public record ParseAndInspect(Resources classPath,
                               TypeMapImpl.Builder typeMapBuilder,
                               Trie<TypeInfo> sourceTypes,
-                              AnonymousTypeCounters anonymousTypeCounters) {
+                              AnonymousTypeCounters anonymousTypeCounters,
+                              boolean dollarTypesAreNormalTypes) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseAndInspect.class);
 
     // NOTE: there is a bit of optimization we can do if we parse/analyse per package
@@ -90,8 +91,8 @@ public record ParseAndInspect(Resources classPath,
             String name = td.getName().asString();
             TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
-            typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
+            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true, dollarTypesAreNormalTypes);
+            typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
             typeInspectors.add(new TypeInspectorAndTypeDeclaration(typeInspector, td));
         });
 

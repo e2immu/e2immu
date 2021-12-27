@@ -79,9 +79,12 @@ public class TypeInspector {
     private final TypeInfo typeInfo;
     private final TypeInspectionImpl.Builder builder;
     private final boolean fullInspection; // !fullInspection == isDollarType
+    private final boolean dollarTypesAreNormalTypes;
 
-    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
+    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
+                         boolean dollarTypesAreNormalTypes) {
         this.typeInfo = typeInfo;
+        this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
 
         TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
         if (typeInspection == null || typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
@@ -137,20 +140,7 @@ public class TypeInspector {
         LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
         TypeContext typeContext = expressionContext.typeContext();
 
-        DollarResolver dollarResolver;
-        if (typeInfo.isPrimaryType()) {
-            FieldDeclaration packageNameField = typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null);
-            String dollarPackageName = TypeInspectionImpl.packageName(packageNameField);
-            dollarResolver = name -> {
-                if (name.endsWith("$") && dollarPackageName != null) {
-                    return typeContext.typeMapBuilder
-                            .getOrCreate(dollarPackageName, name.substring(0, name.length() - 1), TRIGGER_BYTECODE_INSPECTION);
-                }
-                return null;
-            };
-        } else {
-            dollarResolver = dollarResolverInput;
-        }
+        DollarResolver dollarResolver = getDollarResolver(typeDeclaration, dollarResolverInput, typeContext);
         if (fullInspection) {
             builder.noParent(typeContext.getPrimitives());
             if (enclosingTypeIsInterface) {
@@ -202,8 +192,29 @@ public class TypeInspector {
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
-                builder.typeNature() == TypeNature.INTERFACE, recordFields,
-                dollarResolver);
+                builder.typeNature() == TypeNature.INTERFACE, recordFields, dollarResolver);
+    }
+
+    private DollarResolver getDollarResolver(TypeDeclaration<?> typeDeclaration, DollarResolver dollarResolverInput, TypeContext typeContext) {
+        DollarResolver dollarResolver;
+        if (typeInfo.isPrimaryType()) {
+            if (dollarTypesAreNormalTypes) {
+                dollarResolver = name -> null;
+            } else {
+                FieldDeclaration packageNameField = typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null);
+                String dollarPackageName = TypeInspectionImpl.packageName(packageNameField);
+                dollarResolver = name -> {
+                    if (name.endsWith("$") && dollarPackageName != null) {
+                        return typeContext.typeMapBuilder
+                                .getOrCreate(dollarPackageName, name.substring(0, name.length() - 1), TRIGGER_BYTECODE_INSPECTION);
+                    }
+                    return null;
+                };
+            }
+        } else {
+            dollarResolver = dollarResolverInput;
+        }
+        return dollarResolver;
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration) {
@@ -365,9 +376,11 @@ public class TypeInspector {
     }
 
     // only to be called on primary types
-    public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
+    public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration,
+                                          boolean dollarTypesAreNormalTypes) {
         assert typeInfo.isPrimaryType() : "Only to be called on primary types";
-        builder.recursivelyAddToTypeStore(true, false, typeStore, typeDeclaration);
+        builder.recursivelyAddToTypeStore(true, false, typeStore, typeDeclaration,
+                dollarTypesAreNormalTypes);
     }
 
     private List<TypeInfo> continueInspection(
@@ -622,7 +635,7 @@ public class TypeInspector {
         TypeInfo subType = res.subType;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         boolean typeFullInspection = fullInspection && !res.isDollarType;
-        TypeInspector subTypeInspector = new TypeInspector(typeMapBuilder, subType, typeFullInspection);
+        TypeInspector subTypeInspector = new TypeInspector(typeMapBuilder, subType, typeFullInspection, dollarTypesAreNormalTypes);
         subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);
         if (res.isDollarType) {
             dollarTypes.add(subType);

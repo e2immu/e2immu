@@ -46,9 +46,9 @@ test {
 dependencies {
     implementation 'org.e2immu:e2immu-support:0.3.0'      // LGPL 3.0
 
-    implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
-    implementation 'ch.qos.logback:logback-classic:1.2.8' // EPL v1.0 and the LGPL 2.1
-    implementation 'commons-io:commons-io:2.6'            // Apache License 2.0
+   // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
+    implementation 'ch.qos.logback:logback-classic:1.2.9' // EPL v1.0 and the LGPL 2.1
+    implementation 'commons-io:commons-io:20030203.000550'            // Apache License 2.0
 
     implementation 'com.github.javaparser:javaparser-core:3.22.2-SNAPSHOT'
 

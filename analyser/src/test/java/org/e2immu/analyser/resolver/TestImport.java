@@ -15,13 +15,16 @@
 package org.e2immu.analyser.resolver;
 
 
+import ch.qos.logback.classic.LoggerContext;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
@@ -67,5 +70,14 @@ public class TestImport extends CommonTest {
     @Test
     public void test_5() throws IOException {
         inspectAndResolve(Import_5.class, IMPORT_HELPER);
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Import_6.class);
+        TypeInfo loggerContext = typeMap.get(LoggerContext.class);
+        assertNotNull(loggerContext);
+        TypeInspection typeInspection = typeMap.getTypeInspection(loggerContext);
+        assertEquals(38, typeInspection.methods().size());
     }
 }

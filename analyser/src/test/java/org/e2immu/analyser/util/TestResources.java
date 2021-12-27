@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.IOUtil;
 import org.e2immu.analyser.bytecode.TestByteCodeInspector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -73,7 +73,7 @@ public class TestResources {
             if (0 == counter++) {
                 // let's see if we can read the file
                 InputStreamReader isr = new InputStreamReader(url.openStream());
-                String code = IOUtils.toString(isr);
+                String code = IOUtil.toString(isr);
                 assertTrue(code.contains("@Retention(RetentionPolicy.CLASS)"));
                 LOGGER.info("Successfully read source!");
             }

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.IOUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -101,7 +101,7 @@ public class Resources {
         if (urls != null) {
             for (URL url : urls) {
                 try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                    IOUtils.copy(url.openStream(), byteArrayOutputStream);
+                    IOUtil.copy(url.openStream(), byteArrayOutputStream);
                     return byteArrayOutputStream.toByteArray();
                 } catch (IOException e) {
                     throw new ResourceAccessException("URL = " + url + ", Cannot read? " + e.getMessage());

@@ -34,6 +34,9 @@ public abstract class CommonTest {
                 .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api") // in Constructor_2
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j") // in Import_6
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic") // in Import_6
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addRestrictSourceToPackages(clazz.getCanonicalName());
         for (String source : extraSources) {
             inputConfigurationBuilder.addRestrictSourceToPackages(source);

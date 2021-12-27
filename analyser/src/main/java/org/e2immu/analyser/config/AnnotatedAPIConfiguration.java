@@ -23,7 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 
 @E2Immutable
-public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
+public record AnnotatedAPIConfiguration(boolean disabled,
+                                        // read
+                                        List<String> annotatedAPISourceDirs,
                                         List<String> readAnnotatedAPIPackages,
                                         // writing fields
                                         boolean reportWarnings,
@@ -47,7 +49,7 @@ public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
     public static class Builder {
         private final List<String> readAnnotatedAPIPackages = new ArrayList<>();
         private final List<String> annotatedAPISourceDirs = new ArrayList<>();
-
+        private boolean disabled;
         private WriteMode writeMode;
         private boolean reportWarnings;
         private final List<String> writeAnnotatedAPIsPackages = new ArrayList<>();
@@ -56,6 +58,7 @@ public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
 
         public AnnotatedAPIConfiguration build() {
             return new AnnotatedAPIConfiguration(
+                    disabled,
                     // reading fields
                     List.copyOf(annotatedAPISourceDirs),
                     List.copyOf(readAnnotatedAPIPackages),
@@ -67,6 +70,11 @@ public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
                             DEFAULT_DESTINATION_DIRECTORY : writeAnnotatedAPIsDir,
                     destinationPackage == null || destinationPackage.isBlank() ?
                             DEFAULT_DESTINATION_PACKAGE : destinationPackage.trim());
+        }
+
+        public Builder setDisabled(boolean disabled) {
+            this.disabled = disabled;
+            return this;
         }
 
         @Fluent
@@ -115,7 +123,8 @@ public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
     @Override
     public String toString() {
         return "AnnotatedAPIConfiguration:" +
-                "\n    annotatedAPISourceDirs=" + annotatedAPISourceDirs +
+                "\n    disabled=" + disabled +
+                ",\n    annotatedAPISourceDirs=" + annotatedAPISourceDirs +
                 ",\n    readAnnotatedAPIPackages=" + readAnnotatedAPIPackages +
                 ",\n    reportWarnings=" + reportWarnings +
                 ",\n    writeMode=" + writeMode +

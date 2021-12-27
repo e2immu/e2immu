@@ -444,7 +444,7 @@ public record ExpressionContext(Resolver resolver,
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
         typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
-        TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true);
+        TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         typeContext.addToContext(localName, typeInfo, true);
