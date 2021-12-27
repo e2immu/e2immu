@@ -251,6 +251,11 @@ public class TypeInspector {
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
 
+        TypeInfo enumTypeInfo = expressionContext.typeContext().getFullyQualified(Enum.class);
+
+        ParameterizedType parent = new ParameterizedType(enumTypeInfo, List.of(new ParameterizedType(builder.typeInfo(), List.of())));
+        builder.setParentClass(parent);
+
         doImplementedTypes(expressionContext, enumDeclaration.getImplementedTypes());
 
         List<FieldInfo> enumFields = new ArrayList<>();

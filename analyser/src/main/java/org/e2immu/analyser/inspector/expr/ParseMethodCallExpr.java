@@ -391,7 +391,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                         ParameterizedType arrayType = parameterInfo.parameterizedType;
 
                         // here comes a bit of code duplication...
-                        for (ParameterizedType actualType: acceptedErased) {
+                        for (ParameterizedType actualType : acceptedErased) {
 
                             int compatible;
                             if (isFreeTypeParameter(actualType) && actualType.arrays == arrayType.arrays) {
@@ -451,7 +451,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             if (!foundCombination) {
                 sumScore = -1; // to be removed immediately
             } else {
-                sumScore += IsAssignableFrom.IN_HIERARCHY * methodCandidate.distance();
+                int varargsSkipped = Math.abs(evaluatedExpressions.size() - parameters.size());
+                sumScore += IsAssignableFrom.IN_HIERARCHY * methodCandidate.distance()
+                        + 100 * varargsSkipped;
                 if (acceptedErasedTypesCombination == null) {
                     acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
                 } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
