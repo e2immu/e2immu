@@ -289,18 +289,16 @@ public class Resolver {
 
     private void doAnnotations(List<AnnotationExpression> annotationExpressions, ExpressionContext expressionContext) {
         for (AnnotationExpression annotationExpression : annotationExpressions) {
-            for (org.e2immu.analyser.model.Expression expression : annotationExpression.expressions()) {
-                if (expression instanceof MemberValuePair mvp) {
-                    if (mvp.value().isVariable()) {
-                        org.e2immu.analyser.model.Expression current = mvp.value().get();
-                        if (current instanceof UnevaluatedAnnotationParameterValue unevaluated) {
-                            org.e2immu.analyser.model.Expression resolved = expressionContext.parseExpression
-                                    (unevaluated.expression(), unevaluated.forwardReturnTypeInfo());
-                            assert !(resolved instanceof UnevaluatedAnnotationParameterValue);
-                            mvp.value().setFinal(resolved);
-                        } else {
-                            mvp.value().setFinal(mvp.value().get());
-                        }
+            for (MemberValuePair mvp : annotationExpression.expressions()) {
+                if (mvp.value().isVariable()) {
+                    org.e2immu.analyser.model.Expression current = mvp.value().get();
+                    if (current instanceof UnevaluatedAnnotationParameterValue unevaluated) {
+                        org.e2immu.analyser.model.Expression resolved = expressionContext.parseExpression
+                                (unevaluated.expression(), unevaluated.forwardReturnTypeInfo());
+                        assert !(resolved instanceof UnevaluatedAnnotationParameterValue);
+                        mvp.value().setFinal(resolved);
+                    } else {
+                        mvp.value().setFinal(mvp.value().get());
                     }
                 }
             }

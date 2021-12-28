@@ -38,9 +38,9 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     public AnnotationExpression createLinkAnnotation(TypeInfo typeInfo, Set<Variable> links) {
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(inspectionProvider.getPrimitives(),
                 variable.nameInLinkedAnnotation())).collect(Collectors.toList());
-        Expression linksStringArray = new MemberValuePair("to",
+        MemberValuePair linksStringArray = new MemberValuePair("to",
                 new ArrayInitializer(inspectionProvider, linkNameList, inspectionProvider.getPrimitives().stringParameterizedType));
-        List<Expression> expressions = List.of(linksStringArray);
+        List<MemberValuePair> expressions = List.of(linksStringArray);
         return new AnnotationExpressionImpl(typeInfo, expressions);
     }
 

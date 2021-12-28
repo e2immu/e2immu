@@ -30,7 +30,7 @@ import java.util.*;
 
 
 public record AnnotationExpressionImpl(TypeInfo typeInfo,
-                                       List<Expression> expressions) implements AnnotationExpression {
+                                       List<MemberValuePair> expressions) implements AnnotationExpression {
 
     public static final String ORG_E_2_IMMU_ANNOTATION = "org.e2immu.annotation";
 
@@ -42,14 +42,14 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     // used by the byte code inspector, MyAnnotationVisitor
     public static class Builder {
         private TypeInfo typeInfo;
-        private final List<Expression> expressions = new ArrayList<>();
+        private final List<MemberValuePair> expressions = new ArrayList<>();
 
         public Builder setTypeInfo(TypeInfo typeInfo) {
             this.typeInfo = typeInfo;
             return this;
         }
 
-        public Builder addExpression(Expression expression) {
+        public Builder addExpression(MemberValuePair expression) {
             this.expressions.add(expression);
             return this;
         }

@@ -109,7 +109,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsImmutable.generate(immutable, container,
                 isType, isInterface, eventualFieldNames, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, Object>> entry : map.entrySet()) {
-            List<Expression> list;
+            List<MemberValuePair> list;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
                 list = List.of();
             } else {

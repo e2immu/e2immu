@@ -56,12 +56,8 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     public void visit(String name, Object value) {
         log(BYTECODE_INSPECTOR_DEBUG, "Assignment: {} to {}", name, value);
         Expression expression = ExpressionFactory.from(typeContext, value);
-        if ("value".equals(name)) {
-            expressionBuilder.addExpression(expression);
-        } else {
-            MemberValuePair mvp = new MemberValuePair(name, expression);
-            expressionBuilder.addExpression(mvp);
-        }
+        MemberValuePair mvp = new MemberValuePair(name, expression);
+        expressionBuilder.addExpression(mvp);
     }
 
     @Override

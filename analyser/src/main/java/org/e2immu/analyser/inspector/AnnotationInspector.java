@@ -30,7 +30,7 @@ public class AnnotationInspector {
         TypeInfo typeInfo = (TypeInfo) typeContext.get(ae.getNameAsString(), true);
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
 
-        List<Expression> analyserExpressions;
+        List<MemberValuePair> analyserExpressions;
         if (ae instanceof NormalAnnotationExpr normalAnnotationExpr) {
             analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : normalAnnotationExpr.getPairs()) {

@@ -65,7 +65,7 @@ public class JetBrainsAnnotationTranslator {
         if (annotation.values().isEmpty()) {
             return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
         }
-        List<Expression> expressions = new ArrayList<>();
+        List<MemberValuePair> expressions = new ArrayList<>();
         expressions.add(contractExpression);
         for (Value value : annotation.values()) {
             expressions.add(new MemberValuePair(value.name, convert(value.val)));

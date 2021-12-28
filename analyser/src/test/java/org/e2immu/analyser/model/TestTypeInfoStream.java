@@ -239,7 +239,8 @@ public class TestTypeInfoStream {
         ParameterInfo y = intSumBuilder.getParameters().get(0);
         MethodInfo intSum = intSumBuilder
                 .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
-                .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
+                .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(
+                        new MemberValuePair(MemberValuePair.VALUE, new StringConstant(primitives, "hello")))))
                 .setInspectedBlock(
                         new Block.BlockBuilder(Identifier.generate()).addStatement(
                                 new ReturnStatement(Identifier.generate(),
