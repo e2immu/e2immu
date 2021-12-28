@@ -102,7 +102,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 String fqn = typeInfo.fullyQualifiedName + "." + name.substring(dot + 1);
                 return getFullyQualified(fqn, complain);
             }
-            return null;
+            throw new UnsupportedOperationException("?");
         }
         // try out java.lang; has been pre-loaded
         TypeInfo inJavaLang = typeMapBuilder.get("java.lang." + name);
@@ -161,11 +161,6 @@ public class TypeContext implements TypeAndInspectionProvider {
         if (allowOverwrite || !map.containsKey(altName)) {
             map.put(altName, namedType);
         }
-    }
-
-    private MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
-        MethodInspectionImpl.Builder constructorBuilder = new MethodInspectionImpl.Builder(typeInfo);
-        return constructorBuilder.addModifier(MethodModifier.PUBLIC).build(this);
     }
 
     private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
@@ -252,8 +247,7 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     public List<MethodCandidate> resolveConstructorInvocation(TypeInfo startingPoint,
-                                                              int parametersPresented,
-                                                              int typeParametersPresented) {
+                                                              int parametersPresented) {
         ParameterizedType type = startingPoint.asParameterizedType(this);
         return resolveConstructor(type, type, parametersPresented, Map.of());
     }
@@ -268,11 +262,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
         TypeInspection typeInspection = getTypeInspection(typeInfo);
-        if (parametersPresented == 0) {
-            if (typeInspection.constructors().isEmpty()) {
-                return List.of(new MethodCandidate(new MethodTypeParameterMap(createEmptyConstructor(typeInfo), Map.of())));
-            }
-        }
+
         return typeInspection.constructors().stream()
                 .map(this::getMethodInspection)
                 .filter(methodInspection -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||

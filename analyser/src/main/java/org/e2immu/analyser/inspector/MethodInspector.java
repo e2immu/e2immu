@@ -188,15 +188,15 @@ public class MethodInspector {
     Compact constructor for records
      */
     public boolean inspect(CompactConstructorDeclaration ccd,
-                        ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
-                        List<TypeInspector.RecordField> fields) {
-        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder
-                .compactConstructor(Identifier.from(ccd), typeInfo);
+                           ExpressionContext expressionContext,
+                           Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                           List<TypeInspector.RecordField> fields) {
+        Identifier identifier = ccd == null ? typeInfo.identifier : Identifier.from(ccd);
+        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(identifier, typeInfo);
         int i = 0;
         for (TypeInspector.RecordField recordField : fields) {
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
-                  recordField.fieldInfo().type, recordField.fieldInfo().name, i++);
+                    recordField.fieldInfo().type, recordField.fieldInfo().name, i++);
             pib.setVarArgs(recordField.varargs());
             tempBuilder.addParameter(pib);
         }

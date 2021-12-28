@@ -447,8 +447,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                               TypeDeclaration<?> typeDeclaration,
                                               boolean dollarTypesAreNormalTypes) {
             typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
-                TypeInspector.DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
-                        typeDeclaration, parentIsPrimaryType, parentIsDollarType, dollarTypesAreNormalTypes);
+                TypeInspector.DollarResolverResult res = subTypeInfo(typeInfo, typeDeclaration, cid,
+                        parentIsPrimaryType, parentIsDollarType, dollarTypesAreNormalTypes);
 
                 TypeInspectionImpl.InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
                         STARTING_JAVA_PARSER;
@@ -469,20 +469,26 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
     and the subtype name without the $.
      */
-    private static TypeInspector.DollarResolverResult subTypeInfo(TypeInfo enclosingType, String simpleName,
-                                                                  TypeDeclaration<?> typeDeclaration,
+    private static TypeInspector.DollarResolverResult subTypeInfo(TypeInfo enclosingType,
+                                                                  TypeDeclaration<?> enclosingTypeDeclaration,
+                                                                  TypeDeclaration<?> subTypeDeclaration,
                                                                   boolean isPrimaryType,
                                                                   boolean parentIsDollarType,
                                                                   boolean dollarTypesAreNormalTypes) {
+        Identifier identifier = Identifier.from(subTypeDeclaration);
+        String simpleName = subTypeDeclaration.getName().asString();
         if (!dollarTypesAreNormalTypes && simpleName.endsWith("$")) {
             if (!isPrimaryType) throw new UnsupportedOperationException();
-            String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
+            String packageName = packageName(enclosingTypeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {
-                TypeInfo dollarType = new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
+                TypeInfo dollarType = new TypeInfo(
+                        identifier,
+                        packageName, simpleName.substring(0, simpleName.length() - 1));
                 return new TypeInspector.DollarResolverResult(dollarType, true);
             }
         }
-        return new TypeInspector.DollarResolverResult(new TypeInfo(enclosingType, simpleName), parentIsDollarType);
+        TypeInfo subType = new TypeInfo(identifier, enclosingType, simpleName);
+        return new TypeInspector.DollarResolverResult(subType, parentIsDollarType);
     }
 
     static String packageName(FieldDeclaration packageNameField) {

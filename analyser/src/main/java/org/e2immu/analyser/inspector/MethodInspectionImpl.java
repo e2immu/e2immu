@@ -194,7 +194,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         /* constructor */
 
         public Builder(TypeInfo owner) {
-            this(Identifier.generate(), owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+            this(owner.identifier, owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
         }
 
         public Builder(Identifier identifier, TypeInfo owner) {

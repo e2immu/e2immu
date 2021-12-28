@@ -17,7 +17,6 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
-import com.github.javaparser.ast.type.Type;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeParameterMap;
@@ -39,7 +38,6 @@ public class ParseExplicitConstructorInvocation {
                 enclosingType,
                 statement.getArguments(),
                 statement.isThis(),
-                statement.getTypeArguments().orElse(null),
                 statement.getBegin().orElseThrow());
         return new ExplicitConstructorInvocation(identifier, !statement.isThis(),
                 result.constructor, result.expressions);
@@ -53,7 +51,6 @@ public class ParseExplicitConstructorInvocation {
                                           TypeInfo enclosingType,
                                           NodeList<com.github.javaparser.ast.expr.Expression> arguments,
                                           boolean isThis,
-                                          NodeList<Type> typeParameters,
                                           Position position) {
         TypeContext typeContext = expressionContext.typeContext();
 
@@ -61,7 +58,7 @@ public class ParseExplicitConstructorInvocation {
                 : typeContext.getTypeInspection(enclosingType).parentClass().typeInfo;
 
         List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructorInvocation(startingPoint,
-                arguments.size(), typeParameters == null ? 0 : typeParameters.size());
+                arguments.size());
 
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo(isThis ? "this()" : "super()",
                 enclosingType.asParameterizedType(typeContext), position);
