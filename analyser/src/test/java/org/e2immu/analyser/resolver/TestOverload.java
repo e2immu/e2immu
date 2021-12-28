@@ -16,6 +16,7 @@ package org.e2immu.analyser.resolver;
 
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class TestOverload extends CommonTest {
@@ -39,5 +41,31 @@ public class TestOverload extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Overload_1.class);
         TypeInfo typeInfo = typeMap.get(Overload_1.class);
         assertNotNull(typeInfo);
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_2.class);
+        TypeInfo typeInfo = typeMap.get(Overload_2.class);
+        assertNotNull(typeInfo);
+        TypeInfo i2 = typeMap.get(Overload_2.class.getCanonicalName() + ".I2");
+        TypeInspection i2i = typeMap.getTypeInspection(i2);
+        assertTrue(i2i.isFunctionalInterface());
+    }
+
+
+    @Test
+    public void test_3() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_3.class);
+        TypeInfo typeInfo = typeMap.get(Overload_3.class);
+        assertNotNull(typeInfo);
+        TypeInfo i2 = typeMap.get(Overload_3.class.getCanonicalName() + ".I2");
+        TypeInspection i2i = typeMap.getTypeInspection(i2);
+        assertTrue(i2i.isFunctionalInterface());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(Overload_4.class);
     }
 }

@@ -16,12 +16,11 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -142,17 +141,51 @@ public interface TypeInspection extends Inspection {
 
     TypeInspectionImpl.InspectionState getInspectionState();
 
-    default int countNonStaticNonDefaultMethods(InspectionProvider inspectionProvider) {
-        int sum = (int) methodStream(Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(m -> {
-                    MethodInspection inspection = inspectionProvider.getMethodInspection(m);
-                    return !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
-                }).count();
-        for (ParameterizedType superInterface : interfacesImplemented()) {
-            TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
-            sum += typeInspectionOfSuperType.countNonStaticNonDefaultMethods(inspectionProvider);
+    /**
+     * @param inspectionProvider to be able to inspect super-types
+     * @return true when a functional interface
+     */
+    default boolean computeIsFunctionalInterface(InspectionProvider inspectionProvider) {
+        return computeIsFunctionalInterface(inspectionProvider, this, new HashSet<>(), new HashMap<>()) == 1;
+    }
+
+    private static int computeIsFunctionalInterface(InspectionProvider inspectionProvider,
+                                                    TypeInspection typeInspection,
+                                                    Set<MethodInspection> overridden,
+                                                    Map<NamedType, ParameterizedType> translationMap) {
+        int sum = 0;
+        for (MethodInfo methodInfo : typeInspection.methods()) {
+            MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
+            boolean nonStaticNonDefault = !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
+            if (nonStaticNonDefault) {
+                if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                    sum++;
+                    overridden.add(inspection);
+                }
+            } else if (inspection.isDefault()) {
+                // can cancel out a method in one of the super types
+                overridden.add(inspection);
+            }
+        }
+        // overridden needs to cancel out all of them, individually!
+        if (sum <= 1) {
+            for (ParameterizedType superInterface : typeInspection.interfacesImplemented()) {
+                TypeInspection typeInspectionOfSuperType = inspectionProvider.getTypeInspection(superInterface.typeInfo);
+                Map<NamedType, ParameterizedType> map = ShallowMethodResolver.mapOfSuperType(superInterface, inspectionProvider);
+                Map<NamedType, ParameterizedType> superMap = new HashMap<>(translationMap);
+                superMap.putAll(map);
+                sum += computeIsFunctionalInterface(inspectionProvider, typeInspectionOfSuperType, overridden, superMap);
+            }
         }
         return sum;
+    }
+
+    private static boolean isOverrideOf(InspectionProvider inspectionProvider,
+                                        MethodInspection inSubType,
+                                        MethodInspection inSuperType,
+                                        Map<NamedType, ParameterizedType> map) {
+        if (!inSubType.getMethodInfo().name.equals(inSuperType.getMethodInfo().name)) return false;
+        return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(), inSuperType.getParameters(), map);
     }
 
     /**

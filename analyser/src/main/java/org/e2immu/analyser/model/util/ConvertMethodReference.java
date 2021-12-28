@@ -107,7 +107,8 @@ public class ConvertMethodReference {
 
     private static Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(firstParameter);
-        return new MethodCall(Identifier.generate(), newScope, concreteMethod.getMethodInfo(), List.of());
+        return new MethodCall(Identifier.generate(), false, newScope, concreteMethod.getMethodInfo(),
+                concreteMethod.getReturnType(), List.of());
     }
 
     /*
@@ -118,7 +119,8 @@ public class ConvertMethodReference {
                                                           MethodInspection interfaceMethod) {
         List<Expression> parameterExpressions = interfaceMethod
                 .getParameters().stream().map(VariableExpression::new).collect(Collectors.toList());
-        return new MethodCall(Identifier.generate(), scope, concreteMethod.getMethodInfo(), parameterExpressions);
+        return new MethodCall(Identifier.generate(), false, scope, concreteMethod.getMethodInfo(),
+                concreteMethod.getReturnType(), parameterExpressions);
     }
 
 }

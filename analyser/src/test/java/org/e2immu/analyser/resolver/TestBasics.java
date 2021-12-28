@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.Basics_0;
-import org.e2immu.analyser.resolver.testexample.Basics_1;
-import org.e2immu.analyser.resolver.testexample.Basics_2;
-import org.e2immu.analyser.resolver.testexample.Basics_3;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,5 +85,10 @@ public class TestBasics extends CommonTest {
             assertFalse(mvp.value().get() instanceof UnevaluatedAnnotationParameterValue);
             assertFalse(mvp.value().isVariable());
         }
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(Basics_4.class);
     }
 }

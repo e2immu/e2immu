@@ -317,8 +317,10 @@ public class BinaryOperator extends ElementImpl implements Expression {
             switch (operator) {
                 case XOR:
                     return primitives.xorOperatorBool;
+                case BINARY_OR:
                 case OR:
                     return primitives.orOperatorBool;
+                case BINARY_AND:
                 case AND:
                     return primitives.andOperatorBool;
                 case EQUALS:

@@ -45,26 +45,15 @@ public class ShallowMethodResolver {
                 Map.of()));
     }
 
+    // very similar code in TypeInspection.computeIsFunctionalInterface
     private static Set<MethodInfo> recursiveOverridesCall(InspectionProvider inspectionProvider,
                                                           TypeInfo typeToSearch,
                                                           MethodInspection methodInspection,
                                                           Map<NamedType, ParameterizedType> translationMap) {
         Set<MethodInfo> result = new HashSet<>();
         for (ParameterizedType superType : directSuperTypes(inspectionProvider, typeToSearch)) {
-            Map<NamedType, ParameterizedType> translationMapOfSuperType;
-            if (superType.parameters.isEmpty()) {
-                translationMapOfSuperType = translationMap;
-            } else {
-                assert superType.typeInfo != null;
-                ParameterizedType formalType = superType.typeInfo.asParameterizedType(inspectionProvider);
-                translationMapOfSuperType = new HashMap<>(translationMap);
-                int index = 0;
-                for (ParameterizedType parameter : formalType.parameters) {
-                    ParameterizedType concreteParameter = superType.parameters.get(index);
-                    translationMapOfSuperType.put(parameter.typeParameter, concreteParameter);
-                    index++;
-                }
-            }
+            Map<NamedType, ParameterizedType> translationMapOfSuperType = mapOfSuperType(superType, inspectionProvider);
+            translationMapOfSuperType.putAll(translationMap);
             assert superType.typeInfo != null;
             MethodInfo override = findUniqueMethod(inspectionProvider, superType.typeInfo, methodInspection, translationMapOfSuperType);
             if (override != null) {
@@ -75,6 +64,21 @@ public class ShallowMethodResolver {
             }
         }
         return result;
+    }
+
+    public static Map<NamedType, ParameterizedType> mapOfSuperType(ParameterizedType superType, InspectionProvider inspectionProvider) {
+        Map<NamedType, ParameterizedType> translationMapOfSuperType = new HashMap<>();
+        if (!superType.parameters.isEmpty()) {
+            assert superType.typeInfo != null;
+            ParameterizedType formalType = superType.typeInfo.asParameterizedType(inspectionProvider);
+            int index = 0;
+            for (ParameterizedType parameter : formalType.parameters) {
+                ParameterizedType concreteParameter = superType.parameters.get(index);
+                translationMapOfSuperType.put(parameter.typeParameter, concreteParameter);
+                index++;
+            }
+        }
+        return translationMapOfSuperType;
     }
 
 
@@ -108,7 +112,7 @@ public class ShallowMethodResolver {
                 baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
     }
 
-    private static boolean sameParameters(
+    public static boolean sameParameters(
             InspectionProvider inspectionProvider,
             List<ParameterInfo> parametersOfMyMethod,
             List<ParameterInfo> parametersOfTarget,
@@ -164,7 +168,7 @@ public class ShallowMethodResolver {
             // check if we can go from the parameter to the concrete type
             ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
             if (inMap == null) return true;
-            if(inMap.typeParameter != inSuperType.typeParameter) {
+            if (inMap.typeParameter != inSuperType.typeParameter) {
                 return differentType(inspectionProvider, inMap, inSubType, translationMap);
             } // else: the map doesn't point us to some other place
         }

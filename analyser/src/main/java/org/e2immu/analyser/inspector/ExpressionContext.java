@@ -266,8 +266,8 @@ public record ExpressionContext(Resolver resolver,
         Expression selector = parseExpressionStartVoid(switchStmt.getSelector());
         ExpressionContext newExpressionContext;
         TypeInfo enumType = selectorIsEnumType(selector);
-        TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
         if (enumType != null) {
+            TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
             newExpressionContext = newVariableContext("switch-statement");
             enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
                     .add(new FieldReference(typeContext, fieldInfo)));

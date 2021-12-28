@@ -456,7 +456,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) & "s".equals(d.variableName())) {
+            if ("method".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("q>=5?\"abc\":\"xyz\"", d.currentValue().toString());
                     assertEquals("1.0.0.0.0-E,1.0.0.1.0-E,1.0.0:M", d.variableInfo().getAssignmentIds().toString());
@@ -519,7 +519,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) & "s".equals(d.variableName())) {
+            if ("method".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("q>=5?\"abc\":\"xyz\"", d.currentValue().toString());
                 }

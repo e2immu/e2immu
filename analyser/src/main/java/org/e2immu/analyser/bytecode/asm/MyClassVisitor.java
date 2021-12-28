@@ -495,11 +495,8 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     private boolean functionalInterface() {
-        if (typeInspectionBuilder.typeNature() == TypeNature.INTERFACE) {
-            int countMethods = typeInspectionBuilder.countNonStaticNonDefaultMethods(typeContext);
-            return countMethods == 1;
-        }
-        return false;
+        return typeInspectionBuilder.typeNature() == TypeNature.INTERFACE &&
+                typeInspectionBuilder.computeIsFunctionalInterface(typeContext);
     }
 
     private void errorStateForType(String pathCausingFailure) {

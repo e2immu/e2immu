@@ -144,9 +144,9 @@ public class ParseMethodReferenceExpr {
         int param = scopeIsAType && !constructor && !mc.method().methodInspection.isStatic() ? index - 1 : index;
         if (param == -1) {
             return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
-        } else {
-            return mc.method().methodInspection.getParameters().get(index).parameterizedType;
         }
+        List<ParameterInfo> parameters = mc.method().methodInspection.getParameters();
+        return parameters.get(index).parameterizedType;
     }
 
     private static void staticVsInstance(List<TypeContext.MethodCandidate> methodCandidates) {

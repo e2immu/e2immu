@@ -348,11 +348,13 @@ public class Resolver {
             boolean artificial;
             if (fieldInfo.type.isFunctionalInterface(subContext.typeContext())) {
                 List<ConstructorCall> constructorCalls = parsedExpression.collect(ConstructorCall.class);
-                artificial = constructorCalls.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
+                artificial = constructorCalls.stream().filter(no -> no.parameterizedType()
+                        .isFunctionalInterface(inspectionProvider)).count() != 1L;
 
                 if (!artificial) {
                     ConstructorCall newObject = constructorCalls.stream()
-                            .filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
+                            .filter(no -> no.parameterizedType().isFunctionalInterface(inspectionProvider))
+                            .findFirst().orElseThrow();
                     TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
                     sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
                 } else {

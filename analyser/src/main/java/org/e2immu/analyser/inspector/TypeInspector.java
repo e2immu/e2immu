@@ -594,8 +594,7 @@ public class TypeInspector {
 
     private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext,
                                                      TypeInspectionImpl.Builder builder) {
-        int count = builder.countNonStaticNonDefaultMethods(typeContext);
-        if (count == 1 && builder.typeNature() == TypeNature.INTERFACE) {
+        if (builder.typeNature() == TypeNature.INTERFACE && builder.computeIsFunctionalInterface(typeContext)) {
             builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             builder.setFunctionalInterface(true);
         } else {
