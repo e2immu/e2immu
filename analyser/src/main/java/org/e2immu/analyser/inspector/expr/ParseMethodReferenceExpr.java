@@ -146,7 +146,7 @@ public class ParseMethodReferenceExpr {
             return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
         }
         List<ParameterInfo> parameters = mc.method().methodInspection.getParameters();
-        return parameters.get(index).parameterizedType;
+        return parameters.get(param).parameterizedType;
     }
 
     private static void staticVsInstance(List<TypeContext.MethodCandidate> methodCandidates) {

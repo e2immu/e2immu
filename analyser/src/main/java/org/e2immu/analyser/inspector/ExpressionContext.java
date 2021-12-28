@@ -447,8 +447,15 @@ public record ExpressionContext(Resolver resolver,
         TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
+        TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
+        List<MethodInspection> methodAndConstructorInspections = typeInspection.methodsAndConstructors()
+                .stream().map(typeContext::getMethodInspection).toList();
+
+        Resolver resolver = new Resolver(this.resolver, typeContext, typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
+        resolver.resolve(Map.of(typeInfo, this));
+        
         typeContext.addToContext(localName, typeInfo, true);
-        return new LocalClassDeclaration(identifier, typeInfo);
+        return new LocalClassDeclaration(identifier, typeInfo, methodAndConstructorInspections);
     }
 
     private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement, Identifier identifier) {

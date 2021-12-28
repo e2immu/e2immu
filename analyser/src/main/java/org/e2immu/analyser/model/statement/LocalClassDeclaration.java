@@ -20,14 +20,20 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class LocalClassDeclaration extends StatementWithStructure {
     public final TypeInfo typeInfo;
+    private final List<MethodInspection> methodAndConstructorInspections;
 
-    public LocalClassDeclaration(Identifier identifier, TypeInfo typeInfo) {
+    public LocalClassDeclaration(Identifier identifier,
+                                 TypeInfo typeInfo,
+                                 List<MethodInspection> methodAndConstructorInspections) {
         super(identifier);
         this.typeInfo = typeInfo;
+        this.methodAndConstructorInspections = methodAndConstructorInspections;
+        assert methodAndConstructorInspections.stream().noneMatch(Objects::isNull);
     }
 
     @Override
@@ -52,7 +58,8 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .map(methodInfo -> methodInfo.methodInspection.get().getMethodBody()).collect(Collectors.toList());
+        return methodAndConstructorInspections.stream()
+                .map(mi -> Objects.requireNonNull(mi.getMethodBody(), "No method body for "+mi.getMethodInfo().fullyQualifiedName))
+                .collect(Collectors.toList());
     }
 }
