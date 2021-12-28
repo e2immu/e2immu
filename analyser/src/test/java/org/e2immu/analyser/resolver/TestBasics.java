@@ -73,6 +73,8 @@ public class TestBasics extends CommonTest {
         MethodInspection methodInspection = typeMap.getMethodInspection(method);
         ensureNoUnevaluatedAnnotationParameterValues(methodInspection.getAnnotations());
 
+        assertTrue(methodInspection.getMethodBody().identifier instanceof Identifier.PositionalIdentifier);
+
         FieldInfo fieldInfo = typeInfo.getFieldByName("field", true);
         FieldInspection fieldInspection = typeMap.getFieldInspection(fieldInfo);
         ensureNoUnevaluatedAnnotationParameterValues(fieldInspection.getAnnotations());

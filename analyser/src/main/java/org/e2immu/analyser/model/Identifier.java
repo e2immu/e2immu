@@ -40,8 +40,12 @@ public interface Identifier extends Comparable<Identifier> {
         if (node == null) return Identifier.generate();
         Optional<Position> position = node.getBegin();
         if (position.isEmpty()) return new IncrementalIdentifier();
-        Position p = position.get();
-        return new PositionalIdentifier(p.line, p.column);
+        return from(position.get());
+    }
+
+    static PositionalIdentifier from(Position position) {
+        if(position == null) return null;
+        return new PositionalIdentifier(position.line, position.column);
     }
 
     static Identifier generate() {

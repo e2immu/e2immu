@@ -135,6 +135,9 @@ public class TypeInspector {
                                    ExpressionContext expressionContext,
                                    DollarResolver dollarResolverInput) {
         LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
+        assert typeDeclaration != null;
+        builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null)));
+
         TypeContext typeContext = expressionContext.typeContext();
 
         DollarResolver dollarResolver = getDollarResolver(typeDeclaration, dollarResolverInput, typeContext);
@@ -243,7 +246,7 @@ public class TypeInspector {
         return recordDeclaration.getParameters().stream().map(parameter -> {
             boolean varargs = parameter.isVarArgs();
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType(), varargs, null);
-            FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, parameter.getNameAsString(), typeInfo);
+            FieldInfo fieldInfo = new FieldInfo(Identifier.from(parameter), type, parameter.getNameAsString(), typeInfo);
 
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.setSynthetic(true);
@@ -269,7 +272,8 @@ public class TypeInspector {
         List<FieldInfo> enumFields = new ArrayList<>();
 
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
-            FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), typeInfo.asSimpleParameterizedType(),
+            FieldInfo fieldInfo = new FieldInfo(Identifier.from(enumConstantDeclaration),
+                    typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.setSynthetic(true);
@@ -461,7 +465,7 @@ public class TypeInspector {
             }
         }
 
-            // finally, add synthetic methods if needed
+        // finally, add synthetic methods if needed
         if (recordFields != null) {
             assert TypeNature.RECORD == builder.typeNature();
             RecordSynthetics.ensureAccessors(expressionContext, typeInfo, builder, recordFields);

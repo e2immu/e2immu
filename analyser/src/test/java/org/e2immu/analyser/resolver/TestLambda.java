@@ -15,9 +15,7 @@
 package org.e2immu.analyser.resolver;
 
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
@@ -148,7 +146,13 @@ public class TestLambda extends CommonTest {
 
     @Test
     public void test_14() throws IOException {
-        inspectAndResolve(Lambda_14.class);
+        TypeMap typeMap = inspectAndResolve(Lambda_14.class);
+        TypeInfo typeInfo = typeMap.get(Lambda_14.class);
+
+        MethodInfo method = typeInfo.findUniqueMethod("methods", 1);
+        MethodInspection methodInspection = typeMap.getMethodInspection(method);
+
+        assertTrue(methodInspection.getMethodBody().identifier instanceof Identifier.PositionalIdentifier);
     }
 
     @Test

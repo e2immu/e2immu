@@ -55,6 +55,12 @@ public interface TypeInspection extends Inspection {
     Inspector inspector();
 
     /**
+     * There is no easy way to use TypeInfo's identifier for correct positioning
+     *
+     * @return null if synthetic
+     */
+    Identifier.PositionalIdentifier positionalIdentifier();
+    /**
      * Returns the types permitted to extend from this type.
      *
      * @return The types permitted to extend from this type. Note that this list is not empty

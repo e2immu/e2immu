@@ -32,11 +32,8 @@ import static org.e2immu.analyser.util.Logger.log;
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
-
     public final TypeNature typeNature;
-
     public final ParameterizedType parentClass;
-
     public final List<MethodInfo> constructors;
     public final List<MethodInfo> methods;
     public final List<FieldInfo> fields;
@@ -48,6 +45,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final TypeModifier access;
     public final Inspector inspector;
     public final boolean functionalInterface;
+    public final Identifier.PositionalIdentifier positionalIdentifier;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
                                TypeNature typeNature,
@@ -64,7 +62,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<AnnotationExpression> annotations,
                                Inspector inspector,
                                boolean synthetic,
-                               boolean functionalInterface) {
+                               boolean functionalInterface,
+                               Identifier.PositionalIdentifier positionalIdentifier) {
         super(annotations, synthetic);
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -80,6 +79,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.permittedWhenSealed = permittedWhenSealed;
         this.functionalInterface = functionalInterface;
         this.inspector = inspector;
+        this.positionalIdentifier = positionalIdentifier;
+    }
+
+    @Override
+    public Identifier.PositionalIdentifier positionalIdentifier() {
+        return positionalIdentifier;
     }
 
     @Override
@@ -216,6 +221,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final Inspector inspector;
         private InspectionState inspectionState;
         private Boolean functionalInterface;
+        private Identifier.PositionalIdentifier positionalIdentifier;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
@@ -226,6 +232,15 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public Builder setFunctionalInterface(boolean functionalInterface) {
             this.functionalInterface = functionalInterface;
             return this;
+        }
+
+        @Override
+        public Identifier.PositionalIdentifier positionalIdentifier() {
+            return positionalIdentifier;
+        }
+
+        public void setPositionalIdentifier(Identifier.PositionalIdentifier positionalIdentifier) {
+            this.positionalIdentifier = positionalIdentifier;
         }
 
         @Override
@@ -385,7 +400,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     getAnnotations(),
                     inspector,
                     isSynthetic(),
-                    isFunctionalInterface());
+                    isFunctionalInterface(),
+                    positionalIdentifier);
         }
 
         @Override
