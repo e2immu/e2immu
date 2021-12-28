@@ -33,10 +33,7 @@ import org.e2immu.analyser.parser.TypeMapImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -394,54 +391,30 @@ public class TypeInspector {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + typeInfo.fullyQualifiedName);
 
+        int countCompactConstructors = 0;
+        int countNormalConstructors = 0;
+
         // 2-step approach: first, add these types to the expression context, without inspection
+        // while we loop, we do some counting to avoid looping too often
+
+        List<TypeDeclaration<?>> typeDeclarations = new LinkedList<>();
+        List<FieldDeclaration> fieldDeclarations = new LinkedList<>();
+
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifTypeDeclaration(cid -> prepareSubType(expressionContext, dollarResolver, cid.getNameAsString()));
+            if (bodyDeclaration instanceof TypeDeclaration cid) {
+                prepareSubType(expressionContext, dollarResolver, cid.getNameAsString());
+                typeDeclarations.add(cid);
+            } else if (bodyDeclaration instanceof CompactConstructorDeclaration) ++countCompactConstructors;
+            else if (bodyDeclaration instanceof ConstructorDeclaration) ++countNormalConstructors;
+            else if (bodyDeclaration instanceof FieldDeclaration fd) fieldDeclarations.add(fd);
         }
 
         // then inspect them...
         List<TypeInfo> dollarTypes = new ArrayList<>();
-        for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifTypeDeclaration(cid -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
-                    cid.getNameAsString(), cid.asTypeDeclaration()));
+        for (TypeDeclaration<?> typeDeclaration : typeDeclarations) {
+            inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
+                    typeDeclaration.getNameAsString(), typeDeclaration);
         }
-
-        // finally, do constructors and methods
-
-        log(INSPECTOR, "Variable context after parsing fields of type {}: {}", typeInfo.fullyQualifiedName, subContext.variableContext());
-
-        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
-        AtomicInteger countCompactConstructors = new AtomicInteger();
-        AtomicInteger countStaticBlocks = new AtomicInteger();
-
-        for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifInitializerDeclaration(id -> initializerDeclaration(expressionContext, countStaticBlocks, id));
-            bodyDeclaration.ifCompactConstructorDeclaration(ccd -> compactConstructorDeclaration(expressionContext,
-                    recordFields, subContext, companionMethodsWaiting, countCompactConstructors, ccd));
-            bodyDeclaration.ifConstructorDeclaration(cd -> constructorDeclaration(expressionContext, dollarResolver,
-                    subContext, companionMethodsWaiting, cd));
-            bodyDeclaration.ifMethodDeclaration(md -> methodDeclaration(expressionContext, isInterface,
-                    dollarResolver, subContext, companionMethodsWaiting, md));
-        }
-
-        // add @FunctionalInterface interface if needed
-
-        if (fullInspection) {
-            ensureFunctionalInterfaceAnnotation(typeContext, builder);
-        }
-
-        // then, do fields (relies on @FI to be present)
-        // FIXME but some annotations on methods may rely on fields to be done already...?
-        for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifFieldDeclaration(fd -> fieldDeclaration(expressionContext, isInterface, typeContext, fd));
-        }
-
-        // add empty constructor if needed
-        if (builder.constructors().isEmpty() && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
-            boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
-            builder.addConstructor(createEmptyConstructor(typeContext, privateEmptyConstructor));
-        }
-
 
         /*
         Ensure a constructor when the type is a record and there are no compact constructors.
@@ -449,9 +422,42 @@ public class TypeInspector {
         and also no default constructor override.
         The latter condition is verified in the builder.ensureConstructor() method
          */
-        if (TypeNature.RECORD == builder.typeNature() && countCompactConstructors.get() == 0) {
-            ensureCompactConstructor(recordFields, typeContext, subContext, companionMethodsWaiting);
+        if (TypeNature.RECORD == builder.typeNature()) {
+            if (countCompactConstructors == 0) {
+                ensureCompactConstructor(recordFields, typeContext, subContext);
+            }
+        } else if (countNormalConstructors == 0 && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
+            boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
+            builder.addConstructor(createEmptyConstructor(typeContext, privateEmptyConstructor));
         }
+
+        // then, do normal constructors and methods
+        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
+        AtomicInteger countStaticBlocks = new AtomicInteger();
+
+        for (BodyDeclaration<?> bodyDeclaration : members) {
+            if (bodyDeclaration instanceof InitializerDeclaration id) {
+                initializerDeclaration(expressionContext, countStaticBlocks, id);
+            } else if (bodyDeclaration instanceof CompactConstructorDeclaration ccd) {
+                compactConstructorDeclaration(expressionContext, recordFields, subContext, companionMethodsWaiting, ccd);
+            } else if (bodyDeclaration instanceof ConstructorDeclaration cd) {
+                constructorDeclaration(expressionContext, dollarResolver, subContext, companionMethodsWaiting, cd);
+            } else if (bodyDeclaration instanceof MethodDeclaration md) {
+                methodDeclaration(expressionContext, isInterface, dollarResolver, subContext, companionMethodsWaiting, md);
+            }
+        }
+
+        // add @FunctionalInterface interface if needed
+        if (fullInspection) {
+            ensureFunctionalInterfaceAnnotation(typeContext, builder);
+        }
+
+        // then, do fields (relies on @FI to be present)
+        for (FieldDeclaration fieldDeclaration : fieldDeclarations) {
+            fieldDeclaration(expressionContext, isInterface, typeContext, fieldDeclaration);
+        }
+
+        // finally, add synthetic methods if needed
         if (recordFields != null) {
             assert TypeNature.RECORD == builder.typeNature();
             RecordSynthetics.ensureAccessors(expressionContext, typeInfo, builder, recordFields);
@@ -477,7 +483,6 @@ public class TypeInspector {
                                                List<RecordField> recordFields,
                                                ExpressionContext subContext,
                                                Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting,
-                                               AtomicInteger countCompactConstructors,
                                                CompactConstructorDeclaration ccd) {
         MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMapBuilder, typeInfo,
                 fullInspection);
@@ -485,7 +490,6 @@ public class TypeInspector {
         methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
         builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
         companionMethodsWaiting.clear();
-        countCompactConstructors.incrementAndGet();
     }
 
     private void constructorDeclaration(ExpressionContext expressionContext,
@@ -581,12 +585,11 @@ public class TypeInspector {
 
     private void ensureCompactConstructor(List<RecordField> recordFields,
                                           TypeContext typeContext,
-                                          ExpressionContext subContext,
-                                          Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting) {
+                                          ExpressionContext subContext) {
         assert recordFields != null;
         MethodInspector methodInspector = new MethodInspector(typeContext.typeMapBuilder, typeInfo,
                 fullInspection);
-        boolean created = methodInspector.inspect(null, subContext, companionMethodsWaiting, recordFields);
+        boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
             builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
         }
@@ -615,7 +618,8 @@ public class TypeInspector {
     record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
     }
 
-    private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String nameAsString) {
+    private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String
+            nameAsString) {
         DollarResolverResult res = subType(expressionContext.typeContext().typeMapBuilder, dollarResolver, nameAsString);
         expressionContext.typeContext().addToContext(res.subType);
         if (res.isDollarType) { // dollar name
@@ -643,7 +647,8 @@ public class TypeInspector {
         }
     }
 
-    private DollarResolverResult subType(TypeMapImpl.Builder typeMapBuilder, DollarResolver dollarResolver, String name) {
+    private DollarResolverResult subType(TypeMapImpl.Builder typeMapBuilder, DollarResolver dollarResolver, String
+            name) {
         TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
         if (subType != null) {
             return new DollarResolverResult(subType, true);
