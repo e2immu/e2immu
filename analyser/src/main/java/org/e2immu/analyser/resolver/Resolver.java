@@ -272,6 +272,7 @@ public class Resolver {
 
             doFields(typeInspection, expressionContextForBody, methodFieldSubTypeGraph, restrictToType);
             doMethodsAndConstructors(typeInspection, expressionContextForBody, methodFieldSubTypeGraph, restrictToType);
+            doAnnotations(typeInspection.getAnnotations(), expressionContextForBody);
 
             // dependencies of the type
 
@@ -283,6 +284,26 @@ public class Resolver {
         } catch (RuntimeException re) {
             LOGGER.warn("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
             throw re;
+        }
+    }
+
+    private void doAnnotations(List<AnnotationExpression> annotationExpressions, ExpressionContext expressionContext) {
+        for (AnnotationExpression annotationExpression : annotationExpressions) {
+            for (org.e2immu.analyser.model.Expression expression : annotationExpression.expressions()) {
+                if (expression instanceof MemberValuePair mvp) {
+                    if (mvp.value().isVariable()) {
+                        org.e2immu.analyser.model.Expression current = mvp.value().get();
+                        if (current instanceof UnevaluatedAnnotationParameterValue unevaluated) {
+                            org.e2immu.analyser.model.Expression resolved = expressionContext.parseExpression
+                                    (unevaluated.expression(), unevaluated.forwardReturnTypeInfo());
+                            assert !(resolved instanceof UnevaluatedAnnotationParameterValue);
+                            mvp.value().setFinal(resolved);
+                        } else {
+                            mvp.value().setFinal(mvp.value().get());
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -301,6 +322,8 @@ public class Resolver {
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
             fieldInfo.fieldInspection.set(fieldInspection.build());
             log(RESOLVER, "Set field inspection of " + fieldInfo.fullyQualifiedName());
+
+            doAnnotations(fieldInspection.getAnnotations(), expressionContext);
         });
     }
 
@@ -465,6 +488,8 @@ public class Resolver {
 
         // and only then, when the FQN is known, add to the sub-graph
         methodFieldSubTypeGraph.addNode(methodInfo, List.copyOf(methodsAndFieldsVisited.methodsAndFields));
+
+        doAnnotations(methodInspection.getAnnotations(), expressionContext);
     }
 
     private void addCompactConstructorSyntheticAssignments(InspectionProvider inspectionProvider,

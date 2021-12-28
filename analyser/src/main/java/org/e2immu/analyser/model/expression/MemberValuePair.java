@@ -40,7 +40,11 @@ public record MemberValuePair(String name, EventuallyFinal<Expression> value) im
 
     public MemberValuePair(@NotNull String name, @NotNull Expression value) {
         this(name, new EventuallyFinal<>());
-        this.value.setFinal(value);
+        if(value instanceof UnevaluatedAnnotationParameterValue) {
+            this.value.setVariable(value);
+        } else {
+            this.value.setFinal(value);
+        }
     }
 
     @Override

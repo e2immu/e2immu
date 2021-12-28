@@ -18,6 +18,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -30,12 +31,12 @@ This is a marker for the Resolver to replace this by a properly resolved Variabl
 See e.g. EventuallyE1Immutable_0
  */
 public record UnevaluatedAnnotationParameterValue(Identifier identifier,
-                                                  ParameterizedType returnType,
-                                                  String name) implements Expression {
+                                                  ForwardReturnTypeInfo forwardReturnTypeInfo,
+                                                  com.github.javaparser.ast.expr.Expression expression) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return returnType;
+        return forwardReturnTypeInfo.type();
     }
 
     @Override
@@ -45,7 +46,7 @@ public record UnevaluatedAnnotationParameterValue(Identifier identifier,
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text("<unevaluated annotation value " + name + ">"));
+        return new OutputBuilder().add(new Text("<unevaluated annotation value@" + expression.getBegin().orElseThrow() + ">"));
     }
 
     @Override

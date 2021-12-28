@@ -35,29 +35,29 @@ public class AnnotationInspector {
             analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : normalAnnotationExpr.getPairs()) {
                 String methodName = mvp.getNameAsString();
-                ForwardReturnTypeInfo expectedType = expectedType(typeContext, methodName, typeInspection);
-                Expression value;
-                if (mvp.getValue().isFieldAccessExpr()) {
-                    value = new UnevaluatedAnnotationParameterValue(Identifier.from(mvp), expectedType.type(),
-                            mvp.getValue().asFieldAccessExpr().getNameAsString());
-                } else {
-                    value = expressionContext.parseExpression(mvp.getValue(), expectedType);
-                }
+                Expression value = makeValue(mvp.getValue(), expressionContext, methodName, typeInspection);
                 analyserExpressions.add(new MemberValuePair(methodName, value));
             }
         } else if (ae instanceof SingleMemberAnnotationExpr sm) {
-            ForwardReturnTypeInfo expectedType = expectedType(typeContext, MemberValuePair.VALUE, typeInspection);
-            com.github.javaparser.ast.expr.Expression mv = ae.asSingleMemberAnnotationExpr().getMemberValue();
-            Expression value;
-            if (mv.isNameExpr()) {
-                value = new UnevaluatedAnnotationParameterValue(Identifier.from(mv), expectedType.type(),
-                        mv.asNameExpr().getNameAsString());
-            } else {
-                value = expressionContext.parseExpression(mv, expectedType);
-            }
+            com.github.javaparser.ast.expr.Expression mv = sm.getMemberValue();
+            Expression value = makeValue(mv, expressionContext, MemberValuePair.VALUE, typeInspection);
             analyserExpressions = List.of(new MemberValuePair(MemberValuePair.VALUE, value));
-        } else analyserExpressions = List.of();
+        } else {
+            analyserExpressions = List.of();
+        }
         return new AnnotationExpressionImpl(typeInfo, analyserExpressions);
+    }
+
+    private static Expression makeValue(com.github.javaparser.ast.expr.Expression expression,
+                                        ExpressionContext expressionContext,
+                                        String methodName,
+                                        TypeInspection typeInspection) {
+        ForwardReturnTypeInfo forwardReturnTypeInfo = expectedType(expressionContext.typeContext(), methodName, typeInspection);
+        if (expression.isFieldAccessExpr() || expression.isNameExpr()) {
+            return new UnevaluatedAnnotationParameterValue(Identifier.from(expression), forwardReturnTypeInfo,
+                    expression);
+        }
+        return expressionContext.parseExpression(expression, forwardReturnTypeInfo);
     }
 
     private static ForwardReturnTypeInfo expectedType(TypeContext typeContext,

@@ -84,7 +84,11 @@ public class TestBasics extends CommonTest {
     private void ensureNoUnevaluatedAnnotationParameterValues(List<AnnotationExpression> expressions) {
         List<Expression> memberValuePairs = expressions.stream().flatMap(ae -> ae.expressions().stream()).toList();
         assertFalse(memberValuePairs.isEmpty());
-        assertFalse(memberValuePairs.stream()
-                .anyMatch(e -> ((MemberValuePair) e).value().get() instanceof UnevaluatedAnnotationParameterValue));
+        for (Expression expression : memberValuePairs) {
+            if (expression instanceof MemberValuePair mvp) {
+                assertFalse(mvp.value().get() instanceof UnevaluatedAnnotationParameterValue);
+                assertFalse(mvp.value().isVariable());
+            } else fail("Expected member value pair but got " + expression.getClass());
+        };
     }
 }
