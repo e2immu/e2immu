@@ -416,17 +416,8 @@ public class TypeInspector {
                     typeDeclaration.getNameAsString(), typeDeclaration);
         }
 
-        /*
-        Ensure a constructor when the type is a record and there are no compact constructors.
-        (those without arguments, as in 'public record SomeRecord(...) { public Record { this.field = } ... }' )
-        and also no default constructor override.
-        The latter condition is verified in the builder.ensureConstructor() method
-         */
-        if (TypeNature.RECORD == builder.typeNature()) {
-            if (countCompactConstructors == 0) {
-                ensureCompactConstructor(recordFields, typeContext, subContext);
-            }
-        } else if (countNormalConstructors == 0 && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
+        // add an empty constructor if no constructors are available, for ENUM and CLASS
+        if (countNormalConstructors == 0 && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
             boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
             builder.addConstructor(createEmptyConstructor(typeContext, privateEmptyConstructor));
         }
@@ -457,7 +448,20 @@ public class TypeInspector {
             fieldDeclaration(expressionContext, isInterface, typeContext, fieldDeclaration);
         }
 
-        // finally, add synthetic methods if needed
+         /*
+        Ensure a constructor when the type is a record and there are no compact constructors.
+        (those without arguments, as in 'public record SomeRecord(...) { public Record { this.field = } ... }' )
+        and also no default constructor override.
+        The latter condition is verified in the builder.ensureConstructor() method.
+        NOTE: this compact synthetic constructor is inserted in the beginning of the list
+         */
+        if (TypeNature.RECORD == builder.typeNature()) {
+            if (countCompactConstructors == 0) {
+                ensureCompactConstructor(recordFields, typeContext, subContext);
+            }
+        }
+
+            // finally, add synthetic methods if needed
         if (recordFields != null) {
             assert TypeNature.RECORD == builder.typeNature();
             RecordSynthetics.ensureAccessors(expressionContext, typeInfo, builder, recordFields);
@@ -591,7 +595,7 @@ public class TypeInspector {
                 fullInspection);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
-            builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
+            builder.addConstructorAtStartOfList(methodInspector.getBuilder().getMethodInfo());
         }
     }
 

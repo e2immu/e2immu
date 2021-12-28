@@ -299,6 +299,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             }
         }
 
+        public void addConstructorAtStartOfList(MethodInfo methodInfo) {
+            assert !methodAndConstructorNames.contains(methodInfo.distinguishingName);
+            constructors.add(0, methodInfo);
+        }
+
         public Builder addMethod(MethodInfo methodInfo) {
             if (!methodAndConstructorNames.add(methodInfo.distinguishingName)) {
                 throw new UnsupportedOperationException("Already have " + methodInfo.distinguishingName
