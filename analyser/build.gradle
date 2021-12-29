@@ -47,7 +47,7 @@ dependencies {
     implementation 'org.e2immu:e2immu-support:0.3.0'      // LGPL 3.0
 
    // implementation 'org.slf4j:slf4j-api:1.7.32'           // MIT X-11 License
-    implementation 'ch.qos.logback:logback-classic:1.2.9' // EPL v1.0 and the LGPL 2.1
+    implementation 'ch.qos.logback:logback-classic:1.2.10' // EPL v1.0 and the LGPL 2.1
     implementation 'commons-io:commons-io:20030203.000550'            // Apache License 2.0
 
     implementation 'com.github.javaparser:javaparser-core:3.22.2-SNAPSHOT'
@@ -108,5 +108,103 @@ publishing {
     }
 }
 
+// -------------------
+
+// a bit of code to generate a list of all the tests that ran successfully
+// will be picked up by the
+class MyTestListener implements TestListener {
+    Set<String> testFqns = new HashSet<>();
+    File file;
+
+    MyTestListener(File file) {
+        this.file = file
+        file.delete()
+        file.createNewFile()
+    }
+
+    void beforeSuite(TestDescriptor testDescriptor) { }
+    void afterSuite(TestDescriptor testDescriptor, TestResult testResult) { }
+    void beforeTest(TestDescriptor testDescriptor) { }
+
+    void afterTest(TestDescriptor testDescriptor, TestResult testResult) {
+        if(testResult.resultType == TestResult.ResultType.SUCCESS && testFqns.add(testDescriptor.className))
+            file << testDescriptor.className+"\n"
+    }
+}
+
+tasks.withType(Test) {
+    var l = new MyTestListener(new File("$buildDir/testFQNs.txt"))
+    addTestListener(l)
+}
+
+// ----------------
+
+class IterateOverTests extends DefaultTask {
+    @Input
+    String testCoverageJar
+    @InputDirectory
+    File theBuildDir
+    @InputDirectory
+    File theProjectDir
+
+    @TaskAction
+    void runIterateOverTests() {
+        if (!new File(testCoverageJar).canRead()) {
+            println "Test coverage jar $testCoverageJar not found"
+            System.exit 1
+        }
+        println "Test coverage jar $testCoverageJar"
+
+        var destination = new File("${theBuildDir}/json.gz/")
+        destination.delete()
+        destination.mkdirs()
+        println "Destination is $destination.path"
+
+        List<String> tests = new File("${theBuildDir}/testFQNs.txt").readLines('UTF-8')
+
+        tests.forEach {
+            println "Processing $it"
+
+            String cmd = "gradle test --tests $it jacocoTestReport"
+            execute(cmd, theProjectDir)
+
+            String cmd2 = "java -jar $testCoverageJar ${theBuildDir}/reports/jacoco/test/jacocoTestReport.xml ${destination.path}/${it}.json.gz"
+            println "Executing translation to json: $cmd"
+            execute(cmd2, new File("."))
+        }
+    }
+
+    static def execute(String cmd, File projectDir) {
+        def noParams = [] as String[]
+        def output = new StringBuilder(), error = new StringBuilder()
+        def proc = cmd.execute(noParams, projectDir)
+        proc.consumeProcessOutput(output, error)
+        proc.waitForOrKill(3600_000)
+        if (!output.isBlank()) {
+            println "----\n$output\n----\n"
+        }
+        if (!error.isBlank()) {
+            println "---- ERROR ----\n$error\n----\n"
+        }
+        if (proc.exitValue() != 0) {
+            System.exit proc.exitValue()
+        }
+    }
+}
+
+configurations {
+    iterate1
+}
+
+dependencies {
+    iterate1 'com.codemodernizer:jacocoparser:0.0.1'
+}
 
 
+task iterateOverTests(type : IterateOverTests) {
+    dependsOn test
+
+    testCoverageJar  configurations.iterate1.resolve()[0].path
+    theBuildDir buildDir
+    theProjectDir projectDir
+}
