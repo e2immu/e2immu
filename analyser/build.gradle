@@ -140,36 +140,41 @@ tasks.withType(Test) {
 // ----------------
 
 class IterateOverTests extends DefaultTask {
-    @Input
-    String testCoverageJar
-    @InputDirectory
-    File theBuildDir
+    @InputFile
+    File testFQNs
+
+    @InputFile
+    File testCoverageJar
+
+    @InputFile
+    File jacocoTestReportXml
+
+    @OutputDirectory
+    File jsonGzDir
+
     @InputDirectory
     File theProjectDir
 
     @TaskAction
     void runIterateOverTests() {
-        if (!new File(testCoverageJar).canRead()) {
-            println "Test coverage jar $testCoverageJar not found"
-            System.exit 1
-        }
-        println "Test coverage jar $testCoverageJar"
+        logger.info("Test coverage jar ${testCoverageJar.path}")
+        logger.info("Jacoco XML report ${jacocoTestReportXml.path}")
 
-        var destination = new File("${theBuildDir}/json.gz/")
-        destination.delete()
-        destination.mkdirs()
-        println "Destination is $destination.path"
+        jsonGzDir.delete()
+        jsonGzDir.mkdirs()
+        logger.info("Destination is ${jsonGzDir.path}")
 
-        List<String> tests = new File("${theBuildDir}/testFQNs.txt").readLines('UTF-8')
+        List<String> tests = testFQNs.readLines('UTF-8')
 
         tests.forEach {
-            println "Processing $it"
+            logger.info("Processing test $it")
 
             String cmd = "gradle test --tests $it jacocoTestReport"
             execute(cmd, theProjectDir)
 
-            String cmd2 = "java -jar $testCoverageJar ${theBuildDir}/reports/jacoco/test/jacocoTestReport.xml ${destination.path}/${it}.json.gz"
-            println "Executing translation to json: $cmd"
+            String cmd2 = "java -jar ${testCoverageJar.path} ${jacocoTestReportXml.path} ${jsonGzDir.path}/${it}.json.gz"
+            logger.info("Executing translation to json: $cmd")
+
             execute(cmd2, new File("."))
         }
     }
@@ -200,11 +205,12 @@ dependencies {
     iterate1 'com.codemodernizer:jacocoparser:0.0.1'
 }
 
-
 task iterateOverTests(type : IterateOverTests) {
-    dependsOn test
+    dependsOn test, jacocoTestReport
 
-    testCoverageJar  configurations.iterate1.resolve()[0].path
-    theBuildDir buildDir
-    theProjectDir projectDir
+    testFQNs = new File(buildDir, "testFQNs.txt")
+    testCoverageJar = configurations.iterate1.resolve()[0]
+    jacocoTestReportXml = tasks.jacocoTestReport.reports.xml.outputLocation.getAsFile().get()
+    jsonGzDir = new File(buildDir, "json.gz")
+    theProjectDir = projectDir
 }
