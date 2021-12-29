@@ -136,7 +136,8 @@ public class TypeInspector {
                                    DollarResolver dollarResolverInput) {
         LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
         assert typeDeclaration != null;
-        builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null)));
+        builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null),
+                typeDeclaration.getEnd().orElse(null)));
 
         TypeContext typeContext = expressionContext.typeContext();
 

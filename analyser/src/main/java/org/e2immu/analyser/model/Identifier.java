@@ -38,14 +38,16 @@ public interface Identifier extends Comparable<Identifier> {
 
     static Identifier from(Node node) {
         if (node == null) return Identifier.generate();
-        Optional<Position> position = node.getBegin();
-        if (position.isEmpty()) return new IncrementalIdentifier();
-        return from(position.get());
+        Optional<Position> begin = node.getBegin();
+        if (begin.isEmpty()) return new IncrementalIdentifier();
+        Optional<Position> end = node.getEnd();
+        return from(begin.get(), end.orElseThrow());
     }
 
-    static PositionalIdentifier from(Position position) {
-        if(position == null) return null;
-        return new PositionalIdentifier(position.line, position.column);
+    static PositionalIdentifier from(Position begin, Position end) {
+        if (begin == null) return null;
+        return new PositionalIdentifier((short) begin.line, (short) begin.column,
+                (short) end.line, (short) end.column);
     }
 
     static Identifier generate() {
@@ -77,7 +79,7 @@ public interface Identifier extends Comparable<Identifier> {
     }
 
 
-    record PositionalIdentifier(int line, int pos) implements Identifier {
+    record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
             if (o instanceof PositionalIdentifier pi) {
