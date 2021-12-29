@@ -457,7 +457,6 @@ public class TypeInspector {
         (those without arguments, as in 'public record SomeRecord(...) { public Record { this.field = } ... }' )
         and also no default constructor override.
         The latter condition is verified in the builder.ensureConstructor() method.
-        NOTE: this compact synthetic constructor is inserted in the beginning of the list
          */
         if (TypeNature.RECORD == builder.typeNature()) {
             if (countCompactConstructors == 0) {
@@ -599,7 +598,7 @@ public class TypeInspector {
                 fullInspection);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
-            builder.addConstructorAtStartOfList(methodInspector.getBuilder().getMethodInfo());
+            builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
         }
     }
 

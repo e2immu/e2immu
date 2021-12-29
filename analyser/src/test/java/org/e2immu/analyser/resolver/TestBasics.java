@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestBasics extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
 
-    private void inspectAndResolve(Class<?> clazz, String methodFqn) throws IOException {
+    private TypeMap inspectAndResolve(Class<?> clazz, String methodFqn) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 0);
@@ -45,11 +45,19 @@ public class TestBasics extends CommonTest {
                 assertEquals(methodFqn, methodCall.methodInfo.fullyQualifiedName);
             } else fail();
         } else fail();
+        return typeMap;
     }
 
     @Test
     public void test_0() throws IOException {
-        inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(java.lang.String)");
+        TypeMap typeMap = inspectAndResolve(Basics_0.class, "java.io.PrintStream.println(java.lang.String)");
+        TypeInfo typeInfo = typeMap.get(Basics_0.class);
+        TypeInspection typeInspection = typeMap.getTypeInspection(typeInfo);
+
+        FieldInfo b = typeInspection.fields().stream().filter(f -> "b".equals(f.name)).findFirst().orElseThrow();
+        assertFalse(typeMap.getFieldInspection(b).hasFieldInitializer());
+        FieldInfo i = typeInspection.fields().stream().filter(f -> "i".equals(f.name)).findFirst().orElseThrow();
+        assertTrue(typeMap.getFieldInspection(i).hasFieldInitializer());
     }
 
     @Test

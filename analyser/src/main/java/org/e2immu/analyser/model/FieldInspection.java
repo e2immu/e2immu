@@ -39,4 +39,8 @@ public interface FieldInspection extends Inspection {
             Objects.requireNonNull(initialiser);
         }
     }
+
+    default boolean hasFieldInitializer() {
+        return getFieldInitialiser() != null;
+    }
 }

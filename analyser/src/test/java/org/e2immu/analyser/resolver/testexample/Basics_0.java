@@ -16,6 +16,9 @@ package org.e2immu.analyser.resolver.testexample;
 
 public class Basics_0 {
 
+    boolean b;
+    int i = 3;
+
     public void test() {
         System.out.println("a");
     }
