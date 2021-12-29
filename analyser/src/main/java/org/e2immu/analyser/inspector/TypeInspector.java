@@ -67,6 +67,7 @@ public class ComGoogleCommonCollect {                             // name irrele
 It is important to note that the type inspector first *adds* to the byte-code inspection of ImmutableCollection,
 as the Annotated API Java class may not be complete. In this case fullInspection is false.
 
+DollarTypesAreNormalTypes is used when testing the inspection of annotated API files as plain Java files.
  */
 
 public class TypeInspector {
@@ -422,7 +423,7 @@ public class TypeInspector {
         }
 
         // add an empty constructor if no constructors are available, for ENUM and CLASS
-        if (countNormalConstructors == 0 && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
+        if (countNormalConstructors == 0 && builder.hasEmptyConstructorIfNoConstructorsPresent() && fullInspection) {
             boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
             builder.addConstructor(createEmptyConstructor(typeContext, privateEmptyConstructor));
         }

@@ -80,4 +80,9 @@ public class TestImport extends CommonTest {
         TypeInspection typeInspection = typeMap.getTypeInspection(loggerContext);
         assertEquals(38, typeInspection.methods().size());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        inspectAndResolve(Import_7.class);
+    }
 }

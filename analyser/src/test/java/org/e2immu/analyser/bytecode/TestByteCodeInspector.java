@@ -113,26 +113,9 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testGenerics2() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/DependencyGraph.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.DependencyGraph");
-        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.output());
-    }
-
-    @Test
     public void testStringArray() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
-
-        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.output());
-    }
-
-    @Test
-    public void testTrie() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Trie.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Trie");
 
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.output());

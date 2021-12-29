@@ -50,6 +50,7 @@ public abstract class CommonAnnotatedAPI {
     @BeforeAll
     public static void beforeClass() throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
+                .setAlternativeJREDirectory("/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")

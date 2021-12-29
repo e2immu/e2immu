@@ -280,7 +280,13 @@ public record ParseAndInspect(Resources classPath,
 
     private TypeInfo loadTypeDoNotImport(String fqn) {
         TypeInfo inMap = typeMapBuilder.get(fqn);
-        if (inMap != null) return inMap;
+        if (inMap != null) {
+            TypeInspectionImpl.InspectionState inspectionState = typeMapBuilder().getInspectionState(inMap);
+            if(inspectionState != null) {
+                return inMap;
+            }
+            // there is no associated type inspection yet
+        }
         // we don't know it... so we don't know the boundary between primary and sub-type
         // we can either search in the class path, or in the source path
 

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.model.ParameterizedType.WildCard.NONE;
@@ -53,7 +54,7 @@ public class TestParameterizedType {
     @BeforeEach
     public void before() {
         primitives = new Primitives();
-        IP = InspectionProvider.DEFAULT;
+        IP = InspectionProvider.defaultFrom(primitives);
         String PACKAGE = "org.e2immu";
 
         primitives.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo, BY_HAND)
@@ -111,8 +112,8 @@ public class TestParameterizedType {
         }
         function = new TypeInfo(PACKAGE, "Function");
         {
-            TypeParameter functionT = new TypeParameterImpl(map, "T", 0);
-            TypeParameter functionR = new TypeParameterImpl(map, "R", 1);
+            TypeParameter functionT = new TypeParameterImpl(function, "T", 0);
+            TypeParameter functionR = new TypeParameterImpl(function, "R", 1);
 
             MethodInspectionImpl.Builder applyBuilder = new MethodInspectionImpl.Builder(function, "apply");
             MethodInfo apply = applyBuilder
@@ -187,12 +188,20 @@ public class TestParameterizedType {
 
         ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType, integerPt));
         ParameterizedType functionMapToBoolean = new ParameterizedType(function, List.of(mapStringInteger, primitives.boxedBooleanTypeInfo.asSimpleParameterizedType()));
-        Map<NamedType, ParameterizedType> translation = functionMapToBoolean.initialTypeParameterMap(IP);
-        assertEquals("{T as #0 in org.e2immu.Map=Type org.e2immu.Map<java.lang.String,java.lang.Integer>, " +
-                "R as #1 in org.e2immu.Map=Type java.lang.Boolean}", translation.toString());
+        assertEquals("Type org.e2immu.Function<org.e2immu.Map<java.lang.String,java.lang.Integer>,java.lang.Boolean>", functionMapToBoolean.toString());
 
-        Map<NamedType, ParameterizedType> translation2 = function.asParameterizedType(IP).translateMap(IP, functionMapToBoolean, true);
-        assertEquals(translation, translation2);
+        Map<NamedType, ParameterizedType> translation = functionMapToBoolean.initialTypeParameterMap(IP);
+        assertEquals("K as #0 in org.e2immu.Map=Type java.lang.String, " +
+                "R as #1 in org.e2immu.Function=Type java.lang.Boolean, " +
+                "T as #0 in org.e2immu.Function=Type org.e2immu.Map<java.lang.String,java.lang.Integer>, " +
+                "V as #1 in org.e2immu.Map=Type java.lang.Integer", translation
+                .entrySet().stream().map(e -> e.getKey()+"="+e.getValue()).sorted().collect(Collectors.joining(", ")));
+
+        Map<NamedType, ParameterizedType> translation2 = function.asParameterizedType(IP)
+                .translateMap(IP, functionMapToBoolean, true);
+        assertEquals("R as #1 in org.e2immu.Function=Type java.lang.Boolean, " +
+                "T as #0 in org.e2immu.Function=Type org.e2immu.Map<java.lang.String,java.lang.Integer>", translation2
+                .entrySet().stream().map(e -> e.getKey()+"="+e.getValue()).sorted().collect(Collectors.joining(", ")));
     }
 
     @Test
@@ -225,7 +234,7 @@ public class TestParameterizedType {
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(1), 0, NONE)));
         ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType, integerPt));
         ParameterizedType concreteField = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope);
-        assertEquals("Type org.e2immu.Map<java.lang.String,int>", concreteField.toString());
+        assertEquals("Type org.e2immu.Map<java.lang.String,java.lang.Integer>", concreteField.toString());
 
         /* we simulate
         class A<K, V> { private Map<K, V> field = ... }
@@ -267,18 +276,18 @@ public class TestParameterizedType {
 
         // we simulate Map<String, Integer> map = new HashMap<>(), where we need to obtain the concrete pt of HashMap
         ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType,
-                primitives.intParameterizedType));
+                primitives.integerTypeInfo.asSimpleParameterizedType()));
         ParameterizedType hashMapPt = hashMap.asParameterizedType(IP);
         Map<NamedType, ParameterizedType> t1 = hashMapPt.translateMap(IP, mapStringInteger, false);
-        assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type int}", t1.toString());
+        assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type java.lang.Integer}", t1.toString());
         ParameterizedType concreteHashMap = hashMapPt.inferDiamondNewObjectCreation(IP, mapStringInteger);
-        assertEquals("Type org.e2immu.HashMap<java.lang.String,int>", concreteHashMap.toString());
+        assertEquals("Type org.e2immu.HashMap<java.lang.String,java.lang.Integer>", concreteHashMap.toString());
 
         // we simulate Map<String, Integer> map = new StringMap<>(), where we need to obtain the concrete pt of StringMap
         ParameterizedType stringMapPt = stringMap.asParameterizedType(IP);
         Map<NamedType, ParameterizedType> t2 = stringMapPt.translateMap(IP, mapStringInteger, false);
-        assertEquals("{V as #0 in org.e2immu.StringMap=Type int}", t2.toString());
+        assertEquals("{V as #0 in org.e2immu.StringMap=Type java.lang.Integer}", t2.toString());
         ParameterizedType concreteStringMap = stringMapPt.inferDiamondNewObjectCreation(IP, mapStringInteger);
-        assertEquals("Type org.e2immu.StringMap<int>", concreteStringMap.toString());
+        assertEquals("Type org.e2immu.StringMap<java.lang.Integer>", concreteStringMap.toString());
     }
 }

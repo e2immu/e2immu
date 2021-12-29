@@ -17,29 +17,18 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestPreloadJavaBase {
-
-
-    @Test
-    public void testNoPreload() throws IOException {
-        // there is no preloading by default
-        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR,
-                Logger.LogTarget.BYTECODE_INSPECTOR);
-        Parser parser = new Parser();
-        TypeContext typeContext = parser.getTypeContext();
-        TypeInfo list = typeContext.typeMapBuilder.get("java.util.List");
-        assertNull(list);
-    }
 
     @Test
     public void testPreload() throws IOException {
@@ -53,7 +42,20 @@ public class TestPreloadJavaBase {
                 .build();
         Parser parser = new Parser(configuration);
         TypeContext typeContext = parser.getTypeContext();
+
+        // NOTE: this may be very dependent on JDK 16
+
+        // interestingly, java.util.List has been referred to, but it has not been loaded
+        // because it has not yet appeared in a type hierarchy (but it has appeared as a field type
+        // in some private field of java.lang.Throwable)
         TypeInfo list = typeContext.typeMapBuilder.get("java.util.List");
         assertNotNull(list);
+        assertEquals(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMapBuilder.getInspectionState(list));
+
+        // the next call will trigger the byte code inspection of "list":
+        TypeInspection listInspection = typeContext.getTypeInspection(list);
+        assertNotNull(listInspection);
+        assertEquals(TypeInspectionImpl.InspectionState.FINISHED_BYTECODE, typeContext.typeMapBuilder.getInspectionState(list));
+
     }
 }

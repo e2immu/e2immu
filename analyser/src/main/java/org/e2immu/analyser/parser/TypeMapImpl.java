@@ -348,9 +348,18 @@ public class TypeMapImpl implements TypeMap {
             return fieldInspections.get(fieldInfo);
         }
 
+        public InspectionState getInspectionState(TypeInfo typeInfo) {
+            if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get().getInspectionState();
+            TypeInspectionImpl.Builder typeInspection = typeInspections.get(typeInfo);
+            if (typeInspection == null) {
+                return null; // not registered
+            }
+            return typeInspection.getInspectionState();
+        }
+
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-            if(typeInfo.typeInspection.isSet()) {
+            if (typeInfo.typeInspection.isSet()) {
                 // primitives, etc.
                 return typeInfo.typeInspection.get();
             }

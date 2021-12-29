@@ -502,10 +502,7 @@ public class MyClassVisitor extends ClassVisitor {
     private void errorStateForType(String pathCausingFailure) {
         if (currentType == null || currentType.typeInspection.isSet()) throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
-        typeInspectionBuilder.setInspectionState(FINISHED_BYTECODE);
-        log(BYTECODE_INSPECTOR, message);
-        currentType = null;
-        typeInspectionBuilder = null;
+        throw new RuntimeException(message);
     }
 
 }

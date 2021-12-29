@@ -220,7 +220,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final TypeInfo typeInfo;
         private final Inspector inspector;
         private InspectionState inspectionState;
-        private Boolean functionalInterface;
+        private boolean functionalInterface;
         private Identifier.PositionalIdentifier positionalIdentifier;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
@@ -245,7 +245,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public boolean isFunctionalInterface() {
-            return Objects.requireNonNull(functionalInterface, "No FI info for " + typeInfo.fullyQualifiedName);
+            return functionalInterface;
         }
 
         @Override

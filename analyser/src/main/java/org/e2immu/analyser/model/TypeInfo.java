@@ -207,8 +207,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
-        return new ParameterizedType(this, inspectionProvider.getTypeInspection(this).typeParameters()
-                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
+        List<ParameterizedType> typeParameters = inspectionProvider.getTypeInspection(this).typeParameters()
+                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE))
+                .collect(Collectors.toList());
+        return new ParameterizedType(this, typeParameters);
     }
     // to be called before type inspection has been built
 

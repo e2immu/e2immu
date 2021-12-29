@@ -213,7 +213,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         }
         return switch (mode) {
             case COVARIANT, COVARIANT_ERASURE -> hierarchy(target, from, mode);
-            case CONTRAVARIANT -> hierarchy(from, target, mode);
+            case CONTRAVARIANT -> hierarchy(from, target, Mode.COVARIANT);
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
