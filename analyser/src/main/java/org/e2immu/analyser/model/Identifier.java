@@ -44,6 +44,13 @@ public interface Identifier extends Comparable<Identifier> {
         return from(begin.get(), end.orElseThrow());
     }
 
+    static PositionalIdentifier positionFrom(Node node) {
+        assert node != null;
+        Optional<Position> begin = node.getBegin();
+        Optional<Position> end = node.getEnd();
+        return from(begin.orElseThrow(), end.orElseThrow());
+    }
+
     static PositionalIdentifier from(Position begin, Position end) {
         if (begin == null) return null;
         return new PositionalIdentifier((short) begin.line, (short) begin.column,

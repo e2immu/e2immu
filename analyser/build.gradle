@@ -169,27 +169,27 @@ class IterateOverTests extends DefaultTask {
         tests.forEach {
             logger.info("Processing test $it")
 
-            String cmd = "gradle test --tests $it jacocoTestReport"
+            String cmd = "/usr/local/bin/gradle test --tests $it jacocoTestReport"
             execute(cmd, theProjectDir)
 
-            String cmd2 = "java -jar ${testCoverageJar.path} ${jacocoTestReportXml.path} ${jsonGzDir.path}/${it}.json.gz"
+            String cmd2 = "/usr/bin/java -jar ${testCoverageJar.path} ${jacocoTestReportXml.path} ${jsonGzDir.path}/${it}.json.gz"
             logger.info("Executing translation to json: $cmd")
 
             execute(cmd2, new File("."))
         }
     }
 
-    static def execute(String cmd, File projectDir) {
+    def execute(String cmd, File projectDir) {
         def noParams = [] as String[]
         def output = new StringBuilder(), error = new StringBuilder()
         def proc = cmd.execute(noParams, projectDir)
         proc.consumeProcessOutput(output, error)
         proc.waitForOrKill(3600_000)
         if (!output.isBlank()) {
-            println "----\n$output\n----\n"
+            logger.info( "----\n$output\n----\n")
         }
         if (!error.isBlank()) {
-            println "---- ERROR ----\n$error\n----\n"
+            logger.error("---- ERROR ----\n$error\n----\n")
         }
         if (proc.exitValue() != 0) {
             System.exit proc.exitValue()

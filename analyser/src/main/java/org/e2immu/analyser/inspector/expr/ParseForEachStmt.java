@@ -56,7 +56,8 @@ public class ParseForEachStmt {
                 Identifier.from(vde),
                 expressionContext.typeContext(),
                 localVariable, EmptyExpression.EMPTY_EXPRESSION, isVar);
-        return new ForEachStatement(Identifier.from(forEachStmt), label, lvc, expression, block);
+        return new ForEachStatement(Identifier.positionFrom(forEachStmt), label, lvc, expression,
+                Identifier.positionFrom(forEachStmt.getIterable()), block);
     }
 
     private static ParameterizedType extractTypeParameterOfIterableOf(ExpressionContext expressionContext, Expression expression) {

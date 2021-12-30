@@ -27,10 +27,13 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 
 public class ForEachStatement extends LoopStatement {
+    public final Identifier.PositionalIdentifier positionOfExpression;
+
     public ForEachStatement(Identifier identifier,
                             String label,
                             LocalVariableCreation localVariableCreation,
                             Expression expression,
+                            Identifier.PositionalIdentifier positionOfExpression,
                             Block block) {
         super(identifier, new Structure.Builder()
                 .setStatementExecution(ForEachStatement::computeExecution)
@@ -38,6 +41,7 @@ public class ForEachStatement extends LoopStatement {
                 .addInitialisers(List.of(localVariableCreation))
                 .setExpression(expression)
                 .setBlock(block).build(), label);
+        this.positionOfExpression = positionOfExpression;
     }
 
     private static DV computeExecution(Expression expression, EvaluationContext evaluationContext) {
@@ -54,6 +58,7 @@ public class ForEachStatement extends LoopStatement {
         return new ForEachStatement(identifier, label,
                 (LocalVariableCreation) translationMap.translateExpression(structure.initialisers().get(0)),
                 translationMap.translateExpression(expression),
+                positionOfExpression,
                 translationMap.translateBlock(structure.block()));
     }
 
