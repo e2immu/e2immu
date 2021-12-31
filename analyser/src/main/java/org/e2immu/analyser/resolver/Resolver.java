@@ -761,7 +761,7 @@ public class Resolver {
     public static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider,
                                                                   TypeInfo typeInfo,
                                                                   Map<TypeInfo, TypeResolution.Builder> builders) {
-        if (PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) return Set.of();
+        if (typeInfo.isJavaLangObject()) return Set.of();
         List<TypeInfo> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         boolean hasGeneratedAnnotation = typeInspection.getAnnotations().stream()
@@ -820,7 +820,7 @@ public class Resolver {
         Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
                 .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
         Stream<TypeInfo> parentStream;
-        boolean isJLO = PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
+        boolean isJLO = typeInfo.isJavaLangObject();
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null :
                     "Type " + typeInfo + " has parentClass " + typeInspection.parentClass();
@@ -875,7 +875,7 @@ public class Resolver {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        boolean isJLO = PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
+        boolean isJLO = typeInfo.isJavaLangObject();
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,

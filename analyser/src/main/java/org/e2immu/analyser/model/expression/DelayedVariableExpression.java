@@ -21,8 +21,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
@@ -102,7 +100,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     @Override
     public boolean isNumeric() {
-        return PrimitivesWithoutParameterizedType.isNumeric(variable.parameterizedType().typeInfo);
+        return variable.parameterizedType().typeInfo.isNumeric();
     }
 
     @Override

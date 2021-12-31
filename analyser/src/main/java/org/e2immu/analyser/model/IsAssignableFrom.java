@@ -14,12 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.CharConstant;
-import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -86,7 +81,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
         // Assignment to Object: everything can be assigned to object!
         if (ignoreArrays) {
-            if (target.typeInfo != null && PrimitivesWithoutParameterizedType.isJavaLangObject(target.typeInfo)) {
+            if (target.typeInfo != null && target.typeInfo.isJavaLangObject()) {
                 return IN_HIERARCHY;
             }
         } else if (target.isJavaLangObject()) {
@@ -135,7 +130,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (target.typeInfo != null && from.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = from.typeParameter.getTypeBounds();
             if (otherTypeBounds.isEmpty()) {
-                return PrimitivesWithoutParameterizedType.isJavaLangObject(target.typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
+                return target.typeInfo.isJavaLangObject() ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)
                             .execute(true, mode))

@@ -27,8 +27,6 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -136,7 +134,7 @@ public class MyClassVisitor extends ClassVisitor {
         currentTypePath = name;
 
         // may be overwritten, but this is the default UNLESS it's JLO itself
-        if (!PrimitivesWithoutParameterizedType.isJavaLangObject(currentType)) {
+        if (!currentType.isJavaLangObject()) {
             typeInspectionBuilder.noParent(typeContext.getPrimitives());
         }
 

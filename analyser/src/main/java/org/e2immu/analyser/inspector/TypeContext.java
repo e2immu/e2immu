@@ -18,8 +18,6 @@ import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
-import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.NotNull;
@@ -343,7 +341,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();
-        boolean isJLO = PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
+        boolean isJLO = typeInfo.isJavaLangObject();
         assert isJLO || parentClass != null :
                 "Parent class of " + typeInfo.fullyQualifiedName + " is null";
         int numInterfaces = typeInspection.interfacesImplemented().size();

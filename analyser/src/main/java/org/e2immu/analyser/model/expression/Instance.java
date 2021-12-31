@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -411,7 +410,7 @@ public record Instance(
 
     @Override
     public boolean isNumeric() {
-        return parameterizedType.isType() && PrimitivesWithoutParameterizedType.isNumeric(parameterizedType.typeInfo);
+        return parameterizedType.isType() && parameterizedType.typeInfo.isNumeric();
     }
 
     @Override
@@ -435,7 +434,7 @@ public record Instance(
 
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(bestType)) return "";
+        if (bestType.isPrimitiveExcludingVoid()) return "";
         DV minimalNotNull = valueProperties.getOrDefault(Property.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE_DV);
         if (minimalNotNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return "nullable ";
         return "";

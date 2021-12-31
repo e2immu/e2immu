@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.Map;
 
@@ -67,14 +66,14 @@ public interface ConstantExpression<T> extends Expression {
 
     static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {
         if (typeInfo != null) {
-            if (PrimitivesWithoutParameterizedType.isBoolean(typeInfo)) return new BooleanConstant(primitives, false);
-            if (PrimitivesWithoutParameterizedType.isInt(typeInfo)) return new IntConstant(primitives, 0);
-            if (PrimitivesWithoutParameterizedType.isLong(typeInfo)) return new LongConstant(primitives, 0L);
-            if (PrimitivesWithoutParameterizedType.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0);
-            if (PrimitivesWithoutParameterizedType.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0);
-            if (PrimitivesWithoutParameterizedType.isFloat(typeInfo)) return new FloatConstant(primitives, 0);
-            if (PrimitivesWithoutParameterizedType.isDouble(typeInfo)) return new DoubleConstant(primitives, 0);
-            if (PrimitivesWithoutParameterizedType.isChar(typeInfo)) return new CharConstant(primitives, '\0');
+            if (typeInfo.isBoolean()) return new BooleanConstant(primitives, false);
+            if (typeInfo.isInt()) return new IntConstant(primitives, 0);
+            if (typeInfo.isLong()) return new LongConstant(primitives, 0L);
+            if (typeInfo.isShort()) return new ShortConstant(primitives, (short) 0);
+            if (typeInfo.isByte()) return new ByteConstant(primitives, (byte) 0);
+            if (typeInfo.isFloat()) return new FloatConstant(primitives, 0);
+            if (typeInfo.isDouble()) return new DoubleConstant(primitives, 0);
+            if (typeInfo.isChar()) return new CharConstant(primitives, '\0');
         }
         return NullConstant.NULL_CONSTANT;
     }

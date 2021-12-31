@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
 
@@ -389,7 +388,7 @@ public class EvaluateMethodCall {
         Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
 
         if (state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
-            if (PrimitivesWithoutParameterizedType.isBoolean(methodInfo.returnType().typeInfo)) {
+            if (methodInfo.returnType().typeInfo.isBoolean()) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
                 Expression reduced = And.and(evaluationContext, state, resultingValue);

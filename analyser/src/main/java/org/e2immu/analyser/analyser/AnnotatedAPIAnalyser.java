@@ -93,7 +93,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         DependencyGraph<TypeInfo> dependencyGraph = new DependencyGraph<>();
         for (TypeInfo typeInfo : types) {
-            if (!PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) {
+            if (!typeInfo.isJavaLangObject()) {
                 dependencyGraph.addNode(typeInfo, typeInfo.typeResolution.get().superTypesExcludingJavaLangObject());
             }
         }
@@ -152,8 +152,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     public static int typeComparator(TypeInfo t1, TypeInfo t2) {
         if (t1 == t2 || t1.equals(t2)) throw new IllegalArgumentException();
-        if (PrimitivesWithoutParameterizedType.isJavaLangObject(t1)) return -1;
-        if (PrimitivesWithoutParameterizedType.isJavaLangObject(t2)) return 1;
+        if (t1.isJavaLangObject()) return -1;
+        if (t2.isJavaLangObject()) return 1;
 
         Set<TypeInfo> super1 = t1.typeResolution.get(t1.fullyQualifiedName).superTypesExcludingJavaLangObject();
         if (super1.contains(t2)) {

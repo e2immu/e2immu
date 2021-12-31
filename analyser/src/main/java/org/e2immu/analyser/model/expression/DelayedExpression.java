@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
@@ -132,7 +131,7 @@ public record DelayedExpression(String msg,
 
     @Override
     public boolean isNumeric() {
-        return PrimitivesWithoutParameterizedType.isNumeric(parameterizedType.typeInfo);
+        return parameterizedType.typeInfo.isNumeric();
     }
 
     @Override

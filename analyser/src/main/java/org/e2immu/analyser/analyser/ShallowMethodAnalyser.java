@@ -313,7 +313,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             // unbound type parameter T, or unbound with array T[], T[][]
             return MultiLevel.INDEPENDENT_1_DV;
         }
-        if (PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(bestType)) {
+        if (bestType.isPrimitiveExcludingVoid()) {
             return MultiLevel.INDEPENDENT_DV;
         }
         DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);

@@ -23,8 +23,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.Either;
@@ -318,7 +316,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         Set<ParameterizedType> explicitTypesFromParent;
         {
             TypeInfo parentClass = typeInspection.parentClass().typeInfo;
-            if (PrimitivesWithoutParameterizedType.isJavaLangObject(parentClass)) {
+            if (parentClass.isJavaLangObject()) {
                 explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);

@@ -16,8 +16,6 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -42,7 +40,7 @@ public class FindInstanceOfPatterns {
         }
         // expression has most likely not been evaluated yet, so ! can be negation or unary !
         if (expression instanceof UnaryOperator unaryOperator
-                && PrimitivesWithoutParameterizedType.isUnaryNot(unaryOperator.operator)) {
+                && unaryOperator.operator.isUnaryNot()) {
             return find(unaryOperator.expression).stream()
                     .map(iop -> new InstanceOfPositive(iop.instanceOf, !iop.positive)).toList();
         }
@@ -53,7 +51,7 @@ public class FindInstanceOfPatterns {
             return and.getExpressions().stream().flatMap(e -> find(e).stream()).toList();
         }
         if (expression instanceof BinaryOperator binaryOperator
-                && PrimitivesWithoutParameterizedType.isBinaryAnd(binaryOperator.operator)) {
+                && binaryOperator.operator.isBinaryAnd()) {
             return ListUtil.immutableConcat(find(binaryOperator.lhs), find(binaryOperator.rhs));
         }
         return List.of();

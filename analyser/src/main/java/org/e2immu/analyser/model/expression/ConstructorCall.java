@@ -23,8 +23,6 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -234,7 +232,7 @@ public record ConstructorCall(
 
     @Override
     public boolean isNumeric() {
-        return parameterizedType.isType() && PrimitivesWithoutParameterizedType.isNumeric(parameterizedType.typeInfo);
+        return parameterizedType.isType() && parameterizedType.typeInfo.isNumeric();
     }
 
     @Override

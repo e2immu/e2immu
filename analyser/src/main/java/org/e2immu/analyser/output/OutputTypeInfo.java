@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -169,7 +168,7 @@ public class OutputTypeInfo {
     private static void addMethodsToQualification(TypeInfo typeInfo, QualificationImpl qImpl) {
         TypeInspection ti = typeInfo.typeInspection.get("Inspection of type " + typeInfo.fullyQualifiedName);
         ti.methods().forEach(qImpl::addMethodUnlessOverride);
-        if (!PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) {
+        if (!typeInfo.isJavaLangObject()) {
             addMethodsToQualification(ti.parentClass().typeInfo, qImpl);
         }
         for (ParameterizedType interfaceType : ti.interfacesImplemented()) {
@@ -231,7 +230,7 @@ public class OutputTypeInfo {
     private static ResultOfImportComputation imports(String myPackage, TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
-                .filter(PrimitivesWithoutParameterizedType::allowInImport)
+                .filter(TypeInfo::allowInImport)
                 .collect(Collectors.toSet());
         Map<String, PerPackage> typesPerPackage = new HashMap<>();
         QualificationImpl qualification = new QualificationImpl();

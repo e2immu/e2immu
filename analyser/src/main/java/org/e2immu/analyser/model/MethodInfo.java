@@ -22,7 +22,7 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.*;
 import org.e2immu.support.SetOnce;
@@ -32,6 +32,7 @@ import java.util.*;
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
+    public static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
     public final Identifier identifier;
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
@@ -42,6 +43,26 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
+
+
+    // -- a bit of primitives info
+
+    boolean isUnaryMinusOperatorInt() {
+        return UNARY_MINUS_OPERATOR_INT.equals(fullyQualifiedName()) && this.methodInspection.get().getParameters().size() == 1;
+    }
+
+    public boolean isBinaryAnd() {
+        return this.name.equals("&&");
+    }
+
+    public boolean isUnaryNot() {
+        return this.name.equals("!");
+    }
+
+    public boolean isPostfix() {
+        return (this.name.equals("++") || this.name.equals("--")) && returnType().typeInfo != null &&
+                returnType().typeInfo.fullyQualifiedName.equals("long");
+    }
 
     @Override
     public Identifier getIdentifier() {

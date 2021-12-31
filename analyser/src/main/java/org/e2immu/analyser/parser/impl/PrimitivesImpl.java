@@ -294,8 +294,8 @@ public class PrimitivesImpl implements Primitives {
                 .noParent(this)
                 .build());
 
-        assert UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
-        assert LONG_FQN.equals(longTypeInfo.fullyQualifiedName) : "Have " + longTypeInfo.fullyQualifiedName;
+        assert MethodInfo.UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
+        assert "long".equals(longTypeInfo.fullyQualifiedName) : "Have " + longTypeInfo.fullyQualifiedName;
     }
 
     @Override

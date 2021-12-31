@@ -18,7 +18,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -29,6 +28,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
+
+    public static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
     @NotNull
     public final String simpleName;
@@ -48,6 +49,119 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
         this(enclosingType, "$" + number);
+    }
+
+    public boolean isNumeric() {
+        return isInt() || isInteger() ||
+                isLong() || isBoxedLong() ||
+                isShort() || isBoxedShort() ||
+                isByte() || isBoxedByte() ||
+                isFloat() || isBoxedFloat() ||
+                isDouble() || isBoxedDouble();
+    }
+
+    public boolean isBoxedExcludingVoid() {
+        return isBoxedByte() || isBoxedShort() || isInteger() || isBoxedLong()
+                || isCharacter() || isBoxedFloat() || isBoxedDouble() || isBoxedBoolean();
+    }
+
+    public boolean allowInImport() {
+        return isNotJavaLang() && !isPrimitiveExcludingVoid() && !isVoid();
+    }
+
+    public boolean isNotJavaLang() {
+        return !this.fullyQualifiedName.startsWith("java.lang.");
+    }
+
+    public boolean needsParent() {
+        return this.fullyQualifiedName.indexOf('.') > 0 &&
+                !this.fullyQualifiedName.startsWith("java.lang") &&
+                !this.fullyQualifiedName.startsWith("jdk.internal");
+    }
+
+    public boolean isJavaLangObject() {
+        return JAVA_LANG_OBJECT.equals(this.fullyQualifiedName);
+    }
+
+    boolean isJavaLangString() {
+        return "java.lang.String".equals(this.fullyQualifiedName);
+    }
+
+    boolean isJavaLangVoid() {
+        return "java.lang.Void".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isVoid() {
+        return "void".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedFloat() {
+        return "java.lang.Float".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isFloat() {
+        return "float".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedDouble() {
+        return "java.lang.Double".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isDouble() {
+        return "double".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedByte() {
+        return "java.lang.Byte".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isByte() {
+        return "byte".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedShort() {
+        return "java.lang.Short".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isShort() {
+        return "short".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedLong() {
+        return "java.lang.Long".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isLong() {
+        return "long".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoxedBoolean() {
+        return "java.lang.Boolean".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isChar() {
+        return "char".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isInteger() {
+        return "java.lang.Integer".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isInt() {
+        return "int".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isBoolean() {
+        return "boolean".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isCharacter() {
+        return "java.lang.Character".equals(this.fullyQualifiedName);
+    }
+
+    public boolean isPrimitiveExcludingVoid() {
+        return this.isByte() || this.isShort() || this.isInt() || this.isLong() ||
+                this.isChar() || this.isFloat() || this.isDouble() || this.isBoolean();
     }
 
     @Override
@@ -166,7 +280,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         }
         // or to parent type, but only if in the same file TODO
         ParameterizedType parentClass = inspection.parentClass();
-        if (parentClass != null && parentClass.isJavaLangObject()) return this;
+        if (parentClass.isJavaLangObject()) return this;
         return parentClass.typeInfo.topOfInterdependentClassHierarchy();
     }
 
@@ -475,7 +589,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public List<FieldInfo> visibleFields(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         List<FieldInfo> locally = inspection.fields();
-        List<FieldInfo> fromParent = PrimitivesWithoutParameterizedType.isJavaLangObject(this) ? List.of() :
+        List<FieldInfo> fromParent = this.isJavaLangObject() ? List.of() :
                 inspection.parentClass().typeInfo.visibleFields(inspectionProvider);
         List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
                 .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).toList();

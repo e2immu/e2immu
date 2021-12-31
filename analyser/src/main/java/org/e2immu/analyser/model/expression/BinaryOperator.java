@@ -23,7 +23,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
@@ -302,8 +301,8 @@ public class BinaryOperator extends ElementImpl implements Expression {
     public static MethodInfo getOperator(@NotNull Primitives primitives,
                                          @NotNull @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null || !PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(widestType)
-                && !PrimitivesWithoutParameterizedType.isBoxedExcludingVoid(widestType)) {
+        if (widestType == null || !widestType.isPrimitiveExcludingVoid()
+                && !widestType.isBoxedExcludingVoid()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return primitives.equalsOperatorObject();
             }
@@ -345,7 +344,7 @@ public class BinaryOperator extends ElementImpl implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on char");
         }
-        if (PrimitivesWithoutParameterizedType.isNumeric(widestType)) {
+        if (widestType.isNumeric()) {
             switch (operator) {
                 case MULTIPLY:
                     return primitives.multiplyOperatorInt();
