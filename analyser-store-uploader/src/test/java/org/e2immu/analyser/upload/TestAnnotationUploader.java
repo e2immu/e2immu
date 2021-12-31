@@ -84,7 +84,7 @@ public class TestAnnotationUploader {
 
         TypeInfo basics = typeContext.typeMapBuilder.get(BASICS_0);
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
-        assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
+        assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo()));
 
         AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration());
         Map<String, String> map = annotationUploader.createMap(Set.of(basics), Stream.of());
