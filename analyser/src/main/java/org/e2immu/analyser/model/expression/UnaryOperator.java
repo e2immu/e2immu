@@ -85,24 +85,24 @@ public class UnaryOperator extends ElementImpl implements Expression {
     private Expression computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
         Expression v = evaluationResult.value();
 
-        if (operator == primitives.logicalNotOperatorBool || operator == primitives.unaryMinusOperatorInt) {
+        if (operator == primitives.logicalNotOperatorBool() || operator == primitives.unaryMinusOperatorInt()) {
             return Negation.negate(evaluationContext, v);
         }
-        if (operator == primitives.unaryPlusOperatorInt) {
+        if (operator == primitives.unaryPlusOperatorInt()) {
             return v;
         }
-        if (operator == primitives.bitWiseNotOperatorInt) {
+        if (operator == primitives.bitWiseNotOperatorInt()) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ~ic.constant());
             return new UnaryOperator(identifier, operator, v, precedence);
         }
-        if (operator == primitives.postfixDecrementOperatorInt
-                || operator == primitives.prefixDecrementOperatorInt) {
+        if (operator == primitives.postfixDecrementOperatorInt()
+                || operator == primitives.prefixDecrementOperatorInt()) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() - 1);
             return new UnaryOperator(identifier, operator, v, precedence);
         }
-        if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
+        if (operator == primitives.postfixIncrementOperatorInt() || operator == primitives.prefixIncrementOperatorInt()) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() + 1);
             return new UnaryOperator(identifier, operator, v, precedence);
@@ -116,25 +116,25 @@ public class UnaryOperator extends ElementImpl implements Expression {
         if (Primitives.isNumeric(typeInfo)) {
             switch (operator) {
                 case MINUS:
-                    return primitives.unaryMinusOperatorInt;
+                    return primitives.unaryMinusOperatorInt();
                 case PLUS:
-                    return primitives.unaryPlusOperatorInt;
+                    return primitives.unaryPlusOperatorInt();
                 case BITWISE_COMPLEMENT:
-                    return primitives.bitWiseNotOperatorInt;
+                    return primitives.bitWiseNotOperatorInt();
                 case POSTFIX_DECREMENT:
-                    return primitives.postfixDecrementOperatorInt;
+                    return primitives.postfixDecrementOperatorInt();
                 case POSTFIX_INCREMENT:
-                    return primitives.postfixIncrementOperatorInt;
+                    return primitives.postfixIncrementOperatorInt();
                 case PREFIX_DECREMENT:
-                    return primitives.prefixDecrementOperatorInt;
+                    return primitives.prefixDecrementOperatorInt();
                 case PREFIX_INCREMENT:
-                    return primitives.prefixIncrementOperatorInt;
+                    return primitives.prefixIncrementOperatorInt();
                 default:
             }
         }
-        if (typeInfo == primitives.booleanTypeInfo || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
+        if (typeInfo == primitives.booleanTypeInfo() || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
             if (operator == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
-                return primitives.logicalNotOperatorBool;
+                return primitives.logicalNotOperatorBool();
             }
         }
         throw new UnsupportedOperationException("?? unknown operator " + operator);
@@ -189,7 +189,7 @@ public class UnaryOperator extends ElementImpl implements Expression {
 
     @Override
     public Expression removeAllReturnValueParts() {
-        if( expression.isReturnValue()) return expression;
+        if (expression.isReturnValue()) return expression;
         return new UnaryOperator(identifier, operator, expression.removeAllReturnValueParts(), precedence);
     }
 }

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
@@ -30,7 +29,7 @@ public class Equals extends BinaryOperator {
 
     // public for testing
     public Equals(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
+        super(identifier, primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt() : primitives.equalsOperatorObject(),
                 rhs, Precedence.EQUALITY);
     }
 

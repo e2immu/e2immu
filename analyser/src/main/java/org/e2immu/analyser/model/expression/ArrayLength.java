@@ -69,7 +69,7 @@ public class ArrayLength extends ElementImpl implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return primitives.intParameterizedType;
+        return primitives.intParameterizedType();
     }
 
     @Override

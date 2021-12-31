@@ -32,7 +32,7 @@ public class Product extends BinaryOperator {
     }
 
     private Product(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.multiplyOperatorInt, rhs, Precedence.MULTIPLICATIVE);
+        super(identifier, primitives, lhs, primitives.multiplyOperatorInt(), rhs, Precedence.MULTIPLICATIVE);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

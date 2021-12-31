@@ -110,7 +110,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         }
         {
             MethodInfo appendString = sb.findUniqueMethod("append",
-                    typeContext.getPrimitives().stringTypeInfo);
+                    typeContext.getPrimitives().stringTypeInfo());
             MethodAnalysis methodAnalysis = appendString.methodAnalysis.get();
 
             assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.FLUENT));

@@ -45,7 +45,7 @@ public record LongConstant(Primitives primitives, long constant) implements Cons
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.longParameterizedType;
+        return primitives.longParameterizedType();
     }
 
     @Override

@@ -119,7 +119,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // quick check that the XML annotations have been read properly, and copied into the correct place
-            TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
+            TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo();
             assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                     stringType.typeAnalysis.get().getProperty(Property.IMMUTABLE));
         };

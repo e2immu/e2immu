@@ -26,7 +26,7 @@ import java.util.Map;
 public class BitwiseOr extends BinaryOperator {
 
     private BitwiseOr(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
+        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.OR);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

@@ -120,10 +120,10 @@ public class BinaryOperator extends ElementImpl implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         // we need to handle the short-circuit operators differently
         Primitives primitives = evaluationContext.getPrimitives();
-        if (operator == primitives.orOperatorBool) {
+        if (operator == primitives.orOperatorBool()) {
             return shortCircuit(evaluationContext, forwardEvaluationInfo, false);
         }
-        if (operator == primitives.andOperatorBool) {
+        if (operator == primitives.andOperatorBool()) {
             return shortCircuit(evaluationContext, forwardEvaluationInfo, true);
         }
 
@@ -144,7 +144,7 @@ public class BinaryOperator extends ElementImpl implements Expression {
         Expression l = left.value();
         Expression r = right.value();
 
-        if (operator == primitives.equalsOperatorObject) {
+        if (operator == primitives.equalsOperatorObject()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
 
             // HERE are the ==null checks
@@ -162,14 +162,14 @@ public class BinaryOperator extends ElementImpl implements Expression {
             }
             return Equals.equals(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.equalsOperatorInt) {
+        if (operator == primitives.equalsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
             return Equals.equals(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.notEqualsOperatorObject) {
+        if (operator == primitives.notEqualsOperatorObject()) {
             if (l.equals(r)) new BooleanConstant(primitives, false);
 
             // HERE are the !=null checks
@@ -180,7 +180,7 @@ public class BinaryOperator extends ElementImpl implements Expression {
             return Negation.negate(evaluationContext,
                     Equals.equals(identifier, evaluationContext, l, r));
         }
-        if (operator == primitives.notEqualsOperatorInt) {
+        if (operator == primitives.notEqualsOperatorInt()) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
@@ -190,62 +190,62 @@ public class BinaryOperator extends ElementImpl implements Expression {
         }
 
         // from here on, straightforward operations
-        if (operator == primitives.plusOperatorInt) {
+        if (operator == primitives.plusOperatorInt()) {
             return Sum.sum(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.minusOperatorInt) {
+        if (operator == primitives.minusOperatorInt()) {
             return Sum.sum(identifier, evaluationContext, l, Negation.negate(evaluationContext, r));
         }
-        if (operator == primitives.multiplyOperatorInt) {
+        if (operator == primitives.multiplyOperatorInt()) {
             return Product.product(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.divideOperatorInt) {
+        if (operator == primitives.divideOperatorInt()) {
             EvaluationResult er = Divide.divide(identifier, evaluationContext, l, r);
             builder.compose(er);
             return er.value();
         }
-        if (operator == primitives.remainderOperatorInt) {
+        if (operator == primitives.remainderOperatorInt()) {
             EvaluationResult er = Remainder.remainder(identifier, evaluationContext, l, r);
             builder.compose(er);
             return er.value();
         }
-        if (operator == primitives.lessEqualsOperatorInt) {
+        if (operator == primitives.lessEqualsOperatorInt()) {
             return GreaterThanZero.less(identifier, evaluationContext, l, r, true);
         }
-        if (operator == primitives.lessOperatorInt) {
+        if (operator == primitives.lessOperatorInt()) {
             return GreaterThanZero.less(identifier, evaluationContext, l, r, false);
         }
-        if (operator == primitives.greaterEqualsOperatorInt) {
+        if (operator == primitives.greaterEqualsOperatorInt()) {
             return GreaterThanZero.greater(identifier, evaluationContext, l, r, true);
         }
-        if (operator == primitives.greaterOperatorInt) {
+        if (operator == primitives.greaterOperatorInt()) {
             return GreaterThanZero.greater(identifier, evaluationContext, l, r, false);
         }
-        if (operator == primitives.plusOperatorString) {
+        if (operator == primitives.plusOperatorString()) {
             return StringConcat.stringConcat(identifier, evaluationContext, l, r);
         }
 
         // more obscure operators
 
-        if (operator == primitives.xorOperatorBool) {
+        if (operator == primitives.xorOperatorBool()) {
             return BooleanXor.booleanXor(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.bitwiseAndOperatorInt) {
+        if (operator == primitives.bitwiseAndOperatorInt()) {
             return BitwiseAnd.bitwiseAnd(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.bitwiseOrOperatorInt) {
+        if (operator == primitives.bitwiseOrOperatorInt()) {
             return BitwiseOr.bitwiseOr(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.bitwiseXorOperatorInt) {
+        if (operator == primitives.bitwiseXorOperatorInt()) {
             return BitwiseXor.bitwiseXor(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.leftShiftOperatorInt) {
+        if (operator == primitives.leftShiftOperatorInt()) {
             return ShiftLeft.shiftLeft(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.signedRightShiftOperatorInt) {
+        if (operator == primitives.signedRightShiftOperatorInt()) {
             return SignedShiftRight.shiftRight(identifier, evaluationContext, l, r);
         }
-        if (operator == primitives.unsignedRightShiftOperatorInt) {
+        if (operator == primitives.unsignedRightShiftOperatorInt()) {
             return UnsignedShiftRight.unsignedShiftRight(identifier, evaluationContext, l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
@@ -290,11 +290,11 @@ public class BinaryOperator extends ElementImpl implements Expression {
     }
 
     private boolean allowsForNullOperands(Primitives primitives) {
-        return operator == primitives.equalsOperatorInt ||
-                operator == primitives.equalsOperatorObject ||
-                operator == primitives.notEqualsOperatorObject ||
-                operator == primitives.notEqualsOperatorInt ||
-                operator == primitives.plusOperatorString;
+        return operator == primitives.equalsOperatorInt() ||
+                operator == primitives.equalsOperatorObject() ||
+                operator == primitives.notEqualsOperatorObject() ||
+                operator == primitives.notEqualsOperatorInt() ||
+                operator == primitives.plusOperatorString();
     }
 
     @NotNull
@@ -303,82 +303,82 @@ public class BinaryOperator extends ElementImpl implements Expression {
                                          @NotModified TypeInfo widestType) {
         if (widestType == null || !Primitives.isPrimitiveExcludingVoid(widestType) && !Primitives.isBoxedExcludingVoid(widestType)) {
             if (operator == BinaryExpr.Operator.EQUALS) {
-                return primitives.equalsOperatorObject;
+                return primitives.equalsOperatorObject();
             }
             if (operator == BinaryExpr.Operator.NOT_EQUALS) {
-                return primitives.notEqualsOperatorObject;
+                return primitives.notEqualsOperatorObject();
             }
-            if (widestType == primitives.stringTypeInfo && operator == BinaryExpr.Operator.PLUS) {
-                return primitives.plusOperatorString;
+            if (widestType == primitives.stringTypeInfo() && operator == BinaryExpr.Operator.PLUS) {
+                return primitives.plusOperatorString();
             }
             throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
         }
-        if (widestType == primitives.booleanTypeInfo || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
+        if (widestType == primitives.booleanTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
             switch (operator) {
                 case XOR:
-                    return primitives.xorOperatorBool;
+                    return primitives.xorOperatorBool();
                 case BINARY_OR:
                 case OR:
-                    return primitives.orOperatorBool;
+                    return primitives.orOperatorBool();
                 case BINARY_AND:
                 case AND:
-                    return primitives.andOperatorBool;
+                    return primitives.andOperatorBool();
                 case EQUALS:
-                    return primitives.equalsOperatorInt; // TODO should clean up
+                    return primitives.equalsOperatorInt(); // TODO should clean up
                 case NOT_EQUALS:
-                    return primitives.notEqualsOperatorInt;
+                    return primitives.notEqualsOperatorInt();
             }
             throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
-        if (widestType == primitives.charTypeInfo || widestType.fullyQualifiedName.equals("java.lang.Character")) {
+        if (widestType == primitives.charTypeInfo() || widestType.fullyQualifiedName.equals("java.lang.Character")) {
             switch (operator) {
                 case PLUS:
-                    return primitives.plusOperatorInt;
+                    return primitives.plusOperatorInt();
                 case MINUS:
-                    return primitives.minusOperatorInt;
+                    return primitives.minusOperatorInt();
                 case EQUALS:
-                    return primitives.equalsOperatorInt; // TODO should clean up
+                    return primitives.equalsOperatorInt(); // TODO should clean up
                 case NOT_EQUALS:
-                    return primitives.notEqualsOperatorInt;
+                    return primitives.notEqualsOperatorInt();
             }
             throw new UnsupportedOperationException("Operator " + operator + " on char");
         }
         if (Primitives.isNumeric(widestType)) {
             switch (operator) {
                 case MULTIPLY:
-                    return primitives.multiplyOperatorInt;
+                    return primitives.multiplyOperatorInt();
                 case REMAINDER:
-                    return primitives.remainderOperatorInt;
+                    return primitives.remainderOperatorInt();
                 case DIVIDE:
-                    return primitives.divideOperatorInt;
+                    return primitives.divideOperatorInt();
                 case PLUS:
-                    return primitives.plusOperatorInt;
+                    return primitives.plusOperatorInt();
                 case MINUS:
-                    return primitives.minusOperatorInt;
+                    return primitives.minusOperatorInt();
                 case BINARY_OR:
-                    return primitives.bitwiseOrOperatorInt;
+                    return primitives.bitwiseOrOperatorInt();
                 case BINARY_AND:
-                    return primitives.bitwiseAndOperatorInt;
+                    return primitives.bitwiseAndOperatorInt();
                 case XOR:
-                    return primitives.bitwiseXorOperatorInt;
+                    return primitives.bitwiseXorOperatorInt();
                 case UNSIGNED_RIGHT_SHIFT:
-                    return primitives.unsignedRightShiftOperatorInt;
+                    return primitives.unsignedRightShiftOperatorInt();
                 case SIGNED_RIGHT_SHIFT:
-                    return primitives.signedRightShiftOperatorInt;
+                    return primitives.signedRightShiftOperatorInt();
                 case LEFT_SHIFT:
-                    return primitives.leftShiftOperatorInt;
+                    return primitives.leftShiftOperatorInt();
                 case GREATER:
-                    return primitives.greaterOperatorInt;
+                    return primitives.greaterOperatorInt();
                 case GREATER_EQUALS:
-                    return primitives.greaterEqualsOperatorInt;
+                    return primitives.greaterEqualsOperatorInt();
                 case LESS:
-                    return primitives.lessOperatorInt;
+                    return primitives.lessOperatorInt();
                 case LESS_EQUALS:
-                    return primitives.lessEqualsOperatorInt;
+                    return primitives.lessEqualsOperatorInt();
                 case EQUALS:
-                    return primitives.equalsOperatorInt;
+                    return primitives.equalsOperatorInt();
                 case NOT_EQUALS:
-                    return primitives.notEqualsOperatorInt;
+                    return primitives.notEqualsOperatorInt();
             }
         }
 
@@ -387,52 +387,52 @@ public class BinaryOperator extends ElementImpl implements Expression {
     }
 
     public static MethodInfo fromAssignmentOperatorToNormalOperator(Primitives primitives, MethodInfo methodInfo) {
-        if (primitives.assignOperatorInt == methodInfo) return null;
-        if (primitives.assignPlusOperatorInt == methodInfo) return primitives.plusOperatorInt;
-        if (primitives.assignMinusOperatorInt == methodInfo) return primitives.minusOperatorInt;
-        if (primitives.assignMultiplyOperatorInt == methodInfo) return primitives.multiplyOperatorInt;
-        if (primitives.assignDivideOperatorInt == methodInfo) return primitives.divideOperatorInt;
-        if (primitives.assignOrOperatorInt == methodInfo) return primitives.bitwiseOrOperatorInt;
-        if (primitives.assignAndOperatorInt == methodInfo) return primitives.bitwiseAndOperatorInt;
+        if (primitives.assignOperatorInt() == methodInfo) return null;
+        if (primitives.assignPlusOperatorInt() == methodInfo) return primitives.plusOperatorInt();
+        if (primitives.assignMinusOperatorInt() == methodInfo) return primitives.minusOperatorInt();
+        if (primitives.assignMultiplyOperatorInt() == methodInfo) return primitives.multiplyOperatorInt();
+        if (primitives.assignDivideOperatorInt() == methodInfo) return primitives.divideOperatorInt();
+        if (primitives.assignOrOperatorInt() == methodInfo) return primitives.bitwiseOrOperatorInt();
+        if (primitives.assignAndOperatorInt() == methodInfo) return primitives.bitwiseAndOperatorInt();
 
         throw new UnsupportedOperationException("TODO! " + methodInfo.distinguishingName());
     }
 
     public static Precedence precedence(@NotNull Primitives primitives, @NotNull @NotModified MethodInfo methodInfo) {
-        if (primitives.divideOperatorInt == methodInfo || primitives.remainderOperatorInt == methodInfo || primitives.multiplyOperatorInt == methodInfo) {
+        if (primitives.divideOperatorInt() == methodInfo || primitives.remainderOperatorInt() == methodInfo || primitives.multiplyOperatorInt() == methodInfo) {
             return MULTIPLICATIVE;
         }
-        if (primitives.plusOperatorString == methodInfo) {
+        if (primitives.plusOperatorString() == methodInfo) {
             return STRING_CONCAT;
         }
-        if (primitives.minusOperatorInt == methodInfo || primitives.plusOperatorInt == methodInfo) {
+        if (primitives.minusOperatorInt() == methodInfo || primitives.plusOperatorInt() == methodInfo) {
             return ADDITIVE;
         }
-        if (primitives.signedRightShiftOperatorInt == methodInfo || primitives.unsignedRightShiftOperatorInt == methodInfo || primitives.leftShiftOperatorInt == methodInfo) {
+        if (primitives.signedRightShiftOperatorInt() == methodInfo || primitives.unsignedRightShiftOperatorInt() == methodInfo || primitives.leftShiftOperatorInt() == methodInfo) {
             return SHIFT;
         }
-        if (primitives.greaterEqualsOperatorInt == methodInfo || primitives.greaterOperatorInt == methodInfo || primitives.lessEqualsOperatorInt == methodInfo || primitives.lessOperatorInt == methodInfo) {
+        if (primitives.greaterEqualsOperatorInt() == methodInfo || primitives.greaterOperatorInt() == methodInfo || primitives.lessEqualsOperatorInt() == methodInfo || primitives.lessOperatorInt() == methodInfo) {
             return RELATIONAL;
         }
-        if (primitives.equalsOperatorInt == methodInfo || primitives.equalsOperatorObject == methodInfo || primitives.notEqualsOperatorInt == methodInfo || primitives.notEqualsOperatorObject == methodInfo) {
+        if (primitives.equalsOperatorInt() == methodInfo || primitives.equalsOperatorObject() == methodInfo || primitives.notEqualsOperatorInt() == methodInfo || primitives.notEqualsOperatorObject() == methodInfo) {
             return EQUALITY;
         }
-        if (primitives.bitwiseAndOperatorInt == methodInfo) {
+        if (primitives.bitwiseAndOperatorInt() == methodInfo) {
             return AND;
         }
-        if (primitives.bitwiseXorOperatorInt == methodInfo) {
+        if (primitives.bitwiseXorOperatorInt() == methodInfo) {
             return XOR;
         }
-        if (primitives.bitwiseOrOperatorInt == methodInfo) {
+        if (primitives.bitwiseOrOperatorInt() == methodInfo) {
             return OR;
         }
-        if (primitives.andOperatorBool == methodInfo) {
+        if (primitives.andOperatorBool() == methodInfo) {
             return LOGICAL_AND;
         }
-        if (primitives.orOperatorBool == methodInfo) {
+        if (primitives.orOperatorBool() == methodInfo) {
             return LOGICAL_OR;
         }
-        if (primitives.xorOperatorBool == methodInfo) {
+        if (primitives.xorOperatorBool() == methodInfo) {
             return XOR;
         }
         throw new UnsupportedOperationException("? unknown operator " + methodInfo.distinguishingName());
@@ -443,8 +443,8 @@ public class BinaryOperator extends ElementImpl implements Expression {
     public ParameterizedType returnType() {
         Precedence precedence = precedence();
         return switch (precedence) {
-            case RELATIONAL, LOGICAL_AND, LOGICAL_OR, EQUALITY, INSTANCE_OF -> primitives.booleanParameterizedType;
-            case STRING_CONCAT -> primitives.stringParameterizedType;
+            case RELATIONAL, LOGICAL_AND, LOGICAL_OR, EQUALITY, INSTANCE_OF -> primitives.booleanParameterizedType();
+            case STRING_CONCAT -> primitives.stringParameterizedType();
             default -> primitives.widestType(lhs.returnType(), rhs.returnType());
         };
     }

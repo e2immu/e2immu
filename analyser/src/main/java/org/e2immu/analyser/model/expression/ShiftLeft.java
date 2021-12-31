@@ -26,7 +26,7 @@ import java.util.Map;
 public class ShiftLeft extends BinaryOperator {
 
     private ShiftLeft(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.leftShiftOperatorInt, rhs, Precedence.SHIFT);
+        super(identifier, primitives, lhs, primitives.leftShiftOperatorInt(), rhs, Precedence.SHIFT);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

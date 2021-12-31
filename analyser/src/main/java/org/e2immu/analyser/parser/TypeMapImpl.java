@@ -18,6 +18,7 @@ import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Resources;
@@ -132,7 +133,7 @@ public class TypeMapImpl implements TypeMap {
     public static class Builder implements TypeMap {
 
         private final Trie<TypeInfo> trie = new Trie<>();
-        private final Primitives primitives = new Primitives();
+        private final PrimitivesImpl primitives = new PrimitivesImpl();
         private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
         private final Resources classPath;
 
@@ -145,11 +146,11 @@ public class TypeMapImpl implements TypeMap {
 
         public Builder(Resources classPath) {
             this.classPath = classPath;
-            for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
+            for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
                 if (!typeInfo.typeInspection.isSet())
                     add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
             }
-            for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
+            for (TypeInfo typeInfo : getPrimitives().getPrimitiveByName().values()) {
                 if (!typeInfo.typeInspection.isSet())
                     add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }

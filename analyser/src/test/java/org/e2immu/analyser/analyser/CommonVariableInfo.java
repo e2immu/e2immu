@@ -26,18 +26,19 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 
 public abstract class CommonVariableInfo {
 
-    protected final Primitives primitives = new Primitives();
+    protected final Primitives primitives = new PrimitivesImpl();
 
     protected Variable makeLocalIntVar(String name) {
         return new LocalVariableReference(
                 // owningType is completely arbitrary
                 new LocalVariable.Builder()
                         .setName(name)
-                        .setParameterizedType(primitives.intParameterizedType)
-                        .setOwningType(primitives.stringTypeInfo)
+                        .setParameterizedType(primitives.intParameterizedType())
+                        .setOwningType(primitives.stringTypeInfo())
                         .build());
     }
 
@@ -46,13 +47,13 @@ public abstract class CommonVariableInfo {
                 new LocalVariable.Builder()
                         .setName("x")
                         .setSimpleName("x")
-                        .setParameterizedType(primitives.booleanParameterizedType)
-                        .setOwningType(primitives.stringTypeInfo)
+                        .setParameterizedType(primitives.booleanParameterizedType())
+                        .setOwningType(primitives.stringTypeInfo())
                         .build());
     }
 
     protected Variable makeReturnVariable() {
-        return new ReturnVariable(primitives.orOperatorBool);
+        return new ReturnVariable(primitives.orOperatorBool());
     }
 
     protected final IntConstant two = new IntConstant(primitives, 2);
@@ -67,7 +68,7 @@ public abstract class CommonVariableInfo {
 
         @Override
         public TypeInfo getCurrentType() {
-            return primitives.stringTypeInfo;
+            return primitives.stringTypeInfo();
         }
 
         @Override

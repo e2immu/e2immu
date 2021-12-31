@@ -14,244 +14,226 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.SetOfTypes;
-import org.e2immu.analyser.analyser.TypeAnalysisImpl;
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
-import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
-import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
+public interface Primitives {
+    String JAVA_LANG = "java.lang";
+    String JAVA_PRIMITIVE = "__java.lang__PRIMITIVE"; // special string, caught by constructor
+    String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
+    String JAVA_LANG_OBJECT = "java.lang.Object";
 
-public class Primitives {
-    public static final String JAVA_LANG = "java.lang";
-    private static final String JAVA_LANG_OBJECT = "java.lang.Object";
-    public static final String JAVA_PRIMITIVE = "__java.lang__PRIMITIVE"; // special string, caught by constructor
+    String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
+    String LONG_FQN = "long";
 
-    public static final String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
-    private static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
-    private static final String LONG_FQN = "long";
+    ParameterizedType stringParameterizedType();
 
-    public final TypeInfo intTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "int");
-    public final ParameterizedType intParameterizedType = intTypeInfo.asSimpleParameterizedType();
+    ParameterizedType intParameterizedType();
 
-    public static boolean isInt(TypeInfo typeInfo) {
+    ParameterizedType booleanParameterizedType();
+
+    ParameterizedType longParameterizedType();
+
+    ParameterizedType doubleParameterizedType();
+
+    ParameterizedType floatParameterizedType();
+
+    ParameterizedType shortParameterizedType();
+
+    ParameterizedType charParameterizedType();
+
+    static boolean isInt(TypeInfo typeInfo) {
         return "int".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo integerTypeInfo = new TypeInfo(JAVA_LANG, "Integer");
-
-    public static boolean isInteger(TypeInfo typeInfo) {
+    static boolean isInteger(TypeInfo typeInfo) {
         return "java.lang.Integer".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo charTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "char");
-    public final ParameterizedType charParameterizedType = charTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isChar(TypeInfo typeInfo) {
+    static boolean isChar(TypeInfo typeInfo) {
         return "char".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo characterTypeInfo = new TypeInfo(JAVA_LANG, "Character");
-
-    public static boolean isCharacter(TypeInfo typeInfo) {
+    static boolean isCharacter(TypeInfo typeInfo) {
         return "java.lang.Character".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo booleanTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "boolean");
-    public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isBoolean(TypeInfo typeInfo) {
+    static boolean isBoolean(TypeInfo typeInfo) {
         return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isBoolean(ParameterizedType pt) {
+    static boolean isBoolean(ParameterizedType pt) {
         if (pt == null || pt.arrays != 0) return false;
         return pt.typeInfo != null && "boolean".equals(pt.typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedBooleanTypeInfo = new TypeInfo(JAVA_LANG, "Boolean");
-
-    public static boolean isBoxedBoolean(TypeInfo typeInfo) {
+    static boolean isBoxedBoolean(TypeInfo typeInfo) {
         return typeInfo != null && "java.lang.Boolean".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isNotBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {
+    static boolean isNotBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {
         if (parameterizedType.typeInfo == null) return true; // for parameterized types
         return !isBoolean(parameterizedType.typeInfo) && !isBoxedBoolean(parameterizedType.typeInfo);
     }
 
-    public final TypeInfo longTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "long");
-    public final ParameterizedType longParameterizedType = longTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isLong(TypeInfo typeInfo) {
+    static boolean isLong(TypeInfo typeInfo) {
         return "long".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedLongTypeInfo = new TypeInfo(JAVA_LANG, "Long");
-
-    public static boolean isBoxedLong(TypeInfo typeInfo) {
+    static boolean isBoxedLong(TypeInfo typeInfo) {
         return "java.lang.Long".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo shortTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "short");
-    public final ParameterizedType shortParameterizedType = shortTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isShort(TypeInfo typeInfo) {
+    static boolean isShort(TypeInfo typeInfo) {
         return "short".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedShortTypeInfo = new TypeInfo(JAVA_LANG, "Short");
-
-    public static boolean isBoxedShort(TypeInfo typeInfo) {
+    static boolean isBoxedShort(TypeInfo typeInfo) {
         return "java.lang.Short".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo byteTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "byte");
-    public final ParameterizedType byteParameterizedType = byteTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isByte(TypeInfo typeInfo) {
+    static boolean isByte(TypeInfo typeInfo) {
         return typeInfo != null && "byte".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedByteTypeInfo = new TypeInfo(JAVA_LANG, "Byte");
-
-    public static boolean isBoxedByte(TypeInfo typeInfo) {
+    static boolean isBoxedByte(TypeInfo typeInfo) {
         return typeInfo != null && "java.lang.Byte".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo doubleTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "double");
-    public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isDouble(TypeInfo typeInfo) {
+    static boolean isDouble(TypeInfo typeInfo) {
         return "double".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedDoubleTypeInfo = new TypeInfo(JAVA_LANG, "Double");
-
-    public static boolean isBoxedDouble(TypeInfo typeInfo) {
+    static boolean isBoxedDouble(TypeInfo typeInfo) {
         return "java.lang.Double".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo floatTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "float");
-    public final ParameterizedType floatParameterizedType = floatTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isFloat(TypeInfo typeInfo) {
+    static boolean isFloat(TypeInfo typeInfo) {
         return "float".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo boxedFloatTypeInfo = new TypeInfo(JAVA_LANG, "Float");
-
-    public static boolean isBoxedFloat(TypeInfo typeInfo) {
+    static boolean isBoxedFloat(TypeInfo typeInfo) {
         return "java.lang.Float".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo voidTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "void");
-    public final ParameterizedType voidParameterizedType = voidTypeInfo.asSimpleParameterizedType();
-    public final TypeInfo boxedVoidTypeInfo = new TypeInfo(JAVA_LANG, "Void");
-
-    public static boolean isVoid(TypeInfo typeInfo) {
+    static boolean isVoid(TypeInfo typeInfo) {
         return "void".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isJavaLangVoid(TypeInfo typeInfo) {
+    static boolean isJavaLangVoid(TypeInfo typeInfo) {
         return "java.lang.Void".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isVoid(ParameterizedType parameterizedType) {
+    static boolean isVoid(ParameterizedType parameterizedType) {
         return parameterizedType.typeInfo != null && isVoid(parameterizedType.typeInfo);
     }
 
-    public static boolean isVoidOrJavaLangVoid(ParameterizedType parameterizedType) {
+    static boolean isVoidOrJavaLangVoid(ParameterizedType parameterizedType) {
         return parameterizedType.typeInfo != null && (isJavaLangVoid(parameterizedType.typeInfo) || isVoid(parameterizedType.typeInfo));
     }
 
-    public final TypeInfo stringTypeInfo = new TypeInfo(JAVA_LANG, "String");
-    public final ParameterizedType stringParameterizedType = stringTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isJavaLangString(TypeInfo typeInfo) {
+    static boolean isJavaLangString(TypeInfo typeInfo) {
         return "java.lang.String".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isJavaLangString(ParameterizedType parameterizedType) {
+    static boolean isJavaLangString(ParameterizedType parameterizedType) {
         return parameterizedType.typeInfo != null && isJavaLangString(parameterizedType.typeInfo);
     }
 
-    public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
-    private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
-    public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "COMPUTED", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerify = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "VERIFY", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "VERIFY_ABSENT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContract = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "CONTRACT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "CONTRACT_ABSENT", annotationTypeTypeInfo);
-
-    public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
-    public final FieldInfo annotationModeDefensive = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "DEFENSIVE", annotationModeTypeInfo);
-    public final FieldInfo annotationModeOffensive = new FieldInfo(Identifier.generate(),
-            annotationTypePt, "OFFENSIVE", annotationModeTypeInfo);
-
-    public final TypeInfo functionalInterface = new TypeInfo(JAVA_LANG, "FunctionalInterface");
-    public final AnnotationExpression functionalInterfaceAnnotationExpression =
-            new AnnotationExpressionImpl(functionalInterface, List.of());
-
-    public static boolean isFunctionalInterfaceAnnotation(TypeInfo typeInfo) {
+    static boolean isFunctionalInterfaceAnnotation(TypeInfo typeInfo) {
         return "java.lang.FunctionalInterface".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo classTypeInfo = new TypeInfo(JAVA_LANG, "Class");
-
-    public final TypeInfo objectTypeInfo = new TypeInfo(JAVA_LANG, "Object");
-    public final ParameterizedType objectParameterizedType = objectTypeInfo.asSimpleParameterizedType();
-
-    public static boolean isJavaLangObject(TypeInfo typeInfo) {
+    static boolean isJavaLangObject(TypeInfo typeInfo) {
         return JAVA_LANG_OBJECT.equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isJavaLangObject(ParameterizedType parameterizedType) {
+    static boolean isJavaLangObject(ParameterizedType parameterizedType) {
         return parameterizedType.arrays == 0 &&
                 parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
     }
 
-    public static boolean needsParent(TypeInfo typeInfo) {
+    static boolean needsParent(TypeInfo typeInfo) {
         return typeInfo.fullyQualifiedName.indexOf('.') > 0 &&
                 !typeInfo.fullyQualifiedName.startsWith("java.lang") &&
                 !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
     }
 
-    public static boolean isNotJavaLang(TypeInfo typeInfo) {
+    static boolean isNotJavaLang(TypeInfo typeInfo) {
         return typeInfo == null || !typeInfo.fullyQualifiedName.startsWith("java.lang.");
     }
 
-    public static boolean allowInImport(TypeInfo ti) {
-        return Primitives.isNotJavaLang(ti) && !Primitives.isPrimitiveExcludingVoid(ti) && !Primitives.isVoid(ti);
+    static boolean allowInImport(TypeInfo ti) {
+        return Primitives.isNotJavaLang(ti) && !isPrimitiveExcludingVoid(ti) && !isVoid(ti);
     }
 
-    public static boolean isPostfix(MethodInfo operator) {
+    static boolean isPostfix(MethodInfo operator) {
         return (operator.name.equals("++") || operator.name.equals("--")) && operator.returnType().typeInfo != null &&
                 operator.returnType().typeInfo.fullyQualifiedName.equals(LONG_FQN);
     }
 
-    public static boolean isUnaryNot(MethodInfo operator) {
+    static boolean isUnaryNot(MethodInfo operator) {
         return operator.name.equals("!");
     }
 
-    public static boolean isBinaryAnd(MethodInfo operator) {
+    static boolean isBinaryAnd(MethodInfo operator) {
         return operator.name.equals("&&");
     }
 
-    private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
+    static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
+        return UNARY_MINUS_OPERATOR_INT.equals(operator.fullyQualifiedName()) && operator.methodInspection.get().getParameters().size() == 1;
+    }
+
+    static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.arrays == 0 && isPrimitiveExcludingVoid(parameterizedType.typeInfo);
+    }
+
+    static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
+        if (typeInfo == null) return false;
+        return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
+                isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
+    }
+
+    static boolean isBoxedExcludingVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.arrays == 0 &&
+                isBoxedExcludingVoid(parameterizedType.typeInfo);
+    }
+
+    static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
+        if (typeInfo == null) return false;
+        return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
+                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoxedBoolean(typeInfo);
+    }
+
+    static boolean isDiscrete(ParameterizedType parameterizedType) {
+        TypeInfo typeInfo = parameterizedType.typeInfo;
+        if (parameterizedType.arrays != 0 || parameterizedType.typeInfo == null) return false;
+        return isInt(typeInfo) || isInteger(typeInfo) ||
+                isLong(typeInfo) || isBoxedLong(typeInfo) ||
+                isShort(typeInfo) || isBoxedShort(typeInfo) ||
+                isByte(typeInfo) || isBoxedByte(typeInfo);
+    }
+
+    static boolean isNumeric(ParameterizedType parameterizedType) {
+        return parameterizedType != null && parameterizedType.arrays == 0 && isNumeric(parameterizedType.typeInfo);
+    }
+
+    static boolean isNumeric(TypeInfo typeInfo) {
+        if (typeInfo == null) return false;
+        return isInt(typeInfo) || isInteger(typeInfo) ||
+                isLong(typeInfo) || isBoxedLong(typeInfo) ||
+                isShort(typeInfo) || isBoxedShort(typeInfo) ||
+                isByte(typeInfo) || isBoxedByte(typeInfo) ||
+                isFloat(typeInfo) || isBoxedFloat(typeInfo) ||
+                isDouble(typeInfo) || isBoxedDouble(typeInfo);
+    }
+
+    default MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
         int i = 0;
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
@@ -263,292 +245,130 @@ public class Primitives {
         return builder.build(InspectionProvider.DEFAULT).getMethodInfo();
     }
 
-    private final List<ParameterizedType> intInt = List.of(intParameterizedType, intParameterizedType);
-    private final List<ParameterizedType> boolBool = List.of(booleanParameterizedType, booleanParameterizedType);
-
-    public final MethodInfo plusOperatorInt = createOperator(intTypeInfo, "+", intInt, intParameterizedType);
-    public final MethodInfo minusOperatorInt = createOperator(intTypeInfo, "-", intInt, intParameterizedType);
-    public final MethodInfo bitwiseOrOperatorInt = createOperator(intTypeInfo, "|", intInt, intParameterizedType);
-    public final MethodInfo bitwiseAndOperatorInt = createOperator(intTypeInfo, "&", intInt, intParameterizedType);
-    public final MethodInfo bitwiseXorOperatorInt = createOperator(intTypeInfo, "^", intInt, intParameterizedType);
-    public final MethodInfo remainderOperatorInt = createOperator(intTypeInfo, "%", intInt, intParameterizedType);
-    public final MethodInfo signedRightShiftOperatorInt = createOperator(intTypeInfo, ">>", intInt, intParameterizedType);
-    public final MethodInfo unsignedRightShiftOperatorInt = createOperator(intTypeInfo, ">>>", intInt, intParameterizedType);
-    public final MethodInfo leftShiftOperatorInt = createOperator(intTypeInfo, "<<", intInt, intParameterizedType);
-    public final MethodInfo divideOperatorInt = createOperator(intTypeInfo, "/", intInt, intParameterizedType);
-    public final MethodInfo multiplyOperatorInt = createOperator(intTypeInfo, "*", intInt, intParameterizedType);
-
-    public final MethodInfo equalsOperatorInt = createOperator(intTypeInfo, "==", intInt, booleanParameterizedType);
-    public final MethodInfo notEqualsOperatorInt = createOperator(intTypeInfo, "!=", intInt, booleanParameterizedType);
-    public final MethodInfo greaterOperatorInt = createOperator(intTypeInfo, ">", intInt, booleanParameterizedType);
-    public final MethodInfo greaterEqualsOperatorInt = createOperator(intTypeInfo, ">=", intInt, booleanParameterizedType);
-    public final MethodInfo lessOperatorInt = createOperator(intTypeInfo, "<", intInt, booleanParameterizedType);
-    public final MethodInfo lessEqualsOperatorInt = createOperator(intTypeInfo, "<=", intInt, booleanParameterizedType);
-
-    public final MethodInfo assignOperatorInt = createOperator(intTypeInfo, "=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignPlusOperatorInt = createOperator(intTypeInfo, "+=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignMinusOperatorInt = createOperator(intTypeInfo, "-=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignMultiplyOperatorInt = createOperator(intTypeInfo, "*=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignOrOperatorInt = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignAndOperatorInt = createOperator(intTypeInfo, "&=", List.of(intParameterizedType), intParameterizedType);
-
-    // TODO long instead of int to distinguish statically (isPostfix) This is a hack!
-    public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), longParameterizedType);
-    public final MethodInfo prefixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
-    public final MethodInfo postfixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), longParameterizedType);
-    public final MethodInfo prefixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), intParameterizedType);
-
-    public final MethodInfo unaryPlusOperatorInt = createOperator(intTypeInfo, "+", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo unaryMinusOperatorInt = createOperator(intTypeInfo, "-", List.of(intParameterizedType), intParameterizedType);
-
-    public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
-        return UNARY_MINUS_OPERATOR_INT.equals(operator.fullyQualifiedName()) && operator.methodInspection.get().getParameters().size() == 1;
-    }
-
-    public final MethodInfo bitWiseNotOperatorInt = createOperator(intTypeInfo, "~", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo logicalNotOperatorBool = createOperator(booleanTypeInfo, "!", List.of(booleanParameterizedType), booleanParameterizedType);
-    public final MethodInfo orOperatorBool = createOperator(booleanTypeInfo, "||", boolBool, booleanParameterizedType);
-    public final MethodInfo andOperatorBool = createOperator(booleanTypeInfo, "&&", boolBool, booleanParameterizedType);
-    public final MethodInfo xorOperatorBool = createOperator(booleanTypeInfo, "^", boolBool, booleanParameterizedType);
-
-    public final MethodInfo plusOperatorString = createOperator(stringTypeInfo, "+", List.of(stringParameterizedType,
-            stringParameterizedType), stringParameterizedType);
-
-    public final MethodInfo equalsOperatorObject = createOperator(objectTypeInfo, "==",
-            List.of(objectParameterizedType, objectParameterizedType), booleanParameterizedType);
-    public final MethodInfo notEqualsOperatorObject = createOperator(objectTypeInfo, "!=",
-            List.of(objectParameterizedType, objectParameterizedType), booleanParameterizedType);
-
-    public final Map<String, TypeInfo> primitiveByName = new HashMap<>();
-    public final Map<String, TypeInfo> typeByName = new HashMap<>();
-
-    public final Set<TypeInfo> boxed = Set.of(boxedBooleanTypeInfo, boxedByteTypeInfo, boxedDoubleTypeInfo, boxedFloatTypeInfo,
-            boxedLongTypeInfo, boxedShortTypeInfo, boxedVoidTypeInfo, integerTypeInfo, characterTypeInfo);
-
-    public final Set<TypeInfo> primitives = Set.of(booleanTypeInfo, byteTypeInfo, doubleTypeInfo, floatTypeInfo,
-            longTypeInfo, shortTypeInfo, voidTypeInfo, intTypeInfo, charTypeInfo);
-
     // normally, this information is read from the annotated APIs
-    public void setInspectionOfBoxedTypesForTesting() {
-        for (TypeInfo ti : boxed) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
-                    .setTypeNature(TypeNature.CLASS)
-                    .setFunctionalInterface(false)
-                    .noParent(this)
-                    .build());
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
-            builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.setTransparentTypes(SetOfTypes.EMPTY);
-            builder.setImmutableCanBeIncreasedByTypeParameters(false);
-            ti.typeAnalysis.set(builder.build());
-        }
-    }
+    void setInspectionOfBoxedTypesForTesting();
 
-    public Primitives() {
-        for (TypeInfo ti : primitives) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
-                    .setTypeNature(TypeNature.PRIMITIVE)
-                    .setFunctionalInterface(false)
-                    .noParent(this)
-                    .build());
-            primitiveByName.put(ti.simpleName, ti);
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            ti.typeAnalysis.set(builder);
-            builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
-            builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
-            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
-            builder.setTransparentTypes(SetOfTypes.EMPTY);
-            builder.setImmutableCanBeIncreasedByTypeParameters(false);
-        }
+    void processEnum(TypeInfo typeInfo, List<FieldInfo> fields);
 
-        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,
-                annotationModeTypeInfo, functionalInterface)) {
-            typeByName.put(ti.simpleName, ti);
-        }
-        for (TypeInfo ti : boxed) {
-            typeByName.put(ti.simpleName, ti);
-        }
+    ParameterizedType widestType(ParameterizedType t1, ParameterizedType t2);
 
-        processEnum(annotationTypeTypeInfo, List.of(annotationTypeComputed, annotationTypeContract, annotationTypeContractAbsent,
-                annotationTypeVerify, annotationTypeVerifyAbsent));
-        processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
+    int primitiveTypeOrder(ParameterizedType pt);
 
-        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND_WITHOUT_STATEMENTS)
-                .setTypeNature(TypeNature.ANNOTATION)
-                .setFunctionalInterface(false)
-                .noParent(this)
-                .build());
+    TypeInfo primitiveByName(String asString);
 
-        assert UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
-        assert LONG_FQN.equals(longTypeInfo.fullyQualifiedName) : "Have " + longTypeInfo.fullyQualifiedName;
-    }
+    int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant);
 
-    public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
-        return parameterizedType.arrays == 0 && isPrimitiveExcludingVoid(parameterizedType.typeInfo);
-    }
+    boolean isPreOrPostFixOperator(MethodInfo operator);
 
-    public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
-        if (typeInfo == null) return false;
-        return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
-                isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
-    }
+    boolean isPrefixOperator(MethodInfo operator);
 
-    public static boolean isBoxedExcludingVoid(ParameterizedType parameterizedType) {
-        return parameterizedType.arrays == 0 &&
-                isBoxedExcludingVoid(parameterizedType.typeInfo);
-    }
+    MethodInfo prePostFixToAssignment(MethodInfo operator);
 
-    public static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
-        if (typeInfo == null) return false;
-        return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
-                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoxedBoolean(typeInfo);
-    }
+    TypeInfo boxed(TypeInfo typeInfo);
 
-    private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
-        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
-        ParameterInspectionImpl.Builder valueOf0Builder =
-                new ParameterInspectionImpl.Builder(Identifier.generate(), stringParameterizedType, "s", 0);
-        ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
-        MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
-                .addParameter(valueOf0Builder)
-                .addModifier(MethodModifier.PUBLIC)
-                .build(InspectionProvider.DEFAULT).getMethodInfo();
+    Set<ParameterizedType> explicitTypesOfJLO();
 
-        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
-        MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
-                .addModifier(MethodModifier.PUBLIC)
-                .build(InspectionProvider.DEFAULT).getMethodInfo();
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
-                .setTypeNature(TypeNature.ENUM)
-                .addTypeModifier(TypeModifier.PUBLIC)
-                .setFunctionalInterface(false)
-                .noParent(this)
-                .addMethod(valueOf)
-                .addMethod(name);
-        for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
-        typeInfo.typeInspection.set(typeInspectionBuilder.build());
-        for (FieldInfo fieldInfo : fields) {
-            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder()
-                    .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
-                    .build());
-        }
-    }
+    MethodInfo assignOperatorInt();
 
-    public ParameterizedType widestType(ParameterizedType t1, ParameterizedType t2) {
-        int o1 = primitiveTypeOrder(Objects.requireNonNull(t1));
-        int o2 = primitiveTypeOrder(Objects.requireNonNull(t2));
-        if (o1 >= o2) return t1;
-        return t2;
-    }
+    MethodInfo assignPlusOperatorInt();
 
-    public int primitiveTypeOrder(ParameterizedType pt) {
-        if (pt == null) throw new NullPointerException();
-        if (pt.isType()) {
-            TypeInfo typeInfo = pt.typeInfo;
-            if (typeInfo == booleanTypeInfo) return 1;
-            if (typeInfo == byteTypeInfo) return 2;
-            if (typeInfo == charTypeInfo) return 3;
-            if (typeInfo == shortTypeInfo) return 4;
-            if (typeInfo == intTypeInfo) return 5;
-            if (typeInfo == floatTypeInfo) return 6;
-            if (typeInfo == longTypeInfo) return 7;
-            if (typeInfo == doubleTypeInfo) return 8;
-            if (typeInfo == stringTypeInfo) return 9;
-        }
-        return 0;
-    }
+    MethodInfo assignMinusOperatorInt();
 
-    public TypeInfo primitiveByName(String asString) {
-        TypeInfo ti = primitiveByName.get(asString);
-        if (ti == null) throw new UnsupportedOperationException("Type " + asString + " not (yet) a primitive");
-        return ti;
-    }
+    MethodInfo assignMultiplyOperatorInt();
 
-    public int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant) {
-        int fromOrder = primitiveTypeOrder(from);
-        if (fromOrder <= 1 || fromOrder >= 9) return NOT_ASSIGNABLE;
-        int toOrder = primitiveTypeOrder(to);
-        if (toOrder <= 1 || toOrder >= 9) return NOT_ASSIGNABLE;
-        int diff = covariant ? toOrder - fromOrder : fromOrder - toOrder;
-        return diff < 0 ? NOT_ASSIGNABLE : diff;
-    }
+    MethodInfo assignDivideOperatorInt();
 
-    public boolean isPreOrPostFixOperator(MethodInfo operator) {
-        return operator == postfixDecrementOperatorInt || // i--;
-                operator == postfixIncrementOperatorInt || // i++;
-                operator == prefixDecrementOperatorInt || // --i;
-                operator == prefixIncrementOperatorInt; // ++i;
-    }
+    MethodInfo assignOrOperatorInt();
 
-    public boolean isPrefixOperator(MethodInfo operator) {
-        return operator == prefixDecrementOperatorInt || operator == prefixIncrementOperatorInt;
-    }
+    MethodInfo assignAndOperatorInt();
 
-    public MethodInfo prePostFixToAssignment(MethodInfo operator) {
-        if (operator == postfixDecrementOperatorInt || operator == prefixDecrementOperatorInt) {
-            return assignMinusOperatorInt;
-        }
-        if (operator == postfixIncrementOperatorInt || operator == prefixIncrementOperatorInt) {
-            return assignPlusOperatorInt;
-        }
-        throw new UnsupportedOperationException();
-    }
+    MethodInfo plusOperatorInt();
 
-    public TypeInfo boxed(TypeInfo typeInfo) {
-        if (typeInfo == longTypeInfo)
-            return boxedLongTypeInfo;
-        if (typeInfo == intTypeInfo)
-            return integerTypeInfo;
-        if (typeInfo == shortTypeInfo)
-            return boxedShortTypeInfo;
-        if (typeInfo == byteTypeInfo)
-            return boxedByteTypeInfo;
-        if (typeInfo == charTypeInfo)
-            return characterTypeInfo;
-        if (typeInfo == booleanTypeInfo)
-            return boxedBooleanTypeInfo;
-        if (typeInfo == floatTypeInfo)
-            return boxedFloatTypeInfo;
-        if (typeInfo == doubleTypeInfo)
-            return boxedDoubleTypeInfo;
-        throw new UnsupportedOperationException();
-    }
+    MethodInfo minusOperatorInt();
 
-    public static boolean isDiscrete(ParameterizedType parameterizedType) {
-        TypeInfo typeInfo = parameterizedType.typeInfo;
-        if (parameterizedType.arrays != 0 || parameterizedType.typeInfo == null) return false;
-        return isInt(typeInfo) || isInteger(typeInfo) ||
-                isLong(typeInfo) || isBoxedLong(typeInfo) ||
-                isShort(typeInfo) || isBoxedShort(typeInfo) ||
-                isByte(typeInfo) || isBoxedByte(typeInfo);
-    }
+    MethodInfo multiplyOperatorInt();
 
-    public static boolean isNumeric(ParameterizedType parameterizedType) {
-        return parameterizedType != null && parameterizedType.arrays == 0 && isNumeric(parameterizedType.typeInfo);
-    }
+    MethodInfo divideOperatorInt();
 
-    public static boolean isNumeric(TypeInfo typeInfo) {
-        if (typeInfo == null) return false;
-        return isInt(typeInfo) || isInteger(typeInfo) ||
-                isLong(typeInfo) || isBoxedLong(typeInfo) ||
-                isShort(typeInfo) || isBoxedShort(typeInfo) ||
-                isByte(typeInfo) || isBoxedByte(typeInfo) ||
-                isFloat(typeInfo) || isBoxedFloat(typeInfo) ||
-                isDouble(typeInfo) || isBoxedDouble(typeInfo);
-    }
+    MethodInfo bitwiseOrOperatorInt();
 
-    public Set<ParameterizedType> explicitTypesOfJLO() {
-        return Set.of(stringParameterizedType, objectParameterizedType, classTypeInfo.asSimpleParameterizedType());
-    }
+    MethodInfo bitwiseAndOperatorInt();
+
+    MethodInfo orOperatorBool();
+
+    MethodInfo andOperatorBool();
+
+    MethodInfo equalsOperatorObject();
+
+    MethodInfo equalsOperatorInt();
+
+    MethodInfo notEqualsOperatorObject();
+
+    MethodInfo notEqualsOperatorInt();
+
+    MethodInfo plusOperatorString();
+
+    MethodInfo xorOperatorBool();
+
+    MethodInfo bitwiseXorOperatorInt();
+
+    MethodInfo leftShiftOperatorInt();
+
+    MethodInfo signedRightShiftOperatorInt();
+
+    MethodInfo unsignedRightShiftOperatorInt();
+
+    MethodInfo greaterOperatorInt();
+
+    MethodInfo greaterEqualsOperatorInt();
+
+    MethodInfo lessEqualsOperatorInt();
+
+    MethodInfo lessOperatorInt();
+
+    MethodInfo remainderOperatorInt();
+
+    TypeInfo stringTypeInfo();
+
+    TypeInfo booleanTypeInfo();
+
+    TypeInfo charTypeInfo();
+
+    ParameterizedType byteParameterizedType();
+
+    TypeInfo classTypeInfo();
+
+    ParameterizedType objectParameterizedType();
+
+    ParameterizedType voidParameterizedType();
+
+    MethodInfo logicalNotOperatorBool();
+
+    MethodInfo unaryMinusOperatorInt();
+
+    MethodInfo unaryPlusOperatorInt();
+
+    MethodInfo prefixIncrementOperatorInt();
+
+    MethodInfo postfixIncrementOperatorInt();
+
+    MethodInfo prefixDecrementOperatorInt();
+
+    MethodInfo postfixDecrementOperatorInt();
+
+    MethodInfo bitWiseNotOperatorInt();
+
+    TypeInfo integerTypeInfo();
+
+    TypeInfo intTypeInfo();
+
+    TypeInfo boxedBooleanTypeInfo();
+
+    TypeInfo objectTypeInfo();
+
+    AnnotationExpression functionalInterfaceAnnotationExpression();
+
+    Map<String, TypeInfo> getTypeByName();
+
+    Map<String, TypeInfo> getPrimitiveByName();
 }

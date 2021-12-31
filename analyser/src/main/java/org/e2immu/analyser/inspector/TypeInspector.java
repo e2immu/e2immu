@@ -607,7 +607,7 @@ public class TypeInspector {
     private void ensureFunctionalInterfaceAnnotation(TypeContext typeContext,
                                                      TypeInspectionImpl.Builder builder) {
         if (builder.typeNature() == TypeNature.INTERFACE && builder.computeIsFunctionalInterface(typeContext)) {
-            builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
+            builder.addAnnotation(typeContext.getPrimitives().functionalInterfaceAnnotationExpression());
             builder.setFunctionalInterface(true);
         } else {
             builder.setFunctionalInterface(false);

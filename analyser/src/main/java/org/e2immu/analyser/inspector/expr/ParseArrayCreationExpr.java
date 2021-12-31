@@ -50,7 +50,7 @@ public class ParseArrayCreationExpr {
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
             ParameterInspectionImpl.Builder p = new ParameterInspectionImpl.Builder(Identifier.generate(),
-                    typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
+                    typeContext.getPrimitives().intParameterizedType(), "dim" + i, i);
             builder.addParameter(p);
         }
         MethodInfo constructor = builder.build(typeContext).getMethodInfo();

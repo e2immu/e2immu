@@ -34,7 +34,7 @@ public record DoubleConstant(Primitives primitives, double constant) implements 
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.doubleParameterizedType;
+        return primitives.doubleParameterizedType();
     }
 
     @Override

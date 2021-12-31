@@ -39,7 +39,7 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
     @Test
     public void testPrintStreamPrint() {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
-        TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo;
+        TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("print", charTypeInfo);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
@@ -53,7 +53,7 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
     @Test
     public void testPrintStreamPrintln() {
         TypeInfo typeInfo = typeContext.getFullyQualified(PrintStream.class);
-        TypeInfo objectTypeInfo = typeContext.getPrimitives().objectTypeInfo;
+        TypeInfo objectTypeInfo = typeContext.getPrimitives().objectTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("println", objectTypeInfo);
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -70,7 +70,7 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
     @Test
     public void testWriterAppendChar() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Writer.class);
-        TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo;
+        TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("append", charTypeInfo);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 

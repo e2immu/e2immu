@@ -76,7 +76,7 @@ public class TestSynthetics {
             assertTrue(pt.isFunctionalInterface(typeMap));
             MethodTypeParameterMap map = new MethodTypeParameterMap(m3.methodInspection.get(),
                     Map.of(t3.typeInspection.get().typeParameters().get(0),
-                            typeMap.getPrimitives().stringParameterizedType));
+                            typeMap.getPrimitives().stringParameterizedType()));
             assertTrue(map.isSingleAbstractMethod());
             ParameterizedType c = map.getConcreteTypeOfParameter(typeMap.getPrimitives(), 0);
             assertEquals("Type java.lang.String", c.toString());

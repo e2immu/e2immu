@@ -18,6 +18,7 @@ import org.e2immu.analyser.inspector.expr.Scope;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.NotNull;
@@ -68,10 +69,10 @@ public class TypeContext implements TypeAndInspectionProvider {
     must be called AFTER the typeMapBuilder has the ByteCodeInspector set.
      */
     public void loadPrimitives() {
-        for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
+        for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
             addToContext(typeInfo);
         }
-        for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
+        for (TypeInfo typeInfo : getPrimitives().getPrimitiveByName().values()) {
             addToContext(typeInfo);
         }
         typeMapBuilder.getE2ImmuAnnotationExpressions().streamTypes().forEach(this::addToContext);
@@ -175,7 +176,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                 if (!typeBounds.isEmpty()) {
                     return typeBounds.stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
                 } else {
-                    typeInfo = getPrimitives().objectTypeInfo;
+                    typeInfo = getPrimitives().objectTypeInfo();
                 }
             } else {
                 typeInfo = pt.typeInfo;

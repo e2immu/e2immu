@@ -146,7 +146,7 @@ public class GreaterThanZero extends ElementImpl implements Expression {
             return new BooleanConstant(primitives, ln.doubleValue() > rn.doubleValue());
         }
 
-        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
+        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType();
 
         if (l instanceof Numeric ln && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
@@ -184,7 +184,7 @@ public class GreaterThanZero extends ElementImpl implements Expression {
             return new BooleanConstant(primitives, ln.doubleValue() < rn.doubleValue());
         }
 
-        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
+        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType();
 
         if (l instanceof Numeric ln && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
@@ -205,7 +205,7 @@ public class GreaterThanZero extends ElementImpl implements Expression {
 
         // TODO add tautology call
 
-        return new GreaterThanZero(identifier, primitives.booleanParameterizedType, Sum.sum(evaluationContext,
+        return new GreaterThanZero(identifier, primitives.booleanParameterizedType(), Sum.sum(evaluationContext,
                 Negation.negate(evaluationContext, l), r), allowEquals);
     }
 

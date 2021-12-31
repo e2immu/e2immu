@@ -50,7 +50,7 @@ public record Instance(
     }
 
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
-        return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType, Diamond.NO,
+        return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(), Diamond.NO,
                 primitiveValueProperties());
     }
 
@@ -80,7 +80,7 @@ public record Instance(
 
     public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
         return new Instance(Identifier.catchCondition(index),
-                primitives.booleanParameterizedType, Diamond.NO,
+                primitives.booleanParameterizedType(), Diamond.NO,
                 primitiveValueProperties());
     }
 

@@ -48,7 +48,7 @@ public record IntConstant(Primitives primitives,
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.intParameterizedType;
+        return primitives.intParameterizedType();
     }
 
     @Override

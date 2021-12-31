@@ -34,7 +34,7 @@ public record ByteConstant(Primitives primitives, byte constant) implements Cons
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.byteParameterizedType;
+        return primitives.byteParameterizedType();
     }
 
     @Override

@@ -17,8 +17,8 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.model.Diamond;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.parser.Primitives;
 import org.objectweb.asm.Type;
 
 public class ExpressionFactory {

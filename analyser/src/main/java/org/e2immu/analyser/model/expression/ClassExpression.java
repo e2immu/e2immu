@@ -36,7 +36,7 @@ public record ClassExpression(Primitives primitives,
 ) implements ConstantExpression<ParameterizedType> {
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
-        this(primitives, parameterizedType, new ParameterizedType(primitives.classTypeInfo,
+        this(primitives, parameterizedType, new ParameterizedType(primitives.classTypeInfo(),
                 List.of(parameterizedType.ensureBoxed(primitives))));
     }
 

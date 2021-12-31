@@ -711,7 +711,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
-                    evaluationContext.getPrimitives().stringTypeInfo) {
+                    evaluationContext.getPrimitives().stringTypeInfo()) {
                 builder.raiseError(getIdentifier(), Message.Label.UNNECESSARY_METHOD_CALL, "toString()");
             }
         }

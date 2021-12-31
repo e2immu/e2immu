@@ -35,7 +35,7 @@ public record ShortConstant(Primitives primitives,
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.shortParameterizedType;
+        return primitives.shortParameterizedType();
     }
 
     @Override

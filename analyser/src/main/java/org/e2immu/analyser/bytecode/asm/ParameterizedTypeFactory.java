@@ -98,7 +98,7 @@ public class ParameterizedTypeFactory {
                     // this is possible
                     // <T:Ljava/lang/Object;T_SPLITR::Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;T_CONS:Ljava/lang/Object;>Ljava/util/stream/StreamSpliterators$SliceSpliterator<TT;TT_SPLITR;>;Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;
                     // problem is that T_CONS is used before it is declared
-                    ParameterizedType objectParameterizedType = typeContext.getPrimitives().objectParameterizedType;
+                    ParameterizedType objectParameterizedType = typeContext.getPrimitives().objectParameterizedType();
                     return new Result(objectParameterizedType, semiColon + 1, true);
                 }
                 if (!(namedType instanceof TypeParameter))
@@ -180,15 +180,15 @@ public class ParameterizedTypeFactory {
 
     private static ParameterizedType primitive(Primitives primitives, char firstChar) {
         return switch (firstChar) {
-            case 'B' -> primitives.byteParameterizedType;
-            case 'C' -> primitives.charParameterizedType;
-            case 'D' -> primitives.doubleParameterizedType;
-            case 'F' -> primitives.floatParameterizedType;
-            case 'I' -> primitives.intParameterizedType;
-            case 'J' -> primitives.longParameterizedType;
-            case 'S' -> primitives.shortParameterizedType;
-            case 'V' -> primitives.voidParameterizedType;
-            case 'Z' -> primitives.booleanParameterizedType;
+            case 'B' -> primitives.byteParameterizedType();
+            case 'C' -> primitives.charParameterizedType();
+            case 'D' -> primitives.doubleParameterizedType();
+            case 'F' -> primitives.floatParameterizedType();
+            case 'I' -> primitives.intParameterizedType();
+            case 'J' -> primitives.longParameterizedType();
+            case 'S' -> primitives.shortParameterizedType();
+            case 'V' -> primitives.voidParameterizedType();
+            case 'Z' -> primitives.booleanParameterizedType();
             default -> throw new RuntimeException("Char " + firstChar + " does NOT represent a primitive!");
         };
     }

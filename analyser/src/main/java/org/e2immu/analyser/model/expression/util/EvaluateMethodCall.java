@@ -250,7 +250,7 @@ public class EvaluateMethodCall {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
             Map<Property, DV> valueProperties = Instance.primitiveValueProperties();
-            return Instance.forGetInstance(identifier, primitives.stringParameterizedType, valueProperties);
+            return Instance.forGetInstance(identifier, primitives.stringParameterizedType(), valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {

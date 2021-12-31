@@ -68,12 +68,12 @@ public record DelayedExpression(String msg,
 
     public static Expression forArrayLength(Primitives primitives, CausesOfDelay causes) {
         return new DelayedExpression("<delayed array length>",
-                "<delayed array length>", primitives.intParameterizedType, LinkedVariables.delayedEmpty(causes), causes);
+                "<delayed array length>", primitives.intParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
         // result is an int, so no linked variables
     }
 
     public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
-        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
+        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType(),
                 LinkedVariables.EMPTY, causes); // no need for linked variables
     }
 
@@ -81,7 +81,7 @@ public record DelayedExpression(String msg,
                                            LinkedVariables linkedVariables,
                                            CausesOfDelay causes) {
         return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
-                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType,
+                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType(),
                 linkedVariables, causes);
     }
 

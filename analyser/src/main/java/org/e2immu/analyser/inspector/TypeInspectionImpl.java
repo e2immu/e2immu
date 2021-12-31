@@ -280,7 +280,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         public Builder noParent(Primitives primitives) {
-            this.parentClass = primitives.objectParameterizedType;
+            this.parentClass = primitives.objectParameterizedType();
             return this;
         }
 

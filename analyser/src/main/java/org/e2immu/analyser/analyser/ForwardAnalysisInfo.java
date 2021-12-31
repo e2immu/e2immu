@@ -16,12 +16,10 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManager,
                                   LocalVariableCreation catchVariable,

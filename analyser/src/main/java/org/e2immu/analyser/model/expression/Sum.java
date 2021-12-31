@@ -36,7 +36,7 @@ public class Sum extends BinaryOperator {
     }
 
     private Sum(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE);
+        super(identifier, primitives, lhs, primitives.plusOperatorInt(), rhs, Precedence.ADDITIVE);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

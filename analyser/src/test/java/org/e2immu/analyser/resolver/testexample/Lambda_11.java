@@ -35,7 +35,11 @@ public class Lambda_11 {
 
         default <T extends Element> void loop(Consumer<T> consumer, Class<T> clazz) {
             visit(element -> {
-                if (clazz.isAssignableFrom(element.getClass())) consumer.accept((T) element);
+                if (clazz.isAssignableFrom(element.getClass())) {
+                    @SuppressWarnings("unchecked")
+                    T t = (T) element;
+                    consumer.accept(t);
+                }
             });
         }
     }

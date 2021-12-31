@@ -37,7 +37,7 @@ public record BooleanConstant(Primitives primitives,
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override

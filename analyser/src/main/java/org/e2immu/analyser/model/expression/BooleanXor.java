@@ -26,7 +26,7 @@ import java.util.Map;
 public class BooleanXor extends BinaryOperator {
 
     private BooleanXor(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.XOR);
+        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt(), rhs, Precedence.XOR);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

@@ -40,7 +40,7 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testInt() {
-        assertEquals(typeContext.getPrimitives().intParameterizedType,
+        assertEquals(typeContext.getPrimitives().intParameterizedType(),
                 create("I").parameterizedType);
     }
 
@@ -51,7 +51,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testString() {
         ParameterizedType pt = create("[Ljava/lang/String;").parameterizedType;
-        assertEquals(typeContext.getPrimitives().stringTypeInfo,
+        assertEquals(typeContext.getPrimitives().stringTypeInfo(),
                 pt.typeInfo);
         assertEquals(1, pt.arrays);
     }
@@ -60,7 +60,7 @@ public class TestParameterizedTypeFactory {
     public void testStringAndInt() {
         String desc = "[Ljava/lang/String;I";
         ParameterizedTypeFactory.Result res = create(desc);
-        assertEquals(typeContext.getPrimitives().stringTypeInfo,
+        assertEquals(typeContext.getPrimitives().stringTypeInfo(),
                 res.parameterizedType.typeInfo);
         assertEquals(1, res.parameterizedType.arrays);
         assertEquals('I', desc.charAt(res.nextPos));
@@ -69,8 +69,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testCharArray() {
         ParameterizedType pt = create("[C").parameterizedType;
-        assertEquals(typeContext.getPrimitives().charTypeInfo,
-                pt.typeInfo);
+        assertEquals(typeContext.getPrimitives().charTypeInfo(),                pt.typeInfo);
         assertEquals(1, pt.arrays);
     }
 

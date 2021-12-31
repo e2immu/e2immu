@@ -125,7 +125,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.setProperty(IDENTITY, Level.FALSE_DV);
-        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType(), UnknownExpression.RETURN_VALUE));
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
         Expression x = Instance.forTesting(viX.variable().parameterizedType());
@@ -164,7 +164,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneIfXThenReturnIfYThenReturn() {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
-        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType(), UnknownExpression.RETURN_VALUE));
         ret.setProperty(IDENTITY, Level.FALSE_DV);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
@@ -238,7 +238,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.setValue(Instance.forTesting(viA.variable().parameterizedType()));
 
-        Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
+        Expression unknown = new UnknownExpression(primitives.booleanParameterizedType(), "no idea");
         List<StatementAnalysis.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(unknown, viB));
 
         try {

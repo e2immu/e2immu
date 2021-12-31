@@ -208,10 +208,10 @@ public class Block extends StatementWithStructure {
         visit(statement -> {
             if (statement instanceof ReturnStatement returnStatement) {
                 if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
-                    mostSpecific.set(primitives.voidParameterizedType);
+                    mostSpecific.set(primitives.voidParameterizedType());
                 } else if (returnStatement.expression instanceof NullConstant) {
                     if (mostSpecific.get() == null) {
-                        mostSpecific.set(primitives.objectParameterizedType);
+                        mostSpecific.set(primitives.objectParameterizedType());
                     }
                 } else {
                     ParameterizedType returnType = returnStatement.expression.returnType();
@@ -219,7 +219,7 @@ public class Block extends StatementWithStructure {
                 }
             }
         });
-        return mostSpecific.get() == null ? primitives.voidParameterizedType : mostSpecific.get();
+        return mostSpecific.get() == null ? primitives.voidParameterizedType() : mostSpecific.get();
     }
 
     @Override

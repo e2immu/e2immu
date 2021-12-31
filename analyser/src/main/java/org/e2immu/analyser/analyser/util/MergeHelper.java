@@ -119,7 +119,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             // it is identical to do if(x) return a; return b or if(x) return a; if(!x) return b;
             if (vi.variable() instanceof ReturnVariable) {
                 if (stateOfParent.isBoolValueTrue()) return vi1value;
-                if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType)) {
+                if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType())) {
                     return And.and(evaluationContext, stateOfParent, vi1value);
                 }
                 return inlineConditional(stateOfParent, vi1value, vi.getValue());

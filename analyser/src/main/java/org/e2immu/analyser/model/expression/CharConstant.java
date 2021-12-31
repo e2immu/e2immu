@@ -34,7 +34,7 @@ public record CharConstant(Primitives primitives, char constant) implements Cons
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.charParameterizedType;
+        return primitives.charParameterizedType();
     }
 
     @Override

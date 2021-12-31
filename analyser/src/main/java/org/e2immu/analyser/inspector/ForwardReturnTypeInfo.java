@@ -63,11 +63,11 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
     // are boxed
     public static ForwardReturnTypeInfo expectBoolean(TypeContext typeContext) {
         return new ForwardReturnTypeInfo(typeContext.getPrimitives()
-                .boxedBooleanTypeInfo.asSimpleParameterizedType(), false);
+                .boxedBooleanTypeInfo().asSimpleParameterizedType(), false);
     }
 
     public static ForwardReturnTypeInfo expectVoid(TypeContext typeContext) {
-        return new ForwardReturnTypeInfo(typeContext.getPrimitives().voidParameterizedType, false);
+        return new ForwardReturnTypeInfo(typeContext.getPrimitives().voidParameterizedType(), false);
     }
 
     public MethodTypeParameterMap computeSAM(InspectionProvider inspectionProvider) {

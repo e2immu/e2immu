@@ -33,7 +33,7 @@ public record FloatConstant(Primitives primitives, float constant) implements Co
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.floatParameterizedType;
+        return primitives.floatParameterizedType();
     }
 
     @Override

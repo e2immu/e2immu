@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ public class TestParameterizedTypeStreamer {
 
     @Test
     public void testClazzTSSub() {
-        Primitives primitives = new Primitives();
+        Primitives primitives = new PrimitivesImpl();
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeParameter s = new TypeParameterImpl(clazz, "S", 1);
@@ -96,7 +97,7 @@ public class TestParameterizedTypeStreamer {
 
     @Test
     public void testClazzTSubS() {
-        Primitives primitives = new Primitives();
+        Primitives primitives = new PrimitivesImpl();
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)

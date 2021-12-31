@@ -59,7 +59,7 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
     public void test_2() throws IOException {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
+            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 

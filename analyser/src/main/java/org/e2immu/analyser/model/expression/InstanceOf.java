@@ -187,7 +187,7 @@ public class InstanceOf extends ElementImpl implements Expression {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override

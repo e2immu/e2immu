@@ -62,7 +62,7 @@ public class TestConditionalValue extends CommonAbstractValue {
                 annotatedAPI, "isFact", AnnotatedAPIAnalyser.IS_FACT_FQN, AnnotatedAPIAnalyser.IS_FACT_FQN, false);
         isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI)
                 .setStatic(true)
-                .setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
+                .setReturnType(PRIMITIVES.booleanParameterizedType()).build(InspectionProvider.DEFAULT));
         Expression isFactA = new MethodCall(Identifier.generate(),
                 new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(a));
         assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
@@ -231,8 +231,8 @@ public class TestConditionalValue extends CommonAbstractValue {
     @Test
     public void testReturnType() {
         CausesOfDelay delay = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
-        Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType, LinkedVariables.delayedEmpty(delay), delay);
-        ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo.asParameterizedType(InspectionProvider.DEFAULT);
+        Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType(), LinkedVariables.delayedEmpty(delay), delay);
+        ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = new UnknownExpression(boxed, "return value");
         Expression inline = inline(c, a, b);
         assertEquals("c?<s:boolean>:<return value>", inline.toString());

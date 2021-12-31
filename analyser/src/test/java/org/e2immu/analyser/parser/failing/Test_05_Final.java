@@ -174,7 +174,7 @@ public class Test_05_Final extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            TypeInfo stringType = d.evaluationContext().getPrimitives().stringTypeInfo;
+            TypeInfo stringType = d.evaluationContext().getPrimitives().stringTypeInfo();
             assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
                     stringType.typeAnalysis.get().getProperty(IMMUTABLE));
             MethodInfo methodInfo = d.methodInfo();

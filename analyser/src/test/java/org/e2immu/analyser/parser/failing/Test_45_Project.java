@@ -199,7 +199,7 @@ public class Test_45_Project extends CommonTestRunner {
 
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
+            TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo().typeAnalysis.get();
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, stringAnalysis.getProperty(Property.IMMUTABLE));
         };
 

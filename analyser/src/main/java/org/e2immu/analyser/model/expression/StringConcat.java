@@ -27,7 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class StringConcat extends BinaryOperator {
 
     private StringConcat(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT);
+        super(identifier, primitives, lhs, primitives.plusOperatorInt(), rhs, Precedence.STRING_CONCAT);
     }
 
     public static Expression stringConcat(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {

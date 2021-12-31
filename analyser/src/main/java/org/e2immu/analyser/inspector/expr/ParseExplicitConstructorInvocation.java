@@ -69,7 +69,7 @@ public class ParseExplicitConstructorInvocation {
         ParseMethodCallExpr.Candidate candidate = parser.chooseCandidateAndEvaluateCall(expressionContext,
                 methodCandidates,
                 arguments,
-                typeContext.getPrimitives().voidParameterizedType,
+                typeContext.getPrimitives().voidParameterizedType(),
                 extra,
                 errorInfo);
 

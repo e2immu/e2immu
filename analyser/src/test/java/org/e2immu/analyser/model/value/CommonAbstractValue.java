@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
@@ -108,9 +109,9 @@ public abstract class CommonAbstractValue {
         return new Variable() {
             @Override
             public ParameterizedType parameterizedType() {
-                if (Set.of("a", "b", "c", "d").contains(name)) return PRIMITIVES.booleanParameterizedType;
-                if (Set.of("i", "j", "k").contains(name)) return PRIMITIVES.intParameterizedType;
-                if (Set.of("s", "t", "p").contains(name)) return PRIMITIVES.stringParameterizedType;
+                if (Set.of("a", "b", "c", "d").contains(name)) return PRIMITIVES.booleanParameterizedType();
+                if (Set.of("i", "j", "k").contains(name)) return PRIMITIVES.intParameterizedType();
+                if (Set.of("s", "t", "p").contains(name)) return PRIMITIVES.stringParameterizedType();
                 return null;
             }
 
@@ -159,8 +160,8 @@ public abstract class CommonAbstractValue {
 
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
-        if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
-            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, TypeInspectionImpl.InspectionState.BY_HAND)
+        if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
+            PRIMITIVES.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo(), TypeInspectionImpl.InspectionState.BY_HAND)
                     .noParent(PRIMITIVES)
                     .build());
         }
@@ -169,8 +170,8 @@ public abstract class CommonAbstractValue {
                 PRIMITIVES, someType, null).build());
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(Identifier.generate(),
-                PRIMITIVES.stringParameterizedType, "p", 0);
-        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
+                PRIMITIVES.stringParameterizedType(), "p", 0);
+        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType()).addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
@@ -233,7 +234,7 @@ public abstract class CommonAbstractValue {
 
         @Override
         public TypeInfo getCurrentType() {
-            return PRIMITIVES.booleanTypeInfo;
+            return PRIMITIVES.booleanTypeInfo();
         }
     }
 

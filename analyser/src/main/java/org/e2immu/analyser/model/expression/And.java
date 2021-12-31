@@ -434,7 +434,7 @@ public class And extends ElementImpl implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return primitives.booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override

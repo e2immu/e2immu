@@ -203,7 +203,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
                     length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
 
-            TypeInfo intTypeInfo = typeMap.getPrimitives().intTypeInfo;
+            TypeInfo intTypeInfo = typeMap.getPrimitives().intTypeInfo();
             TypeInfo stringBuilder = typeMap.get(StringBuilder.class);
             MethodInfo appendInt = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
@@ -211,7 +211,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
             assertEquals("return post==prev+Integer.toString(i).length();", returnStatement.minimalOutput());
 
-            TypeInfo string = typeMap.getPrimitives().stringTypeInfo;
+            TypeInfo string = typeMap.getPrimitives().stringTypeInfo();
             MethodInfo stringLength = string.findUniqueMethod("length", 0);
 
             if (returnStatement.expression instanceof BinaryOperator eq &&
@@ -220,7 +220,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     lengthCall.object instanceof MethodCall toString &&
                     toString.object instanceof TypeExpression integer) {
                 // check we have the same Integer type
-                assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo);
+                assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo());
                 // check the length method
                 assertSame(lengthCall.methodInfo, stringLength);
             }

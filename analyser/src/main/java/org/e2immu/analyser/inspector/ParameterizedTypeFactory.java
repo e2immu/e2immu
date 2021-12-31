@@ -62,7 +62,7 @@ public class ParameterizedTypeFactory {
             }
             return ParameterizedType.WILDCARD_PARAMETERIZED_TYPE; // <?>
         }
-        if ("void".equals(baseType.asString())) return context.getPrimitives().voidParameterizedType;
+        if ("void".equals(baseType.asString())) return context.getPrimitives().voidParameterizedType();
 
         String name;
         List<ParameterizedType> parameters = new ArrayList<>();

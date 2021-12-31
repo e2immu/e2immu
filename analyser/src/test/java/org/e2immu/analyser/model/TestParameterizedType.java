@@ -19,6 +19,7 @@ import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,14 +54,14 @@ public class TestParameterizedType {
 
     @BeforeEach
     public void before() {
-        primitives = new Primitives();
+        primitives = new PrimitivesImpl();
         IP = InspectionProvider.defaultFrom(primitives);
         String PACKAGE = "org.e2immu";
 
-        primitives.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo, BY_HAND)
+        primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
                 .build());
-        primitives.integerTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.integerTypeInfo, BY_HAND)
+        primitives.integerTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.integerTypeInfo(), BY_HAND)
                 .noParent(primitives)
                 .setTypeNature(TypeNature.CLASS)
                 .build());
@@ -98,7 +99,7 @@ public class TestParameterizedType {
             TypeParameter stringMapV = new TypeParameterImpl(stringMap, "V", 0);
 
             TypeInspectionImpl.Builder stringMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
-                    .setParentClass(new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType,
+                    .setParentClass(new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType(),
                             new ParameterizedType(stringMapV, 0, NONE))))
                     .addTypeParameter(stringMapV);
             stringMap.typeInspection.set(stringMapInspection.build());
@@ -107,7 +108,7 @@ public class TestParameterizedType {
         table = new TypeInfo(PACKAGE, "Table");
         {
             TypeInspectionImpl.Builder tableInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
-                    .setParentClass(new ParameterizedType(stringMap, List.of(primitives.integerTypeInfo.asParameterizedType(IP))));
+                    .setParentClass(new ParameterizedType(stringMap, List.of(primitives.integerTypeInfo().asParameterizedType(IP))));
             table.typeInspection.set(tableInspection.build());
         }
         function = new TypeInfo(PACKAGE, "Function");
@@ -124,7 +125,7 @@ public class TestParameterizedType {
             TypeInspectionImpl.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
                     .noParent(primitives)
                     .setTypeNature(TypeNature.INTERFACE)
-                    .addAnnotation(primitives.functionalInterfaceAnnotationExpression)
+                    .addAnnotation(primitives.functionalInterfaceAnnotationExpression())
                     .addTypeParameter(functionT)
                     .addTypeParameter(functionR)
                     .addMethod(apply);
@@ -149,7 +150,7 @@ public class TestParameterizedType {
 
             TypeInspectionImpl.Builder bInspection = new TypeInspectionImpl.Builder(b, BY_HAND)
                     .setParentClass(new ParameterizedType(a, List.of(
-                            primitives.stringParameterizedType,
+                            primitives.stringParameterizedType(),
                             new ParameterizedType(bX, 0, NONE))))
                     .addTypeParameter(bX);
             b.typeInspection.set(bInspection.build());
@@ -159,16 +160,16 @@ public class TestParameterizedType {
         {
             TypeInspectionImpl.Builder cInspection = new TypeInspectionImpl.Builder(c, BY_HAND)
                     .setParentClass(new ParameterizedType(b, List.of(
-                            primitives.integerTypeInfo.asParameterizedType(IP))));
+                            primitives.integerTypeInfo().asParameterizedType(IP))));
             c.typeInspection.set(cInspection.build());
         }
     }
 
     @Test
     public void test_0() {
-        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+        ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
 
-        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType, integerPt));
+        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType(), integerPt));
         Map<NamedType, ParameterizedType> translation = mapStringInteger.initialTypeParameterMap(IP);
         assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type java.lang.Integer}", translation.toString());
 
@@ -176,7 +177,7 @@ public class TestParameterizedType {
         Map<NamedType, ParameterizedType> translation2 = map.asParameterizedType(IP).translateMap(IP, mapStringInteger, true);
         assertEquals(translation, translation2);
 
-        ParameterizedType hashMapStringInteger = new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType,
+        ParameterizedType hashMapStringInteger = new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType(),
                 integerPt));
         Map<NamedType, ParameterizedType> translation3 = hashMapStringInteger.initialTypeParameterMap(IP);
         assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type java.lang.Integer}", translation3.toString());
@@ -184,10 +185,10 @@ public class TestParameterizedType {
 
     @Test
     public void test_1() {
-        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+        ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
 
-        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType, integerPt));
-        ParameterizedType functionMapToBoolean = new ParameterizedType(function, List.of(mapStringInteger, primitives.boxedBooleanTypeInfo.asSimpleParameterizedType()));
+        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType(), integerPt));
+        ParameterizedType functionMapToBoolean = new ParameterizedType(function, List.of(mapStringInteger, primitives.boxedBooleanTypeInfo().asSimpleParameterizedType()));
         assertEquals("Type org.e2immu.Function<org.e2immu.Map<java.lang.String,java.lang.Integer>,java.lang.Boolean>", functionMapToBoolean.toString());
 
         Map<NamedType, ParameterizedType> translation = functionMapToBoolean.initialTypeParameterMap(IP);
@@ -224,7 +225,7 @@ public class TestParameterizedType {
     public void test_2B() {
         // FIELD TYPE BASED ON SCOPE
 
-        ParameterizedType integerPt = primitives.integerTypeInfo.asSimpleParameterizedType();
+        ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
 
         /* we simulate
         class A<K, V> { private Map<K, V> field = ... } scope = new A<String, Boolean>()  scope.field
@@ -232,7 +233,7 @@ public class TestParameterizedType {
         ParameterizedType field = new ParameterizedType(map, List.of(
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(0), 0, NONE),
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(1), 0, NONE)));
-        ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType, integerPt));
+        ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType(), integerPt));
         ParameterizedType concreteField = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope);
         assertEquals("Type org.e2immu.Map<java.lang.String,java.lang.Integer>", concreteField.toString());
 
@@ -275,8 +276,8 @@ public class TestParameterizedType {
         // NEW OBJECT CREATION
 
         // we simulate Map<String, Integer> map = new HashMap<>(), where we need to obtain the concrete pt of HashMap
-        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType,
-                primitives.integerTypeInfo.asSimpleParameterizedType()));
+        ParameterizedType mapStringInteger = new ParameterizedType(map, List.of(primitives.stringParameterizedType(),
+                primitives.integerTypeInfo().asSimpleParameterizedType()));
         ParameterizedType hashMapPt = hashMap.asParameterizedType(IP);
         Map<NamedType, ParameterizedType> t1 = hashMapPt.translateMap(IP, mapStringInteger, false);
         assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type java.lang.Integer}", t1.toString());

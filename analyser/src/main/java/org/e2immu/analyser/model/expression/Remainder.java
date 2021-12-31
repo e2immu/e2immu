@@ -25,7 +25,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class Remainder extends BinaryOperator {
 
     private Remainder(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
-        super(identifier, primitives, lhs, primitives.remainderOperatorInt, rhs, Precedence.MULTIPLICATIVE);
+        super(identifier, primitives, lhs, primitives.remainderOperatorInt(), rhs, Precedence.MULTIPLICATIVE);
     }
 
     public static EvaluationResult remainder(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {

@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
@@ -206,7 +205,7 @@ public class MyClassVisitor extends ClassVisitor {
                             errorStateForType(parentFqName);
                             return;
                         }
-                        if (typeContext.getPrimitives().objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
+                        if (typeContext.getPrimitives().objectTypeInfo() != interFaceRes.parameterizedType.typeInfo) {
                             typeInspectionBuilder.addInterfaceImplemented(interFaceRes.parameterizedType);
                         }
                         pos += interFaceRes.nextPos;

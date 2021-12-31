@@ -85,7 +85,7 @@ public class ParseObjectCreationExpr {
         ParseMethodCallExpr.ErrorInfo errorInfo = new ParseMethodCallExpr.ErrorInfo("constructor",
                 parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
 
-        ParameterizedType voidType = typeContext.getPrimitives().voidParameterizedType;
+        ParameterizedType voidType = typeContext.getPrimitives().voidParameterizedType();
         ParameterizedType forward = impliedParameterizedType == null ? voidType : impliedParameterizedType;
         ParseMethodCallExpr.Candidate candidate = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),

@@ -48,7 +48,7 @@ public class EnumMethods {
 
         var nameBuilder = new MethodInspectionImpl.Builder(enumType, "name")
                 .setSynthetic(true)
-                .setReturnType(primitives.stringParameterizedType)
+                .setReturnType(primitives.stringParameterizedType())
                 .addModifier(MethodModifier.PUBLIC)
                 .addModifier(MethodModifier.ABSTRACT) // no code -> shallow method analyser
                 .addAnnotation(notNullContract)
@@ -89,7 +89,7 @@ public class EnumMethods {
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = new ParameterInspectionImpl.Builder(Identifier.generate(),
-                primitives.stringParameterizedType, "name", 0)
+                primitives.stringParameterizedType(), "name", 0)
                 .addAnnotation(eRContainer)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
@@ -197,7 +197,7 @@ public class EnumMethods {
 
         var predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
                 .setSynthetic(true)
-                .setReturnType(primitives.booleanParameterizedType)
+                .setReturnType(primitives.booleanParameterizedType())
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
 

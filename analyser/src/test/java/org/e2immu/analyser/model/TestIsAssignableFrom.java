@@ -17,7 +17,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.expression.CharConstant;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
@@ -73,20 +72,20 @@ public class TestIsAssignableFrom {
         ParameterizedType integerPt = type(JAVA_LANG_INTEGER);
         ParameterizedType characterPt = type(JAVA_LANG_CHARACTER);
 
-        assertTrue(integerPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, integerPt));
+        assertTrue(integerPt.isAssignableFrom(typeContext, primitives.intParameterizedType()));
+        assertTrue(primitives.intParameterizedType().isAssignableFrom(typeContext, primitives.intParameterizedType()));
+        assertTrue(primitives.intParameterizedType().isAssignableFrom(typeContext, integerPt));
 
-        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, stringPt));
-        assertFalse(stringPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertFalse(primitives.intParameterizedType().isAssignableFrom(typeContext, stringPt));
+        assertFalse(stringPt.isAssignableFrom(typeContext, primitives.intParameterizedType()));
 
-        assertTrue(characterPt.isAssignableFrom(typeContext, primitives.charParameterizedType));
+        assertTrue(characterPt.isAssignableFrom(typeContext, primitives.charParameterizedType()));
 
-        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.charParameterizedType));
-        assertFalse(primitives.charParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertTrue(primitives.intParameterizedType().isAssignableFrom(typeContext, primitives.charParameterizedType()));
+        assertFalse(primitives.charParameterizedType().isAssignableFrom(typeContext, primitives.intParameterizedType()));
 
-        assertFalse(integerPt.isAssignableFrom(typeContext, primitives.charParameterizedType));
-        assertFalse(characterPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertFalse(integerPt.isAssignableFrom(typeContext, primitives.charParameterizedType()));
+        assertFalse(characterPt.isAssignableFrom(typeContext, primitives.intParameterizedType()));
     }
 
     // CharSequence[] <- String[] should be allowed
@@ -132,8 +131,8 @@ public class TestIsAssignableFrom {
         assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, stringPt));
         assertTrue(stringPt.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
 
-        assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
+        assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, primitives.intParameterizedType()));
+        assertFalse(primitives.intParameterizedType().isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
     }
 
     // List<String>, LinkedList<String>
@@ -145,8 +144,8 @@ public class TestIsAssignableFrom {
 
         assertTrue(listString.isAssignableFrom(typeContext, linkedListString));
         assertFalse(linkedListString.isAssignableFrom(typeContext, listString));
-        assertTrue(primitives.objectParameterizedType.isAssignableFrom(typeContext, stringPt));
-        assertTrue(primitives.objectParameterizedType.isAssignableFrom(typeContext, linkedListString));
+        assertTrue(primitives.objectParameterizedType().isAssignableFrom(typeContext, stringPt));
+        assertTrue(primitives.objectParameterizedType().isAssignableFrom(typeContext, linkedListString));
     }
 
     // E <- String, E <- Integer, E <- int, E <- int[] should work
@@ -165,8 +164,8 @@ public class TestIsAssignableFrom {
         assertTrue(typeParam.isAssignableFrom(typeContext, integerPt));
         assertFalse(integerPt.isAssignableFrom(typeContext, typeParam));
 
-        assertTrue(typeParam.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, typeParam));
+        assertTrue(typeParam.isAssignableFrom(typeContext, primitives.intParameterizedType()));
+        assertFalse(primitives.intParameterizedType().isAssignableFrom(typeContext, typeParam));
     }
 
     private ParameterizedType type(String name) {

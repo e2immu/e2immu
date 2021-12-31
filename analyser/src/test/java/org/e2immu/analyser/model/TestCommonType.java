@@ -48,30 +48,30 @@ public class TestCommonType {
 
     @Test
     public void testPrimitivesAmongEachOther() {
-        assertEquals(primitives.intParameterizedType, primitives.intParameterizedType.commonType(typeContext, primitives.intParameterizedType));
-        assertEquals(primitives.doubleParameterizedType, primitives.intParameterizedType.commonType(typeContext, primitives.doubleParameterizedType));
-        assertEquals(primitives.doubleParameterizedType, primitives.doubleParameterizedType.commonType(typeContext, primitives.intParameterizedType));
-        assertEquals(primitives.intParameterizedType, primitives.intParameterizedType.commonType(typeContext, primitives.shortParameterizedType));
+        assertEquals(primitives.intParameterizedType(), primitives.intParameterizedType().commonType(typeContext, primitives.intParameterizedType()));
+        assertEquals(primitives.doubleParameterizedType(), primitives.intParameterizedType().commonType(typeContext, primitives.doubleParameterizedType()));
+        assertEquals(primitives.doubleParameterizedType(), primitives.doubleParameterizedType().commonType(typeContext, primitives.intParameterizedType()));
+        assertEquals(primitives.intParameterizedType(), primitives.intParameterizedType().commonType(typeContext, primitives.shortParameterizedType()));
     }
 
     @Test
     public void testPrimitivesAndNull() {
-        assertEquals(primitives.integerTypeInfo.asParameterizedType(typeContext),
-                primitives.intParameterizedType.commonType(typeContext, ParameterizedType.NULL_CONSTANT));
-        assertEquals(primitives.integerTypeInfo.asParameterizedType(typeContext),
-                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.intParameterizedType));
-        assertEquals(primitives.boxedBooleanTypeInfo,
-                primitives.booleanParameterizedType.commonType(typeContext, ParameterizedType.NULL_CONSTANT).bestTypeInfo());
-        assertEquals(primitives.boxedBooleanTypeInfo,
-                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.booleanParameterizedType).bestTypeInfo());
+        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext),
+                primitives.intParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT));
+        assertEquals(primitives.integerTypeInfo().asParameterizedType(typeContext),
+                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.intParameterizedType()));
+        assertEquals(primitives.boxedBooleanTypeInfo(),
+                primitives.booleanParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT).bestTypeInfo());
+        assertEquals(primitives.boxedBooleanTypeInfo(),
+                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.booleanParameterizedType()).bestTypeInfo());
     }
 
     @Test
     public void testStringAndNull() {
-        assertEquals(primitives.stringParameterizedType,
-                primitives.stringParameterizedType.commonType(typeContext, ParameterizedType.NULL_CONSTANT));
-        assertEquals(primitives.stringParameterizedType,
-                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.stringParameterizedType));
+        assertEquals(primitives.stringParameterizedType(),
+                primitives.stringParameterizedType().commonType(typeContext, ParameterizedType.NULL_CONSTANT));
+        assertEquals(primitives.stringParameterizedType(),
+                ParameterizedType.NULL_CONSTANT.commonType(typeContext, primitives.stringParameterizedType()));
     }
 
     @Test
@@ -82,13 +82,13 @@ public class TestCommonType {
 
     @Test
     public void testIncompatible() {
-        assertEquals(primitives.objectParameterizedType,
-                primitives.stringParameterizedType.commonType(typeContext, primitives.intParameterizedType));
+        assertEquals(primitives.objectParameterizedType(),
+                primitives.stringParameterizedType().commonType(typeContext, primitives.intParameterizedType()));
     }
 
     @Test
     public void testWithObject() {
-        assertEquals(primitives.objectParameterizedType,
-                primitives.stringParameterizedType.commonType(typeContext, primitives.objectParameterizedType));
+        assertEquals(primitives.objectParameterizedType(),
+                primitives.stringParameterizedType().commonType(typeContext, primitives.objectParameterizedType()));
     }
 }

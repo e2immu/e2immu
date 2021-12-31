@@ -89,7 +89,7 @@ public class LocalVariableCreation extends ElementImpl implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return inspectionProvider.getPrimitives().voidParameterizedType;
+        return inspectionProvider.getPrimitives().voidParameterizedType();
     }
 
     @Override

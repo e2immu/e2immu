@@ -186,7 +186,7 @@ public record Or(Identifier identifier, Primitives primitives, List<Expression> 
 
     @Override
     public ParameterizedType returnType() {
-        return primitives.booleanParameterizedType;
+        return primitives.booleanParameterizedType();
     }
 
     @Override

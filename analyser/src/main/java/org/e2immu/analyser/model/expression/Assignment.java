@@ -117,19 +117,19 @@ public class Assignment extends ElementImpl implements Expression {
                                       @NotNull TypeInfo widestType) {
         switch (operator) {
             case PLUS:
-                return primitives.assignPlusOperatorInt;
+                return primitives.assignPlusOperatorInt();
             case MINUS:
-                return primitives.assignMinusOperatorInt;
+                return primitives.assignMinusOperatorInt();
             case MULTIPLY:
-                return primitives.assignMultiplyOperatorInt;
+                return primitives.assignMultiplyOperatorInt();
             case DIVIDE:
-                return primitives.assignDivideOperatorInt;
+                return primitives.assignDivideOperatorInt();
             case BINARY_OR:
-                return primitives.assignOrOperatorInt;
+                return primitives.assignOrOperatorInt();
             case BINARY_AND:
-                return primitives.assignAndOperatorInt;
+                return primitives.assignAndOperatorInt();
             case ASSIGN:
-                return primitives.assignOperatorInt;
+                return primitives.assignOperatorInt();
         }
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);
@@ -148,7 +148,7 @@ public class Assignment extends ElementImpl implements Expression {
     @Override
     public OutputBuilder output(Qualification qualification) {
         if (prefixPrimitiveOperator != null) {
-            String operator = assignmentOperator == primitives.assignPlusOperatorInt ? "++" : "--";
+            String operator = assignmentOperator == primitives.assignPlusOperatorInt() ? "++" : "--";
             if (prefixPrimitiveOperator) {
                 return new OutputBuilder().add(Symbol.plusPlusPrefix(operator)).add(outputInParenthesis(qualification, precedence(), target));
             }

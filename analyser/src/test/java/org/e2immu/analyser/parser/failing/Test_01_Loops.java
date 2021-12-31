@@ -404,7 +404,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
                         DV exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(),
-                                        List.of(), d.statementAnalysis().primitives.stringParameterizedType), d.evaluationContext());
+                                        List.of(), d.statementAnalysis().primitives.stringParameterizedType()), d.evaluationContext());
                         assertSame(FlowData.NEVER, exec);
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();

@@ -356,7 +356,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
 
         builder.companionAnalyses.freeze();
-        builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType, "isKnown return value"));
+        builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType(), "isKnown return value"));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

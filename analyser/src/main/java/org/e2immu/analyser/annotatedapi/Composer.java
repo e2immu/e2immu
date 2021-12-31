@@ -198,7 +198,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.PUBLIC);
-        FieldInfo packageField = new FieldInfo(Identifier.generate(), typeMap.getPrimitives().stringParameterizedType,
+        FieldInfo packageField = new FieldInfo(Identifier.generate(), typeMap.getPrimitives().stringParameterizedType(),
                 "PACKAGE_NAME", typeInfo);
         FieldInspectionImpl.Builder packageFieldInspectionBuilder = new FieldInspectionImpl.Builder();
         packageFieldInspectionBuilder

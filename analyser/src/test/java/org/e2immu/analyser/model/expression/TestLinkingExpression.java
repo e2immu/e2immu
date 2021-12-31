@@ -22,9 +22,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -145,7 +143,7 @@ public class TestLinkingExpression {
     }
 
     private ParameterizedType integer() {
-        return typeContext.getPrimitives().integerTypeInfo.asSimpleParameterizedType();
+        return typeContext.getPrimitives().integerTypeInfo().asSimpleParameterizedType();
     }
 
     @Test

@@ -690,13 +690,13 @@ public class ParameterizedType {
             if (otherIsPrimitive && isBoxed && inspectionProvider.getPrimitives().boxed(otherBestType).equals(bestType)) {
                 return this;
             }
-            return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
         }
         if (other == ParameterizedType.NULL_CONSTANT) return this;
         if (this == ParameterizedType.NULL_CONSTANT) return other;
 
         if (bestType == null || otherBestType == null)
-            return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+            return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
         if (isAssignableFrom(inspectionProvider, other)) {
             return this;
         }
@@ -704,7 +704,7 @@ public class ParameterizedType {
             return other;
         }
         // FIXME go into hierarchy
-        return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+        return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
     }
 
     public DV isTransparentOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
@@ -750,7 +750,7 @@ public class ParameterizedType {
 
     public ParameterizedType mostSpecific(InspectionProvider inspectionProvider, ParameterizedType other) {
         if (isType() && Primitives.isVoid(typeInfo) || other.isType() && Primitives.isVoid(other.typeInfo)) {
-            return inspectionProvider.getPrimitives().voidParameterizedType;
+            return inspectionProvider.getPrimitives().voidParameterizedType();
         }
         if (isAssignableFrom(inspectionProvider, other)) {
             return other;
@@ -922,7 +922,7 @@ public class ParameterizedType {
             recursiveFromParent = Stream.concat(Stream.of(concreteParentType),
                     concreteParentType.concreteSuperTypes(inspectionProvider));
         } else {
-            ParameterizedType concreteParentType = inspectionProvider.getPrimitives().objectParameterizedType;
+            ParameterizedType concreteParentType = inspectionProvider.getPrimitives().objectParameterizedType();
             recursiveFromParent = Stream.of(concreteParentType);
         }
         Stream<ParameterizedType> concreteInterfaceTypes = Stream.of();

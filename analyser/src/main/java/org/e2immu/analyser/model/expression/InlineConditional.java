@@ -163,7 +163,7 @@ public class InlineConditional extends ElementImpl implements Expression {
         EvaluationResult conditionResult = condition.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
-        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType);
+        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
@@ -197,7 +197,7 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     private Expression optimise(EvaluationContext evaluationContext, boolean useState) {
-        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType);
+        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal

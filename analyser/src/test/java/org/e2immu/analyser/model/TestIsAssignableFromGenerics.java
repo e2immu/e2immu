@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,10 +75,10 @@ public class TestIsAssignableFromGenerics {
 
     @BeforeEach
     public void before() {
-        primitives = new Primitives();
+        primitives = new PrimitivesImpl();
         IP = InspectionProvider.DEFAULT;
         String PACKAGE = "org.e2immu";
-        primitives.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo, BY_HAND)
+        primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
                 .build());
 
@@ -90,7 +91,7 @@ public class TestIsAssignableFromGenerics {
                     .addTypeParameter(myComparableT);
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
             MethodInfo compareTo = compareToBuilder
-                    .setReturnType(primitives.intParameterizedType)
+                    .setReturnType(primitives.intParameterizedType())
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
                             new ParameterizedType(myComparableT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
@@ -132,7 +133,7 @@ public class TestIsAssignableFromGenerics {
                     .addTypeParameter(t);
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
             add = addBuilder
-                    .setReturnType(primitives.voidParameterizedType)
+                    .setReturnType(primitives.voidParameterizedType())
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
                             new ParameterizedType(t, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
@@ -256,12 +257,12 @@ public class TestIsAssignableFromGenerics {
         assertTrue(nodePt.isAssignableFrom(IP, nodePt));
         assertTrue(nodePt.isAssignableFrom(IP, sub1Pt));
         assertTrue(nodePt.isAssignableFrom(IP, sub2Pt));
-        assertFalse(nodePt.isAssignableFrom(IP, primitives.objectParameterizedType));
+        assertFalse(nodePt.isAssignableFrom(IP, primitives.objectParameterizedType()));
 
         assertFalse(sub1Pt.isAssignableFrom(IP, nodePt));
         assertTrue(sub1Pt.isAssignableFrom(IP, sub1Pt));
         assertFalse(sub2Pt.isAssignableFrom(IP, sub1Pt));
-        assertFalse(sub1Pt.isAssignableFrom(IP, primitives.objectParameterizedType));
+        assertFalse(sub1Pt.isAssignableFrom(IP, primitives.objectParameterizedType()));
     }
 
 
@@ -282,7 +283,7 @@ public class TestIsAssignableFromGenerics {
         assertFalse(superSub1.isAssignableFrom(IP, nodePt));
         assertTrue(superSub1.isAssignableFrom(IP, sub1Pt));
         assertFalse(superSub1.isAssignableFrom(IP, sub2Pt));
-        assertFalse(superSub1.isAssignableFrom(IP, primitives.objectParameterizedType));
+        assertFalse(superSub1.isAssignableFrom(IP, primitives.objectParameterizedType()));
     }
 
     public void testSub4(MyList1<? extends Node> myList1, Node n1, Sub1 sub1, Sub2 sub2) {
@@ -304,7 +305,7 @@ public class TestIsAssignableFromGenerics {
         assertTrue(extendsNode.isAssignableFrom(IP, nodePt));
         assertTrue(extendsNode.isAssignableFrom(IP, sub1Pt));
         assertTrue(extendsNode.isAssignableFrom(IP, sub2Pt));
-        assertFalse(extendsNode.isAssignableFrom(IP, primitives.objectParameterizedType));
+        assertFalse(extendsNode.isAssignableFrom(IP, primitives.objectParameterizedType()));
 
     }
 
@@ -326,7 +327,7 @@ public class TestIsAssignableFromGenerics {
         assertTrue(superNode.isAssignableFrom(IP, nodePt));
         assertTrue(superNode.isAssignableFrom(IP, sub1Pt));
         assertTrue(superNode.isAssignableFrom(IP, sub2Pt));
-        assertFalse(superNode.isAssignableFrom(IP, primitives.objectParameterizedType));
+        assertFalse(superNode.isAssignableFrom(IP, primitives.objectParameterizedType()));
     }
 
 

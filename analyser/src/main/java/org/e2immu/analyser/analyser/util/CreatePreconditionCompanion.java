@@ -47,11 +47,11 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
     private MethodInfo createCompanion(CompanionMethodName companionMethodName, MethodInfo mainMethod, Expression value, String aspect) {
         MethodInspection mainInspection = mainMethod.methodInspection.get();
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(mainMethod.typeInfo, companionMethodName.composeMethodName());
-        builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType);
+        builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType());
 
         if (aspect != null) {
             builder.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
-                    inspectionProvider.getPrimitives().intParameterizedType, aspect, 0).setVarArgs(false));
+                    inspectionProvider.getPrimitives().intParameterizedType(), aspect, 0).setVarArgs(false));
         }
         int offset = aspect == null ? 0 : 1;
         for (ParameterInfo parameterInfo : mainInspection.getParameters()) {

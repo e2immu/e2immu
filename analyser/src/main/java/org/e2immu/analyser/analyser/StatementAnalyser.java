@@ -1829,7 +1829,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         } else {
             evaluationContext = new EvaluationContextImpl(sharedState.evaluationContext.getIteration(),
                     localConditionManager.withoutState(statementAnalysis.primitives), sharedState.evaluationContext.getClosure());
-            if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
+            if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType())) {
                 // state, boolean; evaluation of And will add clauses to the context one by one
                 toEvaluate = And.and(evaluationContext, localConditionManager.state(), structure.expression());
             } else {
@@ -2382,7 +2382,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
-            return new GreaterThanZero(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType,
+            return new GreaterThanZero(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType(),
                     new ArrayLength(evaluationContext.getPrimitives(), value), false);
         }
         if (returnType.typeInfo != null) {
@@ -2395,7 +2395,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
         if (valueIsDelayed) {
-            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType,
+            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType(),
                     value.linkedVariables(evaluationContext).changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
         }
         return Instance.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());

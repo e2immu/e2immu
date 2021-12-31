@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -26,13 +29,12 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record StringConstant(Primitives primitives,
-                             String constant) implements ConstantExpression<String> {
+public record StringConstant(Primitives primitives, String constant) implements ConstantExpression<String> {
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return primitives.stringParameterizedType;
+        return primitives.stringParameterizedType();
     }
 
     @Override

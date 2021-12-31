@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
@@ -22,6 +21,7 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ public class TestStatementAnalysisComparator {
 
     @BeforeEach
     public void before() {
-        primitives = new Primitives();
+        primitives = new PrimitivesImpl();
         emptyStatement = new ExpressionAsStatement(Identifier.generate(), EmptyExpression.EMPTY_EXPRESSION);
     }
 
@@ -75,7 +75,7 @@ public class TestStatementAnalysisComparator {
     }
 
     private StatementAnalysis newStatementAnalysis(String s) {
-        MethodInfo operator = primitives.lessOperatorInt;
+        MethodInfo operator = primitives.lessOperatorInt();
         return new StatementAnalysis(primitives, MethodAnalysis.createEmpty(operator, primitives),
                 emptyStatement, null, s, false);
     }
