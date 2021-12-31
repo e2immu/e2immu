@@ -86,7 +86,7 @@ public class ParseFieldAccessExpr {
             return new TypeExpression(oSubType.get().asParameterizedType(inspectionProvider), Diamond.NO);
         }
         ParameterizedType parent = objectTypeInspection.parentClass();
-        if(parent != null && !Primitives.isJavaLangObject(parent)) {
+        if(parent != null && !parent.isJavaLangObject()) {
             Expression res = findFieldOrSubType(parent.typeInfo, object, name, inspectionProvider);
             if(res != null) return res;
         }

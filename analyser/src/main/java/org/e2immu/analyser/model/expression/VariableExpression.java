@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -100,7 +101,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
     @Override
     public boolean isNumeric() {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        return Primitives.isNumeric(typeInfo);
+        return PrimitivesWithoutParameterizedType.isNumeric(typeInfo);
     }
 
     /*

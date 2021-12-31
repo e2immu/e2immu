@@ -237,7 +237,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
 
             // all other annotations cannot be added to primitives
-            if (Primitives.isPrimitiveExcludingVoid(type)) return;
+            if (type.isPrimitiveExcludingVoid()) return;
 
             // @NotModified(after=), @NotModified, @Modified
             if (modified.valueIsTrue() && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {

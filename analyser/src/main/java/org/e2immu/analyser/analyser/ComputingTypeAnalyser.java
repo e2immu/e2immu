@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.Either;
@@ -161,9 +162,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         if (pe.isRight() && !typeInfo.isStatic()) {
             tmp.add(analyserContext.getTypeAnalysis(pe.getRight()));
         }
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(typeInspection.parentClass().typeInfo);
-            tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass().typeInfo.typeAnalysis.get());
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(parentClass.typeInfo);
+            tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : parentClass.typeInfo.typeAnalysis.get());
         }
         parentAndOrEnclosingTypeAnalysis = List.copyOf(tmp);
     }
@@ -316,7 +318,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         Set<ParameterizedType> explicitTypesFromParent;
         {
             TypeInfo parentClass = typeInspection.parentClass().typeInfo;
-            if (Primitives.isJavaLangObject(parentClass)) {
+            if (PrimitivesWithoutParameterizedType.isJavaLangObject(parentClass)) {
                 explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
@@ -390,7 +392,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         allExplicitTypes.addAll(superTypesOfExplicitTypes);
 
         allTypes.removeAll(allExplicitTypes);
-        allTypes.removeIf(pt -> Primitives.isPrimitiveExcludingVoid(pt) || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
+        allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
         typeAnalysis.explicitTypes.set(new SetOfTypes(allExplicitTypes));
         typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
@@ -465,8 +467,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
     private Map<FieldReference, Expression> approvedPreconditionsFromParent(TypeInfo typeInfo, boolean e2) {
         TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            TypeInfo parent = typeInspection.parentClass().typeInfo;
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            TypeInfo parent = parentClass.typeInfo;
             TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent);
             Map<FieldReference, Expression> map = new HashMap<>(parentAnalysis.getApprovedPreconditions(e2));
             map.putAll(approvedPreconditionsFromParent(parent, e2));
@@ -809,10 +812,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
         TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
         MultiLevel.Effective parentEffective;
-        if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && parentClass.isJavaLangObject()) {
             parentEffective = MultiLevel.Effective.EFFECTIVE;
         } else {
-            TypeInfo parentType = typeInspection.parentClass().typeInfo;
+            TypeInfo parentType = parentClass.typeInfo;
             DV parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(Property.IMMUTABLE);
             parentEffective = MultiLevel.effectiveAtLevel(parentImmutable, MultiLevel.Level.IMMUTABLE_1);
         }
@@ -919,7 +923,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
             // NOTE: the 2 values that matter now are EVENTUAL and EFFECTIVE; any other will lead to a field
             // that needs to follow the additional rules
-            boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
+            boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
 
             if (fieldE2Immutable == MultiLevel.Effective.EVENTUAL) {
                 eventual = true;
@@ -1141,7 +1145,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                     && ve.variable() instanceof FieldReference fr
                     && fr.fieldInfo.isStatic()
                     && fr.fieldInfo.isPrivate()
-                    && Primitives.isBoolean(fr.fieldInfo.type)) {
+                    && fr.fieldInfo.type.isBoolean()) {
                 // one thing that's left is that there is an assignment in the constructor, and no assignment anywhere else
                 boolean wantAssignmentToTrue = precondition.expression() instanceof Negation;
                 String fieldFqn = ve.variable().fullyQualifiedName();

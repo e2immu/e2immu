@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 
@@ -101,7 +102,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     @Override
     public boolean isNumeric() {
-        return Primitives.isNumeric(variable.parameterizedType().typeInfo);
+        return PrimitivesWithoutParameterizedType.isNumeric(variable.parameterizedType().typeInfo);
     }
 
     @Override
@@ -152,7 +153,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (Property.NOT_NULL_EXPRESSION == property && Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
+        if (Property.NOT_NULL_EXPRESSION == property && variable.parameterizedType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
         return causesOfDelay;

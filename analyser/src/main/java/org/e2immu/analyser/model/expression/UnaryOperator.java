@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -113,7 +114,7 @@ public class UnaryOperator extends ElementImpl implements Expression {
     public static MethodInfo getOperator(@NotNull @NotModified Primitives primitives,
                                          @NotNull @NotModified UnaryExpr.Operator operator,
                                          @NotNull @NotModified TypeInfo typeInfo) {
-        if (Primitives.isNumeric(typeInfo)) {
+        if (PrimitivesWithoutParameterizedType.isNumeric(typeInfo)) {
             switch (operator) {
                 case MINUS:
                     return primitives.unaryMinusOperatorInt();
@@ -147,7 +148,7 @@ public class UnaryOperator extends ElementImpl implements Expression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        if (Primitives.isPostfix(operator)) {
+        if (PrimitivesWithoutParameterizedType.isPostfix(operator)) {
             return new OutputBuilder().add(outputInParenthesis(qualification, precedence, expression))
                     .add(Symbol.plusPlusSuffix(operator.name));
         }

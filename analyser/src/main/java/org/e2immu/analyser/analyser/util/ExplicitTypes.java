@@ -180,11 +180,11 @@ public class ExplicitTypes {
         for (Expression expression : expressions) {
             ParameterInfo parameterInfo = i < parameters.size() ? parameters.get(i) : parameters.get(parameters.size() - 1);
             ParameterizedType formal = parameterInfo.parameterizedType;
-            if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundTypeParameter()) {
+            if (!formal.isJavaLangObject() && !formal.isUnboundTypeParameter()) {
                 add(formal, usedAs);
             }
             ParameterizedType concrete = expression.returnType();
-            if(Primitives.isPrimitiveExcludingVoid(concrete) && !Primitives.isPrimitiveExcludingVoid(formal)) {
+            if(concrete.isPrimitiveExcludingVoid() && !formal.isPrimitiveExcludingVoid()) {
                 // formal could be an unbound type parameter, so int is boxed into Integer
                 ParameterizedType boxed = inspectionProvider.getPrimitives().boxed(concrete.typeInfo).asSimpleParameterizedType();
                 add(boxed, usedAs);
@@ -193,7 +193,7 @@ public class ExplicitTypes {
         }
         for (Expression expression : expressions) {
             ParameterizedType dynamic = expression.returnType();
-            if (!Primitives.isJavaLangObject(dynamic) && !dynamic.isUnboundTypeParameter()) {
+            if (!dynamic.isJavaLangObject() && !dynamic.isUnboundTypeParameter()) {
                 add(dynamic, usedAs);
             }
         }

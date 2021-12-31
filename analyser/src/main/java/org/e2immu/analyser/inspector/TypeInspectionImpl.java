@@ -19,6 +19,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.Container;
 
@@ -373,7 +374,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public TypeInspectionImpl build() {
             Objects.requireNonNull(typeNature);
-            if (Primitives.needsParent(typeInfo) && parentClass == null) {
+            if (PrimitivesWithoutParameterizedType.needsParent(typeInfo) && parentClass == null) {
                 throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName);
             }
             assert permittedWhenSealed.isEmpty() || modifiers.contains(TypeModifier.SEALED);

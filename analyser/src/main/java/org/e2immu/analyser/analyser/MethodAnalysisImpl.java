@@ -317,7 +317,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }
 
-            if (Primitives.isVoidOrJavaLangVoid(returnType)) return;
+            if (returnType.isVoidOrJavaLangVoid()) return;
 
             // @Identity
             if (getProperty(Property.IDENTITY).valueIsTrue()) {
@@ -325,7 +325,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
 
             // all other annotations cannot be added to primitives
-            if (Primitives.isPrimitiveExcludingVoid(returnType)) return;
+            if (returnType.isPrimitiveExcludingVoid()) return;
 
             // @Fluent
             if (getProperty(Property.FLUENT).valueIsTrue()) {

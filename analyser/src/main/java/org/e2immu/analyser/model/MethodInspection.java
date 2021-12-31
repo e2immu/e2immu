@@ -107,7 +107,7 @@ public interface MethodInspection extends Inspection {
     }
 
     default boolean isVoid() {
-        return Primitives.isVoid(getReturnType());
+        return getReturnType().isVoid();
     }
 
     /**

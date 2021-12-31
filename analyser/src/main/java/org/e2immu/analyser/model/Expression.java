@@ -88,7 +88,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isDiscreteType() {
         ParameterizedType type = returnType();
-        return type != null && Primitives.isDiscrete(type);
+        return type != null && type.isDiscrete();
     }
 
     // only called from EvaluationContext.getProperty().

@@ -15,10 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 
 import java.util.List;
@@ -127,7 +124,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private DV computeNotNullParameter(ParameterAnalysisImpl.Builder builder) {
         ParameterizedType pt = builder.getParameterInfo().parameterizedType;
-        if (Primitives.isPrimitiveExcludingVoid(pt)) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        if (pt.isPrimitiveExcludingVoid()) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         DV override = bestOfParameterOverrides(builder.getParameterInfo(), Property.NOT_NULL_PARAMETER);
         return MultiLevel.NULLABLE_DV.maxIgnoreDelay(override);
     }
@@ -178,7 +175,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private DV computeMethodContainer() {
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType.arrays > 0 || Primitives.isPrimitiveExcludingVoid(returnType) || returnType.isUnboundTypeParameter()) {
+        if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid() || returnType.isUnboundTypeParameter()) {
             return Level.TRUE_DV;
         }
         if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
@@ -220,7 +217,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                 value = override;
             } else {
                 ParameterizedType type = builder.getParameterInfo().parameterizedType;
-                if (Primitives.isPrimitiveExcludingVoid(type) || Primitives.isJavaLangString(type)) {
+                if (type.isPrimitiveExcludingVoid() || type.isJavaLangString()) {
                     value = Level.FALSE_DV;
                 } else {
                     DV typeIndependent = type.defaultIndependent(analyserContext);
@@ -247,7 +244,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {
         DV value;
         ParameterizedType type = builder.getParameterInfo().parameterizedType;
-        if (Primitives.isPrimitiveExcludingVoid(type)) {
+        if (type.isPrimitiveExcludingVoid()) {
             value = MultiLevel.INDEPENDENT_DV;
         } else {
             // @Modified needs to be marked explicitly
@@ -316,7 +313,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
             // unbound type parameter T, or unbound with array T[], T[][]
             return MultiLevel.INDEPENDENT_1_DV;
         }
-        if (Primitives.isPrimitiveExcludingVoid(bestType)) {
+        if (PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(bestType)) {
             return MultiLevel.INDEPENDENT_DV;
         }
         DV immutable = methodAnalysis.getProperty(Property.IMMUTABLE);
@@ -335,7 +332,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     private DV computeMethodNotNull() {
         if (methodInfo.isConstructor || methodInfo.isVoid()) return DV.MIN_INT_DV; // no decision!
-        if (Primitives.isPrimitiveExcludingVoid(methodInfo.returnType())) {
+        if (methodInfo.returnType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);

@@ -112,7 +112,7 @@ public class InlineConditional extends ElementImpl implements Expression {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (property == Property.NOT_NULL_EXPRESSION) {
-            if (Primitives.isPrimitiveExcludingVoid(returnType())) {
+            if (returnType().isPrimitiveExcludingVoid()) {
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
             Expression c = condition;
@@ -235,7 +235,7 @@ public class InlineConditional extends ElementImpl implements Expression {
     }
 
     private ParameterizedType box(ParameterizedType returnType) {
-        if (Primitives.isPrimitiveExcludingVoid(returnType)) {
+        if (returnType.isPrimitiveExcludingVoid()) {
             return returnType.toBoxed(inspectionProvider.getPrimitives()).asParameterizedType(inspectionProvider);
         }
         return returnType;

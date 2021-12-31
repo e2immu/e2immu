@@ -191,7 +191,7 @@ public class Filter {
                 if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope)) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
-            } else if (Primitives.isBoolean(value.returnType())) {
+            } else if (value.returnType().isBoolean()) {
                 FieldReferenceAndTranslationMap b = extractBooleanFieldReference(analyserContext, value,
                         acceptAndRemapLocalCopy);
                 if (b != null) {

@@ -97,7 +97,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // no annotations can be added to primitives
-            if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) return;
+            if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid()) return;
 
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable

@@ -118,6 +118,22 @@ public class PrimitivesImpl implements Primitives {
         return charParameterizedType;
     }
 
+    @Override
+    public MethodInfo createOperator(TypeInfo owner,
+                                     String name,
+                                     List<ParameterizedType> parameterizedTypes,
+                                     ParameterizedType returnType) {
+        int i = 0;
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
+        for (ParameterizedType parameterizedType : parameterizedTypes) {
+            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    parameterizedType, "p" + i, i++);
+            builder.addParameter(pb); // inspection built when method is built
+        }
+        builder.setReturnType(returnType);
+        return builder.build(InspectionProvider.DEFAULT).getMethodInfo();
+    }
+
     public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
     private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
     public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(),

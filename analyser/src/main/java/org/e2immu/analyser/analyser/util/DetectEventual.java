@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 
@@ -57,7 +56,7 @@ public record DetectEventual(MethodInfo methodInfo,
         Optional<Precondition> precondition = methodAnalysis.preconditionForEventual.get();
         boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
-        if (modified.valueIsFalse() && Primitives.isBoolean(methodInfo.returnType())) {
+        if (modified.valueIsFalse() && methodInfo.returnType().isBoolean()) {
 
             /*
             @TestMark first situation: non-modifying method, no preconditions, simply detecting method calls that are @TestMark

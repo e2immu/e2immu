@@ -69,7 +69,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public boolean notNullAccordingToConditionManager(Expression expression) {
-        if (Primitives.isNotBooleanOrBoxedBoolean(expression.returnType())) {
+        if (expression.returnType().isNotBooleanOrBoxedBoolean()) {
             // do not use the Condition manager to check for null in creation of isNull
             Expression isNull = Equals.equals(expression.getIdentifier(),
                     this, expression, NullConstant.NULL_CONSTANT, false);

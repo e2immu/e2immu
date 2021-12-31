@@ -70,7 +70,7 @@ public class InequalitySolver {
         AtomicBoolean invalid = new AtomicBoolean();
         e.visit(element -> {
             if (element instanceof MethodCall methodCall) {
-                if (Primitives.isNumeric(methodCall.returnType()) && evaluationContext.getAnalyserContext()
+                if (methodCall.returnType().isNumeric() && evaluationContext.getAnalyserContext()
                         .getMethodAnalysis(methodCall.methodInfo)
                         .getProperty(Property.MODIFIED_METHOD).valueIsFalse()) {
                     oneVariables.add(methodCall);
@@ -81,7 +81,7 @@ public class InequalitySolver {
             }
             VariableExpression ve;
             if ((ve = element.asInstanceOf(VariableExpression.class)) != null) {
-                if (Primitives.isNumeric(ve.variable().parameterizedType())) {
+                if (ve.variable().parameterizedType().isNumeric()) {
                     oneVariables.add(ve.variable());
                 } else {
                     invalid.set(true);

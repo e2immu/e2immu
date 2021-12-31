@@ -17,7 +17,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.*;
 
@@ -59,7 +59,7 @@ public class ShallowMethodResolver {
             if (override != null) {
                 result.add(override);
             }
-            if (!Primitives.isJavaLangObject(superType.typeInfo)) {
+            if (!PrimitivesWithoutParameterizedType.isJavaLangObject(superType.typeInfo)) {
                 result.addAll(recursiveOverridesCall(inspectionProvider, superType.typeInfo, methodInspection, translationMapOfSuperType));
             }
         }
@@ -192,7 +192,7 @@ public class ShallowMethodResolver {
     }
 
     public static List<ParameterizedType> directSuperTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
-        if (Primitives.isJavaLangObject(typeInfo)) return List.of();
+        if (PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) return List.of();
         List<ParameterizedType> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         list.add(typeInspection.parentClass());

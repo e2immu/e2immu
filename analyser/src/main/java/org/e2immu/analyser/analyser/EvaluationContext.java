@@ -188,7 +188,7 @@ public interface EvaluationContext {
     companion analyser, that would be chicken-and-egg).
      */
     default Expression currentValue(Variable variable, int statementTime) {
-        if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
+        if (variable.parameterizedType().isPrimitiveExcludingVoid()) return null;
         // a new one with empty state -- we cannot be bothered here.
         return Instance.forTesting(variable.parameterizedType());
     }

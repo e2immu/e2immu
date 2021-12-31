@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
@@ -493,7 +494,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public boolean isVoid() {
             assert returnType != null : "Method " + fullyQualifiedName + " has no return type yet";
-            return Primitives.isVoidOrJavaLangVoid(returnType);
+            return returnType.isVoidOrJavaLangVoid();
         }
 
         /*

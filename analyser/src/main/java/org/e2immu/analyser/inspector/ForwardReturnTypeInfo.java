@@ -16,9 +16,6 @@ package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-
-import java.util.Map;
 
 /**
  * Information about the return-type of an expression, passed on in a forwarding way.
@@ -52,11 +49,11 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
     }
 
     public ForwardReturnTypeInfo(ParameterizedType type) {
-        this(type, false,  TypeParameterMap.EMPTY);
+        this(type, false, TypeParameterMap.EMPTY);
     }
 
     public ForwardReturnTypeInfo(ParameterizedType type, boolean erasure) {
-        this(type, erasure,  TypeParameterMap.EMPTY);
+        this(type, erasure, TypeParameterMap.EMPTY);
     }
 
     // we'd rather have java.lang.Boolean, because as soon as type parameters are involved, primitives
@@ -71,7 +68,7 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
     }
 
     public MethodTypeParameterMap computeSAM(InspectionProvider inspectionProvider) {
-        if (type == null || Primitives.isVoid(type)) return null;
+        if (type == null || type.isVoid()) return null;
         MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(inspectionProvider);
         if (sam != null) {
             return sam.expand(type.initialTypeParameterMap(inspectionProvider));
@@ -81,10 +78,10 @@ public record ForwardReturnTypeInfo(ParameterizedType type, boolean erasure, Typ
 
     public boolean isVoid(TypeContext typeContext) {
         if (type == null) return false;
-        if (Primitives.isVoid(type)) return true;
+        if (type.isVoid()) return true;
         MethodTypeParameterMap sam = type.findSingleAbstractMethodOfInterface(typeContext);
         return sam != null && sam.methodInspection != null
-                && Primitives.isVoid(sam.getConcreteReturnType(typeContext.getPrimitives()));
+                && sam.getConcreteReturnType(typeContext.getPrimitives()).isVoid();
     }
 
     public String toString(InspectionProvider inspectionProvider) {

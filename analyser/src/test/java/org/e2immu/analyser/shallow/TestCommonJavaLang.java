@@ -92,7 +92,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             MethodInfo appendBoolean = sb.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                     .filter(m -> "append".equals(m.name))
                     .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
-                            Primitives.isBoolean(m.methodInspection.get().getParameters().get(0).parameterizedType))
+                            m.methodInspection.get().getParameters().get(0).parameterizedType.isBoolean())
                     .findFirst().orElseThrow();
             MethodAnalysis methodAnalysis = appendBoolean.methodAnalysis.get();
 

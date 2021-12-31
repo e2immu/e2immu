@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.Map;
 
@@ -66,14 +67,14 @@ public interface ConstantExpression<T> extends Expression {
 
     static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {
         if (typeInfo != null) {
-            if (Primitives.isBoolean(typeInfo)) return new BooleanConstant(primitives, false);
-            if (Primitives.isInt(typeInfo)) return new IntConstant(primitives, 0);
-            if (Primitives.isLong(typeInfo)) return new LongConstant(primitives, 0L);
-            if (Primitives.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0);
-            if (Primitives.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0);
-            if (Primitives.isFloat(typeInfo)) return new FloatConstant(primitives, 0);
-            if (Primitives.isDouble(typeInfo)) return new DoubleConstant(primitives, 0);
-            if (Primitives.isChar(typeInfo)) return new CharConstant(primitives, '\0');
+            if (PrimitivesWithoutParameterizedType.isBoolean(typeInfo)) return new BooleanConstant(primitives, false);
+            if (PrimitivesWithoutParameterizedType.isInt(typeInfo)) return new IntConstant(primitives, 0);
+            if (PrimitivesWithoutParameterizedType.isLong(typeInfo)) return new LongConstant(primitives, 0L);
+            if (PrimitivesWithoutParameterizedType.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0);
+            if (PrimitivesWithoutParameterizedType.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0);
+            if (PrimitivesWithoutParameterizedType.isFloat(typeInfo)) return new FloatConstant(primitives, 0);
+            if (PrimitivesWithoutParameterizedType.isDouble(typeInfo)) return new DoubleConstant(primitives, 0);
+            if (PrimitivesWithoutParameterizedType.isChar(typeInfo)) return new CharConstant(primitives, '\0');
         }
         return NullConstant.NULL_CONSTANT;
     }

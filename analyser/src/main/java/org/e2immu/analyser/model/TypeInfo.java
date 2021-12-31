@@ -18,6 +18,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -164,8 +165,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
             return packageNameOrEnclosingType.getRight().topOfInterdependentClassHierarchy();
         }
         // or to parent type, but only if in the same file TODO
-        if (Primitives.isJavaLangObject(inspection.parentClass())) return this;
-        return inspection.parentClass().typeInfo.topOfInterdependentClassHierarchy();
+        ParameterizedType parentClass = inspection.parentClass();
+        if (parentClass != null && parentClass.isJavaLangObject()) return this;
+        return parentClass.typeInfo.topOfInterdependentClassHierarchy();
     }
 
     @Override
@@ -203,7 +205,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     }
 
     public boolean parentIsNotJavaLangObject() {
-        return !Primitives.isJavaLangObject(typeInspection.get().parentClass());
+        ParameterizedType parentClass = typeInspection.get().parentClass();
+        return parentClass != null && !parentClass.isJavaLangObject();
     }
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
@@ -327,8 +330,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         if (foundHere != null && !foundHere.isAbstract()
                 && (!foundHere.shallowAnalysis() || foundHere.methodInspection.get().isPublic())) return foundHere;
         TypeInspection inspection = typeInspection.get();
-        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
-            MethodInfo foundInParent = inspection.parentClass().typeInfo.findMethodImplementing(abstractMethodInfo);
+        ParameterizedType parentClass = inspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            MethodInfo foundInParent = parentClass.typeInfo.findMethodImplementing(abstractMethodInfo);
             if (foundInParent != null) return foundInParent;
         }
         for (ParameterizedType interfaceType : inspection.interfacesImplemented()) {
@@ -471,7 +475,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public List<FieldInfo> visibleFields(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         List<FieldInfo> locally = inspection.fields();
-        List<FieldInfo> fromParent = Primitives.isJavaLangObject(this) ? List.of() :
+        List<FieldInfo> fromParent = PrimitivesWithoutParameterizedType.isJavaLangObject(this) ? List.of() :
                 inspection.parentClass().typeInfo.visibleFields(inspectionProvider);
         List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
                 .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).toList();
@@ -506,7 +510,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         if (fullyQualifiedName.equals(fqn)) return this;
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         ParameterizedType parentClass = inspection.parentClass();
-        if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
             TypeInfo res = parentClass.typeInfo.recursivelyImplements(inspectionProvider, fqn);
             if (res != null) return res;
         }
@@ -534,7 +538,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         while (true) {
             TypeInspection inspection = inspectionProvider.getTypeInspection(start);
             ParameterizedType parent = inspection.parentClass();
-            if (parent != null && !Primitives.isJavaLangObject(parent)) {
+            if (parent != null && !parent.isJavaLangObject()) {
                 result.add(parent.typeInfo);
                 start = parent.typeInfo;
             } else break;
@@ -547,7 +551,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         ParameterizedType parent = inspection.parentClass();
         if (parent != null) {
-            if (Primitives.isJavaLangObject(parent)) {
+            if (parent.isJavaLangObject()) {
                 return target == parent.typeInfo;
             } else {
                 return parent.typeInfo.hasAsParentClass(inspectionProvider, target);
@@ -559,7 +563,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public boolean parentalHierarchyContains(TypeInfo target, InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         ParameterizedType parent = inspection.parentClass();
-        if (parent == null || Primitives.isJavaLangObject(parent)) return false;
+        if (parent == null || parent.isJavaLangObject()) return false;
         if (target.equals(parent.typeInfo)) return true;
         return parent.typeInfo.parentalHierarchyContains(target, inspectionProvider);
     }

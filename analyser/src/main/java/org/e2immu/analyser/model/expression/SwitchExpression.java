@@ -142,7 +142,7 @@ public class SwitchExpression extends ElementImpl implements Expression, HasSwit
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (Primitives.isPrimitiveExcludingVoid(returnType)) {
+        if (returnType.isPrimitiveExcludingVoid()) {
             return UnknownExpression.primitiveGetProperty(property);
         }
         return yieldExpressions.getProperty(evaluationContext, property, duringEvaluation);

@@ -51,7 +51,7 @@ public class ParseObjectCreationExpr {
         ParameterizedType parameterizedType;
         if (diamond == Diamond.YES) {
             // it is still possible that impliedParameterizedType is null, as in "assert new HashSet<>(coll).size()>1"
-            if (impliedParameterizedType == null || Primitives.isVoid(impliedParameterizedType)) {
+            if (impliedParameterizedType == null || impliedParameterizedType.isVoid()) {
                 parameterizedType = null;
             } else {
                 parameterizedType = formalType.inferDiamondNewObjectCreation(typeContext,

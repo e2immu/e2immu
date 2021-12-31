@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -79,16 +80,16 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
 
         // NULL
         if (from == ParameterizedType.NULL_CONSTANT) {
-            if (Primitives.isPrimitiveExcludingVoid(target)) return NOT_ASSIGNABLE;
+            if (target.isPrimitiveExcludingVoid()) return NOT_ASSIGNABLE;
             return ASSIGN_TO_NULL;
         }
 
         // Assignment to Object: everything can be assigned to object!
         if (ignoreArrays) {
-            if (target.typeInfo != null && Primitives.isJavaLangObject(target.typeInfo)) {
+            if (target.typeInfo != null && PrimitivesWithoutParameterizedType.isJavaLangObject(target.typeInfo)) {
                 return IN_HIERARCHY;
             }
-        } else if (Primitives.isJavaLangObject(target)) {
+        } else if (target.isJavaLangObject()) {
             return IN_HIERARCHY;
         }
 
@@ -109,15 +110,15 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             }
 
             // PRIMITIVES
-            if (Primitives.isPrimitiveExcludingVoid(from)) {
-                if (Primitives.isPrimitiveExcludingVoid(target)) {
+            if (from.isPrimitiveExcludingVoid()) {
+                if (target.isPrimitiveExcludingVoid()) {
                     // use a dedicated method in Primitives
                     return inspectionProvider.getPrimitives().isAssignableFromTo(from, target,
                             mode == Mode.COVARIANT || mode == Mode.COVARIANT_ERASURE);
                 }
                 return checkBoxing(target.typeInfo, from.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
             }
-            if (Primitives.isPrimitiveExcludingVoid(target)) {
+            if (target.isPrimitiveExcludingVoid()) {
                 // the other one is not a primitive
                 return checkBoxing(from.typeInfo, target.typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
             }
@@ -134,7 +135,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         if (target.typeInfo != null && from.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = from.typeParameter.getTypeBounds();
             if (otherTypeBounds.isEmpty()) {
-                return Primitives.isJavaLangObject(target.typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
+                return PrimitivesWithoutParameterizedType.isJavaLangObject(target.typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound -> new IsAssignableFrom(inspectionProvider, target, bound)
                             .execute(true, mode))
@@ -227,8 +228,8 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
         MethodInspection mTarget = target.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
         MethodInspection mFrom = from.findSingleAbstractMethodOfInterface(inspectionProvider).methodInspection;
         if (mTarget.getParameters().size() != mFrom.getParameters().size()) return NOT_ASSIGNABLE;
-        boolean targetIsVoid = Primitives.isVoid(mTarget.getReturnType());
-        boolean fromIsVoid = Primitives.isVoid(mFrom.getReturnType());
+        boolean targetIsVoid = mTarget.getReturnType().isVoid();
+        boolean fromIsVoid = mFrom.getReturnType().isVoid();
         // target void -> fromIsVoid is unimportant, we can assign a function to a consumer
         if (!targetIsVoid && fromIsVoid) return NOT_ASSIGNABLE;
 
@@ -253,7 +254,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
         }
         ParameterizedType parentClass = otherTypeInspection.parentClass();
-        if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
             ParameterizedType concreteType = from.concreteDirectSuperType(inspectionProvider, parentClass);
             int scoreParent = new IsAssignableFrom(inspectionProvider, target, concreteType)
                     .execute(true, mode);

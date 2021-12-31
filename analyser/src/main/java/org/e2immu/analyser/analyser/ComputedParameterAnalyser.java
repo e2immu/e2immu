@@ -75,7 +75,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
         assert sharedState.iteration == 0;
 
-        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
+        if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid() &&
                 !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
         }
@@ -103,7 +103,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contractModified);
         }
 
-        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
+        if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid()) {
             if (!parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
                 parameterAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, NOT_INVOLVED_DV); // not involved
             }

@@ -1026,7 +1026,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         assert fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD).isDelayed();
 
-        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
+        boolean isPrimitive = fieldInfo.type.isPrimitiveExcludingVoid();
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
             log(MODIFICATION, "Field {} is @NotModified, since it is final and primitive", fqn);

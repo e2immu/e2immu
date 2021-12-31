@@ -308,7 +308,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
 
                         boolean contentChangeable = !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
-                                && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
+                                && !fa.getFieldInfo().type.isPrimitiveExcludingVoid()
                                 && !fa.isTransparentType().valueIsTrue();
                         return Level.fromBoolDv(contentChangeable);
                     })
@@ -325,7 +325,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // GO UP TO PARENT
 
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
-            if (Primitives.isJavaLangObject(parentClass)) {
+            if (parentClass.isJavaLangObject()) {
                 log(EVENTUALLY, "No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForEventual.set(Optional.empty());
                 return DONE;
@@ -764,8 +764,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     public boolean fieldInMyTypeHierarchy(FieldInfo fieldInfo, TypeInfo typeInfo) {
         if (typeInfo == fieldInfo.owner) return true;
         TypeInspection inspection = analyserContext.getTypeInspection(typeInfo);
-        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
-            return fieldInMyTypeHierarchy(fieldInfo, inspection.parentClass().typeInfo);
+        ParameterizedType parentClass = inspection.parentClass();
+        if (!parentClass.isJavaLangObject()) {
+            return fieldInMyTypeHierarchy(fieldInfo, parentClass.typeInfo);
         }
         return typeInfo.primaryType() == fieldInfo.owner.primaryType();
     }

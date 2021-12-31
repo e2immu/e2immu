@@ -935,7 +935,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public boolean isNumeric() {
-        return Primitives.isNumeric(methodInfo.returnType().bestTypeInfo());
+        return methodInfo.returnType().isNumeric();
     }
 
     @Override

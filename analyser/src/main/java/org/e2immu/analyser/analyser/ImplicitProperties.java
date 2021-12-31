@@ -45,7 +45,7 @@ public class ImplicitProperties {
             DV arrayPropertyValue = arrayProperties(property);
             if (arrayPropertyValue != DV.MIN_INT_DV) return arrayPropertyValue;
         }
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
+        if (parameterizedType.isPrimitiveExcludingVoid()) {
             return primitiveProperties(property);
         }
         return DV.MIN_INT_DV;

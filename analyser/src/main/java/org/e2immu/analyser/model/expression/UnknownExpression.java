@@ -55,7 +55,7 @@ public class UnknownExpression extends ElementImpl implements Expression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
+        if (parameterizedType.isPrimitiveExcludingVoid()) {
             return primitiveGetProperty(property);
         }
         TypeAnalysis typeAnalysis = parameterizedType.typeInfo == null ? null

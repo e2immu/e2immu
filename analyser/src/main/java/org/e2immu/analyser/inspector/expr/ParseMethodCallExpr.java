@@ -554,7 +554,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Objects.requireNonNull(method);
         Primitives primitives = typeContext.getPrimitives();
         ParameterizedType parameterType = method.getConcreteTypeOfParameter(primitives, i);
-        if (outsideContext == null || Primitives.isVoid(outsideContext) || outsideContext.typeInfo == null) {
+        if (outsideContext == null || outsideContext.isVoid() || outsideContext.typeInfo == null) {
             // Cannot do better than parameter type, have no outside context;
             ParameterizedType translated = parameterType.applyTranslation(primitives, extra.map());
             return new ForwardReturnTypeInfo(translated, false, extra);

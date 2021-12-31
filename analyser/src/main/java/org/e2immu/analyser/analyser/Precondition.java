@@ -59,7 +59,7 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     }
 
     public Precondition {
-        if (!expression.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(expression.returnType())) {
+        if (!expression.isUnknown() && expression.returnType().isNotBooleanOrBoxedBoolean()) {
             throw new UnsupportedOperationException("Need an unknown or boolean value in a precondition, got " + expression);
         }
         Objects.requireNonNull(causes);

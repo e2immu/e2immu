@@ -63,7 +63,7 @@ public class AssignmentIncompatibleWithPrecondition {
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
                     VariableExpression ve;
-                    if (Primitives.isNumeric(fieldInfo.type)) {
+                    if (fieldInfo.type.isNumeric()) {
                         Expression value = variableInfo.getValue();
                         if (value instanceof ConstantExpression) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
@@ -80,7 +80,7 @@ public class AssignmentIncompatibleWithPrecondition {
                                 return Level.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
                             }
                         }
-                    } else if (Primitives.isBoolean(fieldInfo.type)) {
+                    } else if (fieldInfo.type.isBoolean()) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                 variableInfo.getValue(), pcExpression);
                         if (incompatible != null) return Level.fromBoolDv(incompatible);

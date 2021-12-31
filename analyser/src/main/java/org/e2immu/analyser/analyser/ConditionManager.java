@@ -71,7 +71,7 @@ public record ConditionManager(Expression condition,
     NO_VALUE -> delay
      */
     private static void checkBooleanOrUnknown(Expression v) {
-        if (!v.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
+        if (!v.isUnknown() && v.returnType().isNotBooleanOrBoxedBoolean()) {
             throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v
                     + " with return type " + v.returnType());
         }

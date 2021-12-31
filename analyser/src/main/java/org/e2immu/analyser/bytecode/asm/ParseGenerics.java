@@ -21,7 +21,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.model.TypeParameterImpl;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +98,8 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo,
             ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
                     signature.substring(end + 1));
             if (result == null) return null; // unable to load type
-            if (result.parameterizedType.typeInfo != null && !Primitives.isJavaLangObject(result.parameterizedType.typeInfo)) {
+            if (result.parameterizedType.typeInfo != null
+                    && !PrimitivesWithoutParameterizedType.isJavaLangObject(result.parameterizedType.typeInfo)) {
                 typeBounds.add(result.parameterizedType);
             }
 

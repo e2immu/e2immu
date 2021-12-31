@@ -2523,7 +2523,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof ExpressionAsStatement eas
                 && eas.expression instanceof MethodCall methodCall
                 && myMethodAnalyser.methodInfo.isNotATestMethod()) {
-            if (Primitives.isVoidOrJavaLangVoid(methodCall.methodInfo.returnType())) return DONE;
+            if (methodCall.methodInfo.returnType().isVoidOrJavaLangVoid()) return DONE;
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             DV identity = methodAnalysis.getProperty(Property.IDENTITY);
             if (identity.isDelayed()) {
@@ -2720,7 +2720,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // read what's in the property map (all values should be there) at initial or current level
                 DV inMap = getVariableProperty(variable, property, duringEvaluation);
                 if (property == NOT_NULL_EXPRESSION) {
-                    if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) {
+                    if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
                         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                     }
                     DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);

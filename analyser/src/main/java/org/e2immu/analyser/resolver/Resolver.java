@@ -761,14 +761,15 @@ public class Resolver {
     public static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider,
                                                                   TypeInfo typeInfo,
                                                                   Map<TypeInfo, TypeResolution.Builder> builders) {
-        if (Primitives.isJavaLangObject(typeInfo)) return Set.of();
+        if (PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) return Set.of();
         List<TypeInfo> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         boolean hasGeneratedAnnotation = typeInspection.getAnnotations().stream()
                 .anyMatch(ae -> Generated.class.getCanonicalName().equals(ae.typeInfo().fullyQualifiedName));
 
-        if (typeInspection.parentClass() != null && !Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            TypeInfo parent = Objects.requireNonNull(parentClass.typeInfo);
             list.add(parent);
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent, builders));
             incrementImplementations(parent, typeInfo, hasGeneratedAnnotation, builders);
@@ -819,7 +820,7 @@ public class Resolver {
         Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
                 .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
         Stream<TypeInfo> parentStream;
-        boolean isJLO = Primitives.isJavaLangObject(typeInfo);
+        boolean isJLO = PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null :
                     "Type " + typeInfo + " has parentClass " + typeInspection.parentClass();
@@ -874,7 +875,7 @@ public class Resolver {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        boolean isJLO = Primitives.isJavaLangObject(typeInfo);
+        boolean isJLO = PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
         if (!isJLO) {
             assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,

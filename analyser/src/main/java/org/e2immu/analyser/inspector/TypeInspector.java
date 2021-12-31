@@ -363,8 +363,9 @@ public class TypeInspector {
             }
             // parentClass can be null in rare occasions where there is a cyclic dependency between types inside two primary types
             // see Immutables-generated code
-            if (typeInspection.parentClass() != null && !Primitives.isJavaLangObject(typeInspection.parentClass())) {
-                ensureLoaded(expressionContext, typeInspection.parentClass());
+            ParameterizedType parentClass = typeInspection.parentClass();
+            if (parentClass != null && !parentClass.isJavaLangObject()) {
+                ensureLoaded(expressionContext, parentClass);
             }
             typeInspection.interfacesImplemented().forEach(i -> ensureLoaded(expressionContext, i));
         }

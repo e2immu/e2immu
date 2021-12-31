@@ -68,7 +68,7 @@ public class And extends ElementImpl implements Expression {
             if (v.returnType() == null) {
                 throw new UnsupportedOperationException("Null return type for " + v + " in And");
             }
-            if (Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
+            if (v.returnType().isNotBooleanOrBoxedBoolean()) {
                 throw new UnsupportedOperationException("Non-boolean return type for " + v + " in And: " + v.returnType());
             }
         }

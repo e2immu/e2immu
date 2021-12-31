@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -214,7 +215,7 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
         Expression cv1 = inline(a, inline(b, newInt(3), NullConstant.NULL_CONSTANT), i);
         assertEquals("a?b?3:null:i", cv1.toString());
         TypeInfo type = cv1.returnType().typeInfo;
-        assertFalse(Primitives.isPrimitiveExcludingVoid(type));
+        assertFalse(PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(type));
         Expression eqNull = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1);
         assertEquals("a&&!b", eqNull.toString());
     }

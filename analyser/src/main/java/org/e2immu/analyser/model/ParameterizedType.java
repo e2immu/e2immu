@@ -19,7 +19,7 @@ import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -103,8 +103,12 @@ public class ParameterizedType {
         assert checkParametersForPrimitives();
     }
 
+    public boolean isPrimitiveExcludingVoid() {
+        return arrays == 0 && PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(typeInfo);
+    }
+
     private boolean checkParametersForPrimitives() {
-        assert parameters.stream().noneMatch(Primitives::isPrimitiveExcludingVoid) : "Type parameters contain primitives: " + parameters;
+        assert parameters.stream().noneMatch(ParameterizedType::isPrimitiveExcludingVoid) : "Type parameters contain primitives: " + parameters;
         return true;
     }
 
@@ -141,7 +145,7 @@ public class ParameterizedType {
     // from one type context into another one
     public ParameterizedType copy(TypeContext localTypeContext) {
         TypeInfo newTypeInfo;
-        if (typeInfo == null || Primitives.isPrimitiveExcludingVoid(typeInfo)) {
+        if (typeInfo == null || PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(typeInfo)) {
             newTypeInfo = typeInfo;
         } else {
             newTypeInfo = Objects.requireNonNull(localTypeContext.typeMapBuilder.get(typeInfo.fullyQualifiedName),
@@ -274,11 +278,11 @@ public class ParameterizedType {
     }
 
     public boolean allowsForOperators() {
-        if (Primitives.isVoidOrJavaLangVoid(this)) return false;
+        if (isVoidOrJavaLangVoid()) return false;
         if (typeInfo == null) return false;
-        return Primitives.isPrimitiveExcludingVoid(typeInfo)
-                || Primitives.isBoxedExcludingVoid(typeInfo)
-                || Primitives.isJavaLangString(typeInfo);
+        return PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(typeInfo)
+                || PrimitivesWithoutParameterizedType.isBoxedExcludingVoid(typeInfo)
+                || PrimitivesWithoutParameterizedType.isJavaLangString(typeInfo);
     }
 
     // ******************************************************************************************************
@@ -382,7 +386,7 @@ public class ParameterizedType {
         }
         assert typeInfo != null;
         // no hope if Object or unbound wildcard is the best we have
-        if (concreteType.typeInfo == null || Primitives.isJavaLangObject(concreteType)) return Map.of();
+        if (concreteType.typeInfo == null || concreteType.isJavaLangObject()) return Map.of();
 
         if (isFunctionalInterface(inspectionProvider) && concreteType.isFunctionalInterface(inspectionProvider)) {
             return translationMapForFunctionalInterfaces(inspectionProvider, concreteType, concreteTypeIsAssignableToThis);
@@ -421,7 +425,7 @@ public class ParameterizedType {
                     methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
                     concreteTypeMap.methodInspection.getFullyQualifiedName());
         }
-        Primitives primitives = inspectionProvider.getPrimitives();
+        PrimitivesWithoutParameterizedType primitives = inspectionProvider.getPrimitives();
         for (int i = 0; i < methodParams.size(); i++) {
             ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
             ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(primitives, i);
@@ -514,14 +518,15 @@ public class ParameterizedType {
             return this;
         }
         TypeInspection inspection = inspectionProvider.getTypeInspection(bestType);
-        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
-            if (inspection.parentClass().typeInfo == superType.typeInfo) {
-                return concreteDirectSuperType(inspectionProvider, inspection.parentClass());
+        ParameterizedType parentClass = inspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            if (parentClass.typeInfo == superType.typeInfo) {
+                return concreteDirectSuperType(inspectionProvider, parentClass);
             }
             /* do a recursion, but accept that we may return null
             we must call concreteSuperType on a concrete version of the parentClass
             */
-            ParameterizedType res = inspection.parentClass().concreteSuperType(inspectionProvider, superType);
+            ParameterizedType res = parentClass.concreteSuperType(inspectionProvider, superType);
             if (res != null) {
                 return concreteDirectSuperType(inspectionProvider, res);
             }
@@ -668,13 +673,13 @@ public class ParameterizedType {
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
         TypeInfo otherBestType = other.bestTypeInfo(inspectionProvider);
 
-        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this);
-        boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other);
+        boolean isPrimitive = isPrimitiveExcludingVoid();
+        boolean otherIsPrimitive = other.isPrimitiveExcludingVoid();
         if (isPrimitive && otherIsPrimitive) {
             return inspectionProvider.getPrimitives().widestType(this, other);
         }
-        boolean isBoxed = Primitives.isBoxedExcludingVoid(this);
-        boolean otherIsBoxed = Primitives.isBoxedExcludingVoid(other);
+        boolean isBoxed = isBoxedExcludingVoid();
+        boolean otherIsBoxed = other.isBoxedExcludingVoid();
         if ((isPrimitive || isBoxed) && other == ParameterizedType.NULL_CONSTANT) {
             if (isBoxed) return this;
             return inspectionProvider.getPrimitives().boxed(bestType).asParameterizedType(inspectionProvider);
@@ -744,12 +749,12 @@ public class ParameterizedType {
         return Level.fromBoolDv(canBeModified);
     }
 
-    public TypeInfo toBoxed(Primitives primitives) {
+    public TypeInfo toBoxed(PrimitivesWithoutParameterizedType primitives) {
         return primitives.boxed(typeInfo);
     }
 
     public ParameterizedType mostSpecific(InspectionProvider inspectionProvider, ParameterizedType other) {
-        if (isType() && Primitives.isVoid(typeInfo) || other.isType() && Primitives.isVoid(other.typeInfo)) {
+        if (isType() && PrimitivesWithoutParameterizedType.isVoid(typeInfo) || other.isType() && PrimitivesWithoutParameterizedType.isVoid(other.typeInfo)) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
         if (isAssignableFrom(inspectionProvider, other)) {
@@ -761,7 +766,7 @@ public class ParameterizedType {
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return UpgradableBooleanMap.of(
                 parameters.stream().flatMap(pt -> pt.typesReferenced(explicit).stream()).collect(UpgradableBooleanMap.collector()),
-                isType() && !Primitives.isPrimitiveExcludingVoid(typeInfo) ?
+                isType() && !PrimitivesWithoutParameterizedType.isPrimitiveExcludingVoid(typeInfo) ?
                         UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
     }
 
@@ -779,7 +784,7 @@ public class ParameterizedType {
     }
 
     public DV defaultNotNull() {
-        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
+        return isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
     }
 
     public DV defaultContainer(AnalysisProvider analysisProvider) {
@@ -908,17 +913,18 @@ public class ParameterizedType {
     }
 
     public static boolean isUnboundTypeParameterOrJLO(TypeInfo bestType) {
-        return bestType == null || Primitives.isJavaLangObject(bestType);
+        return bestType == null || PrimitivesWithoutParameterizedType.isJavaLangObject(bestType);
     }
 
     // if we arrive here with Set<String>, we need Collection<String>, Iterable<String>, JLO in the result
     public Stream<ParameterizedType> concreteSuperTypes(InspectionProvider inspectionProvider) {
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
-        if (bestType == null || Primitives.isJavaLangObject(bestType)) return Stream.of();
+        if (bestType == null || PrimitivesWithoutParameterizedType.isJavaLangObject(bestType)) return Stream.of();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(bestType);
         Stream<ParameterizedType> recursiveFromParent;
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            ParameterizedType concreteParentType = concreteSuperType(inspectionProvider, typeInspection.parentClass());
+        ParameterizedType parentClass = typeInspection.parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            ParameterizedType concreteParentType = concreteSuperType(inspectionProvider, parentClass);
             recursiveFromParent = Stream.concat(Stream.of(concreteParentType),
                     concreteParentType.concreteSuperTypes(inspectionProvider));
         } else {
@@ -959,7 +965,7 @@ public class ParameterizedType {
      * @param translate the map to be applied on the type parameters of this
      * @return a newly created ParameterizedType
      */
-    public ParameterizedType applyTranslation(Primitives primitives, Map<NamedType, ParameterizedType> translate) {
+    public ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives, Map<NamedType, ParameterizedType> translate) {
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         while (pt.isTypeParameter() && translate.containsKey(pt.typeParameter)) {
@@ -983,10 +989,60 @@ public class ParameterizedType {
         return new ParameterizedType(stablePt.typeInfo, recursivelyMappedParameters);
     }
 
-    public ParameterizedType ensureBoxed(Primitives primitives) {
-        if (Primitives.isPrimitiveExcludingVoid(this)) {
+    public ParameterizedType ensureBoxed(PrimitivesWithoutParameterizedType primitives) {
+        if (isPrimitiveExcludingVoid()) {
             return toBoxed(primitives).asSimpleParameterizedType();
         }
         return this;
     }
+
+
+    public boolean isBoolean() {
+        if (arrays != 0) return false;
+        return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
+    }
+
+    public boolean isNotBooleanOrBoxedBoolean() {
+        if (typeInfo == null) return true; // for parameterized types
+        return !PrimitivesWithoutParameterizedType.isBoolean(typeInfo)
+                && !PrimitivesWithoutParameterizedType.isBoxedBoolean(typeInfo);
+    }
+
+    public boolean isVoid() {
+        return typeInfo != null && PrimitivesWithoutParameterizedType.isVoid(typeInfo);
+    }
+
+    public boolean isVoidOrJavaLangVoid() {
+        return typeInfo != null && (PrimitivesWithoutParameterizedType.isJavaLangVoid(typeInfo) ||
+                PrimitivesWithoutParameterizedType.isVoid(typeInfo));
+    }
+
+    public boolean isJavaLangString() {
+        return typeInfo != null && PrimitivesWithoutParameterizedType.isJavaLangString(typeInfo);
+    }
+
+    public boolean isJavaLangObject() {
+        return arrays == 0 && typeInfo != null && PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo);
+    }
+
+    public boolean isBoxedExcludingVoid() {
+        return arrays == 0 && PrimitivesWithoutParameterizedType.isBoxedExcludingVoid(typeInfo);
+    }
+
+    public boolean isDiscrete() {
+        if (arrays != 0 || typeInfo == null) return false;
+        return PrimitivesWithoutParameterizedType.isInt(typeInfo)
+                || PrimitivesWithoutParameterizedType.isInteger(typeInfo)
+                || PrimitivesWithoutParameterizedType.isLong(typeInfo)
+                || PrimitivesWithoutParameterizedType.isBoxedLong(typeInfo)
+                || PrimitivesWithoutParameterizedType.isShort(typeInfo)
+                || PrimitivesWithoutParameterizedType.isBoxedShort(typeInfo)
+                || PrimitivesWithoutParameterizedType.isByte(typeInfo)
+                || PrimitivesWithoutParameterizedType.isBoxedByte(typeInfo);
+    }
+
+    public boolean isNumeric() {
+        return arrays == 0 && PrimitivesWithoutParameterizedType.isNumeric(typeInfo);
+    }
+
 }

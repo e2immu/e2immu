@@ -163,7 +163,7 @@ public class ParseLambdaExpr {
                         inferredReturnType);
             }
             // but if we expect one, the inferredReturnType cannot be void (would be a compiler error)
-            if (Primitives.isVoid(inferredReturnType)) {
+            if (inferredReturnType.isVoid()) {
                 throw new UnsupportedOperationException();
             }
             return new Evaluation(new Block.BlockBuilder(identifier)

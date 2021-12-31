@@ -18,7 +18,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -109,7 +109,7 @@ public class OutputTypeInfo {
             if (!typeParameters.isEmpty()) {
                 afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
                 afterAnnotations.add(typeParameters.stream().map(tp ->
-                        tp.output(InspectionProvider.DEFAULT, insideType, new HashSet<>()))
+                                tp.output(InspectionProvider.DEFAULT, insideType, new HashSet<>()))
                         .collect(OutputBuilder.joining(Symbol.COMMA)));
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
@@ -126,19 +126,19 @@ public class OutputTypeInfo {
         }
 
         OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(Stream.concat(
-                enumConstantStream(typeInfo, insideType),
-                fields.stream()
-                        .filter(f -> !f.fieldInspection.get().isSynthetic())
-                        .map(f -> f.output(insideType, false))),
-                subTypes.stream()
-                        .filter(st -> !st.typeInspection.get().isSynthetic())
-                        .map(ti -> ti.output(insideType, true))),
-                constructors.stream()
-                        .filter(c -> !c.methodInspection.get().isSynthetic())
-                        .map(c -> c.output(insideType))),
-                methods.stream()
-                        .filter(m -> !m.methodInspection.get().isSynthetic())
-                        .map(m -> m.output(insideType)))
+                                                enumConstantStream(typeInfo, insideType),
+                                                fields.stream()
+                                                        .filter(f -> !f.fieldInspection.get().isSynthetic())
+                                                        .map(f -> f.output(insideType, false))),
+                                        subTypes.stream()
+                                                .filter(st -> !st.typeInspection.get().isSynthetic())
+                                                .map(ti -> ti.output(insideType, true))),
+                                constructors.stream()
+                                        .filter(c -> !c.methodInspection.get().isSynthetic())
+                                        .map(c -> c.output(insideType))),
+                        methods.stream()
+                                .filter(m -> !m.methodInspection.get().isSynthetic())
+                                .map(m -> m.output(insideType)))
                 .collect(OutputBuilder.joining(Space.NONE, Symbol.LEFT_BRACE, Symbol.RIGHT_BRACE,
                         Guide.generatorForBlock()));
         afterAnnotations.add(main);
@@ -159,8 +159,9 @@ public class OutputTypeInfo {
 
     private static void addThisToQualification(TypeInfo typeInfo, QualificationImpl insideType) {
         insideType.addThis(new This(InspectionProvider.DEFAULT, typeInfo));
-        if (!Primitives.isJavaLangObject(typeInfo.typeInspection.get().parentClass())) {
-            insideType.addThis(new This(InspectionProvider.DEFAULT, typeInfo.typeInspection.get().parentClass().typeInfo,
+        ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
+        if (parentClass != null && !parentClass.isJavaLangObject()) {
+            insideType.addThis(new This(InspectionProvider.DEFAULT, parentClass.typeInfo,
                     null, true));
         }
     }
@@ -168,7 +169,7 @@ public class OutputTypeInfo {
     private static void addMethodsToQualification(TypeInfo typeInfo, QualificationImpl qImpl) {
         TypeInspection ti = typeInfo.typeInspection.get("Inspection of type " + typeInfo.fullyQualifiedName);
         ti.methods().forEach(qImpl::addMethodUnlessOverride);
-        if (!Primitives.isJavaLangObject(typeInfo)) {
+        if (!PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) {
             addMethodsToQualification(ti.parentClass().typeInfo, qImpl);
         }
         for (ParameterizedType interfaceType : ti.interfacesImplemented()) {
@@ -230,7 +231,7 @@ public class OutputTypeInfo {
     private static ResultOfImportComputation imports(String myPackage, TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
-                .filter(Primitives::allowInImport)
+                .filter(PrimitivesWithoutParameterizedType::allowInImport)
                 .collect(Collectors.toSet());
         Map<String, PerPackage> typesPerPackage = new HashMap<>();
         QualificationImpl qualification = new QualificationImpl();

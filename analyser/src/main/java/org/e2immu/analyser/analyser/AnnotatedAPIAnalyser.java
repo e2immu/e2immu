@@ -93,7 +93,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         DependencyGraph<TypeInfo> dependencyGraph = new DependencyGraph<>();
         for (TypeInfo typeInfo : types) {
-            if (!Primitives.isJavaLangObject(typeInfo)) {
+            if (!PrimitivesWithoutParameterizedType.isJavaLangObject(typeInfo)) {
                 dependencyGraph.addNode(typeInfo, typeInfo.typeResolution.get().superTypesExcludingJavaLangObject());
             }
         }
@@ -152,8 +152,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     public static int typeComparator(TypeInfo t1, TypeInfo t2) {
         if (t1 == t2 || t1.equals(t2)) throw new IllegalArgumentException();
-        if (Primitives.isJavaLangObject(t1)) return -1;
-        if (Primitives.isJavaLangObject(t2)) return 1;
+        if (PrimitivesWithoutParameterizedType.isJavaLangObject(t1)) return -1;
+        if (PrimitivesWithoutParameterizedType.isJavaLangObject(t2)) return 1;
 
         Set<TypeInfo> super1 = t1.typeResolution.get(t1.fullyQualifiedName).superTypesExcludingJavaLangObject();
         if (super1.contains(t2)) {
@@ -564,8 +564,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     builder.getTypeInfo().typeInspection.get()
                             .methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUPERTYPES)
                             .filter(m -> m.methodInspection.get().isPublic())
-                            .allMatch(m -> (m.isConstructor || m.isVoid() || Primitives.isPrimitiveExcludingVoid(m.returnType()))
-                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> Primitives.isPrimitiveExcludingVoid(p.parameterizedType)));
+                            .allMatch(m -> (m.isConstructor || m.isVoid() || m.returnType().isPrimitiveExcludingVoid())
+                                    && m.methodInspection.get().getParameters().stream().allMatch(p -> p.parameterizedType.isPrimitiveExcludingVoid()));
             if (allMethodsOnlyPrimitives) {
                 builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
                 return;

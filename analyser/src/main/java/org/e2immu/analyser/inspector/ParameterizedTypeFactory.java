@@ -130,7 +130,7 @@ public class ParameterizedTypeFactory {
             if (field.isPresent()) return field.get().type;
 
             ParameterizedType parent = scopeInspection.parentClass();
-            if (parent != null && !Primitives.isJavaLangObject(parent)) {
+            if (parent != null && !parent.isJavaLangObject()) {
                 ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, parent);
                 if (res != null) return res;
             }

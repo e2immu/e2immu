@@ -641,8 +641,8 @@ public record ExpressionContext(Resolver resolver,
                 Expression target = parseExpressionStartVoid(assignExpr.getTarget());
                 Expression value = parseExpression(assignExpr.getValue(),
                         new ForwardReturnTypeInfo(target.returnType()));
-                if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
-                        target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
+                if (value.returnType().isType() && value.returnType().isPrimitiveExcludingVoid() &&
+                        target.returnType().isType() && target.returnType().isPrimitiveExcludingVoid()) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
                     return new Assignment(identifier, typeContext.getPrimitives(), target, value, primitiveOperator,

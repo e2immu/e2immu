@@ -21,6 +21,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Finalizer;
 import org.e2immu.annotation.IgnoreModifications;
@@ -92,7 +93,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     @Override
     public Set<String> imports() {
-        if (Primitives.isNotJavaLang(typeInfo)) return Set.of(typeInfo.fullyQualifiedName);
+        if (PrimitivesWithoutParameterizedType.isNotJavaLang(typeInfo)) return Set.of(typeInfo.fullyQualifiedName);
         return Set.of();
     }
 
@@ -179,7 +180,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
         // -123
         if (expression instanceof UnaryOperator unaryOperator) {
-            if (Primitives.isUnaryMinusOperatorInt(unaryOperator.operator) &&
+            if (PrimitivesWithoutParameterizedType.isUnaryMinusOperatorInt(unaryOperator.operator) &&
                     unaryOperator.expression instanceof IntConstant intConstant) {
                 return -intConstant.getValue();
             }

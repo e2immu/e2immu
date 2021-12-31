@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -56,14 +57,14 @@ public class MethodTypeParameterMap {
         return methodInspection != null;
     }
 
-    public ParameterizedType getConcreteReturnType(Primitives primitives) {
+    public ParameterizedType getConcreteReturnType(PrimitivesWithoutParameterizedType primitives) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         ParameterizedType returnType = methodInspection.getReturnType();
         return returnType.applyTranslation(primitives, concreteTypes);
     }
 
-    public ParameterizedType getConcreteTypeOfParameter(Primitives primitives, int i) {
+    public ParameterizedType getConcreteTypeOfParameter(PrimitivesWithoutParameterizedType primitives, int i) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
         int n = methodInspection.getParameters().size();
@@ -145,8 +146,8 @@ public class MethodTypeParameterMap {
             i++;
         }
         // TODO
-        return Primitives.isVoidOrJavaLangVoid(methodInspection.getReturnType()) ==
-                Primitives.isVoidOrJavaLangVoid(other.methodInspection.getReturnType());
+        return methodInspection.getReturnType().isVoidOrJavaLangVoid() ==
+                other.methodInspection.getReturnType().isVoidOrJavaLangVoid();
     }
 
     // used in TypeInfo.convertMethodReferenceIntoLambda
