@@ -287,7 +287,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private DV formalProperty() {
-            return returnType.getProperty(analysisProvider, Property.IMMUTABLE);
+            return analysisProvider.getProperty(returnType, Property.IMMUTABLE);
         }
 
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -337,7 +337,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);
-            DV formallyIndependent = methodInfo.returnType().defaultIndependent(analysisProvider);
+            DV formallyIndependent = analysisProvider.defaultIndependent(methodInfo.returnType());
             doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
         }
 

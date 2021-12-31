@@ -560,7 +560,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         assert variable instanceof ParameterInfo;
         DV currentImmutable = vi.getProperty(IMMUTABLE);
         if (currentImmutable.isDelayed()) {
-            DV formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext, false);
+            DV formalImmutable = analyserContext.defaultImmutable(variable.parameterizedType(), false);
             vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
         }
         // update @Independent
@@ -1134,7 +1134,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
-        DV defaultNotNull = variable.parameterizedType().defaultNotNull();
+        DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Map<Property, DV> map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
@@ -1143,7 +1143,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
-        DV defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
+        DV defaultNotNull = AnalysisProvider.defaultNotNull(methodAnalysis.getMethodInfo().returnType());
         Map<Property, DV> properties = sharedContext(defaultNotNull);
         properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
         properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
@@ -1181,7 +1181,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
         // start with context properties
-        Map<Property, DV> properties = sharedContext(fieldReference.fieldInfo.type.defaultNotNull());
+        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
 
         // the value and its properties are taken from the field analyser
         Expression value = fieldAnalysis.getValueForStatementAnalyser();
@@ -1203,19 +1203,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
 
         // start with context properties
-        Map<Property, DV> properties = sharedContext(parameterInfo.parameterizedType.defaultNotNull());
+        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(parameterInfo.parameterizedType));
 
         // the value properties are not delayed (there's an assertion in the Instance factory method)
         DV notNull = parameterAnalysis.getProperty(NOT_NULL_PARAMETER)
-                .maxIgnoreDelay(parameterInfo.parameterizedType.defaultNotNull());
+                .maxIgnoreDelay(AnalysisProvider.defaultNotNull(parameterInfo.parameterizedType));
         properties.put(NOT_NULL_EXPRESSION, notNull);
 
-        DV formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(parameterInfo.parameterizedType, false);
         DV immutable = parameterAnalysis.getProperty(IMMUTABLE).max(formallyImmutable)
                 .replaceDelayBy(MUTABLE_DV);
         properties.put(IMMUTABLE, immutable);
 
-        DV formallyIndependent = parameterInfo.parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
+        DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(parameterInfo.parameterizedType);
         DV independent = parameterAnalysis.getProperty(INDEPENDENT).max(formallyIndependent)
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV);
         properties.put(INDEPENDENT, independent);
@@ -1266,7 +1266,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private Map<Property, DV> fieldPropertyMap(AnalyserContext analyserContext,
                                                FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-        Map<Property, DV> result = sharedContext(fieldInfo.type.defaultNotNull());
+        Map<Property, DV> result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
 
         for (Property vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
             DV value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);

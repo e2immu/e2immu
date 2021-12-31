@@ -258,9 +258,9 @@ public class EvaluateMethodCall {
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
         ParameterizedType parameterizedType = objectValue.returnType();
-        DV immutable = parameterizedType.defaultImmutable(analyserContext, false);
-        DV independent = parameterizedType.defaultIndependent(analyserContext);
-        DV container = parameterizedType.defaultContainer(analyserContext);
+        DV immutable = analyserContext.defaultImmutable(parameterizedType, false);
+        DV independent = analyserContext.defaultIndependent(parameterizedType);
+        DV container = analyserContext.defaultContainer(parameterizedType);
         if (immutable.isDelayed() || independent.isDelayed() || container.isDelayed()) {
             return DelayedExpression.forValueOf(parameterizedType, immutable.causesOfDelay()
                     .merge(independent.causesOfDelay()).merge(container.causesOfDelay()));

@@ -83,7 +83,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
         // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
         // computed, the property IMMUTABLE is not "contract" anymore
-        DV formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
+        DV formallyImmutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
         DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
         if (contractImmutable.isDone() && formallyImmutable.isDone()
@@ -172,7 +172,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     DV minHiddenContentImmutable = fields.stream()
                             // hidden content is available, because linking has been computed(?)
                             .flatMap(fr -> typeAnalysis.hiddenContentLinkedTo(fr.fieldInfo).stream())
-                            .map(pt -> pt.defaultImmutable(analyserContext, false))
+                            .map(pt -> analyserContext.defaultImmutable(pt, false))
                             .reduce(EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                     if (minHiddenContentImmutable.isDelayed()) {
                         return minHiddenContentImmutable.causesOfDelay();
@@ -306,7 +306,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 }
 
                 if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    DV immutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext, false);
+                    DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
                     if (immutable.isDelayed()) {
                         delays = delays.merge(immutable.causesOfDelay());
                     } else {

@@ -633,9 +633,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (xx != null) {
             ParameterizedType returnType = xx.returnType();
             AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
-            DV immutable = returnType.defaultImmutable(analysisProvider, false);
-            DV container = returnType.defaultContainer(analysisProvider);
-            DV independent = returnType.defaultIndependent(analysisProvider);
+            DV immutable = analysisProvider.defaultImmutable(returnType, false);
+            DV container = analysisProvider.defaultContainer(returnType);
+            DV independent = analysisProvider.defaultIndependent(returnType);
             CausesOfDelay causesOfDelay = immutable.causesOfDelay().merge(container.causesOfDelay()).merge(independent.causesOfDelay());
             if (causesOfDelay.isDelayed()) {
                 return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
@@ -823,8 +823,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
             // in the case of factory methods or indeed identity
             // see E2Immutable_11
-            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(evaluationContext.getCurrentType());
-            MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+            AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(evaluationContext.getCurrentType());
+            MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
 
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
                 if(typeAnalysis.hiddenContentTypeStatus().isDelayed()) {
@@ -838,7 +839,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Formal can be E2Immutable for Map.Entry<K, V>, because the removal method has gone.
             It can still upgrade to ERImmutable when the K and V become ER themselves
              */
-            return returnType().defaultImmutable(evaluationContext.getAnalyserContext(), true, formal);
+            return analyserContext.defaultImmutable(returnType(), true, formal);
         }
         return formal;
     }
@@ -856,7 +857,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 causesOfDelay = causesOfDelay.merge(concreteHiddenTypes.causesOfDelay());
             } else {
                 DV hiddenImmutable = concreteHiddenTypes.hiddenTypes().stream()
-                        .map(pt -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), true))
+                        .map(pt -> evaluationContext.getAnalyserContext().defaultImmutable(pt, true))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 minParams = minParams.min(hiddenImmutable);
             }

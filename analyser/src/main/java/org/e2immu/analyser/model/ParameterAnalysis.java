@@ -81,7 +81,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (external.equals(property.bestDv)) return external;
                 DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_IMMUTABLE);
                 if (context.equals(property.bestDv)) return context;
-                DV formalImmutable = parameterInfo.parameterizedType.defaultImmutable(analysisProvider, true);
+                DV formalImmutable = analysisProvider.defaultImmutable(parameterInfo.parameterizedType, true);
                 return formalImmutable.max(external.max(context));
             }
 

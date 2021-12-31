@@ -207,17 +207,18 @@ public record ConstructorCall(
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         ParameterizedType pt;
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         if (anonymousClass != null) {
-            pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
+            pt = anonymousClass.asParameterizedType(analyserContext);
         } else {
             pt = parameterizedType;
         }
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-            case INDEPENDENT -> pt.defaultIndependent(evaluationContext.getAnalyserContext());
+            case INDEPENDENT -> analyserContext.defaultIndependent(pt);
             case IDENTITY -> Level.FALSE_DV;
-            case IMMUTABLE -> pt.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-            case CONTAINER -> pt.defaultContainer(evaluationContext.getAnalyserContext());
+            case IMMUTABLE -> analyserContext.defaultImmutable(pt, false);
+            case CONTAINER -> analyserContext.defaultContainer(pt);
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };

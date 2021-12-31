@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -625,14 +624,6 @@ public class ParameterizedType {
         return (typeParameter != null || typeInfo != null) && v.typeParameter == null && v.typeInfo == null;
     }
 
-    public DV getProperty(AnalysisProvider analysisProvider, Property property) {
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType != null) {
-            return analysisProvider.getTypeAnalysis(bestType).getProperty(property);
-        }
-        return property.falseDv;
-    }
-
     public TypeInfo bestTypeInfo() {
         return bestTypeInfo(InspectionProvider.DEFAULT);
     }
@@ -712,42 +703,6 @@ public class ParameterizedType {
         return inspectionProvider.getPrimitives().objectParameterizedType(); // no common type
     }
 
-    public DV isTransparentOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
-        if (arrays > 0) return Level.FALSE_DV;
-        DV atLeastEventuallyE2Immutable = isAtLeastEventuallyE2Immutable(analysisProvider);
-        if (atLeastEventuallyE2Immutable.valueIsTrue()) return Level.TRUE_DV;
-        DV transparent = isTransparent(analysisProvider, typeBeingAnalysed);
-        if (transparent.valueIsTrue()) return Level.TRUE_DV;
-        if (transparent.isDelayed() || atLeastEventuallyE2Immutable.isDelayed()) {
-            return transparent.min(atLeastEventuallyE2Immutable);
-        }
-        return Level.FALSE_DV;
-    }
-
-    private DV isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType == null) return Level.FALSE_DV;
-        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
-        if (immutable.isDelayed()) return immutable;
-        return Level.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
-    }
-
-    public DV isTransparent(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return new CausesOfDelay.SimpleSet(new Location(typeBeingAnalysed),
-                CauseOfDelay.Cause.HIDDEN_CONTENT);
-        return Level.fromBoolDv(hiddenContentTypes.contains(this));
-    }
-
-    public DV canBeModifiedInThisClass(AnalysisProvider analysisProvider) {
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType == null) return Level.FALSE_DV;
-        DV immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
-        if (immutable.isDelayed()) return immutable;
-        boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
-        return Level.fromBoolDv(canBeModified);
-    }
 
     public TypeInfo toBoxed(PrimitivesWithoutParameterizedType primitives) {
         return primitives.boxed(typeInfo);
@@ -781,130 +736,6 @@ public class ParameterizedType {
         return Objects.equals(typeInfo, other.typeInfo)
                 && Objects.equals(typeParameter, other.typeParameter)
                 && Objects.equals(parameters, other.parameters) && wildCard == other.wildCard;
-    }
-
-    public DV defaultNotNull() {
-        return isPrimitiveExcludingVoid() ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
-    }
-
-    public DV defaultContainer(AnalysisProvider analysisProvider) {
-        TypeInfo bestType = bestTypeInfo();
-        if (arrays > 0) {
-            return Level.TRUE_DV;
-        }
-        if (bestType == null) {
-            // unbound type parameter, null constant
-            return Level.FALSE_DV;
-        }
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return typeAnalysisNotAvailable(bestType);
-        }
-        return typeAnalysis.getProperty(Property.CONTAINER);
-    }
-
-    private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
-        return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.TYPE_ANALYSIS);
-    }
-
-    public DV defaultIndependent(AnalysisProvider analysisProvider) {
-        TypeInfo bestType = bestTypeInfo();
-        if (arrays > 0) {
-            // because the "fields" of the array, i.e. the cells, can be mutated
-            return MultiLevel.DEPENDENT_DV;
-        }
-        if (bestType == null) {
-            // unbound type parameter, null constant
-            return MultiLevel.INDEPENDENT_1_DV;
-        }
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return typeAnalysisNotAvailable(bestType);
-        }
-        DV baseValue = typeAnalysis.getProperty(Property.INDEPENDENT);
-        if (baseValue.isDelayed()) return baseValue;
-        if (MultiLevel.isAtLeastE2Immutable(baseValue) && !parameters.isEmpty()) {
-            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            if (doSum.valueIsTrue()) {
-                DV paramValue = parameters.stream()
-                        .map(pt -> pt.defaultIndependent(analysisProvider))
-                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
-                if (paramValue.isDelayed()) return paramValue;
-                return MultiLevel.sumImmutableLevels(baseValue, paramValue);
-            }
-            if (doSum.isDelayed()) {
-                return doSum;
-            }
-        }
-        return baseValue;
-    }
-
-    public DV immutableOfHiddenContent(AnalysisProvider analysisProvider, boolean returnValueOfMethod) {
-        TypeInfo bestType = bestTypeInfo();
-        if (arrays > 0) {
-            ParameterizedType withoutArrays = copyWithoutArrays();
-            return withoutArrays.defaultImmutable(analysisProvider, returnValueOfMethod);
-        }
-        if (bestType == null) {
-            return returnValueOfMethod ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV;
-        }
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return typeAnalysisNotAvailable(bestType);
-        }
-        SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(this);
-        if (hiddenContentTypes == null) {
-            return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT);
-        }
-        return hiddenContentTypes.types().stream()
-                .map(pt -> pt.defaultImmutable(analysisProvider, returnValueOfMethod))
-                .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
-    }
-
-    public DV defaultImmutable(AnalysisProvider analysisProvider, boolean unboundIsMutable) {
-        return defaultImmutable(analysisProvider, unboundIsMutable, MultiLevel.NOT_INVOLVED_DV);
-    }
-
-    /*
-    Why dynamic value? firstEntry() returns a Map.Entry, which formally is MUTABLE, but has E2IMMUTABLE assigned
-    Once a type is E2IMMUTABLE, we have to look at the immutability of the hidden content, to potentially upgrade
-    to a higher version. See e.g., E2Immutable_11,12
-     */
-    public DV defaultImmutable(AnalysisProvider analysisProvider, boolean unboundIsMutable, DV dynamicValue) {
-        assert dynamicValue.isDone();
-        if (arrays > 0) {
-            return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
-        }
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType == null) {
-            // unbound type parameter, null constant
-            return dynamicValue.max(unboundIsMutable ? MultiLevel.NOT_INVOLVED_DV : MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
-        }
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(bestType);
-        if (typeAnalysis == null) {
-            return typeAnalysisNotAvailable(bestType);
-        }
-        DV baseValue = typeAnalysis.getProperty(Property.IMMUTABLE);
-        if (baseValue.isDelayed()) {
-            return baseValue;
-        }
-        DV dynamicBaseValue = dynamicValue.max(baseValue);
-        if (MultiLevel.isAtLeastE2Immutable(dynamicBaseValue) && !parameters.isEmpty()) {
-            DV doSum = typeAnalysis.immutableCanBeIncreasedByTypeParameters();
-            if (doSum.isDelayed()) {
-                assert typeAnalysis.isNotContracted();
-                return doSum;
-            }
-            if (doSum.valueIsTrue()) {
-                DV paramValue = parameters.stream()
-                        .map(pt -> pt.defaultImmutable(analysisProvider, true))
-                        .map(v -> v.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS) ? MultiLevel.MUTABLE_DV : v)
-                        .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
-                if (paramValue.isDelayed()) return paramValue;
-                return MultiLevel.sumImmutableLevels(dynamicBaseValue, paramValue);
-            }
-        }
-        return dynamicBaseValue;
     }
 
     // for delay debugging

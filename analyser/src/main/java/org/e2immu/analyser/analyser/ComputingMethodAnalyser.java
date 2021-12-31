@@ -571,7 +571,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private DV computeImmutableValue() {
-        DV formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext, true);
+        DV formalImmutable = analyserContext.defaultImmutable(methodInfo.returnType(), true);
         if (formalImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             return formalImmutable;
         }
@@ -791,7 +791,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         MethodAnalysis ma = analyserContext.getMethodAnalysis(methodInfo);
         DV mm = ma.getProperty(Property.MODIFIED_METHOD);
         if (!mm.valueIsFalse()) return mm;
-        DV transparent = methodInfo.returnType().isTransparentOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo);
+        DV transparent = analyserContext.isTransparentOrAtLeastEventuallyE2Immutable(methodInfo.returnType(), methodInfo.typeInfo);
         if (transparent.isDelayed()) return transparent;
         DV independent = ma.getProperty(INDEPENDENT);
         if (independent.isDelayed()) return independent;

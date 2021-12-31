@@ -103,17 +103,17 @@ public record Instance(
     }
 
     private static DV defaultIndependent(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = parameterizedType.defaultIndependent(analysisProvider);
+        DV v = analysisProvider.defaultIndependent(parameterizedType);
         return v.replaceDelayBy(MultiLevel.DEPENDENT_DV);
     }
 
     private static DV defaultImmutable(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = parameterizedType.defaultImmutable(analysisProvider, false);
+        DV v = analysisProvider.defaultImmutable(parameterizedType, false);
         return v.replaceDelayBy(MultiLevel.MUTABLE_DV);
     }
 
     private static DV defaultContainer(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = parameterizedType.defaultContainer(analysisProvider);
+        DV v = analysisProvider.defaultContainer(parameterizedType);
         return v.replaceDelayBy(Level.FALSE_DV);
     }
 
@@ -139,7 +139,7 @@ public record Instance(
                     causes);
         }
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
-                Map.of(Property.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
+                Map.of(Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
                         Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         Property.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
@@ -149,7 +149,7 @@ public record Instance(
     public static Instance localCopyOfVariableField(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
         return new Instance(Identifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
-                Map.of(Property.NOT_NULL_EXPRESSION, parameterizedType.defaultNotNull(),
+                Map.of(Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
                         Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
                         Property.CONTAINER, defaultContainer(parameterizedType, analysisProvider),

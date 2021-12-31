@@ -970,7 +970,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 // we need to know the immutability level of the hidden content of the field
                 Set<ParameterizedType> hiddenContent = typeAnalysis.hiddenContentLinkedTo(fieldInfo);
                 DV minHiddenContentImmutable = hiddenContent.stream()
-                        .map(pt -> pt.defaultImmutable(analyserContext, true))
+                        .map(pt -> analyserContext.defaultImmutable(pt, true))
                         .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
                 int immutableLevel = MultiLevel.oneLevelMoreFrom(minHiddenContentImmutable);
                 minLevel = Math.min(minLevel, immutableLevel);

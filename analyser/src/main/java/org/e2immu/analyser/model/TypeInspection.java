@@ -162,7 +162,7 @@ public interface TypeInspection extends Inspection {
         int sum = 0;
         for (MethodInfo methodInfo : typeInspection.methods()) {
             MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
-            boolean nonStaticNonDefault = !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
+            boolean nonStaticNonDefault = !inspection.isPrivate() && !inspection.isStatic() && !inspection.isDefault() && !inspection.isOverloadOfJLOMethod();
             if (nonStaticNonDefault) {
                 if (overridden.stream().noneMatch(override -> isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
                     sum++;

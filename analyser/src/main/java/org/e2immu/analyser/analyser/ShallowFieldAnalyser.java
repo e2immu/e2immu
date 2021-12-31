@@ -56,7 +56,7 @@ public class ShallowFieldAnalyser {
         // unless annotated with something heavier, ...
         DV notNull;
         if (!fieldAnalysisBuilder.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
-            notNull = enumField ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : fieldInfo.type.defaultNotNull();
+            notNull = enumField ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : AnalysisProvider.defaultNotNull(fieldInfo.type);
             fieldAnalysisBuilder.setProperty(Property.EXTERNAL_NOT_NULL, notNull);
         } else {
             notNull = fieldAnalysisBuilder.getPropertyFromMapNeverDelay(Property.EXTERNAL_NOT_NULL);
@@ -84,10 +84,10 @@ public class ShallowFieldAnalyser {
         }
 
         DV annotatedImmutable = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.IMMUTABLE);
-        DV formallyImmutable = fieldInfo.type.defaultImmutable(analysisProvider, false);
+        DV formallyImmutable = analysisProvider.defaultImmutable(fieldInfo.type, false);
         DV immutable = MultiLevel.MUTABLE_DV.maxIgnoreDelay(annotatedImmutable.maxIgnoreDelay(formallyImmutable));
         DV annotatedIndependent = fieldAnalysisBuilder.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
-        DV formallyIndependent = fieldInfo.type.defaultIndependent(analysisProvider);
+        DV formallyIndependent = analysisProvider.defaultIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
 
         Expression value;

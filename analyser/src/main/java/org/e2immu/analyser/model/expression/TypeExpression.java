@@ -98,7 +98,7 @@ public class TypeExpression implements Expression {
         if (property == Property.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         if (property == Property.IMMUTABLE) {
             // used by EvaluationContext.extractHiddenContent
-            return parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
+            return evaluationContext.getAnalyserContext().defaultImmutable(parameterizedType, false);
         }
         return property.falseDv;
     }

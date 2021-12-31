@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.StringUtil;
@@ -843,11 +842,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // the second one is across clusters of variables
 
-        addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
+        addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> AnalysisProvider.defaultNotNull(x.parameterizedType()), true);
         addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x ->
                 new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(x, getLocation(),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
-        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> x.parameterizedType().defaultImmutable(analyserContext, false), false);
+        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE_DV, true);
 
@@ -1147,7 +1146,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, MultiLevel.NOT_INVOLVED_DV);
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
-        groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? variable.parameterizedType().defaultNotNull() : cnn);
+        groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
         DV cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE_DV : cm);
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
@@ -1175,7 +1174,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 DV value = switch (k) {
                     case EXTERNAL_IMMUTABLE, CONTEXT_MODIFIED, EXTERNAL_NOT_NULL -> prev.max(change);
                     case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
-                    case CONTEXT_NOT_NULL -> variable.parameterizedType().defaultNotNull().max(prev).max(change);
+                    case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
@@ -1405,7 +1404,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(getLocation(), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, analyserContext),
-                        lvr.parameterizedType().defaultImmutable(analyserContext, false),
+                        analyserContext.defaultImmutable(lvr.parameterizedType(), false),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
             }
@@ -1449,8 +1448,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
                     // an assignment may be difficult. The value is never used, only local copies are
 
-                    DV defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext, false);
-                    DV initialNotNull = lvr.parameterizedType().defaultNotNull();
+                    DV defaultImmutable = analyserContext.defaultImmutable(lvr.parameterizedType(), false);
+                    DV initialNotNull = AnalysisProvider.defaultNotNull(lvr.parameterizedType());
                     Map<Property, DV> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE_DV,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
@@ -2697,7 +2696,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (MultiLevel.isAtLeastEffectivelyE2Immutable(imm)) return true;
                 DV extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
                 if (MultiLevel.isAtLeastEffectivelyE2Immutable(extImm)) return true;
-                DV formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext, false);
+                DV formal = analyserContext.defaultImmutable(variableInfo.variable().parameterizedType(), false);
                 return MultiLevel.isAtLeastEffectivelyE2Immutable(formal);
             }
             DV valueProperty = getProperty(value, IMMUTABLE, true, false);
@@ -2734,7 +2733,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
 
                 if (property == IMMUTABLE) {
-                    DV formally = variable.parameterizedType().defaultImmutable(getAnalyserContext(), false);
+                    DV formally = getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
                     if (formally.equals(IMMUTABLE.bestDv)) return formally; // EFFECTIVELY_E2, for primitives etc.
                     if (isMyself(variable.parameterizedType())) return MultiLevel.MUTABLE_DV;
                     DV formallyInMap = formally.max(inMap);

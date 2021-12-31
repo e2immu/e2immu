@@ -401,7 +401,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseIndependent(SharedState sharedState) {
         if (fieldAnalysis.getProperty(Property.INDEPENDENT).isDone()) return DONE;
 
-        DV staticallyIndependent = fieldInfo.type.defaultIndependent(analyserContext);
+        DV staticallyIndependent = analyserContext.defaultIndependent(fieldInfo.type);
         if (staticallyIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
             log(INDEPENDENCE, "Field {} set to @Independent: static type",
                     fieldInfo.fullyQualifiedName());
@@ -450,7 +450,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        DV staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext, false);
+        DV staticallyImmutable = analyserContext.defaultImmutable(fieldInfo.type, false);
         if (staticallyImmutable.equals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)) {
             log(IMMUTABLE_LOG, "Field {} is statically @ERImmutable", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, staticallyImmutable);

@@ -199,7 +199,7 @@ public record PropertyWrapper(Expression expression,
         if (castType != null && (
                 property == Property.IMMUTABLE || property == Property.CONTAINER ||
                         property == Property.INDEPENDENT)) {
-            return castType.getProperty(evaluationContext.getAnalyserContext(), property);
+            return evaluationContext.getAnalyserContext().getProperty(castType, property);
         }
         DV inMap = properties.getOrDefault(property, null);
         if (inMap != null) return inMap;
