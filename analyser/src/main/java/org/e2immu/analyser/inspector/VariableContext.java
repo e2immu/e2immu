@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashMap;
 import java.util.List;

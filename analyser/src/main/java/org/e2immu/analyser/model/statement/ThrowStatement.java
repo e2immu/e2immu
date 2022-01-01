@@ -39,7 +39,7 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("throw"))
                 .add(Space.ONE).add(expression.output(qualification))
                 .add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));

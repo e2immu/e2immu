@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
 
 import java.util.*;

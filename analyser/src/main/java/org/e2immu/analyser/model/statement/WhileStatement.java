@@ -49,12 +49,12 @@ public class WhileStatement extends LoopStatement {
 
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
-                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

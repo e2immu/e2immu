@@ -95,7 +95,9 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return primitive ? primitives.equalsOperatorInt() : primitives.equalsOperatorObject();
     }
 
-    public abstract OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
+    public abstract OutputBuilder output(Qualification qualification,
+                                         Guide.GuideGenerator guideGenerator,
+                                         LimitedStatementAnalysis statementAnalysis);
 
     public static DV statementExecution(List<Expression> labels,
                                         Expression value,
@@ -140,12 +142,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification,
+                                    Guide.GuideGenerator guideGenerator,
+                                    LimitedStatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
             appendLabels(outputBuilder, qualification, guideGenerator);
 
@@ -199,12 +203,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, LimitedStatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
             appendLabels(outputBuilder, qualification, guideGenerator);
             outputBuilder.add(structure.block().output(qualification, statementAnalysis));

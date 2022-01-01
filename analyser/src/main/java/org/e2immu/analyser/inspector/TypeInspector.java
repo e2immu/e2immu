@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

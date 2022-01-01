@@ -60,7 +60,7 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
@@ -74,7 +74,7 @@ public class ForStatement extends LoopStatement {
                 .add(structure.updaters().stream().map(expression2 -> expression2.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
-                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

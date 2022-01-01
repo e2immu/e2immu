@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -85,7 +84,7 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label)).add(Symbol.COLON_LABEL);
@@ -101,9 +100,9 @@ public class Block extends StatementWithStructure {
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
-            StatementAnalysis sa;
-            if (statementAnalysis.statement instanceof Block) {
-                sa = statementAnalysis.navigationData.blocks.get().get(0).orElse(null);
+            LimitedStatementAnalysis sa;
+            if (statementAnalysis.statement() instanceof Block) {
+                sa = statementAnalysis.navigationBlock0OrElseNull();
             } else {
                 sa = statementAnalysis;
             }
@@ -116,16 +115,23 @@ public class Block extends StatementWithStructure {
         return outputBuilder;
     }
 
-    public static void statementsString(Qualification qualification, OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+    public static void statementsString(Qualification qualification,
+                                        OutputBuilder outputBuilder,
+                                        Guide.GuideGenerator guideGenerator,
+                                        LimitedStatementAnalysis statementAnalysis) {
         statementsString(qualification, outputBuilder, guideGenerator, statementAnalysis, false);
     }
 
-    private static void statementsString(Qualification qualification, OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis, boolean isNotFirst) {
-        StatementAnalysis sa = statementAnalysis;
+    private static void statementsString(Qualification qualification,
+                                         OutputBuilder outputBuilder,
+                                         Guide.GuideGenerator guideGenerator,
+                                         LimitedStatementAnalysis statementAnalysis,
+                                         boolean isNotFirst) {
+        LimitedStatementAnalysis sa = statementAnalysis;
         boolean notFirst = isNotFirst;
         while (sa != null) {
-            if (!sa.statement.isSynthetic()) {
-                if (sa.navigationData.replacement.isSet()) {
+            if (!sa.statement().isSynthetic()) {
+                if (sa.navigationReplacementIsSet()) {
                     if (!notFirst) notFirst = true;
                     else outputBuilder.add(guideGenerator.mid());
                     outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
@@ -133,18 +139,18 @@ public class Block extends StatementWithStructure {
                             .add(guideGenerator.mid())
                             .add(sa.output(qualification));
 
-                    StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+                    LimitedStatementAnalysis moreReplaced = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
                     if (moreReplaced != null) {
                         statementsString(qualification, outputBuilder, guideGenerator, moreReplaced, true); // recursion!
                     }
                     outputBuilder.add(guideGenerator.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
-                    sa = sa.navigationData.replacement.get();
+                    sa = sa.navigationReplacementGet();
                 }
                 if (!notFirst) notFirst = true;
                 else outputBuilder.add(guideGenerator.mid());
                 outputBuilder.add(sa.output(qualification));
             }
-            sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+            sa = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
         }
     }
 
@@ -155,20 +161,20 @@ public class Block extends StatementWithStructure {
     public static void outputSwitchOldStyle(Qualification qualification,
                                             OutputBuilder outputBuilder,
                                             Guide.GuideGenerator guideGenerator,
-                                            StatementAnalysis statementAnalysis,
+                                            LimitedStatementAnalysis statementAnalysis,
                                             Map<String, List<SwitchStatementOldStyle.SwitchLabel>> idToLabels) {
         Guide.GuideGenerator statementGg = null;
-        StatementAnalysis sa = statementAnalysis;
+        LimitedStatementAnalysis sa = statementAnalysis;
         boolean notFirst = false;
         boolean notFirstInCase = false;
         while (sa != null) {
-            if (idToLabels.containsKey(sa.index)) {
+            if (idToLabels.containsKey(sa.index())) {
                 if (statementGg != null) {
                     outputBuilder.add(statementGg.end());
                 }
                 if (!notFirst) notFirst = true;
                 else outputBuilder.add(guideGenerator.mid());
-                for (SwitchStatementOldStyle.SwitchLabel switchLabel : idToLabels.get(sa.index)) {
+                for (SwitchStatementOldStyle.SwitchLabel switchLabel : idToLabels.get(sa.index())) {
                     outputBuilder.add(switchLabel.output(qualification));
                     guideGenerator.mid();
                 }
@@ -177,25 +183,25 @@ public class Block extends StatementWithStructure {
                 notFirstInCase = false;
             }
             assert statementGg != null;
-            if (sa.navigationData.replacement.isSet()) {
+            if (sa.navigationReplacementIsSet()) {
                 if (!notFirstInCase) notFirstInCase = true;
                 else outputBuilder.add(statementGg.mid());
                 outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
                         .add(new Text("code will be replaced"))
                         .add(statementGg.mid())
-                        .add(sa.statement.output(qualification, sa));
+                        .add(sa.statement().output(qualification, sa));
 
-                StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+                LimitedStatementAnalysis moreReplaced = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
                 if (moreReplaced != null) {
                     statementsString(qualification, outputBuilder, statementGg, moreReplaced, true); // recursion!
                 }
                 outputBuilder.add(statementGg.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
-                sa = sa.navigationData.replacement.get();
+                sa = sa.navigationReplacementGet();
             }
             if (!notFirstInCase) notFirstInCase = true;
             else outputBuilder.add(statementGg.mid());
-            outputBuilder.add(sa.statement.output(qualification, sa));
-            sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+            outputBuilder.add(sa.statement().output(qualification, sa));
+            sa = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
         }
         if (statementGg != null) {
             outputBuilder.add(statementGg.end());

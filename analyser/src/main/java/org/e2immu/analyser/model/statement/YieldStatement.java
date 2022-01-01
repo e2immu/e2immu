@@ -34,7 +34,7 @@ public class YieldStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("yield"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Space.ONE).add(expression.output(qualification));

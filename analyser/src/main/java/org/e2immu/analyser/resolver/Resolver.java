@@ -254,7 +254,7 @@ public class Resolver {
 
             log(RESOLVER, "Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
-            ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
+            ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
 
             TypeContext typeContext = expressionContextForBody.typeContext();
             typeContext.addToContext(typeInfo);

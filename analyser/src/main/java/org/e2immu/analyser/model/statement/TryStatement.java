@@ -30,6 +30,8 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.LimitedStatementAnalysis.startOfBlock;
+
 public class TryStatement extends StatementWithStructure {
     public final List<Expression> resources;
     public final List<Pair<CatchParameter, Block>> catchClauses;
@@ -134,28 +136,29 @@ public class TryStatement extends StatementWithStructure {
 
     // TODO we may want to change output to have the GuideGenerator in the parameter to align catch and finally
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("try"));
         if (!resources.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(resources.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.SEMICOLON)))
+                    .add(resources.stream().map(expression -> expression
+                            .output(qualification)).collect(OutputBuilder.joining(Symbol.SEMICOLON)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         outputBuilder
                 .addIfNotNull(messageComment(statementAnalysis))
-                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             outputBuilder.add(new Text("catch"))
                     .add(Symbol.LEFT_PARENTHESIS)
                     .add(pair.k.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
-                    .add(pair.v.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+                    .add(pair.v.output(qualification, startOfBlock(statementAnalysis, i)));
             i++;
         }
         if (!finallyBlock.isEmpty()) {
             outputBuilder
                     .add(new Text("finally"))
-                    .add(finallyBlock.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+                    .add(finallyBlock.output(qualification, startOfBlock(statementAnalysis, i)));
         }
         return outputBuilder;
     }

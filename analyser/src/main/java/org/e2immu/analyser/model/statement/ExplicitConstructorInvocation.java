@@ -44,7 +44,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         String name = isSuper ? "super" : "this";
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text(name));
         if (structure.updaters().isEmpty()) {

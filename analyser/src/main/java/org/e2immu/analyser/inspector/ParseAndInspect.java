@@ -110,7 +110,7 @@ public record ParseAndInspect(Resources classPath,
             // add the subtypes, because record declarations can have subtype names in their parameter lists
             TypeInspection typeInspection = typeContextOfFile.getTypeInspection(typeInfo);
             typeInspection.subTypes().forEach(typeContext::addToContext);
-            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(resolver, typeInfo,
+            ExpressionContext expressionContext = ExpressionContextImpl.forInspectionOfPrimaryType(resolver, typeInfo,
                     typeContext, anonymousTypeCounters);
             try {
                 List<TypeInfo> primaryTypes = tia.typeInspector.inspect(false, null,

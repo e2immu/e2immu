@@ -149,7 +149,7 @@ public class Parser {
         // we're sorting the types for some stability in debugging
         TreeMap<TypeInfo, ExpressionContext> expressionContexts = new TreeMap<>();
         for (Map.Entry<TypeInfo, TypeContext> e : onDemandSourceInspection.typeContexts.entrySet()) {
-            ExpressionContext ec = ExpressionContext.forInspectionOfPrimaryType(resolver,
+            ExpressionContext ec = ExpressionContextImpl.forInspectionOfPrimaryType(resolver,
                     e.getKey(), e.getValue(), anonymousTypeCounters);
             expressionContexts.put(e.getKey(), ec);
         }

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -32,7 +31,7 @@ public interface Statement extends Element {
         return this;
     }
 
-    OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis);
+    OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis);
 
     @Override
     default OutputBuilder output(Qualification qualification) {
@@ -44,7 +43,7 @@ public interface Statement extends Element {
         return output(Qualification.EMPTY, null).toString();
     }
 
-    default OutputBuilder messageComment(StatementAnalysis statementAnalysis) {
+    default OutputBuilder messageComment(LimitedStatementAnalysis statementAnalysis) {
         if (statementAnalysis != null && statementAnalysis.haveLocalMessages()) {
             OutputBuilder outputBuilder = new OutputBuilder();
             statementAnalysis.localMessageStream().forEach(message -> outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)

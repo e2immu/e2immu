@@ -45,7 +45,7 @@ import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
 public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>,
-        HasNavigationData<StatementAnalysis> {
+        HasNavigationData<StatementAnalysis>, LimitedStatementAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalysis.class);
 
     public final Statement statement;
@@ -100,10 +100,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return sa == null ? null : sa.startOfBlock(block);
     }
 
-    private StatementAnalysis startOfBlock(int i) {
+    @Override
+    public StatementAnalysis startOfBlock(int i) {
         if (!navigationData.blocks.isSet()) return null;
         List<Optional<StatementAnalysis>> list = navigationData.blocks.get();
         return i >= list.size() ? null : list.get(i).orElse(null);
+    }
+
+    @Override
+    public LimitedStatementAnalysis navigationBlock0OrElseNull() {
+        return navigationData.blocks.get().get(0).orElse(null);
     }
 
     @Override
@@ -117,6 +123,36 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     @Override
     public String index() {
         return index;
+    }
+
+    @Override
+    public boolean navigationReplacementIsSet() {
+        return navigationData.replacement.isSet();
+    }
+
+    @Override
+    public boolean navigationNextIsSet() {
+        return navigationData.next.isSet();
+    }
+
+    @Override
+    public LimitedStatementAnalysis navigationNextGetOrElseNull() {
+        return navigationData.next.get().orElse(null);
+    }
+
+    @Override
+    public LimitedStatementAnalysis navigationReplacementGet() {
+        return navigationData.replacement.get();
+    }
+
+    @Override
+    public boolean navigationHasSubBlocks() {
+        return navigationData.hasSubBlocks();
+    }
+
+    @Override
+    public boolean navigationBlock0IsPresent() {
+        return navigationData.blocks.get().get(0).isPresent();
     }
 
     @Override

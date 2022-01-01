@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.LimitedStatementAnalysis;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -27,7 +27,7 @@ public class EmptyStatement extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(Symbol.SEMICOLON);
     }
 }

@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Equals;
@@ -83,15 +82,16 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         outputBuilder.add(Symbol.LEFT_BRACE);
-        if (statementAnalysis.navigationData.hasSubBlocks() &&
-                statementAnalysis.navigationData.blocks.get().get(0).isPresent()) {
+        if (statementAnalysis.navigationHasSubBlocks() &&
+                statementAnalysis.navigationBlock0IsPresent()) {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
-            StatementAnalysis firstStatement = statementAnalysis.navigationData.blocks.get().get(0).orElseThrow();
+            LimitedStatementAnalysis firstStatement = statementAnalysis.navigationBlock0OrElseNull();
+            assert firstStatement != null;
             Block.outputSwitchOldStyle(qualification, outputBuilder, guideGenerator, firstStatement, switchLabelMap(firstStatement));
             outputBuilder.add(guideGenerator.end());
         }
@@ -99,23 +99,24 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     // IMPROVE doesn't take replacements into account
-    private Map<String, List<SwitchLabel>> switchLabelMap(StatementAnalysis firstStatement) {
+    private Map<String, List<SwitchLabel>> switchLabelMap(LimitedStatementAnalysis firstStatement) {
         Map<String, List<SwitchLabel>> res = new HashMap<>();
-        StatementAnalysis sa = firstStatement;
+        LimitedStatementAnalysis sa = firstStatement;
         int statementCnt = 0;
         int labelIndex = 0;
         do {
             while (labelIndex < switchLabels.size() && switchLabels.get(labelIndex).from == statementCnt) {
-                SMapList.add(res, sa.index, switchLabels.get(labelIndex));
+                SMapList.add(res, sa.index(), switchLabels.get(labelIndex));
                 labelIndex++;
             }
-            sa = sa.navigationData.next.get().orElse(null);
+            sa = sa.navigationNextGetOrElseNull();
             statementCnt++;
         } while (sa != null && labelIndex < switchLabels.size());
         return res;
     }
 
-    public Map<String, Expression> startingPointToLabels(EvaluationContext evaluationContext, StatementAnalysis firstStatement) {
+    public Map<String, Expression> startingPointToLabels(EvaluationContext evaluationContext,
+                                                         LimitedStatementAnalysis firstStatement) {
         return switchLabelMap(firstStatement).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                 e -> Or.or(evaluationContext, e.getValue().stream()
                         .map(switchLabel ->

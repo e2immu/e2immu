@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.ConstructorCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.*;

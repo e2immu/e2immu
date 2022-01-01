@@ -40,12 +40,12 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("synchronized"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

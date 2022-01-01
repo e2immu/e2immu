@@ -56,7 +56,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE);
@@ -64,7 +64,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            outputBuilder.add(switchEntry.output(qualification, guideGenerator, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+            outputBuilder.add(switchEntry.output(qualification, guideGenerator, LimitedStatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
