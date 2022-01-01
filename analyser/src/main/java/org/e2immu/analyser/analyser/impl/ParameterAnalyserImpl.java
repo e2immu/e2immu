@@ -21,22 +21,27 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
-public abstract class ParameterAnalyser extends AbstractAnalyser {
+public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements ParameterAnalyser {
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
 
-    ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
+    ParameterAnalyserImpl(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super("Parameter " + parameterInfo.fullyQualifiedName(), analyserContext);
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
     }
 
+    @Override
+    public ParameterInfo getParameterInfo() {
+        return parameterInfo;
+    }
+
+    @Override
     public ParameterAnalysis getParameterAnalysis() {
         return parameterAnalysis;
     }
@@ -56,14 +61,10 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
         throw new UnsupportedOperationException("Use different initializer");
     }
 
-    public abstract void initialize(Stream<FieldAnalyser> fieldAnalyserStream);
-
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         return analyse(iteration);
     }
-
-    protected abstract AnalysisStatus analyse(int iteration);
 
     public void check() {
         log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());

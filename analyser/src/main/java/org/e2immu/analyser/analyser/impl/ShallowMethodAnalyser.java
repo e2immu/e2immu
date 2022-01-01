@@ -27,7 +27,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class ShallowMethodAnalyser extends MethodAnalyser {
+public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
     private final boolean enableVisitors;

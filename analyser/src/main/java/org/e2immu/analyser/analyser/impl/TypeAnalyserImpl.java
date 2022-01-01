@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.model.*;
@@ -51,17 +52,17 @@ import static org.e2immu.analyser.util.Logger.log;
  * Errors related to those constraints are added to the type making the violation.
  */
 
-public abstract class TypeAnalyser extends AbstractAnalyser {
+public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeAnalyser {
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
     public final TypeAnalysisImpl.Builder typeAnalysis;
     protected final Messages messages = new Messages();
 
-    public TypeAnalyser(@NotModified TypeInfo typeInfo,
-                        TypeInfo primaryType,
-                        AnalyserContext analyserContextInput,
-                        Analysis.AnalysisMode analysisMode) {
+    public TypeAnalyserImpl(@NotModified TypeInfo typeInfo,
+                            TypeInfo primaryType,
+                            AnalyserContext analyserContextInput,
+                            Analysis.AnalysisMode analysisMode) {
         super("Type " + typeInfo.simpleName, new ExpandableAnalyserContextImpl(analyserContextInput));
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
@@ -72,10 +73,25 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    public TypeInfo getPrimaryType() {
+        return primaryType;
+    }
+
+    @Override
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
+    }
+
+    @Override
+    public TypeAnalysisImpl.Builder getTypeAnalysis() {
+        return typeAnalysis;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TypeAnalyser that = (TypeAnalyser) o;
+        TypeAnalyserImpl that = (TypeAnalyserImpl) o;
         return typeInfo.equals(that.typeInfo);
     }
 
@@ -98,8 +114,6 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
     }
-
-    public abstract boolean ignorePrivateConstructorsForFieldValue();
 
     @Override
     public void check() {

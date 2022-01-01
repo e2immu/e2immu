@@ -12,35 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.AnalyserComponents;
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.FieldAnalyser;
+import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 
 import java.util.stream.Stream;
 
-public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
+public interface ParameterAnalyser extends Analyser {
+    ParameterAnalysis getParameterAnalysis();
 
-    public AggregatingParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
-        super(analyserContext, parameterInfo);
-    }
+    void initialize(Stream<FieldAnalyser> fieldAnalyserStream);
 
-    @Override
-    public AnalyserComponents<String, ?> getAnalyserComponents() {
-        throw new UnsupportedOperationException();
-    }
+    AnalysisStatus analyse(int iteration);
 
-    @Override
-    public void initialize(Stream<FieldAnalyser> fieldAnalyserStream) {
-
-    }
-
-    @Override
-    public AnalysisStatus analyse(int iteration) {
-        return AnalysisStatus.DONE;
-    }
-
+    ParameterInfo getParameterInfo();
 }

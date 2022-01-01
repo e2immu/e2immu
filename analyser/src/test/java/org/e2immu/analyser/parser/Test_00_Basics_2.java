@@ -16,7 +16,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.FieldAnalyser;
+import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -55,17 +55,17 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.iteration() == 0) {
                 Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                        FieldAnalyser.EVALUATE_INITIALISER,
-                        FieldAnalyser.ANALYSE_CONTAINER));
+                        FieldAnalyserImpl.EVALUATE_INITIALISER,
+                        FieldAnalyserImpl.ANALYSE_CONTAINER));
                 assertSubMap(expect, d.statuses());
             }
             if (d.iteration() == 1) {
                 Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
-                        FieldAnalyser.EVALUATE_INITIALISER,
-                        FieldAnalyser.ANALYSE_CONTAINER,
-                        FieldAnalyser.ANALYSE_FINAL,
-                        FieldAnalyser.ANALYSE_FINAL_VALUE,
-                        FieldAnalyser.ANALYSE_NOT_NULL));
+                        FieldAnalyserImpl.EVALUATE_INITIALISER,
+                        FieldAnalyserImpl.ANALYSE_CONTAINER,
+                        FieldAnalyserImpl.ANALYSE_FINAL,
+                        FieldAnalyserImpl.ANALYSE_FINAL_VALUE,
+                        FieldAnalyserImpl.ANALYSE_NOT_NULL));
                 assertSubMap(expect, d.statuses());
             }
             if ("string".equals(d.fieldInfo().name)) {

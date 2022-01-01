@@ -31,7 +31,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class AggregatingMethodAnalyser extends MethodAnalyser {
+public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
 
     public static final String MODIFIED = "modified";
     public static final String IMMUTABLE = "immutable";

@@ -106,6 +106,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         Comparator<ValueAndPropertyProxy> COMPARATOR = (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
     }
 
+    @Override
+    public boolean isDeclaredFunctionalInterface() {
+        return false;// TODO
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements FieldAnalysis {
         public final TypeInfo bestType;
         public final boolean isExplicitlyFinal;
@@ -299,7 +304,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         public String sortedValuesString() {
-            if(values.isFirst()) return values.getFirst().toString();
+            if (values.isFirst()) return values.getFirst().toString();
             return values.get().stream().map(p -> p.getValue().toString()).sorted().collect(Collectors.joining(","));
         }
 

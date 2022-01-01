@@ -40,7 +40,7 @@ import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class ComputedParameterAnalyser extends ParameterAnalyser {
+public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputedParameterAnalyser.class);
     public static final String CHECK_UNUSED_PARAMETER = "checkUnusedParameter";
     public static final String ANALYSE_FIRST_ITERATION = "analyseFirstIteration";
@@ -57,7 +57,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
     @Override
     public void initialize(Stream<FieldAnalyser> fieldAnalyserStream) {
-        this.fieldAnalysers = fieldAnalyserStream.collect(Collectors.toUnmodifiableMap(fa -> fa.fieldInfo, fa -> fa));
+        this.fieldAnalysers = fieldAnalyserStream.collect(Collectors.toUnmodifiableMap(FieldAnalyser::getFieldInfo, fa -> fa));
     }
 
     record SharedState(int iteration) {
@@ -285,7 +285,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             if (LinkedVariables.isAssigned(assignedOrLinked)) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
-                FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
+                FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
 
                 for (Property property : propertiesToCopy) {
                     DV inField = fieldAnalysis.getProperty(property);

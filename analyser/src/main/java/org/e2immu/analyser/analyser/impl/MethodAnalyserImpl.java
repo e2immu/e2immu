@@ -23,12 +23,11 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
-public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
+public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
     public final boolean isSAM;
@@ -39,13 +38,13 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final CheckConstant checkConstant;
 
-    MethodAnalyser(MethodInfo methodInfo,
-                   MethodAnalysisImpl.Builder methodAnalysis,
-                   List<? extends ParameterAnalyser> parameterAnalysers,
-                   List<ParameterAnalysis> parameterAnalyses,
-                   Map<CompanionMethodName, CompanionAnalyser> companionAnalysers,
-                   boolean isSAM,
-                   AnalyserContext analyserContextInput) {
+    MethodAnalyserImpl(MethodInfo methodInfo,
+                       MethodAnalysisImpl.Builder methodAnalysis,
+                       List<? extends ParameterAnalyser> parameterAnalysers,
+                       List<ParameterAnalysis> parameterAnalyses,
+                       Map<CompanionMethodName, CompanionAnalyser> companionAnalysers,
+                       boolean isSAM,
+                       AnalyserContext analyserContextInput) {
         super("Method " + methodInfo.name, analyserContextInput);
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.methodInfo = methodInfo;
@@ -59,19 +58,36 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         this.isSAM = isSAM;
     }
 
-    public abstract Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers();
+    @Override
+    public MethodAnalysisImpl.Builder getMethodAnalysis() {
+        return methodAnalysis;
+    }
 
-    public abstract Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies);
+    @Override
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
+    }
 
-    public abstract StatementAnalyser findStatementAnalyser(String index);
+    @Override
+    public MethodInspection getMethodInspection() {
+        return methodInspection;
+    }
 
-    public abstract void logAnalysisStatuses();
+    @Override
+    public List<ParameterAnalysis> getParameterAnalyses() {
+        return parameterAnalyses;
+    }
+
+    @Override
+    public boolean isSAM() {
+        return isSAM;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        MethodAnalyser that = (MethodAnalyser) o;
+        MethodAnalyserImpl that = (MethodAnalyserImpl) o;
         return methodInfo.equals(that.methodInfo);
     }
 
@@ -80,6 +96,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         return Objects.hash(methodInfo);
     }
 
+    @Override
     public Collection<? extends ParameterAnalyser> getParameterAnalysers() {
         return parameterAnalysers;
     }
@@ -97,8 +114,8 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
                 methodInspection.getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
-            Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
-            pa.parameterAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.PARAMETER, acceptVerify,
+            Collection<AnnotationExpression> annotations = pa.getParameterInfo().getInspection().getAnnotations();
+            pa.getParameterAnalysis().fromAnnotationsIntoProperties(AnalyserIdentification.PARAMETER, acceptVerify,
                     annotations, analyserContext.getE2ImmuAnnotationExpressions());
 
             pa.initialize(analyserContext.fieldAnalyserStream());
@@ -110,11 +127,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         return methodAnalysis;
     }
 
-    public boolean fromFieldToParametersIsDone() {
-        return !hasCode() || getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                parameterAnalyser.getParameterAnalysis().isAssignedToFieldDelaysResolved());
-    }
-
+    @Override
     public boolean hasCode() {
         StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
         return firstStatement != null;
@@ -202,16 +215,17 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::write);
     }
 
-    public abstract List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies);
-
+    @Override
     public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
         return getFieldAsVariable(fieldInfo, false).stream().filter(VariableInfo::isAssigned)
                 .toList();
     }
 
+    @Override
     public CausesOfDelay fromFieldToParametersStatus() {
-        return parameterAnalysers.stream().filter(pa -> !pa.parameterAnalysis.isAssignedToFieldDelaysResolved())
-                .map(pa -> (CausesOfDelay) new CausesOfDelay.SimpleSet(pa.parameterAnalysis.location, CauseOfDelay.Cause.ASSIGNED_TO_FIELD))
+        return parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
+                .map(pa -> (CausesOfDelay) new CausesOfDelay.SimpleSet(pa.getParameterAnalysis().location(),
+                        CauseOfDelay.Cause.ASSIGNED_TO_FIELD))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 }

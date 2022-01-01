@@ -40,8 +40,8 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class FieldAnalyser extends AbstractAnalyser {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FieldAnalyser.class);
+public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FieldAnalyserImpl.class);
 
     // analyser components, constants are used in tests and delay debugging
     public static final String COMPUTE_TRANSPARENT_TYPE = "computeTransparentType";
@@ -80,11 +80,11 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private final Predicate<WithInspectionAndAnalysis> ignoreMyConstructors;
 
-    public FieldAnalyser(FieldInfo fieldInfo,
-                         TypeInfo primaryType,
-                         TypeAnalysis ownerTypeAnalysis,
-                         MethodAnalyser sam,
-                         AnalyserContext nonExpandableAnalyserContext) {
+    public FieldAnalyserImpl(FieldInfo fieldInfo,
+                             TypeInfo primaryType,
+                             TypeAnalysis ownerTypeAnalysis,
+                             MethodAnalyser sam,
+                             AnalyserContext nonExpandableAnalyserContext) {
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
@@ -120,10 +120,25 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    public FieldInfo getFieldInfo() {
+        return fieldInfo;
+    }
+
+    @Override
+    public TypeInfo getPrimaryType() {
+        return primaryType;
+    }
+
+    @Override
+    public FieldAnalysisImpl.Builder getFieldAnalysis() {
+        return fieldAnalysis;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        FieldAnalyser that = (FieldAnalyser) o;
+        FieldAnalyserImpl that = (FieldAnalyserImpl) o;
         return fieldInfo.equals(that.fieldInfo);
     }
 
@@ -156,9 +171,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                 fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
-            if (analyser.methodInspection.isStaticBlock()) {
+            if (analyser.getMethodInspection().isStaticBlock()) {
                 myStaticBlocks.add(analyser);
-            } else if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
+            } else if (analyser.getMethodInfo().typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);
             }
         });
@@ -168,7 +183,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private Stream<MethodAnalyser> otherStaticBlocks() {
-        TypeInfo primaryType = myTypeAnalyser.primaryType;
+        TypeInfo primaryType = myTypeAnalyser.getPrimaryType();
         TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
         return primaryTypeInspection.staticBlocksRecursively(analyserContext)
                 .filter(m -> !(m.typeInfo == fieldInfo.owner)) // filter out mine
@@ -177,7 +192,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     // group them per type, because we take only one value per type
     private Stream<List<MethodAnalyser>> staticBlocksPerTypeExcludeMine() {
-        TypeInfo primaryType = myTypeAnalyser.primaryType;
+        TypeInfo primaryType = myTypeAnalyser.getPrimaryType();
         TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
         return primaryTypeInspection.staticBlocksPerType(analyserContext)
                 .filter(list -> !list.isEmpty() && !(list.get(0).typeInfo == fieldInfo.owner)) // filter out mine
@@ -186,9 +201,9 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(boolean alsoMyOwnConstructors) {
         return analyserContext.methodAnalyserStream()
-                .filter(ma -> !ma.methodInspection.isStaticBlock())
+                .filter(ma -> !ma.getMethodInspection().isStaticBlock())
                 .filter(ma -> alsoMyOwnConstructors ||
-                        !(ma.methodInfo.typeInfo == fieldInfo.owner && ma.methodInfo.isConstructor))
+                        !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
                         ma.getLocallyCreatedPrimaryTypeAnalysers().flatMap(PrimaryTypeAnalyser::methodAnalyserStream)));
     }
@@ -257,11 +272,11 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeTransparentType() {
         assert fieldAnalysis.isTransparentType().isDelayed();
-        CausesOfDelay causes = myTypeAnalyser.typeAnalysis.hiddenContentTypeStatus();
+        CausesOfDelay causes = myTypeAnalyser.getTypeAnalysis().hiddenContentTypeStatus();
         if (causes.isDelayed()) {
             return causes;
         }
-        boolean transparent = myTypeAnalyser.typeAnalysis.getTransparentTypes().contains(fieldInfo.type);
+        boolean transparent = myTypeAnalyser.getTypeAnalysis().getTransparentTypes().contains(fieldInfo.type);
         fieldAnalysis.setTransparentType(Level.fromBoolDv(transparent));
         return DONE;
     }
@@ -287,7 +302,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // only worth doing something when the field is statically not a container
         DV parameterModification = methodsForModification()
                 .flatMap(method -> method.getParameterAnalysers().stream())
-                .map(pa -> pa.parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE))
+                .map(pa -> pa.getParameterAnalysis().getProperty(Property.MODIFIED_VARIABLE))
                 .reduce(Property.MODIFIED_VARIABLE.falseDv, DV::max);
         if (parameterModification.isDelayed()) {
             log(MODIFICATION, "Delaying @Container on field {}, some parameters have no @Modified status yet",
@@ -329,8 +344,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
-                        m.methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
-                .peek(m -> LOGGER.info("Considering " + m.methodInfo.fullyQualifiedName))
+                        m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                .peek(m -> LOGGER.info("Considering " + m.getMethodInfo().fullyQualifiedName))
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
@@ -486,7 +501,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
         if (MultiLevel.isBefore(worstOverValues)) {
             DV bestOverContext = myMethodsAndConstructors.stream()
-                    .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
+                    .filter(m -> m.getMethodInfo().isConstructor || m.getMethodInfo().methodResolution.get().partOfConstruction()
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                     .map(vi -> vi.getProperty(Property.CONTEXT_IMMUTABLE))
@@ -528,8 +543,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         // FIXME ignoreMyConstructors is a delay breaking measure, needs re-implementing
         CausesOfDelay delayLinkedVariables = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
-                .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())
+                .filter(ma -> !ma.getMethodInfo().isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
+                .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())
                 .map(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (delayLinkedVariables.isDelayed()) {
@@ -539,14 +554,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldReference me = new FieldReference(analyserContext, fieldInfo);
         boolean linkedToMe = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
-                .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
-                .filter(ma -> !ma.methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())
+                .filter(ma -> !ma.getMethodInfo().isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
+                .filter(ma -> !ma.getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())
                 .anyMatch(ma -> {
-                    if (ma.methodInfo.hasReturnValue()) {
+                    if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
                         if (linkedVariables.value(me) == LinkedVariables.DEPENDENT_DV) return true;
                     }
-                    return ma.methodAnalysis.getLastStatement().variableStream()
+                    return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
                             .anyMatch(vi -> vi.getLinkedVariables().contains(me));
                 });
@@ -565,17 +580,17 @@ public class FieldAnalyser extends AbstractAnalyser {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         int occurrenceCountForError = 0;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-            DV finalizer = methodAnalyser.methodAnalysis.getProperty(Property.FINALIZER);
+            DV finalizer = methodAnalyser.getMethodAnalysis().getProperty(Property.FINALIZER);
             assert finalizer.isDone();
-            if (finalizer.valueIsFalse() && (!methodAnalyser.methodInfo.isPrivate() ||
-                    methodAnalyser.methodInfo.isConstructor && !ignorePrivateConstructors)) {
+            if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
+                    methodAnalyser.getMethodInfo().isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
                     Expression expression = vi.getValue();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
                             && ve.variable() instanceof LocalVariableReference) {
-                        throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                        throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
                     values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
@@ -599,7 +614,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             return "ALL_CONSTR:" + getValue().toString();
                         }
                     });
-                    if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor) {
+                    if (!fieldInspection.isStatic() && methodAnalyser.getMethodInfo().isConstructor) {
                         // we'll warn for the combination of field initializer, and occurrence in at least one constructor
                         occurrenceCountForError++;
                     }
@@ -609,7 +624,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         delays = delays.merge(vi.getValue().causesOfDelay());
                     }
                 }
-                if (!added && methodAnalyser.methodInfo.isConstructor) {
+                if (!added && methodAnalyser.getMethodInfo().isConstructor) {
                     occurs = false;
                 }
             }
@@ -627,7 +642,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
                             && ve.variable() instanceof LocalVariableReference) {
-                        throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                        throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
                     latestBlock = new FieldAnalysisImpl.ValueAndPropertyProxy() {
@@ -982,7 +997,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
             Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
-                            m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
+                            m.getMethodInfo().methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
         }
@@ -1086,8 +1101,10 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         check(NotNull.class, e2.notNull);
         check(NotNull1.class, e2.notNull1);
-        CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis, myTypeAnalyser.typeAnalysis);
-        CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis, myTypeAnalyser.typeAnalysis);
+        CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
+                myTypeAnalyser.getTypeAnalysis());
+        CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
+                myTypeAnalyser.getTypeAnalysis());
 
         // dynamic type annotations
         check(Container.class, e2.container);
@@ -1117,6 +1134,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         });
     }
 
+    @Override
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
     }
@@ -1156,7 +1174,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         public EvaluationContext child(Expression condition) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
                     Precondition.empty(getPrimitives()), null);
-            return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
+            return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 
         @Override

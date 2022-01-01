@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.MethodAnalyser;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
@@ -57,7 +57,7 @@ public class AssignmentIncompatibleWithPrecondition {
                     Expression pcExpression = precondition.expression();
                     String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
                     log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
-                            methodAnalyser.methodInfo.distinguishingName(), index);
+                            methodAnalyser.getMethodInfo().distinguishingName(), index);
 
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
                     StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;

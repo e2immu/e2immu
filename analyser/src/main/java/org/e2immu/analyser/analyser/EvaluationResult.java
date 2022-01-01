@@ -660,8 +660,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markVariablesFromPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
-            pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.methodAnalysis));
-            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitializers(fa.fieldAnalysis, fa.primaryType));
+            pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.getMethodAnalysis()));
+            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitializers(fa.getFieldAnalysis(), fa.getPrimaryType()));
         }
 
         private void markVariablesFromSubFieldInitializers(FieldAnalysis fieldAnalysis, TypeInfo subType) {

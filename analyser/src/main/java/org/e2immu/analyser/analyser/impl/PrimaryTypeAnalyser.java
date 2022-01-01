@@ -109,10 +109,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             mfss.forEach(mfs -> {
                 if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
                     TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
-                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalyser.typeAnalysis,
+                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalyser.getTypeAnalysis(),
                             false, true, this);
                     for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                        parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                        parameterAnalysersBuilder.put(parameterAnalyser.getParameterInfo(), parameterAnalyser);
                     }
                     // this has to happen before the regular analysers, because there are no delays
                     //if (methodAnalyser instanceof ShallowMethodAnalyser) {
@@ -121,7 +121,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                     methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                     // finalizers are done early, before the first assignments
                     if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                        typeAnalyser.typeAnalysis.setProperty(Property.FINALIZER, Level.TRUE_DV);
+                        ((TypeAnalysisImpl.Builder) typeAnalyser.getTypeAnalysis())
+                                .setProperty(Property.FINALIZER, Level.TRUE_DV);
                     }
                 }
             });
@@ -146,8 +147,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                                             "No method analyser for " + sam.fullyQualifiedName);
                                 } else samAnalyser = null;
                             } else samAnalyser = null;
-                            TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
-                            analyser = new FieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
+                            TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
+                            analyser = new FieldAnalyserImpl(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {
                             analyser = null;

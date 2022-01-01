@@ -69,7 +69,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     public static final String CHECK_UNREACHABLE_STATEMENT = "checkUnreachableStatement";
 
     public final StatementAnalysis statementAnalysis;
-    private final MethodAnalyser myMethodAnalyser;
+    private final MethodAnalyserImpl myMethodAnalyser;
     private final ExpandableAnalyserContextImpl analyserContext;
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
@@ -80,7 +80,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
-                              MethodAnalyser methodAnalyser,
+                              MethodAnalyserImpl methodAnalyser,
                               Statement statement,
                               StatementAnalysis parent,
                               String index,
@@ -93,7 +93,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
             AnalyserContext analyserContext,
-            MethodAnalyser myMethodAnalyser,
+            MethodAnalyserImpl myMethodAnalyser,
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
@@ -2615,7 +2615,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public MethodAnalyser getCurrentMethod() {
+        public MethodAnalyserImpl getCurrentMethod() {
             return myMethodAnalyser;
         }
 

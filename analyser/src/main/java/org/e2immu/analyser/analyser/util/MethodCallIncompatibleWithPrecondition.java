@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.MethodAnalyser;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -40,7 +40,7 @@ public class MethodCallIncompatibleWithPrecondition {
     public static DV isMark(EvaluationContext evaluationContext,
                             Set<FieldInfo> fields,
                             MethodAnalyser methodAnalyser) {
-        StatementAnalysis statementAnalysis = methodAnalyser.methodAnalysis.getLastStatement();
+        StatementAnalysis statementAnalysis = methodAnalyser.getMethodAnalysis().getLastStatement();
         assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
         Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
         Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(evaluationContext, precondition);
@@ -51,7 +51,7 @@ public class MethodCallIncompatibleWithPrecondition {
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
             if (!variableInfo.valueIsSet()) {
                 log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",
-                        fieldInfo.name, methodAnalyser.methodInfo.fullyQualifiedName);
+                        fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
                 return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variableInfo.variable(),
                         statementAnalysis.location(), CauseOfDelay.Cause.VALUE));
             }

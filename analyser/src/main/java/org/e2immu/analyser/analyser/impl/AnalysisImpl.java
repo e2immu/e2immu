@@ -14,12 +14,16 @@
 
 package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Messages;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -57,5 +61,13 @@ public abstract class AnalysisImpl implements Analysis {
         DV v = properties.getOrDefault(property, null);
         if (v == null) return new CausesOfDelay.SimpleSet(location(), property.causeOfDelay());
         return v;
+    }
+
+    @Override
+    public Messages fromAnnotationsIntoProperties(Analyser.AnalyserIdentification analyserIdentification,
+                                                  boolean acceptVerifyAsContracted,
+                                                  Collection<AnnotationExpression> annotations,
+                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        throw new UnsupportedOperationException("Only in builders!");
     }
 }

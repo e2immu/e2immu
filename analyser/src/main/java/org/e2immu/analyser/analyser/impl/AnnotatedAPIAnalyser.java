@@ -242,7 +242,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         validateIndependence();
 
-        return Stream.concat(methodAnalysers.values().stream().flatMap(AbstractAnalyser::getMessageStream),
+        return Stream.concat(methodAnalysers.values().stream().flatMap(MethodAnalyser::getMessageStream),
                 Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream()));
     }
 
@@ -383,7 +383,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     @Override
-    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
+    public FieldAnalyserImpl getFieldAnalyser(FieldInfo fieldInfo) {
         return null; // IMPROVE ME
     }
 
@@ -393,7 +393,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     @Override
-    public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
+    public MethodAnalyserImpl getMethodAnalyser(MethodInfo methodInfo) {
         throw new UnsupportedOperationException();
     }
 
@@ -410,13 +410,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        AbstractAnalyser analyser = methodAnalysers.get(methodInfo);
-        if (analyser != null) return (MethodAnalysis) analyser.getAnalysis();
+        MethodAnalyser analyser = methodAnalysers.get(methodInfo);
+        if (analyser != null) return analyser.getMethodAnalysis();
         return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
     }
 
     @Override
-    public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
+    public TypeAnalyserImpl getTypeAnalyser(TypeInfo typeInfo) {
         throw new UnsupportedOperationException();
     }
 

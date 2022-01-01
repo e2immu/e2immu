@@ -89,13 +89,13 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             if (parent != null) return parent.getFieldAnalysis(fieldInfo);
             return fieldInfo.fieldAnalysis.get(fieldInfo.fullyQualifiedName());
         }
-        return fieldAnalyser.fieldAnalysis;
+        return fieldAnalyser.getFieldAnalysis();
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser parameterAnalyser = getParameterAnalyser(parameterInfo);
         if (parameterAnalyser != null) {
-            return parameterAnalyser.parameterAnalysis;
+            return parameterAnalyser.getParameterAnalysis();
         }
         AnalyserContext parent = getParent();
         if (parent != null) return parent.getParameterAnalysis(parameterInfo);
@@ -111,7 +111,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             if (parent != null) return parent.getTypeAnalysis(typeInfo);
             return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
         }
-        return typeAnalyser.typeAnalysis;
+        return typeAnalyser.getTypeAnalysis();
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
@@ -121,7 +121,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             if (parent != null) return parent.getMethodAnalysis(methodInfo);
             return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
         }
-        return methodAnalyser.methodAnalysis;
+        return methodAnalyser.getMethodAnalysis();
     }
 
     default FieldInspection getFieldInspection(FieldInfo fieldInfo) {

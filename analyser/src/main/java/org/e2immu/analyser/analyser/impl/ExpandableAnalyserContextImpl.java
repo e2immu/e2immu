@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -85,7 +85,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
-        if (ma != null) return ma.methodAnalysis;
+        if (ma != null) return ma.getMethodAnalysis();
         return parent.getMethodAnalysis(methodInfo);
     }
 
@@ -101,7 +101,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser pa = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
-        if (pa != null) return pa.parameterAnalysis;
+        if (pa != null) return pa.getParameterAnalysis();
         return getMethodAnalysis(parameterInfo.owner).getParameterAnalyses().get(parameterInfo.index);
     }
 
@@ -125,8 +125,8 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser ta = this.typeAnalysers.getOrDefaultNull(typeInfo);
-        if (ta != null) return ta.typeAnalysis;
+        TypeAnalyser typeAnalyser = this.typeAnalysers.getOrDefaultNull(typeInfo);
+        if (typeAnalyser != null) return typeAnalyser.getTypeAnalysis();
         return parent.getTypeAnalysis(typeInfo);
     }
 
@@ -138,19 +138,19 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     @Override
     public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
-        if (fa != null) return fa.fieldAnalysis;
+        if (fa != null) return fa.getFieldAnalysis();
         return parent.getFieldAnalysis(fieldInfo);
     }
 
     public void addPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
         pta.analysers.forEach(analyser -> {
-            if (analyser instanceof MethodAnalyser ma && !this.methodAnalysers.isSet(ma.methodInfo)) {
+            if (analyser instanceof MethodAnalyserImpl ma && !this.methodAnalysers.isSet(ma.methodInfo)) {
                 this.methodAnalysers.put(ma.methodInfo, ma);
-            } else if (analyser instanceof TypeAnalyser ta && !this.typeAnalysers.isSet(ta.typeInfo)) {
+            } else if (analyser instanceof TypeAnalyserImpl ta && !this.typeAnalysers.isSet(ta.typeInfo)) {
                 this.typeAnalysers.put(ta.typeInfo, ta);
-            } else if (analyser instanceof FieldAnalyser fa && !this.fieldAnalysers.isSet(fa.fieldInfo)) {
+            } else if (analyser instanceof FieldAnalyserImpl fa && !this.fieldAnalysers.isSet(fa.fieldInfo)) {
                 this.fieldAnalysers.put(fa.fieldInfo, fa);
-            } else if (analyser instanceof ParameterAnalyser pa && !this.parameterAnalysers.isSet(pa.parameterInfo)) {
+            } else if (analyser instanceof ParameterAnalyserImpl pa && !this.parameterAnalysers.isSet(pa.parameterInfo)) {
                 this.parameterAnalysers.put(pa.parameterInfo, pa);
             }
         });

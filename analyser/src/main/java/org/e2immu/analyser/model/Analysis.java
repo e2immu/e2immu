@@ -14,9 +14,13 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Messages;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -97,6 +101,12 @@ public interface Analysis {
     DV getPropertyFromMapNeverDelay(Property property);
 
     Location location();
+
+    Messages fromAnnotationsIntoProperties(
+            Analyser.AnalyserIdentification analyserIdentification,
+            boolean acceptVerifyAsContracted,
+            Collection<AnnotationExpression> annotations,
+            E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
 
     default Analysis build() {
         throw new UnsupportedOperationException();

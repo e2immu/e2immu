@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.MethodAnalyser;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analyser.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;

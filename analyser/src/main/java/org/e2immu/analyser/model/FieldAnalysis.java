@@ -96,4 +96,6 @@ public interface FieldAnalysis extends Analysis {
             return DelayedExpression.forDelayedValueProperties(getFieldInfo().type, LinkedVariables.EMPTY, delay);
         return Instance.forField(getFieldInfo(), notNull, immutable, container, independent);
     }
+
+    boolean isDeclaredFunctionalInterface();
 }

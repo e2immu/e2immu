@@ -30,7 +30,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class AggregatingTypeAnalyser extends TypeAnalyser {
+public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
 
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";

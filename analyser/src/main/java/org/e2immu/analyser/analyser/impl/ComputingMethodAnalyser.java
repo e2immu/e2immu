@@ -39,7 +39,7 @@ import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnalysers {
+public class ComputingMethodAnalyser extends MethodAnalyserImpl implements HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingMethodAnalyser.class);
 
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
@@ -104,7 +104,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-            builder.add("Parameter " + parameterAnalyser.parameterInfo.name,
+            builder.add("Parameter " + parameterAnalyser.getParameterInfo().name,
                     sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
         }
 
@@ -152,8 +152,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         Map<FieldInfo, FieldAnalyser> myFieldAnalysers = new HashMap<>();
         analyserContext.fieldAnalyserStream().forEach(analyser -> {
-            if (analyser.fieldInfo.owner == methodInfo.typeInfo) {
-                myFieldAnalysers.put(analyser.fieldInfo, analyser);
+            if (analyser.getFieldInfo().owner == methodInfo.typeInfo) {
+                myFieldAnalysers.put(analyser.getFieldInfo(), analyser);
             }
         });
         this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
@@ -256,7 +256,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()
-                .map(fa -> (FieldAnalysis) fa.fieldAnalysis).toList();
+                .map(FieldAnalyser::getFieldAnalysis).toList();
 
         while (true) {
             // FIRST CRITERION: is there a non-@Final field?
@@ -345,8 +345,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // code to detect the situation as in Lazy
             Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
-                if (fieldAnalyser.fieldAnalysis.getProperty(Property.FINAL).valueIsFalse()) {
-                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo);
+                if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
+                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();
@@ -773,8 +773,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private DV findOtherModifyingElements() {
         boolean nonPrivateFields = myFieldAnalysers.values().stream()
-                .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
-                .anyMatch(fa -> !fa.fieldInfo.isPrivate());
+                .filter(fa -> fa.getFieldInfo().type.isFunctionalInterface() && fa.getFieldAnalysis().isDeclaredFunctionalInterface())
+                .anyMatch(fa -> !fa.getFieldInfo().isPrivate());
         if (nonPrivateFields) {
             return Level.TRUE_DV;
         }
@@ -983,7 +983,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         @Override
-        public MethodAnalyser getCurrentMethod() {
+        public MethodAnalyserImpl getCurrentMethod() {
             return ComputingMethodAnalyser.this;
         }
 

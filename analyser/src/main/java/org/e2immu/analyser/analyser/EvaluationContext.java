@@ -14,8 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.impl.MethodAnalyser;
-import org.e2immu.analyser.analyser.impl.ParameterAnalyser;
+import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
@@ -54,7 +53,7 @@ public interface EvaluationContext {
         return null;
     }
 
-    default MethodAnalyser getCurrentMethod() {
+    default MethodAnalyserImpl getCurrentMethod() {
         return null;
     }
 
@@ -275,7 +274,7 @@ public interface EvaluationContext {
     }
 
     default boolean firstAssignmentOfFieldInConstructor(Variable variable) {
-        MethodAnalyser cm = getCurrentMethod();
+        MethodAnalyserImpl cm = getCurrentMethod();
         if (cm == null) return false;
         if (!cm.methodInfo.isConstructor) return false;
         if (!(variable instanceof FieldReference)) return false;
