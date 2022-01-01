@@ -117,7 +117,8 @@ public class ByteCodeInspector implements OnDemandInspection {
         return types;
     }
 
-    public Resources getClassPath() {
-        return classPath;
+    @Override
+    public String fqnToPath(String fullyQualifiedName) {
+        return classPath.fqnToPath(fullyQualifiedName, ".class");
     }
 }

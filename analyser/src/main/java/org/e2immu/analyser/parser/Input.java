@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.ParseAndInspect;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -40,7 +41,7 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.T
 
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
-                    ByteCodeInspector byteCodeInspector,
+                    OnDemandInspection byteCodeInspector,
                     Map<TypeInfo, URL> annotatedAPIs,
                     Map<TypeInfo, URL> sourceURLs,
                     Trie<TypeInfo> sourceTypes,
@@ -67,7 +68,7 @@ public record Input(Configuration configuration,
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        OnDemandInspection byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
@@ -80,7 +81,7 @@ public record Input(Configuration configuration,
     public static Input createNext(Configuration configuration,
                                    Resources classPath,
                                    TypeContext globalTypeContext,
-                                   ByteCodeInspector byteCodeInspector) throws IOException {
+                                   OnDemandInspection byteCodeInspector) throws IOException {
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
@@ -148,7 +149,7 @@ public record Input(Configuration configuration,
      * <code>initializeClassPath</code> will be present
      */
     public static void preload(TypeContext globalTypeContext,
-                               ByteCodeInspector byteCodeInspector,
+                               OnDemandInspection byteCodeInspector,
                                Resources classPath,
                                String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);

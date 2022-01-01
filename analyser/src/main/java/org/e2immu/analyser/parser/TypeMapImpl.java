@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
-import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
@@ -141,7 +141,7 @@ public class TypeMapImpl implements TypeMap {
         private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
         private final Map<String, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
 
-        private ByteCodeInspector byteCodeInspector;
+        private OnDemandInspection byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
         public Builder(Resources classPath) {
@@ -419,14 +419,13 @@ public class TypeMapImpl implements TypeMap {
 
         // inspect from class path
         private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
-            String pathInClassPath = byteCodeInspector.getClassPath()
-                    .fqnToPath(typeInfo.fullyQualifiedName, ".class");
+            String pathInClassPath = byteCodeInspector.fqnToPath(typeInfo.fullyQualifiedName);
             if (pathInClassPath != null) {
                 byteCodeInspector.inspectFromPath(pathInClassPath);
             } // else ignore
         }
 
-        public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {
+        public void setByteCodeInspector(OnDemandInspection byteCodeInspector) {
             this.byteCodeInspector = byteCodeInspector;
         }
 

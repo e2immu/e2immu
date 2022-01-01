@@ -19,6 +19,7 @@ import org.apache.commons.io.IOUtil;
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
@@ -341,7 +342,7 @@ public class Parser {
     }
 
     // only meant to be used in tests!
-    public ByteCodeInspector getByteCodeInspector() {
+    public OnDemandInspection getByteCodeInspector() {
         return input.byteCodeInspector();
     }
 

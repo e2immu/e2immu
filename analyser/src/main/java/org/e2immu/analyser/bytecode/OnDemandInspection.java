@@ -25,4 +25,6 @@ public interface OnDemandInspection {
     List<TypeInfo> inspectFromPath(String path); // org/junit/Assert
 
     TypeInfo inspectFromPath(String name, Stack<TypeInfo> enclosingTypes, TypeContext typeContext);
+
+    String fqnToPath(String fullyQualifiedName);
 }
