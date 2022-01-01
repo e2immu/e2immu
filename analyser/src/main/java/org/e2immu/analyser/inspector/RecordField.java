@@ -1,0 +1,2 @@
+package org.e2immu.analyser.inspector;public class RecordField {
+}
