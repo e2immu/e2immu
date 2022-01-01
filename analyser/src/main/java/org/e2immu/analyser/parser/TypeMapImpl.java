@@ -19,7 +19,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ResolverImpl;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
@@ -200,7 +200,7 @@ public class TypeMapImpl implements TypeMap {
             new HashSet<>(typeInspections.keySet()).forEach(typeInfo -> {
                 if (typeInfo.typeInspection.isSet()) {
                     if (!typeInfo.typeResolution.isSet()) {
-                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
+                        Set<TypeInfo> superTypes = ResolverImpl.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
                         TypeResolution typeResolution = new TypeResolution.Builder()
                                 .setSuperTypesExcludingJavaLangObject(superTypes)
                                 .build();

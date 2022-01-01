@@ -19,10 +19,25 @@ import com.github.javaparser.ast.stmt.Statement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.SwitchEntry;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.annotation.NotNull;
 
+import java.util.List;
+import java.util.Map;
+
 public interface ExpressionContext {
+
+    /**
+     * This type is here to prevent a cyclic dependency between Resolver and ExpressionContext
+     */
+    interface ResolverRecursion {
+        List<SortedType> resolve(InspectionProvider inspectionProvider,
+                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                 boolean shallowResolver,
+                                 Map<TypeInfo, ExpressionContext> inspectedTypes);
+    }
 
     ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo);
 
@@ -72,5 +87,5 @@ public interface ExpressionContext {
 
     AnonymousTypeCounters anonymousTypeCounters();
 
-    Resolver resolver();
+    ResolverRecursion resolver();
 }

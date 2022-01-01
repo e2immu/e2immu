@@ -32,7 +32,6 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotModified;
@@ -47,7 +46,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION_CONTEXT;
 import static org.e2immu.analyser.util.Logger.log;
 
 // cannot even be a @Container, since the VariableContext passed on to us gets modified along the way
-public record ExpressionContextImpl(Resolver resolver,
+public record ExpressionContextImpl(ResolverRecursion resolver,
                                     TypeInfo enclosingType,
                                     TypeInfo uninspectedEnclosingType,
                                     MethodInfo enclosingMethod,
@@ -60,7 +59,7 @@ public record ExpressionContextImpl(Resolver resolver,
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionContextImpl.class);
 
     public static ExpressionContext forInspectionOfPrimaryType(
-            Resolver resolver,
+            ResolverRecursion resolver,
             @NotNull @NotModified TypeInfo typeInfo,
             @NotNull @NotModified TypeContext typeContext,
             @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
@@ -75,7 +74,7 @@ public record ExpressionContextImpl(Resolver resolver,
     }
 
     public static ExpressionContext forTypeBodyParsing(
-            Resolver resolver,
+            ResolverRecursion resolver,
             @NotNull @NotModified TypeInfo enclosingType,
             @NotNull @NotModified TypeInfo primaryType,
             @NotNull @NotModified ExpressionContext expressionContextOfType) {
@@ -204,7 +203,7 @@ public record ExpressionContextImpl(Resolver resolver,
             if (statement.isReturnStmt()) {
                 Expression expression = statement.asReturnStmt().getExpression()
                         .map(e -> {
-                            if(enclosingMethod != null) {
+                            if (enclosingMethod != null) {
                                 ParameterizedType returnType = typeContext.getMethodInspection(enclosingMethod).getReturnType();
                                 ForwardReturnTypeInfo forward = new ForwardReturnTypeInfo(returnType);
                                 return parseExpression(e, forward);
@@ -463,9 +462,9 @@ public record ExpressionContextImpl(Resolver resolver,
         List<MethodInspection> methodAndConstructorInspections = typeInspection.methodsAndConstructors()
                 .stream().map(typeContext::getMethodInspection).toList();
 
-        Resolver resolver = new Resolver(this.resolver, typeContext, typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
-        resolver.resolve(Map.of(typeInfo, this));
-        
+        resolver.resolve(typeContext, typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(),
+                false, Map.of(typeInfo, this));
+
         typeContext.addToContext(localName, typeInfo, true);
         return new LocalClassDeclaration(identifier, typeInfo, methodAndConstructorInspections);
     }

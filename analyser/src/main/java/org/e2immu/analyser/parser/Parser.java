@@ -23,7 +23,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ResolverImpl;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -130,7 +130,7 @@ public class Parser {
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                               boolean reportWarnings,
                                               boolean shallowResolver) {
-        Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
+        ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
 
         TypeMapImpl.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder;
@@ -163,9 +163,9 @@ public class Parser {
         private final Map<TypeInfo, TypeContext> typeContexts = new HashMap<>();
         private final Map<TypeInfo, URL> urls;
         private final Trie<TypeInfo> typesForWildcardImport;
-        private final Resolver resolver;
+        private final ResolverImpl resolver;
 
-        InspectWithJavaParserImpl(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport, Resolver resolver) {
+        InspectWithJavaParserImpl(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport, ResolverImpl resolver) {
             this.urls = urls;
             this.resolver = resolver;
             this.typesForWildcardImport = typesForWildcardImport;

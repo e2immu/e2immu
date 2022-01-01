@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.ConstructorCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.*;
 
@@ -69,9 +68,9 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
 
-            Resolver resolver = new Resolver(expressionContext.resolver(), typeContext,
-                    typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false);
-            resolver.resolve(Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
+            expressionContext.resolver().resolve(typeContext,
+                    typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false,
+                    Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
             return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);
         }

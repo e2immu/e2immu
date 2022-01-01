@@ -22,8 +22,7 @@ import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ResolverImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,7 +250,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
         Set<FieldInfo> fieldsAssignedInThisMethod =
-                Resolver.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
+                ResolverImpl.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
                                 parameterInfo.owner.typeInfo.primaryType())
                         .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, fieldInfo))
                         .collect(Collectors.toSet());

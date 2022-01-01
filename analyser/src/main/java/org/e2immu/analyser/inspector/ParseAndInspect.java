@@ -24,7 +24,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMapImpl;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ResolverImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
@@ -59,7 +59,7 @@ public record ParseAndInspect(Resources classPath,
      * @param sourceCode        the source code to parse
      * @return the list of primary types found in the source code
      */
-    public List<TypeInfo> run(Resolver resolver,
+    public List<TypeInfo> run(ResolverImpl resolver,
                               TypeContext typeContextOfFile,
                               String fileName, String sourceCode) throws ParseException {
         log(INSPECTOR, "Parsing compilation unit {}", fileName);

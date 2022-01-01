@@ -24,8 +24,7 @@ import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ResolverImpl;
 
 import java.util.Optional;
 
@@ -75,7 +74,7 @@ public class ParseFieldAccessExpr {
                                                  Expression object,
                                                  String name,
                                                  InspectionProvider inspectionProvider) {
-        Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo.primaryType())
+        Optional<FieldInfo> oFieldInfo = ResolverImpl.accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo.primaryType())
                 .filter(f -> name.equals(f.name)).findFirst();
         if (oFieldInfo.isPresent()) {
             return new VariableExpression(new FieldReference(inspectionProvider, oFieldInfo.get(), object));
