@@ -18,7 +18,9 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
@@ -29,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,8 +45,8 @@ Recursive, but only for types inside statements, not for subtypes.
 Holds either a single primary type and its subtypes, or multiple primary types,
 when there is a circular dependency that cannot easily be ignored.
  */
-public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnalysers {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyser.class);
+public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyserImpl.class);
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final String name;
@@ -65,12 +68,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     record SharedState(int iteration, EvaluationContext closure) {
     }
 
-    public PrimaryTypeAnalyser(AnalyserContext parent,
-                               List<SortedType> sortedTypes,
-                               Configuration configuration,
-                               Primitives primitives,
-                               Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
-                               E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public PrimaryTypeAnalyserImpl(AnalyserContext parent,
+                                   List<SortedType> sortedTypes,
+                                   Configuration configuration,
+                                   Primitives primitives,
+                                   Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
+                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -232,6 +235,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         analysers.forEach(Analyser::check);
     }
 
+    @Override
     public void analyse() {
         int iteration = 0;
         AnalysisStatus analysisStatus;
@@ -359,5 +363,15 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean containsPrimaryType(TypeInfo typeInfo) {
+        return primaryTypes.contains(typeInfo);
+    }
+
+    @Override
+    public void loopOverAnalysers(Consumer<Analyser> consumer) {
+        analysers.forEach(consumer);
     }
 }

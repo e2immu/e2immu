@@ -266,7 +266,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.addCircularCall();
             }
             alwaysModifying = circularCallOutsidePrimaryType;
-            recursiveCall = evaluationContext.getCurrentMethod().methodInfo == this.methodInfo; // recursive call
+            recursiveCall = evaluationContext.getCurrentMethod().getMethodInfo() == this.methodInfo; // recursive call
         } else {
             alwaysModifying = false;
             abstractMethod = false;
@@ -478,7 +478,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private boolean raiseErrorForFinalizer(EvaluationContext evaluationContext,
                                            EvaluationResult.Builder builder, Variable variable) {
         if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
-                !evaluationContext.getCurrentMethod().methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue())) {
+                !evaluationContext.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
             // ensure that the current method has been marked @Finalizer
             builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;
@@ -781,7 +781,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
+        boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().getMethodInfo();
         if (recursiveCall) {
             return property.bestDv;
         }

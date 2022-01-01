@@ -429,7 +429,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean inClosure = false;
         while (closure != null) {
             if (closure.getCurrentMethod() != null) {
-                for (ParameterInfo parameterInfo : closure.getCurrentMethod().methodInspection.getParameters()) {
+                for (ParameterInfo parameterInfo : closure.getCurrentMethod().getMethodInspection().getParameters()) {
                     VariableNature variableNature = inClosure
                             ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.METHOD_WIDE;
                     createVariable(closure, parameterInfo, 0, variableNature);

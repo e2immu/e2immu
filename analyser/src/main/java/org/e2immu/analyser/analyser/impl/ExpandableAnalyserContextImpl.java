@@ -143,15 +143,15 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     public void addPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
-        pta.analysers.forEach(analyser -> {
-            if (analyser instanceof MethodAnalyserImpl ma && !this.methodAnalysers.isSet(ma.methodInfo)) {
-                this.methodAnalysers.put(ma.methodInfo, ma);
-            } else if (analyser instanceof TypeAnalyserImpl ta && !this.typeAnalysers.isSet(ta.typeInfo)) {
-                this.typeAnalysers.put(ta.typeInfo, ta);
-            } else if (analyser instanceof FieldAnalyserImpl fa && !this.fieldAnalysers.isSet(fa.fieldInfo)) {
-                this.fieldAnalysers.put(fa.fieldInfo, fa);
-            } else if (analyser instanceof ParameterAnalyserImpl pa && !this.parameterAnalysers.isSet(pa.parameterInfo)) {
-                this.parameterAnalysers.put(pa.parameterInfo, pa);
+        pta.loopOverAnalysers(analyser -> {
+            if (analyser instanceof MethodAnalyser ma && !this.methodAnalysers.isSet(ma.getMethodInfo())) {
+                this.methodAnalysers.put(ma.getMethodInfo(), ma);
+            } else if (analyser instanceof TypeAnalyser ta && !this.typeAnalysers.isSet(ta.getTypeInfo())) {
+                this.typeAnalysers.put(ta.getTypeInfo(), ta);
+            } else if (analyser instanceof FieldAnalyser fa && !this.fieldAnalysers.isSet(fa.getFieldInfo())) {
+                this.fieldAnalysers.put(fa.getFieldInfo(), fa);
+            } else if (analyser instanceof ParameterAnalyser pa && !this.parameterAnalysers.isSet(pa.getParameterInfo())) {
+                this.parameterAnalysers.put(pa.getParameterInfo(), pa);
             }
         });
     }

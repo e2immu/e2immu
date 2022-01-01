@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
-import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
@@ -53,7 +51,7 @@ public interface EvaluationContext {
         return null;
     }
 
-    default MethodAnalyserImpl getCurrentMethod() {
+    default MethodAnalyser getCurrentMethod() {
         return null;
     }
 
@@ -242,7 +240,7 @@ public interface EvaluationContext {
 
     default MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo) {
         MethodAnalysis inLocalPTAs = getLocalPrimaryTypeAnalysers().stream()
-                .filter(pta -> pta.primaryTypes.contains(methodInfo.typeInfo))
+                .filter(pta -> pta.containsPrimaryType(methodInfo.typeInfo))
                 .map(pta -> pta.getMethodAnalysis(methodInfo))
                 .findFirst().orElse(null);
         if (inLocalPTAs != null) return inLocalPTAs;
@@ -274,9 +272,9 @@ public interface EvaluationContext {
     }
 
     default boolean firstAssignmentOfFieldInConstructor(Variable variable) {
-        MethodAnalyserImpl cm = getCurrentMethod();
+        MethodAnalyser cm = getCurrentMethod();
         if (cm == null) return false;
-        if (!cm.methodInfo.isConstructor) return false;
+        if (!cm.getMethodInfo().isConstructor) return false;
         if (!(variable instanceof FieldReference)) return false;
         return !hasBeenAssigned(variable);
     }

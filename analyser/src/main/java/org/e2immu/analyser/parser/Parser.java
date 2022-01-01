@@ -16,8 +16,9 @@ package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
 import org.apache.commons.io.IOUtil;
+import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
-import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
@@ -237,33 +238,33 @@ public class Parser {
     }
 
     private void analyseSortedTypeCycle(List<SortedType> sortedTypes) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedTypes, configuration,
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(null, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
                 getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while analysing type {}", primaryTypeAnalyser.name);
+            LOGGER.warn("Caught runtime exception while analysing type {}", primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.write();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while writing out annotations for type {}",
-                    primaryTypeAnalyser.name);
+                    primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.check();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while checking type {}", primaryTypeAnalyser.name);
+            LOGGER.warn("Caught runtime exception while checking type {}", primaryTypeAnalyser.getName());
             throw rte;
         }
         try {
             primaryTypeAnalyser.makeImmutable();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while making analysis of type {} immutable",
-                    primaryTypeAnalyser.name);
+                    primaryTypeAnalyser.getName());
             throw rte;
         }
         messages.addAll(primaryTypeAnalyser.getMessageStream());

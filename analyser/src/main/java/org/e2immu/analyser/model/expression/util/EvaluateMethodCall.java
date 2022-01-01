@@ -58,7 +58,7 @@ public class EvaluateMethodCall {
                                         List<Expression> parameters) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null &&
-                evaluationContext.getCurrentMethod().methodInfo == methodInfo;
+                evaluationContext.getCurrentMethod().getMethodInfo() == methodInfo;
         if (recursiveCall) {
             MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();

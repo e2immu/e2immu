@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 

@@ -66,7 +66,7 @@ public class EvaluateParameters {
                 Map<Property, DV> map;
                 try {
                     if (evaluationContext.getCurrentMethod() != null &&
-                            evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
+                            evaluationContext.getCurrentMethod().getMethodInfo() == methodInfo) {
                         map = new HashMap<>(RECURSIVE_CALL);
                         independent = MultiLevel.DEPENDENT_DV;
                     } else {

@@ -355,7 +355,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public MethodAnalyserImpl getCurrentMethod() {
+        public MethodAnalyser getCurrentMethod() {
             return evaluationContext.getCurrentMethod();
         }
 

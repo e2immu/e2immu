@@ -69,7 +69,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     public static final String CHECK_UNREACHABLE_STATEMENT = "checkUnreachableStatement";
 
     public final StatementAnalysis statementAnalysis;
-    private final MethodAnalyserImpl myMethodAnalyser;
+    private final MethodAnalyser myMethodAnalyser;
     private final ExpandableAnalyserContextImpl analyserContext;
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
@@ -80,7 +80,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
-                              MethodAnalyserImpl methodAnalyser,
+                              MethodAnalyser methodAnalyser,
                               Statement statement,
                               StatementAnalysis parent,
                               String index,
@@ -88,19 +88,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         this.analyserContext = new ExpandableAnalyserContextImpl(Objects.requireNonNull(analyserContext));
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
         this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(),
-                methodAnalyser.methodAnalysis, statement, parent, index, inSyncBlock);
+                methodAnalyser.getMethodAnalysis(), statement, parent, index, inSyncBlock);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
             AnalyserContext analyserContext,
-            MethodAnalyserImpl myMethodAnalyser,
+            MethodAnalyser myMethodAnalyser,
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
             boolean setNextAtEnd,
             boolean inSyncBlock) {
         Objects.requireNonNull(myMethodAnalyser);
-        Objects.requireNonNull(myMethodAnalyser.methodAnalysis);
+        Objects.requireNonNull(myMethodAnalyser.getMethodAnalysis());
         String adjustedIndices;
         int statementIndex;
         if (setNextAtEnd) {
@@ -176,7 +176,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     @Override
     public String toString() {
-        return "Statement " + index() + " of " + myMethodAnalyser.methodInfo.fullyQualifiedName;
+        return "Statement " + index() + " of " + myMethodAnalyser.getMethodInfo().fullyQualifiedName;
     }
 
     record PreviousAndFirst(StatementAnalyser previous, StatementAnalyser first) {
@@ -229,7 +229,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {
-            LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
+            LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
             throw rte;
         }
     }
@@ -346,7 +346,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private boolean checkForPatterns(EvaluationContext evaluationContext) {
         PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
-        MethodInfo methodInfo = myMethodAnalyser.methodInfo;
+        MethodInfo methodInfo = myMethodAnalyser.getMethodInfo();
         return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
     }
 
@@ -426,10 +426,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             visitStatementVisitors(statementAnalysis.index, result, sharedState);
 
             log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
-                    myMethodAnalyser.methodInfo.name, analysisStatus);
+                    myMethodAnalyser.getMethodInfo().name, analysisStatus);
             return result;
         } catch (Throwable rte) {
-            LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
+            LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
             throw rte;
         }
     }
@@ -477,7 +477,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     // in a separate task, so that it can be skipped when the statement is unreachable
     private AnalysisStatus initialiseOrUpdateVariables(StatementAnalyserSharedState sharedState) {
         if (sharedState.evaluationContext().getIteration() == 0) {
-            statementAnalysis.initIteration0(sharedState.evaluationContext(), myMethodAnalyser.methodInfo, sharedState.previous());
+            statementAnalysis.initIteration0(sharedState.evaluationContext(), myMethodAnalyser.getMethodInfo(), sharedState.previous());
         } else {
             statementAnalysis.initIteration1Plus(sharedState.evaluationContext(), sharedState.previous());
         }
@@ -505,7 +505,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             new StatementAnalyserVariableVisitor.Data(
                                     sharedState.evaluationContext().getIteration(),
                                     sharedState.evaluationContext(),
-                                    myMethodAnalyser.methodInfo,
+                                    myMethodAnalyser.getMethodInfo(),
                                     statementId,
                                     variableInfoContainer.current().name(),
                                     variableInfoContainer.current().variable(),
@@ -522,7 +522,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             result,
                             sharedState.evaluationContext().getIteration(),
                             sharedState.evaluationContext(),
-                            myMethodAnalyser.methodInfo,
+                            myMethodAnalyser.getMethodInfo(),
                             statementAnalysis,
                             statementAnalysis.index,
                             cm == null ? null : cm.condition(),
@@ -543,7 +543,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .filter(typeInfo -> typeInfo.typeResolution.get().sortedType() != null)
                     .map(typeInfo -> {
                         SortedType sortedType = typeInfo.typeResolution.get().sortedType();
-                        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
+                        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
                                 List.of(sortedType),
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
@@ -795,11 +795,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             if (vi.isDelayed()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(vi.getValue().causesOfDelay());
             } else if (changeData.delays().isDelayed()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of delay in method call on {}",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(changeData.delays());
             }
         }
@@ -909,7 +909,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
                 if (preconditionExpression.isDelayed()) {
                     log(DELAYED, "Apply of {}, {} is delayed because of precondition",
-                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                            index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName);
                     delay = delay.merge(preconditionExpression.causesOfDelay());
                 } else {
                     checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext(),
@@ -927,7 +927,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
                 .debugConfiguration().evaluationResultVisitors()) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
+                    myMethodAnalyser.getMethodInfo(), statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
         return new ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
@@ -998,7 +998,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .map(variableInfo -> variableInfo.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.MIN_INT_DV, DV::max);
         if (bestInSub != DV.MIN_INT_DV) {
-            Variable thisVar = new This(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            Variable thisVar = new This(analyserContext, myMethodAnalyser.getMethodInfo().typeInfo);
             DV myValue = map.getOrDefault(thisVar, null);
             DV merged = myValue == null ? bestInSub : myValue.max(bestInSub);
             map.put(thisVar, merged);
@@ -1626,7 +1626,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
                 PrimaryTypeAnalyser primaryTypeAnalyser =
                         localAnalysers.get().stream()
-                                .filter(pta -> pta.primaryTypes.contains(localClassDeclaration.typeInfo))
+                                .filter(pta -> pta.containsPrimaryType(localClassDeclaration.typeInfo))
                                 .findFirst().orElseThrow();
                 builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
                 return apply(sharedState, builder.build()).combinedStatus();
@@ -1658,7 +1658,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
             }
             if (statementAnalysis.statement instanceof ThrowStatement) {
-                if (myMethodAnalyser.methodInfo.hasReturnValue()) {
+                if (myMethodAnalyser.getMethodInfo().hasReturnValue()) {
                     result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
                 }
             }
@@ -1700,7 +1700,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (ennStatus.isDelayed()) {
                 log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName);
             }
             return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()));
         } catch (Throwable rte) {
@@ -1716,7 +1716,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private EvaluationResult modifyReturnValueRemoveConditionBasedOnState(StatementAnalyserSharedState sharedState,
                                                                           EvaluationResult result) {
         if (sharedState.previous() == null) return result; // first statement of block, no need to change
-        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
+        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.getMethodInfo());
         VariableInfo vi = sharedState.previous().findOrThrow(returnVariable);
         if (!vi.getValue().isReturnValue()) {
             // remove all return_value parts
@@ -1775,7 +1775,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
         List<Expression> assignments = new ArrayList<>();
-        for (FieldInfo fieldInfo : myMethodAnalyser.methodInfo.typeInfo.visibleFields(analyserContext)) {
+        for (FieldInfo fieldInfo : myMethodAnalyser.getMethodInfo().typeInfo.visibleFields(analyserContext)) {
             if (!fieldInfo.isStatic(analyserContext)) {
                 for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                     if (variableInfo.isAssigned()) {
@@ -1808,10 +1808,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
    */
 
     private EvaluationResult createAndEvaluateReturnStatement(StatementAnalyserSharedState sharedState) {
-        assert myMethodAnalyser.methodInfo.hasReturnValue();
+        assert myMethodAnalyser.getMethodInfo().hasReturnValue();
         Structure structure = statementAnalysis.statement.getStructure();
         ConditionManager localConditionManager = sharedState.localConditionManager();
-        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
+        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.getMethodInfo());
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
 
         EvaluationContext evaluationContext;
@@ -1823,7 +1823,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         } else {
             evaluationContext = new EvaluationContextImpl(sharedState.evaluationContext().getIteration(),
                     localConditionManager.withoutState(statementAnalysis.primitives), sharedState.evaluationContext().getClosure());
-            if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType())) {
+            if (myMethodAnalyser.getMethodInfo().returnType().equals(statementAnalysis.primitives.booleanParameterizedType())) {
                 // state, boolean; evaluation of And will add clauses to the context one by one
                 toEvaluate = And.and(evaluationContext, localConditionManager.state(), structure.expression());
             } else {
@@ -1834,7 +1834,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives,
-                new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo)), toEvaluate);
+                new VariableExpression(new ReturnVariable(myMethodAnalyser.getMethodInfo())), toEvaluate);
         return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
     }
 
@@ -1878,7 +1878,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
-                        Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                        Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(),
                                         firstStatement.index, firstStatement.statement.getIdentifier()),
                                 Message.Label.UNREACHABLE_STATEMENT);
                         // let's add it to us, rather than to this unreachable statement
@@ -1891,7 +1891,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     blocks.get(1).ifPresent(firstStatement -> {
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
-                            Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                            Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(),
                                             firstStatement.index, firstStatement.statement.getIdentifier()),
                                     Message.Label.UNREACHABLE_STATEMENT);
                             statementAnalysis.ensure(msg);
@@ -1909,7 +1909,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData.setGuaranteedToBeReached(FlowData.NEVER);
-                        Message msg = Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index,
+                        Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(), nextAnalysis.index,
                                 nextAnalysis.statement.getIdentifier()), Message.Label.UNREACHABLE_STATEMENT);
                         statementAnalysis.ensure(msg);
                     }
@@ -2425,7 +2425,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
-        if ((atEndOfBlock || alwaysInterrupts) && myMethodAnalyser.methodInfo.isNotATestMethod()) {
+        if ((atEndOfBlock || alwaysInterrupts) && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
             // important to be after this statement, because assignments need to be "earlier" in notReadAfterAssignment
             String indexEndOfBlock = StringUtil.beyond(index());
             statementAnalysis.variables.stream()
@@ -2474,7 +2474,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {
-        if (navigationData.next.get().isEmpty() && myMethodAnalyser.methodInfo.isNotATestMethod()) {
+        if (navigationData.next.get().isEmpty() && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variables.stream()
@@ -2492,7 +2492,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkUnusedLoopVariables() {
         if (statement() instanceof LoopStatement
                 && !statementAnalysis.containsMessage(Message.Label.EMPTY_LOOP)
-                && myMethodAnalyser.methodInfo.isNotATestMethod()) {
+                && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().variableNature() instanceof VariableNature.LoopVariable loopVariable &&
                             loopVariable.statementIndex().equals(index()))
@@ -2516,20 +2516,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkUnusedReturnValueOfMethodCall() {
         if (statementAnalysis.statement instanceof ExpressionAsStatement eas
                 && eas.expression instanceof MethodCall methodCall
-                && myMethodAnalyser.methodInfo.isNotATestMethod()) {
+                && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
             if (methodCall.methodInfo.returnType().isVoidOrJavaLangVoid()) return DONE;
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             DV identity = methodAnalysis.getProperty(Property.IDENTITY);
             if (identity.isDelayed()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
+                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return identity.causesOfDelay();
             }
             if (identity.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
             if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
+                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return modified.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
@@ -2549,7 +2549,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                     if (delays.isDelayed()) {
                         log(DELAYED, "Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
-                                index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
+                                index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
                         return delays;
                     }
                 }
@@ -2611,11 +2611,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public TypeInfo getCurrentType() {
-            return myMethodAnalyser.methodInfo.typeInfo;
+            return myMethodAnalyser.getMethodInfo().typeInfo;
         }
 
         @Override
-        public MethodAnalyserImpl getCurrentMethod() {
+        public MethodAnalyser getCurrentMethod() {
             return myMethodAnalyser;
         }
 
@@ -2626,13 +2626,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public Location getLocation() {
-            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index,
+            return new Location(myMethodAnalyser.getMethodInfo(), statementAnalysis.index,
                     statementAnalysis.statement.getIdentifier());
         }
 
         @Override
         public Location getLocation(Identifier identifier) {
-            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index, identifier);
+            return new Location(myMethodAnalyser.getMethodInfo(), statementAnalysis.index, identifier);
         }
 
         @Override

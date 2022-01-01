@@ -41,7 +41,7 @@ public class EvaluatePreconditionFromMethod {
         if (precondition.expression().isDelayed()) {
             boolean partOfCallCycle = methodInfo != null && methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             boolean callingMyself = evaluationContext.getCurrentMethod() != null &&
-                    methodInfo == evaluationContext.getCurrentMethod().methodInfo;
+                    methodInfo == evaluationContext.getCurrentMethod().getMethodInfo();
             if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition(precondition.expression().causesOfDelay());
         } else if (!precondition.expression().isBooleanConstant()) {
             if (scopeObject.isDelayed()) {

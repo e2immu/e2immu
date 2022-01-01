@@ -354,7 +354,7 @@ public record ConstructorCall(
 
         if (anonymousClass != null) {
             evaluationContext.getLocalPrimaryTypeAnalysers().stream()
-                    .filter(pta -> pta.primaryTypes.contains(anonymousClass))
+                    .filter(pta -> pta.containsPrimaryType(anonymousClass))
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 
