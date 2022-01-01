@@ -866,46 +866,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return new LocalVariableReference(localVariable);
     }
 
-    public record ConditionAndVariableInfo(Expression condition,
-                                           VariableInfo variableInfo,
-                                           boolean alwaysEscapes,
-                                           VariableNature variableNature,
-                                           String firstStatementIndexForOldStyleSwitch,
-                                           String indexOfLastStatement,
-                                           String indexOfCurrentStatement,
-                                           StatementAnalysis lastStatement,
-                                           Variable myself,
-                                           EvaluationContext evaluationContext) {
-        // for testing
-        public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0", "-", null, variableInfo.variable(), null);
-        }
-
-        public Expression value() {
-            Expression value = variableInfo.getVariableValue(myself);
-
-            List<Variable> variables = value.variables();
-            if (variables.isEmpty()) return value;
-            Map<Variable, Expression> replacements = new HashMap<>();
-            for (Variable variable : variables) {
-                // Test 26 Enum 1 shows that the variable may not exist
-                VariableInfoContainer vic = lastStatement.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                if (vic != null && !vic.variableNature().acceptForSubBlockMerging(indexOfCurrentStatement)) {
-                    Expression currentValue = vic.current().getValue();
-                    replacements.put(variable, currentValue);
-                }
-            }
-            if (replacements.isEmpty()) return value;
-
-            if (value.isDelayed()) {
-                return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
-                        variableInfo.getLinkedVariables().changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
-            }
-            Map<Property, DV> valueProperties = evaluationContext.getValueProperties(value);
-            return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);
-        }
-    }
-
     private record AcceptForMerging(VariableInfoContainer vic, boolean accept) {
         // useful for debugging
         @Override
@@ -983,7 +943,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             })
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;
-                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature.ignoreCurrent(index) && !atLeastOneBlockExecuted ||
+                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature().ignoreCurrent(index) && !atLeastOneBlockExecuted ||
                             variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
                             destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
                         ignoreCurrent = true;
@@ -995,7 +955,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent,
                                     toMerge, groupPropertyValues);
 
-                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo.getLinkedVariables())
+                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                             linkedVariablesMap.put(variable, linkedVariables);
 
@@ -1089,7 +1049,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
             int countAssignments = 0;
             for (ConditionAndVariableInfo cav : toMerge) {
-                VariableInfoContainer localVic = cav.lastStatement.getVariableOrDefaultNull(fqn);
+                VariableInfoContainer localVic = cav.lastStatement().getVariableOrDefaultNull(fqn);
                 if (localVic != null) {
                     VariableInfo current = localVic.current();
                     if (!current.isAssigned()) {
@@ -1159,16 +1119,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
         if (inSwitchStatementOldStyle) {
-            assert cav.firstStatementIndexForOldStyleSwitch != null;
+            assert cav.firstStatementIndexForOldStyleSwitch() != null;
             // if the variable is assigned in the block, it has to be assigned after the first index
             // "the block" is the switch statement; otherwise,
-            String cavLatest = cav.variableInfo.getAssignmentIds().getLatestAssignmentIndex();
+            String cavLatest = cav.variableInfo().getAssignmentIds().getLatestAssignmentIndex();
             if (cavLatest.compareTo(index) > 0) {
-                return cav.firstStatementIndexForOldStyleSwitch.compareTo(cavLatest) <= 0;
+                return cav.firstStatementIndexForOldStyleSwitch().compareTo(cavLatest) <= 0;
             }
-            return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getReadId()) <= 0;
+            return cav.firstStatementIndexForOldStyleSwitch().compareTo(cav.variableInfo().getReadId()) <= 0;
         }
-        return cav.variableInfo.isRead() || cav.variableInfo.isAssigned();
+        return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
     // explicitly ignore loop and shadow loop variables, they should not exist beyond the statement ->

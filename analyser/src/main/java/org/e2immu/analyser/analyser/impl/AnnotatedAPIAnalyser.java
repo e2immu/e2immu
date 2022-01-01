@@ -70,9 +70,6 @@ The AggregatingMethodAnalyser plays no role in the AnnotatedAPI analyser.
 
 public class AnnotatedAPIAnalyser implements AnalyserContext {
 
-    public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
-    public static final String IS_KNOWN_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)";
-
     private final Configuration configuration;
     private final Messages messages = new Messages();
     private final Primitives primitives;
@@ -127,9 +124,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                         .filter(methodInfo -> methodInfo.methodInspection.get().isPublic())
                         .forEach(methodInfo -> {
                             try {
-                                if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                if (TypeInfo.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
                                     analyseIsFact(methodInfo);
-                                } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                } else if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
                                     analyseIsKnown(methodInfo);
                                 } else {
                                     MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);

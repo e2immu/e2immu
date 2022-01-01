@@ -16,9 +16,9 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.Message;
@@ -249,7 +249,7 @@ public class EvaluateInlineConditional {
     // note that we don't need to check for !isFact() because the inversion has already taken place
     private static Expression isFact(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
         if (condition instanceof MethodCall methodValue &&
-                AnnotatedAPIAnalyser.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
+                TypeInfo.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
             return inState(evaluationContext, methodValue.parameterExpressions.get(0)) ? ifTrue : ifFalse;
         }
         return null;
@@ -266,7 +266,7 @@ public class EvaluateInlineConditional {
     // constant evaluation
     private static Expression isKnown(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
         if (condition instanceof MethodCall methodValue &&
-                AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
+                TypeInfo.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
             VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
             Expression knownValue = new MethodCall(Identifier.generate(),

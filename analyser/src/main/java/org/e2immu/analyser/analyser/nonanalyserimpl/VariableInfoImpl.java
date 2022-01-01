@@ -17,7 +17,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.MergeHelper;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Location;
@@ -259,7 +259,7 @@ public class VariableInfoImpl implements VariableInfo {
     VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                         Expression stateOfDestination,
                                         boolean atLeastOneBlockExecuted,
-                                        List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources) {
+                                        List<ConditionAndVariableInfo> mergeSources) {
         return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
                 new GroupPropertyValues());
     }
@@ -271,7 +271,7 @@ public class VariableInfoImpl implements VariableInfo {
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
-                                               List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources,
+                                               List<ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(evaluationContext, atLeastOneBlockExecuted,
                 getAssignmentIds(), mergeSources);
@@ -288,14 +288,14 @@ public class VariableInfoImpl implements VariableInfo {
                      Expression stateOfDestination,
                      boolean atLeastOneBlockExecuted,
                      VariableInfoImpl previous,
-                     List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources) {
+                     List<ConditionAndVariableInfo> mergeSources) {
         mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, previous, mergeSources,
                 new GroupPropertyValues());
     }
 
     void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
                                     VariableInfo previous,
-                                    List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources) {
+                                    List<ConditionAndVariableInfo> mergeSources) {
         mergePropertiesIgnoreValue(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
     }
 
@@ -306,7 +306,7 @@ public class VariableInfoImpl implements VariableInfo {
                             Expression stateOfDestination,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
-                            List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources,
+                            List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != this;
 
@@ -331,7 +331,7 @@ public class VariableInfoImpl implements VariableInfo {
 
     private static String mergedReadId(EvaluationContext evaluationContext,
                                        String previousId,
-                                       List<StatementAnalysisImpl.ConditionAndVariableInfo> merge) {
+                                       List<ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
@@ -339,7 +339,7 @@ public class VariableInfoImpl implements VariableInfo {
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
         boolean inSubBlocks =
                 merge.stream()
-                        .map(StatementAnalysisImpl.ConditionAndVariableInfo::variableInfo)
+                        .map(ConditionAndVariableInfo::variableInfo)
                         .anyMatch(vi -> vi.getReadId().compareTo(currentStatementIdE) > 0);
         return inSubBlocks ? currentStatementIdM : previousId;
     }
@@ -347,7 +347,7 @@ public class VariableInfoImpl implements VariableInfo {
     private static AssignmentIds mergedAssignmentIds(EvaluationContext evaluationContext,
                                                      boolean atLeastOneBlockExecuted,
                                                      AssignmentIds previousIds,
-                                                     List<StatementAnalysisImpl.ConditionAndVariableInfo> merge) {
+                                                     List<ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
@@ -355,7 +355,7 @@ public class VariableInfoImpl implements VariableInfo {
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
         boolean inSubBlocks =
                 merge.stream()
-                        .map(StatementAnalysisImpl.ConditionAndVariableInfo::variableInfo)
+                        .map(ConditionAndVariableInfo::variableInfo)
                         .anyMatch(vi -> vi.getAssignmentIds().getLatestAssignment().compareTo(currentStatementIdE) > 0);
         if (!inSubBlocks) return previousIds;
         Stream<AssignmentIds> sub = merge.stream().map(cav -> cav.variableInfo().getAssignmentIds());
@@ -369,10 +369,10 @@ public class VariableInfoImpl implements VariableInfo {
     private void mergeStatementTime(EvaluationContext evaluationContext,
                                     boolean existingValuesWillBeOverwritten,
                                     int previousStatementTime,
-                                    List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources) {
+                                    List<ConditionAndVariableInfo> mergeSources) {
         boolean noVariableFieldDelay = (existingValuesWillBeOverwritten || previousStatementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) &&
                 mergeSources.stream()
-                        .map(StatementAnalysisImpl.ConditionAndVariableInfo::variableInfo)
+                        .map(ConditionAndVariableInfo::variableInfo)
                         .noneMatch(vi -> vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY);
         if (noVariableFieldDelay) {
             int statementTimeToSet = previousStatementTime == NOT_A_VARIABLE_FIELD ?
@@ -387,10 +387,10 @@ public class VariableInfoImpl implements VariableInfo {
      */
     void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
                                     VariableInfo previous,
-                                    List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources,
+                                    List<ConditionAndVariableInfo> mergeSources,
                                     GroupPropertyValues groupPropertyValues) {
         List<VariableInfo> list = mergeSources.stream()
-                .map(StatementAnalysisImpl.ConditionAndVariableInfo::variableInfo)
+                .map(ConditionAndVariableInfo::variableInfo)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
         if (!existingValuesWillBeOverwritten) {
             assert previous != null;
@@ -423,7 +423,7 @@ public class VariableInfoImpl implements VariableInfo {
     private Expression mergeValue(EvaluationContext evaluationContext,
                                   Expression stateOfDestination,
                                   boolean atLeastOneBlockExecuted,
-                                  List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources) {
+                                  List<ConditionAndVariableInfo> mergeSources) {
         Expression currentValue = getVariableValue(variable);
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
@@ -435,7 +435,7 @@ public class VariableInfoImpl implements VariableInfo {
         }
 
         // here is the correct point to remove dead branches
-        List<StatementAnalysisImpl.ConditionAndVariableInfo> reduced =
+        List<ConditionAndVariableInfo> reduced =
                 mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).toList();
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav ->
@@ -449,7 +449,7 @@ public class VariableInfoImpl implements VariableInfo {
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (reduced.size() == 1) {
-            StatementAnalysisImpl.ConditionAndVariableInfo e = reduced.get(0);
+            ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
                 return e.value();
             }
@@ -458,9 +458,9 @@ public class VariableInfoImpl implements VariableInfo {
         }
 
         if (reduced.size() == 2 && atLeastOneBlockExecuted) {
-            StatementAnalysisImpl.ConditionAndVariableInfo e = reduced.get(0);
+            ConditionAndVariableInfo e = reduced.get(0);
             Expression negated = Negation.negate(evaluationContext, e.condition());
-            StatementAnalysisImpl.ConditionAndVariableInfo e2 = reduced.get(1);
+            ConditionAndVariableInfo e2 = reduced.get(1);
 
             if (e2.condition().equals(negated)) {
                 Expression result = mergeHelper.twoComplementary(e.value(), stateOfDestination, e.condition(), e2.value());
@@ -473,7 +473,7 @@ public class VariableInfoImpl implements VariableInfo {
         // all the rest is the territory of switch and try statements, not yet implemented
 
         // one thing we can already do: if the try statement ends with a 'finally', we return this value
-        StatementAnalysisImpl.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
+        ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
         if (eLast.condition().isBoolValueTrue()) return eLast.value();
 
         CausesOfDelay valuesDelayed = reduced.stream().map(cav -> cav.variableInfo().getValue().causesOfDelay())

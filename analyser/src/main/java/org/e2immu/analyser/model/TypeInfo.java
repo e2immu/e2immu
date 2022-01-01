@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparable<TypeInfo> {
 
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
+    public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
+    public static final String IS_KNOWN_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)";
 
     @NotNull
     public final String simpleName;

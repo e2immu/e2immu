@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -90,7 +89,7 @@ public class EvaluateMethodCall {
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 
-        if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
+        if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !analyserContext.inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression clause = new MethodCall(identifier, objectValue, methodInfo,

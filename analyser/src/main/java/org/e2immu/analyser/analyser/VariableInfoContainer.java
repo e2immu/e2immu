@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -144,7 +144,7 @@ public interface VariableInfoContainer {
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
                      boolean atLeastOneBlockExecuted,
-                     List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources,
+                     List<ConditionAndVariableInfo> mergeSources,
                      GroupPropertyValues groupPropertyValues);
 
     /*
