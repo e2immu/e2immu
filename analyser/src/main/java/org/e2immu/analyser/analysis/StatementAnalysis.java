@@ -15,23 +15,18 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
-import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.model.statement.SynchronizedStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.util.StringUtil.pad;
 
 public interface StatementAnalysis extends Analysis,
         Comparable<StatementAnalysis>,
@@ -73,12 +68,6 @@ public interface StatementAnalysis extends Analysis,
 
     LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop);
 
-    AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
-                                       Expression stateOfConditionManagerBeforeExecution,
-                                       List<StatementAnalysisImpl.ConditionAndLastStatement> lastStatements,
-                                       boolean atLeastOneBlockExecuted,
-                                       int statementTime);
-
     /*
         create a variable, potentially even assign an initial value and a linked variables set.
         everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
@@ -93,7 +82,7 @@ public interface StatementAnalysis extends Analysis,
     /*
         We've encountered a break or continue statement, and need to find the corresponding loop...
          */
-    StatementAnalysisImpl.FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue);
+    FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue);
 
     Expression initialValueOfReturnVariable(@NotNull Variable variable);
 
@@ -144,4 +133,7 @@ public interface StatementAnalysis extends Analysis,
     int statementTime(VariableInfoContainer.Level merge);
 
     MethodAnalysis methodAnalysis();
+
+    record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
+    }
 }

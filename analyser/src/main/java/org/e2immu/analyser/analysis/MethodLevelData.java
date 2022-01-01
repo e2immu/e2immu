@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -109,7 +108,7 @@ public class MethodLevelData {
             .build();
 
     public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
-                                  StatementAnalysisImpl statementAnalysis,
+                                  StatementAnalysis statementAnalysis,
                                   MethodLevelData previous,
                                   String previousIndex,
                                   StateData stateData) {

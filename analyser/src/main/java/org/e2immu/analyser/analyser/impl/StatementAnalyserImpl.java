@@ -2141,7 +2141,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             }
 
             // need timeAfterSubBlocks set already
-            AnalysisStatus copyStatus = statementAnalysis.copyBackLocalCopies(evaluationContext,
+            AnalysisStatus copyStatus = ((StatementAnalysisImpl)statementAnalysis).copyBackLocalCopies(evaluationContext,
                     sharedState.localConditionManager().state(), lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
             analysisStatus = analysisStatus.combine(copyStatus);
 

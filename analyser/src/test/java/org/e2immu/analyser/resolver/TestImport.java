@@ -85,4 +85,9 @@ public class TestImport extends CommonTest {
     public void test_7() throws IOException {
         inspectAndResolve(Import_7.class);
     }
+
+    @Test
+    public void test_8() throws IOException {
+        inspectAndResolve(Import_8.class, IMPORT_HELPER);
+    }
 }

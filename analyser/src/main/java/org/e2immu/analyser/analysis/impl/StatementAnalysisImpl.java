@@ -866,12 +866,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return new LocalVariableReference(localVariable);
     }
 
-    public record ConditionAndLastStatement(Expression condition,
-                                            String firstStatementIndexForOldStyleSwitch,
-                                            StatementAnalyser lastStatement,
-                                            boolean alwaysEscapes) {
-    }
-
     public record ConditionAndVariableInfo(Expression condition,
                                            VariableInfo variableInfo,
                                            boolean alwaysEscapes,
@@ -920,6 +914,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
+    public record ConditionAndLastStatement(Expression condition,
+                                     String firstStatementIndexForOldStyleSwitch,
+                                     StatementAnalyser lastStatement,
+                                     boolean alwaysEscapes) {
+    }
+
     /**
      * From child blocks into the parent block; determine the value and properties for the current statement
      *
@@ -928,7 +928,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param statementTime           the statement time of subBlocks
      */
-    @Override
     public AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
                                               Expression stateOfConditionManagerBeforeExecution,
                                               List<ConditionAndLastStatement> lastStatements,
@@ -970,15 +969,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
                     List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
-                            .filter(e2 -> e2.lastStatement.getStatementAnalysis().variables.isSet(fqn))
+                            .filter(e2 -> e2.lastStatement().getStatementAnalysis().variables.isSet(fqn))
                             .map(e2 -> {
-                                VariableInfoContainer vic2 = e2.lastStatement.getStatementAnalysis().variables.get(fqn);
-                                return new ConditionAndVariableInfo(e2.condition,
-                                        vic2.current(), e2.alwaysEscapes,
-                                        vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch,
-                                        e2.lastStatement.getStatementAnalysis().index,
+                                VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().variables.get(fqn);
+                                return new ConditionAndVariableInfo(e2.condition(),
+                                        vic2.current(), e2.alwaysEscapes(),
+                                        vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
+                                        e2.lastStatement().getStatementAnalysis().index,
                                         index,
-                                        e2.lastStatement.getStatementAnalysis(),
+                                        e2.lastStatement().getStatementAnalysis(),
                                         variable,
                                         evaluationContext);
                             })
@@ -1032,8 +1031,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
 
             // CNN_FOR_PARENT overwrite
-            lastStatements.stream().filter(cal -> cal.lastStatement.getStatementAnalysis().variables.isSet(fqn)).forEach(cal -> {
-                VariableInfoContainer calVic = cal.lastStatement.getStatementAnalysis().variables.get(fqn);
+            lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variables.isSet(fqn)).forEach(cal -> {
+                VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().variables.get(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
             /*    DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
                 DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
@@ -1180,7 +1179,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
                         e.getValue().variableNature().acceptVariableForMerging(index))),
-                lastStatements.stream().flatMap(st -> st.lastStatement.getStatementAnalysis().variables.stream().map(e ->
+                lastStatements.stream().flatMap(st -> st.lastStatement().getStatementAnalysis().variables.stream().map(e ->
                         new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
         );
     }
@@ -1395,9 +1394,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             sa = sa.parent();
         }
         throw new UnsupportedOperationException();
-    }
-
-    public record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 
     /*
