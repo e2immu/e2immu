@@ -14,8 +14,31 @@
 
 package org.e2immu.analyser.model;
 
+import com.github.javaparser.ast.body.Parameter;
+import org.e2immu.analyser.inspector.ExpressionContext;
+
 public interface ParameterInspection extends Inspection {
 
     boolean isVarArgs();
 
+    interface Builder extends InspectionBuilder<Builder>, Inspection {
+
+        Builder setVarArgs(boolean varargs);
+
+        boolean isVarArgs();
+
+        int getIndex();
+
+        Builder setIndex(int size);
+
+        void copyAnnotations(Parameter parameter, ExpressionContext expressionContext);
+
+        ParameterizedType getParameterizedType();
+
+        ParameterInfo build(MethodInfo methodInfo);
+
+        void setParameterizedType(ParameterizedType parameterizedType);
+
+        void setName(String name);
+    }
 }

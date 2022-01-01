@@ -98,9 +98,8 @@ public class ParseLambdaExpr {
                 break;
             }
             types.add(parameterType);
-            ParameterInspectionImpl.Builder parameterBuilder =
-                    new ParameterInspectionImpl.Builder(Identifier.from(parameter),
-                            parameterType, parameter.getName().asString(), cnt++);
+            ParameterInspection.Builder parameterBuilder = new ParameterInspectionImpl.Builder(Identifier.from(parameter),
+                    parameterType, parameter.getName().asString(), cnt++);
             // parameter analysis will be set later
             applyMethodInspectionBuilder.addParameter(parameterBuilder);
         }

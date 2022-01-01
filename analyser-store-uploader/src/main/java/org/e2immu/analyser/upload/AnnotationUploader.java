@@ -22,6 +22,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;

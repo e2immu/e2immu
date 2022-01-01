@@ -16,7 +16,6 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.annotationxml.model.Value;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
@@ -48,7 +47,7 @@ public class JetBrainsAnnotationTranslator {
 
     private <T> void mapAnnotation(Annotation annotation, Inspection.InspectionBuilder<T> inspectionBuilder) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name())) {
-            if (inspectionBuilder instanceof ParameterInspectionImpl.Builder) {
+            if (inspectionBuilder instanceof ParameterInspection.Builder) {
                 inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull);
             }
         } else if (annotation.name().startsWith(E2IMMU)) {

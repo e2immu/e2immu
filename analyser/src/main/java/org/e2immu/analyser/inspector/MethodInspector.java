@@ -198,7 +198,7 @@ public class MethodInspector {
         MethodInspection.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(identifier, typeInfo);
         int i = 0;
         for (TypeInspector.RecordField recordField : fields) {
-            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
+            ParameterInspection.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
                     recordField.fieldInfo().type, recordField.fieldInfo().name, i++);
             pib.setVarArgs(recordField.varargs());
             tempBuilder.addParameter(pib);
@@ -366,7 +366,7 @@ public class MethodInspector {
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext(), parameter.getType(),
                     parameter.isVarArgs(), dollarResolver);
-            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.from(parameter),
+            ParameterInspection.Builder pib = new ParameterInspectionImpl.Builder(Identifier.from(parameter),
                     pt, parameter.getNameAsString(), i++);
             pib.setVarArgs(parameter.isVarArgs());
             // we do not copy annotations yet, that happens after readFQN
@@ -375,11 +375,11 @@ public class MethodInspector {
     }
 
     private static void inspectParameters(NodeList<Parameter> parameters,
-                                          List<ParameterInspectionImpl.Builder> parameterBuilders,
+                                          List<ParameterInspection.Builder> parameterBuilders,
                                           ExpressionContext expressionContext) {
         int i = 0;
         for (Parameter parameter : parameters) {
-            ParameterInspectionImpl.Builder builder = parameterBuilders.get(i++);
+            ParameterInspection.Builder builder = parameterBuilders.get(i++);
             builder.copyAnnotations(parameter, expressionContext);
         }
     }

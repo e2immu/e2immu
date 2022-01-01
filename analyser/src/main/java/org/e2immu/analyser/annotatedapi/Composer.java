@@ -173,7 +173,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             builder.setInspectedBlock(block);
         }
         for (ParameterInfo p : methodInspection.getParameters()) {
-            ParameterInspectionImpl.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
+            ParameterInspection.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
                     Identifier.generate(), p.parameterizedType, p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);

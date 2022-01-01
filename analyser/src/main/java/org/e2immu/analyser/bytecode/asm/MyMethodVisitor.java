@@ -35,7 +35,7 @@ public class MyMethodVisitor extends MethodVisitor {
     private final TypeContext typeContext;
     private final MethodInspection.Builder methodInspectionBuilder;
     private final List<ParameterizedType> types;
-    private final ParameterInspectionImpl.Builder[] parameterInspectionBuilders;
+    private final ParameterInspection.Builder[] parameterInspectionBuilders;
     private final int numberOfParameters;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final MethodItem methodItem;
@@ -83,7 +83,7 @@ public class MyMethodVisitor extends MethodVisitor {
         int i = countLocalVars - (methodInspectionBuilder.isStatic() ? 0 : 1);
         if (i >= 0 && i < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(i);
-            ParameterInspectionImpl.Builder pib = parameterInspectionBuilders[i];
+            ParameterInspection.Builder pib = parameterInspectionBuilders[i];
             pib.setName(name);
             pib.setParameterizedType(parameterizedType);
             if (lastParameterIsVarargs && i == numberOfParameters - 1) {
@@ -99,7 +99,7 @@ public class MyMethodVisitor extends MethodVisitor {
         ParameterNameFactory factory = new ParameterNameFactory();
         for (int i = 0; i < numberOfParameters; i++) {
             if (!hasNameFromLocalVar[i]) {
-                ParameterInspectionImpl.Builder pib = parameterInspectionBuilders[i];
+                ParameterInspection.Builder pib = parameterInspectionBuilders[i];
                 ParameterizedType type = types.get(i);
                 pib.setParameterizedType(type);
                 pib.setName(factory.next(type));

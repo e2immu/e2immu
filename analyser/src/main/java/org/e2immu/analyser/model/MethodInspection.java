@@ -16,8 +16,6 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
-import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Finalizer;
@@ -126,7 +124,7 @@ public interface MethodInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, MethodInspection {
 
-        Builder addParameter(ParameterInspectionImpl.Builder pib);
+        Builder addParameter(ParameterInspection.Builder pib);
 
         void readyToComputeFQN(InspectionProvider inspectionProvider);
 
@@ -134,9 +132,9 @@ public interface MethodInspection extends Inspection {
 
         Builder addModifier(MethodModifier from);
 
-        Builder addTypeParameter(TypeParameterImpl tp);
+        Builder addTypeParameter(TypeParameter tp);
 
-        List<ParameterInspectionImpl.Builder> getParameterBuilders();
+        List<ParameterInspection.Builder> getParameterBuilders();
 
         void makeParametersImmutable();
 
@@ -162,6 +160,6 @@ public interface MethodInspection extends Inspection {
 
         Builder setStatic(boolean b);
 
-        ParameterInspectionImpl.Builder newParameterInspectionBuilder(Identifier generate, int i);
+        ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate, int i);
     }
 }

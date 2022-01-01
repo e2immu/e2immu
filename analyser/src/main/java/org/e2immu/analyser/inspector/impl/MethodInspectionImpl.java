@@ -172,7 +172,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<MethodInspection.Builder> implements MethodInspection,
     MethodInspection.Builder {
-        private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
+        private final List<ParameterInspection.Builder> parameters = new ArrayList<>();
         private final Set<MethodModifier> modifiers = new HashSet<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         public final TypeInfo owner;
@@ -288,8 +288,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         // the following two methods are used by the bytecode inspector
 
-        public ParameterInspectionImpl.Builder newParameterInspectionBuilder(Identifier identifier, int index) {
-            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder(identifier).setIndex(index);
+        public ParameterInspection.Builder newParameterInspectionBuilder(Identifier identifier, int index) {
+            ParameterInspection.Builder builder = new ParameterInspectionImpl.Builder(identifier).setIndex(index);
             addParameter(builder);
             return builder;
         }
@@ -297,7 +297,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         // finally, this one is used by hand
 
         @Fluent
-        public Builder addParameter(@NotNull ParameterInspectionImpl.Builder builder) {
+        public Builder addParameter(@NotNull ParameterInspection.Builder builder) {
             if (builder.getIndex() == -1) builder.setIndex(parameters.size());
             parameters.add(builder);
             assert builder.getIndex() == parameters.size() - 1;
@@ -317,7 +317,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Fluent
-        public MethodInspection.Builder addTypeParameter(@NotNull TypeParameterImpl typeParameter) {
+        public MethodInspection.Builder addTypeParameter(@NotNull TypeParameter typeParameter) {
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
             if (typeParameter.getIndex() < typeParameters.size()) {
                 // we've seen the index before, overwrite
@@ -511,7 +511,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return modifiers.contains(MethodModifier.STATIC) || isStaticBlock();
         }
 
-        public List<ParameterInspectionImpl.Builder> getParameterBuilders() {
+        public List<ParameterInspection.Builder> getParameterBuilders() {
             return parameters;
         }
 

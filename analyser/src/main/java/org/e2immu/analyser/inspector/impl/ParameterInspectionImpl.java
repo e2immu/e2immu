@@ -39,7 +39,8 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
     }
 
     @Container(builds = ParameterInspectionImpl.class)
-    public static class Builder extends AbstractInspectionBuilder<Builder> implements ParameterInspection {
+    public static class Builder extends AbstractInspectionBuilder<ParameterInspection.Builder>
+            implements ParameterInspection.Builder, ParameterInspection {
         private final Identifier identifier;
         private boolean varArgs;
         private String name;
