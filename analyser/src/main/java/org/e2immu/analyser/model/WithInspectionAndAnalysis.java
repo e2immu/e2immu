@@ -14,9 +14,12 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.*;

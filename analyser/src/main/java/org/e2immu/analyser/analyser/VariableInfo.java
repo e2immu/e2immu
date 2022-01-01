@@ -29,7 +29,6 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.Property.MODIFIED_OUTSIDE_METHOD;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.VARIABLE_FIELD_DELAY;
 

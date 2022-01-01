@@ -50,8 +50,8 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysis.class)
-public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
+public class StatementAnalyserImpl implements StatementAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyserImpl.class);
 
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
     public static final String EVALUATION_OF_MAIN_EXPRESSION = "evaluationOfMainExpression";
@@ -79,19 +79,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
-    private StatementAnalyser(AnalyserContext analyserContext,
-                              MethodAnalyser methodAnalyser,
-                              Statement statement,
-                              StatementAnalysis parent,
-                              String index,
-                              boolean inSyncBlock) {
+    private StatementAnalyserImpl(AnalyserContext analyserContext,
+                                  MethodAnalyser methodAnalyser,
+                                  Statement statement,
+                                  StatementAnalysis parent,
+                                  String index,
+                                  boolean inSyncBlock) {
         this.analyserContext = new ExpandableAnalyserContextImpl(Objects.requireNonNull(analyserContext));
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
         this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(),
                 methodAnalyser.getMethodAnalysis(), statement, parent, index, inSyncBlock);
     }
 
-    public static StatementAnalyser recursivelyCreateAnalysisObjects(
+    public static StatementAnalyserImpl recursivelyCreateAnalysisObjects(
             AnalyserContext analyserContext,
             MethodAnalyser myMethodAnalyser,
             StatementAnalysis parent,
@@ -112,12 +112,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
             adjustedIndices = pos < 0 ? "" : indices.substring(0, pos);
         }
-        StatementAnalyser first = null;
-        StatementAnalyser previous = null;
+        StatementAnalyserImpl first = null;
+        StatementAnalyserImpl previous = null;
         for (Statement statement : statements) {
             String padded = pad(statementIndex, statements.size());
             String iPlusSt = adjustedIndices.isEmpty() ? "" + padded : adjustedIndices + "." + padded;
-            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
+            StatementAnalyserImpl statementAnalyser = new StatementAnalyserImpl(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
                 previous.navigationData.next.set(Optional.of(statementAnalyser));
@@ -135,7 +135,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (structure.haveStatements()) {
                 String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
 
-                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
+                StatementAnalyserImpl subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                         statementAnalyser.statementAnalysis, structure.getStatements(),
                         indexWithBlock, true, newInSyncBlock);
                 blocks.add(Optional.of(subStatementAnalyser));
@@ -151,7 +151,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (subStatements.haveStatements()) {
                     String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
 
-                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
+                    StatementAnalyserImpl subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                             statementAnalyser.statementAnalysis, subStatements.getStatements(),
                             indexWithBlock, true, newInSyncBlock);
                     blocks.add(Optional.of(subStatementAnalyser));
@@ -203,7 +203,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             StatementAnalyser previousStatement = previousAndFirst.previous;
-            StatementAnalyser statementAnalyser = previousAndFirst.first;
+            StatementAnalyserImpl statementAnalyser = (StatementAnalyserImpl) previousAndFirst.first;
             Expression switchCondition = new BooleanConstant(statementAnalysis.primitives, true);
             do {
                 boolean wasReplacement;
@@ -213,9 +213,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 } else {
                     // first attempt at detecting a transformation
                     wasReplacement = statementAnalyser.checkForPatterns(evaluationContext);
-                    statementAnalyser = statementAnalyser.followReplacements();
+                    statementAnalyser = (StatementAnalyserImpl) statementAnalyser.followReplacements();
                 }
-                StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.statementAnalysis;
+                StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
                 switchCondition = statementAnalyser.conditionInSwitchStatement(forwardAnalysisInfo, evaluationContext, previousStatement, switchCondition);
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(evaluationContext, switchCondition, forwardAnalysisInfo.switchSelectorIsDelayed()));
@@ -225,7 +225,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 builder.add(result);
                 previousStatement = statementAnalyser;
 
-                statementAnalyser = statementAnalyser.navigationData.next.get().orElse(null);
+                statementAnalyser = (StatementAnalyserImpl) statementAnalyser.navigationDataNextGet().orElse(null);
             } while (statementAnalyser != null);
             return builder.build();
         } catch (Throwable rte) {
@@ -281,6 +281,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return this;
     }
 
+    @Override
+    public boolean navigationDataNextIsSet() {
+        return navigationData.next.isSet();
+    }
+
+    @Override
+    public Optional<StatementAnalyser> navigationDataNextGet() {
+        return navigationData.next.get();
+    }
+
     // note that there is a clone of this in statementAnalysis
     @Override
     public StatementAnalyser lastStatement() {
@@ -288,9 +298,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalyser afterReplacements = followReplacements();
-        if (!afterReplacements.navigationData.next.isSet()) return afterReplacements;
-        return afterReplacements.navigationData.next.get().map(statementAnalyser -> {
-            if (statementAnalyser.statementAnalysis.flowData.isUnreachable()) {
+        if (!afterReplacements.navigationDataNextIsSet()) return afterReplacements;
+        return afterReplacements.navigationDataNextGet().map(statementAnalyser -> {
+            if (statementAnalyser.getStatementAnalysis().flowData.isUnreachable()) {
                 return afterReplacements;
             }
             return statementAnalyser.lastStatement();
@@ -315,13 +325,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     @Override
     public void wireDirectly(StatementAnalyser newStatementAnalyser) {
         navigationData.replacement.set(newStatementAnalyser);
-        statementAnalysis.navigationData.replacement.set(newStatementAnalyser.statementAnalysis);
+        statementAnalysis.navigationData.replacement.set(newStatementAnalyser.getStatementAnalysis());
     }
 
     @Override
     public void wireNext(StatementAnalyser newStatement) {
         navigationData.next.set(Optional.ofNullable(newStatement));
-        statementAnalysis.navigationData.next.set(newStatement == null ? Optional.empty() : Optional.of(newStatement.statementAnalysis));
+        statementAnalysis.navigationData.next.set(newStatement == null ? Optional.empty() :
+                Optional.of(newStatement.getStatementAnalysis()));
     }
 
     @Override
@@ -331,12 +342,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 parent(), statements, startIndex, false, statementAnalysis.inSyncBlock);
     }
 
+    @Override
+    public boolean isDone() {
+        return analysisStatus == DONE;
+    }
+
     private PreviousAndFirst goToFirstStatementToAnalyse() {
         StatementAnalyser statementAnalyser = followReplacements();
         StatementAnalyser previous = null;
-        while (statementAnalyser != null && statementAnalyser.analysisStatus == DONE) {
+        while (statementAnalyser != null && statementAnalyser.isDone()) {
             previous = statementAnalyser;
-            statementAnalyser = statementAnalyser.navigationData.next.get().orElse(null);
+            statementAnalyser = statementAnalyser.navigationDataNextGet().orElse(null);
             if (statementAnalyser != null) {
                 statementAnalyser = statementAnalyser.followReplacements();
             }
@@ -354,6 +370,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return statementAnalysis.location();
     }
 
+    @Override
     public AnalyserComponents<String, StatementAnalyserSharedState> getAnalyserComponents() {
         return analyserComponents;
     }
@@ -558,8 +575,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean haveNext = navigationData.next.get().isPresent();
             // first, simple propagation of those analysers that we've already accumulated
             if (haveNext) {
-                navigationData.next.get().get().analyserContext.addAll(analyserContext);
-                navigationData.blocks.get().forEach(opt -> opt.ifPresent(sa -> sa.analyserContext.addAll(analyserContext)));
+                ((StatementAnalyserImpl) navigationData.next.get().get()).analyserContext.addAll(analyserContext);
+                navigationData.blocks.get().forEach(opt -> opt.ifPresent(sa ->
+                        ((StatementAnalyserImpl) sa).analyserContext.addAll(analyserContext)));
             }
         }
 
@@ -618,7 +636,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
-    private DV isEscapeAlwaysExecutedInCurrentBlock() {
+    @Override
+    public DV isEscapeAlwaysExecutedInCurrentBlock() {
         if (!statementAnalysis.flowData.interruptsFlowIsSet()) {
             log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
             return statementAnalysis.flowData.interruptStatus().causesOfDelay();
@@ -970,7 +989,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
                 changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
             String index = vi1.getAssignmentIds().getLatestAssignmentIndex();
-            StatementAnalysis sa = myMethodAnalyser.findStatementAnalyser(index).statementAnalysis;
+            StatementAnalysis sa = myMethodAnalyser.findStatementAnalyser(index).getStatementAnalysis();
             if (sa.stateData.conditionManagerForNextStatement.isVariable()) {
                 return false; // we'll be back
             }
@@ -1983,6 +2002,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     // identical code in statement analysis
+    @Override
     public StatementAnalyser navigateTo(String target) {
         String myIndex = index();
         if (myIndex.equals(target)) return this;
@@ -2008,7 +2028,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         public boolean escapesAlwaysButNotWithPrecondition() {
             if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
-                StatementAnalysis lastStatement = startOfBlock.lastStatement().statementAnalysis;
+                StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
                 return lastStatement.flowData.interruptStatus().equals(FlowData.ALWAYS) && !lastStatement.flowData.alwaysEscapesViaException();
             }
             return false;
@@ -2016,7 +2036,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         public boolean escapesAlways() {
             if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
-                StatementAnalysis lastStatement = startOfBlock.lastStatement().statementAnalysis;
+                StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
                 return lastStatement.flowData.interruptStatus().equals(FlowData.ALWAYS);
             }
             return false;
@@ -2043,7 +2063,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 switchStatement.startingPointToLabels(evaluationContext,
-                                        executionOfBlock.startOfBlock.statementAnalysis),
+                                        executionOfBlock.startOfBlock.getStatementAnalysis()),
                                 statementAnalysis.stateData.valueOfExpression.get(),
                                 statementAnalysis.stateData.valueOfExpression.get().causesOfDelay());
                     } else {
@@ -2051,7 +2071,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 null, null, CausesOfDelay.EMPTY);
                     }
-                    StatementAnalyserResult result = executionOfBlock.startOfBlock
+                    StatementAnalyserResult result = ((StatementAnalyserImpl)executionOfBlock.startOfBlock)
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),
                                     forward, evaluationContext.getClosure());
                     sharedState.builder().add(result);
@@ -2059,14 +2079,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     blocksExecuted++;
                 } else {
                     // ensure that the first statement is unreachable
-                    FlowData flowData = executionOfBlock.startOfBlock.statementAnalysis.flowData;
+                    FlowData flowData = executionOfBlock.startOfBlock.getStatementAnalysis().flowData;
                     flowData.setGuaranteedToBeReachedInMethod(FlowData.NEVER);
 
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.EMPTY_LOOP));
                     }
 
-                    sharedState.builder().addMessages(executionOfBlock.startOfBlock.statementAnalysis.messageStream());
+                    sharedState.builder().addMessages(executionOfBlock.startOfBlock.getStatementAnalysis().messageStream());
                 }
             }
         }
@@ -2081,10 +2101,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
                 lastStatements = composeLastStatements(evaluationContext, switchStatementOldStyle, executions.get(0).startOfBlock);
                 maxTime = executions.get(0).startOfBlock == null ? statementAnalysis.flowData.getTimeAfterEvaluation() :
-                        executions.get(0).startOfBlock.lastStatement().statementAnalysis.flowData.getTimeAfterSubBlocks();
+                        executions.get(0).startOfBlock.lastStatement().getStatementAnalysis().flowData.getTimeAfterSubBlocks();
             } else {
                 lastStatements = executions.stream()
-                        .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
+                        .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.getStatementAnalysis().flowData.isUnreachable())
                         .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition,
                                 ex.startOfBlock.index(),
                                 ex.startOfBlock.lastStatement(),
@@ -2097,7 +2117,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 int increment = atLeastOneBlockExecuted ? 0 : 1;
                 maxTime = lastStatements.stream()
                         .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
-                        .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
+                        .mapToInt(sa -> sa.getStatementAnalysis().flowData.getTimeAfterSubBlocks())
                         .max().orElseThrow() + increment;
             }
             int maxTimeWithEscape;
@@ -2156,9 +2176,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             SwitchStatementOldStyle switchStatementOldStyle,
             StatementAnalyser startOfBlock) {
         Map<String, Expression> startingPointToLabels = switchStatementOldStyle
-                .startingPointToLabels(evaluationContext, startOfBlock.statementAnalysis);
+                .startingPointToLabels(evaluationContext, startOfBlock.getStatementAnalysis());
         return startingPointToLabels.entrySet().stream().map(e -> {
-            StatementAnalyser lastStatement = startOfBlock.lastStatementOfSwitchOldStyle(e.getKey());
+            StatementAnalyser lastStatement = ((StatementAnalyserImpl) startOfBlock).lastStatementOfSwitchOldStyle(e.getKey());
             boolean alwaysEscapes = statementAnalysis.flowData.alwaysEscapesViaException();
             return new StatementAnalysis.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes);
         }).toList();
@@ -2169,16 +2189,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         StatementAnalyser sa = this;
         while (true) {
             if (sa.index().compareTo(startAt) >= 0 &&
-                    (sa.statementAnalysis.statement instanceof ReturnStatement ||
-                            sa.statementAnalysis.statement instanceof BreakStatement))
+                    (sa.getStatementAnalysis().statement instanceof ReturnStatement ||
+                            sa.getStatementAnalysis().statement instanceof BreakStatement))
                 return sa;
-            if (sa.navigationData.next.get().isPresent()) {
-                sa = sa.navigationData.next.get().get();
+            if (sa.navigationDataNextGet().isPresent()) {
+                sa = sa.navigationDataNextGet().get();
             } else {
                 return sa;
             }
         }
     }
+
 
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
         if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
@@ -2263,7 +2284,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         if (statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
             Expression lastState = list.get(0).startOfBlock.lastStatement()
-                    .statementAnalysis.stateData.conditionManagerForNextStatement.get().state();
+                    .getStatementAnalysis().stateData.conditionManagerForNextStatement.get().state();
             return evaluationContext.replaceLocalVariables(lastState);
         }
         return TRUE;
@@ -2499,7 +2520,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .forEach(e -> {
                         String loopVarFqn = e.getKey();
                         StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
-                        StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
+                        StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
                         if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
                                 !statementAnalysis.variables.get(loopVarFqn).current().isRead()) {
                             this.statementAnalysis.ensure(Message.newMessage(getLocation(),
@@ -2562,17 +2583,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
 
+    @Override
     public List<StatementAnalyser> lastStatementsOfNonEmptySubBlocks() {
         return navigationData.blocks.get().stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .filter(sa -> !sa.statementAnalysis.flowData.isUnreachable())
+                .filter(sa -> !sa.getStatementAnalysis().flowData.isUnreachable())
                 .map(StatementAnalyser::lastStatement)
                 .collect(Collectors.toList());
     }
 
+    @Override
     public EvaluationContext newEvaluationContextForOutside() {
         return new EvaluationContextImpl(0, ConditionManager.initialConditionManager(statementAnalysis.primitives), null);
+    }
+
+    @Override
+    public StatementAnalysis getStatementAnalysis() {
+        return statementAnalysis;
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
@@ -2621,7 +2649,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public StatementAnalyser getCurrentStatement() {
-            return StatementAnalyser.this;
+            return StatementAnalyserImpl.this;
         }
 
         @Override

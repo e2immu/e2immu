@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 
 import java.util.List;
@@ -390,7 +392,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public StatementAnalyser findStatementAnalyser(String index) {
+    public StatementAnalyserImpl findStatementAnalyser(String index) {
         throw new UnsupportedOperationException();
     }
 

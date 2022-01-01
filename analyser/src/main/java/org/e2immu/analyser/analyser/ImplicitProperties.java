@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.parser.Primitives;
 
 public class ImplicitProperties {
 

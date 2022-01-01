@@ -18,7 +18,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.support.Either;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 

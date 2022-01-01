@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;

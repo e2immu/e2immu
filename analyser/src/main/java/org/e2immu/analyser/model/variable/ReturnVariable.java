@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 

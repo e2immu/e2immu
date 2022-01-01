@@ -19,7 +19,6 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;

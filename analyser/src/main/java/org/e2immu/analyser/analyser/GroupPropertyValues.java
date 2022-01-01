@@ -16,7 +16,10 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class GroupPropertyValues {
 

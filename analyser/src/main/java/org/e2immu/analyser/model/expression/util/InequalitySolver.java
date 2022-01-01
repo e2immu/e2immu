@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
 
 import java.util.*;

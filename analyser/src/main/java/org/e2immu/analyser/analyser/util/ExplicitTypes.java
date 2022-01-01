@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.statement.TryStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.function.Consumer;

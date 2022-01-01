@@ -54,7 +54,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
     public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
 
     private final TypeAnalysis typeAnalysis;
-    public final StatementAnalyser firstStatementAnalyser;
+    public final StatementAnalyserImpl firstStatementAnalyser;
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final Set<PrimaryTypeAnalyser> locallyCreatedPrimaryTypeAnalysers = new HashSet<>();
 
@@ -85,7 +85,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         if (block.isEmpty()) {
             firstStatementAnalyser = null;
         } else {
-            firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
+            firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements(), "", true,
                     methodInfo.isSynchronized() || methodInfo.isConstructor ||
                             methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION);
@@ -412,7 +412,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                 int index = Integer.parseInt(m.group(1)) - 1;
                 if (index >= 0) {
                     String id = "" + index; // TODO numeric padding to same length
-                    return findStatementAnalyser(id).statementAnalysis;
+                    return findStatementAnalyser(id).getStatementAnalysis();
                 }
             }
         }
@@ -874,10 +874,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             LOGGER.warn("Analyser components of last statement {} of {}:\n{}", lastStatement.index(),
                     methodInfo.fullyQualifiedName(),
                     analyserComponentsOfStatement.details());
-            AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyser.ANALYSE_METHOD_LEVEL_DATA);
+            AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
-                        lastStatement.statementAnalysis.methodLevelData.analyserComponents;
+                        lastStatement.getStatementAnalysis().methodLevelData.analyserComponents;
                 LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
                         methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());

@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
-import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.ConstantExpression;
@@ -60,7 +58,7 @@ public class AssignmentIncompatibleWithPrecondition {
                             methodAnalyser.getMethodInfo().distinguishingName(), index);
 
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
-                    StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;
+                    StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
                     VariableExpression ve;

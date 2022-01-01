@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.util.StringUtil;
 
 public interface VariableNature {

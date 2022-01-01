@@ -25,9 +25,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @E2Immutable
 public record MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) implements ErasureExpression {

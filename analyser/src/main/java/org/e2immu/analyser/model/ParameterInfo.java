@@ -17,11 +17,9 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 
 import java.util.HashSet;

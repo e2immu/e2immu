@@ -153,7 +153,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public StatementAnalyser findStatementAnalyser(String index) {
+    public StatementAnalyserImpl findStatementAnalyser(String index) {
         return null;
     }
 

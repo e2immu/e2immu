@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;

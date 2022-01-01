@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
@@ -324,8 +323,8 @@ public class FlowData {
         }
         // in case there is no explicit return statement at the end of the method...
         // this one is probably completely irrelevant
-        boolean endOfBlockTopLevel = statementAnalyser.statementAnalysis.atTopLevel() &&
-                statementAnalyser.navigationData.next.get().isEmpty();
+        boolean endOfBlockTopLevel = statementAnalyser.getStatementAnalysis().atTopLevel() &&
+                statementAnalyser.navigationDataNextGet().isEmpty();
         if (endOfBlockTopLevel) {
             setInterruptsFlow(Map.of(RETURN, ALWAYS));
             return DONE;
@@ -346,24 +345,25 @@ public class FlowData {
 
         List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks();
         for (StatementAnalyser subAnalyser : lastStatementsOfSubBlocks) {
-            if (!subAnalyser.statementAnalysis.flowData.interruptsFlowIsSet()) {
+            StatementAnalysis subStatementAnalysis = subAnalyser.getStatementAnalysis();
+            if (!subStatementAnalysis.flowData.interruptsFlowIsSet()) {
                 log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
                         subAnalyser.index());
-                CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.interruptsFlow.getFirst().causesOfDelay();
+                CausesOfDelay delays = subStatementAnalysis.flowData.interruptsFlow.getFirst().causesOfDelay();
                 interruptsFlow.setFirst(delays);
                 return delays;
             }
-            Map<InterruptsFlow, DV> subInterrupts = subAnalyser.statementAnalysis.flowData.interruptsFlow.get();
+            Map<InterruptsFlow, DV> subInterrupts = subStatementAnalysis.flowData.interruptsFlow.get();
             if (subInterrupts.isEmpty()) {
                 // in this sub-block, there are no interrupts...
-                if (subAnalyser.statementAnalysis.flowData.blockExecution.isFirst()) {
-                    CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                if (subStatementAnalysis.flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = subStatementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }
-                builder.put(NO, subAnalyser.statementAnalysis.flowData.blockExecution.get());
+                builder.put(NO, subStatementAnalysis.flowData.blockExecution.get());
             } else for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
                 InterruptsFlow i = entry.getKey();
                 DV e = entry.getValue();
@@ -377,14 +377,14 @@ public class FlowData {
                 if (rejectInterrupt(statement, i)) {
                     builder.merge(i, e, (a, b) -> b.max(a));
                 }
-                if (subAnalyser.statementAnalysis.flowData.blockExecution.isFirst()) {
-                    CausesOfDelay delays = subAnalyser.statementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                if (subStatementAnalysis.flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = subStatementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }
-                builder.merge(i, subAnalyser.statementAnalysis.flowData.blockExecution.get(), (a, b) -> b.min(a));
+                builder.merge(i, subStatementAnalysis.flowData.blockExecution.get(), (a, b) -> b.min(a));
             }
         }
         setInterruptsFlow(Map.copyOf(builder));

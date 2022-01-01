@@ -15,12 +15,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;

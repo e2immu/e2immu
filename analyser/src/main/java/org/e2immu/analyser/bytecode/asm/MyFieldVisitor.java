@@ -15,9 +15,9 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
 

@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;

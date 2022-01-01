@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;
 

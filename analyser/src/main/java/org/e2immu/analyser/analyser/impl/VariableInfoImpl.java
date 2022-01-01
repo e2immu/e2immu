@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser.impl;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -32,13 +32,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
-import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 class VariableInfoImpl implements VariableInfo {

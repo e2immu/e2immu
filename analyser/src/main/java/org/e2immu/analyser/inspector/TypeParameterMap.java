@@ -16,11 +16,9 @@ package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Will have to be merged with MethodTypeParameterMap at some stage

@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;

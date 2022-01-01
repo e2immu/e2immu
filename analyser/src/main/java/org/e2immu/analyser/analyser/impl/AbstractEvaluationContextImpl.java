@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Set;
 import java.util.function.Function;

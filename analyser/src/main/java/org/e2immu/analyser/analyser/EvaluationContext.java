@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;

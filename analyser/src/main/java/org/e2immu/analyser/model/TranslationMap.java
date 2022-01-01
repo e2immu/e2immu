@@ -15,16 +15,9 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Container;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.

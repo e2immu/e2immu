@@ -17,7 +17,10 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 public class ParameterizedTypePrinter {
 

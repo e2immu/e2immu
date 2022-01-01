@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
-import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.analyser.impl.VariableInfoContainerImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -916,15 +915,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
                     List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
-                            .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
+                            .filter(e2 -> e2.lastStatement.getStatementAnalysis().variables.isSet(fqn))
                             .map(e2 -> {
-                                VariableInfoContainer vic2 = e2.lastStatement.statementAnalysis.variables.get(fqn);
+                                VariableInfoContainer vic2 = e2.lastStatement.getStatementAnalysis().variables.get(fqn);
                                 return new ConditionAndVariableInfo(e2.condition,
                                         vic2.current(), e2.alwaysEscapes,
                                         vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch,
-                                        e2.lastStatement.statementAnalysis.index,
+                                        e2.lastStatement.getStatementAnalysis().index,
                                         index,
-                                        e2.lastStatement.statementAnalysis,
+                                        e2.lastStatement.getStatementAnalysis(),
                                         variable,
                                         evaluationContext);
                             })
@@ -978,8 +977,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
 
             // CNN_FOR_PARENT overwrite
-            lastStatements.stream().filter(cal -> cal.lastStatement.statementAnalysis.variables.isSet(fqn)).forEach(cal -> {
-                VariableInfoContainer calVic = cal.lastStatement.statementAnalysis.variables.get(fqn);
+            lastStatements.stream().filter(cal -> cal.lastStatement.getStatementAnalysis().variables.isSet(fqn)).forEach(cal -> {
+                VariableInfoContainer calVic = cal.lastStatement.getStatementAnalysis().variables.get(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
             /*    DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
                 DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
@@ -1125,7 +1124,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
                         e.getValue().variableNature().acceptVariableForMerging(index))),
-                lastStatements.stream().flatMap(st -> st.lastStatement.statementAnalysis.variables.stream().map(e ->
+                lastStatements.stream().flatMap(st -> st.lastStatement.getStatementAnalysis().variables.stream().map(e ->
                         new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
         );
     }

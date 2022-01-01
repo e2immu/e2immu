@@ -22,7 +22,6 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.*;
 import org.e2immu.support.SetOnce;

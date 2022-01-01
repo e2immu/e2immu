@@ -12,30 +12,34 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.pattern;
+package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.HasNavigationData;
-import org.e2immu.analyser.model.MethodInfo;
 
-public interface PatternMatcher<T extends HasNavigationData<T>> {
-    PatternMatcher<StatementAnalyser> NO_PATTERN_MATCHER = new NoPatternMatcher<>();
+import java.util.List;
+import java.util.Optional;
 
-    boolean matchAndReplace(MethodInfo methodInfo, T hasNavigationData, EvaluationContext evaluationContext);
+public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>, HoldsAnalysers {
+    AnalyserComponents<String, StatementAnalyserSharedState> getAnalyserComponents();
 
-    void startNewIteration();
+    // identical code in statement analysis
+    StatementAnalyser navigateTo(String target);
 
-    class NoPatternMatcher<T extends HasNavigationData<T>> implements PatternMatcher<T> {
+    List<StatementAnalyser> lastStatementsOfNonEmptySubBlocks();
 
-        @Override
-        public boolean matchAndReplace(MethodInfo methodInfo, T hasNavigationData, EvaluationContext evaluationContext) {
-            return false;
-        }
+    EvaluationContext newEvaluationContextForOutside();
 
-        @Override
-        public void startNewIteration() {
-            // nothing here
-        }
-    }
+    StatementAnalysis getStatementAnalysis();
+
+    DV isEscapeAlwaysExecutedInCurrentBlock();
+
+    StatementAnalyser lastStatement();
+
+    //navigationData.next.get()
+    Optional<StatementAnalyser> navigationDataNextGet();
+
+    boolean navigationDataNextIsSet();
+
+    boolean isDone();
+
 }

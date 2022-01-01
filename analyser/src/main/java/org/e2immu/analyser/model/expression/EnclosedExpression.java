@@ -25,7 +25,6 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 

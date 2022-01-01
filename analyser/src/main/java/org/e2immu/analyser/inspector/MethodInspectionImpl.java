@@ -18,8 +18,6 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;

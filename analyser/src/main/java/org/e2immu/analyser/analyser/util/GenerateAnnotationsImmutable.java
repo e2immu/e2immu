@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.annotation.*;
 

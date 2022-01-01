@@ -14,9 +14,12 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;

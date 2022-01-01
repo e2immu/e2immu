@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
