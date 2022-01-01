@@ -43,28 +43,28 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "null==<f:t>" : "null==t";
-                    assertEquals(expect, d.statementAnalysis().stateData.getPrecondition()
+                    assertEquals(expect, d.statementAnalysis().stateData().getPrecondition()
                             .expression().toString());
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
+                    assertEquals(expect, d.statementAnalysis().methodLevelData()
                             .combinedPrecondition.get().expression().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertNull(d.statementAnalysis().stateData.getPrecondition());
+                        assertNull(d.statementAnalysis().stateData().getPrecondition());
                     } else {
-                        assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
-                        assertEquals("null==t", d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
+                        assertEquals("null==t", d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                     }
                 }
             }
             if ("set2".equals(d.methodInfo().name)) {
                 String expectPrecondition = d.iteration() == 0 ? "<precondition>" : "null==t";
                 assertEquals(expectPrecondition, d.statementAnalysis()
-                        .stateData.getPrecondition().expression().toString());
+                        .stateData().getPrecondition().expression().toString());
             }
         };
 
@@ -102,8 +102,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("error".equals(d.methodInfo().name)) {
                 String expectPrecondition = d.iteration() == 0 ? "<precondition>&&<precondition>" : "true";
                 assertEquals(expectPrecondition, d.statementAnalysis()
-                        .stateData.getPrecondition().expression().toString());
-                assertEquals(d.iteration() >= 1, d.statementAnalysis().stateData.preconditionIsFinal());
+                        .stateData().getPrecondition().expression().toString());
+                assertEquals(d.iteration() >= 1, d.statementAnalysis().stateData().preconditionIsFinal());
             }
         };
 
@@ -291,11 +291,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
+                        assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
                     } else {
-                        assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("!data.isEmpty()&&set.isEmpty()",
-                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                     }
                 }
             }
@@ -366,11 +366,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
+                        assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
                     } else {
-                        assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("data.size()>=1&&set.size()<=0",
-                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                     }
                 }
             }
@@ -425,11 +425,11 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("initialize".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
+                        assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
                     } else {
-                        assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                        assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                         assertEquals("0!=data.size()&&0==set.size()",
-                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                                d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                     }
                 }
             }

@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.FieldAnalysis;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;

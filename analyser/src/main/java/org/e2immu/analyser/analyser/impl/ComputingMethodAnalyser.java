@@ -15,7 +15,13 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.DetectEventual;
+import org.e2immu.analyser.analysis.*;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -349,9 +355,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
-                        ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();
+                        ConditionManager cm = beforeAssignment.stateData().conditionManagerForNextStatement.get();
                         if (cm.stateIsDelayed().isDelayed()) {
-                            log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index,
+                            log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);
                             return cm.stateIsDelayed();
                         }
@@ -628,15 +634,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
     private static boolean recursivelyFindReachableReturnStatement(StatementAnalysis statementAnalysis) {
         StatementAnalysis sa = statementAnalysis;
-        while (!sa.flowData.isUnreachable()) {
-            if (sa.statement instanceof ReturnStatement) return true;
-            for (Optional<StatementAnalysis> first : sa.navigationData.blocks.get()) {
+        while (!sa.flowData().isUnreachable()) {
+            if (sa.statement() instanceof ReturnStatement) return true;
+            for (Optional<StatementAnalysis> first : sa.navigationData().blocks.get()) {
                 if (first.isPresent() && recursivelyFindReachableReturnStatement(first.get())) {
                     return true;
                 }
             }
-            if (sa.navigationData.next.get().isEmpty()) break;
-            sa = sa.navigationData.next.get().get();
+            if (sa.navigationData().next.get().isEmpty()) break;
+            sa = sa.navigationData().next.get().get();
         }
         return false;
     }

@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -150,10 +153,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 1, d.statementAnalysis().flowData.interruptsFlowIsSet());
+                    assertEquals(d.iteration() > 1, d.statementAnalysis().flowData().interruptsFlowIsSet());
                 }
                 if ("0.0.1".equals(d.statementId())) {
-                    DV exec = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+                    DV exec = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                     if(d.iteration()<=1) {
                         assertTrue(exec.isDelayed());
                     } else {
@@ -315,11 +318,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(d.iteration() > 0,
-                            d.statementAnalysis().stateData.valueOfExpressionIsDelayed() == null);
+                            d.statementAnalysis().stateData().valueOfExpressionIsDelayed() == null);
 
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().stateData.preconditionIsFinal());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().stateData().preconditionIsFinal());
                     assertEquals(d.iteration() > 0,
-                            d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                            d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
@@ -329,8 +332,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("lookAhead".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     // 'this', parameter 'list', ret var; references to fields 'pos', 'guide', 'forwardInfo'
-                    assertFalse(d.statementAnalysis().variables.isSet("fwdInfo"));
-                    Map<String, VariableInfoContainer> map = d.statementAnalysis().variables.toImmutableMap();
+                    assertFalse(d.statementAnalysis().variableIsSet("fwdInfo"));
+                    Map<String, VariableInfoContainer> map = d.statementAnalysis().rawVariableStream()
+                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
                     assertEquals(6, map.size());
                     String values = map.keySet().stream()
                             .map(s -> s.replace(FormatterSimplified_9.class.getCanonicalName(), ""))

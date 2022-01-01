@@ -12,10 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.CommonVariableInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
@@ -81,7 +81,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // try { ... c = b; } or synchronized(...) { c = b; }
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        List<StatementAnalysis.ConditionAndVariableInfo> list = List.of(new StatementAnalysis.ConditionAndVariableInfo(TRUE, viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> list = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(TRUE, viB));
         VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, true, list);
 
         Expression res = viC2.getValue();
@@ -105,7 +105,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, Level.FALSE_DV);
 
         // situation: boolean x = ...; int c = a; if(x) c = b;
-        List<StatementAnalysis.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(x, viB));
 
         VariableInfoImpl viC = viA.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, xViB);
         assertNotSame(viA, viC);
@@ -138,7 +138,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, Level.TRUE_DV);
 
         // situation: if(x) return b;
-        List<StatementAnalysis.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(x, viB));
 
         VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, xViB);
         assertNotSame(ret, ret2);
@@ -179,7 +179,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, Level.TRUE_DV);
 
         // situation: if(x==3) return b;
-        List<StatementAnalysis.ConditionAndVariableInfo> x3ViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(xEquals3, viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> x3ViB = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(xEquals3, viB));
 
         VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, x3ViB);
         assertNotSame(ret2, ret);
@@ -199,7 +199,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viA.setProperty(IDENTITY, Level.TRUE_DV);
 
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
-        List<StatementAnalysis.ConditionAndVariableInfo> x4ViA = List.of(new StatementAnalysis.ConditionAndVariableInfo(xEquals4, viA));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> x4ViA = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(xEquals4, viA));
 
         VariableInfoImpl ret3 = ret2.mergeIntoNewObject(minimalEvaluationContext, state, false, x4ViA);
         assertNotSame(ret3, ret2);
@@ -241,7 +241,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.setValue(Instance.forTesting(viA.variable().parameterizedType()));
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType(), "no idea");
-        List<StatementAnalysis.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(unknown, viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(unknown, viB));
 
         try {
             VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, uViB);
@@ -272,8 +272,8 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        List<StatementAnalysis.ConditionAndVariableInfo> list = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viA),
-                new StatementAnalysis.ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> list = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(x, viA),
+                new StatementAnalysisImpl.ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
@@ -301,8 +301,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        List<StatementAnalysis.ConditionAndVariableInfo> list = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viA),
-                new StatementAnalysis.ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
+        List<StatementAnalysisImpl.ConditionAndVariableInfo> list = List.of(new StatementAnalysisImpl.ConditionAndVariableInfo(x, viA),
+                new StatementAnalysisImpl.ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
 

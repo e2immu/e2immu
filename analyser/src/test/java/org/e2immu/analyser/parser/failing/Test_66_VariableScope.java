@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.failing;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -143,7 +143,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertEquals("no interrupt=CONDITIONALLY,return=ALWAYS",
-                            d.statementAnalysis().flowData.getInterruptsFlow().entrySet().stream()
+                            d.statementAnalysis().flowData().getInterruptsFlow().entrySet().stream()
                                     .map(Object::toString).sorted().collect(Collectors.joining(",")));
                 }
             }

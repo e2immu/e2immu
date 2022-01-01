@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
@@ -72,11 +73,11 @@ public class Test_29_TryStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    Expression value0 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
+                    Expression value0 = d.statementAnalysis().getVariable(METHOD_FQN).current().getValue();
                     assertTrue(value0 instanceof StringConcat, "Got " + value0.getClass());
                 }
                 if ("0.1.0".equals(d.statementId())) {
-                    Expression value1 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
+                    Expression value1 = d.statementAnalysis().getVariable(METHOD_FQN).current().getValue();
                     assertTrue(value1 instanceof ConstantExpression, "Got " + value1.getClass());
                 }
             }

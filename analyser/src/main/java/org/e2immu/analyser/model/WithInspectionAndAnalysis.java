@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -41,7 +41,7 @@ public interface WithInspectionAndAnalysis {
 
     TypeInfo primaryType();
 
-    default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
+    default Optional<Boolean> error(Analysis analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
         Optional<AnnotationParameters> optAp = hasInspectedAnnotation(annotation)
                 .map(AnnotationExpression::e2ImmuAnnotationParameters);
         if (optAp.isPresent()) {
@@ -49,27 +49,27 @@ public interface WithInspectionAndAnalysis {
             if (ap.contract()) return Optional.empty(); // DO NOTHING, CONTRACTED
         }
         Optional<Boolean> mustBeAbsent = optAp.map(AnnotationParameters::isVerifyAbsent);
-        Boolean actual = analysisBuilder.annotations.getOrDefaultNull(expression);
+        Boolean actual = analysisBuilder.annotationGetOrDefaultNull(expression);
         if (mustBeAbsent.isEmpty()) {
-            analysisBuilder.annotationChecks.put(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
+            analysisBuilder.putAnnotationCheck(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
                     Analysis.AnnotationCheck.OK_ABSENT);
             return Optional.empty(); // no error, because no check!
         }
         if (!mustBeAbsent.get()) {
             // we expect the annotation to be present
             if (actual == null || !actual) {
-                analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.MISSING);
+                analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.MISSING);
                 return mustBeAbsent; // error!!!
             }
-            analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.OK);
+            analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.OK);
             return Optional.empty(); // no error
         }
         // we expect the annotation to be absent
         if (actual == Boolean.TRUE) {
-            analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.PRESENT);
+            analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.PRESENT);
             return mustBeAbsent; // error
         }
-        analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.OK_ABSENT);
+        analysisBuilder.putAnnotationCheck(expression, Analysis.AnnotationCheck.OK_ABSENT);
         return Optional.empty(); // no error, annotation is not there
     }
 

@@ -16,7 +16,8 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;
 
@@ -30,7 +31,7 @@ public class CheckImmutable {
                              WithInspectionAndAnalysis info,
                              Class<?> annotation,
                              AnnotationExpression annotationExpression,
-                             AbstractAnalysisBuilder analysis,
+                             Analysis analysis,
                              boolean after,
                              boolean level,
                              boolean recursive) {
@@ -71,7 +72,7 @@ public class CheckImmutable {
                 new Location(info));
     }
 
-    private static String recursive(AbstractAnalysisBuilder analysis) {
+    private static String recursive(Analysis analysis) {
         DV immutable = analysis.getProperty(Property.IMMUTABLE);
         if (MultiLevel.level(immutable) == MultiLevel.MAX_LEVEL) return "true";
         return null;

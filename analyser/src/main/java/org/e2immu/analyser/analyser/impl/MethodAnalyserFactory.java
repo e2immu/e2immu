@@ -18,6 +18,12 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.ParameterAnalyser;
+import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.model.*;
 
 import java.util.HashMap;

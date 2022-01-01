@@ -19,7 +19,7 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -48,7 +48,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
             if ("setString".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     assertTrue(d.haveMarkRead(STRING));
-                    VariableInfoContainer stringVic = d.statementAnalysis().variables.get(STRING);
+                    VariableInfoContainer stringVic = d.statementAnalysis().getVariable(STRING);
                     assertEquals(Level.FALSE_DV, stringVic.getPreviousOrInitial().getProperty(Property.CONTEXT_MODIFIED));
                     assertTrue(stringVic.hasEvaluation());
                     assertFalse(stringVic.hasMerge());

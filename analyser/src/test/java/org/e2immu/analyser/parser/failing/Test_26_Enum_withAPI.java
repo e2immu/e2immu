@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -69,16 +70,16 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("values".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 

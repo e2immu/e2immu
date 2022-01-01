@@ -123,10 +123,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     assertEquals(expectState, d.state().toString());
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData.isUnreachable());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData().isUnreachable());
                 }
                 if ("1.0.2".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData.isUnreachable());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData().isUnreachable());
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {
                     assertEquals(0, d.iteration());

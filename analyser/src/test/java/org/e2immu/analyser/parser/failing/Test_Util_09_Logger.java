@@ -18,7 +18,7 @@ package org.e2immu.analyser.parser.failing;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;

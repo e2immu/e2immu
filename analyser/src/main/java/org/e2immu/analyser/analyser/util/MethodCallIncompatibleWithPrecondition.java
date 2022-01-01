@@ -15,6 +15,10 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -40,8 +44,8 @@ public class MethodCallIncompatibleWithPrecondition {
                             Set<FieldInfo> fields,
                             MethodAnalyser methodAnalyser) {
         StatementAnalysis statementAnalysis = methodAnalyser.getMethodAnalysis().getLastStatement();
-        assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
-        Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
+        assert statementAnalysis.methodLevelData().combinedPrecondition.isFinal();
+        Expression precondition = statementAnalysis.methodLevelData().combinedPrecondition.get().expression();
         Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(evaluationContext, precondition);
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this

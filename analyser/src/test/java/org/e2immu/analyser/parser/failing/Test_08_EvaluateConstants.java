@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analysis.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
@@ -73,7 +73,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -133,7 +133,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
      */
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
+            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData();
             if ("print".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() >= 1) {
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
@@ -141,7 +141,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                     if (d.iteration() >= 1) {
-                        assertTrue(d.statementAnalysis().flowData.isUnreachable());
+                        assertTrue(d.statementAnalysis().flowData().isUnreachable());
                     }
                 }
             }

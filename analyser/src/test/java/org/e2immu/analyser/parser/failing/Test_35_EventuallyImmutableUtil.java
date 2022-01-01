@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -103,8 +103,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==value.t";
                 };
-                assertEquals(expectPre, d.statementAnalysis().stateData.getPrecondition().expression().toString());
-                assertEquals(d.iteration() > 1, d.statementAnalysis().stateData.preconditionIsFinal());
+                assertEquals(expectPre, d.statementAnalysis().stateData().getPrecondition().expression().toString());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().stateData().preconditionIsFinal());
             }
         };
 
@@ -130,7 +130,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
                 // preconditions have nothing to do with this
-                assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

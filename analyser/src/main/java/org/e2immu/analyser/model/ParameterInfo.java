@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;

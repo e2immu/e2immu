@@ -15,6 +15,8 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;

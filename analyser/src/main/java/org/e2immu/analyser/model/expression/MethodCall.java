@@ -15,6 +15,10 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -358,15 +362,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
                     if (lastStatement == null) {
                         increment = false;
-                    } else if (lastStatement.flowData.initialTimeNotYetSet()) {
+                    } else if (lastStatement.flowData().initialTimeNotYetSet()) {
                         CausesOfDelay.SimpleSet initialTime = new CausesOfDelay.SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
                         return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
                     } else {
-                        if (lastStatement.flowData.timeAfterSubBlocksNotYetSet()) {
+                        if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
                             increment = false;
                             // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda so we don't see this
                         } else {
-                            increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+                            increment = lastStatement.flowData().getTimeAfterSubBlocks() > 0;
                         }
                     }
                 }

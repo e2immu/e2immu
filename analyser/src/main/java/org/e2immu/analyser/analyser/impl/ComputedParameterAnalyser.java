@@ -15,6 +15,12 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
@@ -157,7 +163,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 if (!vi.linkedVariablesIsSet()) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delay independent in parameter {}, waiting for linked1variables in statement {}",
-                            parameterInfo.fullyQualifiedName(), lastStatement.index);
+                            parameterInfo.fullyQualifiedName(), lastStatement.index());
                     return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
@@ -455,7 +461,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             // the case of this(...) or super(...)
             StatementAnalysis firstStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getFirstStatement();
             if (ve != null && ve.variable() instanceof ParameterInfo pi &&
-                    firstStatement != null && firstStatement.statement instanceof ExplicitConstructorInvocation eci &&
+                    firstStatement != null && firstStatement.statement() instanceof ExplicitConstructorInvocation eci &&
                     eci.methodInfo == pi.owner) {
                 Expression param = eci.structure.updaters().get(pi.index);
                 VariableExpression ve2;

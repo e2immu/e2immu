@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.impl;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
-import org.e2immu.analyser.analyser.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
@@ -28,7 +28,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
-import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
+import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class PrimitivesImpl implements Primitives {

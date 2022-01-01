@@ -14,9 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -48,14 +49,14 @@ public class ComputeLinkedVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinkedVariables.class);
 
     private final VariableInfoContainer.Level level;
-    private final StatementAnalysis statementAnalysis;
+    private final StatementAnalysisImpl statementAnalysis;
     private final List<List<Variable>> clustersStaticallyAssigned;
     private final List<List<Variable>> clustersDependent;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
     private final Predicate<Variable> ignore;
 
-    private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
+    private ComputeLinkedVariables(StatementAnalysisImpl statementAnalysis,
                                    VariableInfoContainer.Level level,
                                    Predicate<Variable> ignore,
                                    WeightedGraph<Variable, DV> weightedGraph,
@@ -71,7 +72,7 @@ public class ComputeLinkedVariables {
         this.weightedGraph = weightedGraph;
     }
 
-    public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
+    public static ComputeLinkedVariables create(StatementAnalysisImpl statementAnalysis,
                                                 VariableInfoContainer.Level level,
                                                 Predicate<Variable> ignore,
                                                 Set<Variable> reassigned,

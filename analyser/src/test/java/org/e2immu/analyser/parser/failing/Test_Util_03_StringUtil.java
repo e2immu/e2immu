@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -59,7 +60,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
                 if ("4".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().flowData.alwaysEscapesViaException());
+                    assertTrue(d.statementAnalysis().flowData().alwaysEscapesViaException());
                     assertEquals("n>=1001", d.conditionManagerForNextStatement().state().toString());
                     // IMPROVE has to move to preconditions (n <= 1000)
                 }

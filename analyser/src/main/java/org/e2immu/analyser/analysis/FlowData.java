@@ -12,8 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analysis;
 
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
@@ -254,7 +255,7 @@ public class FlowData {
         if (previousStatement == null) {
             // start of a block is always reached in that block
             setGuaranteedToBeReachedInCurrentBlock(ALWAYS);
-        } else if (previousStatement.flowData.getGuaranteedToBeReachedInMethod().equals(NEVER)) {
+        } else if (previousStatement.flowData().getGuaranteedToBeReachedInMethod().equals(NEVER)) {
             setGuaranteedToBeReachedInCurrentBlock(NEVER);
             setGuaranteedToBeReachedInMethod(NEVER);
             return delayBasedOnExecutionAndLocalConditionManager; // no more errors
@@ -277,9 +278,9 @@ public class FlowData {
 
         // look at the previous statement in the block, there are no delays
 
-        DV prev = previousStatement.flowData.getGuaranteedToBeReachedInCurrentBlock();
+        DV prev = previousStatement.flowData().getGuaranteedToBeReachedInCurrentBlock();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
-        DV interrupt = previousStatement.flowData.interruptStatusToExecution();
+        DV interrupt = previousStatement.flowData().interruptStatusToExecution();
         DV execBasedOnState = state.isBoolValueFalse() ? NEVER : ALWAYS;
         DV executionInCurrentBlock = prev.min(interrupt).min(execBasedOnState);
 
@@ -295,7 +296,7 @@ public class FlowData {
     public AnalysisStatus analyseInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
         Statement statement = statementAnalyser.statement();
         boolean oldStyleSwitch = statementAnalyser.parent() != null &&
-                statementAnalyser.parent().statement instanceof SwitchStatementOldStyle;
+                statementAnalyser.parent().statement() instanceof SwitchStatementOldStyle;
 
         if (!oldStyleSwitch) {
             if (statement instanceof ReturnStatement) {
@@ -333,37 +334,38 @@ public class FlowData {
         // all the obvious ones have been done; for the rest we need to ensure that blockExecution has been set already
         if (!blockExecution.isSet()) return blockExecution.getFirst();
 
-        if (previousStatement != null && !previousStatement.flowData.interruptsFlowIsSet()) {
+        if (previousStatement != null && !previousStatement.flowData().interruptsFlowIsSet()) {
             log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
                     previousStatement.index());
-            return previousStatement.flowData.interruptsFlow.getFirst();
+            return previousStatement.flowData().interruptsFlow.getFirst();
         }
 
         // situation from the previous statement
         Map<InterruptsFlow, DV> builder = new HashMap<>(previousStatement == null ? Map.of() :
-                previousStatement.flowData.interruptsFlow.get());
+                previousStatement.flowData().interruptsFlow.get());
 
         List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks();
         for (StatementAnalyser subAnalyser : lastStatementsOfSubBlocks) {
             StatementAnalysis subStatementAnalysis = subAnalyser.getStatementAnalysis();
-            if (!subStatementAnalysis.flowData.interruptsFlowIsSet()) {
+            FlowData flowData = subStatementAnalysis.flowData();
+            if (!flowData.interruptsFlowIsSet()) {
                 log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
                         subAnalyser.index());
-                CausesOfDelay delays = subStatementAnalysis.flowData.interruptsFlow.getFirst().causesOfDelay();
+                CausesOfDelay delays = flowData.interruptsFlow.getFirst().causesOfDelay();
                 interruptsFlow.setFirst(delays);
                 return delays;
             }
-            Map<InterruptsFlow, DV> subInterrupts = subStatementAnalysis.flowData.interruptsFlow.get();
+            Map<InterruptsFlow, DV> subInterrupts = flowData.interruptsFlow.get();
             if (subInterrupts.isEmpty()) {
                 // in this sub-block, there are no interrupts...
-                if (subStatementAnalysis.flowData.blockExecution.isFirst()) {
-                    CausesOfDelay delays = subStatementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                if (flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }
-                builder.put(NO, subStatementAnalysis.flowData.blockExecution.get());
+                builder.put(NO, flowData.blockExecution.get());
             } else for (Map.Entry<InterruptsFlow, DV> entry : subInterrupts.entrySet()) {
                 InterruptsFlow i = entry.getKey();
                 DV e = entry.getValue();
@@ -377,14 +379,14 @@ public class FlowData {
                 if (rejectInterrupt(statement, i)) {
                     builder.merge(i, e, (a, b) -> b.max(a));
                 }
-                if (subStatementAnalysis.flowData.blockExecution.isFirst()) {
-                    CausesOfDelay delays = subStatementAnalysis.flowData.blockExecution.getFirst().causesOfDelay();
+                if (flowData.blockExecution.isFirst()) {
+                    CausesOfDelay delays = flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }
-                builder.merge(i, subStatementAnalysis.flowData.blockExecution.get(), (a, b) -> b.min(a));
+                builder.merge(i, flowData.blockExecution.get(), (a, b) -> b.min(a));
             }
         }
         setInterruptsFlow(Map.copyOf(builder));

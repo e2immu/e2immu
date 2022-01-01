@@ -127,9 +127,9 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("\"3\".equals(label1)", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData()
                             .getPrecondition().expression().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData()
                             .combinedPrecondition.get().expression().toString());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
@@ -137,8 +137,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("!\"3\".equals(label1)",
-                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
-                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                            d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
+                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
@@ -185,7 +185,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
                 boolean unreachable = "1".equals(d.statementId());
-                assertEquals(unreachable, d.statementAnalysis().flowData.alwaysEscapesViaException());
+                assertEquals(unreachable, d.statementAnalysis().flowData().alwaysEscapesViaException());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.analyser.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;

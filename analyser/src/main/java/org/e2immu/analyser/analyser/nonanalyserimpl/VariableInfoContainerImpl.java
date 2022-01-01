@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
@@ -468,7 +469,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public Expression merge(EvaluationContext evaluationContext,
                             Expression stateOfDestination,
                             boolean atLeastOneBlockExecuted,
-                            List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                            List<StatementAnalysisImpl.ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);

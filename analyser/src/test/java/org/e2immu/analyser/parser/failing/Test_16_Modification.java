@@ -15,7 +15,8 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -238,7 +239,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() > 1) {
-                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -528,11 +529,11 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 1,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -767,7 +768,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals(d.iteration() >= 2,
-                        d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                        d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -775,7 +776,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -863,7 +864,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
-                Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement).expression).object;
+                Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement()).expression).object;
                 VariableExpression variableExpression = (VariableExpression) scope;
                 This t = (This) variableExpression.variable();
                 assertNotNull(t.explicitlyWriteType);
@@ -872,7 +873,7 @@ public class Test_16_Modification extends CommonTestRunner {
             // we make sure that super.clearAndLog refers to the method in ParentClass
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId())) {
-                if (d.statementAnalysis().statement instanceof ExpressionAsStatement expressionAsStatement) {
+                if (d.statementAnalysis().statement() instanceof ExpressionAsStatement expressionAsStatement) {
                     Expression expression = expressionAsStatement.expression;
                     if (expression instanceof MethodCall methodCall) {
                         assertEquals("org.e2immu.analyser.testexample.Modification_12.ParentClass.clearAndLog()",
@@ -880,11 +881,11 @@ public class Test_16_Modification extends CommonTestRunner {
                     } else fail();
                 } else fail();
                 if (d.iteration() == 0) {
-                    assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
-                    assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
+                    assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertFalse(d.statementAnalysis().stateData().preconditionIsEmpty());
                 } else {
-                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
-                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
+                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                 }
             }
         };

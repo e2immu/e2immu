@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.FieldAnalysis;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.TypeInfo;
 

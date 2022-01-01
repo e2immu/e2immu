@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -88,7 +88,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     }
 
     public static void checkAnnotationWithValue(Messages messages,
-                                                AbstractAnalysisBuilder analysis,
+                                                Analysis analysis,
                                                 String annotationFqn,
                                                 String annotationSimpleName,
                                                 TypeInfo annotationTypeInfo,
@@ -106,22 +106,20 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
 
     // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
     public static void checkAnnotationWithValue(Messages messages,
-                                                AbstractAnalysisBuilder analysis,
+                                                Analysis analysis,
                                                 String annotationFqn,
                                                 String annotationSimpleName,
                                                 TypeInfo annotationTypeInfo,
                                                 List<AnnotationKV> annotationKVs,
                                                 List<AnnotationExpression> annotations,
                                                 Location where) {
-        Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.annotations.stream()
-                .filter(e -> e.getKey().typeInfo().fullyQualifiedName.equals(annotationFqn)
-                        && e.getValue() == Boolean.TRUE).findFirst().orElse(null);
+        Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.findAnnotation(annotationFqn);
 
         Optional<AnnotationExpression> optAnnotationInInspection = annotations.stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFqn)).findFirst();
         if (optAnnotationInInspection.isEmpty()) {
             if (inAnalysis != null) {
-                analysis.annotationChecks.put(inAnalysis.getKey(), inAnalysis.getValue() == Boolean.TRUE ?
+                analysis.putAnnotationCheck(inAnalysis.getKey(), inAnalysis.getValue() == Boolean.TRUE ?
                         Analysis.AnnotationCheck.COMPUTED : Analysis.AnnotationCheck.ABSENT);
             }
             return;
@@ -135,20 +133,20 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             if (haveComputedValue || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
                 messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
                 assert inAnalysis != null;
-                analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
+                analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
             } else if (inAnalysis != null) {
-                analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.OK_ABSENT);
+                analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.OK_ABSENT);
                 assert inAnalysis.getValue() != Boolean.TRUE;
             } else {
                 // we'll have to add the value to the annotationChecks
-                analysis.annotationChecks.put(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
+                analysis.putAnnotationCheck(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                         Analysis.AnnotationCheck.OK_ABSENT);
             }
             return;
         }
         if (inAnalysis == null) {
             messages.add(Message.newMessage(where, Message.Label.ANNOTATION_ABSENT, annotationSimpleName));
-            analysis.annotationChecks.put(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
+            analysis.putAnnotationCheck(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                     Analysis.AnnotationCheck.MISSING);
             return;
         }
@@ -160,10 +158,10 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 messages.add(Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
                         "Annotation " + annotationSimpleName + ", required " +
                                 requiredValue + ", found " + kv.computedValue));
-                analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);
+                analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);
                 return;
             }
         }
-        analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.OK);
+        analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.OK);
     }
 }

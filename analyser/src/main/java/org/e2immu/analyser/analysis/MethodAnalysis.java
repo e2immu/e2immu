@@ -12,12 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.model.CompanionMethodName;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.List;
 import java.util.Map;
@@ -25,16 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface MethodAnalysis extends Analysis {
-
-    static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
-        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
-                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, p).build())
-                .collect(Collectors.toList());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(AnalysisMode.CONTRACTED,
-                primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
-                methodInfo, parameterAnalyses);
-        return (MethodAnalysis) builder.build();
-    }
 
     MethodInfo getMethodInfo();
 
@@ -97,7 +89,7 @@ public interface MethodAnalysis extends Analysis {
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();
         if (last == null) return null; // there is no last statement --> there are no statements
-        return last.methodLevelData;
+        return last.methodLevelData();
     }
 
     default DV getMethodProperty(Property property) {

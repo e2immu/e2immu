@@ -12,8 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analysis;
 
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -107,7 +109,7 @@ public class MethodLevelData {
             .build();
 
     public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
-                                  StatementAnalysis statementAnalysis,
+                                  StatementAnalysisImpl statementAnalysis,
                                   MethodLevelData previous,
                                   String previousIndex,
                                   StateData stateData) {
@@ -133,7 +135,7 @@ public class MethodLevelData {
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
         CausesOfDelay subBlockDelays = subBlocks.stream()
-                .map(sa -> sa.methodLevelData.combinedPrecondition.get().expression().causesOfDelay())
+                .map(sa -> sa.methodLevelData().combinedPrecondition.get().expression().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
 
@@ -142,7 +144,7 @@ public class MethodLevelData {
         Stream<Precondition> fromPrevious = sharedState.previous != null ?
                 Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
         Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
-                .map(sa -> sa.methodLevelData.combinedPrecondition)
+                .map(sa -> sa.methodLevelData().combinedPrecondition)
                 .map(EventuallyFinal::get);
         Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
                 .map(pc -> pc == null ? Precondition.empty(sharedState.evaluationContext.getPrimitives()) : pc)

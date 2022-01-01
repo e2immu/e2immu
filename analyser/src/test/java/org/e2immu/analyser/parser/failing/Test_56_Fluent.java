@@ -16,6 +16,8 @@ package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -191,21 +193,21 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("from".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertNull(d.conditionManagerForNextStatement().preconditionIsDelayed());
-                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
-                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
                 }
                 if ("1".equals(d.statementId())) {
                     // STEP 6: evaluation renders a delayed precondition: hardcoded in AggregatingMethodAnalyser
-                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
+                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
 
                     // STEP 5: check preconditionIsDelayed in previous statement, that's OK
                     assertNull(d.conditionManagerForNextStatement().preconditionIsDelayed());
                     // STEP 5bis: combined precondition never becomes final
-                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                    assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                 }
                 if ("2".equals(d.statementId())) {
                     // STEP 2 parameter 'instance'
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };

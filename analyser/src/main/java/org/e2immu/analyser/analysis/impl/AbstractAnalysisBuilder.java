@@ -12,10 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
@@ -35,7 +37,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.log;
 
-public abstract class AbstractAnalysisBuilder implements Analysis {
+abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
@@ -48,6 +50,23 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     protected AbstractAnalysisBuilder(Primitives primitives, String simpleName) {
         this.simpleName = simpleName;
         this.primitives = primitives;
+    }
+
+    @Override
+    public void putAnnotationCheck(AnnotationExpression expression, AnnotationCheck missing) {
+        annotationChecks.put(expression, missing);
+    }
+
+    @Override
+    public Boolean annotationGetOrDefaultNull(AnnotationExpression expression) {
+        return annotations.getOrDefaultNull(expression);
+    }
+
+    @Override
+    public Map.Entry<AnnotationExpression, Boolean> findAnnotation(String annotationFqn) {
+        return annotations.stream()
+                .filter(e -> e.getKey().typeInfo().fullyQualifiedName.equals(annotationFqn)
+                        && e.getValue() == Boolean.TRUE).findFirst().orElse(null);
     }
 
     public DV getPropertyFromMapDelayWhenAbsent(Property property) {
@@ -100,7 +119,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         DV container = getProperty(Property.CONTAINER);
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
-        boolean isInterface = isType && ((TypeAnalysisImpl.Builder) this).typeInfo.isInterface();
+        boolean isInterface = isType && ((TypeAnalysis) this).getTypeInfo().isInterface();
         boolean eventual = isType && ((TypeAnalysis) this).isEventual();
         if (eventual) {
             eventualFieldNames = ((TypeAnalysis) this).markLabel();

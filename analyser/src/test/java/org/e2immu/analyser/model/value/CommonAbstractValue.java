@@ -15,8 +15,10 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.impl.AbstractEvaluationContextImpl;
-import org.e2immu.analyser.analyser.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;

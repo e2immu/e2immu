@@ -15,8 +15,8 @@
 
 package org.e2immu.analyser.parser.failing;
 
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
-import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -239,7 +239,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
-                FlowData flowData = d.statementAnalysis().flowData;
+                FlowData flowData = d.statementAnalysis().flowData();
                 int time1 = flowData.getInitialTime();
                 int time3 = flowData.getTimeAfterEvaluation();
                 int time4 = flowData.getTimeAfterSubBlocks();
@@ -263,7 +263,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
                     assertEquals("true", d.localConditionManager().precondition().expression().toString());
                     assertFalse(d.localConditionManager().isDelayed());
-                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
                     assertEquals(2, time1);

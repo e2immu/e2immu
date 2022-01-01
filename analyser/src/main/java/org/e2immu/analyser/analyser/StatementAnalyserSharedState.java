@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.StatementAnalysis;
+
 public record StatementAnalyserSharedState(EvaluationContext evaluationContext,
                                            StatementAnalyserResult.Builder builder,
                                            StatementAnalysis previous,

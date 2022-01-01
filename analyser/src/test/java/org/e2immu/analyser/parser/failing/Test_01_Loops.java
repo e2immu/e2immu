@@ -14,9 +14,19 @@
 
 package org.e2immu.analyser.parser.failing;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.ForEachStatement;
@@ -36,9 +46,9 @@ import java.time.chrono.ChronoLocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.FlowData.ALWAYS;
-import static org.e2immu.analyser.analyser.FlowData.CONDITIONALLY;
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
+import static org.e2immu.analyser.analysis.FlowData.CONDITIONALLY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_01_Loops extends CommonTestRunner {
@@ -116,28 +126,28 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("2".equals(d.statementId())) {
-                if (d.statementAnalysis().statement instanceof WhileStatement whileStatement) {
+                if (d.statementAnalysis().statement() instanceof WhileStatement whileStatement) {
                     DV exec = whileStatement.structure.statementExecution()
-                            .apply(new BooleanConstant(d.statementAnalysis().primitives, true),
+                            .apply(new BooleanConstant(((StatementAnalysisImpl) d.statementAnalysis()).primitives, true),
                                     d.evaluationContext());
                     assertEquals(ALWAYS, exec);
                 } else fail();
                 String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+instance type int>=n";
                 assertEquals(expectState, d.state().toString());
 
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
             }
             if ("2.0.0".equals(d.statementId())) {
                 assertEquals("true", d.condition().toString());
                 assertEquals("true", d.state().toString());
                 assertTrue(d.localConditionManager().precondition().isEmpty());
                 if (d.iteration() == 0) {
-                    VariableInfoContainer vic = d.statementAnalysis().variables.get("i");
+                    VariableInfoContainer vic = d.statementAnalysis().getVariable("i");
                     assertEquals("0", vic.current().getValue().toString());
                 }
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
             }
             if ("2.0.1".equals(d.statementId())) {
                 assertTrue(d.localConditionManager().precondition().isEmpty());
@@ -147,18 +157,18 @@ public class Test_01_Loops extends CommonTestRunner {
                 String expectState = d.iteration() == 0 ? "n-<v:i>>=1" : "-1-i$2+n>=1";
                 assertEquals(expectState, d.state().toString());
                 assertEquals(d.iteration() == 0, d.statementAnalysis()
-                        .stateData.conditionManagerForNextStatement.isVariable());
+                        .stateData().conditionManagerForNextStatement.isVariable());
 
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
             }
             // shows that the BREAK statement, always executed in its own block, is dependent on a valid condition
             if ("2.0.2.0.0".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? "<v:i>>=n" : "1+i$2>=n";
                 assertEquals(expect, d.condition().toString());
 
-                assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
             }
         };
         testClass("Loops_0", 0, 0, new DebugConfiguration.Builder()
@@ -229,7 +239,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                DV execution = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+                DV execution = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                 if ("2.0.0".equals(d.statementId())) {
                     assertEquals("true", d.condition().debugOutput());
                     assertEquals("true", d.absoluteState().debugOutput());
@@ -401,22 +411,22 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(0, d.iteration(), "statement should be unreachable after iteration 0");
                 }
                 if ("1".equals(d.statementId())) {
-                    if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
+                    if (d.statementAnalysis().statement() instanceof ForEachStatement forEachStatement) {
                         DV exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(),
-                                        List.of(), d.statementAnalysis().primitives.stringParameterizedType()), d.evaluationContext());
+                                        List.of(), ((StatementAnalysisImpl) d.statementAnalysis()).primitives.stringParameterizedType()), d.evaluationContext());
                         assertSame(FlowData.NEVER, exec);
 
-                        StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
-                        assertEquals("1.0.0", firstInBlock.index);
+                        StatementAnalysis firstInBlock = d.statementAnalysis().navigationData().blocks.get().get(0).orElseThrow();
+                        assertEquals("1.0.0", firstInBlock.index());
                         if (d.iteration() > 0) {
-                            assertTrue(firstInBlock.flowData.isUnreachable());
+                            assertTrue(firstInBlock.flowData().isUnreachable());
                             assertNotNull(d.haveError(Message.Label.EMPTY_LOOP));
                         }
                     } else fail();
                 }
                 if ("2".equals(d.statementId())) {
-                    assertFalse(d.statementAnalysis().variables.isSet("s"));
+                    assertFalse(d.statementAnalysis().variableIsSet("s"));
                 }
             }
         };
@@ -627,19 +637,19 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
 
-                    assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
-                    assertEquals("i", d.statementAnalysis().localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
+                    assertTrue(((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.isFrozen());
+                    assertEquals("i", ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                    assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                    assertDv(d, 1, CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock());
 
                     String expect = d.iteration() == 0 ? "n><v:i>" : "n>i$1";
                     assertEquals(expect, d.absoluteState().toString());
@@ -649,28 +659,28 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(expect, d.absoluteState().toString());
                     assertEquals(expect, d.condition().toString());
                     String expectInterrupt = "{}";
-                    assertEquals(expectInterrupt, d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                    assertEquals(expectInterrupt, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                 }
                 if ("1.0.2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "true" : "false";
                     assertEquals(expect, d.state().toString());
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().flowData.interruptsFlowIsSet());
+                        assertFalse(d.statementAnalysis().flowData().interruptsFlowIsSet());
                     } else {
-                        assertEquals("{break=CONDITIONALLY}", d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                        assertEquals("{break=CONDITIONALLY}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     }
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {
                     String expect = "{break=ALWAYS}";
-                    assertEquals(expect, d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                    assertEquals(expect, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     if (d.iteration() == 0) {
-                        assertFalse(d.statementAnalysis().flowData.blockExecution.isSet());
+                        assertFalse(d.statementAnalysis().flowData().blockExecution.isSet());
                     } else {
-                        assertSame(CONDITIONALLY, d.statementAnalysis().flowData.blockExecution.get());
+                        assertSame(CONDITIONALLY, d.statementAnalysis().flowData().blockExecution.get());
                     }
                 }
                 if ("1.0.3".equals(d.statementId())) {
-                    assertDv(d, 1, FlowData.NEVER, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowData.NEVER, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
         };
@@ -782,7 +792,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
                     assertEquals("count,entry",
-                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                            ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.toImmutableSet()
                                     .stream().sorted().collect(Collectors.joining(",")));
                 }
             }
@@ -815,7 +825,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     assertEquals("[i]", // and not RES!
-                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet().toString());
+                            ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.toImmutableSet().toString());
                 }
             }
         };
@@ -835,7 +845,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     assertEquals("i,res1",
-                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                            ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.toImmutableSet()
                                     .stream().sorted().collect(Collectors.joining(",")));
                 }
             }
@@ -911,8 +921,8 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
-                    assertEquals("i,j", d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                    assertTrue(((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.isFrozen());
+                    assertEquals("i,j", ((StatementAnalysisImpl) d.statementAnalysis()).localVariablesAssignedInThisLoop.toImmutableSet()
                             .stream().sorted().collect(Collectors.joining(",")));
                 }
                 if ("2.0.0".equals(d.statementId())) {

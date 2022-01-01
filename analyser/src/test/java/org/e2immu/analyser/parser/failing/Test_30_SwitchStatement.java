@@ -118,7 +118,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     assertNotNull(d.haveError(Message.Label.TRIVIAL_CASES_IN_SWITCH));
-                    assertEquals("{no interrupt=ALWAYS}", d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                    assertEquals("{no interrupt=ALWAYS}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
                 }
             }
         };

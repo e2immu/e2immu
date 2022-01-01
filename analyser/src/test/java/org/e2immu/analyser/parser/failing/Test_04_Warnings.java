@@ -15,8 +15,10 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -116,10 +118,10 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("checkForEach".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
+                    assertFalse(d.statementAnalysis().variableIsSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 1, FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -394,11 +396,11 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
+                VariableInfoContainer vic = d.statementAnalysis().getVariable(T);
                 assertTrue(vic.current().isRead());
             }
             if ("apply".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
+                VariableInfoContainer vic = d.statementAnalysis().getVariable(T);
                 assertTrue(vic.current().isRead());
             }
         };

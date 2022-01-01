@@ -12,10 +12,11 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analysis.impl;
 
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
-import org.e2immu.analyser.analyser.impl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -46,9 +47,8 @@ import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
-public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>,
-        HasNavigationData<StatementAnalysis>, LimitedStatementAnalysis {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalysis.class);
+public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements StatementAnalysis, LimitedStatementAnalysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalysisImpl.class);
 
     public final Statement statement;
     public final String index;
@@ -66,9 +66,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
-    public StatementAnalysis(Primitives primitives,
-                             MethodAnalysis methodAnalysis,
-                             Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock) {
+    public StatementAnalysisImpl(Primitives primitives,
+                                 MethodAnalysis methodAnalysis,
+                                 Statement statement,
+                                 StatementAnalysis parent,
+                                 String index,
+                                 boolean inSyncBlock) {
         super(primitives, index);
         this.index = super.simpleName;
         this.statement = statement;
@@ -80,6 +83,74 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         flowData = new FlowData(location());
     }
 
+    static StatementAnalysis startOfBlockStatementAnalysis(StatementAnalysis sa, int block) {
+        return sa == null ? null : sa.startOfBlockStatementAnalysis(block);
+    }
+
+    static StatementAnalysis recursivelyCreateAnalysisObjects(
+            Primitives primitives,
+            MethodAnalysis methodAnalysis,
+            StatementAnalysis parent,
+            List<Statement> statements,
+            String indices,
+            boolean setNextAtEnd,
+            boolean inSyncBlock) {
+        Objects.requireNonNull(methodAnalysis);
+        int statementIndex;
+        if (setNextAtEnd) {
+            statementIndex = 0;
+        } else {
+            // we're in the replacement mode; replace the existing index value
+            int pos = indices.lastIndexOf(".");
+            statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
+        }
+        StatementAnalysis first = null;
+        StatementAnalysis previous = null;
+
+        for (Statement statement : statements) {
+            String iPlusSt = indices + "." + pad(statementIndex, statements.size());
+            StatementAnalysis statementAnalysis = new StatementAnalysisImpl(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
+            if (previous != null) {
+                previous.navigationData().next.set(Optional.of(statementAnalysis));
+            }
+            previous = statementAnalysis;
+            if (first == null) first = statementAnalysis;
+
+            int blockIndex = 0;
+            List<Optional<StatementAnalysis>> analysisBlocks = new ArrayList<>();
+
+            boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
+            Structure structure = statement.getStructure();
+            if (structure.haveStatements()) {
+                String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
+                        structure.statements(), indexWithBlock, true, newInSyncBlock);
+                analysisBlocks.add(Optional.of(subStatementAnalysis));
+            } else {
+                analysisBlocks.add(Optional.empty());
+            }
+            blockIndex++;
+            for (Structure subStatements : structure.subStatements()) {
+                if (subStatements.haveStatements()) {
+                    String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
+                            subStatements.statements(), indexWithBlock, true, newInSyncBlock);
+                    analysisBlocks.add(Optional.of(subStatementAnalysis));
+                } else {
+                    analysisBlocks.add(Optional.empty());
+                }
+                blockIndex++;
+            }
+            statementAnalysis.navigationData().blocks.set(List.copyOf(analysisBlocks));
+            ++statementIndex;
+        }
+        if (previous != null && setNextAtEnd) {
+            previous.navigationData().next.set(Optional.empty());
+        }
+        return first;
+    }
+
+    @Override
     public String fullyQualifiedName() {
         return methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
     }
@@ -90,7 +161,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public int compareTo(StatementAnalysis o) {
-        return index.compareTo(o.index);
+        return index.compareTo(o.index());
     }
 
     @Override
@@ -98,15 +169,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return navigationData;
     }
 
-    public static StatementAnalysis startOfBlock(StatementAnalysis sa, int block) {
-        return sa == null ? null : sa.startOfBlock(block);
-    }
-
     @Override
     public StatementAnalysis startOfBlock(int i) {
         if (!navigationData.blocks.isSet()) return null;
         List<Optional<StatementAnalysis>> list = navigationData.blocks.get();
         return i >= list.size() ? null : list.get(i).orElse(null);
+    }
+
+    @Override
+    public StatementAnalysis startOfBlockStatementAnalysis(int i) {
+        return startOfBlock(i);
     }
 
     @Override
@@ -163,24 +235,40 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     @Override
+    public StateData stateData() {
+        return stateData;
+    }
+
+    @Override
+    public boolean inSyncBlock() {
+        return inSyncBlock;
+    }
+
+    @Override
+    public MethodAnalysis methodAnalysis() {
+        return methodAnalysis;
+    }
+
+    @Override
     public StatementAnalysis lastStatement() {
         if (flowData.isUnreachable()) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalysis replaced = followReplacements();
-        return replaced.navigationData.next.get().map(statementAnalysis -> {
-            if (statementAnalysis.flowData.isUnreachable()) {
+        return replaced.navigationData().next.get().map(statementAnalysis -> {
+            if (statementAnalysis.flowData().isUnreachable()) {
                 return replaced;
             }
             return statementAnalysis.lastStatement();
         }).orElse(replaced);
     }
 
+    @Override
     public List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks() {
         return navigationData.blocks.get().stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .filter(sa -> !sa.flowData.isUnreachable())
+                .filter(sa -> !sa.flowData().isUnreachable())
                 .map(StatementAnalysis::lastStatement)
                 .collect(Collectors.toList());
     }
@@ -206,73 +294,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 statements, startIndex, false, inSyncBlock);
     }
 
-    public static StatementAnalysis recursivelyCreateAnalysisObjects(
-            Primitives primitives,
-            MethodAnalysis methodAnalysis,
-            StatementAnalysis parent,
-            List<Statement> statements,
-            String indices,
-            boolean setNextAtEnd,
-            boolean inSyncBlock) {
-        Objects.requireNonNull(methodAnalysis);
-        int statementIndex;
-        if (setNextAtEnd) {
-            statementIndex = 0;
-        } else {
-            // we're in the replacement mode; replace the existing index value
-            int pos = indices.lastIndexOf(".");
-            statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
-        }
-        StatementAnalysis first = null;
-        StatementAnalysis previous = null;
-
-        for (Statement statement : statements) {
-            String iPlusSt = indices + "." + pad(statementIndex, statements.size());
-            StatementAnalysis statementAnalysis = new StatementAnalysis(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
-            if (previous != null) {
-                previous.navigationData.next.set(Optional.of(statementAnalysis));
-            }
-            previous = statementAnalysis;
-            if (first == null) first = statementAnalysis;
-
-            int blockIndex = 0;
-            List<Optional<StatementAnalysis>> analysisBlocks = new ArrayList<>();
-
-            boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
-            Structure structure = statement.getStructure();
-            if (structure.haveStatements()) {
-                String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
-                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                        structure.statements(), indexWithBlock, true, newInSyncBlock);
-                analysisBlocks.add(Optional.of(subStatementAnalysis));
-            } else {
-                analysisBlocks.add(Optional.empty());
-            }
-            blockIndex++;
-            for (Structure subStatements : structure.subStatements()) {
-                if (subStatements.haveStatements()) {
-                    String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
-                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                            subStatements.statements(), indexWithBlock, true, newInSyncBlock);
-                    analysisBlocks.add(Optional.of(subStatementAnalysis));
-                } else {
-                    analysisBlocks.add(Optional.empty());
-                }
-                blockIndex++;
-            }
-            statementAnalysis.navigationData.blocks.set(List.copyOf(analysisBlocks));
-            ++statementIndex;
-        }
-        if (previous != null && setNextAtEnd) {
-            previous.navigationData.next.set(Optional.empty());
-        }
-        return first;
-    }
-
+    @Override
     public boolean atTopLevel() {
         return index.indexOf('.') == 0;
     }
 
+    @Override
     public void ensure(Message newMessage) {
         if (!messages.contains(newMessage)) {
             messages.add(newMessage);
@@ -287,6 +314,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @throws IllegalArgumentException if the variable does not exist
      */
 
+    @Override
     @NotNull
     public VariableInfo getLatestVariableInfo(String variableName) {
         if (!variables.isSet(variableName)) {
@@ -295,6 +323,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variableName).current();
     }
 
+    @Override
     public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
         return variables.stream()
                 .map(e -> e.getValue().current())
@@ -306,6 +335,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 );
     }
 
+    @Override
     public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
         return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).toList();
     }
@@ -313,6 +343,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     // next to this.field, and local copies, we also have fields with a non-this scope.
     // all values that contain the field itself get blocked;
 
+    @Override
     public List<VariableInfo> assignmentInfo(FieldInfo fieldInfo) {
         List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo, false);
         if (normalValue.isEmpty()) return normalValue;
@@ -352,7 +383,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 String assignmentIndex = StringUtil.stripLevel(assignmentId);
                 if (!done.contains(assignmentIndex) && !prefixAdded(assignmentIndex, added)) {
                     StatementAnalysis statementAnalysis = methodAnalysis.getFirstStatement().navigateTo(assignmentIndex);
-                    VariableInfoContainer assignmentVic = statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
+                    VariableInfoContainer assignmentVic = statementAnalysis.getVariable(fieldInfo.fullyQualifiedName());
                     String level = StringUtil.level(assignmentId);
                     VariableInfo assignmentVi = EVALUATION.label.equals(level) ? assignmentVic.best(EVALUATION) : assignmentVic.best(MERGE);
                     Expression value = assignmentVi.getValue();
@@ -367,6 +398,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return result;
     }
 
+    @Override
+    public VariableInfoContainer getVariable(String fullyQualifiedName) {
+        return variables.get(fullyQualifiedName);
+    }
+
+    @Override
+    public VariableInfoContainer getVariableOrDefaultNull(String fullyQualifiedName) {
+        return variables.getOrDefaultNull(fullyQualifiedName);
+    }
+
+    @Override
+    public boolean variableIsSet(String fullyQualifiedName) {
+        return variables.isSet(fullyQualifiedName);
+    }
+
     private boolean prefixAdded(String assignmentIndex, Set<String> added) {
         return added.stream().anyMatch(assignmentIndex::startsWith);
     }
@@ -376,6 +422,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.stream().noneMatch(v -> v instanceof FieldReference fr && fieldInfo.equals(fr.fieldInfo));
     }
 
+    @Override
     public boolean containsMessage(Message.Label messageLabel) {
         return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
                 message.location().equals(location()));
@@ -399,6 +446,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param evaluationContext overview object for the analysis of this primary type
      * @param previous          the previous statement, or null if there is none (start of block)
      */
+    @Override
     public void initIteration0(EvaluationContext evaluationContext, MethodInfo currentMethod, StatementAnalysis previous) {
         if (previous == null) {
             // at the beginning of a block
@@ -412,13 +460,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.variables.stream()
+        copyFrom.rawVariableStream()
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
                 .forEach(e -> copyVariableFromPreviousInIteration0(e,
-                        previous == null, previous == null ? null : previous.index, false));
+                        previous == null, previous == null ? null : previous.index(), false));
 
-        flowData.initialiseAssignmentIds(copyFrom.flowData);
+        flowData.initialiseAssignmentIds(copyFrom.flowData());
     }
 
     private void createParametersThisAndVariablesFromClosure(EvaluationContext evaluationContext, MethodInfo currentMethod) {
@@ -533,7 +581,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
        ConditionalInitialization only goes to the next statement, never inside a block
      */
     private void explicitlyPropagateVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
-        copyFrom.variables.stream()
+        copyFrom.rawVariableStream()
                 .filter(e -> explicitlyPropagate(copyFrom, copyIsParent, e.getValue()))
                 .forEach(e -> {
                     String fqn = e.getKey();
@@ -557,7 +605,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         }
         // don't continue local copies of loop variables beyond the loop
-        return !copyFrom.index.equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
+        return !copyFrom.index().equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
     }
 
 
@@ -724,6 +772,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
+    @Override
     public void ensureMessages(Stream<Message> messageStream) {
         messageStream.forEach(this::ensure);
     }
@@ -736,10 +785,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return statement.output(qualification, this);
     }
 
+    @Override
     public boolean assignsToFields() {
         return variableStream().anyMatch(vi -> vi.variable() instanceof FieldReference && vi.isAssigned());
     }
 
+    @Override
     public boolean noIncompatiblePrecondition() {
         return !(methodLevelData.combinedPrecondition.isFinal()
                 && methodLevelData.combinedPrecondition.get().expression().isBoolValueFalse());
@@ -753,10 +804,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return messages.stream().filter(m -> m.location().info.getMethod() == methodAnalysis.getMethodInfo());
     }
 
+    @Override
     public Stream<Message> messageStream() {
         return messages.stream();
     }
 
+    @Override
     public LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
                                                             VariableInfo fieldVi,
                                                             int statementTime) {
@@ -783,6 +836,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return createLocalCopy(fieldReference, copy);
     }
 
+    @Override
     public LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
         VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
         return createLocalCopy(original, copy);
@@ -841,7 +895,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Map<Variable, Expression> replacements = new HashMap<>();
             for (Variable variable : variables) {
                 // Test 26 Enum 1 shows that the variable may not exist
-                VariableInfoContainer vic = lastStatement.variables.getOrDefaultNull(variable.fullyQualifiedName());
+                VariableInfoContainer vic = lastStatement.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null && !vic.variableNature().acceptForSubBlockMerging(indexOfCurrentStatement)) {
                     Expression currentValue = vic.current().getValue();
                     replacements.put(variable, currentValue);
@@ -874,6 +928,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param statementTime           the statement time of subBlocks
      */
+    @Override
     public AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
                                               Expression stateOfConditionManagerBeforeExecution,
                                               List<ConditionAndLastStatement> lastStatements,
@@ -1035,7 +1090,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
             int countAssignments = 0;
             for (ConditionAndVariableInfo cav : toMerge) {
-                VariableInfoContainer localVic = cav.lastStatement.variables.getOrDefaultNull(fqn);
+                VariableInfoContainer localVic = cav.lastStatement.getVariableOrDefaultNull(fqn);
                 if (localVic != null) {
                     VariableInfo current = localVic.current();
                     if (!current.isAssigned()) {
@@ -1053,7 +1108,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
                     assert sa != null;
-                    if (!sa.flowData.getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS)) return false;
+                    if (!sa.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS)) return false;
                     if (current.isRead()) {
                         if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
                             return false;
@@ -1062,7 +1117,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         // we'll need to double check that there was no reading before the assignment!
                         // secondly, we want to ensure that the assignment takes place unconditionally in the block
 
-                        VariableInfoContainer atAssignment = sa.variables.get(fqn);
+                        VariableInfoContainer atAssignment = sa.getVariable(fqn);
                         VariableInfo vi1 = atAssignment.current();
                         assert vi1.isAssigned();
                         // <= here instead of <; solves e.g. i+=1 (i = i + 1, read first, then assigned, same stmt)
@@ -1080,7 +1135,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     // almost identical code in statement analyser; serves a different purpose though
-    private StatementAnalysis navigateTo(String target) {
+    @Override
+    public StatementAnalysis navigateTo(String target) {
         if (index.equals(target)) return this;
         if (target.startsWith(index)) {
             // go into sub-block
@@ -1133,6 +1189,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     create a variable, potentially even assign an initial value and a linked variables set.
     everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
      */
+    @Override
     public VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                                 Variable variable,
                                                 int statementTime,
@@ -1319,6 +1376,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
+    @Override
     public int statementTime(VariableInfoContainer.Level level) {
         return switch (level) {
             case INITIAL -> flowData.getInitialTime();
@@ -1327,13 +1385,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         };
     }
 
+    @Override
     public StatementAnalysis mostEnclosingLoop() {
         StatementAnalysis sa = this;
         while (sa != null) {
-            if (sa.statement instanceof LoopStatement) {
+            if (sa.statement() instanceof LoopStatement) {
                 return sa;//.localVariablesAssignedInThisLoop.isFrozen() && sa.localVariablesAssignedInThisLoop.contains(variableFqn);
             }
-            sa = sa.parent;
+            sa = sa.parent();
         }
         throw new UnsupportedOperationException();
     }
@@ -1344,15 +1403,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     /*
     We've encountered a break or continue statement, and need to find the corresponding loop...
      */
+    @Override
     public FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue) {
         StatementAnalysis sa = this;
         int cnt = 0;
         while (sa != null) {
-            if (sa.statement instanceof LoopStatement loop &&
+            if (sa.statement() instanceof LoopStatement loop &&
                     (!breakOrContinue.hasALabel() || loop.label != null && loop.label.equals(breakOrContinue.label))) {
                 return new FindLoopResult(sa, cnt);
             }
-            sa = sa.parent;
+            sa = sa.parent();
             cnt++;
         }
         throw new UnsupportedOperationException();
@@ -1365,6 +1425,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @return the most current variable info object
      * @throws IllegalArgumentException when the variable does not yet exist
      */
+    @Override
     public Expression initialValueOfReturnVariable(@NotNull Variable variable) {
         assert methodAnalysis.getMethodInfo().hasReturnValue();
         String fqn = variable.fullyQualifiedName();
@@ -1381,6 +1442,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable the variable
      * @return the most current variable info object, or null if the variable does not exist
      */
+    @Override
     public VariableInfo findOrNull(@NotNull Variable variable, VariableInfoContainer.Level level) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
@@ -1388,6 +1450,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic.best(level);
     }
 
+    @Override
     public VariableInfoContainer findOrNull(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         return variables.getOrDefaultNull(fqn);
@@ -1399,6 +1462,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable the variable
      * @return the most current variable info object, or null if the variable does not exist
      */
+    @Override
     public VariableInfo findOrThrow(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
@@ -1407,6 +1471,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic.current();
     }
 
+    @Override
     public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
         if (!variables.isSet(variableName)) return false;
         VariableInfoContainer vic = variables.get(variableName);
@@ -1414,7 +1479,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
         if (parent == null) return true;
-        return !parent.variables.isSet(variableName);
+        return !parent.variableIsSet(variableName);
     }
 
     /**
@@ -1423,6 +1488,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variableName the variable's fully qualified name
      * @return the container
      */
+    @Override
     public VariableInfoContainer findForWriting(@NotNull String variableName) {
         return variables.get(variableName);
     }
@@ -1431,14 +1497,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     will cause errors if variable does not exist yet!
     before you write, you'll have to ensureEvaluation
      */
+    @Override
     public VariableInfoContainer findForWriting(@NotNull Variable variable) {
         return variables.get(variable.fullyQualifiedName());
     }
 
+    @Override
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
     }
 
+    @Override
+    public Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream() {
+        return variables.stream();
+    }
+
+    @Override
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level) {
         return variables.stream()
                 .filter(e -> switch (level) {
@@ -1449,6 +1523,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
 
+    @Override
     public Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
         return And.and(evaluationContext, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
@@ -1475,5 +1550,20 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return equals;
                 })
                 .toArray(Expression[]::new));
+    }
+
+    @Override
+    public NavigationData<StatementAnalysis> navigationData() {
+        return navigationData;
+    }
+
+    @Override
+    public FlowData flowData() {
+        return flowData;
+    }
+
+    @Override
+    public MethodLevelData methodLevelData() {
+        return methodLevelData;
     }
 }

@@ -16,7 +16,7 @@ package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.Map;

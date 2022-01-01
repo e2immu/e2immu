@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;

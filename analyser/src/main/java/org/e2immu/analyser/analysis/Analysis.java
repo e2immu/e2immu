@@ -12,11 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 
@@ -39,6 +41,18 @@ public interface Analysis {
 
     default Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
         return Stream.empty();
+    }
+
+    default void putAnnotationCheck(AnnotationExpression expression, AnnotationCheck missing) {
+        throw new UnsupportedOperationException("Only in builder!");
+    }
+
+    default Boolean annotationGetOrDefaultNull(AnnotationExpression expression) {
+        throw new UnsupportedOperationException("Only in builder!");
+    }
+
+    default Map.Entry<AnnotationExpression, Boolean> findAnnotation(String annotationFqn) {
+        throw new UnsupportedOperationException("Only in builder!");
     }
 
     /*

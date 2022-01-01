@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -34,7 +36,7 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Expression singleReturnValue = fieldAnalysis.getValue() != null ?
                 fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
-        checkConstant(messages, (AbstractAnalysisBuilder) fieldAnalysis,
+        checkConstant(messages, fieldAnalysis,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),
                 new Location(fieldInfo));
@@ -42,14 +44,14 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
 
     public void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         Expression singleReturnValue = methodAnalysis.getSingleReturnValue();
-        checkConstant(messages, (AbstractAnalysisBuilder) methodAnalysis,
+        checkConstant(messages,  methodAnalysis,
                 singleReturnValue,
                 methodInfo.methodInspection.get().getAnnotations(),
                 new Location(methodInfo));
     }
 
     private void checkConstant(Messages messages,
-                               AbstractAnalysisBuilder analysis,
+                               Analysis analysis,
                                Expression singleReturnValue,
                                List<AnnotationExpression> annotations,
                                Location where) {

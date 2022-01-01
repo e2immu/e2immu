@@ -19,6 +19,8 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -272,7 +274,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "5".equals(d.statementId())) {
-                assertTrue(d.statementAnalysis().flowData.isUnreachable());
+                assertTrue(d.statementAnalysis().flowData().isUnreachable());
             }
         };
         testClass("BasicCompanionMethods_4", 2, 1, new DebugConfiguration.Builder()

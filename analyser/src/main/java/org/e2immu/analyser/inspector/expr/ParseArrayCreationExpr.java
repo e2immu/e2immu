@@ -15,12 +15,20 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
+import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,9 +62,18 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         MethodInfo constructor = builder.build(typeContext).getMethodInfo();
-        constructor.setAnalysis(MethodAnalysis.createEmpty(constructor, typeContext.getPrimitives()));
+        constructor.setAnalysis(createEmpty(constructor, typeContext.getPrimitives()));
         constructor.methodResolution.set(new MethodResolution.Builder().build());
         return constructor;
     }
 
+    public static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
+        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
+                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, p).build())
+                .collect(Collectors.toList());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
+                methodInfo, parameterAnalyses);
+        return (MethodAnalysis) builder.build();
+    }
 }

@@ -16,9 +16,12 @@ package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;

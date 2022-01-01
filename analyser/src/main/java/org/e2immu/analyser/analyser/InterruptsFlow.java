@@ -37,7 +37,7 @@ public record InterruptsFlow(String name, int level, String label) {
         return new InterruptsFlow("continue", 2, label == null ? "" : label);
     }
 
-    InterruptsFlow best(InterruptsFlow other) {
+    public InterruptsFlow best(InterruptsFlow other) {
         if (other.level > level) return other;
         return this;
     }

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -124,16 +124,16 @@ public class Test_46_Singleton extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "!<f:created>" : "!created";
                     assertEquals(expected,
-                            d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                            d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     String expected1 = d.iteration() == 0 ? "<f:created>" : "created";
                     assertEquals(expected1,
-                            d.statementAnalysis().stateData.conditionManagerForNextStatement.get().condition().toString());
+                            d.statementAnalysis().stateData().conditionManagerForNextStatement.get().condition().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                     String expectValue = d.iteration() == 0 ? "!<f:created>" : "!created";
                     assertEquals(expectValue,
-                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                            d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                 }
             }
         };

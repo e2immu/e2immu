@@ -17,6 +17,8 @@ package org.e2immu.analyser.parser.failing;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -55,7 +57,7 @@ public class Test_10_Identity extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertTrue(d.statementAnalysis().methodAnalysis.methodLevelData().linksHaveBeenEstablished());
+                assertTrue(d.statementAnalysis().methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
@@ -206,7 +208,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 1) {
-                Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
+                Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
                 assertTrue(value instanceof PropertyWrapper);
                 Expression valueInside = ((PropertyWrapper) value).expression();
                 assertTrue(valueInside instanceof PropertyWrapper);

@@ -12,13 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.impl;
+package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 
-public abstract class AnalysisImpl implements Analysis {
+abstract class AnalysisImpl implements Analysis {
 
     public final Map<Property, DV> properties;
     private final Map<AnnotationExpression, AnnotationCheck> annotations;

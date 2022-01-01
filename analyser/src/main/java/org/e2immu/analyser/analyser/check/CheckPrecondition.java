@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.CompanionAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.parser.Message;

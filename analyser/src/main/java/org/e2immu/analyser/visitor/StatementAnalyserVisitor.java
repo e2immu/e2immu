@@ -15,6 +15,7 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;

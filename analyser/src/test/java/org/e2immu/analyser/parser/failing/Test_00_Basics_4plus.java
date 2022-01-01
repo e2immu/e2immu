@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.failing;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -291,11 +292,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
             int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
             int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+            int numVariables = ((StatementAnalysisImpl)d.statementAnalysis()).variables.size();
 
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(3, d.statementAnalysis().variables.size());
+                        assertEquals(3, numVariables);
                         assertEquals(0, timeI);
                         assertEquals(0, timeE);
                         assertEquals(0, timeM);
@@ -305,25 +307,25 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(1, timeE);
                         assertEquals(1, timeM);
                         // 4 vars: field, this, v1, out
-                        assertEquals(4, d.statementAnalysis().variables.size());
+                        assertEquals(4, numVariables);
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals(1, timeI);
                         assertEquals(1, timeE);
                         assertEquals(1, timeM);
                         // 5 vars: field, this, v1, v2, out
-                        assertEquals(5, d.statementAnalysis().variables.size());
+                        assertEquals(5, numVariables);
                     }
                     if ("3".equals(d.statementId())) {
                         assertEquals(1, timeI);
                         assertEquals(1, timeE);
                         assertEquals(1, timeM);
                         // 5 vars: field, this, v1, v2, out
-                        assertEquals(5, d.statementAnalysis().variables.size());
+                        assertEquals(5, numVariables);
                     }
                 } else if (d.iteration() == 1) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(4, d.statementAnalysis().variables.size());
+                        assertEquals(4, numVariables);
                     }
                 }
                 if ("3".equals(d.statementId())) {
@@ -334,20 +336,20 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
                     // this, field, field$0, v1
-                    assertEquals(4, d.statementAnalysis().variables.size());
+                    assertEquals(4, numVariables);
                 }
                 if ("1".equals(d.statementId()) && d.iteration() > 0) {
                     // this, field, field$0, v1, v2
-                    assertEquals(5, d.statementAnalysis().variables.size());
-                    Expression valueV1 = d.statementAnalysis().variables.get("v1").current().getValue();
-                    Expression valueV2 = d.statementAnalysis().variables.get("v2").current().getValue();
+                    assertEquals(5, numVariables);
+                    Expression valueV1 = d.statementAnalysis().getVariable("v1").current().getValue();
+                    Expression valueV2 = d.statementAnalysis().getVariable("v2").current().getValue();
                     if (valueV1 instanceof VariableExpression v1r && valueV2 instanceof VariableExpression v2r) {
                         assertEquals(v1r.variable(), v2r.variable());
                     } else fail();
                 }
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                    assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
-                    assertTrue(d.statementAnalysis().stateData.valueOfExpression.isFinal());
+                    assertEquals("true", d.statementAnalysis().stateData().valueOfExpression.get().toString());
+                    assertTrue(d.statementAnalysis().stateData().valueOfExpression.isFinal());
                     assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
@@ -706,7 +708,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("increment3".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "-1+<f:i>==<f:i>" : "true";
                 assertEquals(expected, d.methodAnalysis().getLastStatement()
-                        .variables.get(INC3_RETURN_VAR).current().getValue().toString());
+                        .getVariable(INC3_RETURN_VAR).current().getValue().toString());
                 if (d.iteration() > 0) {
                     assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
                 }

@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public abstract class AbstractAnalyser implements Analyser {
+abstract class AbstractAnalyser implements Analyser {
     public final AnalyserContext analyserContext;
     public final String name;
 

@@ -16,11 +16,11 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.ConditionManager;
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.Negation;
@@ -79,19 +79,19 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
-                    assertEquals("true", d.statementAnalysis().stateData
+                    assertEquals(0, d.statementAnalysis().flowData().getTimeAfterSubBlocks());
+                    assertEquals("true", d.statementAnalysis().stateData()
                             .conditionManagerForNextStatement.get().state().toString());
-                    assertTrue(d.statementAnalysis().stateData
+                    assertTrue(d.statementAnalysis().stateData()
                             .conditionManagerForNextStatement.get().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
+                    assertEquals(0, d.statementAnalysis().flowData().getTimeAfterSubBlocks());
                 }
             }
             if ("getOrDefault".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
                 assertEquals(d.iteration() >= 1,
-                        d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                        d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 assertEquals("true", d.state().toString());
                 String expectCondition = switch (d.iteration()) {
                     case 0 -> "<m:isSet>";
@@ -100,12 +100,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 };
                 assertEquals(expectCondition, d.condition().toString());
                 String expectPrecondition = d.iteration() <= 1 ? "<precondition>" : "true";
-                assertEquals(expectPrecondition, d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                assertEquals(expectPrecondition, d.statementAnalysis().stateData().getPrecondition().expression().toString());
             }
 
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    ConditionManager cm = d.statementAnalysis().stateData.conditionManagerForNextStatement.get();
+                    ConditionManager cm = d.statementAnalysis().stateData().conditionManagerForNextStatement.get();
                     String expectCondition = switch (d.iteration()) {
                         case 0 -> "<m:isSet>";
                         case 1 -> "null!=<f:t>";
@@ -115,13 +115,13 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     assertEquals(d.iteration() <= 1, d.condition().isDelayed());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("true", d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                    assertEquals("true", d.statementAnalysis().stateData().getPrecondition().expression().toString());
                 }
             }
 
             if ("copy".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    ConditionManager cm = d.statementAnalysis().stateData.conditionManagerForNextStatement.get();
+                    ConditionManager cm = d.statementAnalysis().stateData().conditionManagerForNextStatement.get();
                     String expectCondition = switch (d.iteration()) {
                         case 0 -> "<m:isSet>";
                         case 1 -> "null!=<f:t>";

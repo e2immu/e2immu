@@ -57,17 +57,17 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         case 1 -> "!<m:containsKey>";
                         default -> "!map.containsKey(k)";
                     };
-                    assertEquals(expect, d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                    assertEquals(expect, d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("3".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
                 if ("4".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,
-                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };

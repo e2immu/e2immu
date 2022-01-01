@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
-import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -65,7 +65,7 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "null==<f:counter>" : "null==counter";
                     assertEquals(expected, d.condition().toString());
-                    assertTrue(d.statementAnalysis().flowData.interruptsFlowIsSet());
+                    assertTrue(d.statementAnalysis().flowData().interruptsFlowIsSet());
                 }
             }
         };

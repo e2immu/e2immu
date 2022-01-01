@@ -16,7 +16,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -186,8 +186,8 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("list".equals(d.methodInfo().name)) {
             if (Set.of("0", "1", "2", "3").contains(d.statementId())) {
-                assertFalse(d.statementAnalysis().flowData.isUnreachable());
-                assertFalse(d.statementAnalysis().flowData.alwaysEscapesViaException(), "In " + d.statementId());
+                assertFalse(d.statementAnalysis().flowData().isUnreachable());
+                assertFalse(d.statementAnalysis().flowData().alwaysEscapesViaException(), "In " + d.statementId());
             }
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
@@ -207,10 +207,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         }
         if ("addAll".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                assertEquals(FlowData.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                assertEquals(FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                assertEquals(FlowData.CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                assertEquals(FlowData.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
                 String expectCondition = d.iteration() == 0 ? "null!=<m:get>"

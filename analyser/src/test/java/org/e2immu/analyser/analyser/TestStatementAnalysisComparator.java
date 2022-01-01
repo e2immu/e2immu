@@ -14,8 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.inspector.expr.ParseArrayCreationExpr;
 import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -48,10 +49,10 @@ public class TestStatementAnalysisComparator {
 
     @Test
     public void test() {
-        StatementAnalysis ns0 = newStatementAnalysis("0");
-        StatementAnalysis ns1 = newStatementAnalysis("1");
-        StatementAnalysis ns01 = newStatementAnalysis("0.1");
-        StatementAnalysis ns10 = newStatementAnalysis("1.0");
+        StatementAnalysisImpl ns0 = newStatementAnalysis("0");
+        StatementAnalysisImpl ns1 = newStatementAnalysis("1");
+        StatementAnalysisImpl ns01 = newStatementAnalysis("0.1");
+        StatementAnalysisImpl ns10 = newStatementAnalysis("1.0");
 
         assertEquals(ns0.compareTo(ns0), 0);
         assertTrue(ns0.compareTo(ns1) < 0);
@@ -74,9 +75,9 @@ public class TestStatementAnalysisComparator {
         assertEquals(ns10.compareTo(ns10), 0);
     }
 
-    private StatementAnalysis newStatementAnalysis(String s) {
+    private StatementAnalysisImpl newStatementAnalysis(String s) {
         MethodInfo operator = primitives.lessOperatorInt();
-        return new StatementAnalysis(primitives, MethodAnalysis.createEmpty(operator, primitives),
+        return new StatementAnalysisImpl(primitives, ParseArrayCreationExpr.createEmpty(operator, primitives),
                 emptyStatement, null, s, false);
     }
 }

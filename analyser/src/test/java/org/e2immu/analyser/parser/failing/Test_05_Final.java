@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.FlowData.ALWAYS;
-import static org.e2immu.analyser.analyser.FlowData.NEVER;
+import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
+import static org.e2immu.analyser.analysis.FlowData.NEVER;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -145,7 +145,7 @@ public class Test_05_Final extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName())) {
-                assertTrue(d.statementAnalysis().inSyncBlock);
+                assertTrue(d.statementAnalysis().inSyncBlock());
                 if ("0.0.1".equals(d.statementId())) {
                     fail(); // unreachable
                 }
@@ -153,8 +153,8 @@ public class Test_05_Final extends CommonTestRunner {
                     fail(); // statement unreachable
                 }
                 if ("0".equals(d.statementId())) {
-                    FlowData fd0 = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow().flowData;
-                    FlowData fd1 = d.statementAnalysis().navigationData.blocks.get().get(1).orElseThrow().flowData;
+                    FlowData fd0 = d.statementAnalysis().navigationData().blocks.get().get(0).orElseThrow().flowData();
+                    FlowData fd1 = d.statementAnalysis().navigationData().blocks.get().get(1).orElseThrow().flowData();
                     if (d.iteration() == 0) {
                         assertTrue(fd0.getGuaranteedToBeReachedInMethod().isDelayed());
                         assertTrue(fd1.getGuaranteedToBeReachedInMethod().isDelayed());
@@ -168,7 +168,7 @@ public class Test_05_Final extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(d.iteration() > 0,
-                            d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow().flowData.isUnreachable());
+                            d.statementAnalysis().navigationData().blocks.get().get(0).orElseThrow().flowData().isUnreachable());
                 }
             }
         };

@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
@@ -31,7 +31,7 @@ public class CheckIndependent {
                                   WithInspectionAndAnalysis info,
                                   Class<?> annotation,
                                   AnnotationExpression annotationExpression,
-                                  AbstractAnalysisBuilder analysis) {
+                                  Analysis analysis) {
         checkLevel(messages, Property.INDEPENDENT, info, annotation,
                 annotationExpression, analysis);
     }
@@ -41,7 +41,7 @@ public class CheckIndependent {
                            WithInspectionAndAnalysis info,
                            Class<?> annotation,
                            AnnotationExpression annotationExpression,
-                           AbstractAnalysisBuilder analysis) {
+                           Analysis analysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
         String levelString = levelString(analysis, property);
 
@@ -56,7 +56,7 @@ public class CheckIndependent {
                 new Location(info));
     }
 
-    static String levelString(AbstractAnalysisBuilder analysis, Property property) {
+    static String levelString(Analysis analysis, Property property) {
         DV value = analysis.getProperty(property);
         int level = MultiLevel.level(value);
         return level <= MultiLevel.Level.IMMUTABLE_2.level || level == MultiLevel.MAX_LEVEL

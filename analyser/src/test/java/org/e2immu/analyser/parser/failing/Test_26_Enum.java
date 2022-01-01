@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -145,7 +146,7 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
                 }
             }
         };
@@ -228,9 +229,9 @@ public class Test_26_Enum extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) { // starting from statement 0, they'll all have to be there
-                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(ONE));
-                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(TWO));
-                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variableIsSet(ONE));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variableIsSet(TWO));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variableIsSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
                     String expectCondition = d.iteration() == 0 ? "this==<v:<v:array>[<v:i>]>" : "instance type Enum_3/*{L }*/==this";

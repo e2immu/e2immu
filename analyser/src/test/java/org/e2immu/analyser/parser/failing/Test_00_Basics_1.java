@@ -151,10 +151,10 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             // there's nothing that generates a delay on linked variables
-            assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+            assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished());
+            assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
     };
 
