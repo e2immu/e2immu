@@ -20,11 +20,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImp
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
-import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.FlowData;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;

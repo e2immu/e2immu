@@ -18,8 +18,8 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.parser.Message;
 

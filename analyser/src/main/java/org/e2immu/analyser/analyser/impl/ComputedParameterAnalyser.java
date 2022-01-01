@@ -15,12 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;

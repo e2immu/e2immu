@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;

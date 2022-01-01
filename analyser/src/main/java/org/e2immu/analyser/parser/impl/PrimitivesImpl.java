@@ -27,8 +27,8 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class PrimitivesImpl implements Primitives {

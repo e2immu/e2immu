@@ -84,7 +84,7 @@ public class ParameterizedTypeFactory {
                 ParameterizedType scopePt = from(context, scopeType);
                 // name probably is a sub-type in scopePt...
                 if (scopePt.typeInfo != null) {
-                    return findFieldOrSubType(context, arrays, name, parameters, scopePt);
+                    return findFieldOrSubType(context, arrays, name, parameters, scopePt, true);
                 }
             }// else {
             // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
@@ -118,7 +118,8 @@ public class ParameterizedTypeFactory {
                                                         int arrays,
                                                         String name,
                                                         List<ParameterizedType> parameters,
-                                                        ParameterizedType scopePt) {
+                                                        ParameterizedType scopePt,
+                                                        boolean complain) {
         TypeInspection scopeInspection = typeContext.getTypeInspection(scopePt.typeInfo);
         if (scopeInspection != null) {
             Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
@@ -130,14 +131,17 @@ public class ParameterizedTypeFactory {
 
             ParameterizedType parent = scopeInspection.parentClass();
             if (parent != null && !parent.isJavaLangObject()) {
-                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, parent);
+                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, parent, false);
                 if (res != null) return res;
             }
             for (ParameterizedType implementedInterface : scopeInspection.interfacesImplemented()) {
-                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, implementedInterface);
+                ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, implementedInterface, false);
                 if (res != null) return res;
             }
-            throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
+            if(complain) {
+                throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
+            }
+            return null;
         }
         // we're going to assume that we're creating a subtype
         TypeInfo subType = typeContext.typeMapBuilder.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);

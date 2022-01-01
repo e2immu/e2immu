@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImp
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;

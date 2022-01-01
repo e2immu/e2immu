@@ -16,10 +16,10 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;

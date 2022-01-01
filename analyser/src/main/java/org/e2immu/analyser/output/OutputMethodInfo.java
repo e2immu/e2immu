@@ -15,8 +15,8 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;

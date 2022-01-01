@@ -15,10 +15,12 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Mark;

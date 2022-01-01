@@ -15,8 +15,8 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
