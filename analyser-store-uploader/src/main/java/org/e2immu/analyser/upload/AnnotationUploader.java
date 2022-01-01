@@ -25,6 +25,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SMapList;
 import org.slf4j.Logger;
@@ -75,9 +76,9 @@ public class AnnotationUploader {
         }
 
         messageStream.filter(message -> message.message().severity == Message.Severity.ERROR)
-                .filter(message -> message.location().statementIndexInMethod == null) // only type, field, method errors
-                .forEach(message -> SMapList.add(map, fqn(message.location().info),
-                        "error" + suffix(message.location().info)));
+                .filter(message -> ((LocationImpl) message.location()).statementIndexInMethod == null) // only type, field, method errors
+                .forEach(message -> SMapList.add(map, fqn(((LocationImpl) message.location()).info),
+                        "error" + suffix(((LocationImpl) message.location()).info)));
 
         log(UPLOAD, "Writing {} annotations", map.size());
         return map.entrySet().stream()
@@ -89,7 +90,7 @@ public class AnnotationUploader {
         if (info instanceof FieldInfo f) return f.owner.fullyQualifiedName + ":" + f.name;
         if (info instanceof ParameterInfo p) return p.owner.fullyQualifiedName + "#" + p.index;
         if (info instanceof MethodInfo m) return m.fullyQualifiedName;
-        throw new UnsupportedOperationException("Have "+info.getClass());
+        throw new UnsupportedOperationException("Have " + info.getClass());
     }
 
     private static String suffix(WithInspectionAndAnalysis info) {
@@ -97,7 +98,7 @@ public class AnnotationUploader {
         if (info instanceof FieldInfo) return FIELD_SUFFIX;
         if (info instanceof ParameterInfo) return PARAMETER_SUFFIX;
         if (info instanceof MethodInfo) return METHOD_SUFFIX;
-        throw new UnsupportedOperationException("Have "+info.getClass());
+        throw new UnsupportedOperationException("Have " + info.getClass());
     }
 
     private Map<String, List<String>> add(TypeInfo type) {
@@ -152,7 +153,7 @@ public class AnnotationUploader {
         }
         List<String> annotationStrings = new ArrayList<>(annotations.stream()
                 .map(ae -> ae.typeInfo().simpleName.toLowerCase() + suffix).
-                        sorted().toList()); // we might be adding to the list
+                sorted().toList()); // we might be adding to the list
         return Map.of(qualifiedName, annotationStrings);
     }
 

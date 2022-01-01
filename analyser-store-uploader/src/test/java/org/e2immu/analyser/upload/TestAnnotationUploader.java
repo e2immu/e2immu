@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.upload;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
@@ -52,7 +52,7 @@ public class TestAnnotationUploader {
     public void test() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo string = typeMap.get(String.class);
-            assertEquals(Level.TRUE_DV, string.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(DV.TRUE_DV, string.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
 
         Configuration configuration = new Configuration.Builder()
