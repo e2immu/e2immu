@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
@@ -60,4 +61,5 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     ParameterizedType voidParameterizedType();
 
+    MethodAnalysis createEmptyMethodAnalysis(MethodInfo constructor);
 }

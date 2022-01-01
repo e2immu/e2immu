@@ -148,6 +148,10 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return CausesOfDelay.EMPTY;
     }
 
+    @Override
+    public boolean approvedPreconditionsIsNotEmpty(boolean e2) {
+        return e2 ? !approvedPreconditionsE2.isEmpty() : !approvedPreconditionsE1.isEmpty();
+    }
 
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
@@ -243,6 +247,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                             new CausesOfDelay.SimpleSet(fieldReference.fieldInfo, CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
         }
 
+        @Override
         public CausesOfDelay approvedPreconditionsStatus(boolean e2) {
             return e2 ? (approvedPreconditionsE2.isFrozen() ? CausesOfDelay.EMPTY : approvedPreconditionsE2Delays)
                     : (approvedPreconditionsE1.isFrozen() ? CausesOfDelay.EMPTY : approvedPreconditionsE1Delays);
@@ -252,6 +257,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE1.freeze();
         }
 
+        @Override
         public boolean approvedPreconditionsIsNotEmpty(boolean e2) {
             return e2 ? !approvedPreconditionsE2.isEmpty() : !approvedPreconditionsE1.isEmpty();
         }

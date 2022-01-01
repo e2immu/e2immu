@@ -19,8 +19,6 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
@@ -62,18 +60,8 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         MethodInfo constructor = builder.build(typeContext).getMethodInfo();
-        constructor.setAnalysis(createEmpty(constructor, typeContext.getPrimitives()));
+        constructor.setAnalysis( typeContext.getPrimitives().createEmptyMethodAnalysis(constructor));
         constructor.methodResolution.set(new MethodResolution.Builder().build());
         return constructor;
-    }
-
-    public static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
-        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
-                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, p).build())
-                .collect(Collectors.toList());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
-                methodInfo, parameterAnalyses);
-        return (MethodAnalysis) builder.build();
     }
 }

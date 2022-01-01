@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -44,7 +44,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         return new AnnotationExpressionImpl(typeInfo, expressions);
     }
 
-    public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {
+    public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
@@ -66,7 +66,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     }
 
 
-    public void checkLink1sForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {
+    public void checkLink1sForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));

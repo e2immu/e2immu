@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -22,6 +23,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -51,6 +53,8 @@ public interface StatementAnalysis extends Analysis,
     List<VariableInfo> assignmentInfo(FieldInfo fieldInfo);
 
     boolean containsMessage(Message.Label messageLabel);
+
+    boolean containsMessage(Message message);
 
     void initIteration0(EvaluationContext evaluationContext, MethodInfo currentMethod, StatementAnalysis previous);
 
@@ -133,6 +137,16 @@ public interface StatementAnalysis extends Analysis,
     int statementTime(VariableInfoContainer.Level merge);
 
     MethodAnalysis methodAnalysis();
+
+    int numberOfVariables();
+
+    Primitives primitives();
+
+    int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int newStatementTime);
+
+    void initIteration1Plus(EvaluationContext evaluationContext, StatementAnalysis previous);
+
+    Stream<Variable> candidateVariablesForNullPtrWarningStream();
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

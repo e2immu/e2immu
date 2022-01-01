@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.HasNavigationData;
 
 import java.util.List;
@@ -30,7 +30,7 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>,
 
     EvaluationContext newEvaluationContextForOutside();
 
-    StatementAnalysisImpl getStatementAnalysis();
+    StatementAnalysis getStatementAnalysis();
 
     DV isEscapeAlwaysExecutedInCurrentBlock();
 

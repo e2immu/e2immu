@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
@@ -49,14 +49,14 @@ public class ComputeLinkedVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinkedVariables.class);
 
     private final VariableInfoContainer.Level level;
-    private final StatementAnalysisImpl statementAnalysis;
+    private final StatementAnalysis statementAnalysis;
     private final List<List<Variable>> clustersStaticallyAssigned;
     private final List<List<Variable>> clustersDependent;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
     private final Predicate<Variable> ignore;
 
-    private ComputeLinkedVariables(StatementAnalysisImpl statementAnalysis,
+    private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    VariableInfoContainer.Level level,
                                    Predicate<Variable> ignore,
                                    WeightedGraph<Variable, DV> weightedGraph,
@@ -72,7 +72,7 @@ public class ComputeLinkedVariables {
         this.weightedGraph = weightedGraph;
     }
 
-    public static ComputeLinkedVariables create(StatementAnalysisImpl statementAnalysis,
+    public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 VariableInfoContainer.Level level,
                                                 Predicate<Variable> ignore,
                                                 Set<Variable> reassigned,
@@ -80,7 +80,7 @@ public class ComputeLinkedVariables {
                                                 EvaluationContext evaluationContext) {
         WeightedGraph<Variable, DV> weightedGraph = new WeightedGraph<>(() -> LinkedVariables.STATICALLY_ASSIGNED_DV);
         Set<CauseOfDelay> delaysInClustering = new HashSet<>();
-        List<Variable> variables = new ArrayList<>(statementAnalysis.variables.size());
+        List<Variable> variables = new ArrayList<>(statementAnalysis.numberOfVariables());
 
         statementAnalysis.variableEntryStream(level).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
@@ -186,7 +186,7 @@ public class ComputeLinkedVariables {
                 causes = causes.merge(summary.causesOfDelay());
             }
             for (Variable variable : cluster) {
-                VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 if (vic != null) {
                     VariableInfo vi = vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
                     if (vi.getProperty(property).isDelayed()) {
@@ -207,7 +207,7 @@ public class ComputeLinkedVariables {
     }
 
     public void writeLinkedVariables() {
-        statementAnalysis.variables.stream()
+        statementAnalysis.rawVariableStream()
                 .forEach(e -> {
                     VariableInfoContainer vic = e.getValue();
 

@@ -14,8 +14,14 @@
 
 package org.e2immu.analyser.parser.impl;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
@@ -26,6 +32,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
@@ -670,5 +677,16 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public AnnotationExpression functionalInterfaceAnnotationExpression() {
         return functionalInterfaceAnnotationExpression;
+    }
+
+    @Override
+    public MethodAnalysis createEmptyMethodAnalysis(MethodInfo methodInfo) {
+        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
+                .map(p -> (ParameterAnalysis) new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p).build())
+                .collect(Collectors.toList());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
+                methodInfo, parameterAnalyses);
+        return (MethodAnalysis) builder.build();
     }
 }

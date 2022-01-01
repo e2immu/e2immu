@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
@@ -63,7 +64,7 @@ public class AssignmentIncompatibleWithPrecondition {
                             methodAnalyser.getMethodInfo().distinguishingName(), index);
 
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
-                    StatementAnalysisImpl statementAnalysis = statementAnalyser.getStatementAnalysis();
+                    StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
                     VariableExpression ve;
@@ -75,7 +76,7 @@ public class AssignmentIncompatibleWithPrecondition {
                             if (incompatible != null) return Level.fromBoolDv(incompatible);
                         } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
-                            Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get()
+                            Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get()
                                     .individualStateInfo(evaluationContext, ve.variable());
                             if (!state.isBoolValueTrue()) {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
@@ -91,11 +92,11 @@ public class AssignmentIncompatibleWithPrecondition {
                     } else {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                        Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get().state();
+                        Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get().state();
                         Expression combined = And.and(evaluationContext, state, notNull);
 
                         if (isCompatible(evaluationContext, combined, pcExpression)) {
-                            CausesOfDelay delays = statementAnalysis.stateData.conditionManagerForNextStatementStatus();
+                            CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
                             if (delays.isDelayed()) {
                                 return delays; // IMPROVE we're not gathering them, rather returning the first one here
                             }

@@ -152,4 +152,6 @@ public interface TypeAnalysis extends Analysis {
     }
 
     CausesOfDelay hiddenContentTypeStatus();
+
+    boolean approvedPreconditionsIsNotEmpty(boolean e2);
 }

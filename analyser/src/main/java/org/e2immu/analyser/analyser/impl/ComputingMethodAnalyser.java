@@ -882,7 +882,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
-                        lastStatement.getStatementAnalysis().methodLevelData.analyserComponents;
+                        lastStatement.getStatementAnalysis().methodLevelData().analyserComponents;
                 LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
                         methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());

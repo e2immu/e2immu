@@ -16,7 +16,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Location;
@@ -35,7 +35,7 @@ public class CheckFinalNotModified {
                              FieldInfo fieldInfo,
                              Class<?> annotation,
                              AnnotationExpression annotationExpression,
-                             FieldAnalysisImpl.Builder fieldAnalysis,
+                             FieldAnalysis fieldAnalysis,
                              TypeAnalysis typeAnalysis) {
 
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);

@@ -16,8 +16,7 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -30,8 +29,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record DetectEventual(MethodInfo methodInfo,
-                             MethodAnalysisImpl.Builder methodAnalysis,
-                             TypeAnalysisImpl.Builder typeAnalysis,
+                             MethodAnalysis methodAnalysis,
+                             TypeAnalysis typeAnalysis,
                              AnalyserContext analyserContext) {
 
     public MethodAnalysis.Eventual detect(EvaluationContext evaluationContext) {
@@ -56,7 +55,7 @@ public record DetectEventual(MethodInfo methodInfo,
             log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
             return MethodAnalysis.delayedEventual(delaysPc);
         }
-        Optional<Precondition> precondition = methodAnalysis.preconditionForEventual.get();
+        Precondition precondition = methodAnalysis.getPreconditionForEventual();
         boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
         if (modified.valueIsFalse() && methodInfo.returnType().isBoolean()) {
@@ -66,7 +65,7 @@ public record DetectEventual(MethodInfo methodInfo,
             themselves.
             */
 
-            if (precondition.isEmpty()) {
+            if (precondition != null && precondition.isEmpty()) {
                 Expression srv = methodAnalysis.getSingleReturnValue();
                 if (srv.isDelayed()) {
                     log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
@@ -105,9 +104,9 @@ public record DetectEventual(MethodInfo methodInfo,
         @Mark("label")
         @Only(before="label"), @Only(after="label")
          */
-        if (precondition.isEmpty()) return MethodAnalysis.NOT_EVENTUAL;
+        if (precondition == null || precondition.isEmpty()) return MethodAnalysis.NOT_EVENTUAL;
 
-        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.get().expression(), false);
+        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.expression(), false);
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
 
         // fieldsAndBefore.before == true -> @Mark or @Only(before); otherwise @OnlyAfter
@@ -122,7 +121,7 @@ public record DetectEventual(MethodInfo methodInfo,
         the cause of the precondition will help in case of non-assignment-based @Mark detection
          */
         MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(methodInfo);
-        DV isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition.get(), methodAnalyser);
+        DV isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition, methodAnalyser);
         if (isMark.isDelayed()) {
             return MethodAnalysis.delayedEventual(isMark.causesOfDelay());
         }

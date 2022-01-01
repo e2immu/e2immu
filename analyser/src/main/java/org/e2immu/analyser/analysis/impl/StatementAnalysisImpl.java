@@ -31,6 +31,7 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.Either;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,6 +246,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
+    public int numberOfVariables() {
+        return variables.size();
+    }
+
+    @Override
+    public Primitives primitives() {
+        return primitives;
+    }
+
+    @Override
     public MethodAnalysis methodAnalysis() {
         return methodAnalysis;
     }
@@ -426,6 +437,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public boolean containsMessage(Message.Label messageLabel) {
         return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
                 message.location().equals(location()));
+    }
+
+    @Override
+    public boolean containsMessage(Message message) {
+        return messages.contains(message);
     }
 
     @Override
@@ -866,6 +882,36 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return new LocalVariableReference(localVariable);
     }
 
+    public void ensureLocalVariableAssignedInThisLoop(String name) {
+        if (!(localVariablesAssignedInThisLoop.isFrozen()) &&
+                !localVariablesAssignedInThisLoop.contains(name)) {
+            localVariablesAssignedInThisLoop.add(name);
+        }
+    }
+
+    public boolean localVariablesAssignedInThisLoopIsFrozen() {
+        return localVariablesAssignedInThisLoop.isFrozen();
+    }
+
+    public void putVariable(String name, VariableInfoContainer vic) {
+        variables.put(name, vic);
+    }
+
+    public void ensureCandidateVariableForNullPtrWarning(Variable variable) {
+        if (!candidateVariablesForNullPtrWarning.contains(variable)) {
+            candidateVariablesForNullPtrWarning.add(variable);
+        }
+    }
+
+    public void freezeLocalVariablesAssignedInThisLoop() {
+        localVariablesAssignedInThisLoop.freeze();
+    }
+
+    @Override
+    public Stream<Variable> candidateVariablesForNullPtrWarningStream() {
+        return candidateVariablesForNullPtrWarning.stream();
+    }
+
     private record AcceptForMerging(VariableInfoContainer vic, boolean accept) {
         // useful for debugging
         @Override
@@ -875,9 +921,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     public record ConditionAndLastStatement(Expression condition,
-                                     String firstStatementIndexForOldStyleSwitch,
-                                     StatementAnalyser lastStatement,
-                                     boolean alwaysEscapes) {
+                                            String firstStatementIndexForOldStyleSwitch,
+                                            StatementAnalyser lastStatement,
+                                            boolean alwaysEscapes) {
     }
 
     /**
@@ -929,13 +975,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
                     List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
-                            .filter(e2 -> e2.lastStatement().getStatementAnalysis().variables.isSet(fqn))
+                            .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
                             .map(e2 -> {
-                                VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().variables.get(fqn);
+                                VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
                                 return new ConditionAndVariableInfo(e2.condition(),
                                         vic2.current(), e2.alwaysEscapes(),
                                         vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
-                                        e2.lastStatement().getStatementAnalysis().index,
+                                        e2.lastStatement().getStatementAnalysis().index(),
                                         index,
                                         e2.lastStatement().getStatementAnalysis(),
                                         variable,
@@ -991,8 +1037,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
 
             // CNN_FOR_PARENT overwrite
-            lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variables.isSet(fqn)).forEach(cal -> {
-                VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().variables.get(fqn);
+            lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variableIsSet(fqn)).forEach(cal -> {
+                VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().getVariable(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
             /*    DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
                 DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
@@ -1139,7 +1185,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
                         e.getValue().variableNature().acceptVariableForMerging(index))),
-                lastStatements.stream().flatMap(st -> st.lastStatement().getStatementAnalysis().variables.stream().map(e ->
+                lastStatements.stream().flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(e ->
                         new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
         );
     }
@@ -1292,6 +1338,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
+    @Override
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         if (variable instanceof FieldReference fieldReference) {
             boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
@@ -1522,4 +1569,53 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public MethodLevelData methodLevelData() {
         return methodLevelData;
     }
+
+    public Either<CausesOfDelay, List<Expression>> localVariablesInLoop(StatementAnalyserSharedState sharedState) {
+        if (localVariablesAssignedInThisLoop == null) {
+            return Either.right(List.of()); // not for us
+        }
+        // part 3, iteration 1+: ensure local loop variable copies and their values
+
+        if (!localVariablesAssignedInThisLoop.isFrozen()) {
+            return Either.left(new CausesOfDelay.SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED)); // DELAY
+        }
+        List<Expression> expressionsToEvaluate = new ArrayList<>();
+        localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
+            assert statement() instanceof LoopStatement;
+
+            VariableInfoContainer vic = findForWriting(fqn); // must exist already
+            VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
+            // assign to local variable that has been created at Level 2 in this statement
+            String assigned = index() + VariableInfoContainer.Level.INITIAL;
+            LocalVariableReference loopCopy = createLocalLoopCopy(vi.variable(), index());
+            String loopCopyFqn = loopCopy.fullyQualifiedName();
+            String read = index() + EVALUATION;
+            Expression newValue = Instance.localVariableInLoop(index(), vi.variable(),
+                    sharedState.evaluationContext().getAnalyserContext());
+            Map<Property, DV> valueProps = sharedState.evaluationContext().getValueProperties(newValue);
+            if (!variableIsSet(loopCopyFqn)) {
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(location(),
+                        loopCopy, assigned,
+                        read,
+                        newValue,
+                        mergeValueAndLoopVar(valueProps, vi.getProperties()),
+                        LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV),
+                        true);
+                variables.put(loopCopyFqn, newVic);
+            } else {
+                // FIXME check mergeValueAndLoopVar -- which properties are we talking about?
+                VariableInfoContainer loopVic = getVariable(loopCopyFqn);
+                loopVic.setValue(newValue, LinkedVariables.EMPTY, valueProps, true);
+            }
+        });
+        return Either.right(expressionsToEvaluate);
+    }
+
+    private static Map<Property, DV> mergeValueAndLoopVar(Map<Property, DV> value,
+                                                          Map<Property, DV> loopVar) {
+        Map<Property, DV> res = new HashMap<>(value);
+        res.putAll(loopVar);
+        return res;
+    }
+
 }
