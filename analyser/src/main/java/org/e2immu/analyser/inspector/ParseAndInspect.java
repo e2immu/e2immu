@@ -22,6 +22,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
@@ -93,7 +94,7 @@ public record ParseAndInspect(Resources classPath,
             String name = td.getName().asString();
             TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true, dollarTypesAreNormalTypes);
+            TypeInspector typeInspector = new TypeInspectorImpl(typeMapBuilder, typeInfo, true, dollarTypesAreNormalTypes);
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
             typeInspectors.add(new TypeInspectorAndTypeDeclaration(typeInspector, td));
         });

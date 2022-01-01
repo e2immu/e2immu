@@ -17,6 +17,7 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.CompanionMethodName;
+import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.TypeInfo;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
@@ -43,7 +44,7 @@ public class CreateCompanionMethod {
         CompanionMethodName companionMethodName = CompanionMethodName.extract(name);
         log(BYTECODE_INSPECTOR_DEBUG, "Extracted {}", companionMethodName);
 
-        MethodInspectionImpl.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
+        MethodInspection.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
         companionBuilder.setStatic(true);
         // FIXME more code; ticket https://github.com/e2immu/e2immu/issues/39
 

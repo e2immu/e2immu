@@ -30,7 +30,6 @@ package org.e2immu.analyser.model.util;
 */
 
 import org.e2immu.analyser.inspector.*;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -65,7 +64,7 @@ public class ConvertMethodReference {
         builder.noParent(typeContext.getPrimitives());
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
-        MethodInspectionImpl.Builder methodBuilder = method.buildCopy(typeContext, typeInfo);
+        MethodInspection.Builder methodBuilder = method.buildCopy(typeContext, typeInfo);
         typeContext.typeMap.registerMethodInspection(methodBuilder);
 
         Block block = methodContent(methodBuilder, methodReference, expressionContext);
@@ -76,7 +75,7 @@ public class ConvertMethodReference {
         return methodInfo;
     }
 
-    private static Block methodContent(MethodInspectionImpl.Builder methodBuilder,
+    private static Block methodContent(MethodInspection.Builder methodBuilder,
                                        MethodReference methodReference,
                                        ExpressionContext expressionContext) {
 

@@ -17,7 +17,6 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.objectweb.asm.AnnotationVisitor;
@@ -59,7 +58,7 @@ public class MyMethodVisitor extends MethodVisitor {
         this.methodItem = methodItem;
         numberOfParameters = types.size() - 1;
         hasNameFromLocalVar = new boolean[numberOfParameters];
-        parameterInspectionBuilders = new ParameterInspectionImpl.Builder[numberOfParameters];
+        parameterInspectionBuilders = new ParameterInspection.Builder[numberOfParameters];
         for (int i = 0; i < numberOfParameters; i++) {
             parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(Identifier.generate(), i);
         }

@@ -241,6 +241,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Override
+        public ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate, ParameterizedType concreteTypeOfParameter, String name, int index) {
+            return new ParameterInspectionImpl.Builder(generate, concreteTypeOfParameter, name, index);
+        }
+
+        @Override
         public boolean isCompactConstructor() {
             return compactConstructor;
         }

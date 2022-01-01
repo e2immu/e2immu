@@ -26,7 +26,7 @@ public interface InspectionProvider {
 
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-            return typeInfo.typeInspection.get("Inspection of type "+typeInfo.fullyQualifiedName);
+            return typeInfo.typeInspection.get("Inspection of type " + typeInfo.fullyQualifiedName);
         }
 
         @Override
@@ -71,4 +71,8 @@ public interface InspectionProvider {
     MethodInspection getMethodInspection(MethodInfo methodInfo);
 
     Primitives getPrimitives();
+
+    default MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+        throw new UnsupportedOperationException("Not implemented in "+getClass());
+    }
 }

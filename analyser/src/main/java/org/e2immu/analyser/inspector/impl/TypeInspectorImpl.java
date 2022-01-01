@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
@@ -22,9 +22,7 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
@@ -38,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
@@ -73,17 +70,16 @@ as the Annotated API Java class may not be complete. In this case fullInspection
 DollarTypesAreNormalTypes is used when testing the inspection of annotated API files as plain Java files.
  */
 
-public class TypeInspector {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeInspector.class);
-    public static final String PACKAGE_NAME_FIELD = "PACKAGE_NAME";
+public class TypeInspectorImpl implements TypeInspector {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeInspectorImpl.class);
 
     private final TypeInfo typeInfo;
     private final TypeInspectionImpl.Builder builder;
     private final boolean fullInspection; // !fullInspection == isDollarType
     private final boolean dollarTypesAreNormalTypes;
 
-    public TypeInspector(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
-                         boolean dollarTypesAreNormalTypes) {
+    public TypeInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
+                             boolean dollarTypesAreNormalTypes) {
         this.typeInfo = typeInfo;
         this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
 
@@ -96,6 +92,7 @@ public class TypeInspector {
         builder.setInspectionState(STARTING_JAVA_PARSER);
     }
 
+    @Override
     public void inspectAnonymousType(ParameterizedType typeImplemented,
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
@@ -120,6 +117,7 @@ public class TypeInspector {
      * @param typeDeclaration          the JavaParser object to inspect
      * @param expressionContext        the context to inspect in
      */
+    @Override
     public List<TypeInfo> inspect(boolean enclosingTypeIsInterface,
                                   TypeInfo enclosingType,
                                   TypeDeclaration<?> typeDeclaration,
@@ -231,14 +229,11 @@ public class TypeInspector {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
                 log(INSPECTOR, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
                 TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
-                MethodInspector methodInspector = new MethodInspector(typeMapBuilder, typeInfo, fullInspection);
+                MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
                 builder.addMethod(methodInspector.getBuilder().getMethodInfo());
             }
         }
-    }
-
-    public record RecordField(FieldInfo fieldInfo, boolean varargs) {
     }
 
     private List<RecordField> doRecordDeclaration(ExpressionContext expressionContext,
@@ -374,6 +369,7 @@ public class TypeInspector {
         }
     }
 
+    @Override
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext,
                                              ClassOrInterfaceDeclaration cid) {
         builder.noParent(expressionContext.typeContext().getPrimitives());
@@ -383,6 +379,7 @@ public class TypeInspector {
     }
 
     // only to be called on primary types
+    @Override
     public void recursivelyAddToTypeStore(TypeMap.Builder typeStore, TypeDeclaration<?> typeDeclaration,
                                           boolean dollarTypesAreNormalTypes) {
         assert typeInfo.isPrimaryType() : "Only to be called on primary types";
@@ -485,7 +482,7 @@ public class TypeInspector {
                                         AtomicInteger countStaticBlocks,
                                         InitializerDeclaration id) {
         if (fullInspection) {
-            MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap,
+            MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap,
                     typeInfo, true);
             methodInspector.inspect(id, expressionContext, countStaticBlocks.getAndIncrement());
             builder.ensureMethod(methodInspector.getBuilder().getMethodInfo());
@@ -497,7 +494,7 @@ public class TypeInspector {
                                                ExpressionContext subContext,
                                                Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                                CompactConstructorDeclaration ccd) {
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
                 fullInspection);
         assert recordFields != null;
         methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
@@ -510,7 +507,7 @@ public class TypeInspector {
                                         ExpressionContext subContext,
                                         Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                         ConstructorDeclaration cd) {
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
                 fullInspection);
         boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
         methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
@@ -582,7 +579,7 @@ public class TypeInspector {
         CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
         boolean methodFullInspection = fullInspection || companionMethodName != null;
 
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
                 methodFullInspection);
         methodInspector.inspect(isInterface, methodName, md, subContext,
                 companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
@@ -600,7 +597,7 @@ public class TypeInspector {
                                           TypeContext typeContext,
                                           ExpressionContext subContext) {
         assert recordFields != null;
-        MethodInspector methodInspector = new MethodInspector(typeContext.typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(typeContext.typeMap, typeInfo,
                 fullInspection);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
@@ -628,15 +625,12 @@ public class TypeInspector {
         return builder.getMethodInfo();
     }
 
-    public record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
-    }
-
     private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String
             nameAsString) {
         DollarResolverResult res = subType(expressionContext.typeContext().typeMap(), dollarResolver, nameAsString);
-        expressionContext.typeContext().addToContext(res.subType);
-        if (res.isDollarType) { // dollar name
-            expressionContext.typeContext().addToContext(nameAsString, res.subType, false);
+        expressionContext.typeContext().addToContext(res.subType());
+        if (res.isDollarType()) { // dollar name
+            expressionContext.typeContext().addToContext(nameAsString, res.subType(), false);
         }
     }
 
@@ -648,12 +642,12 @@ public class TypeInspector {
                                 TypeDeclaration<?> asTypeDeclaration) {
         TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
         DollarResolverResult res = subType(typeMapBuilder, dollarResolver, nameAsString);
-        TypeInfo subType = res.subType;
+        TypeInfo subType = res.subType();
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-        boolean typeFullInspection = fullInspection && !res.isDollarType;
-        TypeInspector subTypeInspector = new TypeInspector(typeMapBuilder, subType, typeFullInspection, dollarTypesAreNormalTypes);
+        boolean typeFullInspection = fullInspection && !res.isDollarType();
+        TypeInspectorImpl subTypeInspector = new TypeInspectorImpl(typeMapBuilder, subType, typeFullInspection, dollarTypesAreNormalTypes);
         subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);
-        if (res.isDollarType) {
+        if (res.isDollarType()) {
             dollarTypes.add(subType);
         } else {
             builder.ensureSubType(subType);
@@ -673,9 +667,7 @@ public class TypeInspector {
         return new DollarResolverResult(fromStore, false);
     }
 
-    public interface DollarResolver extends Function<String, TypeInfo> {
-    }
-
+    @Override
     public TypeInfo getTypeInfo() {
         return typeInfo;
     }

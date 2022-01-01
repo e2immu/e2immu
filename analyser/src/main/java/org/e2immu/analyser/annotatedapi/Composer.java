@@ -14,10 +14,9 @@
 
 package org.e2immu.analyser.annotatedapi;
 
-import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
@@ -173,8 +172,8 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             builder.setInspectedBlock(block);
         }
         for (ParameterInfo p : methodInspection.getParameters()) {
-            ParameterInspection.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
-                    Identifier.generate(), p.parameterizedType, p.name, p.index);
+            ParameterInspection.Builder newParameterBuilder = builder.newParameterInspectionBuilder
+                    (Identifier.generate(), p.parameterizedType, p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);
             }

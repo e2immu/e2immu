@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -50,5 +51,11 @@ public interface FieldInspection extends Inspection {
         Builder setInspectedInitialiserExpression(Expression expression);
 
         FieldInspection build();
+
+        void setInitialiserExpression(com.github.javaparser.ast.expr.Expression initialiserExpression);
+
+        Builder addAnnotations(List<AnnotationExpression> annotations);
+
+        Builder addModifiers(List<FieldModifier> modifiers);
     }
 }

@@ -16,15 +16,18 @@ package org.e2immu.analyser.parser.impl;
 
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
-import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.InspectionState;
+import org.e2immu.analyser.inspector.NotFoundInClassPathException;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
+import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
@@ -362,6 +365,11 @@ public class TypeMapImpl implements TypeMap {
         }
 
         @Override
+        public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+            return new MethodInspectionImpl.Builder(typeInfo, methodName);
+        }
+
+        @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
             if (typeInfo.typeInspection.isSet()) {
                 // primitives, etc.
@@ -419,6 +427,10 @@ public class TypeMapImpl implements TypeMap {
             return typeInspections.entrySet().stream();
         }
 
+        @Override
+        public TypeInspector newTypeInspector(TypeInfo typeInfo, boolean fullInspection, boolean dollarTypesAreNormalTypes) {
+            return new TypeInspectorImpl(this, typeInfo, fullInspection, dollarTypesAreNormalTypes);
+        }
 
         // inspect from class path
         private void inspectWithByteCodeInspector(TypeInfo typeInfo) {

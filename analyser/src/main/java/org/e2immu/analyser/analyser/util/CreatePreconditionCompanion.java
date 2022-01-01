@@ -16,8 +16,6 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -45,18 +43,21 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
         }
     }
 
-    private MethodInfo createCompanion(CompanionMethodName companionMethodName, MethodInfo mainMethod, Expression value, String aspect) {
+    private MethodInfo createCompanion(CompanionMethodName companionMethodName,
+                                       MethodInfo mainMethod,
+                                       Expression value,
+                                       String aspect) {
         MethodInspection mainInspection = mainMethod.methodInspection.get();
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(mainMethod.typeInfo, companionMethodName.composeMethodName());
+        MethodInspection.Builder builder = inspectionProvider.newMethodInspectionBuilder(mainMethod.typeInfo, companionMethodName.composeMethodName());
         builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType());
 
         if (aspect != null) {
-            builder.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate(),
                     inspectionProvider.getPrimitives().intParameterizedType(), aspect, 0).setVarArgs(false));
         }
         int offset = aspect == null ? 0 : 1;
         for (ParameterInfo parameterInfo : mainInspection.getParameters()) {
-            builder.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+            builder.addParameter(builder.newParameterInspectionBuilder(Identifier.generate(),
                     parameterInfo.parameterizedType(), parameterInfo.name, parameterInfo.index + offset)
                     .setVarArgs(false));
         }

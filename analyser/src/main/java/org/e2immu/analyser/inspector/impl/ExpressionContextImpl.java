@@ -456,7 +456,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
         typeContext.typeMap.add(typeInfo, InspectionState.STARTING_JAVA_PARSER);
-        TypeInspector typeInspector = new TypeInspector(typeContext.typeMap, typeInfo, true, true);
+        TypeInspector typeInspector = typeContext.typeMap.newTypeInspector(typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);

@@ -91,7 +91,7 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
-        var valueOfP0B = new ParameterInspectionImpl.Builder(Identifier.generate(),
+        var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(Identifier.generate(),
                 primitives.stringParameterizedType(), "name", 0)
                 .addAnnotation(eRContainer)
                 .addAnnotation(notNullContract);
@@ -204,7 +204,7 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
 
-        var predicate0Builder = new ParameterInspectionImpl.Builder(Identifier.generate(), enumPt, "v", 0);
+        var predicate0Builder = predicate.newParameterInspectionBuilder(Identifier.generate(), enumPt, "v", 0);
         predicate.addParameter(predicate0Builder);
         predicate.readyToComputeFQN(typeContext);
 

@@ -68,6 +68,11 @@ public class TypeContext implements TypeAndInspectionProvider {
         return typeMap;
     }
 
+    @Override
+    public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+        return typeMap.newMethodInspectionBuilder(typeInfo, methodName);
+    }
+
     /*
     must be called AFTER the typeMapBuilder has the ByteCodeInspector set.
      */

@@ -12,13 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -41,7 +42,7 @@ import java.util.Optional;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class MethodInspector {
+public class MethodInspectorImpl implements MethodInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspection.class);
 
     private final SetOnce<MethodInspection.Builder> builderOnceFQNIsKnown = new SetOnce<>();
@@ -49,12 +50,13 @@ public class MethodInspector {
     private final TypeMap.Builder typeMapBuilder;
     private final TypeInfo typeInfo;
 
-    public MethodInspector(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
+    public MethodInspectorImpl(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
         this.typeMapBuilder = typeMapBuilder;
         this.fullInspection = fullInspection;
         this.typeInfo = typeInfo;
     }
 
+    @Override
     public MethodInspection.Builder getBuilder() {
         return Objects.requireNonNull(builderOnceFQNIsKnown.get());
     }
@@ -68,6 +70,7 @@ public class MethodInspector {
     }
      */
 
+    @Override
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
         log(INSPECTOR, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
@@ -190,6 +193,7 @@ public class MethodInspector {
     /*
     Compact constructor for records
      */
+    @Override
     public boolean inspect(CompactConstructorDeclaration ccd,
                            ExpressionContext expressionContext,
                            Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
@@ -229,6 +233,7 @@ public class MethodInspector {
     /*
     Inspection of a static block
      */
+    @Override
     public void inspect(InitializerDeclaration id,
                         ExpressionContext expressionContext,
                         int staticBlockIdentifier) {
@@ -246,6 +251,7 @@ public class MethodInspector {
     Inspection of a constructor.
     Code block will be handled later.
      */
+    @Override
     public void inspect(ConstructorDeclaration cd,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
@@ -279,6 +285,7 @@ public class MethodInspector {
     Code block will be handled later.
      */
 
+    @Override
     public void inspect(boolean isInterface,
                         String methodName,
                         MethodDeclaration md,

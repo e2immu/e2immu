@@ -34,11 +34,11 @@ public class ParameterizedTypeFactory {
     }
 
     @NotNull
-    public static ParameterizedType from(TypeContext context, Type type, boolean varargs, TypeInspector.DollarResolver dollarResolver) {
+    public static ParameterizedType from(TypeContext context, Type type, boolean varargs, DollarResolver dollarResolver) {
         return from(context, type, ParameterizedType.WildCard.NONE, varargs, dollarResolver);
     }
 
-    private static ParameterizedType from(TypeContext context, Type type, ParameterizedType.WildCard wildCard, boolean varargs, TypeInspector.DollarResolver dollarResolver) {
+    private static ParameterizedType from(TypeContext context, Type type, ParameterizedType.WildCard wildCard, boolean varargs, DollarResolver dollarResolver) {
         Type baseType = type;
         int arrays = 0;
         if (type.isArrayType()) {

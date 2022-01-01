@@ -161,5 +161,9 @@ public interface MethodInspection extends Inspection {
         Builder setStatic(boolean b);
 
         ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate, int i);
+
+        ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate,
+                                                                  ParameterizedType concreteTypeOfParameter,
+                                                                  String name, int index);
     }
 }

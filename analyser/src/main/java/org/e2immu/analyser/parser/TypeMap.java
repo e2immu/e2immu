@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.InspectionState;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
 
 import java.util.List;
@@ -69,5 +70,7 @@ public interface TypeMap extends InspectionProvider {
         TypeInspection.Builder getOrCreateFromPathReturnInspection(String name, InspectionState startingBytecode);
 
         Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes();
+
+        TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
     }
 }

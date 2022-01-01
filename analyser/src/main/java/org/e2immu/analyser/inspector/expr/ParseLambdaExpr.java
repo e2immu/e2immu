@@ -17,8 +17,6 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import org.e2immu.analyser.inspector.*;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
@@ -67,8 +65,10 @@ public class ParseLambdaExpr {
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
 
-        MethodInspectionImpl.Builder applyMethodInspectionBuilder =
-                createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
+        MethodInspection.Builder applyMethodInspectionBuilder =
+                createAnonymousTypeAndApplyMethod(
+                        expressionContext.typeContext(),
+                        singleAbstractMethod.methodInspection.getMethodInfo().name,
                         expressionContext.enclosingType(),
                         expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
         List<Lambda.OutputVariant> outputVariants = new ArrayList<>(lambdaExpr.getParameters().size());
@@ -98,8 +98,9 @@ public class ParseLambdaExpr {
                 break;
             }
             types.add(parameterType);
-            ParameterInspection.Builder parameterBuilder = new ParameterInspectionImpl.Builder(Identifier.from(parameter),
-                    parameterType, parameter.getName().asString(), cnt++);
+            ParameterInspection.Builder parameterBuilder = applyMethodInspectionBuilder
+                    .newParameterInspectionBuilder(Identifier.from(parameter),
+                            parameterType, parameter.getName().asString(), cnt++);
             // parameter analysis will be set later
             applyMethodInspectionBuilder.addParameter(parameterBuilder);
         }
@@ -113,7 +114,7 @@ public class ParseLambdaExpr {
         applyMethodInspectionBuilder.makeParametersImmutable();
         applyMethodInspectionBuilder.getParameters().forEach(newVariableContext::add);
 
-        TypeInfo anonymousType = applyMethodInspectionBuilder.owner;
+        TypeInfo anonymousType = applyMethodInspectionBuilder.owner();
         ExpressionContext newExpressionContext = expressionContext.newLambdaContext(anonymousType,
                 newVariableContext);
 
@@ -175,14 +176,15 @@ public class ParseLambdaExpr {
     }
 
 
-    private static MethodInspectionImpl.Builder createAnonymousTypeAndApplyMethod(String name,
-                                                                                  TypeInfo enclosingType, int nextId) {
+    private static MethodInspection.Builder createAnonymousTypeAndApplyMethod
+            (InspectionProvider inspectionProvider, String name,
+             TypeInfo enclosingType, int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
-        return new MethodInspectionImpl.Builder(typeInfo, name);
+        return inspectionProvider.newMethodInspectionBuilder(typeInfo, name);
     }
 
     private static void continueCreationOfAnonymousType(TypeMap.Builder typeMapBuilder,
-                                                        MethodInspectionImpl.Builder builder,
+                                                        MethodInspection.Builder builder,
                                                         ParameterizedType functionalInterfaceType,
                                                         Block block,
                                                         ParameterizedType returnType) {

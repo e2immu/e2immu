@@ -14,8 +14,6 @@
 
 package org.e2immu.analyser.inspector;
 
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
@@ -152,13 +150,13 @@ public class MethodTypeParameterMap {
     }
 
     // used in TypeInfo.convertMethodReferenceIntoLambda
-    public MethodInspectionImpl.Builder buildCopy(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    public MethodInspection.Builder buildCopy(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
         String methodName = methodInspection.getMethodInfo().name;
-        MethodInspectionImpl.Builder copy = new MethodInspectionImpl.Builder(typeInfo, methodName);
+        MethodInspection.Builder copy = inspectionProvider.newMethodInspectionBuilder(typeInfo, methodName);
         copy.addModifier(MethodModifier.PUBLIC);
 
         for (ParameterInfo p : methodInspection.getParameters()) {
-            ParameterInspection.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
+            ParameterInspection.Builder newParameterBuilder = copy.newParameterInspectionBuilder(
                     Identifier.generate(),
                     getConcreteTypeOfParameter(inspectionProvider.getPrimitives(), p.index), p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
