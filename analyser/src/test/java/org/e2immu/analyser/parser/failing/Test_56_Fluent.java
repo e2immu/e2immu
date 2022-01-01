@@ -243,10 +243,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
-        TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
+        TypeInfo iFluent1 = typeContext.typeMap.get(IFluent_1.class);
         MethodInfo value = iFluent1.findUniqueMethod("value", 0);
         TypeInfo implementation = iFluent1.typeResolution.get().generatedImplementation();
-        TypeInfo fluent1 = typeContext.typeMapBuilder.get(Fluent_1.class);
+        TypeInfo fluent1 = typeContext.typeMap.get(Fluent_1.class);
         assertSame(fluent1, implementation, "Generated implementation");
 
         MethodAnalysis valueAnalysis = value.methodAnalysis.get();

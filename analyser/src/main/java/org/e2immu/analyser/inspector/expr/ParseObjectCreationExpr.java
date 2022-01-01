@@ -63,13 +63,13 @@ public class ParseObjectCreationExpr {
             assert parameterizedType != null;
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType(),
                     expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
-            typeContext.typeMapBuilder.add(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
-            TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true, true);
+            typeContext.typeMap.add(anonymousType, InspectionState.STARTING_JAVA_PARSER);
+            TypeInspector typeInspector = new TypeInspector(typeContext.typeMap, anonymousType, true, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
 
             expressionContext.resolver().resolve(typeContext,
-                    typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(), false,
+                    typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 
             return ConstructorCall.withAnonymousClass(parameterizedType, anonymousType, diamond);

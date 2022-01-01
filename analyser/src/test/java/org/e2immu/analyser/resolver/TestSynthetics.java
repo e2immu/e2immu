@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +58,7 @@ public class TestSynthetics {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        TypeMapImpl.Builder typeMap = parser.inspectOnlyForTesting();
+        TypeMap.Builder typeMap = parser.inspectOnlyForTesting();
         parser.preload("java.io");
         TypeInfo fileNameFilter = typeMap.get(FilenameFilter.class);
         assertNotNull(fileNameFilter);

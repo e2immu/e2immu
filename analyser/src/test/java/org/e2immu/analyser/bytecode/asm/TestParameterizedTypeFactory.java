@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -35,7 +35,7 @@ public class TestParameterizedTypeFactory {
     }
 
     private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(new Resources()));
-    private final FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreateFromPath(path,
+    private final FindType findType = (fqn, path) -> typeContext.typeMap.getOrCreateFromPath(path,
             TRIGGER_BYTECODE_INSPECTION);
 
     @Test

@@ -168,7 +168,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private static final int NOT_A_STATIC_BLOCK = -1;
 
     @Container(builds = MethodInspectionImpl.class)
-    public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
+    public static class Builder extends AbstractInspectionBuilder<MethodInspection.Builder> implements MethodInspection,
+    MethodInspection.Builder {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
         private final Set<MethodModifier> modifiers = new HashSet<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
@@ -212,14 +213,14 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         /* compact constructor */
 
         public static Builder compactConstructor(Identifier identifier, TypeInfo owner) {
-            return new Builder(identifier, owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
+            return new MethodInspectionImpl.Builder(identifier, owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
         }
 
         /* static block */
 
         public static Builder createStaticBlock(Identifier identifier, TypeInfo owner, int staticBlockIdentifier) {
             String name = TypeInspection.createStaticBlockMethodName(staticBlockIdentifier);
-            return new Builder(identifier, owner, name, false, false, staticBlockIdentifier);
+            return new MethodInspectionImpl.Builder(identifier, owner, name, false, false, staticBlockIdentifier);
         }
 
         private Builder(Identifier identifier,
@@ -314,7 +315,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Fluent
-        public Builder addTypeParameter(@NotNull TypeParameterImpl typeParameter) {
+        public MethodInspection.Builder addTypeParameter(@NotNull TypeParameterImpl typeParameter) {
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
             if (typeParameter.getIndex() < typeParameters.size()) {
                 // we've seen the index before, overwrite
@@ -326,8 +327,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return this;
         }
 
-        public void addCompanionMethods(Map<CompanionMethodName, Builder> companionMethods) {
+        public MethodInspection.Builder addCompanionMethods(Map<CompanionMethodName, Builder> companionMethods) {
             this.companionMethods.putAll(companionMethods);
+            return this;
         }
 
         @NotModified
@@ -339,7 +341,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
             // all companion methods have to have been built already!
             companionMethods.values().forEach(builder -> {
-                assert builder.methodInfo != null && builder.methodInfo.methodInspection.isSet();
+                assert builder.methodInfo() != null && builder.methodInfo().methodInspection.isSet();
             });
 
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
@@ -383,6 +385,26 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             methodInfo.methodInspection.set(methodInspection);
             log(INSPECTOR, "Setting inspection of {}", methodInfo.fullyQualifiedName);
             return methodInspection;
+        }
+
+        @Override
+        public MethodInfo methodInfo() {
+            return methodInfo;
+        }
+
+        @Override
+        public TypeInfo owner() {
+            return owner;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public boolean isConstructor() {
+            return isConstructor;
         }
 
         public void readyToComputeFQN(InspectionProvider inspectionProvider) {
@@ -463,7 +485,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public Map<CompanionMethodName, MethodInfo> getCompanionMethods() {
-            return companionMethods.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().methodInfo));
+            return companionMethods.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().methodInfo()));
         }
 
         public boolean inspectedBlockIsSet() {

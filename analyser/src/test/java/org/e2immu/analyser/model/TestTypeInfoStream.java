@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.InspectionState.BY_HAND;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -220,7 +220,7 @@ public class TestTypeInfoStream {
                 .addMethod(referenceMethodInfo)
                 .build());
 
-        MethodInspectionImpl.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
+        MethodInspection.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
                 .setReturnType(primitives.intParameterizedType()).setStatic(true);
 
         ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(Identifier.generate(),

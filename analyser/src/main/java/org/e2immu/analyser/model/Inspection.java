@@ -24,4 +24,10 @@ public interface Inspection {
     List<AnnotationExpression> getAnnotations();
 
     boolean hasAnnotation(AnnotationExpression annotationExpression);
+
+    interface InspectionBuilder<B> {
+        B setSynthetic(boolean b);
+
+        B addAnnotation(AnnotationExpression annotationExpression);
+    }
 }

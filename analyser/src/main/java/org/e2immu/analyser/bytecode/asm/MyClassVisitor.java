@@ -40,7 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
@@ -71,7 +71,7 @@ public class MyClassVisitor extends ClassVisitor {
         this.onDemandInspection = onDemandInspection;
         this.annotationStore = annotationStore;
         jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(typeContext.getPrimitives(),
-                typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions()) : null;
+                typeContext.typeMap.getE2ImmuAnnotationExpressions()) : null;
     }
 
     // return true when child = parent + $ + somethingWithoutDollars
@@ -111,12 +111,12 @@ public class MyClassVisitor extends ClassVisitor {
             return;
         }
         String fqName = pathToFqn(name);
-        currentType = typeContext.typeMapBuilder.get(fqName);
+        currentType = typeContext.typeMap.get(fqName);
         if (currentType == null) {
-            typeInspectionBuilder = typeContext.typeMapBuilder.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
+            typeInspectionBuilder = typeContext.typeMap.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
             currentType = typeInspectionBuilder.typeInfo();
         } else {
-            TypeInspection typeInspection = typeContext.typeMapBuilder.getTypeInspection(currentType);
+            TypeInspection typeInspection = typeContext.typeMap.getTypeInspection(currentType);
             if (typeInspection != null) {
                 if (typeInspection.getInspectionState().ge(FINISHED_BYTECODE)) {
                     log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
@@ -127,7 +127,7 @@ public class MyClassVisitor extends ClassVisitor {
                 }
                 typeInspectionBuilder = (TypeInspectionImpl.Builder) typeInspection;
             } else {
-                typeInspectionBuilder = typeContext.typeMapBuilder.ensureTypeInspection(currentType, STARTING_BYTECODE);
+                typeInspectionBuilder = typeContext.typeMap.ensureTypeInspection(currentType, STARTING_BYTECODE);
             }
         }
         typeInspectionBuilder.setInspectionState(STARTING_BYTECODE);
@@ -233,7 +233,7 @@ public class MyClassVisitor extends ClassVisitor {
      */
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
         if (path.equals(currentTypePath)) return currentType;
-        TypeInfo alreadyKnown = typeContext.typeMapBuilder.get(fqn);
+        TypeInfo alreadyKnown = typeContext.typeMap.get(fqn);
         TypeInspection alreadyKnownInspection = alreadyKnown == null ? null : typeContext.getTypeInspection(alreadyKnown);
         if (alreadyKnownInspection != null && alreadyKnownInspection.getInspectionState().ge(STARTING_BYTECODE)) {
             return Objects.requireNonNull(alreadyKnown);
@@ -252,14 +252,14 @@ public class MyClassVisitor extends ClassVisitor {
             onDemandInspection.inspectFromPath(path);
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
-        return typeContext.typeMapBuilder.get(fqn);
+        return typeContext.typeMap.get(fqn);
     }
 
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        return typeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        return typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
     }
 
     private TypeInfo inEnclosingTypes(String parentFqName) {
@@ -287,8 +287,8 @@ public class MyClassVisitor extends ClassVisitor {
                 signature != null ? signature : descriptor).parameterizedType;
 
         FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, name, currentType);
-        FieldInspectionImpl.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
-        typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
+        FieldInspection.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+        typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
 
         if ((access & Opcodes.ACC_STATIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
         if ((access & Opcodes.ACC_PUBLIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.PUBLIC);
@@ -407,11 +407,11 @@ public class MyClassVisitor extends ClassVisitor {
 
                 log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
 
-                TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(fqn);
+                TypeInfo subTypeInMap = typeContext.typeMap.get(fqn);
                 TypeInspectionImpl.Builder subTypeInspection;
                 if (subTypeInMap == null) {
                     subTypeInMap = new TypeInfo(stepDown ? currentType : currentType.packageNameOrEnclosingType.getRight(), innerName);
-                    subTypeInspection = typeContext.typeMapBuilder.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
+                    subTypeInspection = typeContext.typeMap.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
                     subTypeInspection = Objects.requireNonNull((TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap)); //MUST EXIST
                 }

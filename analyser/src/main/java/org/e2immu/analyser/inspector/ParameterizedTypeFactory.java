@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 
 public class ParameterizedTypeFactory {
     @NotNull
@@ -144,7 +144,7 @@ public class ParameterizedTypeFactory {
             return null;
         }
         // we're going to assume that we're creating a subtype
-        TypeInfo subType = typeContext.typeMapBuilder.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
+        TypeInfo subType = typeContext.typeMap.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
         return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
     }
 }

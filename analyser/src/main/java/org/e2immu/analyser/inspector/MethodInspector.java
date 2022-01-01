@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
@@ -41,18 +41,18 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspection.class);
 
-    private final SetOnce<MethodInspectionImpl.Builder> builderOnceFQNIsKnown = new SetOnce<>();
+    private final SetOnce<MethodInspection.Builder> builderOnceFQNIsKnown = new SetOnce<>();
     private final boolean fullInspection;
-    private final TypeMapImpl.Builder typeMapBuilder;
+    private final TypeMap.Builder typeMapBuilder;
     private final TypeInfo typeInfo;
 
-    public MethodInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
+    public MethodInspector(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
         this.typeMapBuilder = typeMapBuilder;
         this.fullInspection = fullInspection;
         this.typeInfo = typeInfo;
     }
 
-    public MethodInspectionImpl.Builder getBuilder() {
+    public MethodInspection.Builder getBuilder() {
         return Objects.requireNonNull(builderOnceFQNIsKnown.get());
     }
 
@@ -68,8 +68,8 @@ public class MethodInspector {
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
         log(INSPECTOR, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
+        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
+        MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
         assert builder != null;
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
@@ -85,13 +85,13 @@ public class MethodInspector {
         }
     }
 
-    private MethodInspectionImpl.Builder fqnIsKnown(InspectionProvider inspectionProvider,
-                                                    MethodInspectionImpl.Builder builder,
-                                                    boolean returnNullWhenExistsAndFullInspection) {
+    private MethodInspection.Builder fqnIsKnown(InspectionProvider inspectionProvider,
+                                                MethodInspection.Builder builder,
+                                                boolean returnNullWhenExistsAndFullInspection) {
         builder.readyToComputeFQN(inspectionProvider);
         String distinguishingName = builder.getDistinguishingName();
         MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
-        if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
+        if (methodInspection instanceof MethodInspection.Builder existing) {
             if (fullInspection && returnNullWhenExistsAndFullInspection) return null;
             assert !fullInspection;
             log(INSPECTOR, "Inspecting method {}, already byte-code inspected", distinguishingName);
@@ -121,8 +121,8 @@ public class MethodInspector {
         throw new UnsupportedOperationException();
     }
 
-    static MethodInspection findInSuperType(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(builder.owner);
+    static MethodInspection findInSuperType(InspectionProvider inspectionProvider, MethodInspection.Builder builder) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(builder.owner());
         if (typeInspection.parentClass() != null) {
             MethodInspection parent = findMethodInSuperType(inspectionProvider, builder, typeInspection.parentClass());
             if (parent != null) return parent;
@@ -135,15 +135,15 @@ public class MethodInspector {
     }
 
     static MethodInspection findMethodInSuperType(InspectionProvider inspectionProvider,
-                                                  MethodInspectionImpl.Builder builder,
+                                                  MethodInspection.Builder builder,
                                                   ParameterizedType superTypeDefinition) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(superTypeDefinition.typeInfo);
         Optional<MethodInfo> candidate;
-        if (builder.isConstructor) {
+        if (builder.isConstructor()) {
             candidate = typeInspection.constructors().stream()
                     .filter(c -> identicalParameterLists(inspectionProvider, c, builder, superTypeDefinition)).findFirst();
         } else {
-            candidate = typeInspection.methods().stream().filter(m -> m.name.equals(builder.name))
+            candidate = typeInspection.methods().stream().filter(m -> m.name.equals(builder.name()))
                     .filter(c -> identicalParameterLists(inspectionProvider, c, builder, superTypeDefinition)).findFirst();
         }
         return candidate.map(inspectionProvider::getMethodInspection).orElse(null);
@@ -151,7 +151,7 @@ public class MethodInspector {
 
     static boolean identicalParameterLists(InspectionProvider inspectionProvider,
                                            MethodInfo candidate,
-                                           MethodInspectionImpl.Builder me,
+                                           MethodInspection.Builder me,
                                            ParameterizedType superTypeDefinition) {
         MethodInspection candidateInspection = inspectionProvider.getMethodInspection(candidate);
         if (candidateInspection.getParameters().size() != me.getParameters().size()) return false;
@@ -170,10 +170,10 @@ public class MethodInspector {
         return true; // FIXME need more code here! and this probably exists somewhere? YES in ShallowMethodResolver
     }
 
-    private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods, String mainMethodName) {
-        for (Map.Entry<CompanionMethodName, MethodInspectionImpl.Builder> entry : companionMethods.entrySet()) {
+    private void checkCompanionMethods(Map<CompanionMethodName, MethodInspection.Builder> companionMethods, String mainMethodName) {
+        for (Map.Entry<CompanionMethodName, MethodInspection.Builder> entry : companionMethods.entrySet()) {
             CompanionMethodName companionMethodName = entry.getKey();
-            MethodInspectionImpl.Builder companionInspection = entry.getValue();
+            MethodInspection.Builder companionInspection = entry.getValue();
             if (!companionInspection.getAnnotations().isEmpty()) {
                 throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
             }
@@ -189,10 +189,10 @@ public class MethodInspector {
      */
     public boolean inspect(CompactConstructorDeclaration ccd,
                            ExpressionContext expressionContext,
-                           Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                           Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
                            List<TypeInspector.RecordField> fields) {
         Identifier identifier = ccd == null ? typeInfo.identifier : Identifier.from(ccd);
-        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(identifier, typeInfo);
+        MethodInspection.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(identifier, typeInfo);
         int i = 0;
         for (TypeInspector.RecordField recordField : fields) {
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
@@ -200,7 +200,7 @@ public class MethodInspector {
             pib.setVarArgs(recordField.varargs());
             tempBuilder.addParameter(pib);
         }
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder,
+        MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder,
                 ccd == null);
         if (builder == null) {
             LOGGER.debug("Nothing to be done; there is no need for this compact constructor");
@@ -229,9 +229,9 @@ public class MethodInspector {
     public void inspect(InitializerDeclaration id,
                         ExpressionContext expressionContext,
                         int staticBlockIdentifier) {
-        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(
+        MethodInspection.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(
                 Identifier.from(id), typeInfo, staticBlockIdentifier);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder,
+        MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder,
                 false);
         assert fullInspection : "? otherwise we would not see them";
         assert builder != null;
@@ -245,14 +245,14 @@ public class MethodInspector {
      */
     public void inspect(ConstructorDeclaration cd,
                         ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver,
                         boolean makePrivate) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
+        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
         ExpressionContext newContext = addTypeParameters(cd, expressionContext, tempBuilder);
 
         addParameters(tempBuilder, cd.getParameters(), newContext, dollarResolver);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(newContext.typeContext(), tempBuilder, false);
+        MethodInspection.Builder builder = fqnIsKnown(newContext.typeContext(), tempBuilder, false);
         assert builder != null;
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), newContext);
         if (makePrivate) {
@@ -280,7 +280,7 @@ public class MethodInspector {
                         String methodName,
                         MethodDeclaration md,
                         ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        Map<CompanionMethodName, MethodInspection.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
         try {
             MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl
@@ -289,7 +289,7 @@ public class MethodInspector {
             ExpressionContext newContext = addTypeParameters(md, expressionContext, tempBuilder);
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
-            MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
+            MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
             assert builder != null;
             inspectParameters(md.getParameters(), builder.getParameterBuilders(), expressionContext);
             builder.makeParametersImmutable();
@@ -319,7 +319,7 @@ public class MethodInspector {
 
     private ExpressionContext addTypeParameters(CallableDeclaration<?> md,
                                                 ExpressionContext expressionContext,
-                                                MethodInspectionImpl.Builder tempBuilder) {
+                                                MethodInspection.Builder tempBuilder) {
         int tpIndex = 0;
         ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
                 expressionContext.newTypeContext("Method type parameters");
@@ -332,7 +332,7 @@ public class MethodInspector {
         return newContext;
     }
 
-    private static void addAnnotations(MethodInspectionImpl.Builder builder,
+    private static void addAnnotations(MethodInspection.Builder builder,
                                        NodeList<AnnotationExpr> annotations,
                                        ExpressionContext expressionContext) {
         for (AnnotationExpr ae : annotations) {
@@ -340,7 +340,7 @@ public class MethodInspector {
         }
     }
 
-    private static void addExceptionTypes(MethodInspectionImpl.Builder builder,
+    private static void addExceptionTypes(MethodInspection.Builder builder,
                                           NodeList<ReferenceType> thrownExceptions,
                                           TypeContext typeContext) {
         for (ReferenceType referenceType : thrownExceptions) {
@@ -349,14 +349,13 @@ public class MethodInspector {
         }
     }
 
-    private static void addModifiers(MethodInspectionImpl.Builder builder,
-                                     NodeList<Modifier> modifiers) {
+    private static void addModifiers(MethodInspection.Builder builder, NodeList<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
             builder.addModifier(MethodModifier.from(modifier));
         }
     }
 
-    private static void addParameters(MethodInspectionImpl.Builder builder,
+    private static void addParameters(MethodInspection.Builder builder,
                                       NodeList<Parameter> parameters,
                                       ExpressionContext expressionContext,
                                       TypeInspector.DollarResolver dollarResolver) {

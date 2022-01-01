@@ -18,10 +18,7 @@ import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.annotationxml.model.Value;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.AnnotationExpressionImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -43,13 +40,13 @@ public class JetBrainsAnnotationTranslator {
         this.primitives = primitives;
     }
 
-    public <T> void mapAnnotations(List<Annotation> annotations, AbstractInspectionBuilder<T> inspectionBuilder) {
+    public <T> void mapAnnotations(List<Annotation> annotations, Inspection.InspectionBuilder<T> inspectionBuilder) {
         for (Annotation annotation : annotations) {
             mapAnnotation(annotation, inspectionBuilder);
         }
     }
 
-    private <T> void mapAnnotation(Annotation annotation, AbstractInspectionBuilder<T> inspectionBuilder) {
+    private <T> void mapAnnotation(Annotation annotation, Inspection.InspectionBuilder<T> inspectionBuilder) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name())) {
             if (inspectionBuilder instanceof ParameterInspectionImpl.Builder) {
                 inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull);

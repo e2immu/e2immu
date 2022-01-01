@@ -14,9 +14,14 @@
 
 package org.e2immu.analyser.model;
 
+import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.Finalizer;
 
 import java.util.List;
@@ -119,5 +124,44 @@ public interface MethodInspection extends Inspection {
         if ("equals".equals(getMethodInfo().name) && getParameters().size() == 1) return true;
         if ("hashCode".equals(getMethodInfo().name) && getParameters().size() == 0) return true;
         return "toString".equals(getMethodInfo().name) && getParameters().size() == 0;
+    }
+
+    interface Builder extends InspectionBuilder<Builder>, MethodInspection {
+
+        Builder addParameter(ParameterInspectionImpl.Builder pib);
+
+        void readyToComputeFQN(InspectionProvider inspectionProvider);
+
+        Builder addExceptionType(ParameterizedType pt);
+
+        Builder addModifier(MethodModifier from);
+
+        Builder addTypeParameter(TypeParameterImpl tp);
+
+        List<ParameterInspectionImpl.Builder> getParameterBuilders();
+
+        void makeParametersImmutable();
+
+        Builder addCompanionMethods(Map<CompanionMethodName, MethodInspection.Builder> companionMethods);
+
+        Builder setReturnType(ParameterizedType pt);
+
+        Builder setBlock(BlockStmt blockStmt);
+
+        MethodInspection build(InspectionProvider inspectionProvider);
+
+        MethodInfo methodInfo();
+
+        TypeInfo owner();
+
+        String name();
+
+        boolean isConstructor();
+
+        void copyFrom(MethodInspection parent);
+
+        Builder setInspectedBlock(Block body);
+
+        Builder setStatic(boolean b);
     }
 }

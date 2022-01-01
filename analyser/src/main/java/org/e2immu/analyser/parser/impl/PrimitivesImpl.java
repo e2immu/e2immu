@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
+import static org.e2immu.analyser.inspector.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 
 public class PrimitivesImpl implements Primitives {
@@ -131,7 +131,7 @@ public class PrimitivesImpl implements Primitives {
                                      List<ParameterizedType> parameterizedTypes,
                                      ParameterizedType returnType) {
         int i = 0;
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
+        MethodInspection.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
             ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate(),
                     parameterizedType, "p" + i, i++);
@@ -307,7 +307,7 @@ public class PrimitivesImpl implements Primitives {
 
     @Override
     public void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
-        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
+        MethodInspection.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
         ParameterInspectionImpl.Builder valueOf0Builder =
                 new ParameterInspectionImpl.Builder(Identifier.generate(), stringParameterizedType, "s", 0);
         ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();

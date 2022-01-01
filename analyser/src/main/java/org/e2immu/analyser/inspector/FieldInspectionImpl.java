@@ -72,7 +72,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         return access;
     }
 
-    public static class Builder extends AbstractInspectionBuilder<Builder> implements FieldInspection {
+    public static class Builder extends AbstractInspectionBuilder<FieldInspection.Builder>
+            implements FieldInspection, FieldInspection.Builder {
         private final Set<FieldModifier> modifiers = new HashSet<>();
         private com.github.javaparser.ast.expr.Expression initialiserExpression;
         private Expression inspectedInitialiserExpression;

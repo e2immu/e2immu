@@ -43,4 +43,12 @@ public interface FieldInspection extends Inspection {
     default boolean hasFieldInitializer() {
         return getFieldInitialiser() != null;
     }
+
+    interface Builder extends InspectionBuilder<Builder>, FieldInspection {
+        Builder addModifier(FieldModifier aStatic);
+
+        Builder setInspectedInitialiserExpression(Expression expression);
+
+        FieldInspection build();
+    }
 }

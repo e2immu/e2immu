@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
+import static org.e2immu.analyser.inspector.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 
 /*
 Given a number of types, compose one annotated API "file" per package, in the style of the JavaUtil, JavaLang classes.

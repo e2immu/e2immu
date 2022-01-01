@@ -19,7 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -37,15 +37,15 @@ import static org.e2immu.analyser.util.Logger.log;
 public class TypeContext implements TypeAndInspectionProvider {
     private final TypeContext parentContext;
 
-    public final TypeMapImpl.Builder typeMapBuilder;
+    public final TypeMap.Builder typeMap;
     public final String packageName; // this one is filled in UNLESS parentContext == null, because that is the root level
     private final List<TypeInfo> importStaticAsterisk;
     private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
     private final Map<String, NamedType> map = new HashMap<>();
 
 
-    public TypeContext(TypeMapImpl.Builder typeMapBuilder) {
-        this.typeMapBuilder = typeMapBuilder;
+    public TypeContext(TypeMap.Builder typeMap) {
+        this.typeMap = typeMap;
         parentContext = null;
         packageName = null;
         importStaticAsterisk = new ArrayList<>();
@@ -58,10 +58,14 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     public TypeContext(String packageName, @NotNull TypeContext parentContext) {
         this.parentContext = Objects.requireNonNull(parentContext);
-        typeMapBuilder = parentContext.typeMapBuilder;
+        typeMap = parentContext.typeMap;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         this.packageName = packageName;
+    }
+
+    public TypeMap.Builder typeMap() {
+        return typeMap;
     }
 
     /*
@@ -74,7 +78,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         for (TypeInfo typeInfo : getPrimitives().getPrimitiveByName().values()) {
             addToContext(typeInfo);
         }
-        typeMapBuilder.getE2ImmuAnnotationExpressions().streamTypes().forEach(this::addToContext);
+        typeMap.getE2ImmuAnnotationExpressions().streamTypes().forEach(this::addToContext);
     }
 
     /**
@@ -105,7 +109,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             throw new UnsupportedOperationException("?");
         }
         // try out java.lang; has been pre-loaded
-        TypeInfo inJavaLang = typeMapBuilder.get("java.lang." + name);
+        TypeInfo inJavaLang = typeMap.get("java.lang." + name);
         if (inJavaLang != null) return inJavaLang;
 
         // go fully qualified using the package
@@ -135,15 +139,15 @@ public class TypeContext implements TypeAndInspectionProvider {
      * @return the type
      */
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
-        TypeInfo typeInfo = typeMapBuilder.get(fullyQualifiedName);
+        TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
-            return typeMapBuilder.loadType(fullyQualifiedName, complain);
+            return typeMap.loadType(fullyQualifiedName, complain);
         }
         return typeInfo;
     }
 
     public boolean isKnown(String fullyQualified) {
-        return typeMapBuilder.get(fullyQualified) != null;
+        return typeMap.get(fullyQualified) != null;
     }
 
     public void addToContext(@NotNull NamedType namedType) {
@@ -184,7 +188,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             typeInfo = typeOfObject.typeInfo;
         }
         assert typeInfo != null;
-        TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
+        TypeInspection typeInspection = this.typeMap.getTypeInspection(typeInfo);
         if (typeInspection == null) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected");
         }
@@ -222,21 +226,21 @@ public class TypeContext implements TypeAndInspectionProvider {
 
     @Override
     public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
-        return typeMapBuilder.getFieldInspection(fieldInfo);
+        return typeMap.getFieldInspection(fieldInfo);
     }
 
     @Override
     public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-        return typeMapBuilder.getTypeInspection(typeInfo);
+        return typeMap.getTypeInspection(typeInfo);
     }
 
     @Override
     public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-        return typeMapBuilder.getMethodInspection(methodInfo);
+        return typeMap.getMethodInspection(methodInfo);
     }
 
     public Primitives getPrimitives() {
-        return typeMapBuilder.getPrimitives();
+        return typeMap.getPrimitives();
     }
 
 
@@ -385,7 +389,7 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     public boolean isPackagePrefix(PackagePrefix packagePrefix) {
-        return typeMapBuilder.isPackagePrefix(packagePrefix);
+        return typeMap.isPackagePrefix(packagePrefix);
     }
 
 }

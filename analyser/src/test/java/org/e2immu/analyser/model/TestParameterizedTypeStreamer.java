@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
@@ -74,7 +75,7 @@ public class TestParameterizedTypeStreamer {
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeParameter s = new TypeParameterImpl(clazz, "S", 1);
-        TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
+        TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(t)
                 .addTypeParameter(s);
@@ -86,7 +87,7 @@ public class TestParameterizedTypeStreamer {
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
 
-        TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
+        TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, InspectionState.BY_HAND)
                 .noParent(primitives);
         sub.typeInspection.set(subInspection.build());
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
@@ -100,7 +101,7 @@ public class TestParameterizedTypeStreamer {
         Primitives primitives = new PrimitivesImpl();
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
-        TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
+        TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(t);
         clazz.typeInspection.set(clazzInspection.build());
@@ -109,7 +110,7 @@ public class TestParameterizedTypeStreamer {
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
         TypeParameter s = new TypeParameterImpl(sub, "S", 0);
-        TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
+        TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, InspectionState.BY_HAND)
                 .noParent(primitives)
                 .addTypeParameter(s);
         sub.typeInspection.set(subInspection.build());

@@ -23,6 +23,7 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.resolver.ResolverImpl;
 import org.e2immu.analyser.util.Resources;
@@ -35,13 +36,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record ParseAndInspect(Resources classPath,
-                              TypeMapImpl.Builder typeMapBuilder,
+                              TypeMap.Builder typeMapBuilder,
                               Trie<TypeInfo> sourceTypes,
                               AnonymousTypeCounters anonymousTypeCounters,
                               boolean dollarTypesAreNormalTypes) {
@@ -89,7 +90,7 @@ public record ParseAndInspect(Resources classPath,
         List<TypeInspectorAndTypeDeclaration> typeInspectors = new ArrayList<>();
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
+            TypeInfo typeInfo = typeContextOfFile.typeMap.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true, dollarTypesAreNormalTypes);
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
@@ -208,9 +209,9 @@ public record ParseAndInspect(Resources classPath,
                     // primary type
                     String simpleName = StringUtil.stripDotClass(leaf);
                     String fqn = fullyQualified + "." + simpleName;
-                    TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
+                    TypeInfo typeInfo = typeContextOfFile.typeMap.get(fqn);
                     if (typeInfo == null) {
-                        TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
+                        TypeInfo newTypeInfo = typeContextOfFile.typeMap
                                 .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
                         log(INSPECTOR, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                         typeContextOfFile.addToContext(newTypeInfo, false);
@@ -281,7 +282,7 @@ public record ParseAndInspect(Resources classPath,
     private TypeInfo loadTypeDoNotImport(String fqn) {
         TypeInfo inMap = typeMapBuilder.get(fqn);
         if (inMap != null) {
-            TypeInspectionImpl.InspectionState inspectionState = typeMapBuilder().getInspectionState(inMap);
+            InspectionState inspectionState = typeMapBuilder().getInspectionState(inMap);
             if(inspectionState != null) {
                 return inMap;
             }

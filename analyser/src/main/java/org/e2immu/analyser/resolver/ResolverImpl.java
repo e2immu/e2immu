@@ -279,7 +279,7 @@ public class ResolverImpl implements Resolver {
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = expressionContextOfType.typeContext().getTypeInspection(typeInfo);
-            if (typeInspection.getInspectionState().le(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
+            if (typeInspection.getInspectionState().le(InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
                 // no need to inspect this method, we'll never use it
                 return List.of(typeInfo);
             }

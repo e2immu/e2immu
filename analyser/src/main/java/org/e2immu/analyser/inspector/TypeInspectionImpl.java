@@ -19,12 +19,12 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.annotation.Container;
 
 import java.util.*;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
@@ -165,42 +165,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public List<TypeInfo> permittedWhenSealed() {
         return permittedWhenSealed;
-    }
-
-    public enum InspectionState {
-        TRIGGER_BYTECODE_INSPECTION(1, Inspector.BYTE_CODE_INSPECTION),
-        STARTING_BYTECODE(2, Inspector.BYTE_CODE_INSPECTION),
-        FINISHED_BYTECODE(3, Inspector.BYTE_CODE_INSPECTION),
-        TRIGGER_JAVA_PARSER(4, Inspector.JAVA_PARSER_INSPECTION),
-        STARTING_JAVA_PARSER(5, Inspector.JAVA_PARSER_INSPECTION),
-        FINISHED_JAVA_PARSER(6, Inspector.JAVA_PARSER_INSPECTION),
-        BY_HAND_WITHOUT_STATEMENTS(7, Inspector.BY_HAND_WITHOUT_STATEMENTS),
-        BY_HAND(7, Inspector.BY_HAND),
-        BUILT(8, null);
-
-        private final int state;
-        private final Inspector inspector;
-
-        InspectionState(int state, Inspector inspector) {
-            this.state = state;
-            this.inspector = inspector;
-        }
-
-        public boolean ge(InspectionState other) {
-            return state >= other.state;
-        }
-
-        public boolean le(InspectionState other) {
-            return state <= other.state;
-        }
-
-        public boolean lt(InspectionState other) {
-            return state < other.state;
-        }
-
-        public Inspector getInspector() {
-            return Objects.requireNonNull(inspector, "Need to query before the type is built!");
-        }
     }
 
     @Container(builds = TypeInspectionImpl.class)
@@ -459,14 +423,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public void recursivelyAddToTypeStore(boolean parentIsPrimaryType,
                                               boolean parentIsDollarType,
-                                              TypeMapImpl.Builder typeStore,
+                                              TypeMap.Builder typeStore,
                                               TypeDeclaration<?> typeDeclaration,
                                               boolean dollarTypesAreNormalTypes) {
             typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
                 TypeInspector.DollarResolverResult res = subTypeInfo(typeInfo, typeDeclaration, cid,
                         parentIsPrimaryType, parentIsDollarType, dollarTypesAreNormalTypes);
 
-                TypeInspectionImpl.InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
+                InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
                         STARTING_JAVA_PARSER;
                 TypeInspectionImpl.Builder subTypeBuilder = typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
                 if (!res.isDollarType()) {

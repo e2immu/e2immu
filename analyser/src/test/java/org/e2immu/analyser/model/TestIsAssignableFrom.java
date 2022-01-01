@@ -103,9 +103,9 @@ public class TestIsAssignableFrom {
         assertFalse(stringPt.isAssignableFrom(typeContext, objectPt));
         assertFalse(charSeqPt.isAssignableFrom(typeContext, objectPt));
 
-        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_STRING)), 1);
-        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_CHAR_SEQUENCE)), 1);
-        ParameterizedType objectArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get(JAVA_LANG_OBJECT)), 1);
+        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_STRING)), 1);
+        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_CHAR_SEQUENCE)), 1);
+        ParameterizedType objectArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_OBJECT)), 1);
 
         CharSequence[] sequences = new String[]{"a", "b"};
         for (CharSequence sequence : sequences) {
@@ -139,8 +139,8 @@ public class TestIsAssignableFrom {
     @Test
     public void testTypeParameters1() {
         ParameterizedType stringPt = type(JAVA_LANG_STRING);
-        ParameterizedType listString = new ParameterizedType(typeContext.typeMapBuilder.get(List.class), List.of(stringPt));
-        ParameterizedType linkedListString = new ParameterizedType(typeContext.typeMapBuilder.get(LinkedList.class), List.of(stringPt));
+        ParameterizedType listString = new ParameterizedType(typeContext.typeMap.get(List.class), List.of(stringPt));
+        ParameterizedType linkedListString = new ParameterizedType(typeContext.typeMap.get(LinkedList.class), List.of(stringPt));
 
         assertTrue(listString.isAssignableFrom(typeContext, linkedListString));
         assertFalse(linkedListString.isAssignableFrom(typeContext, listString));
@@ -169,7 +169,7 @@ public class TestIsAssignableFrom {
     }
 
     private ParameterizedType type(String name) {
-        TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMapBuilder.get(name), "Cannot find " + name);
+        TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMap.get(name), "Cannot find " + name);
         return Objects.requireNonNull(typeInfo.asParameterizedType(typeContext));
     }
 }

@@ -410,7 +410,7 @@ public record ExpressionContextImpl(ResolverRecursion resolver,
                 unionOfTypes = unionType.getElements()
                         .stream()
                         .map(rt -> ParameterizedTypeFactory.from(typeContext, rt)).collect(Collectors.toList());
-                typeOfVariable = typeContext.typeMapBuilder.get("java.lang.Exception").asParameterizedType(typeContext);
+                typeOfVariable = typeContext.typeMap.get("java.lang.Exception").asParameterizedType(typeContext);
             } else {
                 typeOfVariable = ParameterizedTypeFactory.from(typeContext, parameter.getType());
                 unionOfTypes = List.of(typeOfVariable);
@@ -454,15 +454,15 @@ public record ExpressionContextImpl(ResolverRecursion resolver,
         String localName = statement.getClassDeclaration().getNameAsString();
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
-        typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
-        TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true, true);
+        typeContext.typeMap.add(typeInfo, InspectionState.STARTING_JAVA_PARSER);
+        TypeInspector typeInspector = new TypeInspector(typeContext.typeMap, typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         List<MethodInspection> methodAndConstructorInspections = typeInspection.methodsAndConstructors()
                 .stream().map(typeContext::getMethodInspection).toList();
 
-        resolver.resolve(typeContext, typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions(),
+        resolver.resolve(typeContext, typeContext.typeMap.getE2ImmuAnnotationExpressions(),
                 false, Map.of(typeInfo, this));
 
         typeContext.addToContext(localName, typeInfo, true);

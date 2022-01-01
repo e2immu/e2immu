@@ -66,7 +66,7 @@ public class Test_47_CollectUsage extends CommonTestRunner {
 
         File testDir = new File("build/test_47");
         FileUtils.deleteDirectory(testDir);
-        Composer composer = new Composer(typeContext.typeMapBuilder, "test47",
+        Composer composer = new Composer(typeContext.typeMap, "test47",
                 set::contains);
         Collection<TypeInfo> apiTypes = composer.compose(typesInSet);
         composer.write(apiTypes, testDir.getPath());

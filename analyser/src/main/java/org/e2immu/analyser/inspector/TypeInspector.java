@@ -28,7 +28,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.TypeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -78,7 +78,7 @@ public class TypeInspector {
     private final boolean fullInspection; // !fullInspection == isDollarType
     private final boolean dollarTypesAreNormalTypes;
 
-    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
+    public TypeInspector(TypeMap.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection,
                          boolean dollarTypesAreNormalTypes) {
         this.typeInfo = typeInfo;
         this.dollarTypesAreNormalTypes = dollarTypesAreNormalTypes;
@@ -206,7 +206,7 @@ public class TypeInspector {
                 String dollarPackageName = TypeInspectionImpl.packageName(packageNameField);
                 dollarResolver = name -> {
                     if (name.endsWith("$") && dollarPackageName != null) {
-                        return typeContext.typeMapBuilder
+                        return typeContext.typeMap
                                 .getOrCreate(dollarPackageName, name.substring(0, name.length() - 1), TRIGGER_BYTECODE_INSPECTION);
                     }
                     return null;
@@ -226,7 +226,7 @@ public class TypeInspector {
             if (bd.isAnnotationMemberDeclaration()) {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
                 log(INSPECTOR, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
-                TypeMapImpl.Builder typeMapBuilder = expressionContext.typeContext().typeMapBuilder;
+                TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
                 MethodInspector methodInspector = new MethodInspector(typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
                 builder.addMethod(methodInspector.getBuilder().getMethodInfo());
@@ -253,7 +253,7 @@ public class TypeInspector {
             fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PRIVATE);
-            expressionContext.typeContext().typeMapBuilder.registerFieldInspection(fieldInfo, fieldBuilder);
+            expressionContext.typeContext().typeMap.registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
 
             return new RecordField(fieldInfo, varargs);
@@ -286,7 +286,7 @@ public class TypeInspector {
             objectCreationExpr.setType(typeInfo.simpleName);
             objectCreationExpr.setRange(enumConstantDeclaration.getRange().orElseThrow());
             fieldBuilder.setInitialiserExpression(objectCreationExpr); // = new EnumType(...)
-            expressionContext.typeContext().typeMapBuilder.registerFieldInspection(fieldInfo, fieldBuilder);
+            expressionContext.typeContext().typeMap.registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
             enumFields.add(fieldInfo);
         });
@@ -310,7 +310,7 @@ public class TypeInspector {
         return typeParameter.getAnnotations().stream()
                 .map(ae -> AnnotationInspector.inspect(expressionContext, ae))
                 .anyMatch(ae -> ae.equals(
-                        expressionContext.typeContext().typeMapBuilder.getE2ImmuAnnotationExpressions().independent));
+                        expressionContext.typeContext().typeMap.getE2ImmuAnnotationExpressions().independent));
     }
 
     private void doImplementedTypes(ExpressionContext expressionContext,
@@ -350,7 +350,7 @@ public class TypeInspector {
         assert parameterizedType.typeInfo != null;
         boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType().fullyQualifiedName);
         if (!insideCompilationUnit) {
-            InspectionProvider inspectionProvider = expressionContext.typeContext().typeMapBuilder;
+            InspectionProvider inspectionProvider = expressionContext.typeContext().typeMap;
             // getting the type inspection should trigger either byte-code or java inspection
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
             if (typeInspection == null) {
@@ -379,7 +379,7 @@ public class TypeInspector {
     }
 
     // only to be called on primary types
-    public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration,
+    public void recursivelyAddToTypeStore(TypeMap.Builder typeStore, TypeDeclaration<?> typeDeclaration,
                                           boolean dollarTypesAreNormalTypes) {
         assert typeInfo.isPrimaryType() : "Only to be called on primary types";
         builder.recursivelyAddToTypeStore(true, false, typeStore, typeDeclaration,
@@ -429,7 +429,7 @@ public class TypeInspector {
         }
 
         // then, do normal constructors and methods
-        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
+        Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting = new LinkedHashMap<>();
         AtomicInteger countStaticBlocks = new AtomicInteger();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
@@ -481,7 +481,7 @@ public class TypeInspector {
                                         AtomicInteger countStaticBlocks,
                                         InitializerDeclaration id) {
         if (fullInspection) {
-            MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMapBuilder,
+            MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap,
                     typeInfo, true);
             methodInspector.inspect(id, expressionContext, countStaticBlocks.getAndIncrement());
             builder.ensureMethod(methodInspector.getBuilder().getMethodInfo());
@@ -491,9 +491,9 @@ public class TypeInspector {
     private void compactConstructorDeclaration(ExpressionContext expressionContext,
                                                List<RecordField> recordFields,
                                                ExpressionContext subContext,
-                                               Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting,
+                                               Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                                CompactConstructorDeclaration ccd) {
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMapBuilder, typeInfo,
+        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
                 fullInspection);
         assert recordFields != null;
         methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
@@ -504,9 +504,9 @@ public class TypeInspector {
     private void constructorDeclaration(ExpressionContext expressionContext,
                                         DollarResolver dollarResolver,
                                         ExpressionContext subContext,
-                                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting,
+                                        Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                         ConstructorDeclaration cd) {
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMapBuilder, typeInfo,
+        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
                 fullInspection);
         boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
         methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
@@ -544,7 +544,7 @@ public class TypeInspector {
         FieldInspectionImpl.Builder fieldInspectionBuilder;
         if (inMap == null) {
             fieldInspectionBuilder = new FieldInspectionImpl.Builder();
-            typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
+            typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
         } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
         else throw new UnsupportedOperationException();
 
@@ -570,7 +570,7 @@ public class TypeInspector {
                                    boolean isInterface,
                                    DollarResolver dollarResolver,
                                    ExpressionContext subContext,
-                                   Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting,
+                                   Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                    MethodDeclaration md) {
         // NOTE: it is possible that the return type is unknown at this moment: it can be one of the type
         // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
@@ -578,7 +578,7 @@ public class TypeInspector {
         CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
         boolean methodFullInspection = fullInspection || companionMethodName != null;
 
-        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMapBuilder, typeInfo,
+        MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext().typeMap, typeInfo,
                 methodFullInspection);
         methodInspector.inspect(isInterface, methodName, md, subContext,
                 companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
@@ -596,7 +596,7 @@ public class TypeInspector {
                                           TypeContext typeContext,
                                           ExpressionContext subContext) {
         assert recordFields != null;
-        MethodInspector methodInspector = new MethodInspector(typeContext.typeMapBuilder, typeInfo,
+        MethodInspector methodInspector = new MethodInspector(typeContext.typeMap, typeInfo,
                 fullInspection);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
@@ -620,7 +620,7 @@ public class TypeInspector {
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
                 .readyToComputeFQN(typeContext);
-        typeContext.typeMapBuilder.registerMethodInspection(builder);
+        typeContext.typeMap.registerMethodInspection(builder);
         return builder.getMethodInfo();
     }
 
@@ -629,7 +629,7 @@ public class TypeInspector {
 
     private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String
             nameAsString) {
-        DollarResolverResult res = subType(expressionContext.typeContext().typeMapBuilder, dollarResolver, nameAsString);
+        DollarResolverResult res = subType(expressionContext.typeContext().typeMap(), dollarResolver, nameAsString);
         expressionContext.typeContext().addToContext(res.subType);
         if (res.isDollarType) { // dollar name
             expressionContext.typeContext().addToContext(nameAsString, res.subType, false);
@@ -642,7 +642,7 @@ public class TypeInspector {
                                 boolean isInterface,
                                 String nameAsString,
                                 TypeDeclaration<?> asTypeDeclaration) {
-        TypeMapImpl.Builder typeMapBuilder = expressionContext.typeContext().typeMapBuilder;
+        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
         DollarResolverResult res = subType(typeMapBuilder, dollarResolver, nameAsString);
         TypeInfo subType = res.subType;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
@@ -656,7 +656,7 @@ public class TypeInspector {
         }
     }
 
-    private DollarResolverResult subType(TypeMapImpl.Builder typeMapBuilder, DollarResolver dollarResolver, String
+    private DollarResolverResult subType(TypeMap.Builder typeMapBuilder, DollarResolver dollarResolver, String
             name) {
         TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
         if (subType != null) {

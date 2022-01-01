@@ -39,7 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 
@@ -109,10 +109,10 @@ public class Parser {
 
         if (configuration.skipAnalysis()) {
             // do not build yet, others may want to continue
-            typeMap = input.globalTypeContext().typeMapBuilder;
+            typeMap = input.globalTypeContext().typeMap;
         } else {
             // creating the typeMap ensures that all inspections and resolutions are set.
-            typeMap = input.globalTypeContext().typeMapBuilder.build();
+            typeMap = input.globalTypeContext().typeMap.build();
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
@@ -122,19 +122,19 @@ public class Parser {
         return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
     }
 
-    public TypeMapImpl.Builder inspectOnlyForTesting() {
+    public TypeMap.Builder inspectOnlyForTesting() {
         inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
                 configuration.annotatedAPIConfiguration().reportWarnings(), true);
-        return input.globalTypeContext().typeMapBuilder;
+        return input.globalTypeContext().typeMap;
     }
 
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
                                               boolean reportWarnings,
                                               boolean shallowResolver) {
         ResolverImpl resolver = new ResolverImpl(anonymousTypeCounters, input.globalTypeContext(),
-                input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
+                input.globalTypeContext().typeMap.getE2ImmuAnnotationExpressions(), shallowResolver);
 
-        TypeMapImpl.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder;
+        TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport, resolver);
         typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
 
@@ -189,7 +189,7 @@ public class Parser {
                         configuration.inputConfiguration().sourceEncoding());
                 String source = IOUtil.toString(isr);
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
-                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters,
+                        input.globalTypeContext().typeMap(), typesForWildcardImport, anonymousTypeCounters,
                         configuration.annotatedAPIConfiguration().disabled());
                 List<TypeInfo> primaryTypes = parseAndInspect.run(resolver, inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
@@ -240,7 +240,7 @@ public class Parser {
     private void analyseSortedTypeCycle(List<SortedType> sortedTypes) {
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(null, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
-                getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -320,7 +320,7 @@ public class Parser {
             Input.preload(input.globalTypeContext(), input.byteCodeInspector(), input.classPath(), packagePrefix);
         }
         LOGGER.info("Building TypeMap, fixing inspections");
-        TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
+        TypeMap typeMap = input.globalTypeContext().typeMap.build();
 
         Set<TypeInfo> typesToWrite = new HashSet<>();
         // ensure that all types in the packages to write have been byte code inspected

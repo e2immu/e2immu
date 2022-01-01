@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
@@ -145,7 +145,7 @@ public interface TypeInspection extends Inspection {
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
-    TypeInspectionImpl.InspectionState getInspectionState();
+    InspectionState getInspectionState();
 
     /**
      * @param inspectionProvider to be able to inspect super-types

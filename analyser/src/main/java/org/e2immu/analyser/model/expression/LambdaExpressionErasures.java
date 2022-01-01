@@ -95,7 +95,7 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        return counts.stream().map(count -> typeContext.typeMapBuilder
+        return counts.stream().map(count -> typeContext.typeMap
                         .syntheticFunction(count.parameters, count.isVoid).asParameterizedType(typeContext))
                 .collect(Collectors.toUnmodifiableSet());
     }

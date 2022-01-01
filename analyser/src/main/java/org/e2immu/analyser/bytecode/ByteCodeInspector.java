@@ -30,8 +30,8 @@ import java.util.Objects;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.STARTING_BYTECODE;
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
@@ -59,13 +59,13 @@ public class ByteCodeInspector implements OnDemandInspection {
         if (dollar > 0) {
             String pathOfPrimaryType = path.substring(0, dollar);
             String fqnPrimaryType = pathOfPrimaryType.replace('/', '.');
-            TypeInfo primaryType = typeContext.typeMapBuilder.get(fqnPrimaryType);
+            TypeInfo primaryType = typeContext.typeMap.get(fqnPrimaryType);
             TypeInspection primaryTypeInspection = primaryType == null ? null : typeContext.getTypeInspection(primaryType);
             if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
                 inspectFromPath(pathOfPrimaryType);
             }
             String pathWithoutClass = StringUtil.stripDotClass(path);
-            return List.of(typeContext.typeMapBuilder.getOrCreateFromPath(pathWithoutClass, TRIGGER_BYTECODE_INSPECTION));
+            return List.of(typeContext.typeMap.getOrCreateFromPath(pathWithoutClass, TRIGGER_BYTECODE_INSPECTION));
             // NOTE that is is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of sub-types as interface or parent
         }
@@ -80,7 +80,7 @@ public class ByteCodeInspector implements OnDemandInspection {
 
     private void logTypesInProcess(String path) {
         log(BYTECODE_INSPECTOR, "Parsing {}, in process [{}]", path,
-                typeContext.typeMapBuilder.streamTypes()
+                typeContext.typeMap.streamTypes()
                         .filter(e -> e.getValue().getInspectionState() == STARTING_BYTECODE)
                         .map(e -> e.getKey().fullyQualifiedName).collect(Collectors.joining(", ")));
     }

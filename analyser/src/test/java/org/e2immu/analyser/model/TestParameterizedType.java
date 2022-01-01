@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.InspectionState.BY_HAND;
 import static org.e2immu.analyser.model.ParameterizedType.WildCard.NONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

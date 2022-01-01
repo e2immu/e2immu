@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
 
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
@@ -69,7 +69,7 @@ public record Input(Configuration configuration,
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
         OnDemandInspection byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
-        globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
+        globalTypeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
             preload(globalTypeContext, byteCodeInspector, classPath, packageName); // needed for our own stuff
@@ -115,7 +115,7 @@ public record Input(Configuration configuration,
                     String packageName = Arrays.stream(parts).limit(n).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
-                        globalTypeContext.typeMapBuilder.add(typeInfo, TRIGGER_JAVA_PARSER);
+                        globalTypeContext.typeMap.add(typeInfo, TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                         parts[n] = typeName;

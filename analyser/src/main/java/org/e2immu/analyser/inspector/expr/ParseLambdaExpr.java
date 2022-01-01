@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.TypeMap;
 
 import java.util.*;
 
@@ -131,7 +131,7 @@ public class ParseLambdaExpr {
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
-        continueCreationOfAnonymousType(expressionContext.typeContext().typeMapBuilder,
+        continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
                 applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
@@ -180,7 +180,7 @@ public class ParseLambdaExpr {
         return new MethodInspectionImpl.Builder(typeInfo, name);
     }
 
-    private static void continueCreationOfAnonymousType(TypeMapImpl.Builder typeMapBuilder,
+    private static void continueCreationOfAnonymousType(TypeMap.Builder typeMapBuilder,
                                                         MethodInspectionImpl.Builder builder,
                                                         ParameterizedType functionalInterfaceType,
                                                         Block block,
@@ -197,7 +197,7 @@ public class ParseLambdaExpr {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
-                        TypeInspectionImpl.InspectionState.BY_HAND)
+                        InspectionState.BY_HAND)
                 .noParent(typeMapBuilder.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addInterfaceImplemented(functionalInterfaceType)

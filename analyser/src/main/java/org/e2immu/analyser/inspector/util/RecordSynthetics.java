@@ -40,7 +40,7 @@ public class RecordSynthetics {
                                        List<TypeInspector.RecordField> recordFields) {
 
         var primitives = expressionContext.typeContext().getPrimitives();
-        var e2 = expressionContext.typeContext().typeMapBuilder.getE2ImmuAnnotationExpressions();
+        var e2 = expressionContext.typeContext().typeMap.getE2ImmuAnnotationExpressions();
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
 
         for (var fieldInfo : recordFields) {
@@ -62,7 +62,7 @@ public class RecordSynthetics {
                 .addAnnotation(notModifiedContract);
         accessor.readyToComputeFQN(expressionContext.typeContext());
         var distinguishingName = accessor.getDistinguishingName();
-        var typeMapBuilder = expressionContext.typeContext().typeMapBuilder;
+        var typeMapBuilder = expressionContext.typeContext().typeMap;
         var methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(distinguishingName);
         if (methodInspection != null) {
             // method is already there, we can skip this!

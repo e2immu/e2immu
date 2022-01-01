@@ -201,7 +201,7 @@ public class ParseMethodReferenceExpr {
 
     private static MethodReference arrayConstruction(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInfo arrayConstructor = ParseArrayCreationExpr.createArrayCreationConstructor(typeContext, parameterizedType);
-        TypeInfo intFunction = typeContext.typeMapBuilder.get("java.util.function.IntFunction");
+        TypeInfo intFunction = typeContext.typeMap.get("java.util.function.IntFunction");
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
         return new MethodReference(Identifier.generate(),

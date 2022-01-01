@@ -31,8 +31,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.model.ParameterizedType.WildCard.NONE;
 
 public class TypeMapImpl implements TypeMap {
@@ -130,7 +129,7 @@ public class TypeMapImpl implements TypeMap {
         return primitives;
     }
 
-    public static class Builder implements TypeMap {
+    public static class Builder implements TypeMap.Builder {
 
         private final Trie<TypeInfo> trie = new Trie<>();
         private final PrimitivesImpl primitives = new PrimitivesImpl();
@@ -138,8 +137,8 @@ public class TypeMapImpl implements TypeMap {
         private final Resources classPath;
 
         private final Map<TypeInfo, TypeInspectionImpl.Builder> typeInspections = new HashMap<>();
-        private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
-        private final Map<String, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
+        private final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
+        private final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
 
         private OnDemandInspection byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
@@ -317,13 +316,13 @@ public class TypeMapImpl implements TypeMap {
             return ensureTypeInspection(inMap, inspectionState);
         }
 
-        public void registerFieldInspection(FieldInfo fieldInfo, FieldInspectionImpl.Builder builder) {
+        public void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder builder) {
             if (fieldInspections.put(fieldInfo, builder) != null) {
                 throw new IllegalArgumentException("Re-registering field " + fieldInfo.fullyQualifiedName());
             }
         }
 
-        public void registerMethodInspection(MethodInspectionImpl.Builder builder) {
+        public void registerMethodInspection(MethodInspection.Builder builder) {
             if (methodInspections.put(builder.getDistinguishingName(), builder) != null) {
                 throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
             }
@@ -435,7 +434,7 @@ public class TypeMapImpl implements TypeMap {
 
         // we can probably do without this method; then the mutable versions will be used more
         public void makeParametersImmutable() {
-            methodInspections.values().forEach(MethodInspectionImpl.Builder::makeParametersImmutable);
+            methodInspections.values().forEach(MethodInspection.Builder::makeParametersImmutable);
         }
 
         public TypeInfo syntheticFunction(int numberOfParameters, boolean isVoid) {
@@ -459,7 +458,7 @@ public class TypeMapImpl implements TypeMap {
             builder.addTypeModifier(TypeModifier.PUBLIC);
             builder.addAnnotation(primitives.functionalInterfaceAnnotationExpression);
 
-            MethodInspectionImpl.Builder m = new MethodInspectionImpl.Builder(typeInfo, isVoid ? "accept" : "apply");
+            MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, isVoid ? "accept" : "apply");
             m.setReturnType(isVoid ? primitives.voidParameterizedType :
                     new ParameterizedType(tps.get(numberOfParameters), 0, NONE));
             for (int i = 0; i < numberOfParameters; i++) {

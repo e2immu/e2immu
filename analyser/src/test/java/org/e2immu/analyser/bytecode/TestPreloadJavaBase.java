@@ -16,8 +16,8 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.Parser;
@@ -48,14 +48,14 @@ public class TestPreloadJavaBase {
         // interestingly, java.util.List has been referred to, but it has not been loaded
         // because it has not yet appeared in a type hierarchy (but it has appeared as a field type
         // in some private field of java.lang.Throwable)
-        TypeInfo list = typeContext.typeMapBuilder.get("java.util.List");
+        TypeInfo list = typeContext.typeMap.get("java.util.List");
         assertNotNull(list);
-        assertEquals(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMapBuilder.getInspectionState(list));
+        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(list));
 
         // the next call will trigger the byte code inspection of "list":
         TypeInspection listInspection = typeContext.getTypeInspection(list);
         assertNotNull(listInspection);
-        assertEquals(TypeInspectionImpl.InspectionState.FINISHED_BYTECODE, typeContext.typeMapBuilder.getInspectionState(list));
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(list));
 
     }
 }

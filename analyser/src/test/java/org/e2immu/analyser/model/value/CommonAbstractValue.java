@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
@@ -164,7 +165,7 @@ public abstract class CommonAbstractValue {
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo().typeInspection.isSet()) {
-            PRIMITIVES.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo(), TypeInspectionImpl.InspectionState.BY_HAND)
+            PRIMITIVES.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo(), InspectionState.BY_HAND)
                     .noParent(PRIMITIVES)
                     .build());
         }
@@ -179,7 +180,7 @@ public abstract class CommonAbstractValue {
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
 
-        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, TypeInspectionImpl.InspectionState.BY_HAND)
+        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, InspectionState.BY_HAND)
                 .noParent(PRIMITIVES)
                 .addMethod(methodInfo)
                 .build());

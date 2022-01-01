@@ -21,7 +21,7 @@ import org.e2immu.support.AddOnceSet;
 
 import java.util.List;
 
-public abstract class AbstractInspectionBuilder<B> implements Inspection {
+public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspection.InspectionBuilder<B> {
 
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
     private boolean synthetic;

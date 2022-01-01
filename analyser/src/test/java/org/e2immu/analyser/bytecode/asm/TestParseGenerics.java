@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.STARTING_BYTECODE;
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
+import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -49,7 +49,7 @@ public class TestParseGenerics {
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
-        typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
+        typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
         Input.preload(typeContext, byteCodeInspector, resources, "java.util");
     }
@@ -90,7 +90,7 @@ public class TestParseGenerics {
         TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder)
                 typeContext.getTypeInspection(typeInfo);
         TypeContext newTypeContext = new TypeContext(typeContext);
-        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path,
+        FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(path,
                 TRIGGER_BYTECODE_INSPECTION);
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
@@ -154,9 +154,9 @@ public class TestParseGenerics {
         TypeContext newTypeContext = new TypeContext(typeContext);
         newTypeContext.addToContext(new TypeParameterImpl("V", 0));
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1));
-        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
-        TypeInspectionImpl.Builder typeInspectionBuilder = typeContext.typeMapBuilder.add(typeInfo, STARTING_BYTECODE);
+        TypeInspectionImpl.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
                 findType);

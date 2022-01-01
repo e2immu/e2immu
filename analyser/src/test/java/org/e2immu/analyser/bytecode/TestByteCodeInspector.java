@@ -56,14 +56,14 @@ public class TestByteCodeInspector {
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
-        typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
+        typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
         Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
 
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         // in case the path is a subType, we need to inspect it explicitly
-        types.forEach(typeContext.typeMapBuilder::getTypeInspection);
-        return typeContext.typeMapBuilder.build();
+        types.forEach(typeContext.typeMap::getTypeInspection);
+        return typeContext.typeMap.build();
     }
 
     public static String determineAnalyserJarName() {
