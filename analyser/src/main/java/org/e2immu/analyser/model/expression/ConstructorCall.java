@@ -20,7 +20,9 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -40,14 +42,14 @@ import java.util.stream.Collectors;
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
 
  */
-public record ConstructorCall(
-        Identifier identifier, // variable FQN + assignment ID
-        MethodInfo constructor,
-        ParameterizedType parameterizedType,
-        Diamond diamond,
-        List<Expression> parameterExpressions,
-        TypeInfo anonymousClass,
-        ArrayInitializer arrayInitializer) implements HasParameterExpressions {
+public class ConstructorCall extends BaseExpression implements HasParameterExpressions {
+
+    private final MethodInfo constructor;
+    private final ParameterizedType parameterizedType;
+    private final Diamond diamond;
+    private final List<Expression> parameterExpressions;
+    private final TypeInfo anonymousClass;
+    private final ArrayInitializer arrayInitializer;
 
     // specific construction and copy methods: we explicitly name construction
     /*
@@ -105,7 +107,7 @@ public record ConstructorCall(
                            List<Expression> parameterExpressions,
                            TypeInfo anonymousClass,
                            ArrayInitializer arrayInitializer) {
-        this.identifier = identifier;
+        super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.constructor = constructor;
@@ -194,7 +196,7 @@ public record ConstructorCall(
                 result = result.mergeDelay(sub, independentOnParameter);
             } else if (independentOnParameter.ge(MultiLevel.DEPENDENT_DV) &&
                     independentOnParameter.lt(MultiLevel.INDEPENDENT_DV)) {
-                result = result.merge(sub, MultiLevel.fromIndependentToLinkedVariableLevel(independentOnParameter));
+                result = result.merge(sub, LinkedVariables.fromIndependentToLinkedVariableLevel(independentOnParameter));
             }
             i++;
         }
@@ -219,10 +221,10 @@ public record ConstructorCall(
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT -> analyserContext.defaultIndependent(pt);
-            case IDENTITY -> Level.FALSE_DV;
+            case IDENTITY -> DV.FALSE_DV;
             case IMMUTABLE -> analyserContext.defaultImmutable(pt, false);
             case CONTAINER -> analyserContext.defaultContainer(pt);
-            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> Level.FALSE_DV;
+            case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };
     }
@@ -377,5 +379,21 @@ public record ConstructorCall(
     public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
         return DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                 linkedVariables(evaluationContext).changeAllToDelay(causes), causes);
+    }
+
+    public MethodInfo constructor() {
+        return constructor;
+    }
+
+    public TypeInfo anonymousClass() {
+        return anonymousClass;
+    }
+
+    public ParameterizedType parameterizedType() {
+        return parameterizedType;
+    }
+
+    public List<Expression> parameterExpressions() {
+        return parameterExpressions;
     }
 }

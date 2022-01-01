@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
@@ -45,7 +46,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.function.Function<K,V>, Type param K, Type param V",
                         d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 4, Level.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 4, DV.TRUE_DV, Property.CONTAINER);
             }
         };
 
@@ -84,7 +85,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertLinked(d, 2, "TODO", "");
-                    assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("put".equals(d.methodInfo().name)) {
@@ -92,7 +93,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:map>" : "instance type HashMap<K,V>";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
@@ -104,7 +105,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertLinked(d, 2, "TODO", "");
-                        assertDv(d, 3, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
@@ -116,7 +117,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                         String expectValue = d.iteration() <= 1 ? "<p:v>" : "nullable instance type V";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertLinked(d, 2, "TODO", "");
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         assertEquals("nullable instance type V", d.currentValue().toString());
@@ -131,7 +132,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -145,42 +146,42 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, 2, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                assertDv(d.p(0), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals("isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 2, Level.FALSE_DV, Property.IDENTITY);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
 
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashMap<K,V>", d.fieldAnalysis().getValue().toString());
             }
         };

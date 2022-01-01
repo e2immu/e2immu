@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -29,11 +30,25 @@ import java.util.Objects;
 import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
 @E2Container
-public record DelayedExpression(String msg,
-                                String debug,
-                                ParameterizedType parameterizedType,
-                                LinkedVariables linkedVariables,
-                                CausesOfDelay causesOfDelay) implements Expression {
+public final class DelayedExpression extends BaseExpression implements Expression {
+    private final String msg;
+    private final String debug;
+    private final ParameterizedType parameterizedType;
+    private final LinkedVariables linkedVariables;
+    private final CausesOfDelay causesOfDelay;
+
+    public DelayedExpression(String msg,
+                             String debug,
+                             ParameterizedType parameterizedType,
+                             LinkedVariables linkedVariables,
+                             CausesOfDelay causesOfDelay) {
+        super(Identifier.CONSTANT);
+        this.msg = msg;
+        this.debug = debug;
+        this.parameterizedType = parameterizedType;
+        this.linkedVariables = linkedVariables;
+        this.causesOfDelay = causesOfDelay;
+    }
 
     public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables,
@@ -131,7 +146,7 @@ public record DelayedExpression(String msg,
 
     @Override
     public boolean isNumeric() {
-        return parameterizedType.typeInfo.isNumeric();
+        return parameterizedType.typeInfo != null && parameterizedType.typeInfo.isNumeric();
     }
 
     @Override
@@ -190,13 +205,24 @@ public record DelayedExpression(String msg,
         return linkedVariables;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT; // not important in final equality
-    }
-
-    @Override
     public CausesOfDelay causesOfDelay() {
         return causesOfDelay;
     }
+
+    public String msg() {
+        return msg;
+    }
+
+    public String debug() {
+        return debug;
+    }
+
+    public ParameterizedType parameterizedType() {
+        return parameterizedType;
+    }
+
+    public LinkedVariables linkedVariables() {
+        return linkedVariables;
+    }
+
 }

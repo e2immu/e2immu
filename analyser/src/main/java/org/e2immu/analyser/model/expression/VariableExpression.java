@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -34,7 +35,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @E2Container
-public record VariableExpression(Variable variable, String name) implements Expression, IsVariableExpression {
+public final class VariableExpression extends BaseExpression implements Expression, IsVariableExpression {
+    private final Variable variable;
+    private final String name;
+
+    public VariableExpression(Variable variable, String name) {
+        super(Identifier.CONSTANT);
+        this.variable = variable;
+        this.name = name;
+    }
 
     public VariableExpression(Variable variable) {
         this(variable, variable.fullyQualifiedName());
@@ -76,11 +85,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 
     @Override
@@ -326,4 +330,13 @@ public record VariableExpression(Variable variable, String name) implements Expr
         }
         return null;
     }
+
+    public Variable variable() {
+        return variable;
+    }
+
+    public String name() {
+        return name;
+    }
+
 }

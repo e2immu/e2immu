@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -34,7 +35,7 @@ import java.util.Objects;
 
 
 @E2Container
-public class InstanceOf extends ElementImpl implements Expression {
+public class InstanceOf extends BaseExpression implements Expression {
 
     private final Primitives primitives;
     private final ParameterizedType parameterizedType;

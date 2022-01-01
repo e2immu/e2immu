@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -36,7 +37,7 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -45,7 +46,7 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         TypeInfo charTypeInfo = typeContext.getPrimitives().charTypeInfo();
         MethodInfo methodInfo = typeInfo.findUniqueMethod("print", charTypeInfo);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
@@ -60,12 +61,12 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("println", objectTypeInfo);
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
         assertTrue(methodInfo.methodResolution.get().allowsInterrupts());
     }

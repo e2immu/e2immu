@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.NoDelay;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.util.WeightedGraph;
-
-import java.util.Objects;
 
 /*
 Delayable Value
@@ -26,7 +26,14 @@ public interface DV extends WeightedGraph.Weight {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
-    DV MIN_INT_DV = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
+    DV MIN_INT_DV = new SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
+
+    DV FALSE_DV = new NoDelay(0, "false");
+    DV TRUE_DV = new NoDelay(1, "true");
+
+    static DV fromBoolDv(boolean b) {
+        return b ? TRUE_DV : FALSE_DV;
+    }
 
     int value();
 
@@ -80,81 +87,4 @@ public interface DV extends WeightedGraph.Weight {
 
     String label();
 
-    record NoDelay(int value, String label) implements DV {
-
-        public static final String COMPUTED = "computed";
-
-        public NoDelay(int value) {
-            this(value, COMPUTED);
-        }
-
-        public NoDelay {
-            assert value >= 0;
-        }
-
-        @Override
-        public CausesOfDelay causesOfDelay() {
-            return CausesOfDelay.EMPTY;
-        }
-
-        @Override
-        public DV min(DV other) {
-            if (other.value() > value) return this;
-            // if other is a delay, its value is less than ours!
-            return other;
-        }
-
-        @Override
-        public DV max(DV other) {
-            if (this == MIN_INT_DV) return other;
-            if (other == MIN_INT_DV) return this;
-            if (other.value() >= value || other.isDelayed()) return other;
-            return this;
-        }
-
-        @Override
-        public DV maxIgnoreDelay(DV other) {
-            if (other.value() >= value) return other;
-            return this;
-        }
-
-        @Override
-        public DV replaceDelayBy(DV nonDelay) {
-            assert nonDelay.isDone();
-            return this;
-        }
-
-        @Override
-        public boolean isDone() {
-            return true;
-        }
-
-        @Override
-        public boolean isDelayed() {
-            return false;
-        }
-
-        @Override
-        public String toString() {
-            return label + ":" + value;
-        }
-
-        @Override
-        public int compareTo(WeightedGraph.Weight o) {
-            return value - ((DV) o).value();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            NoDelay noDelay = (NoDelay) o;
-            return value == noDelay.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(value);
-        }
-    }
 }

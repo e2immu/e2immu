@@ -29,7 +29,7 @@ import java.util.Map;
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
     private static final Map<Property, DV> RECURSIVE_CALL =
-            Map.of(Property.CONTEXT_MODIFIED, Level.FALSE_DV,
+            Map.of(Property.CONTEXT_MODIFIED, DV.FALSE_DV,
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
@@ -89,12 +89,12 @@ public class EvaluateParameters {
                     if (independent.isDelayed()) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(Property.PROPAGATE_MODIFICATION, Level.FALSE_DV);
+                            map.put(Property.PROPAGATE_MODIFICATION, DV.FALSE_DV);
                         } else {
                             //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
                         }
                     } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-                        map.put(Property.PROPAGATE_MODIFICATION, Level.TRUE_DV);
+                        map.put(Property.PROPAGATE_MODIFICATION, DV.TRUE_DV);
                     }
                 }
 
@@ -103,7 +103,7 @@ public class EvaluateParameters {
                     if (contextModified == null) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                            map.put(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+                            map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
                         } else {
                             //  map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
                             builder.causeOfContextModificationDelay(methodInfo, true);

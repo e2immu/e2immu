@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -115,7 +114,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             if (d.variable() instanceof ReturnVariable) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
                 if ("1.0.0".equals(d.statementId())) {
@@ -124,7 +123,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                         assertTrue(d.getProperty(Property.EXTERNAL_NOT_NULL).isDelayed());
                     } else {
                         fail(); // unreachable, now that the condition is stable
@@ -132,12 +131,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
                 if ("1.0.1".equals(d.statementId())) {
                     assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
@@ -166,7 +165,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
-            assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             assertEquals("null==a?\"x\":a", d.methodAnalysis().getSingleReturnValue().toString());
 
             assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);

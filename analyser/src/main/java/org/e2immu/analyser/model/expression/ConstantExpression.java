@@ -49,7 +49,7 @@ public interface ConstantExpression<T> extends Expression {
     default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         switch (property) {
             case CONTAINER:
-                return Level.TRUE_DV;
+                return DV.TRUE_DV;
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION:
@@ -57,7 +57,7 @@ public interface ConstantExpression<T> extends Expression {
             case MODIFIED_METHOD:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
-                return Level.FALSE_DV;
+                return DV.FALSE_DV;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }

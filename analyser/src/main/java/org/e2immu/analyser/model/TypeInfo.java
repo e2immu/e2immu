@@ -14,8 +14,12 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -698,5 +702,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     @Override
     public int compareTo(TypeInfo o) {
         return fullyQualifiedName.compareTo(o.fullyQualifiedName);
+    }
+
+    @Override
+    public Location newLocation() {
+        return new LocationImpl(this);
+    }
+
+    @Override
+    public CausesOfDelay delay(CauseOfDelay.Cause cause) {
+        return new SimpleSet(newLocation(), cause);
     }
 }

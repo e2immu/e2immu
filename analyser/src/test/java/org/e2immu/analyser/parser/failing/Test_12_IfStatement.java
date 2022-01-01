@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -78,7 +78,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"

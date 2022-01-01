@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -101,12 +102,12 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name)) {
                 // predicate implements "test"
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
                 assertEquals("(instance type String).equals(name)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -120,7 +121,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -148,7 +149,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
         MethodInfo name = enum0.findUniqueMethod("name", 0);
         MethodAnalysis nameAnalysis = name.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, nameAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, nameAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, nameAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
     }
 
@@ -157,7 +158,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo math = typeMap.get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            assertEquals(Level.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
@@ -179,7 +180,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getCnt".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -208,7 +209,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 assertFalse(d.variableName().contains("name"));
                 if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };

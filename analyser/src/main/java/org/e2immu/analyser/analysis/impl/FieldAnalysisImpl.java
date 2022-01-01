@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -76,7 +78,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public DV isTransparentType() {
-        return isOfTransparentType ? Level.TRUE_DV : Level.FALSE_DV;
+        return isOfTransparentType ? DV.TRUE_DV : DV.FALSE_DV;
     }
 
     @Override
@@ -86,7 +88,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public Location location() {
-        return new Location(fieldInfo);
+        return fieldInfo.newLocation();
     }
 
     @Override
@@ -156,7 +158,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {
-            return new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(fieldInfo, CauseOfDelay.Cause.INITIAL_VALUE));
+            return new SimpleSet(new SimpleCause(fieldInfo, CauseOfDelay.Cause.INITIAL_VALUE));
         }
 
         @Override
@@ -184,7 +186,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Location location() {
-            return new Location(fieldInfo);
+            return fieldInfo.newLocation();
         }
 
 

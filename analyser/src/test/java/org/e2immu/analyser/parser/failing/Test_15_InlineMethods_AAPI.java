@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -68,7 +68,7 @@ public class Test_15_InlineMethods_AAPI extends CommonTestRunner {
             TypeInfo random = typeMap.get(Random.class);
             MethodInfo nextInt = random.findUniqueMethod("nextInt", 0);
             MethodAnalysis nextIntAnalysis = nextInt.methodAnalysis.get();
-            assertEquals(Level.TRUE_DV, nextIntAnalysis.getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, nextIntAnalysis.getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("InlineMethods_3", 0, 0, new DebugConfiguration.Builder()

@@ -22,6 +22,7 @@ import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -158,14 +159,14 @@ public class ResolverImpl implements Resolver {
 
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
-            Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
+            Set<TypeInfo> typesInCycle = typeGraph.removeAsManyAsPossible(typeGraph.dependencies(typeInfo));
             if (!largeOverlap(cycles, typesInCycle)) {
                 if (isLogEnabled(RESOLVER)) {
                     log(RESOLVER, "Type {} is part of cycle of size {}:\n------\n{}\n------",
                             typeInfo,
                             typesInCycle.size(),
                             typesInCycle.stream()
-                                    .map(t -> t.fullyQualifiedName)
+                                    .map(t -> t.fullyQualifiedName+"  depends on "+summary(t, typeGraph))
                                     .sorted()
                                     .collect(Collectors.joining("\n")));
                 }
@@ -173,7 +174,7 @@ public class ResolverImpl implements Resolver {
                     TypeResolution.Builder otherBuilder = resolutionBuilders.get(other);
                     otherBuilder.addCircularDependencies(typesInCycle);
                 }
-                messages.add(Message.newMessage(new Location(typeInfo), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
+                messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
                         typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
                 cycles.add(typesInCycle);
             } else {
@@ -182,6 +183,12 @@ public class ResolverImpl implements Resolver {
         }, Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
         log(RESOLVER, "Sorted types: {}", sorted);
         return sorted;
+    }
+
+    private static String summary(TypeInfo typeInfo, DependencyGraph<TypeInfo> typeGraph) {
+        List<TypeInfo> dependencies = typeGraph.getDependsOn(typeInfo);
+        return dependencies.size()+": "+dependencies.stream().limit(2)
+                .map(t -> t.simpleName).collect(Collectors.joining(", "));
     }
 
     private static boolean largeOverlap(List<Set<TypeInfo>> cycles, Set<TypeInfo> typesInCycle) {

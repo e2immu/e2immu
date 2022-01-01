@@ -16,7 +16,6 @@ package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -142,7 +141,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("goTo".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fieldReference && "map".equals(fieldReference.fieldInfo.name)) {
                     if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:map>" : "null";
@@ -153,16 +152,16 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                         if (d.iteration() > 0) {
                             VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                            assertEquals(Level.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
+                            assertEquals(DV.FALSE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
                         }
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
@@ -175,10 +174,10 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                         //int expectBreak = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         //assertEquals(expectBreak, d.getProperty(Property.EXTERNAL_IMMUTABLE_BREAK_DELAY));
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("root$0".equals(d.variableName())) {
@@ -187,7 +186,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("node".equals(d.variableName())) {
@@ -195,7 +194,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String expectValue = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
@@ -209,7 +208,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String expectValue = d.iteration() <= 2 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("node$1".equals(d.variableName())) {
@@ -241,7 +240,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("root".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 //assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE_BREAK_DELAY));
                 // wait until TrieNode is immutable
                 if (d.iteration() <= 1) {
@@ -249,17 +248,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 } else {
                     assertEquals("instance type TrieNode<T>", d.fieldAnalysis().getValue().toString());
                 }
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals("null", d.fieldAnalysis().getValue().toString());
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -327,20 +326,20 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
 
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
                     if ("2".equals(d.statementId())) {
                         assertLinked(d, 3, "?", "this.root");
 
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         assertEquals("<return value>", d.currentValue().toString());
 
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                     }
@@ -348,7 +347,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String expect = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expect, d.currentValue().toString());
                         assertLinked(d, 3, "?", "this.root");
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -356,7 +355,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("root".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 if (d.iteration() <= 1) {
                     assertNull(d.fieldAnalysis().getValue());
                 } else {

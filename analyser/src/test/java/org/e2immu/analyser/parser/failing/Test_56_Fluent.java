@@ -86,10 +86,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo i && "instance".equals(i.name)) {
                     DV cm = d.getProperty(Property.CONTEXT_MODIFIED);
                     if ("0".equals(d.statementId())) {
-                        assertEquals(Level.FALSE_DV, cm);
+                        assertEquals(DV.FALSE_DV, cm);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals(Level.FALSE_DV, cm);
+                        assertEquals(DV.FALSE_DV, cm);
                     }
                 }
             }
@@ -98,7 +98,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copyOf".equals(d.methodInfo().name)) {
                 // @NotModified
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -106,14 +106,14 @@ public class Test_56_Fluent extends CommonTestRunner {
                     assertEquals(INSTANCE_TYPE_BUILDER_BUILD, d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
-                assertDv(d, 2, Level.FALSE_DV, Property.FLUENT);
+                assertDv(d, 2, DV.FALSE_DV, Property.FLUENT);
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
@@ -123,10 +123,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                 } else {
                     assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                assertDv(d, 1, Level.TRUE_DV, Property.FLUENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.FLUENT);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -165,27 +165,27 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.FLUENT));
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.FLUENT));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
                 assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.methodAnalysis().getProperty(Property.IMMUTABLE));
             }
             if ("identity".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.IDENTITY));
             }
             if ("value".equals(d.methodInfo().name) && "Fluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
                 // via aggregation
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
 
             if ("from".equals(d.methodInfo().name)) {
                 // STEP 1 links have not been established
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -217,13 +217,13 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "instance".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
                         // because parameters are @Modified by default, we're without annotated APIs
-                        assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                         assertEquals("nullable instance type IFluent_1/*@Identity*/", d.currentValue().toString());
                         assertEquals("instance:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // STEP 3 value of 0 not set because no linked variables set for return variable
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {

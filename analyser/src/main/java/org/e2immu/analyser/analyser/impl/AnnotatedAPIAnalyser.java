@@ -142,7 +142,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             }
                         });
                 if (hasFinalizers.get()) {
-                    typeAnalysis.setProperty(Property.FINALIZER, Level.TRUE_DV);
+                    typeAnalysis.setProperty(Property.FINALIZER, DV.TRUE_DV);
                 }
             }
         }
@@ -261,7 +261,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            typeAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
+            typeAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
             typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
         }
     }
@@ -272,7 +272,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             ValueExplanation computed = computeIndependent(typeInfo);
             // some "Type @Independent lower than its methods allow"-errors (a.o. java.lang.String)
             if (inMap.gt(computed.value)) {
-                Message message = Message.newMessage(new Location(typeInfo),
+                Message message = Message.newMessage(typeInfo.newLocation(),
                         Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT,
                         "Found " + inMap + ", computed maximally " + computed.value
                                 + " in " + computed.explanation);
@@ -309,24 +309,24 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
-        parameterAnalysis.setProperty(Property.IDENTITY, Level.FALSE_DV);
+        parameterAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
         parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
-        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
-        builder.setProperty(Property.IDENTITY, Level.FALSE_DV);
-        builder.setProperty(Property.FLUENT, Level.FALSE_DV);
-        builder.setProperty(Property.MODIFIED_METHOD, Level.FALSE_DV);
-        builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+        builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
+        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
+        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
+        builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new InlinedMethod(Identifier.generate(),
                 methodInfo, new VariableExpression(parameterInfo), Set.of(parameterInfo), false));
@@ -340,24 +340,24 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
-        parameterAnalysis.setProperty(Property.IDENTITY, Level.FALSE_DV);
+        parameterAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
         parameterAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         parameterAnalysis.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
-        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+        parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
-        builder.setProperty(Property.IDENTITY, Level.FALSE_DV);
-        builder.setProperty(Property.FLUENT, Level.FALSE_DV);
-        builder.setProperty(Property.MODIFIED_METHOD, Level.FALSE_DV);
-        builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+        builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
+        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
+        builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
+        builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
 
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType(), "isKnown return value"));
@@ -546,7 +546,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         DV container = builder.getProperty(Property.CONTAINER);
         if (container.isDelayed()) {
-            builder.setProperty(Property.CONTAINER, Level.FALSE_DV);
+            builder.setProperty(Property.CONTAINER, DV.FALSE_DV);
         }
     }
 
@@ -579,7 +579,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 builder.setProperty(Property.INDEPENDENT, independent);
             }
         } else if (immutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV) && inMap.lt(independent)) {
-            messages.add(Message.newMessage(new Location(builder.typeInfo),
+            messages.add(Message.newMessage(builder.typeInfo.newLocation(),
                     Message.Label.INCONSISTENT_INDEPENDENCE_VALUE));
         }
     }

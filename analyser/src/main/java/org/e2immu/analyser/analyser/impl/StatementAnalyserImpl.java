@@ -15,6 +15,9 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.ProgressWrapper;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
@@ -24,6 +27,7 @@ import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
@@ -443,7 +447,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
-                            ? new ProgressWrapper(new CausesOfDelay.SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
+                            ? new ProgressWrapper(new SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
                             : DONE)
                     .build();
             analysisStatus = result.analysisStatus();
@@ -653,9 +657,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         InterruptsFlow bestAlways = statementAnalysis.flowData().bestAlwaysInterrupt();
         boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
         if (escapes) {
-            return Level.fromBoolDv(statementAnalysis.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS));
+            return DV.fromBoolDv(statementAnalysis.flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS));
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
     /*
@@ -866,11 +870,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
         addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> AnalysisProvider.defaultNotNull(x.parameterizedType()), true);
         addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x ->
-                new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(x, getLocation(),
+                new SimpleSet(new VariableCause(x, getLocation(),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
-        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE_DV, true);
+        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
 
         if (statement() instanceof ForEachStatement) {
             Variable loopVar = obtainLoopVar();
@@ -1168,7 +1172,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
         DV cm = res.remove(CONTEXT_MODIFIED);
-        groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE_DV : cm);
+        groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
 
@@ -1469,7 +1473,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     DV defaultImmutable = analyserContext.defaultImmutable(lvr.parameterizedType(), false);
                     DV initialNotNull = AnalysisProvider.defaultNotNull(lvr.parameterizedType());
                     Map<Property, DV> properties =
-                            Map.of(CONTEXT_MODIFIED, Level.FALSE_DV,
+                            Map.of(CONTEXT_MODIFIED, DV.FALSE_DV,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
                                     CONTEXT_NOT_NULL, initialNotNull,
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
@@ -1851,7 +1855,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
-                        Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(),
+                        Message msg = Message.newMessage(new LocationImpl(myMethodAnalyser.getMethodInfo(),
                                         firstStatement.index(), firstStatement.statement().getIdentifier()),
                                 Message.Label.UNREACHABLE_STATEMENT);
                         // let's add it to us, rather than to this unreachable statement
@@ -1864,7 +1868,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     blocks.get(1).ifPresent(firstStatement -> {
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
-                            Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(),
+                            Message msg = Message.newMessage(new LocationImpl(myMethodAnalyser.getMethodInfo(),
                                             firstStatement.index(), firstStatement.statement().getIdentifier()),
                                     Message.Label.UNREACHABLE_STATEMENT);
                             statementAnalysis.ensure(msg);
@@ -1882,7 +1886,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData().setGuaranteedToBeReached(FlowData.NEVER);
-                        Message msg = Message.newMessage(new Location(myMethodAnalyser.getMethodInfo(), nextAnalysis.index(),
+                        Message msg = Message.newMessage(new LocationImpl(myMethodAnalyser.getMethodInfo(), nextAnalysis.index(),
                                 nextAnalysis.statement().getIdentifier()), Message.Label.UNREACHABLE_STATEMENT);
                         statementAnalysis.ensure(msg);
                     }
@@ -2608,14 +2612,14 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
 
         @Override
-        public Location getLocation() {
-            return new Location(myMethodAnalyser.getMethodInfo(), statementAnalysis.index(),
+        public LocationImpl getLocation() {
+            return new LocationImpl(myMethodAnalyser.getMethodInfo(), statementAnalysis.index(),
                     statementAnalysis.statement().getIdentifier());
         }
 
         @Override
         public Location getLocation(Identifier identifier) {
-            return new Location(myMethodAnalyser.getMethodInfo(), statementAnalysis.index(), identifier);
+            return new LocationImpl(myMethodAnalyser.getMethodInfo(), statementAnalysis.index(), identifier);
         }
 
         @Override
@@ -2992,7 +2996,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         public CausesOfDelay variableIsDelayed(Variable variable) {
             VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
             if (vi == null) {
-                return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable,
+                return new SimpleSet(new VariableCause(variable,
                         getLocation(), CauseOfDelay.Cause.VARIABLE_DOES_NOT_EXIST));
             }
             return vi.getValue().causesOfDelay();

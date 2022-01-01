@@ -14,11 +14,11 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -76,7 +76,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo) {
                     assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
                     if ("1".equals(d.statementId())) {
-                        assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                 }
                 if ("b".equals(d.variableName())) {
@@ -171,7 +171,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof ParameterInfo) {
-                    assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);

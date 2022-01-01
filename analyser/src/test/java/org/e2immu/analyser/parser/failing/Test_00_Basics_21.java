@@ -16,9 +16,9 @@
 package org.e2immu.analyser.parser.failing;
 
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -91,7 +91,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
 
                         assertEquals(MultiLevel.MUTABLE_DV, d.variableInfoContainer()
                                 .getPreviousOrInitial().getProperty(CONTEXT_IMMUTABLE));
@@ -105,7 +105,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         String expectLinked = d.iteration() == 0 ? "other:0,this:-1" : "other:0,this:3";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -117,10 +117,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("set".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -128,7 +128,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 }
             }
             if ("isSet".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {

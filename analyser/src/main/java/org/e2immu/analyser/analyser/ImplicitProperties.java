@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 
@@ -23,16 +22,16 @@ public class ImplicitProperties {
     public static DV arrayProperties(Property property) {
         return switch (property) {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
-            case CONTAINER -> Level.TRUE_DV;
+            case CONTAINER -> DV.TRUE_DV;
             default -> DV.MIN_INT_DV;
         };
     }
 
     public static DV primitiveProperties(Property property) {
         return switch (property) {
-            case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> Level.FALSE_DV;
+            case CONTEXT_MODIFIED, MODIFIED_VARIABLE, MODIFIED_OUTSIDE_METHOD -> DV.FALSE_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
-            case CONTAINER -> Level.TRUE_DV;
+            case CONTAINER -> DV.TRUE_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             case NOT_NULL_EXPRESSION, NOT_NULL_PARAMETER -> MultiLevel.EFFECTIVELY_NOT_NULL_DV; // NOT: EXTERNAL_NOT_NULL!
             default -> DV.MIN_INT_DV;

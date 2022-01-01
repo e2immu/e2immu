@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -30,9 +31,15 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record IntConstant(Primitives primitives,
-                          int constant) implements ConstantExpression<Integer>, Negatable, Numeric {
+public final class IntConstant extends BaseExpression implements ConstantExpression<Integer>, Negatable, Numeric {
+    private final Primitives primitives;
+    private final int constant;
 
+    public IntConstant(Primitives primitives, int constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     public static Expression intOrDouble(Primitives primitives, double b) {
         if (IntUtil.isMathematicalInteger(b)) {
@@ -104,8 +111,12 @@ public record IntConstant(Primitives primitives,
         return true;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public Primitives primitives() {
+        return primitives;
     }
+
+    public int constant() {
+        return constant;
+    }
+
 }

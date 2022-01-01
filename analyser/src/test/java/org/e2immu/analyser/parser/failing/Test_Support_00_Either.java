@@ -15,11 +15,11 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlineConditional;
@@ -51,7 +51,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTAINER));
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";

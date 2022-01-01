@@ -196,7 +196,7 @@ public class TestTypeInfoStream {
 
         FieldInfo tInContainer = new FieldInfo(Identifier.generate(), typeT, "t", containerTypeInfo);
         tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
-                .setInspectedInitialiserExpression(new NullConstant())
+                .setInspectedInitialiserExpression(NullConstant.NULL_CONSTANT)
                 .build());
 
         TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, BY_HAND)

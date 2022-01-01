@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -30,11 +31,17 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record Or(Identifier identifier, Primitives primitives, List<Expression> expressions) implements Expression {
+public final class Or extends BaseExpression implements Expression {
+    private final Primitives primitives;
+    private final List<Expression> expressions;
 
-    public Or {
+
+    public Or(Identifier identifier, Primitives primitives, List<Expression> expressions) {
+        super(identifier);
         Objects.requireNonNull(primitives);
         Objects.requireNonNull(expressions);
+        this.primitives = primitives;
+        this.expressions = expressions;
     }
 
     // testing only
@@ -212,7 +219,7 @@ public record Or(Identifier identifier, Primitives primitives, List<Expression> 
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof InlineConditional inlineConditional) {
+        if (v instanceof InlineConditional inlineConditional) {
             return expressions.get(0).compareTo(inlineConditional.condition);
         }
         Or orValue = (Or) v;
@@ -266,8 +273,16 @@ public record Or(Identifier identifier, Primitives primitives, List<Expression> 
         return new Or(identifier, primitives, translated);
     }
 
-    @Override
-    public Identifier getIdentifier() {
+    public Identifier identifier() {
         return identifier;
     }
+
+    public Primitives primitives() {
+        return primitives;
+    }
+
+    public List<Expression> expressions() {
+        return expressions;
+    }
+
 }

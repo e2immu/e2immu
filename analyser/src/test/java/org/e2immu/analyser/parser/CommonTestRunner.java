@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -212,8 +213,8 @@ public abstract class CommonTestRunner {
         } else {
             filteredMessages = messages.stream()
                     .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
-                            m.location().info == null ||
-                            !m.location().info.getTypeInfo().packageName().startsWith("java."))
+                            ((LocationImpl)m.location()).info == null ||
+                            !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java."))
                     .toList();
         }
         filteredMessages

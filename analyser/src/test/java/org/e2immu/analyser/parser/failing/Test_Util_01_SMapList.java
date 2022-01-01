@@ -95,12 +95,12 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("1".equals(d.statementId())) {
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
             }
             if ("3".equals(d.statementId())) {
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
@@ -109,11 +109,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                 if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
-                else assertEquals(Level.FALSE_DV, paramMod);
+                else assertEquals(DV.FALSE_DV, paramMod);
             }
             if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                 if (d.iteration() == 0) assertTrue(paramMod.isDelayed());
-                else assertEquals(Level.FALSE_DV, paramMod);
+                else assertEquals(DV.FALSE_DV, paramMod);
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
@@ -240,11 +240,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
             if ("bs".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("b".equals(parameterInfo.name)) {
-                assertDv(d.p(1), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         }
         if ("immutable".equals(d.methodInfo().name)) {

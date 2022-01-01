@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -23,6 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -80,6 +82,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             AnalysisStatus analysisStatus = d.result().analysisStatus();
+            LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.state().toString());
@@ -94,7 +97,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
                     assertEquals("org.e2immu.analyser.testexample.Warnings_1.method1(java.lang.String)",
-                            d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location().info.fullyQualifiedName());
+                            location.info.fullyQualifiedName());
                     assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     if (d.iteration() >= 2) {
                         assertNotNull(d.haveError(Message.Label.IGNORING_RESULT_OF_METHOD_CALL));
@@ -104,7 +107,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("Warnings_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 assertEquals("org.e2immu.analyser.testexample.Warnings_1.Warnings_1()",
-                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location().info.fullyQualifiedName());
+                        location.info.fullyQualifiedName());
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -229,7 +232,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(Level.TRUE_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
+            assertEquals(DV.TRUE_DV, out.fieldAnalysis.get().getProperty(IGNORE_MODIFICATIONS));
 
             TypeInfo myself = typeMap.get(Warnings_1.class);
             MethodInfo constructor = myself.findConstructor(0);
@@ -411,10 +414,10 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
                 assertEquals(MultiLevel.NULLABLE_DV, parameterAnalysis.getProperty(NOT_NULL_EXPRESSION));
 
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertDv(d.p(0), 1, Level.FALSE_DV, MODIFIED_VARIABLE);
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertDv(d.p(0), 1, DV.FALSE_DV, MODIFIED_VARIABLE);
 
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -429,8 +432,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 else
                     assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 1, Level.FALSE_DV, MODIFIED_METHOD);
-                assertDv(d, 1, Level.TRUE_DV, FLUENT);
+                assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, FLUENT);
             }
         };
 
@@ -441,7 +444,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("s".equals(d.fieldInfo().name)) {
                 assertTrue(d.fieldInfo().owner.isPrivate());
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("s", d.fieldAnalysis().getValue().toString());
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
@@ -475,7 +478,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test7() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, Level.FALSE_DV, CONTAINER);
+                assertDv(d, 1, DV.FALSE_DV, CONTAINER);
             }
         };
 
@@ -486,7 +489,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if ("MustBeContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertTrue(d.methodInfo().methodResolution.get().overrides().isEmpty());
 
-                    assertEquals(Level.FALSE_DV, p0.getProperty(MODIFIED_VARIABLE));
+                    assertEquals(DV.FALSE_DV, p0.getProperty(MODIFIED_VARIABLE));
                     assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
                 }
 
@@ -495,7 +498,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 1, Level.TRUE_DV, MODIFIED_VARIABLE);
+                    assertDv(d, 1, DV.TRUE_DV, MODIFIED_VARIABLE);
 
                     // whatever happens, the set remains independent (the int added is independent)
                     assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));

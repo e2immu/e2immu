@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -80,7 +80,7 @@ public class Test_36_Cast extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? "return incrementedT:-1,this.t:0" : "this.t:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -98,16 +98,16 @@ public class Test_36_Cast extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("Cast_1".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

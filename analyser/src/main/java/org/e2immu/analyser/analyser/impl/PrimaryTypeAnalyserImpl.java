@@ -128,7 +128,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                     // finalizers are done early, before the first assignments
                     if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
                         ((TypeAnalysisImpl.Builder) typeAnalyser.getTypeAnalysis())
-                                .setProperty(Property.FINALIZER, Level.TRUE_DV);
+                                .setProperty(Property.FINALIZER, DV.TRUE_DV);
                     }
                 }
             });

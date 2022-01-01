@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -97,40 +98,40 @@ public interface AnalysisProvider {
 
 
     default DV isTransparentOrAtLeastEventuallyE2Immutable(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
-        if (parameterizedType.arrays > 0) return Level.FALSE_DV;
+        if (parameterizedType.arrays > 0) return DV.FALSE_DV;
         DV atLeastEventuallyE2Immutable = isAtLeastEventuallyE2Immutable(parameterizedType);
-        if (atLeastEventuallyE2Immutable.valueIsTrue()) return Level.TRUE_DV;
+        if (atLeastEventuallyE2Immutable.valueIsTrue()) return DV.TRUE_DV;
         DV transparent = isTransparent(parameterizedType, typeBeingAnalysed);
-        if (transparent.valueIsTrue()) return Level.TRUE_DV;
+        if (transparent.valueIsTrue()) return DV.TRUE_DV;
         if (transparent.isDelayed() || atLeastEventuallyE2Immutable.isDelayed()) {
             return transparent.min(atLeastEventuallyE2Immutable);
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
     private DV isAtLeastEventuallyE2Immutable(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType == null) return Level.FALSE_DV;
+        if (bestType == null) return DV.FALSE_DV;
         DV immutable = getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
-        return Level.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
+        return DV.fromBoolDv(MultiLevel.isAtLeastEventuallyE2Immutable(immutable));
     }
 
     default DV isTransparent(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
         TypeAnalysis typeAnalysis = getTypeAnalysis(typeBeingAnalysed);
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
-        if (hiddenContentTypes == null) return new CausesOfDelay.SimpleSet(new Location(typeBeingAnalysed),
+        if (hiddenContentTypes == null) return new SimpleSet(typeBeingAnalysed.newLocation(),
                 CauseOfDelay.Cause.HIDDEN_CONTENT);
-        return Level.fromBoolDv(hiddenContentTypes.contains(parameterizedType));
+        return DV.fromBoolDv(hiddenContentTypes.contains(parameterizedType));
     }
 
     default DV canBeModifiedInThisClass(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType == null) return Level.FALSE_DV;
+        if (bestType == null) return DV.FALSE_DV;
         DV immutable = getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
-        return Level.fromBoolDv(canBeModified);
+        return DV.fromBoolDv(canBeModified);
     }
 
 
@@ -181,7 +182,7 @@ public interface AnalysisProvider {
         }
         SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes(parameterizedType);
         if (hiddenContentTypes == null) {
-            return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.HIDDEN_CONTENT);
+            return bestType.delay(CauseOfDelay.Cause.HIDDEN_CONTENT);
         }
         return hiddenContentTypes.types().stream()
                 .map(pt -> defaultImmutable(pt, returnValueOfMethod))
@@ -237,11 +238,11 @@ public interface AnalysisProvider {
     default DV defaultContainer(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
-            return Level.TRUE_DV;
+            return DV.TRUE_DV;
         }
         if (bestType == null) {
             // unbound type parameter, null constant
-            return Level.FALSE_DV;
+            return DV.FALSE_DV;
         }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {
@@ -256,7 +257,7 @@ public interface AnalysisProvider {
 
 
     private static DV typeAnalysisNotAvailable(TypeInfo bestType) {
-        return new CausesOfDelay.SimpleSet(bestType, CauseOfDelay.Cause.TYPE_ANALYSIS);
+        return bestType.delay(CauseOfDelay.Cause.TYPE_ANALYSIS);
     }
 
 }

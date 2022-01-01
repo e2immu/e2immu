@@ -95,7 +95,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (propagateMod.valueIsTrue()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-            DV contextModifiedDelay = Level.fromBoolDv(modified .isDelayed());
+            DV contextModifiedDelay = DV.fromBoolDv(modified .isDelayed());
 
             Map<Property, DV> map = Map.of(
                     Property.CONTEXT_MODIFIED, modified,
@@ -136,10 +136,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-            case CONTAINER -> Level.TRUE_DV;
+            case CONTAINER -> DV.TRUE_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
 
-            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE_DV;
+            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> DV.FALSE_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
             default -> throw new UnsupportedOperationException("Property: " + property);
         };

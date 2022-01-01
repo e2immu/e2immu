@@ -18,6 +18,7 @@ import org.e2immu.annotation.*;
 import org.e2immu.support.Freezable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -29,6 +30,7 @@ import java.util.function.Predicate;
  */
 @E2Container(after = "frozen")
 public class DependencyGraph<T> extends Freezable {
+
     private static class Node<T> {
         List<T> dependsOn;
         final T t;
@@ -106,6 +108,30 @@ public class DependencyGraph<T> extends Freezable {
                 }
             });
         }
+    }
+
+    public Set<T> removeAsManyAsPossible(Set<T> set) {
+        AtomicBoolean changed = new AtomicBoolean(true);
+        while (changed.get()) {
+            changed.set(false);
+            set.removeIf(t -> {
+                Node<T> node = nodeMap.get(t);
+                assert node != null;
+                boolean remove = node.dependsOn == null || node.dependsOn.isEmpty() ||
+                        node.dependsOn.stream().noneMatch(set::contains);
+                if (remove) {
+                    changed.set(true);
+                }
+                return remove;
+            });
+        }
+        return set;
+    }
+
+    public List<T> getDependsOn(T t) {
+        Node<T> node = nodeMap.get(t);
+        assert node != null;
+        return node.dependsOn;
     }
 
     @NotNull

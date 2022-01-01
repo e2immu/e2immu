@@ -15,8 +15,9 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -78,7 +79,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid() &&
                 !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
-            parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
         }
 
         // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
@@ -118,13 +119,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // implicit @IgnoreModifications rule for java.util.function
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed() &&
                 parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)) {
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.TRUE_DV);
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.TRUE_DV);
         }
 
         if (parameterAnalysis.getProperty(MODIFIED_VARIABLE).isDelayed()) {
             DV contractIgnoreMod = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS);
             if (contractIgnoreMod.valueIsTrue()) {
-                parameterAnalysis.setProperty(MODIFIED_VARIABLE, Level.FALSE_DV);
+                parameterAnalysis.setProperty(MODIFIED_VARIABLE, DV.FALSE_DV);
             }
         }
 
@@ -140,7 +141,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
             // we wait until the other analyser has finished, since we need the properties it computes
-            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+            return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
         /*
          Because INDEPENDENT has not been set by ANALYSE_FIELD_ASSIGNMENTS, it cannot have been assigned to a field.
@@ -159,7 +160,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
-                    return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
+                    return new SimpleSet(new VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
                 }
                 List<FieldReference> fields = vi.getLinkedVariables().variables().entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && e.getValue().ge(LinkedVariables.INDEPENDENT1_DV))
@@ -214,7 +215,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
                     ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
                     return pa.getPropertyFromMapNeverDelay(Property.CONTAINER);
-                }).reduce(Level.FALSE_DV, DV::max);
+                }).reduce(DV.FALSE_DV, DV::max);
     }
 
     /**
@@ -226,7 +227,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         try {
             return analyserComponents.run(new SharedState(iteration));
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in parameter analyser, {}", new Location(parameterInfo));
+            LOGGER.warn("Caught exception in parameter analyser, {}", parameterInfo.newLocation());
             throw rte;
         }
     }
@@ -246,7 +247,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+            return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
@@ -477,7 +478,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION);
+            return parameterInfo.delay(CauseOfDelay.Cause.FIRST_ITERATION);
         }
 
         // context not null, context modified
@@ -511,7 +512,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private AnalysisStatus checkUnusedParameter(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
-            return new CausesOfDelay.SimpleSet(parameterInfo, CauseOfDelay.Cause.FIRST_ITERATION);
+            return parameterInfo.delay(CauseOfDelay.Cause.FIRST_ITERATION);
         }
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
@@ -521,9 +522,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (vi == null || !vi.isRead()) {
             // unused variable
             if (!parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
-                parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+                parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             }
-            parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+            parameterAnalysis.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
 
             // @NotNull
             if (!parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL)) {
@@ -534,7 +535,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             // @Container: handled separately
 
             // @IgnoreModifications
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.FALSE_DV);
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.FALSE_DV);
 
             // @Independent
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {
@@ -548,7 +549,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {
-                messages.add(Message.newMessage(new Location(parameterInfo.owner),
+                messages.add(Message.newMessage(parameterInfo.owner.newLocation(),
                         Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
             }
 

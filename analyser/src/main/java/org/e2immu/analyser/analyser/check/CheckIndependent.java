@@ -17,10 +17,8 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Messages;
 
 import java.util.function.Function;
@@ -53,7 +51,7 @@ public class CheckIndependent {
                 extractInspected,
                 levelString,
                 info.getInspection().getAnnotations(),
-                new Location(info));
+                info.newLocation());
     }
 
     static String levelString(Analysis analysis, Property property) {

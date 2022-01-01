@@ -12,27 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.analyser.delay;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
-/**
- * Properties have numeric values, according to a number of different encoding systems.
- * We try to keep these systems as close together as possible, using constants to allow for some flexibility of refactoring.
- */
-
-@UtilityClass
-public class Level {
-
-    private Level() {
-        throw new UnsupportedOperationException();
+public record SimpleCause(Location location, CauseOfDelay.Cause cause) implements CauseOfDelay {
+    public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
+        this(withInspectionAndAnalysis.newLocation(), cause);
     }
 
-    public static final DV FALSE_DV = new DV.NoDelay(0, "false");
-    public static final DV TRUE_DV = new DV.NoDelay(1, "true");
-
-    public static DV fromBoolDv(boolean b) {
-        return b ? TRUE_DV : FALSE_DV;
+    @Override
+    public String toString() {
+        return cause.label + "@" + location.toDelayString();
     }
 }

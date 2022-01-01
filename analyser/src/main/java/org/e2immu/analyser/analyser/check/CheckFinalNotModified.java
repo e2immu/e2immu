@@ -19,7 +19,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;
@@ -56,6 +56,6 @@ public class CheckFinalNotModified {
                 extractInspected,
                 mark,
                 fieldInfo.fieldInspection.get().getAnnotations(),
-                new Location(fieldInfo));
+                fieldInfo.newLocation());
     }
 }

@@ -15,10 +15,10 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -49,12 +49,12 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.haveMarkRead(STRING));
                     VariableInfoContainer stringVic = d.statementAnalysis().getVariable(STRING);
-                    assertEquals(Level.FALSE_DV, stringVic.getPreviousOrInitial().getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, stringVic.getPreviousOrInitial().getProperty(Property.CONTEXT_MODIFIED));
                     assertTrue(stringVic.hasEvaluation());
                     assertFalse(stringVic.hasMerge());
                     assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
                     assertEquals("this.string:0", stringVic.current().getLinkedVariables().toString());
-                    assertEquals(Level.FALSE_DV, stringVic.current().getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, stringVic.current().getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };

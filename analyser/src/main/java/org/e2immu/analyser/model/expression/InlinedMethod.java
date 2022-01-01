@@ -21,7 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
  Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
-public class InlinedMethod extends ElementImpl implements Expression {
+public class InlinedMethod extends BaseExpression implements Expression {
     private final MethodInfo methodInfo;
     private final Expression expression;
     private final Set<Variable> variablesOfExpression;
@@ -278,11 +278,11 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     if (valueProperties == null) {
                         replacement = DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
                                 evaluationContext.linkedVariables(variable)
-                                        .changeAllToDelay(new CausesOfDelay.SimpleSet(methodInfo, CauseOfDelay.Cause.TO_IMPLEMENT)),
+                                        .changeAllToDelay(methodInfo.delay(CauseOfDelay.Cause.TO_IMPLEMENT)),
                                 CausesOfDelay.EMPTY); // FIXME
                     } else {
                         replacement = Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
-                                Identifier.variable(variable))), variable.parameterizedType(), valueProperties);
+                                VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
                     }
                 }
 
@@ -442,7 +442,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         @Override
         public boolean notNullAccordingToConditionManager(Variable variable) {
-            return notNullAccordingToConditionManager(variable, fr -> evaluationContext.findOrThrow(fr));
+            return notNullAccordingToConditionManager(variable, evaluationContext::findOrThrow);
         }
 
         @Override

@@ -1,0 +1,99 @@
+/*
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.e2immu.analyser.analyser.delay;
+
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.util.WeightedGraph;
+
+import java.util.Objects;
+
+public record NoDelay(int value, String label) implements DV {
+
+    public static final String COMPUTED = "computed";
+
+    public NoDelay(int value) {
+        this(value, COMPUTED);
+    }
+
+    public NoDelay {
+        assert value >= 0;
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
+    public DV min(DV other) {
+        if (other.value() > value) return this;
+        // if other is a delay, its value is less than ours!
+        return other;
+    }
+
+    @Override
+    public DV max(DV other) {
+        if (this == MIN_INT_DV) return other;
+        if (other == MIN_INT_DV) return this;
+        if (other.value() >= value || other.isDelayed()) return other;
+        return this;
+    }
+
+    @Override
+    public DV maxIgnoreDelay(DV other) {
+        if (other.value() >= value) return other;
+        return this;
+    }
+
+    @Override
+    public DV replaceDelayBy(DV nonDelay) {
+        assert nonDelay.isDone();
+        return this;
+    }
+
+    @Override
+    public boolean isDone() {
+        return true;
+    }
+
+    @Override
+    public boolean isDelayed() {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return label + ":" + value;
+    }
+
+    @Override
+    public int compareTo(WeightedGraph.Weight o) {
+        return value - ((DV) o).value();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        org.e2immu.analyser.analyser.delay.NoDelay noDelay = (org.e2immu.analyser.analyser.delay.NoDelay) o;
+        return value == noDelay.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+}

@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -211,7 +213,7 @@ public class EvaluateMethodCall {
                 methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
             } else {
                 Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
-                        IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE_DV);
+                        IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, DV.FALSE_DV);
                 methodValue = Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
@@ -269,7 +271,7 @@ public class EvaluateMethodCall {
                     .merge(independent.causesOfDelay()).merge(container.causesOfDelay()));
         }
         Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, Level.FALSE_DV);
+                IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, DV.FALSE_DV);
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
 
@@ -315,8 +317,8 @@ public class EvaluateMethodCall {
                         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo(),
                                             iv.expression().returnType(), linkedVariables,
-                                            new CausesOfDelay.SimpleSet(
-                                                    new CauseOfDelay.SimpleCause(parameterAnalysis.location(),
+                                            new SimpleSet(
+                                                    new SimpleCause(parameterAnalysis.location(),
                                                             CauseOfDelay.Cause.ASSIGNED_TO_FIELD))))
                                     .build();
                         }
@@ -358,7 +360,7 @@ public class EvaluateMethodCall {
         if (expression instanceof MethodCall) {
             return evaluationContext.getProperty(expression, Property.MODIFIED_METHOD, false, false);
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
     private Expression valueAssistedByCompanion(EvaluationContext evaluationContext,

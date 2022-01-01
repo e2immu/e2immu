@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class And extends ElementImpl implements Expression {
+public class And extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final List<Expression> expressions;
 

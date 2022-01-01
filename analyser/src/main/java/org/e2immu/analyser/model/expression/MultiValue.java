@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -37,7 +38,7 @@ A final field can have been initialised with multiple different values; in some 
 it pays to keep track of all of them.
  */
 @E2Container
-public class MultiValue extends ElementImpl implements Expression {
+public class MultiValue extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;

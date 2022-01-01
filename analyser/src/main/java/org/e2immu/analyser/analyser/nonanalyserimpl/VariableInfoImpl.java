@@ -16,12 +16,11 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
@@ -99,7 +98,7 @@ public class VariableInfoImpl implements VariableInfo {
     }
 
     private static CausesOfDelay initialValue(Location location, Variable variable) {
-        return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
+        return new SimpleSet(new VariableCause(variable, location, CauseOfDelay.Cause.INITIAL_VALUE));
     }
 
     @Override
@@ -157,7 +156,7 @@ public class VariableInfoImpl implements VariableInfo {
     public DV getProperty(Property property) {
         DV dv = properties.getOrDefaultNull(property);
         if(dv == null) {
-            return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variable, location, property.causeOfDelay()));
+            return new SimpleSet(new VariableCause(variable, location, property.causeOfDelay()));
         }
         return dv;
     }
@@ -240,7 +239,7 @@ public class VariableInfoImpl implements VariableInfo {
     public void newVariable(boolean notNull) {
         setProperty(Property.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
                 .max(AnalysisProvider.defaultNotNull( variable.parameterizedType())));
-        setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+        setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
         setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);

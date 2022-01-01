@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -70,7 +70,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedLinked = d.iteration() <= 1 ? "?" : "";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         // links have not been established
                         assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
@@ -93,7 +93,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         String expectedLinked = d.iteration() <= 1 ? "?" : "";
                         assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
 
                         // links have not been established
@@ -125,7 +125,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 }
             }
             if ("isEmpty".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -203,7 +203,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_4() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("j2".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
@@ -233,11 +233,11 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_5() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("j2".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("null", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("j1".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
         testClass("OutputBuilderSimplified_5", 0, 0, new DebugConfiguration.Builder()
@@ -307,7 +307,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     public void test_9() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         testClass("OutputBuilderSimplified_9", 0, 0, new DebugConfiguration.Builder()
@@ -340,13 +340,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("countMid".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 

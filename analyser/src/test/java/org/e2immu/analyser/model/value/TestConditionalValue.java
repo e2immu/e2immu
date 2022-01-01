@@ -15,10 +15,12 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.junit.jupiter.api.Test;
 
@@ -230,7 +232,7 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void testReturnType() {
-        CausesOfDelay delay = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+        CausesOfDelay delay = new SimpleSet(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
         Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType(), LinkedVariables.delayedEmpty(delay), delay);
         ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo().asParameterizedType(InspectionProvider.DEFAULT);
         Expression b = new UnknownExpression(boxed, "return value");

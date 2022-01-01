@@ -48,7 +48,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     @Override
     public Location location() {
-        return new Location(parameterInfo);
+        return parameterInfo.newLocation();
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
@@ -61,7 +61,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
             super(primitives, parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
-            this.location = new Location(parameterInfo);
+            this.location = parameterInfo.newLocation();
             this.analysisProvider = analysisProvider;
         }
 

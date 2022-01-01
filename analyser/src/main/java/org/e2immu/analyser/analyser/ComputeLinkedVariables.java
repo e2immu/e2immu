@@ -14,9 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.This;
@@ -97,7 +98,7 @@ public class ComputeLinkedVariables {
                         analysisProvider.immutableOfHiddenContent(v.parameterizedType(), true);
                 Function<Variable, DV> immutableCanBeIncreasedByTypeParameters = v -> {
                     TypeInfo bestType = v.parameterizedType().bestTypeInfo();
-                    if (bestType == null) return Level.TRUE_DV;
+                    if (bestType == null) return DV.TRUE_DV;
                     TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
                     return typeAnalysis.immutableCanBeIncreasedByTypeParameters();
                 };
@@ -119,7 +120,7 @@ public class ComputeLinkedVariables {
                 if (curated.isDelayed()) {
                     curated.variables().forEach((v, value) -> {
                         if (value.isDelayed()) {
-                            delaysInClustering.add(new CauseOfDelay.VariableCause(v, statementAnalysis.location(), CauseOfDelay.Cause.LINKING));
+                            delaysInClustering.add(new VariableCause(v, statementAnalysis.location(), CauseOfDelay.Cause.LINKING));
                             value.causesOfDelay().causesStream().forEach(delaysInClustering::add);
                         }
                     });
@@ -132,7 +133,7 @@ public class ComputeLinkedVariables {
         List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables,
                 DV.MIN_INT_DV, LinkedVariables.DEPENDENT_DV);
         return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
-                clustersDependent, CausesOfDelay.from(delaysInClustering));
+                clustersDependent, SimpleSet.from(delaysInClustering));
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,
@@ -181,7 +182,7 @@ public class ComputeLinkedVariables {
                     // IMPORTANT: property has to be present, or we get a null pointer!
                     .map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
-                    .reduce(Level.FALSE_DV, DV::max);
+                    .reduce(DV.FALSE_DV, DV::max);
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
             }

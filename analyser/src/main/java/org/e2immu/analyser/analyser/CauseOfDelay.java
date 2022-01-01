@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.model.variable.Variable;
 
 public interface CauseOfDelay {
 
@@ -81,29 +79,8 @@ public interface CauseOfDelay {
         }
     }
 
-    default Variable variable() {
-        return null;
-    }
-
     Cause cause();
 
     Location location();
 
-    record SimpleCause(Location location, Cause cause) implements CauseOfDelay {
-        public SimpleCause(WithInspectionAndAnalysis withInspectionAndAnalysis, Cause cause) {
-            this(new Location(withInspectionAndAnalysis), cause);
-        }
-
-        @Override
-        public String toString() {
-            return cause.label + "@" + location.toDelayString();
-        }
-    }
-
-    record VariableCause(Variable variable, Location location, Cause cause) implements CauseOfDelay {
-        @Override
-        public String toString() {
-            return cause.label + ":" + variable.debug() + "@" + location.toDelayString();
-        }
-    }
 }

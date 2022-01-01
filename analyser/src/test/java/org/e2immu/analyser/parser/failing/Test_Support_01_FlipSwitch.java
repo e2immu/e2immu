@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -44,7 +44,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
     public void test() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("isSet".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }

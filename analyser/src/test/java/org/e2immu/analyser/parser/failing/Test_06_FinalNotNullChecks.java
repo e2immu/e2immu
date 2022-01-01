@@ -46,12 +46,12 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("debug".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, 2, Level.TRUE_DV, FINAL);
+                assertDv(d, 2, DV.TRUE_DV, FINAL);
                 String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
-                assertDv(d, 2, Level.TRUE_DV, FINAL);
+                assertDv(d, 2, DV.TRUE_DV, FINAL);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
                 assertEquals(expectValue, d.currentValue().toString());
@@ -113,7 +113,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                     1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                     requireNonNull.methodAnalysis.get().getProperty(NOT_NULL_EXPRESSION));
-            assertEquals(Level.TRUE_DV, requireNonNull.methodAnalysis.get().getProperty(IDENTITY));
+            assertEquals(DV.TRUE_DV, requireNonNull.methodAnalysis.get().getProperty(IDENTITY));
             ParameterInfo parameterInfo = requireNonNull.methodInspection.get().getParameters().get(0);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                     parameterInfo.parameterAnalysis.get().getProperty(NOT_NULL_PARAMETER));
@@ -122,7 +122,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             assertEquals("input", d.fieldInfo().name);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-            assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
+            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
             assertEquals("param/*@NotNull*/", d.fieldAnalysis().getValue().toString());
         };
 

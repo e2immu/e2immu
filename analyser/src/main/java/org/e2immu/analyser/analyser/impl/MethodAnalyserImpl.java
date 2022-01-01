@@ -16,11 +16,13 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -194,7 +196,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                 boolean complain = property == Property.MODIFIED_METHOD ?
                         value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
-                    messages.add(Message.newMessage(new Location(methodInfo),
+                    messages.add(Message.newMessage(methodInfo.newLocation(),
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, property.name));
                 }
             }
@@ -203,7 +205,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(new Location(methodInfo),
+            Message error = Message.newMessage(methodInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
@@ -228,7 +230,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     @Override
     public CausesOfDelay fromFieldToParametersStatus() {
         return parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
-                .map(pa -> (CausesOfDelay) new CausesOfDelay.SimpleSet(pa.getParameterAnalysis().location(),
+                .map(pa -> (CausesOfDelay) new SimpleSet(pa.getParameterAnalysis().location(),
                         CauseOfDelay.Cause.ASSIGNED_TO_FIELD))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }

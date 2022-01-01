@@ -15,10 +15,12 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.output.*;
@@ -30,7 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class Lambda extends ElementImpl implements Expression {
+public class Lambda extends BaseExpression implements Expression {
     public enum OutputVariant {
         TYPED, // (@Modified X x, Y y) -> ...
         VAR,   // (var x, @NotNull var y) -> ...
@@ -194,9 +196,9 @@ public class Lambda extends ElementImpl implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            CausesOfDelay.SimpleSet pt = new CausesOfDelay.SimpleSet(evaluationContext.getCurrentType(), CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
-            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(pt),
-                    new CausesOfDelay.SimpleSet(new CauseOfDelay.SimpleCause(evaluationContext.getCurrentType(),
+            CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
+            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
+                    new SimpleSet(new SimpleCause(evaluationContext.getCurrentType(),
                             CauseOfDelay.Cause.TYPE_ANALYSIS)));
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
@@ -212,7 +214,7 @@ public class Lambda extends ElementImpl implements Expression {
             } else {
                 Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         // FIXME need more here
-                        Property.IDENTITY, Level.FALSE_DV);
+                        Property.IDENTITY, DV.FALSE_DV);
                 result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);

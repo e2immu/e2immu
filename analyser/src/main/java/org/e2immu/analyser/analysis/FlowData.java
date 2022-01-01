@@ -15,8 +15,10 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.NoDelay;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.util.Logger;
@@ -56,8 +58,8 @@ public class FlowData {
 
     public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
 
-    public FlowData(Location location) {
-        CausesOfDelay initialDelay = new CausesOfDelay.SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
+    public FlowData(LocationImpl location) {
+        CausesOfDelay initialDelay = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
         guaranteedToBeReachedInCurrentBlock = new VariableFirstThen<>(initialDelay);
         guaranteedToBeReachedInMethod = new VariableFirstThen<>(initialDelay);
         interruptsFlow = new VariableFirstThen<>(initialDelay);
@@ -228,10 +230,10 @@ public class FlowData {
         return interruptsFlow.isSet() && ALWAYS.equals(interruptsFlow.get().get(ESCAPE));
     }
 
-    public static final DV DEFAULT_EXECUTION = new DV.NoDelay(3);
-    public static final DV ALWAYS = new DV.NoDelay(2);
-    public static final DV CONDITIONALLY = new DV.NoDelay(1);
-    public static final DV NEVER = new DV.NoDelay(0);
+    public static final DV DEFAULT_EXECUTION = new NoDelay(3);
+    public static final DV ALWAYS = new NoDelay(2);
+    public static final DV CONDITIONALLY = new NoDelay(1);
+    public static final DV NEVER = new NoDelay(0);
 
     /**
      * Call occurs before the actual analysis of the statement.

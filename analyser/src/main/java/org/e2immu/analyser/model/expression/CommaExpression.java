@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -27,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CommaExpression extends ElementImpl implements Expression {
+public class CommaExpression extends BaseExpression implements Expression {
 
     private final List<Expression> expressions;
 

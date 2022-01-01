@@ -15,7 +15,11 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -136,4 +140,8 @@ public interface WithInspectionAndAnalysis {
     }
 
     String niceClassName();
+
+    Location newLocation();
+
+    CausesOfDelay delay(CauseOfDelay.Cause cause);
 }

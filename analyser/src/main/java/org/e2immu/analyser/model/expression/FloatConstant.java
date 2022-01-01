@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -28,7 +29,15 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record FloatConstant(Primitives primitives, float constant) implements ConstantExpression<Float>, Numeric {
+public final class FloatConstant extends BaseExpression implements ConstantExpression<Float>, Numeric {
+    private final Primitives primitives;
+    private final float constant;
+
+    public FloatConstant(Primitives primitives, float constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     @Override
     @NotNull
@@ -89,8 +98,12 @@ public record FloatConstant(Primitives primitives, float constant) implements Co
         return true;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public Primitives primitives() {
+        return primitives;
     }
+
+    public float constant() {
+        return constant;
+    }
+
 }

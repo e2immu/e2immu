@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class UnaryOperator extends ElementImpl implements Expression {
+public class UnaryOperator extends BaseExpression implements Expression {
     public final Expression expression;
     public final Precedence precedence;
     public final MethodInfo operator;

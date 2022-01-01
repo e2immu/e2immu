@@ -14,14 +14,13 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -334,5 +333,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
         }
         return map;
+    }
+
+    @Override
+    public Location newLocation() {
+        return new LocationImpl(this);
+    }
+
+    @Override
+    public CausesOfDelay delay(CauseOfDelay.Cause cause) {
+        return new SimpleSet(newLocation(), cause);
     }
 }

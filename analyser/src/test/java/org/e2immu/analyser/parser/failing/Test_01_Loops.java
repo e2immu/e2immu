@@ -23,7 +23,6 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
@@ -758,7 +757,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("java.time.ZoneOffset.UTC:0", d.variableInfo().getLinkedVariables().toString());
 
-                        assertEquals(Level.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertEquals(DV.TRUE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
                 }
                 if ("result".equals(d.variableName())) {
@@ -801,13 +800,13 @@ public class Test_01_Loops extends CommonTestRunner {
             TypeInfo typeInfo = typeMap.get(LocalDateTime.class);
             MethodInfo now = typeInfo.findUniqueMethod("now", 0);
             assertTrue(now.methodInspection.get().isStatic());
-            assertEquals(Level.FALSE_DV, now.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, now.methodAnalysis.get().getProperty(MODIFIED_METHOD));
             TypeInfo chrono = typeMap.get(ChronoLocalDateTime.class);
             MethodInfo toInstant = chrono.findUniqueMethod("toInstant", 1);
             assertFalse(toInstant.methodInspection.get().isStatic());
-            assertEquals(Level.FALSE_DV, toInstant.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, toInstant.methodAnalysis.get().getProperty(MODIFIED_METHOD));
             ParameterAnalysis utc = toInstant.parameterAnalysis(0);
-            assertEquals(Level.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
+            assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
 
         // potential null pointer exception

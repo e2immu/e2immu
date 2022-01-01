@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -78,7 +77,7 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
         Map<Property, DV> map = new HashMap<>();
         map.put(Property.CONTEXT_MODIFIED,
-                properties.getOrDefault(Property.CONTEXT_MODIFIED, Level.FALSE_DV));
+                properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV));
         map.put(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return new ForwardEvaluationInfo(map, true, assignmentTarget);
     }

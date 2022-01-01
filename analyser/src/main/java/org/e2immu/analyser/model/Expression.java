@@ -16,12 +16,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
+import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
@@ -30,7 +27,6 @@ import org.e2immu.annotation.NotModified;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 @E2Container
@@ -63,15 +59,10 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
-    default boolean isReturnValue() {
-        UnknownExpression ue = asInstanceOf(UnknownExpression.class);
-        return ue != null && UnknownExpression.RETURN_VALUE.equals(ue.msg());
-    }
+    boolean isReturnValue();
 
     @Override
-    default int compareTo(Expression v) {
-        return ExpressionComparator.SINGLETON.compare(this, v);
-    }
+    int compareTo(Expression v);
 
     default int internalCompareTo(Expression v) {
         return 0;
@@ -115,46 +106,19 @@ public interface Expression extends Element, Comparable<Expression> {
         return LinkedVariables.EMPTY;
     }
 
-    default boolean isNotNull() {
-        Negation negatedValue = asInstanceOf(Negation.class);
-        return negatedValue != null && negatedValue.expression.isInstanceOf(NullConstant.class);
-    }
+    boolean isNotNull();
 
-    default boolean isNull() {
-        return isInstanceOf(NullConstant.class);
-    }
+    boolean isNull();
 
-    default boolean equalsNull() {
-        if (this instanceof Negation) return false;
-        Equals equals;
-        if ((equals = asInstanceOf(Equals.class)) != null) {
-            return equals.lhs.isNull();
-        }
-        return false;
-    }
+    boolean equalsNull();
 
-    default boolean equalsNotNull() {
-        if (!(this instanceof Negation negation)) return false;
-        Equals equals;
-        if ((equals = negation.expression.asInstanceOf(Equals.class)) != null) {
-            return equals.lhs.isNull();
-        }
-        return false;
-    }
+    boolean equalsNotNull();
 
-    default boolean isComputeProperties() {
-        return !(this instanceof UnknownExpression);
-    }
+    boolean isComputeProperties();
 
-    default boolean isBoolValueTrue() {
-        BooleanConstant boolValue;
-        return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && boolValue.getValue();
-    }
+    boolean isBoolValueTrue();
 
-    default boolean isBoolValueFalse() {
-        BooleanConstant boolValue;
-        return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
-    }
+    boolean isBoolValueFalse();
 
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
@@ -177,13 +141,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return expression.output(qualification);
     }
 
-    default boolean isInitialReturnExpression() {
-        return this instanceof UnknownExpression unknownExpression && unknownExpression.msg().equals(UnknownExpression.RETURN_VALUE);
-    }
+    boolean isInitialReturnExpression();
 
-    default boolean isBooleanConstant() {
-        return isInstanceOf(BooleanConstant.class);
-    }
+    boolean isBooleanConstant();
 
     default Expression removeAllReturnValueParts() {
         throw new UnsupportedOperationException("Implement! " + getClass());
@@ -202,31 +162,9 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
 
-    default Expression stateTranslateThisTo(FieldReference fieldReference) {
-        Expression state = state();
-        if (state.isBooleanConstant()) return state;
-        // the "this" in the state can belong to the type of the object, or any of its super types
-        This thisVar = findThis();
-        return state.translate(new TranslationMapImpl.Builder().put(thisVar, fieldReference).build());
-    }
+    Expression stateTranslateThisTo(FieldReference fieldReference);
 
-    private This findThis() {
-        AtomicReference<This> thisVar = new AtomicReference<>();
-        state().visit(e -> {
-            VariableExpression ve;
-            if ((ve = e.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This tv) {
-                thisVar.set(tv);
-                return false;
-            }
-            return true;
-        });
-        return thisVar.get();
-    }
-
-    default Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
-        return DelayedExpression.forDelayedValueProperties(returnType(),
-                linkedVariables(evaluationContext).changeAllToDelay(causes), causes);
-    }
+    Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes);
 
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;

@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -125,7 +125,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
             }

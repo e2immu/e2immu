@@ -21,7 +21,6 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
@@ -94,7 +93,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis()
                         .getProperty(Property.EXTERNAL_NOT_NULL));
                 assertEquals("in", d.fieldAnalysis().getValue().toString());
@@ -168,7 +167,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertEquals("false", srv.toString());
                     DV modified = d.methodAnalysis().getProperty(Property.MODIFIED_METHOD);
-                    assertEquals(Level.FALSE_DV, modified);
+                    assertEquals(DV.FALSE_DV, modified);
                 }
             }
             if ("print".equals(d.methodInfo().name)) {

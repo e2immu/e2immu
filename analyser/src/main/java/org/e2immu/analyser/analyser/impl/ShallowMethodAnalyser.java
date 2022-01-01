@@ -65,7 +65,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     annotations, e2));
             if (explicitlyEmpty) {
-                builder.setProperty(Property.MODIFIED_VARIABLE, Level.FALSE_DV);
+                builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
                 builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             }
         });
@@ -79,7 +79,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.preconditionForEventual.set(Optional.empty());
 
         if (explicitlyEmpty) {
-            DV modified = methodInfo.isConstructor ? Level.TRUE_DV : Level.FALSE_DV;
+            DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
             methodAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             computeMethodPropertiesAfterParameters();
@@ -127,7 +127,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     private DV computeParameterIgnoreModification(ParameterAnalysisImpl.Builder builder) {
-        return Level.fromBoolDv(builder.getParameterInfo().parameterizedType.isAbstractInJavaUtilFunction(analyserContext));
+        return DV.fromBoolDv(builder.getParameterInfo().parameterizedType.isAbstractInJavaUtilFunction(analyserContext));
     }
 
     private DV computeNotNullParameter(ParameterAnalysisImpl.Builder builder) {
@@ -141,7 +141,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     @Container on parameters needs to be contracted; but it does inherit
      */
     private DV computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
-        return Level.FALSE_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
+        return DV.FALSE_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
     }
 
     private void computeMethodPropertiesAfterParameters() {
@@ -184,27 +184,27 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private DV computeMethodContainer() {
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid() || returnType.isUnboundTypeParameter()) {
-            return Level.TRUE_DV;
+            return DV.TRUE_DV;
         }
         if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
         TypeInfo bestType = returnType.bestTypeInfo();
-        if (bestType == null) return Level.TRUE_DV; // unbound type parameter
+        if (bestType == null) return DV.TRUE_DV; // unbound type parameter
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
         DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getProperty(Property.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(Property.CONTAINER);
-        return Level.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
+        return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
     }
 
     private DV computeModifiedMethod() {
-        if (methodInfo.isConstructor) return Level.TRUE_DV;
-        return Level.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD));
+        if (methodInfo.isConstructor) return DV.TRUE_DV;
+        return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD));
     }
 
     private DV computeMethodImmutable() {
         ParameterizedType returnType = methodInspection.getReturnType();
         DV immutable = analyserContext.defaultImmutable(returnType, true);
         if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
-            messages.add(Message.newMessage(new Location(methodInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
+            messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                     returnType.toString()));
             return MultiLevel.MUTABLE_DV;
         }
@@ -220,26 +220,26 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (inMap.isDelayed()) {
             DV value;
             if (typeContainer.valueIsTrue()) {
-                value = Level.FALSE_DV;
+                value = DV.FALSE_DV;
             } else if (override.isDone()) {
                 value = override;
             } else {
                 ParameterizedType type = builder.getParameterInfo().parameterizedType;
                 if (type.isPrimitiveExcludingVoid() || type.isJavaLangString()) {
-                    value = Level.FALSE_DV;
+                    value = DV.FALSE_DV;
                 } else {
                     DV typeIndependent = analyserContext.defaultIndependent(type);
-                    value = Level.fromBoolDv(!typeIndependent.equals(MultiLevel.INDEPENDENT_DV));
+                    value = DV.fromBoolDv(!typeIndependent.equals(MultiLevel.INDEPENDENT_DV));
                 }
             }
             builder.setProperty(Property.MODIFIED_VARIABLE, value);
         } else if (override.valueIsFalse() && inMap.valueIsTrue()) {
-            messages.add(Message.newMessage(new Location(builder.getParameterInfo()),
+            messages.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                     Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                     "Override was non-modifying, while this parameter is modifying"));
         } else if (typeContainer.valueIsTrue() && inMap.valueIsTrue()) {
             if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
-                messages.add(Message.newMessage(new Location(builder.getParameterInfo()),
+                messages.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                         Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
             }
         }
@@ -285,7 +285,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 .map(ma -> ma.getProperty(Property.INDEPENDENT))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (overloads != DV.MAX_INT_DV && finalValue.lt(overloads)) {
-            messages.add(Message.newMessage(new Location(methodInfo),
+            messages.add(Message.newMessage(methodInfo.newLocation(),
                     Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT,
                     finalValue.label() + " instead of " + overloads.label()));
         }
@@ -331,7 +331,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             if (typeAnalysis != null) {
                 return typeAnalysis.getProperty(Property.INDEPENDENT);
             }
-            messages.add(Message.newMessage(new Location(methodInfo),
+            messages.add(Message.newMessage(methodInfo.newLocation(),
                     Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
             return MultiLevel.DEPENDENT_DV;
         }

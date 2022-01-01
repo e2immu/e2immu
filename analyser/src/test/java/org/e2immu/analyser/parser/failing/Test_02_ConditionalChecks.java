@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.Variable;
@@ -162,7 +161,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index());
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
                 assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -425,7 +424,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("i".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
             }
         };
 

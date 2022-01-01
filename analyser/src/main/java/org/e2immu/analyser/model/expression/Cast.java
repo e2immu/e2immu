@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class Cast extends ElementImpl implements Expression {
+public class Cast extends BaseExpression implements Expression {
 
     private final Expression expression;
     private final ParameterizedType parameterizedType;

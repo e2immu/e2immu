@@ -14,15 +14,16 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
@@ -73,7 +74,7 @@ public abstract class CommonAnnotatedAPI {
         errors.forEach(e -> LOGGER.info("Error: " + e));
         // we do expect some
         long ownErrors = errors.stream()
-                .filter(m -> m.location().info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
+                .filter(m -> ((LocationImpl)m.location()).info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
                 .peek(m -> LOGGER.info("OWN ERROR: {}", m))
                 .count();
         assertEquals(0L, ownErrors);
@@ -81,13 +82,13 @@ public abstract class CommonAnnotatedAPI {
 
     protected void testERContainerType(TypeAnalysis typeAnalysis) {
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
 
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.IDENTITY));

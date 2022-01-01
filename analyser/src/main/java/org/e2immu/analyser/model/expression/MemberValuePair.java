@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -30,9 +31,17 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public record MemberValuePair(String name, EventuallyFinal<Expression> value) implements Expression {
+public final class MemberValuePair extends BaseExpression implements Expression {
 
     public static final String VALUE = "value";
+    private final String name;
+    private final EventuallyFinal<Expression> value;
+
+    public MemberValuePair(String name, EventuallyFinal<Expression> value) {
+        super(Identifier.CONSTANT);
+        this.name = name;
+        this.value = value;
+    }
 
     public MemberValuePair(@NotNull Expression value) {
         this(VALUE, value);
@@ -40,7 +49,7 @@ public record MemberValuePair(String name, EventuallyFinal<Expression> value) im
 
     public MemberValuePair(@NotNull String name, @NotNull Expression value) {
         this(name, new EventuallyFinal<>());
-        if(value instanceof UnevaluatedAnnotationParameterValue) {
+        if (value instanceof UnevaluatedAnnotationParameterValue) {
             this.value.setVariable(value);
         } else {
             this.value.setFinal(value);
@@ -97,8 +106,19 @@ public record MemberValuePair(String name, EventuallyFinal<Expression> value) im
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public String name() {
+        return name;
     }
+
+    public EventuallyFinal<Expression> value() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return "MemberValuePair[" +
+                "name=" + name + ", " +
+                "value=" + value + ']';
+    }
+
 }

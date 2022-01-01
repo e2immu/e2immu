@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -28,14 +29,22 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public record PropertyWrapper(Expression expression,
-                              Expression state,
-                              Map<Property, DV> properties,
-                              LinkedVariables linkedVariables,
-                              ParameterizedType castType) implements Expression, ExpressionWrapper {
+public final class PropertyWrapper extends BaseExpression implements Expression, ExpressionWrapper {
+    private final Expression expression;
+    private final Expression state;
+    private final Map<Property, DV> properties;
+    private final LinkedVariables linkedVariables;
+    private final ParameterizedType castType;
 
-    public PropertyWrapper {
+
+    public PropertyWrapper(Expression expression, Expression state, Map<Property, DV> properties, LinkedVariables linkedVariables, ParameterizedType castType) {
+        super(expression.getIdentifier());
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
+        this.expression = expression;
+        this.state = state;
+        this.properties = properties;
+        this.linkedVariables = linkedVariables;
+        this.castType = castType;
     }
 
     @Override
@@ -254,16 +263,10 @@ public record PropertyWrapper(Expression expression,
     }
 
     @Override
-    public Identifier getIdentifier() {
-        return expression.getIdentifier();
-    }
-
-    @Override
     public boolean hasState() {
         return state != null && !(state instanceof BooleanConstant bc && bc.constant());
     }
 
-    @Override
     public Expression state() {
         return state;
     }
@@ -272,4 +275,21 @@ public record PropertyWrapper(Expression expression,
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay();
     }
+
+    public Expression expression() {
+        return expression;
+    }
+
+    public Map<Property, DV> properties() {
+        return properties;
+    }
+
+    public LinkedVariables linkedVariables() {
+        return linkedVariables;
+    }
+
+    public ParameterizedType castType() {
+        return castType;
+    }
+
 }

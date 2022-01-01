@@ -86,7 +86,7 @@ public class Test_52_Var extends CommonTestRunner {
 
                 // @NotNull on parameter of apply
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("repeater".equals(d.methodInfo().name)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
@@ -99,7 +99,7 @@ public class Test_52_Var extends CommonTestRunner {
                         assertTrue(inlinedMethod.variables().stream().allMatch(v -> v instanceof ParameterInfo));
                     } else fail();
                 } else fail();
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
         // no annotated API, so we have no idea if repeater is @NotNull or not -> repeater(3) may return null

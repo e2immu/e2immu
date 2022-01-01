@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -68,7 +69,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
@@ -124,7 +125,7 @@ public class Test_26_Enum extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.CONTEXT_IMMUTABLE));
-                        assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -154,7 +155,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo math = typeMap.get(Math.class);
             MethodInfo max = math.findUniqueMethod("max", 2);
-            assertEquals(Level.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -247,7 +248,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.CONSTANT);
+                assertDv(d, 1, DV.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -262,12 +263,12 @@ public class Test_26_Enum extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("THREE".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONSTANT));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONSTANT));
             }
             if ("cnt".equals(d.fieldInfo().name)) {
                 assertEquals("cnt", d.fieldAnalysis().getValue().toString());
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
             }
         };
 

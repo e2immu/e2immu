@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -21,6 +22,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,7 +84,7 @@ public class TestAnnotatedXML {
 
         long javaLangErrors = messages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
-                .filter(m -> !m.location().info.getTypeInfo().packageName().startsWith("java.lang"))
+                .filter(m -> !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
         LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
         assertEquals(0L, javaLangErrors);
@@ -93,13 +95,13 @@ public class TestAnnotatedXML {
     public void testObjectEquals() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
-        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         MethodInfo equals = object.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -109,13 +111,13 @@ public class TestAnnotatedXML {
     public void testOptionalEquals() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         MethodInfo equals = optional.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 

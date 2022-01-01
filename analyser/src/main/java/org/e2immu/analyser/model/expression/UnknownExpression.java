@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -26,7 +27,7 @@ import java.util.Objects;
 /**
  * Contains "some value".
  */
-public class UnknownExpression extends ElementImpl implements Expression {
+public class UnknownExpression extends BaseExpression implements Expression {
 
     public static final String RETURN_VALUE = "return value";
     public static final String VARIABLE = "variable value";
@@ -67,12 +68,12 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case INDEPENDENT:
                 return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.INDEPENDENT);
             case CONTAINER:
-                return typeAnalysis == null ? Level.FALSE_DV : typeAnalysis.getProperty(Property.CONTAINER);
+                return typeAnalysis == null ? DV.FALSE_DV : typeAnalysis.getProperty(Property.CONTAINER);
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
             case IDENTITY:
-                return Level.FALSE_DV;
+                return DV.FALSE_DV;
         }
         throw new UnsupportedOperationException("No info about " + property + " for primitive");
     }
@@ -82,12 +83,12 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case CONTAINER:
-                return Level.TRUE_DV;
+                return DV.TRUE_DV;
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTEXT_MODIFIED:
             case IDENTITY:
-                return Level.FALSE_DV;
+                return DV.FALSE_DV;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT_DV;
         }

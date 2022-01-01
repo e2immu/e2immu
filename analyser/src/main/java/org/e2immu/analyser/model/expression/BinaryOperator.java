@@ -18,7 +18,7 @@ import com.github.javaparser.ast.expr.BinaryExpr;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -54,7 +54,7 @@ import static org.e2immu.analyser.model.expression.Precedence.*;
  * precedence 3: || logical OR
  */
 @E2Container
-public class BinaryOperator extends ElementImpl implements Expression {
+public class BinaryOperator extends BaseExpression implements Expression {
     protected final Primitives primitives;
     public final Expression lhs;
     public final Expression rhs;
@@ -157,9 +157,9 @@ public class BinaryOperator extends ElementImpl implements Expression {
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
             if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true) && r instanceof IsVariableExpression ve) {
-                builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE_DV);
+                builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true) && l instanceof IsVariableExpression ve) {
-                builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE_DV);
+                builder.setProperty(ve.variable(), Property.CANDIDATE_FOR_NULL_PTR_WARNING, DV.TRUE_DV);
             }
             return Equals.equals(identifier, evaluationContext, l, r);
         }

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 
 public enum Property {
@@ -134,13 +133,13 @@ public enum Property {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL),
+    FINAL("@Final", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.FIELD_FINAL),
     FINALIZER("@Finalizer", CauseOfDelay.Cause.FINALIZER),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
-    CONTAINER("@Container", Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, CauseOfDelay.Cause.CONTAINER),
+    CONTAINER("@Container", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.CONTAINER),
     CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
     IDENTITY("@Identity", CauseOfDelay.Cause.IDENTITY),
@@ -156,7 +155,7 @@ public enum Property {
     public final CauseOfDelay.Cause cause;
 
     Property(String name, CauseOfDelay.Cause cause) {
-        this(name, Level.FALSE_DV, Level.TRUE_DV, Level.FALSE_DV, cause);
+        this(name, DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, cause);
     }
 
     Property(String name,

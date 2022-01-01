@@ -14,22 +14,15 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.util.WeightedGraph;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface CausesOfDelay extends DV, AnalysisStatus {
 
     CausesOfDelay EMPTY = new SimpleSet(Set.of());
-
-    static CausesOfDelay from(Set<CauseOfDelay> causes) {
-        return causes.isEmpty() ? EMPTY : new SimpleSet(causes);
-    }
 
     boolean contains(Variable variable);
 
@@ -37,133 +30,4 @@ public interface CausesOfDelay extends DV, AnalysisStatus {
 
     Stream<CauseOfDelay> causesStream();
 
-    record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfDelay {
-
-        public SimpleSet(WithInspectionAndAnalysis withInspectionAndAnalysis, CauseOfDelay.Cause cause) {
-            this(new CauseOfDelay.SimpleCause(new Location(withInspectionAndAnalysis), cause));
-        }
-
-        public SimpleSet(Location location, CauseOfDelay.Cause cause) {
-            this(new CauseOfDelay.SimpleCause(location, cause));
-        }
-
-        public SimpleSet(CauseOfDelay cause) {
-            this(Set.of(cause));
-        }
-
-        @Override
-        public String label() {
-            throw new UnsupportedOperationException("No label for delays");
-        }
-
-        @Override
-        public CausesOfDelay merge(CausesOfDelay other) {
-            if (other.isDone()) return this;
-            if (isDone()) return other;
-            return new SimpleSet(Stream.concat(causesStream(), other.causesStream())
-                    .collect(Collectors.toUnmodifiableSet()));
-        }
-
-        @Override
-        public boolean contains(Variable variable) {
-            return causes.stream().anyMatch(c -> variable.equals(c.variable()));
-        }
-
-        @Override
-        public Stream<CauseOfDelay> causesStream() {
-            return causes.stream();
-        }
-
-        @Override
-        public int pos() {
-            return 1;
-        }
-
-        @Override
-        public boolean isDelayed() {
-            return !causes.isEmpty();
-        }
-
-        @Override
-        public boolean isProgress() {
-            return false;
-        }
-
-        @Override
-        public boolean isDone() {
-            return causes.isEmpty();
-        }
-
-        @Override
-        public int value() {
-            return -1;
-        }
-
-        @Override
-        public CausesOfDelay causesOfDelay() {
-            return this;
-        }
-
-        @Override
-        public AnalysisStatus addProgress(boolean progress) {
-            if (progress) {
-                return new ProgressWrapper(this);
-            }
-            return this;
-        }
-
-        @Override
-        public DV min(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            // other is not delayed
-            return this;
-        }
-
-        private DV merge(DV other) {
-            return new CausesOfDelay.SimpleSet(Stream.concat(causesStream(),
-                    other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));
-        }
-
-        @Override
-        public DV max(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            return this; // other is not a delay
-        }
-
-        @Override
-        public DV maxIgnoreDelay(DV other) {
-            if (other.isDelayed()) {
-                return merge(other);
-            }
-            return other; // other is not a delay
-        }
-
-        @Override
-        public DV replaceDelayBy(DV nonDelay) {
-            assert nonDelay.isDone();
-            return nonDelay;
-        }
-
-        @Override
-        public int compareTo(WeightedGraph.Weight o) {
-            return value() - ((DV) o).value();
-        }
-
-        @Override
-        public String toString() {
-            return causes.stream().map(CauseOfDelay::toString).collect(Collectors.joining(";"));
-        }
-
-        @Override
-        public AnalysisStatus combine(AnalysisStatus other) {
-            if (other instanceof NotDelayed) return this;
-            assert other.isDelayed();
-            assert isDelayed();
-            return merge(other.causesOfDelay()).addProgress(other.isProgress());
-        }
-    }
 }

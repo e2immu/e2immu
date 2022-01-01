@@ -16,7 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class ArrayAccess extends ElementImpl implements Expression {
+public class ArrayAccess extends BaseExpression implements Expression {
 
     public final Expression expression;
     public final Expression index;

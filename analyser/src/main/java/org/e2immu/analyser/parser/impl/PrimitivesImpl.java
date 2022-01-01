@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.impl;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.Analysis;
@@ -250,12 +251,12 @@ public class PrimitivesImpl implements Primitives {
                     .noParent(this)
                     .build());
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
+            builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+            builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.setTransparentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
@@ -273,13 +274,13 @@ public class PrimitivesImpl implements Primitives {
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
-            builder.setProperty(Property.CONTAINER, Level.TRUE_DV);
+            builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, Level.FALSE_DV);
+            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
+            builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             builder.setTransparentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
         }

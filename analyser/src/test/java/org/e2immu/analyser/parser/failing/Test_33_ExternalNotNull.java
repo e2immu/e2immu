@@ -18,7 +18,6 @@ package org.e2immu.analyser.parser.failing;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -111,24 +110,24 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
 
             if ("o".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, enn);
-                assertEquals(Level.TRUE_DV, effFinal);
+                assertEquals(DV.TRUE_DV, effFinal);
                 assertEquals("[null,\"hello\"]", d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("p".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
-                assertEquals(Level.TRUE_DV, effFinal);
+                assertEquals(DV.TRUE_DV, effFinal);
                 assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
 
             }
             if ("q".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE_DV, enn);
-                assertEquals(Level.FALSE_DV, effFinal);
+                assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("q2:0,qs:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("r".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, enn);
-                assertEquals(Level.FALSE_DV, effFinal);
+                assertEquals(DV.FALSE_DV, effFinal);
                 assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -152,7 +151,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("p".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
 
                 if (d.iteration() == 0) {

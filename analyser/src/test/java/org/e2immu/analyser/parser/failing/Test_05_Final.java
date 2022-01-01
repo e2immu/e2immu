@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
@@ -207,7 +208,7 @@ public class Test_05_Final extends CommonTestRunner {
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
             }
             if ("s5".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
             }
         };
 

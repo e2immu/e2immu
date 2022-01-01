@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.expr.ParseSwitchExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class SwitchExpression extends ElementImpl implements Expression, HasSwitchLabels {
+public class SwitchExpression extends BaseExpression implements Expression, HasSwitchLabels {
 
     private final Expression selector;
     private final List<SwitchEntry> switchEntries;

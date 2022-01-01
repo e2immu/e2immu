@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -141,8 +140,8 @@ public interface VariableInfo {
 
 
     BinaryOperator<DV> MAX_CM = (i1, i2) ->
-            i1.valueIsTrue() || i2.valueIsTrue() ? Level.TRUE_DV :
-                    i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : Level.FALSE_DV;
+            i1.valueIsTrue() || i2.valueIsTrue() ? DV.TRUE_DV :
+                    i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : DV.FALSE_DV;
 
     List<MergeOp> MERGE = List.of(
 

@@ -15,10 +15,10 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.analyser.delay.NoDelay;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -27,11 +27,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWeightedGraph {
 
-    private static final DV zero = new DV.NoDelay(0);
-    private static final DV one = new DV.NoDelay(1);
-    private static final DV two = new DV.NoDelay(2);
+    private static final DV zero = new NoDelay(0);
+    private static final DV one = new NoDelay(1);
+    private static final DV two = new NoDelay(2);
 
-    private static final DV delay = new CausesOfDelay.SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
+    private static final DV delay = new SimpleSet(LocationImpl.NOT_YET_SET, CauseOfDelay.Cause.INITIAL_VALUE);
     
     @Test
     public void test1() {

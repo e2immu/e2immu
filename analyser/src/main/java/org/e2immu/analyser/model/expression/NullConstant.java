@@ -20,17 +20,22 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import static org.e2immu.analyser.model.Level.FALSE_DV;
+import static org.e2immu.analyser.analyser.DV.FALSE_DV;
 
 @E2Container
-public class NullConstant implements ConstantExpression<Object> {
+public class NullConstant extends BaseExpression implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
+
+    protected NullConstant() {
+        super(Identifier.CONSTANT);
+    }
 
     @Override
     @NotNull
@@ -82,10 +87,5 @@ public class NullConstant implements ConstantExpression<Object> {
     @Override
     public Object getValue() {
         return null;
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 }

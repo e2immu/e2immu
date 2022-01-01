@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -42,7 +42,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
     public void test_0() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Finalizer_0".equals(d.typeInfo().simpleName)) {
-                assertEquals(Level.TRUE_DV, d.typeAnalysis().getProperty(Property.FINALIZER));
+                assertEquals(DV.TRUE_DV, d.typeAnalysis().getProperty(Property.FINALIZER));
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };

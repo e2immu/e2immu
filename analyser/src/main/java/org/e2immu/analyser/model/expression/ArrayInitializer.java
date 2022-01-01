@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @E2Container
-public class ArrayInitializer extends ElementImpl implements Expression {
+public class ArrayInitializer extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;
@@ -137,7 +137,7 @@ public class ArrayInitializer extends ElementImpl implements Expression {
             return switch (property) {
                 case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                case CONSTANT, CONTAINER -> Level.TRUE_DV;
+                case CONSTANT, CONTAINER -> DV.TRUE_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
             };

@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -29,7 +30,16 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record ByteConstant(Primitives primitives, byte constant) implements ConstantExpression<Byte>, Numeric {
+public class ByteConstant extends BaseExpression implements ConstantExpression<Byte>, Numeric {
+
+    private final Primitives primitives;
+    private final byte constant;
+
+    public ByteConstant(Primitives primitives, byte constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     @Override
     @NotNull
@@ -88,10 +98,5 @@ public record ByteConstant(Primitives primitives, byte constant) implements Cons
     @Override
     public boolean isNumeric() {
         return true;
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 }

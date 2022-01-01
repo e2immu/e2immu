@@ -15,12 +15,12 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -195,7 +195,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
-                        assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
                 }
                 if ((TYPE + ".s$2$0:M").equals(d.variableName())) {
@@ -210,7 +210,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals("input2", d.currentValue().toString());
                     assertEquals("input2:0,this.s:0", d.variableInfo().getLinkedVariables().toString());
 
-                    assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
             }
@@ -223,7 +223,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());
@@ -305,8 +305,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 // because the value is not known, the ENN cannot be either
                 assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 // assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(MODIFIED_OUTSIDE_METHOD));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(MODIFIED_OUTSIDE_METHOD));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertEquals("input2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }

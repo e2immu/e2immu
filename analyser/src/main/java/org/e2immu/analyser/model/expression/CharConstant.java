@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -29,7 +30,16 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record CharConstant(Primitives primitives, char constant) implements ConstantExpression<Character> {
+public class CharConstant extends BaseExpression implements ConstantExpression<Character> {
+
+    private final Primitives primitives;
+    private final char constant;
+
+    public CharConstant(Primitives primitives, char constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     @Override
     @NotNull
@@ -90,8 +100,7 @@ public record CharConstant(Primitives primitives, char constant) implements Cons
         return constant;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public char constant() {
+        return constant;
     }
 }

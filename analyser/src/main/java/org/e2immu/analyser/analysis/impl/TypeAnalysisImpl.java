@@ -64,7 +64,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public DV immutableCanBeIncreasedByTypeParameters() {
-        return Level.fromBoolDv(immutableCanBeIncreasedByTypeParameters);
+        return DV.fromBoolDv(immutableCanBeIncreasedByTypeParameters);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public Location location() {
-        return new Location(typeInfo);
+        return typeInfo.newLocation();
     }
 
     @Override
@@ -191,7 +191,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private CausesOfDelay approvedPreconditionsE2Delays;
 
         private static CausesOfDelay initialDelay(TypeInfo typeInfo) {
-            return new CausesOfDelay.SimpleSet(typeInfo, CauseOfDelay.Cause.INITIAL_VALUE);
+            return typeInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }
 
         /*
@@ -242,9 +242,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldReference) {
             return e2 ? (approvedPreconditionsE2.isSet(fieldReference) ? CausesOfDelay.EMPTY :
-                    new CausesOfDelay.SimpleSet(fieldReference.fieldInfo, CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
+                    fieldReference.fieldInfo.delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS)) :
                     (approvedPreconditionsE1.isSet(fieldReference) ? CausesOfDelay.EMPTY :
-                            new CausesOfDelay.SimpleSet(fieldReference.fieldInfo, CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
+                            fieldReference.fieldInfo.delay(CauseOfDelay.Cause.APPROVED_PRECONDITIONS));
         }
 
         @Override
@@ -291,7 +291,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public Location location() {
-            return new Location(typeInfo);
+            return typeInfo.newLocation();
         }
 
         @Override
@@ -358,7 +358,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public DV immutableCanBeIncreasedByTypeParameters() {
             return immutableCanBeIncreasedByTypeParameters.isFirst() ? immutableCanBeIncreasedByTypeParameters.getFirst()
-                    : Level.fromBoolDv(immutableCanBeIncreasedByTypeParameters.get());
+                    : DV.fromBoolDv(immutableCanBeIncreasedByTypeParameters.get());
         }
 
         public void setImmutableCanBeIncreasedByTypeParameters(CausesOfDelay causes) {

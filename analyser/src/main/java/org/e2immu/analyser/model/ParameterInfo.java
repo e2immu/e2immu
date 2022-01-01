@@ -15,8 +15,12 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -252,5 +256,15 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     @Override
     public String niceClassName() {
         return "Parameter";
+    }
+
+    @Override
+    public Location newLocation() {
+        return new LocationImpl(this);
+    }
+
+    @Override
+    public CausesOfDelay delay(CauseOfDelay.Cause cause) {
+        return new SimpleSet(newLocation(), cause);
     }
 }

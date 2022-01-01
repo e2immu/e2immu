@@ -57,7 +57,7 @@ public class ShallowFieldAnalyser {
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        fieldAnalysisBuilder.setProperty(Property.FINAL, Level.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
+        fieldAnalysisBuilder.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
 
         // unless annotated with something heavier, ...
         DV notNull;
@@ -71,7 +71,7 @@ public class ShallowFieldAnalyser {
         DV typeIsContainer;
         if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER)) {
             if (fieldAnalysisBuilder.bestType == null) {
-                typeIsContainer = Level.TRUE_DV;
+                typeIsContainer = DV.TRUE_DV;
             } else {
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(fieldAnalysisBuilder.bestType);
                 if (typeAnalysis != null) {
@@ -79,7 +79,7 @@ public class ShallowFieldAnalyser {
                 } else {
                     typeIsContainer = Property.CONTAINER.falseDv;
                     if (fieldInfo.isPublic()) {
-                        messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
+                        messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                                 fieldAnalysisBuilder.bestType.fullyQualifiedName));
                     }
                 }

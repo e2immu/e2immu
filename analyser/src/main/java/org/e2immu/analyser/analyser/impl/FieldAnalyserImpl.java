@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
@@ -29,6 +30,7 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -283,7 +285,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return causes;
         }
         boolean transparent = myTypeAnalyser.getTypeAnalysis().getTransparentTypes().contains(fieldInfo.type);
-        fieldAnalysis.setTransparentType(Level.fromBoolDv(transparent));
+        fieldAnalysis.setTransparentType(DV.fromBoolDv(transparent));
         return DONE;
     }
 
@@ -293,7 +295,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         TypeInfo bestType = fieldInfo.type.bestTypeInfo();
         if (bestType == null || !bestType.isAbstract()) {
             // value does not matter
-            fieldAnalysis.setProperty(Property.CONTAINER, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.CONTAINER, DV.FALSE_DV);
             return DONE;
         }
 
@@ -301,7 +303,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
         if (typeContainer.isDelayed()) return typeContainer.causesOfDelay();
         if (typeContainer.valueIsTrue()) {
-            fieldAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
             return DONE;
         }
 
@@ -317,7 +319,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         boolean allParametersNotModified = parameterModification.valueIsFalse();
         log(MODIFICATION, "Set @Container on {} to {}", fqn, allParametersNotModified);
-        fieldAnalysis.setProperty(Property.CONTAINER, Level.fromBoolDv(allParametersNotModified));
+        fieldAnalysis.setProperty(Property.CONTAINER, DV.fromBoolDv(allParametersNotModified));
         return DONE;
     }
 
@@ -386,7 +388,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (!fieldInfo.isStatic()) {
                 boolean readInMethods = allMethodsAndConstructors(false).anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.PRIVATE_FIELD_NOT_READ));
+                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.PRIVATE_FIELD_NOT_READ));
                 }
                 return DONE;
             }
@@ -396,7 +398,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
                 if (!fieldInfo.owner.isPrivateNested()) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
+                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
             } else if (effectivelyFinal.isDelayed()) {
@@ -745,7 +747,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         if (delays.isDone() && haveInitialiser && cannotGoTogetherWithInitialiser) {
-            Message message = Message.newMessage(new Location(fieldInfo), Message.Label.UNNECESSARY_FIELD_INITIALIZER);
+            Message message = Message.newMessage(fieldInfo.newLocation(), Message.Label.UNNECESSARY_FIELD_INITIALIZER);
             messages.add(message);
         }
         if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
@@ -879,7 +881,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         if (value.isUnknown()) {
             log(FINAL, "@Constant of {} false, because not final", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(Property.CONSTANT, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.CONSTANT, DV.FALSE_DV);
             return DONE;
         }
 
@@ -893,7 +895,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         DV recursivelyConstant;
         if (!fieldOfOwnType && !MultiLevel.isAtLeastEventuallyE2Immutable(immutable))
-            recursivelyConstant = Level.FALSE_DV;
+            recursivelyConstant = DV.FALSE_DV;
         else recursivelyConstant = recursivelyConstant(value);
         if (recursivelyConstant.isDelayed()) {
             log(DELAYED, "Delaying @Constant because of recursively constant computation on value {} of {}",
@@ -916,24 +918,24 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     we already know that this type is @E2Immutable, but does it contain only constants?
      */
     private DV recursivelyConstant(Expression effectivelyFinalValue) {
-        if (effectivelyFinalValue.isConstant()) return Level.TRUE_DV;
+        if (effectivelyFinalValue.isConstant()) return DV.TRUE_DV;
         ConstructorCall constructorCall;
         if ((constructorCall = effectivelyFinalValue.asInstanceOf(ConstructorCall.class)) != null) {
-            if (constructorCall.constructor() == null) return Level.FALSE_DV;
+            if (constructorCall.constructor() == null) return DV.FALSE_DV;
             for (Expression parameter : constructorCall.getParameterExpressions()) {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
                     DV immutable = evaluationContext.getProperty(parameter, Property.IMMUTABLE, false, false);
                     if (immutable.isDelayed()) return immutable;
-                    if (!MultiLevel.isEffectivelyNotNull(immutable)) return Level.FALSE_DV;
+                    if (!MultiLevel.isEffectivelyNotNull(immutable)) return DV.FALSE_DV;
                     DV recursively = recursivelyConstant(parameter);
                     if (!recursively.valueIsTrue()) return recursively;
                 }
             }
-            return Level.TRUE_DV;
+            return DV.TRUE_DV;
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
     private AnalysisStatus analyseLinked() {
@@ -990,7 +992,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         assert sharedState.iteration == 0;
 
         if (fieldInfo.isExplicitlyFinal()) {
-            fieldAnalysis.setProperty(Property.FINAL, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.FINAL, DV.TRUE_DV);
             return DONE;
         }
 
@@ -1007,7 +1009,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
         }
-        fieldAnalysis.setProperty(Property.FINAL, Level.fromBoolDv(isFinal));
+        fieldAnalysis.setProperty(Property.FINAL, DV.fromBoolDv(isFinal));
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fqn);
 
@@ -1016,7 +1018,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (bestType != null) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
                 if (typeAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
+                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
                 }
             }
         }
@@ -1051,7 +1053,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
             log(MODIFICATION, "Field {} is @NotModified, since it is final and primitive", fqn);
-            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             return DONE;
         }
 
@@ -1062,7 +1064,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
 
         if (modified) {
-            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.TRUE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.TRUE_DV);
             log(MODIFICATION, "Mark field {} as @Modified", fqn);
             return DONE;
         }
@@ -1077,7 +1079,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         if (contextModifications.isDone()) {
-            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, Level.FALSE_DV);
+            fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
             log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
@@ -1090,7 +1092,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effectivelyFinal.isDelayed()) {
             return DelayedVariableExpression.forField(fieldReference,
-                    new CauseOfDelay.VariableCause(fieldReference, new Location(fieldInfo), CauseOfDelay.Cause.FIELD_FINAL));
+                    new VariableCause(fieldReference, fieldInfo.newLocation(), CauseOfDelay.Cause.FIELD_FINAL));
         }
         if (effectivelyFinal.valueIsFalse()) {
             return new VariableExpression(variable);
@@ -1133,7 +1135,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(new Location(fieldInfo),
+            Message error = Message.newMessage(fieldInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
@@ -1164,12 +1166,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         @Override
         public Location getLocation() {
-            return new Location(fieldInfo);
+            return fieldInfo.newLocation();
         }
 
         @Override
         public Location getLocation(Identifier identifier) {
-            return new Location(fieldInfo, identifier);
+            return new LocationImpl(fieldInfo, identifier);
         }
 
         // rest will be more or less the same as for Methods

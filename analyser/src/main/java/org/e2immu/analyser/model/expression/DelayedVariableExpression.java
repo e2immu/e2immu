@@ -15,8 +15,10 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -29,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @E2Container
-public class DelayedVariableExpression implements Expression, IsVariableExpression {
+public class DelayedVariableExpression extends BaseExpression implements Expression, IsVariableExpression {
     public final String msg;
     public final String debug;
     public final Variable variable;
@@ -39,6 +41,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
                                      String debug,
                                      Variable variable,
                                      CausesOfDelay causesOfDelay) {
+        super(Identifier.CONSTANT);
         this.msg = msg;
         this.debug = debug;
         this.causesOfDelay = causesOfDelay;
@@ -54,7 +57,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      CauseOfDelay causeOfDelay) {
-        return forField(fieldReference, new CausesOfDelay.SimpleSet(causeOfDelay));
+        return forField(fieldReference, new SimpleSet(causeOfDelay));
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
@@ -64,7 +67,7 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
     }
 
     public static Expression forVariable(Variable variable, CauseOfDelay cause) {
-        return forVariable(variable, new CausesOfDelay.SimpleSet(cause));
+        return forVariable(variable, new SimpleSet(cause));
     }
 
     public static Expression forVariable(Variable variable, CausesOfDelay causesOfDelay) {
@@ -174,11 +177,6 @@ public class DelayedVariableExpression implements Expression, IsVariableExpressi
             return ListUtil.concatImmutable(List.of(variable), fr.scope.variables());
         }
         return List.of(variable);
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 
     @Override

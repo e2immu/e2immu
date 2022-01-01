@@ -15,12 +15,12 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -59,10 +59,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         int iteration = d.iteration();
         if ("t".equals(d.fieldInfo().name) && iteration > 0) {
-            assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+            assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
         }
         if ("supplier".equals(d.fieldInfo().name)) {
-            assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+            assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
             if (iteration > 0) assertNotNull(d.fieldAnalysis().getValue());
         }
     };

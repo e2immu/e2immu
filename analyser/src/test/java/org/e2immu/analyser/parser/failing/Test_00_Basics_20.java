@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
@@ -102,7 +102,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertTrue(d.currentValue() instanceof PropertyWrapper);
-                        assertEquals(Level.TRUE_DV, d.getProperty(CONTAINER));
+                        assertEquals(DV.TRUE_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
@@ -114,8 +114,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         // delayed because linking is delayed!
-                        assertDv(d, 1, Level.TRUE_DV, CONTEXT_MODIFIED);
-                        assertDv(d, 1, Level.TRUE_DV, CONTAINER);
+                        assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
@@ -128,7 +128,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         default -> "ci:0,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, Level.TRUE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
                 }
                 if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
@@ -140,7 +140,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                    assertDv(d, 1, Level.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
         };
@@ -181,7 +181,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             }
             if ("C2".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertEquals(Level.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
+                assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
             }
         };
 

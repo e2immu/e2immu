@@ -19,16 +19,26 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
-public record MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) implements ErasureExpression {
+public final class MethodCallErasure extends BaseExpression implements ErasureExpression {
+    private final Set<ParameterizedType> returnTypes;
+    private final String methodName;
+
+    public MethodCallErasure(Set<ParameterizedType> returnTypes, String methodName) {
+        super(Identifier.CONSTANT);
+        this.returnTypes = returnTypes;
+        this.methodName = methodName;
+    }
 
     @Override
     @NotNull
@@ -72,12 +82,30 @@ public record MethodCallErasure(Set<ParameterizedType> returnTypes, String metho
     }
 
     @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
-    }
-
-    @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return returnTypes;
     }
+
+    public Set<ParameterizedType> returnTypes() {
+        return returnTypes;
+    }
+
+    public String methodName() {
+        return methodName;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (MethodCallErasure) obj;
+        return Objects.equals(this.returnTypes, that.returnTypes) &&
+                Objects.equals(this.methodName, that.methodName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(returnTypes, methodName);
+    }
+
 }

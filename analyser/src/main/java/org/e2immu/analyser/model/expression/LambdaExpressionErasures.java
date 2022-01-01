@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -30,16 +31,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @param counts   a set of counts, we cannot know exactly when presented with a method reference like Type::method,
- *                 if there is a static one-parameter method or a parameter-less instance method. In the first case,
- *                 we have a Consumer or Function, in the latter a Runnable or Supplier (both depending on isVoid)
- * @param location used for debugging purposes
  */
 @E2Immutable
-public record LambdaExpressionErasures(Set<Count> counts, Location location) implements ErasureExpression {
-    public LambdaExpressionErasures {
+public final class LambdaExpressionErasures extends BaseExpression implements ErasureExpression {
+    private final Set<Count> counts;
+    private final Location location;
+
+    public LambdaExpressionErasures(Set<Count> counts, Location location) {
+        super(Identifier.CONSTANT);
         Objects.requireNonNull(counts);
         Objects.requireNonNull(location);
+        this.counts = counts;
+        this.location = location;
     }
 
     public record Count(int parameters, boolean isVoid) {
@@ -89,14 +92,32 @@ public record LambdaExpressionErasures(Set<Count> counts, Location location) imp
     }
 
     @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
-    }
-
-    @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return counts.stream().map(count -> typeContext.typeMap
                         .syntheticFunction(count.parameters, count.isVoid).asParameterizedType(typeContext))
                 .collect(Collectors.toUnmodifiableSet());
     }
+
+    public Set<Count> counts() {
+        return counts;
+    }
+
+    public Location location() {
+        return location;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (LambdaExpressionErasures) obj;
+        return Objects.equals(this.counts, that.counts) &&
+                Objects.equals(this.location, that.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(counts, location);
+    }
+
 }

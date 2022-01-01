@@ -143,11 +143,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public boolean haveContextMethodDelay() {
-            return properties.getOrDefault(Property.CONTEXT_MODIFIED, Level.FALSE_DV).isDelayed();
+            return properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV).isDelayed();
         }
 
         public boolean havePropagationModificationDelay() {
-            return properties.getOrDefault(Property.PROPAGATE_MODIFICATION, Level.FALSE_DV).isDelayed();
+            return properties.getOrDefault(Property.PROPAGATE_MODIFICATION, DV.FALSE_DV).isDelayed();
         }
 
         public DV getProperty(Property property) {
@@ -315,7 +315,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // if context not null is already high enough, don't complain
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             if (contextNotNull.equals(MultiLevel.NULLABLE_DV)) {
-                setProperty(variable, Property.IN_NOT_NULL_CONTEXT, Level.TRUE_DV); // so we can raise an error
+                setProperty(variable, Property.IN_NOT_NULL_CONTEXT, DV.TRUE_DV); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
             //  }
@@ -449,7 +449,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             DV ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
                     .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
-                    : Level.FALSE_DV;
+                    : DV.FALSE_DV;
             if (!ignoreContentModifications.valueIsTrue()) {
                 log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
@@ -491,7 +491,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else if (container.isDelayed()) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 // FIXME does this make sense?
-                setProperty(variable, Property.CONTAINER, Level.TRUE_DV);
+                setProperty(variable, Property.CONTAINER, DV.TRUE_DV);
             }
         }
 
@@ -603,7 +603,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
             assert evaluationContext != null;
-            messages.add(Message.newMessage(new Location(parameterInfo),
+            messages.add(Message.newMessage(parameterInfo.newLocation(),
                     Message.Label.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
                     parameterInfo.fullyQualifiedName()));
         }

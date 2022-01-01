@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class LocalVariableCreation extends ElementImpl implements Expression {
+public class LocalVariableCreation extends BaseExpression implements Expression {
 
     public final LocalVariable localVariable;
     public final LocalVariableReference localVariableReference;

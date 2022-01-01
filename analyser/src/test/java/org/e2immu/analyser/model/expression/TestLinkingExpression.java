@@ -152,7 +152,7 @@ public class TestLinkingExpression {
         TypeInfo arrayList = typeContext.getFullyQualified(ArrayList.class);
         // see XML file
         MethodInfo addIndex = arrayList.findUniqueMethod("add", 2);
-        assertEquals(Level.TRUE_DV, addIndex.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, addIndex.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis p1 = addIndex.parameterAnalysis(1);
         assertEquals(MultiLevel.INDEPENDENT_1_DV, p1.getProperty(Property.INDEPENDENT));

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
@@ -453,7 +454,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             !tempApproved.containsKey(fieldToCondition.fieldReference) ?
                                     tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                     if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                        messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
+                        messages.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
                                 Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                     }
                 }
@@ -569,7 +570,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 !tempApproved.containsKey(fieldToCondition.fieldReference) ?
                                         tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                         if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                            messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
+                            messages.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
                                     Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
                         }
                     }
@@ -654,13 +655,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.getMethodInfo().distinguishingName());
-                        typeAnalysis.setProperty(Property.CONTAINER, Level.FALSE_DV);
+                        typeAnalysis.setProperty(Property.CONTAINER, DV.FALSE_DV);
                         return DONE;
                     }
                 }
             }
         }
-        typeAnalysis.setProperty(Property.CONTAINER, Level.TRUE_DV);
+        typeAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
         log(TYPE_ANALYSER, "Mark {} as @Container", typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -750,7 +751,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private record MaxValueStatus(DV maxValue, AnalysisStatus status) {
     }
 
-    private static final AnalysisStatus MARKER = new AnalysisStatus.NotDelayed(4, "MARKER"); // temporary marker
+    private static final AnalysisStatus MARKER = new NotDelayed(4, "MARKER"); // temporary marker
 
     private MaxValueStatus parentOrEnclosingMustHaveTheSameProperty(Property property) {
         DV[] propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
@@ -783,11 +784,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (effectivelyFinal.valueIsFalse()) {
                 log(IMMUTABLE_LOG, "Type {} cannot be @E1Immutable, field {} is not effectively final",
                         typeInfo.fullyQualifiedName, fieldAnalyser.getFieldInfo().name);
-                return Level.FALSE_DV;
+                return DV.FALSE_DV;
             }
         }
         if (causes.isDelayed()) return causes;
-        return Level.TRUE_DV;
+        return DV.TRUE_DV;
     }
 
     /**
@@ -1126,7 +1127,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 if (fieldsWithInitialiser == 1L) {
                     log(TYPE_ANALYSER, "Type {} is @Singleton, found exactly one new object creation in field initialiser",
                             typeInfo.fullyQualifiedName);
-                    typeAnalysis.setProperty(Property.SINGLETON, Level.TRUE_DV);
+                    typeAnalysis.setProperty(Property.SINGLETON, DV.TRUE_DV);
                     return DONE;
                 }
             }
@@ -1170,7 +1171,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             booleanConstant.getValue() == wantAssignmentToTrue) {
                         log(TYPE_ANALYSER, "Type {} is a  @Singleton, found boolean variable with precondition",
                                 typeInfo.fullyQualifiedName);
-                        typeAnalysis.setProperty(Property.SINGLETON, Level.TRUE_DV);
+                        typeAnalysis.setProperty(Property.SINGLETON, DV.TRUE_DV);
                         return DONE;
                     }
                 }
@@ -1179,7 +1180,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         // no hit
         log(TYPE_ANALYSER, "Type {} is not a  @Singleton", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(Property.SINGLETON, Level.FALSE_DV);
+        typeAnalysis.setProperty(Property.SINGLETON, DV.FALSE_DV);
         return DONE;
     }
 
@@ -1202,7 +1203,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not an @ExtensionClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(Property.EXTENSION_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.FALSE_DV);
             return DONE;
         }
 
@@ -1254,7 +1255,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             }
         }
         boolean isExtensionClass = commonTypeOfFirstParameter != null && haveFirstParameter;
-        typeAnalysis.setProperty(Property.EXTENSION_CLASS, Level.fromBoolDv(isExtensionClass));
+        typeAnalysis.setProperty(Property.EXTENSION_CLASS, DV.fromBoolDv(isExtensionClass));
         log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName + " marked " + (isExtensionClass ? "" : "not ")
                 + "@ExtensionClass");
         return DONE;
@@ -1271,7 +1272,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         if (e2Immutable.lt(MultiLevel.EVENTUALLY_E2IMMUTABLE_DV)) {
             log(TYPE_ANALYSER, "Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
-            typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;
         }
 
@@ -1279,7 +1280,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (!methodInfo.methodInspection.get().isStatic()) {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
-                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
                 return DONE;
             }
         }
@@ -1288,7 +1289,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (!constructor.isPrivate()) {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
-                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
                 return DONE;
             }
         }
@@ -1296,7 +1297,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (typeInspection.constructors().isEmpty()) {
             log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
-            typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
+            typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
             return DONE;
         }
 
@@ -1306,12 +1307,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.getMethodInfo().fullyQualifiedName());
-                typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.FALSE_DV);
+                typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);
                 return DONE;
             }
         }
 
-        typeAnalysis.setProperty(Property.UTILITY_CLASS, Level.TRUE_DV);
+        typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.TRUE_DV);
         log(TYPE_ANALYSER, "Type {} marked @UtilityClass", typeInfo.fullyQualifiedName);
         return DONE;
     }

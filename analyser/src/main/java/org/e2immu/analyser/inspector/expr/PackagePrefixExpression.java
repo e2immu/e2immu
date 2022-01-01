@@ -19,9 +19,18 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 
-record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expression {
+import java.util.Objects;
+
+final class PackagePrefixExpression extends BaseExpression implements Expression {
+    private final PackagePrefix packagePrefix;
+
+    PackagePrefixExpression(PackagePrefix packagePrefix) {
+        super(Identifier.CONSTANT);
+        this.packagePrefix = packagePrefix;
+    }
 
     @Override
     public ParameterizedType returnType() {
@@ -48,8 +57,27 @@ record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expressio
         return 0;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public PackagePrefix packagePrefix() {
+        return packagePrefix;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (PackagePrefixExpression) obj;
+        return Objects.equals(this.packagePrefix, that.packagePrefix);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(packagePrefix);
+    }
+
+    @Override
+    public String toString() {
+        return "PackagePrefixExpression[" +
+                "packagePrefix=" + packagePrefix + ']';
+    }
+
 }

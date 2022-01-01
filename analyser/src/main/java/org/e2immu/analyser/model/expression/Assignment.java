@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class Assignment extends ElementImpl implements Expression {
+public class Assignment extends BaseExpression implements Expression {
 
     public final Expression target;
     public final Expression value;

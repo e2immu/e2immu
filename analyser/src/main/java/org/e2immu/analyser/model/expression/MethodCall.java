@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -285,7 +286,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // is the method modifying, do we need to wait?
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        DV modified = alwaysModifying ? Level.TRUE_DV : recursiveCall || partOfCallCycle ? Level.FALSE_DV : modifiedMethod;
+        DV modified = alwaysModifying ? DV.TRUE_DV : recursiveCall || partOfCallCycle ? DV.FALSE_DV : modifiedMethod;
         builder.causeOfContextModificationDelay(methodInfo, modified.isDelayed());
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -362,7 +363,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (lastStatement == null) {
                         increment = false;
                     } else if (lastStatement.flowData().initialTimeNotYetSet()) {
-                        CausesOfDelay.SimpleSet initialTime = new CausesOfDelay.SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
+                        SimpleSet initialTime = new SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
                         return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
                     } else {
                         if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
@@ -647,7 +648,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Property.IMMUTABLE, immutable,
                     Property.INDEPENDENT, independent,
                     Property.CONTAINER, container,
-                    Property.IDENTITY, Level.FALSE_DV);
+                    Property.IDENTITY, DV.FALSE_DV);
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 
@@ -926,7 +927,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return linkedVariablesOfScope.changeToDelay(methodIndependent);
         }
         if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) return LinkedVariables.EMPTY;
-        DV level = MultiLevel.fromIndependentToLinkedVariableLevel(methodIndependent);
+        DV level = LinkedVariables.fromIndependentToLinkedVariableLevel(methodIndependent);
         return LinkedVariables.EMPTY.merge(linkedVariablesOfScope, level);
     }
 

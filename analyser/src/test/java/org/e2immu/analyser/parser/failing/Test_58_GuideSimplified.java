@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -85,9 +85,9 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -95,10 +95,10 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
-                assertDv(d, 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -128,7 +128,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     // this one must wait for Position to become @E2Immutable
-                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -154,9 +154,9 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 }
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("trace".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -164,25 +164,25 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 } else { // independent of delays/modification of the fields
                     assertEquals("\"/*\"+position.msg+\"*/\"", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("msg".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_IMMUTABLE));
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

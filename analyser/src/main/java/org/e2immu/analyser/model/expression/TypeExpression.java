@@ -18,6 +18,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -25,11 +26,12 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public class TypeExpression implements Expression {
+public class TypeExpression extends BaseExpression implements Expression {
     public final ParameterizedType parameterizedType;
     public final Diamond diamond;
 
     public TypeExpression(ParameterizedType parameterizedType, Diamond diamond) {
+        super(Identifier.CONSTANT);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = diamond;
     }
@@ -101,11 +103,6 @@ public class TypeExpression implements Expression {
             return evaluationContext.getAnalyserContext().defaultImmutable(parameterizedType, false);
         }
         return property.falseDv;
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 
     @Override

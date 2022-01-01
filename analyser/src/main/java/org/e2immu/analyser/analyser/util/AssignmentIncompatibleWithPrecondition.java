@@ -17,10 +17,8 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.ConstantExpression;
@@ -73,7 +71,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         if (value instanceof ConstantExpression) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                     variableInfo.getValue(), pcExpression);
-                            if (incompatible != null) return Level.fromBoolDv(incompatible);
+                            if (incompatible != null) return DV.fromBoolDv(incompatible);
                         } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
                             Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get()
@@ -82,13 +80,13 @@ public class AssignmentIncompatibleWithPrecondition {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                 Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                                return Level.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
+                                return DV.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
                             }
                         }
                     } else if (fieldInfo.type.isBoolean()) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                 variableInfo.getValue(), pcExpression);
-                        if (incompatible != null) return Level.fromBoolDv(incompatible);
+                        if (incompatible != null) return DV.fromBoolDv(incompatible);
                     } else {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
@@ -100,9 +98,9 @@ public class AssignmentIncompatibleWithPrecondition {
                             if (delays.isDelayed()) {
                                 return delays; // IMPROVE we're not gathering them, rather returning the first one here
                             }
-                            return Level.FALSE_DV;
+                            return DV.FALSE_DV;
                         }
-                        return Level.TRUE_DV;
+                        return DV.TRUE_DV;
                     }
                 }
             }
@@ -133,9 +131,9 @@ public class AssignmentIncompatibleWithPrecondition {
         }
         if (causesOfDelay.isDelayed()) return causesOfDelay;
         if (consistent != null) {
-            return Level.fromBoolDv(consistent.mark());
+            return DV.fromBoolDv(consistent.mark());
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
 

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -66,9 +67,9 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(0), 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

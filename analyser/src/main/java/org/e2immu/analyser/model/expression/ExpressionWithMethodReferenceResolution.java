@@ -15,12 +15,13 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-public abstract class ExpressionWithMethodReferenceResolution extends ElementImpl implements Expression {
+public abstract class ExpressionWithMethodReferenceResolution extends BaseExpression implements Expression {
 
     public final MethodInfo methodInfo;
     public final ParameterizedType concreteReturnType;

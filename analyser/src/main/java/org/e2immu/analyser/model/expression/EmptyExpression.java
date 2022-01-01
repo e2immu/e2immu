@@ -17,16 +17,26 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 
+import java.util.Objects;
+
 @E2Container
-public record EmptyExpression(String msg) implements Expression {
+public final class EmptyExpression  extends BaseExpression implements Expression {
     public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
     public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
     public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
-    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>"); // assigned to void methods
+    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>"); // assigned to void methodsprivate final String msg;
+
+    private final String msg;
+
+    public EmptyExpression(String msg) {
+        super(Identifier.CONSTANT);
+        this.msg = msg;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -78,8 +88,13 @@ public record EmptyExpression(String msg) implements Expression {
         return this;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public String msg() {
+        return msg;
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(msg);
+    }
+
 }

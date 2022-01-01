@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -139,7 +140,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONTAINER));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.CONTAINER));
             }
         };
 
@@ -303,10 +304,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("getI".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
@@ -358,7 +359,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     //int expectBreakDelay = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     //assertEquals(expectBreakDelay, d.getProperty(Property.EXTERNAL_IMMUTABLE_BREAK_DELAY));
 
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 }
                 if (d.variable() instanceof ReturnVariable) {

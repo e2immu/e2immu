@@ -62,9 +62,9 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, put.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
             MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            assertEquals(Level.FALSE_DV, forEach.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, forEach.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("MethodReferences_2", 0, 0, new DebugConfiguration.Builder()
@@ -91,7 +91,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));

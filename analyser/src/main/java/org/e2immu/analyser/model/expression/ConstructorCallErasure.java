@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -29,7 +30,13 @@ import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
-public record ConstructorCallErasure(ParameterizedType formalType) implements ErasureExpression {
+public final class ConstructorCallErasure extends BaseExpression implements ErasureExpression {
+    private final ParameterizedType formalType;
+
+    public ConstructorCallErasure(ParameterizedType formalType) {
+        super(Identifier.CONSTANT);
+        this.formalType = formalType;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -86,10 +93,6 @@ public record ConstructorCallErasure(ParameterizedType formalType) implements Er
         return 0;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
-    }
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {

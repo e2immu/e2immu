@@ -17,14 +17,24 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
  */
-public record ContractMark(Set<FieldInfo> fields) implements Expression {
+public final class ContractMark extends BaseExpression implements Expression {
+    private final Set<FieldInfo> fields;
+
+    /**
+     */
+    public ContractMark(Set<FieldInfo> fields) {
+        super(Identifier.CONSTANT);
+        this.fields = fields;
+    }
 
     @Override
     public ParameterizedType returnType() {
@@ -58,11 +68,24 @@ public record ContractMark(Set<FieldInfo> fields) implements Expression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
+    }
+
+    public Set<FieldInfo> fields() {
+        return fields;
     }
 
     @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (ContractMark) obj;
+        return Objects.equals(this.fields, that.fields);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fields);
+    }
+
 }

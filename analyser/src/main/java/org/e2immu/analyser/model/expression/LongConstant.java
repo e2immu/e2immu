@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -28,7 +29,15 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record LongConstant(Primitives primitives, long constant) implements ConstantExpression<Long>, Numeric {
+public final class LongConstant extends BaseExpression implements ConstantExpression<Long>, Numeric {
+    private final Primitives primitives;
+    private final long constant;
+
+    public LongConstant(Primitives primitives, long constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     public static Expression parse(Primitives primitives, String valueWithL) {
         String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ?
@@ -101,8 +110,12 @@ public record LongConstant(Primitives primitives, long constant) implements Cons
         return true;
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public Primitives primitives() {
+        return primitives;
     }
+
+    public long constant() {
+        return constant;
+    }
+
 }

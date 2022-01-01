@@ -15,6 +15,7 @@
 package org.e2immu.analyser.shallow;
 
 import ch.qos.logback.classic.Logger;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -31,10 +32,10 @@ public class TestCommonChQosLogbackClassic extends CommonAnnotatedAPI {
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("setLevel", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
-        assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }

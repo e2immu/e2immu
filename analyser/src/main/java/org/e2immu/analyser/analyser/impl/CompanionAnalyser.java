@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.CompanionAnalysisImpl;
@@ -23,6 +25,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -66,7 +69,7 @@ public class CompanionAnalyser {
         try {
             if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
                 if (iteration == 0) {
-                    return new CausesOfDelay.SimpleSet(mainMethod.typeInfo, CauseOfDelay.Cause.ASPECT);
+                    return mainMethod.typeInfo.delay(CauseOfDelay.Cause.ASPECT);
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
@@ -89,7 +92,7 @@ public class CompanionAnalyser {
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationResult.value().isDelayed()) {
-                return new CausesOfDelay.SimpleSet(companionMethod, CauseOfDelay.Cause.VALUE);
+                return companionMethod.delay(CauseOfDelay.Cause.VALUE);
             }
             companionAnalysis.value.set(evaluationResult.value());
 
@@ -167,12 +170,12 @@ public class CompanionAnalyser {
 
         @Override
         public Location getLocation() {
-            return new Location(companionMethod);
+            return companionMethod.newLocation();
         }
 
         @Override
         public Location getLocation(Identifier identifier) {
-            return new Location(companionMethod, identifier);
+            return new LocationImpl(companionMethod, identifier);
         }
 
         @Override
@@ -199,8 +202,8 @@ public class CompanionAnalyser {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
                 if (remapping == null)
                     return DelayedVariableExpression.forParameter(parameterInfo,
-                            new CausesOfDelay.SimpleSet(
-                                    new CauseOfDelay.VariableCause(variable, getLocation(), CauseOfDelay.Cause.REMAP_PARAMETER)));
+                            new SimpleSet(
+                                    new VariableCause(variable, getLocation(), CauseOfDelay.Cause.REMAP_PARAMETER)));
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);

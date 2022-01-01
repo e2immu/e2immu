@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
-import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.List;
 import java.util.Objects;
@@ -63,14 +62,6 @@ public interface Identifier extends Comparable<Identifier> {
 
     static Identifier stringConstant(String constant) {
         return new StringConstantIdentifier(constant);
-    }
-
-    static Identifier variable(Variable variable) {
-        return new VariableIdentifier(variable, "-");
-    }
-
-    static Identifier variable(Variable variable, String index) {
-        return new VariableIdentifier(variable, index);
     }
 
     static Identifier catchCondition(String index) {
@@ -172,21 +163,6 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public int identifierOrder() {
             return 4;
-        }
-    }
-
-    record VariableIdentifier(Variable variable, String index) implements Identifier {
-        @Override
-        public int compareTo(Identifier o) {
-            if (o instanceof VariableIdentifier vi) {
-                return variable.fullyQualifiedName().compareTo(vi.variable.fullyQualifiedName());
-            }
-            return identifierOrder() - o.identifierOrder();
-        }
-
-        @Override
-        public int identifierOrder() {
-            return 5;
         }
     }
 

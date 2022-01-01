@@ -16,10 +16,10 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analyser.ConditionManager;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -59,7 +59,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 String expectValues = d.iteration() == 0 ? "[null, <s:T>]" : "[null, t]";
                 assertEquals(expectValues,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
@@ -71,7 +71,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 String expectLinked = "setOnce.t:0,t:0";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
 
-                assertDv(d, 2, Level.FALSE_DV, Property.IDENTITY);
+                assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
             }
         };
@@ -179,7 +179,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
                         // identity is computed from the value, which is "<m:get>" in the first iteration
                         // then 't'
-                        assertDv(d, 2, Level.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, 2, DV.FALSE_DV, Property.IDENTITY);
                         assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
                     }
                     if ("0".equals(d.statementId())) {
@@ -264,7 +264,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
                     assertEquals("null==t", d.methodAnalysis().getPrecondition().expression().toString());
                 }
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
@@ -292,10 +292,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertTrue(inlinedMethod.containsVariableFields());
                     } else fail();
                 }
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
 
-                assertDv(d, 1, Level.FALSE_DV, Property.IDENTITY);
+                assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
 
 
@@ -322,7 +322,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 }
                 assertEquals(d.iteration() >= 1,
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() >= 3) {
@@ -336,7 +336,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("toString".equals(d.methodInfo().name)) {
                 assertNull(d.methodAnalysis().getPreconditionForEventual());
 
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
 
             if ("isSet".equals(d.methodInfo().name)) {
@@ -348,13 +348,13 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertTrue(im.containsVariableFields());
                     }
                 }
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
             }
 
             if ("getOrDefault".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 }

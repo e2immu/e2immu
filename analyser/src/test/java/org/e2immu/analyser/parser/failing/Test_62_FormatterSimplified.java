@@ -128,7 +128,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("forward".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-                assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+                assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 
@@ -256,7 +256,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "?"
                                 : "(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
@@ -276,10 +276,10 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                             fail();
                         }
                         if ("1".equals(d.statementId())) {
-                            assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         }
                     } else if ("(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo".equals(fr.scope.toString())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     } else fail();
                 }
                 if (d.variable() instanceof FieldReference fr && "forwardInfo".equals(fr.fieldInfo.name)) {
@@ -305,7 +305,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     assertEquals("instance type ForwardInfo", fr.scope.toString());
                     String expect = d.iteration() == 0 ? "<f:guide>" : "instance type Guide";
                     assertEquals(expect, d.currentValue().toString());
-                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -385,7 +385,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.MUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 MethodInfo index = d.typeInfo().findUniqueMethod("index", 0);
                 MethodAnalysis indexAnalysis = d.analysisProvider().getMethodAnalysis(index);
-                assertEquals(Level.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, indexAnalysis.getProperty(Property.MODIFIED_METHOD));
             }
             if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -398,7 +398,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo stack = typeMap.get(Stack.class);
             MethodInfo peek = stack.findUniqueMethod("peek", 0);
-            assertEquals(Level.FALSE_DV, peek.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, peek.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("FormatterSimplified_9", 0, 1, new DebugConfiguration.Builder()

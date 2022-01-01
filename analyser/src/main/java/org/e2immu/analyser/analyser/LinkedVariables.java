@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -49,7 +49,7 @@ public class LinkedVariables {
     public LinkedVariables(Map<Variable, DV> variables, CausesOfDelay otherCausesOfDelay) {
         assert variables != null;
         this.variables = Map.copyOf(variables);
-        assert variables.values().stream().noneMatch(dv -> dv == Level.FALSE_DV);
+        assert variables.values().stream().noneMatch(dv -> dv == DV.FALSE_DV);
         CausesOfDelay causesOfDelay = variables.values().stream()
                 .map(DV::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -60,15 +60,22 @@ public class LinkedVariables {
         return new LinkedVariables(Map.of(), causes);
     }
 
+    public static DV fromIndependentToLinkedVariableLevel(DV dv) {
+        assert dv.lt(MultiLevel.INDEPENDENT_DV); // cannot be linked
+        if (dv.equals(MultiLevel.DEPENDENT_DV)) return DEPENDENT_DV;
+        if (dv.equals(MultiLevel.INDEPENDENT_1_DV)) return INDEPENDENT1_DV;
+        return new NoDelay(MultiLevel.level(dv) + 2);
+    }
+
     public boolean isDelayed() {
         return causesOfDelay.isDelayed();
     }
 
-    public static final DV STATICALLY_ASSIGNED_DV = new DV.NoDelay(0, "statically_assigned");
-    public static final DV ASSIGNED_DV = new DV.NoDelay(1, "assigned");
-    public static final DV DEPENDENT_DV = new DV.NoDelay(2, "dependent");
-    public static final DV INDEPENDENT1_DV = new DV.NoDelay(3, "independent1");
-    public static final DV NO_LINKING_DV = new DV.NoDelay(MultiLevel.MAX_LEVEL, "no");
+    public static final DV STATICALLY_ASSIGNED_DV = new NoDelay(0, "statically_assigned");
+    public static final DV ASSIGNED_DV = new NoDelay(1, "assigned");
+    public static final DV DEPENDENT_DV = new NoDelay(2, "dependent");
+    public static final DV INDEPENDENT1_DV = new NoDelay(3, "independent1");
+    public static final DV NO_LINKING_DV = new NoDelay(MultiLevel.MAX_LEVEL, "no");
 
     public static final LinkedVariables EMPTY = new LinkedVariables(Map.of(), CausesOfDelay.EMPTY);
 

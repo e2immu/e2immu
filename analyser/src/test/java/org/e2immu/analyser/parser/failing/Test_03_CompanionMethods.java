@@ -89,11 +89,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo size = collection.findUniqueMethod("size", 0);
             DV modified = size.methodAnalysis.get().getProperty(MODIFIED_METHOD);
-            assertEquals(Level.FALSE_DV, modified);
+            assertEquals(DV.FALSE_DV, modified);
 
             TypeInfo list = typeMap.get(List.class);
             MethodInfo listSize = list.findUniqueMethod("size", 0);
-            assertEquals(Level.FALSE_DV, listSize.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, listSize.methodAnalysis.get().getProperty(MODIFIED_METHOD));
         };
 
         // two errors: two unused parameters
@@ -329,7 +329,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV,
                                 d.getProperty(CONTEXT_NOT_NULL));
 
-                        assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     }
                 }
             }
@@ -339,7 +339,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && d.iteration() > 0) {
                 ParameterAnalysis param = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, param.getProperty(CONTEXT_NOT_NULL));
-                assertDv(d.p(0), 0, Level.FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d.p(0), 0, DV.FALSE_DV, CONTEXT_MODIFIED);
             }
         };
 
@@ -364,11 +364,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
             assertNotNull(clearCompanion);
-            assertEquals(Level.TRUE_DV, clear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, clear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
-            assertEquals(Level.TRUE_DV, setClear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, setClear.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
             assertNotNull(annotatedAPI);

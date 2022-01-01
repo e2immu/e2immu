@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -66,7 +67,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         }
         if ("equals".equals(d.methodInfo().name) && "o".equals(d.variableName())) {
             if ("2".equals(d.statementId())) {
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
             }
         }
     };
@@ -94,13 +95,13 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             VariableInfo vi = d.getFieldAsVariable(first);
             assert vi != null;
             assertTrue(vi.isRead());
-            assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+            assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
         }
 
         if ("equals".equals(name)) {
-            assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
-            assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+            assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
         }
     };
 
@@ -114,7 +115,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
         ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
-        assertEquals(Level.FALSE_DV, objectsParam.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.FALSE_DV, objectsParam.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
     };
 
     @Test

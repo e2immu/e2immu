@@ -23,16 +23,27 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+
+import java.util.Objects;
 
 /*
 This is a marker for the Resolver to replace this by a properly resolved VariableExpression.
 See e.g. EventuallyE1Immutable_0
  */
-public record UnevaluatedAnnotationParameterValue(Identifier identifier,
-                                                  ForwardReturnTypeInfo forwardReturnTypeInfo,
-                                                  com.github.javaparser.ast.expr.Expression expression) implements Expression {
+public final class UnevaluatedAnnotationParameterValue extends BaseExpression implements Expression {
+    private final ForwardReturnTypeInfo forwardReturnTypeInfo;
+    private final com.github.javaparser.ast.expr.Expression expression;
+
+    public UnevaluatedAnnotationParameterValue(Identifier identifier,
+                                               ForwardReturnTypeInfo forwardReturnTypeInfo,
+                                               com.github.javaparser.ast.expr.Expression expression) {
+        super(identifier);
+        this.forwardReturnTypeInfo = forwardReturnTypeInfo;
+        this.expression = expression;
+    }
 
     @Override
     public ParameterizedType returnType() {
@@ -63,4 +74,36 @@ public record UnevaluatedAnnotationParameterValue(Identifier identifier,
     public int order() {
         return 0;
     }
+
+    public ForwardReturnTypeInfo forwardReturnTypeInfo() {
+        return forwardReturnTypeInfo;
+    }
+
+    public com.github.javaparser.ast.expr.Expression expression() {
+        return expression;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (UnevaluatedAnnotationParameterValue) obj;
+        return Objects.equals(this.identifier, that.identifier) &&
+                Objects.equals(this.forwardReturnTypeInfo, that.forwardReturnTypeInfo) &&
+                Objects.equals(this.expression, that.expression);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, forwardReturnTypeInfo, expression);
+    }
+
+    @Override
+    public String toString() {
+        return "UnevaluatedAnnotationParameterValue[" +
+                "identifier=" + identifier + ", " +
+                "forwardReturnTypeInfo=" + forwardReturnTypeInfo + ", " +
+                "expression=" + expression + ']';
+    }
+
 }

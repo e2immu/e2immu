@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -47,15 +48,15 @@ public class Test_39_PropagateModification extends CommonTestRunner {
     public void test_0() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name) && "PropagateModification_0".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d.p(0), 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
-                    assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -81,10 +82,10 @@ public class Test_39_PropagateModification extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -92,7 +93,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -156,14 +157,14 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 "org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
         assertTrue(accept.isAbstract());
-        assertEquals(Level.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
     }
 
     @Test
     public void test_8() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("name".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("name", d.fieldAnalysis().getValue().toString());
                 if (d.fieldAnalysis().getValue() instanceof VariableExpression ve) {
                     assertTrue(ve.variable() instanceof ParameterInfo);
@@ -219,7 +220,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -245,7 +246,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 "org.e2immu.analyser.testexample.PropagateModification_8.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
         assertTrue(accept.isAbstract());
-        assertEquals(Level.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
 
         ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Ana = p0.parameterAnalysis.get();
@@ -253,7 +254,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         AnnotationExpression ae = p0.getInspection().getAnnotations().get(0);
         assertFalse(ae.e2ImmuAnnotationParameters().contract()); // not explicitly contracted, acceptVerifyAsContracted
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0Ana.getProperty(Property.NOT_NULL_PARAMETER));
-        assertEquals(Level.TRUE_DV, p0Ana.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, p0Ana.getProperty(Property.MODIFIED_VARIABLE));
     }
 
     @Test

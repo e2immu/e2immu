@@ -15,7 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.delay.NoDelay;
 
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.model.MultiLevel.Level.*;
@@ -147,7 +147,7 @@ public class MultiLevel {
      * @return the composite value
      */
     private static DV compose(Effective effective, Level level, String label) {
-        return new DV.NoDelay(effective.value + level.level * FACTOR, label);
+        return new NoDelay(effective.value + level.level * FACTOR, label);
     }
 
     public static DV composeIndependent(Effective effective, Level level) {
@@ -159,14 +159,14 @@ public class MultiLevel {
         if (level == INDEPENDENT_1.level) return INDEPENDENT_1_DV;
         if (level == INDEPENDENT_2.level) return INDEPENDENT_2_DV;
         if (level == INDEPENDENT_R.level) return INDEPENDENT_DV;
-        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR, "independent_" + (level + 1));
+        return new NoDelay(EFFECTIVE.value + level * FACTOR, "independent_" + (level + 1));
     }
 
     public static DV composeImmutable(Effective effective, int level) {
         if (effective == EVENTUAL_BEFORE) return beforeImmutableDv(level);
         if (effective == EVENTUAL_AFTER) return afterImmutableDv(level);
         if (effective == EFFECTIVE) return effectivelyImmutable(level);
-        return new DV.NoDelay(effective.value + level * FACTOR, effective.label + "_immutable" + (level + 1));
+        return new NoDelay(effective.value + level * FACTOR, effective.label + "_immutable" + (level + 1));
     }
 
     public static Effective effective(DV dv) {
@@ -205,21 +205,21 @@ public class MultiLevel {
         if (level == IMMUTABLE_1.level) return EFFECTIVELY_E1IMMUTABLE_DV;
         if (level == IMMUTABLE_2.level) return EFFECTIVELY_E2IMMUTABLE_DV;
         if (level == IMMUTABLE_R.level) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
-        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR);
+        return new NoDelay(EFFECTIVE.value + level * FACTOR);
     }
 
     public static DV beforeImmutableDv(int level) {
         if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV;
         if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV;
         if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_BEFORE_MARK_DV;
-        return new DV.NoDelay(EVENTUAL_BEFORE.value + level * FACTOR);
+        return new NoDelay(EVENTUAL_BEFORE.value + level * FACTOR);
     }
 
     public static DV afterImmutableDv(int level) {
         if (level == IMMUTABLE_1.level) return MultiLevel.EVENTUALLY_E1IMMUTABLE_AFTER_MARK_DV;
         if (level == IMMUTABLE_2.level) return MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK_DV;
         if (level == IMMUTABLE_R.level) return MultiLevel.EVENTUALLY_ERIMMUTABLE_AFTER_MARK_DV;
-        return new DV.NoDelay(EVENTUAL_AFTER.value + level * FACTOR);
+        return new NoDelay(EVENTUAL_AFTER.value + level * FACTOR);
     }
 
     public static boolean isAfterThrowWhenNotEventual(DV dv) {
@@ -265,7 +265,7 @@ public class MultiLevel {
         if (level == NOT_NULL.level) return EFFECTIVELY_NOT_NULL_DV;
         if (level == NOT_NULL_1.level) return EFFECTIVELY_CONTENT_NOT_NULL_DV;
         if (level == NOT_NULL_2.level) return EFFECTIVELY_CONTENT2_NOT_NULL_DV;
-        return new DV.NoDelay(EFFECTIVE.value + level * FACTOR, "not_null_" + level);
+        return new NoDelay(EFFECTIVE.value + level * FACTOR, "not_null_" + level);
     }
 
     public static DV composeOneLevelMoreNotNull(DV dv) {
@@ -305,10 +305,4 @@ public class MultiLevel {
         return levelImmutable == levelIndependent;
     }
 
-    public static DV fromIndependentToLinkedVariableLevel(DV dv) {
-        assert dv.lt(MultiLevel.INDEPENDENT_DV); // cannot be linked
-        if (dv.equals(MultiLevel.DEPENDENT_DV)) return LinkedVariables.DEPENDENT_DV;
-        if (dv.equals(MultiLevel.INDEPENDENT_1_DV)) return LinkedVariables.INDEPENDENT1_DV;
-        return new DV.NoDelay(level(dv) + 2);
-    }
 }

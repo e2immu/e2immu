@@ -59,14 +59,14 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().debugOutput());
                     String expectLv = d.iteration() == 0 ? "this.set1:0,v:-1" : "this.set1:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set1".equals(d.fieldInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<String>", e.toString());
@@ -76,18 +76,18 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo add = set.findUniqueMethod("add", 1);
-            assertEquals(Level.TRUE_DV, add.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, add.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(Level.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
             ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(Level.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
 
             MethodInfo size = set.findUniqueMethod("size", 0);
-            assertEquals(Level.FALSE_DV, size.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, size.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashSet = typeMap.get(Set.class);
-            assertEquals(Level.TRUE_DV, hashSet.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(DV.TRUE_DV, hashSet.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
 
         testClass("Modification_0", 0, 0, new DebugConfiguration.Builder()
@@ -101,7 +101,7 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("size".equals(d.methodInfo().name) && "Modification_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("getFirst".equals(d.methodInfo().name) && d.iteration() > 0) {
                 assertNotNull(d.haveError(Message.Label.UNUSED_PARAMETER));
@@ -110,7 +110,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set2")) {
-                assertDv(d, 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -142,12 +142,12 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             String name = d.fieldInfo().name;
             if (name.equals("set2ter")) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if (name.equals("set2bis")) {
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 0, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertDv(d, 0, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -173,7 +173,7 @@ public class Test_16_Modification extends CommonTestRunner {
                             .map(Map.Entry::getValue)
                             .map(ecd -> ecd.properties().get(Property.CONTEXT_MODIFIED))
                             .findFirst().orElseThrow();
-                    assertEquals(Level.TRUE_DV, v);
+                    assertEquals(DV.TRUE_DV, v);
                 }
             }
         };
@@ -212,7 +212,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
                         assertEquals("instance type HashSet<String>", vi1.getValue().toString());
-                        assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     String expectLv = d.iteration() == 0 ? "local3:0,this.set3:0,v:-1" : "local3:0,this.set3:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -231,7 +231,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                     assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -246,12 +246,12 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set3")) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().size());
                 if (d.iteration() > 0) {
                     assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getValue().toString());
                     if (d.iteration() > 1) {
-                        assertEquals(Level.TRUE_DV,
+                        assertEquals(DV.TRUE_DV,
                                 d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                     }
                 }
@@ -262,11 +262,11 @@ public class Test_16_Modification extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo addInSet = set.findUniqueMethod("add", 1);
-            assertEquals(Level.TRUE_DV, addInSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, addInSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashSet = typeMap.get(HashSet.class);
             MethodInfo addInHashSet = hashSet.findUniqueMethod("add", 1);
-            assertEquals(Level.TRUE_DV, addInHashSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, addInHashSet.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
         testClass("Modification_3", 0, 0, new DebugConfiguration.Builder()
@@ -301,7 +301,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // via statical assignments
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
 
@@ -314,7 +314,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     String expect = d.iteration() == 0 ? "<f:set4>" : "instance type Set<String>";
                     assertEquals(expect, d.currentValue().toString());
@@ -335,8 +335,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set4")) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
 
@@ -350,7 +350,7 @@ public class Test_16_Modification extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Modification_4".equals(name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 2, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add4".equals(name)) {
                 FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);
@@ -358,7 +358,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     VariableInfo vi = d.getFieldAsVariable(set4);
                     assert vi != null;
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                    assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 }
             }
         };
@@ -377,11 +377,11 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p &&
                     "in5".equals(p.name) && "0".equals(d.statementId())) {
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
             if ("Modification_5".equals(d.methodInfo().name) &&
                     "org.e2immu.analyser.testexample.Modification_5.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
-                assertDv(d, 3, Level.TRUE_DV, Property.FINAL);
+                assertDv(d, 3, DV.TRUE_DV, Property.FINAL);
                 String expectValue = "new HashSet<>(in5)/*this.size()==in5.size()*/";
                 assertEquals(expectValue, d.currentValue().toString());
             }
@@ -389,8 +389,8 @@ public class Test_16_Modification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d.p(0), 1, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -419,7 +419,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
             if ("add6".equals(d.methodInfo().name)) {
                 if (VALUES6.equals(d.variableName())) {
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
                     assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
 
@@ -432,12 +432,12 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if (EXAMPLE6_SET6.equals(d.variableName())) {
                     if (d.iteration() > 0)
-                        assertEquals(Level.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                        assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
                 }
             }
             if ("Modification_6".equals(d.methodInfo().name)) {
                 if (SET6.equals(d.variableName()) && "0".equals(d.statementId()) && d.iteration() == 3) {
-                    assertEquals(Level.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
                 }
             }
         };
@@ -447,14 +447,14 @@ public class Test_16_Modification extends CommonTestRunner {
             String name = d.fieldInfo().name;
             if (name.equals("set6")) {
 
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
 
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
                 assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
 
                 if (iteration >= 1) {
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 0, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                    assertDv(d, 0, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 }
             }
         };
@@ -463,7 +463,7 @@ public class Test_16_Modification extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Example6".equals(name)) {
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                assertDv(d.p(0), 2, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add6".equals(name)) {
                 assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -478,7 +478,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 VariableInfo vi = vis.get(0);
                 if (d.iteration() > 0) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
-                    assertEquals(Level.TRUE_DV, vi.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.TRUE_DV, vi.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -544,7 +544,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "instance type HashSet<String>";
@@ -552,7 +552,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
                         String expectLv = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:0" : "theSet:0,this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (S2.equals(d.variableName())) {
@@ -560,7 +560,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         assertEquals("theSet:0,this.s2:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if (("2".equals(d.statementId()) || "3".equals(d.statementId())) && d.iteration() > 1) {
-                        assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     if ("3".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
@@ -577,7 +577,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -612,10 +612,10 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("addAll".equals(d.methodInfo().name) && "d".equals(d.variableName())) {
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
             }
             if ("addAll".equals(d.methodInfo().name) && "c".equals(d.variableName())) {
-                assertEquals(Level.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
             }
         };
 
@@ -634,7 +634,7 @@ public class Test_16_Modification extends CommonTestRunner {
                             .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
                 }
                 if (iteration >= 2) {
-                    assertEquals(Level.FALSE_DV, list.getProperty(Property.MODIFIED_VARIABLE));
+                    assertEquals(DV.FALSE_DV, list.getProperty(Property.MODIFIED_VARIABLE));
                     assertFalse(set3.getAssignedToField().isEmpty());
                 }
             }
@@ -645,12 +645,12 @@ public class Test_16_Modification extends CommonTestRunner {
             FieldInfo fieldInfo = d.fieldInfo();
             if ("c0".equals(fieldInfo.name)) {
                 if (iteration >= 2) {
-                    assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                    assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                 }
             }
             if ("s0".equals(fieldInfo.name)) {
                 if (iteration >= 2) {
-                    assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+                    assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
                 }
             }
         };
@@ -659,10 +659,10 @@ public class Test_16_Modification extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
 
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(Level.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, addAll.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(Level.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, first.parameterAnalysis.get().getProperty(Property.MODIFIED_VARIABLE));
 
         };
 
@@ -697,7 +697,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo setC && "setC".equals(setC.name)) {
-                    assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                 }
             }
@@ -713,7 +713,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     String expectValue = d.iteration() <= 1 ? SET_IN_C1_DELAYED : "instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
                     String expectLv = d.iteration() <= 1 ? "string:-1,this.set:0" : "this.set:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -787,7 +787,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 2, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("s2".equals(d.fieldInfo().name)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
@@ -797,14 +797,14 @@ public class Test_16_Modification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d.p(0), 3, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("addAll".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d.p(0), 1, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
 
                 assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
-                assertDv(d.p(1), 1, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -833,13 +833,13 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && PARENT_CLASS_SET.equals(d.variableName())) {
-                assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId()) && d.variable() instanceof This) {
                 assertEquals(PARENT_CLASS_THIS, d.variableName());
-                assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
@@ -847,7 +847,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
                 }
             }
@@ -857,7 +857,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertEquals(Level.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -893,15 +893,15 @@ public class Test_16_Modification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             String name = d.methodInfo().name;
             if ("clear".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
                 assertTrue(d.getThisAsVariable().isRead());
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -947,12 +947,12 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                assertEquals(Level.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
@@ -1084,12 +1084,12 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This thisVar && "Modification_19".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 3, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("c".equals(d.variableName())) {
@@ -1100,7 +1100,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
                     if ("2".equals(d.statementId())) {
                         // delays in iteration 1, because no value yet
-                        assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -1109,12 +1109,12 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("C1".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
 
-                assertDv(d.p(0), 3, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d, 4, Level.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("addAll".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d.p(0), 1, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -1172,17 +1172,17 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 3, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // applies to c.set and d.set
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    assertDv(d, 2, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                     String expectValue = d.iteration() <= 1 ? "<f:set>" : "instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -1210,12 +1210,12 @@ public class Test_16_Modification extends CommonTestRunner {
                 // is a constructor:
                 assertEquals(MultiLevel.INDEPENDENT_DV, d.methodAnalysis().getProperty(Property.INDEPENDENT));
 
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             // addAll will not modify its parameters
             if ("addAll".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), Level.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
@@ -1225,19 +1225,19 @@ public class Test_16_Modification extends CommonTestRunner {
 
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 // value from the constructor
                 assertEquals("setC", d.fieldAnalysis().getValue().toString());
 
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
 
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("instance type HashSet<String>", d.fieldAnalysis().getValue().toString());
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
-                assertDv(d, 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -1245,7 +1245,7 @@ public class Test_16_Modification extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo equals = set.findUniqueMethod("equals", 1);
             DV mm = equals.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD);
-            assertEquals(Level.FALSE_DV, mm);
+            assertEquals(DV.FALSE_DV, mm);
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -132,7 +129,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         parameterInfo.error(parameterAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(new Location(parameterInfo),
+            Message error = Message.newMessage(parameterInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);

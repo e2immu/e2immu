@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.model.Level.FALSE_DV;
-import static org.e2immu.analyser.model.Level.TRUE_DV;
+import static org.e2immu.analyser.analyser.DV.FALSE_DV;
+import static org.e2immu.analyser.analyser.DV.TRUE_DV;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.junit.jupiter.api.Assertions.*;
 

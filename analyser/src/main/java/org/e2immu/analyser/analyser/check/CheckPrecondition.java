@@ -16,11 +16,9 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.model.CompanionMethodName;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
@@ -37,13 +35,13 @@ public class CheckPrecondition {
             CompanionMethodName cmn = entry.getKey();
             if (cmn.action() == CompanionMethodName.Action.PRECONDITION) {
                 if (precondition == null || precondition instanceof BooleanConstant) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.Label.PRECONDITION_ABSENT));
+                    messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.PRECONDITION_ABSENT));
                     return;
                 }
                 Expression expectedPrecondition = entry.getValue().getValue();
 
                 if (!precondition.equals(expectedPrecondition)) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.Label.WRONG_PRECONDITION,
+                    messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.WRONG_PRECONDITION,
                             "Expected: '" + expectedPrecondition + "', but got: '" + precondition + "'"));
                 }
             }

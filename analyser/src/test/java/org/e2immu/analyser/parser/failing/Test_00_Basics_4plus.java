@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
@@ -167,7 +168,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("v1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
@@ -386,20 +387,20 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            assertEquals(Level.TRUE_DV, out.fieldAnalysis.get().getProperty(FINAL));
+            assertEquals(DV.TRUE_DV, out.fieldAnalysis.get().getProperty(FINAL));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                     out.fieldAnalysis.get().getProperty(EXTERNAL_NOT_NULL));
 
             TypeInfo string = typeMap.get(String.class);
             MethodInfo equals = string.findUniqueMethod("equals", 1);
-            assertEquals(Level.FALSE_DV, equals.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, equals.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
             assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
 
             MethodInfo toUpperCase = string.findUniqueMethod("toUpperCase", 0);
             assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
-            assertEquals(Level.FALSE_DV, toUpperCase.methodAnalysis.get().getProperty(MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, toUpperCase.methodAnalysis.get().getProperty(MODIFIED_METHOD));
 
             TypeInfo printStream = typeMap.get(PrintStream.class);
             MethodInfo println = printStream.findUniqueMethod("println", 0);
@@ -416,8 +417,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                assertDv(d.p(0), 1, Level.FALSE_DV, MODIFIED_VARIABLE);
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                assertDv(d.p(0), 1, DV.FALSE_DV, MODIFIED_VARIABLE);
             }
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());
@@ -427,7 +428,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("field".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
                 assertTrue(d.fieldAnalysis().getValue() instanceof UnknownExpression);
 
@@ -507,14 +508,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         // READ IMPLICITLY via the variable 'i'
                         assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                         assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
-                        assertDv(d, 0, Level.TRUE_DV, IDENTITY);
+                        assertDv(d, 0, DV.TRUE_DV, IDENTITY);
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
 
                         assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
-                        assertDv(d, 0, Level.TRUE_DV, IDENTITY);
+                        assertDv(d, 0, DV.TRUE_DV, IDENTITY);
                     }
 
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL),
@@ -817,17 +818,17 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         if ("3".equals(d.statementId())) {
                             assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
-                            assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                            assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                         }
                         if ("4.0.0.0.0".equals(d.statementId())) {
                             assertEquals("i$1:0,i$2:1,j0:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
-                            assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                            assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                         }
                         if ("4".equals(d.statementId())) {
                             assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
-                            assertEquals(Level.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                            assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                         }
                     }
                     if ("k0".equals(d.variableName()) && "4.0.0.0.2".equals(d.statementId())) {

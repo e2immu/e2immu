@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -29,7 +30,15 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record StringConstant(Primitives primitives, String constant) implements ConstantExpression<String> {
+public final class StringConstant extends BaseExpression implements ConstantExpression<String> {
+    private final Primitives primitives;
+    private final String constant;
+
+    public StringConstant(Primitives primitives, String constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     @Override
     @NotNull
@@ -75,8 +84,12 @@ public record StringConstant(Primitives primitives, String constant) implements 
         return new OutputBuilder().add(new Text(StringUtil.quote(constant)));
     }
 
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
+    public Primitives primitives() {
+        return primitives;
     }
+
+    public String constant() {
+        return constant;
+    }
+
 }

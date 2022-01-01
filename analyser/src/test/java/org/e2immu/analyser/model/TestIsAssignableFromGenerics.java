@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -677,11 +677,11 @@ public class TestIsAssignableFromGenerics {
     }
 
     void tmp() {
-        List<MemberValuePair> mvps = List.of(new MemberValuePair(new NullConstant()));
+        List<MemberValuePair> mvps = List.of(new MemberValuePair(NullConstant.NULL_CONSTANT));
         // Generics are invariant: FAILS: List<Expression> expressions = mvps;
         // Generics are invariant: print(mvps);
         // however, the List.of( ) can be influenced by the position: if turned into variable,
         // the list becomes a List<Expression>
-        print(List.of(new MemberValuePair(new NullConstant())));
+        print(List.of(new MemberValuePair(NullConstant.NULL_CONSTANT)));
     }
 }

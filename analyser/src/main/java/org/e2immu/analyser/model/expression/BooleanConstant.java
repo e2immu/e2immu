@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -31,8 +32,16 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record BooleanConstant(Primitives primitives,
-                              boolean constant) implements ConstantExpression<Boolean>, Negatable {
+public class BooleanConstant extends BaseExpression implements ConstantExpression<Boolean>, Negatable {
+
+    private final Primitives primitives;
+    private final boolean constant;
+
+    public BooleanConstant(Primitives primitives, boolean constant) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.constant = constant;
+    }
 
     @Override
     @NotNull
@@ -81,6 +90,10 @@ public record BooleanConstant(Primitives primitives,
         return constant ? -1 : 1;
     }
 
+    public boolean constant() {
+        return constant;
+    }
+
     @Override
     public Boolean getValue() {
         return constant;
@@ -88,10 +101,5 @@ public record BooleanConstant(Primitives primitives,
 
     public Expression negate() {
         return new BooleanConstant(primitives, !constant);
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 }

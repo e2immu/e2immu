@@ -144,7 +144,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setValue(value);
         initial.setProperty(Property.IMMUTABLE, immutable);
         initial.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        initial.setProperty(Property.IDENTITY, org.e2immu.analyser.model.Level.FALSE_DV);
+        initial.setProperty(Property.IDENTITY, DV.FALSE_DV);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -167,7 +167,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setValue(value);
         properties.forEach(initial::setProperty);
         initial.ensureProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
-        initial.ensureProperty(Property.CONTEXT_MODIFIED, org.e2immu.analyser.model.Level.FALSE_DV);
+        initial.ensureProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         initial.ensureProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         initial.ensureProperty(Property.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
         initial.ensureProperty(Property.CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);

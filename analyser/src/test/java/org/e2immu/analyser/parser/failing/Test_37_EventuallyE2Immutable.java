@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Qualification;
@@ -142,7 +142,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 String expectLinked = d.iteration() == 0 ? "?" : "";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
@@ -184,21 +184,21 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                assertDv(d.p(0), 2, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
             if ("copyInto".equals(d.methodInfo().name)) {
-                assertDv(d, 2, Level.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 3, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(0), 3, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("copyInto".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof ParameterInfo other && "other".equals(other.name)) {
-                    assertDv(d, 2, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -326,7 +326,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.fieldAnalysis().isTransparentType().isDelayed());
                 } else {
-                    assertEquals(Level.TRUE_DV, d.fieldAnalysis().isTransparentType());
+                    assertEquals(DV.TRUE_DV, d.fieldAnalysis().isTransparentType());
                 }
             }
         };

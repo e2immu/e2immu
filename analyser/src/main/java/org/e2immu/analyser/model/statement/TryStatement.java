@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.*;
@@ -87,7 +88,7 @@ public class TryStatement extends StatementWithStructure {
                 translationMap.translateBlock(finallyBlock));
     }
 
-    public static class CatchParameter extends ElementImpl implements Expression {
+    public static class CatchParameter extends BaseExpression implements Expression {
         public final LocalVariableCreation localVariableCreation;
         public final List<ParameterizedType> unionOfTypes;
 

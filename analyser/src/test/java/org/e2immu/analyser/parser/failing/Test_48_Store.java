@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.Property;
@@ -137,7 +138,7 @@ public class Test_48_Store extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 1, Level.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -145,7 +146,7 @@ public class Test_48_Store extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getOrCreate".equals(d.methodInfo().name)) {
                 // modified, because .get() is modifying (there is no annotated API)
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
 
                 // dependent, because only independent if non-modifying (current rule, we may want to get rid of this)
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
@@ -158,13 +159,13 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
             if ("handleMultiSet".equals(d.methodInfo().name)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

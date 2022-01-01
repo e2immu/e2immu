@@ -146,7 +146,7 @@ public interface TypeAnalysis extends Analysis {
     default DV isPartOfHiddenContent(ParameterizedType type) {
         CausesOfDelay status = hiddenContentTypeStatus();
         if (status.isDone()) {
-            return Level.fromBoolDv( getTransparentTypes().contains(type));
+            return DV.fromBoolDv( getTransparentTypes().contains(type));
         }
         return status;
     }

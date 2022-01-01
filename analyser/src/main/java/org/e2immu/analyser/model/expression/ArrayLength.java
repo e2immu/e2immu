@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class ArrayLength extends ElementImpl implements Expression {
+public class ArrayLength extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final Expression scope;
 

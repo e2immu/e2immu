@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -55,7 +57,7 @@ public class MethodCallIncompatibleWithPrecondition {
             if (!variableInfo.valueIsSet()) {
                 log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
-                return new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(variableInfo.variable(),
+                return new SimpleSet(new VariableCause(variableInfo.variable(),
                         statementAnalysis.location(), CauseOfDelay.Cause.VALUE));
             }
             if (evaluationContext.hasState(variableInfo.getValue())) {
@@ -72,11 +74,11 @@ public class MethodCallIncompatibleWithPrecondition {
                     Expression normalisedPrecondition = normaliseMethods(evaluationContext, preconditionInTermsOfAspect);
                     Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
                     Expression and = And.and(evaluationContext, normalisedPrecondition, normalisedStateWithInvariants);
-                    if (and.isBoolValueFalse()) return Level.TRUE_DV;
+                    if (and.isBoolValueFalse()) return DV.TRUE_DV;
                 }
             }
         }
-        return Level.FALSE_DV;
+        return DV.FALSE_DV;
     }
 
     private static Expression normaliseMethods(EvaluationContext evaluationContext, Expression expression) {

@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -48,7 +49,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
-                assertEquals(Level.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("key:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -101,7 +102,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             MethodInfo toString = object.findUniqueMethod("toString", 0);
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                     toString.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
-            assertEquals(Level.FALSE_DV, toString.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.FALSE_DV, toString.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo nonStatic2 = typeMap.get("org.e2immu.analyser.testexample.SubTypes_2.NonStaticSubType2");
             MethodInfo toString2 = nonStatic2.findUniqueMethod("toString", 0);
@@ -153,10 +154,10 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(Level.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                assertDv(d, 1, Level.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

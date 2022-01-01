@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -69,7 +70,7 @@ public class TestJavaUtil {
     public void test_0() throws IOException {
         Set<Message> messages = test("JavaUtil_0");
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        Location location = new Location(collection);
+        Location location = collection.newLocation();
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         ms.forEach(m -> LOGGER.info("Error: {}", m));
         assertEquals(1, ms.size());
@@ -81,7 +82,7 @@ public class TestJavaUtil {
     public void test_1() throws IOException {
         Set<Message> messages = test("JavaUtil_1");
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        Location location = new Location(collection);
+        Location location = collection.newLocation();
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         assertTrue(ms.isEmpty());
     }
@@ -94,7 +95,7 @@ public class TestJavaUtil {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         MethodInfo add = collection.findUniqueMethod("add", 1);
         ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
-        Location location = new Location(p0);
+        Location location = p0.newLocation();
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         ms.forEach(m -> LOGGER.info("Error: {}", m));
         assertEquals(1, ms.size());
@@ -108,7 +109,7 @@ public class TestJavaUtil {
         TypeInfo collection = typeContext.getFullyQualified(List.class);
         MethodInfo add = collection.findUniqueMethod("add", 1);
         ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
-        Location location = new Location(p0);
+        Location location = p0.newLocation();
         List<Message> ms = messages.stream().filter(m -> m.location().equals(location)).toList();
         ms.forEach(m -> LOGGER.info("Error: {}", m));
         assertEquals(1, ms.size());
@@ -124,8 +125,8 @@ public class TestJavaUtil {
         TypeParameter e = typeInspection.typeParameters().get(0);
         assertEquals("E", e.getName());
         assertTrue(e.isAnnotatedWithIndependent());
-        assertEquals(Level.FALSE_DV, collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.FALSE_DV, collection.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        assertEquals(Level.TRUE_DV, list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
+        assertEquals(DV.TRUE_DV, list.typeAnalysis.get().immutableCanBeIncreasedByTypeParameters());
     }
 }

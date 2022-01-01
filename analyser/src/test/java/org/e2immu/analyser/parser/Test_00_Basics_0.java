@@ -15,10 +15,10 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -56,7 +56,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             FieldAnalysis fieldAnalysis = d.fieldAnalysis();
             if ("explicitlyFinal".equals(d.fieldInfo().name)) {
                 assertEquals("", fieldAnalysis.getLinkedVariables().toString());
-                assertEquals(Level.TRUE_DV, fieldAnalysis.getProperty(Property.FINAL));
+                assertEquals(DV.TRUE_DV, fieldAnalysis.getProperty(Property.FINAL));
                 assertEquals("\"abc\"", fieldAnalysis.getValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(fieldAnalysis.getValue(),
                         NOT_NULL_EXPRESSION));

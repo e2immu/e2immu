@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -72,7 +73,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
     public DV getPropertyFromMapDelayWhenAbsent(Property property) {
         DV v = properties.getOrDefaultNull(property);
-        if (v == null) return new CausesOfDelay.SimpleSet(location(), property.causeOfDelay());
+        if (v == null) return new SimpleSet(location(), property.causeOfDelay());
         return v;
     }
 
@@ -204,8 +205,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     // exception: @Container on a parameter is always restrictive/contracted
                     || analyserIdentification == Analyser.AnalyserIdentification.PARAMETER &&
                     e2ImmuAnnotationExpressions.container.typeInfo() == annotationExpression.typeInfo())) {
-                DV trueFalse = parameters.absent() ? Level.FALSE_DV : Level.TRUE_DV;
-                DV falseTrue = !parameters.absent() ? Level.FALSE_DV : Level.TRUE_DV;
+                DV trueFalse = parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
+                DV falseTrue = !parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
 
                 TypeInfo t = annotationExpression.typeInfo();
                 if (e2ImmuAnnotationExpressions.e1Immutable.typeInfo() == t) {
@@ -290,7 +291,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(Property.INDEPENDENT, value);
         }
         if (container) {
-            setProperty(Property.CONTAINER, Level.TRUE_DV);
+            setProperty(Property.CONTAINER, DV.TRUE_DV);
             if (levelImmutable == MultiLevel.Level.ABSENT) {
                 setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
             }

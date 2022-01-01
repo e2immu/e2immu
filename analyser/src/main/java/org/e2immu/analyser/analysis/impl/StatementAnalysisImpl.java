@@ -15,11 +15,13 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -450,8 +452,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public Location location() {
-        return new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
+    public LocationImpl location() {
+        return new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
     }
 
     // ****************************************************************************************
@@ -817,7 +819,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     public Stream<Message> localMessageStream() {
-        return messages.stream().filter(m -> m.location().info.getMethod() == methodAnalysis.getMethodInfo());
+        return messages.stream().filter(m -> ((LocationImpl) m.location()).info.getMethod() == methodAnalysis.getMethodInfo());
     }
 
     @Override
@@ -1009,7 +1011,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
                             if (atLeastOneBlockExecuted &&
                                     checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
-                                ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier()),
+                                ensure(Message.newMessage(new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier()),
                                         Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
                             }
                         } catch (Throwable throwable) {
@@ -1324,7 +1326,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(CONTAINER, container);
 
         boolean identity = parameterInfo.index == 0;
-        properties.put(IDENTITY, Level.fromBoolDv(identity));
+        properties.put(IDENTITY, DV.fromBoolDv(identity));
 
         // the external properties may be delayed, but if so they're delayed in the correct way!
         DV extNotNull = parameterAnalysis.getProperty(EXTERNAL_NOT_NULL);
@@ -1360,7 +1362,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Map<Property, DV> result = new HashMap<>();
         result.put(CONTEXT_NOT_NULL, contextNotNull);
         result.put(CONTEXT_IMMUTABLE, MUTABLE_DV);
-        result.put(CONTEXT_MODIFIED, Level.FALSE_DV);
+        result.put(CONTEXT_MODIFIED, DV.FALSE_DV);
         return result;
     }
 
@@ -1577,7 +1579,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // part 3, iteration 1+: ensure local loop variable copies and their values
 
         if (!localVariablesAssignedInThisLoop.isFrozen()) {
-            return Either.left(new CausesOfDelay.SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED)); // DELAY
+            return Either.left(new SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED)); // DELAY
         }
         List<Expression> expressionsToEvaluate = new ArrayList<>();
         localVariablesAssignedInThisLoop.stream().forEach(fqn -> {

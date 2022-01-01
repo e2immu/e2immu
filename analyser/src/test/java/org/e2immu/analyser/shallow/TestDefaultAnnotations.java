@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.BeforeAll;
@@ -86,7 +88,7 @@ public class TestDefaultAnnotations {
 
         long javaLangErrors = messages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
-                .filter(m -> !m.location().info.getTypeInfo().packageName().startsWith("java.lang"))
+                .filter(m -> !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
         LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
         assertEquals(0L, javaLangErrors);
@@ -97,13 +99,13 @@ public class TestDefaultAnnotations {
     public void testObjectEquals() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
-        assertEquals(Level.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         MethodInfo equals = object.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -113,13 +115,13 @@ public class TestDefaultAnnotations {
     public void testOptionalEquals() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         MethodInfo equals = optional.findUniqueMethod("equals", 1);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -129,13 +131,13 @@ public class TestDefaultAnnotations {
         assertNotNull(collection);
 
         TypeAnalysis typeAnalysis = collection.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.SINGLETON));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.FINALIZER));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.FLUENT));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.IDENTITY));
         assertThrows(PropertyException.class, () -> typeAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
@@ -145,13 +147,13 @@ public class TestDefaultAnnotations {
 
         MethodInfo size = collection.findUniqueMethod("size", 0);
         MethodAnalysis sizeAnalysis = size.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, sizeAnalysis.getProperty(Property.FLUENT));
-        assertEquals(Level.FALSE_DV, sizeAnalysis.getProperty(Property.IDENTITY));
-        assertEquals(Level.FALSE_DV, sizeAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.FLUENT));
+        assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.IDENTITY));
+        assertEquals(DV.FALSE_DV, sizeAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertThrows(PropertyException.class, () -> sizeAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
 
         // properties of a primitive return type:
-        assertEquals(Level.TRUE_DV, sizeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, sizeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, sizeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, sizeAnalysis.getProperty(Property.INDEPENDENT));
 
@@ -159,17 +161,17 @@ public class TestDefaultAnnotations {
 
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
         MethodAnalysis addAllAnalysis = addAll.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, addAllAnalysis.getProperty(Property.FLUENT));
-        assertEquals(Level.FALSE_DV, addAllAnalysis.getProperty(Property.IDENTITY));
-        assertEquals(Level.FALSE_DV, addAllAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, addAllAnalysis.getProperty(Property.FLUENT));
+        assertEquals(DV.FALSE_DV, addAllAnalysis.getProperty(Property.IDENTITY));
+        assertEquals(DV.FALSE_DV, addAllAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         // PARAMETER 1
 
         ParameterAnalysis addAll0 = addAll.parameterAnalysis(0);
 
-        assertEquals(Level.TRUE_DV, addAll0.getProperty(Property.IDENTITY));
-        assertEquals(Level.FALSE_DV, addAll0.getProperty(Property.CONTAINER));
-        assertEquals(Level.FALSE_DV, addAll0.getProperty(Property.IGNORE_MODIFICATIONS));
+        assertEquals(DV.TRUE_DV, addAll0.getProperty(Property.IDENTITY));
+        assertEquals(DV.FALSE_DV, addAll0.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, addAll0.getProperty(Property.IGNORE_MODIFICATIONS));
         // method is non-modifying, so parameter is independent
         assertEquals(MultiLevel.INDEPENDENT_DV, addAll0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, addAll0.getProperty(Property.IMMUTABLE));
@@ -188,8 +190,8 @@ public class TestDefaultAnnotations {
         MethodInfo get = list.findUniqueMethod("get", 1);
         MethodAnalysis getAnalysis = get.methodAnalysis.get();
 
-        assertEquals(Level.TRUE_DV, getAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(Level.FALSE_DV, getAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, getAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, getAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.NOT_INVOLVED_DV, getAnalysis.getProperty(Property.IMMUTABLE));
 
         // an unbound type parameter cannot be DEPENDENT
@@ -201,13 +203,13 @@ public class TestDefaultAnnotations {
     public void testListAdd() {
         TypeInfo list = typeContext.getFullyQualified(List.class);
         TypeAnalysis typeAnalysis = list.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
         MethodInfo add = list.findUniqueMethod("add", 1);
         MethodAnalysis addAnalysis = add.methodAnalysis.get();
 
-        assertEquals(Level.TRUE_DV, addAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(Level.FALSE_DV, addAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, addAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, addAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, addAnalysis.getProperty(Property.IMMUTABLE));
 
         ParameterAnalysis paramAnalysis = add.parameterAnalysis(0);
@@ -215,7 +217,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.NOT_INVOLVED_DV, paramAnalysis.getProperty(Property.IMMUTABLE), "In " + add.fullyQualifiedName);
         assertEquals(MultiLevel.NULLABLE_DV, paramAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
         // not a container!
-        assertEquals(Level.TRUE_DV, paramAnalysis.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, paramAnalysis.getProperty(Property.MODIFIED_VARIABLE));
 
         // independent, because the method is @NotModified and returns a boolean
         assertEquals(MultiLevel.INDEPENDENT_DV, paramAnalysis.getProperty(Property.INDEPENDENT));
@@ -227,7 +229,7 @@ public class TestDefaultAnnotations {
         MethodInfo add = list.findUniqueMethod("add", 2);
         MethodAnalysis addAnalysis = add.methodAnalysis.get();
 
-        assertEquals(Level.FALSE_DV, addAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, addAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis paramAnalysis = add.parameterAnalysis(1);
 
@@ -247,17 +249,17 @@ public class TestDefaultAnnotations {
                 .findFirst().orElseThrow();
         ParameterAnalysis p0 = toArray.parameterAnalysis(0);
 
-        assertEquals(Level.TRUE_DV, p0.getProperty(Property.IDENTITY));
-        assertEquals(Level.TRUE_DV, p0.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.IDENTITY));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
         // parameters of abstract methods are @Modified by default (unless primitive, E2)
-        assertEquals(Level.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
 
         MethodAnalysis toArrayAnalysis = toArray.methodAnalysis.get();
-        assertEquals(Level.TRUE_DV, toArrayAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(Level.FALSE_DV, toArrayAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, toArrayAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, toArrayAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         assertEquals(MultiLevel.NULLABLE_DV, toArrayAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, toArrayAnalysis.getProperty(Property.IMMUTABLE));
@@ -276,7 +278,7 @@ public class TestDefaultAnnotations {
         assertEquals(MultiLevel.INDEPENDENT_DV, emptyAnalysis.getProperty(Property.INDEPENDENT));
 
         // all constructors are modified, by definition
-        assertEquals(Level.TRUE_DV, emptyAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, emptyAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         TypeInfo hashMap = typeContext.getFullyQualified(HashMap.class);
 
@@ -286,14 +288,14 @@ public class TestDefaultAnnotations {
         MethodInfo twoConstructor = hashMap.findConstructor(2);
         MethodAnalysis twoAnalysis = twoConstructor.methodAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, twoAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(Level.TRUE_DV, twoAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.TRUE_DV, twoAnalysis.getProperty(Property.MODIFIED_METHOD));
 
         ParameterAnalysis intAnalysis = twoConstructor.parameterAnalysis(0);
 
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, intAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, intAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, intAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(Level.FALSE_DV, intAnalysis.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, intAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, intAnalysis.getProperty(Property.MODIFIED_VARIABLE));
         assertThrows(PropertyException.class, () -> intAnalysis.getProperty(Property.MODIFIED_METHOD));
     }
 
@@ -303,10 +305,10 @@ public class TestDefaultAnnotations {
         FieldInfo out = system.getFieldByName("out", true);
         FieldAnalysis outAnalysis = out.fieldAnalysis.get();
 
-        assertEquals(Level.FALSE_DV, outAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, outAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, outAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, outAnalysis.getProperty(Property.FINAL));
-        assertEquals(Level.FALSE_DV, outAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+        assertEquals(DV.TRUE_DV, outAnalysis.getProperty(Property.FINAL));
+        assertEquals(DV.FALSE_DV, outAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, outAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NULLABLE_DV, outAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
 
@@ -326,10 +328,10 @@ public class TestDefaultAnnotations {
         FieldInfo bytes = integer.getFieldByName("BYTES", true);
         FieldAnalysis bytesAnalysis = bytes.fieldAnalysis.get();
 
-        assertEquals(Level.TRUE_DV, bytesAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.TRUE_DV, bytesAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, bytesAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(Level.TRUE_DV, bytesAnalysis.getProperty(Property.FINAL));
-        assertEquals(Level.FALSE_DV, bytesAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
+        assertEquals(DV.TRUE_DV, bytesAnalysis.getProperty(Property.FINAL));
+        assertEquals(DV.FALSE_DV, bytesAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, bytesAnalysis.getProperty(Property.INDEPENDENT));
 
         if (bytesAnalysis instanceof FieldAnalysisImpl bytesAnalysisImpl) {
@@ -346,13 +348,13 @@ public class TestDefaultAnnotations {
     public void testThrowable() {
         TypeInfo throwable = typeContext.getFullyQualified(Throwable.class);
         TypeAnalysis typeAnalysis = throwable.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         MethodInfo equals = throwable.findUniqueMethod("getStackTrace", 0);
         MethodAnalysis methodAnalysis = equals.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
     }
 
@@ -365,7 +367,7 @@ public class TestDefaultAnnotations {
     public void testIllegalFormatException() {
         TypeInfo illegalFormatException = typeContext.getFullyQualified(IllegalFormatException.class);
         TypeAnalysis typeAnalysis = illegalFormatException.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
     }
@@ -375,17 +377,17 @@ public class TestDefaultAnnotations {
     public void testMapPut() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals(Level.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
         MethodInfo methodInfo = typeInfo.findUniqueMethod("put", 2);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-        assertEquals(Level.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NOT_INVOLVED_DV, p0.getProperty(Property.IMMUTABLE));
     }
@@ -396,7 +398,7 @@ public class TestDefaultAnnotations {
         TypeInfo typeInfo = typeContext.getFullyQualified(Random.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("nextInt", 0);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
     }
 
 
@@ -405,9 +407,9 @@ public class TestDefaultAnnotations {
         TypeInfo typeInfo = typeContext.getFullyQualified(Objects.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("requireNonNull", 2);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals(Level.FALSE_DV, methodAnalysis.getProperty(Property.IDENTITY));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.IDENTITY));
         ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
-        assertEquals(Level.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
     }
 }

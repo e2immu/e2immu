@@ -16,7 +16,6 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 
@@ -65,7 +64,7 @@ public interface ParameterAnalysis extends Analysis {
                 break;
 
             case IDENTITY:
-                return Level.fromBoolDv(parameterInfo.index == 0);
+                return DV.fromBoolDv(parameterInfo.index == 0);
 
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE_DV;

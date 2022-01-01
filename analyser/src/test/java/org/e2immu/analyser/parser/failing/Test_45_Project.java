@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -153,11 +154,11 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE_DV, get.methodAnalysis.get().getProperty(Property.NOT_NULL_EXPRESSION));
 
             MethodInfo putInMap = map.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, putInMap.getAnalysis().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashMap = typeMap.get(HashMap.class);
             MethodInfo put = hashMap.findUniqueMethod("put", 2);
-            assertEquals(Level.TRUE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
+            assertEquals(DV.TRUE_DV, put.getAnalysis().getProperty(Property.MODIFIED_METHOD));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -207,9 +208,9 @@ public class Test_45_Project extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(0), 3, Level.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(0), 1, Level.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
             }
         };
 
@@ -234,13 +235,13 @@ public class Test_45_Project extends CommonTestRunner {
             MethodInfo get = map.findUniqueMethod("get", 1);
             ParameterInfo p0 = get.methodInspection.get().getParameters().get(0);
             ParameterAnalysis p0a = p0.parameterAnalysis.get();
-            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.IDENTITY)); // first property
+            assertEquals(DV.TRUE_DV, p0a.getProperty(Property.IDENTITY)); // first property
 
-            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.TRUE_DV, p0a.getProperty(Property.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(MultiLevel.DEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
-            assertEquals(Level.TRUE_DV, p0a.getProperty(Property.CONTAINER));
+            assertEquals(DV.TRUE_DV, p0a.getProperty(Property.CONTAINER));
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()

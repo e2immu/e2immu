@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -142,7 +143,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals(Level.TRUE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.CONSTANT));
             }
         };
 

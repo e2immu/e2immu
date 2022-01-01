@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImp
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -157,7 +158,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = value.lt(valueFromOverrides);
                 if (complain) {
-                    messages.add(Message.newMessage(new Location(typeInfo),
+                    messages.add(Message.newMessage(typeInfo.newLocation(),
                             Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, property.name));
                 }
             }
@@ -167,7 +168,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(new Location(typeInfo),
+            Message error = Message.newMessage(typeInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);

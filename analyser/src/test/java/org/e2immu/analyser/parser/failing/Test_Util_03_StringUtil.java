@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -73,10 +74,10 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
             List<ParameterInfo> parameters = arrayCopy.methodInspection.get().getParameters();
 
             ParameterAnalysis p0 = parameters.get(0).parameterAnalysis.get();
-            assertEquals(Level.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
             ParameterAnalysis p2 = parameters.get(2).parameterAnalysis.get();
-            assertEquals(Level.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
+            assertEquals(DV.TRUE_DV, p2.getProperty(Property.MODIFIED_VARIABLE));
 
             TypeInfo integer = typeMap.get(Integer.class);
             MethodInfo toString = integer.findUniqueMethod("toString", 1);

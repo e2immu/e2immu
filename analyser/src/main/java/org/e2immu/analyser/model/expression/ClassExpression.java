@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -30,10 +31,18 @@ import java.util.Objects;
  * Represents an expression like String.class
  */
 @E2Container
-public record ClassExpression(Primitives primitives,
-                              ParameterizedType parameterizedType, // String
-                              ParameterizedType parameterizedClassType // Class<String>
-) implements ConstantExpression<ParameterizedType> {
+public class ClassExpression extends BaseExpression implements ConstantExpression<ParameterizedType> {
+
+    private final Primitives primitives;
+    private final ParameterizedType parameterizedType; // String
+    private final ParameterizedType parameterizedClassType; // Class<String>
+
+    public ClassExpression(Primitives primitives, ParameterizedType parameterizedType, ParameterizedType parameterizedClassType) {
+        super(Identifier.CONSTANT);
+        this.primitives = primitives;
+        this.parameterizedType = parameterizedType;
+        this.parameterizedClassType = parameterizedClassType;
+    }
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
         this(primitives, parameterizedType, new ParameterizedType(primitives.classTypeInfo(),
@@ -96,10 +105,5 @@ public record ClassExpression(Primitives primitives,
     @Override
     public ParameterizedType getValue() {
         return parameterizedType;
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT;
     }
 }

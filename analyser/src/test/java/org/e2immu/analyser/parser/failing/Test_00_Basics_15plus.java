@@ -15,9 +15,9 @@
 
 package org.e2immu.analyser.parser.failing;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -84,7 +84,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             if ("setA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(Level.FALSE_DV, d.getProperty(CONTAINER));
+                        assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
