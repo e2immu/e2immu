@@ -14,9 +14,10 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
@@ -72,7 +73,7 @@ public class TestParameterizedType {
             TypeParameter mapK = new TypeParameterImpl(map, "K", 0);
             TypeParameter mapV = new TypeParameterImpl(map, "V", 1);
 
-            TypeInspectionImpl.Builder mapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
+            TypeInspection.Builder mapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(mapK)
                     .addTypeParameter(mapV);
@@ -84,7 +85,7 @@ public class TestParameterizedType {
             TypeParameter hashMapK = new TypeParameterImpl(hashMap, "K", 0);
             TypeParameter hashMapV = new TypeParameterImpl(hashMap, "V", 1);
 
-            TypeInspectionImpl.Builder hashMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
+            TypeInspection.Builder hashMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .noParent(primitives)
                     .addInterfaceImplemented(new ParameterizedType(map,
                             List.of(new ParameterizedType(hashMapK, 0, NONE),
@@ -98,7 +99,7 @@ public class TestParameterizedType {
         {
             TypeParameter stringMapV = new TypeParameterImpl(stringMap, "V", 0);
 
-            TypeInspectionImpl.Builder stringMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
+            TypeInspection.Builder stringMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .setParentClass(new ParameterizedType(hashMap, List.of(primitives.stringParameterizedType(),
                             new ParameterizedType(stringMapV, 0, NONE))))
                     .addTypeParameter(stringMapV);
@@ -107,7 +108,7 @@ public class TestParameterizedType {
         // Table extends StringMap<Integer>
         table = new TypeInfo(PACKAGE, "Table");
         {
-            TypeInspectionImpl.Builder tableInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
+            TypeInspection.Builder tableInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
                     .setParentClass(new ParameterizedType(stringMap, List.of(primitives.integerTypeInfo().asParameterizedType(IP))));
             table.typeInspection.set(tableInspection.build());
         }
@@ -122,7 +123,7 @@ public class TestParameterizedType {
                     .addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
                             new ParameterizedType(functionT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
-            TypeInspectionImpl.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
+            TypeInspection.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
                     .noParent(primitives)
                     .setTypeNature(TypeNature.INTERFACE)
                     .addAnnotation(primitives.functionalInterfaceAnnotationExpression())
@@ -137,7 +138,7 @@ public class TestParameterizedType {
             TypeParameter aK = new TypeParameterImpl(a, "K", 0);
             TypeParameter aV = new TypeParameterImpl(a, "V", 1);
 
-            TypeInspectionImpl.Builder aInspection = new TypeInspectionImpl.Builder(a, BY_HAND)
+            TypeInspection.Builder aInspection = new TypeInspectionImpl.Builder(a, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(aK)
                     .addTypeParameter(aV);
@@ -148,7 +149,7 @@ public class TestParameterizedType {
         {
             TypeParameter bX = new TypeParameterImpl(b, "X", 0);
 
-            TypeInspectionImpl.Builder bInspection = new TypeInspectionImpl.Builder(b, BY_HAND)
+            TypeInspection.Builder bInspection = new TypeInspectionImpl.Builder(b, BY_HAND)
                     .setParentClass(new ParameterizedType(a, List.of(
                             primitives.stringParameterizedType(),
                             new ParameterizedType(bX, 0, NONE))))
@@ -158,7 +159,7 @@ public class TestParameterizedType {
         // C extends B<Integer>
         c = new TypeInfo(PACKAGE, "C");
         {
-            TypeInspectionImpl.Builder cInspection = new TypeInspectionImpl.Builder(c, BY_HAND)
+            TypeInspection.Builder cInspection = new TypeInspectionImpl.Builder(c, BY_HAND)
                     .setParentClass(new ParameterizedType(b, List.of(
                             primitives.integerTypeInfo().asParameterizedType(IP))));
             c.typeInspection.set(cInspection.build());

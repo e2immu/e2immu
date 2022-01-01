@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;

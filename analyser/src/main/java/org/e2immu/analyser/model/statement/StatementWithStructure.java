@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.ElementImpl;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
 

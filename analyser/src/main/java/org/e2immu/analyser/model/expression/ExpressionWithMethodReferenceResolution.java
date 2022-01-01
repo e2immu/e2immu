@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;

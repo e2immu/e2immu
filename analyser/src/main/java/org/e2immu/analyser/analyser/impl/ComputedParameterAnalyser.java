@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.resolver.ResolverImpl;
+import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

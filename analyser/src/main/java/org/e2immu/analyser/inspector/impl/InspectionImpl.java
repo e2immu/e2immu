@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 
 import org.e2immu.analyser.model.AnnotationExpression;

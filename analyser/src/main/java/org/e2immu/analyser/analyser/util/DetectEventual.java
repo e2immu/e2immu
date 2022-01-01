@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;

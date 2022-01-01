@@ -14,21 +14,16 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeParameter;
-import org.e2immu.analyser.model.TypeParameterImpl;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo,
-                     TypeInspectionImpl.Builder typeInspectionBuilder,
+record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder,
                      FindType findType) {
     public static final char COLON = ':';
     public static final char GT_END_TYPE_PARAMS = '>';
@@ -131,7 +126,7 @@ record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo,
     // copyOf(U[], int, java.lang.Class<? extends T[]>) spaces between parameter types
 
     int parseMethodGenerics(String signature,
-                            MethodInspectionImpl.Builder methodInspectionBuilder,
+                            MethodInspection.Builder methodInspectionBuilder,
                             TypeContext methodContext) {
         IterativeParsing<TypeParameter> iterativeParsing = new IterativeParsing<>();
         while (true) {

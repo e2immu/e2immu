@@ -12,14 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.parser.impl;
 
 import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.resolver.ResolverImpl;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
+import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
@@ -136,7 +140,7 @@ public class TypeMapImpl implements TypeMap {
         private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
         private final Resources classPath;
 
-        private final Map<TypeInfo, TypeInspectionImpl.Builder> typeInspections = new HashMap<>();
+        private final Map<TypeInfo, TypeInspection.Builder> typeInspections = new HashMap<>();
         private final Map<FieldInfo, FieldInspection.Builder> fieldInspections = new HashMap<>();
         private final Map<String, MethodInspection.Builder> methodInspections = new HashMap<>();
 
@@ -241,13 +245,13 @@ public class TypeMapImpl implements TypeMap {
         Creates types all the way up to the primary type if necessary
          */
 
-        public TypeInspectionImpl.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
+        public TypeInspection.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
             assert path.indexOf('.') < 0 : "Path is " + path; // no dots! uses / and $; the . is for the .class which should have been stripped
             int dollar = path.indexOf('$');
             TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
             if (dollar < 0) return ensureTypeInspection(primaryType, inspectionState);
             TypeInfo enclosingType = primaryType;
-            TypeInspectionImpl.Builder typeInspection = null;
+            TypeInspection.Builder typeInspection = null;
             while (dollar >= 0) {
                 int nextDollar = path.indexOf('$', dollar + 1);
                 String simpleName = nextDollar < 0 ? path.substring(dollar + 1) : path.substring(dollar + 1, nextDollar);
@@ -267,10 +271,10 @@ public class TypeMapImpl implements TypeMap {
             return typeInspection;
         }
 
-        public TypeInspectionImpl.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
-            TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
+        public TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+            TypeInspection.Builder inMap = typeInspections.get(typeInfo);
             if (inMap == null) {
-                TypeInspectionImpl.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+                TypeInspection.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
                 typeInspections.put(typeInfo, typeInspection);
                 return typeInspection;
             }
@@ -296,9 +300,9 @@ public class TypeMapImpl implements TypeMap {
             return getOrCreateFromPathReturnInspection(path, inspectionState).typeInfo();
         }
 
-        public TypeInspectionImpl.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
+        public TypeInspection.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
-            TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
+            TypeInspection.Builder inMap = typeInspections.get(typeInfo);
             if (inMap != null) {
                 throw new UnsupportedOperationException();
             }
@@ -308,7 +312,7 @@ public class TypeMapImpl implements TypeMap {
             return ti;
         }
 
-        public TypeInspectionImpl.Builder ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+        public TypeInspection.Builder ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             TypeInfo inMap = get(typeInfo.fullyQualifiedName);
             if (inMap == null) {
                 return add(typeInfo, inspectionState);
@@ -350,7 +354,7 @@ public class TypeMapImpl implements TypeMap {
 
         public InspectionState getInspectionState(TypeInfo typeInfo) {
             if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get().getInspectionState();
-            TypeInspectionImpl.Builder typeInspection = typeInspections.get(typeInfo);
+            TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
             if (typeInspection == null) {
                 return null; // not registered
             }
@@ -363,7 +367,7 @@ public class TypeMapImpl implements TypeMap {
                 // primitives, etc.
                 return typeInfo.typeInspection.get();
             }
-            TypeInspectionImpl.Builder typeInspection = typeInspections.get(typeInfo);
+            TypeInspection.Builder typeInspection = typeInspections.get(typeInfo);
             if (typeInspection == null) {
                 return null;
             }
@@ -411,7 +415,7 @@ public class TypeMapImpl implements TypeMap {
             return primitives;
         }
 
-        public Stream<Map.Entry<TypeInfo, TypeInspectionImpl.Builder>> streamTypes() {
+        public Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes() {
             return typeInspections.entrySet().stream();
         }
 
@@ -444,7 +448,7 @@ public class TypeMapImpl implements TypeMap {
             if (existing != null) return existing;
 
             TypeInfo typeInfo = new TypeInfo("_internal_", name);
-            TypeInspectionImpl.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
+            TypeInspection.Builder builder = add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
 
             builder.setParentClass(primitives.objectParameterizedType);
             builder.setTypeNature(TypeNature.INTERFACE);

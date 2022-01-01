@@ -15,7 +15,13 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -82,9 +88,9 @@ public class TestTypeInfoStream {
         TypeInfo hashMap = new TypeInfo(JAVA_UTIL, "HashMap");
         TypeInfo exception = new TypeInfo(GENERATED_PACKAGE, "MyException");
 
-        TypeInspectionImpl.Builder hashMapInspection = new TypeInspectionImpl.Builder(hashMap, BY_HAND)
+        TypeInspection.Builder hashMapInspection = new TypeInspectionImpl.Builder(hashMap, BY_HAND)
                 .noParent(primitives);
-        TypeInspectionImpl.Builder exceptionInspection = new TypeInspectionImpl.Builder(exception, BY_HAND)
+        TypeInspection.Builder exceptionInspection = new TypeInspectionImpl.Builder(exception, BY_HAND)
                 .noParent(primitives);
 
         InspectionProvider inspectionProvider = new InspectionProvider() {

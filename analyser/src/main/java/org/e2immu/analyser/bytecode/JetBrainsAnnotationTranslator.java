@@ -16,10 +16,10 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.annotationxml.model.Value;
-import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;

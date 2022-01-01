@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;

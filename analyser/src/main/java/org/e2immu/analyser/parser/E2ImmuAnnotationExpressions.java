@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;

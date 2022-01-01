@@ -12,9 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;

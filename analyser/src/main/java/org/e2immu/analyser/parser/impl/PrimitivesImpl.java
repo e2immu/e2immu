@@ -23,11 +23,12 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -320,7 +321,7 @@ public class PrimitivesImpl implements Primitives {
         MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
                 .build(InspectionProvider.DEFAULT).getMethodInfo();
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
+        TypeInspection.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setFunctionalInterface(false)

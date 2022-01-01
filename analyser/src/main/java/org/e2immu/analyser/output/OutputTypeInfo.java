@@ -16,6 +16,7 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 

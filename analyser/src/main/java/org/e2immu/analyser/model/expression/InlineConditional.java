@@ -19,6 +19,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;

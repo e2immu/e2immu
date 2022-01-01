@@ -16,7 +16,7 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Inspection;
 import org.e2immu.analyser.model.ParameterizedType;

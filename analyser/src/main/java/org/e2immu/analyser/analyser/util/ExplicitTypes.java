@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;

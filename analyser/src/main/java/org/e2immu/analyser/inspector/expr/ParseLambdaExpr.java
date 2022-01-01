@@ -17,6 +17,8 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
@@ -196,7 +198,7 @@ public class ParseLambdaExpr {
         typeMapBuilder.registerMethodInspection(builder);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
+        TypeInspection.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
                         InspectionState.BY_HAND)
                 .noParent(typeMapBuilder.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)

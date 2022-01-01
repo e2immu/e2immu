@@ -14,12 +14,13 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
@@ -86,7 +87,7 @@ public class TestIsAssignableFromGenerics {
         {
             TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0);
 
-            TypeInspectionImpl.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
+            TypeInspection.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(myComparableT);
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
@@ -102,21 +103,21 @@ public class TestIsAssignableFromGenerics {
         }
         node = new TypeInfo(PACKAGE, "Node");
         {
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(node, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(node, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(new ParameterizedType(node, List.of()))))
                     .noParent(primitives);
             node.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
         }
         sub1 = new TypeInfo(PACKAGE, "Sub1");
         {
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(sub1, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub1, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
             sub1.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
         }
         sub2 = new TypeInfo(PACKAGE, "Sub2");
         {
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(sub2, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(sub2, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
                     .noParent(primitives);
             sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
@@ -128,7 +129,7 @@ public class TestIsAssignableFromGenerics {
             TypeParameterImpl t = new TypeParameterImpl(myList1, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList1, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(myList1, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(t);
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
@@ -152,7 +153,7 @@ public class TestIsAssignableFromGenerics {
             TypeParameterImpl t = new TypeParameterImpl(myList2, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList2, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(myList2, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(t);
             myList2.typeInspection.set(builder
@@ -168,7 +169,7 @@ public class TestIsAssignableFromGenerics {
             TypeParameterImpl t = new TypeParameterImpl(myList3, "T", 0);
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
-            TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList3, BY_HAND)
+            TypeInspection.Builder builder = new TypeInspectionImpl.Builder(myList3, BY_HAND)
                     .noParent(primitives)
                     .addTypeParameter(t);
             myList3.typeInspection.set(builder

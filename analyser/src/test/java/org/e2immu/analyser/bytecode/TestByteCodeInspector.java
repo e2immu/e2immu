@@ -22,7 +22,7 @@ import org.e2immu.analyser.model.TypeModifier;
 import org.e2immu.analyser.model.TypeNature;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.SMapList;
 import org.junit.jupiter.api.BeforeAll;

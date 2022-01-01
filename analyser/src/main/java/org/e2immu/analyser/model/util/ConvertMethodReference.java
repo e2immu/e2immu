@@ -30,6 +30,7 @@ package org.e2immu.analyser.model.util;
 */
 
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -57,7 +58,7 @@ public class ConvertMethodReference {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeContext);
         int index = expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType());
         TypeInfo typeInfo = new TypeInfo(enclosingType, index);
-        TypeInspectionImpl.Builder builder = typeContext.typeMap.add(typeInfo, InspectionState.BY_HAND);
+        TypeInspection.Builder builder = typeContext.typeMap.add(typeInfo, InspectionState.BY_HAND);
 
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);

@@ -21,10 +21,10 @@ import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.e2immu.analyser.bytecode.ExpressionFactory;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.StringUtil;
@@ -57,7 +57,7 @@ public class MyClassVisitor extends ClassVisitor {
     private TypeInfo currentType;
     private String currentTypePath;
     private boolean currentTypeIsInterface;
-    private TypeInspectionImpl.Builder typeInspectionBuilder;
+    private TypeInspection.Builder typeInspectionBuilder;
 
     public MyClassVisitor(OnDemandInspection onDemandInspection,
                           AnnotationStore annotationStore,
@@ -408,12 +408,12 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
 
                 TypeInfo subTypeInMap = typeContext.typeMap.get(fqn);
-                TypeInspectionImpl.Builder subTypeInspection;
+                TypeInspection.Builder subTypeInspection;
                 if (subTypeInMap == null) {
                     subTypeInMap = new TypeInfo(stepDown ? currentType : currentType.packageNameOrEnclosingType.getRight(), innerName);
                     subTypeInspection = typeContext.typeMap.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
-                    subTypeInspection = Objects.requireNonNull((TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap)); //MUST EXIST
+                    subTypeInspection = Objects.requireNonNull((TypeInspection.Builder) typeContext.getTypeInspection(subTypeInMap)); //MUST EXIST
                 }
                 if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
                     checkTypeFlags(access, subTypeInspection);
@@ -446,7 +446,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
     }
 
-    private void checkTypeFlags(int access, TypeInspectionImpl.Builder typeInspectionBuilder) {
+    private void checkTypeFlags(int access, TypeInspection.Builder typeInspectionBuilder) {
         if ((access & Opcodes.ACC_STATIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.STATIC);
         if ((access & Opcodes.ACC_PRIVATE) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PROTECTED);

@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.ParseAndInspect;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.expr.ParseSwitchExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.YieldStatement;

@@ -22,9 +22,10 @@ import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.resolver.ResolverImpl;
+import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -173,7 +174,7 @@ public class Parser {
         }
 
         @Override
-        public void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) throws ParseException {
+        public void inspect(TypeInfo typeInfo, TypeInspection.Builder typeInspectionBuilder) throws ParseException {
             if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }

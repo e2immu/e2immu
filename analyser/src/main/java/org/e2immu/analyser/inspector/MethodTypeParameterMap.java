@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.inspector;
 
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;

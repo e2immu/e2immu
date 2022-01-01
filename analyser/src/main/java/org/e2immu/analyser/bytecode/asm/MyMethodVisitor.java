@@ -17,13 +17,9 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -35,9 +31,9 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyMethodVisitor extends MethodVisitor {
-    private final TypeInspectionImpl.Builder typeInspectionBuilder;
+    private final TypeInspection.Builder typeInspectionBuilder;
     private final TypeContext typeContext;
-    private final MethodInspectionImpl.Builder methodInspectionBuilder;
+    private final MethodInspection.Builder methodInspectionBuilder;
     private final List<ParameterizedType> types;
     private final ParameterInspectionImpl.Builder[] parameterInspectionBuilders;
     private final int numberOfParameters;
@@ -48,8 +44,8 @@ public class MyMethodVisitor extends MethodVisitor {
     private final boolean lastParameterIsVarargs;
 
     public MyMethodVisitor(TypeContext typeContext,
-                           MethodInspectionImpl.Builder methodInspectionBuilder,
-                           TypeInspectionImpl.Builder typeInspectionBuilder,
+                           MethodInspection.Builder methodInspectionBuilder,
+                           TypeInspection.Builder typeInspectionBuilder,
                            List<ParameterizedType> types,
                            boolean lastParameterIsVarargs,
                            MethodItem methodItem,

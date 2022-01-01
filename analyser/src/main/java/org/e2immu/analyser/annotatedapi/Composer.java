@@ -15,6 +15,10 @@
 package org.e2immu.analyser.annotatedapi;
 
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.NullConstant;

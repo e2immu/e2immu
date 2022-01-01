@@ -15,9 +15,9 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.FieldInspection;
+import org.e2immu.analyser.model.TypeInspection;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
 
@@ -29,12 +29,12 @@ public class MyFieldVisitor extends FieldVisitor {
     private final FieldInfo fieldInfo;
     private final TypeContext typeContext;
     private final FieldInspection.Builder fieldInspectionBuilder;
-    private final TypeInspectionImpl.Builder typeInspectionBuilder;
+    private final TypeInspection.Builder typeInspectionBuilder;
 
     public MyFieldVisitor(TypeContext typeContext,
                           FieldInfo fieldInfo,
                           FieldInspection.Builder fieldInspectionBuilder,
-                          TypeInspectionImpl.Builder typeInspectionBuilder) {
+                          TypeInspection.Builder typeInspectionBuilder) {
         super(ASM9);
         this.typeContext = typeContext;
         this.fieldInfo = fieldInfo;

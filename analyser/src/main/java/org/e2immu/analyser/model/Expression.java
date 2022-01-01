@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Trie;
 import org.junit.jupiter.api.Test;
 

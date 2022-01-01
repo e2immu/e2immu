@@ -17,10 +17,11 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
@@ -156,7 +157,7 @@ public class TestParseGenerics {
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1));
         FindType findType = (fqn, path) -> newTypeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
-        TypeInspectionImpl.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
+        TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
                 findType);

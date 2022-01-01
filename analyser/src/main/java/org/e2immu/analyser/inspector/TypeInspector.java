@@ -22,9 +22,13 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.TypeParameter;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -624,7 +628,7 @@ public class TypeInspector {
         return builder.getMethodInfo();
     }
 
-    record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
+    public record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
     }
 
     private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String

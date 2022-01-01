@@ -16,11 +16,12 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.This;

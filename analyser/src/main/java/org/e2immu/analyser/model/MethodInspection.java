@@ -16,12 +16,10 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.Finalizer;
 
 import java.util.List;
@@ -163,5 +161,7 @@ public interface MethodInspection extends Inspection {
         Builder setInspectedBlock(Block body);
 
         Builder setStatic(boolean b);
+
+        ParameterInspectionImpl.Builder newParameterInspectionBuilder(Identifier generate, int i);
     }
 }

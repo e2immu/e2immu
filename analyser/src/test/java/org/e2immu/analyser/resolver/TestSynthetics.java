@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.TypeMapImpl;
 import org.junit.jupiter.api.Test;
 
 import java.io.FilenameFilter;

@@ -12,10 +12,11 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
+import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInspection;

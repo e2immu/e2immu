@@ -12,7 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.model.impl;
+
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Identifier;
 
 public abstract class ElementImpl implements Element {
 

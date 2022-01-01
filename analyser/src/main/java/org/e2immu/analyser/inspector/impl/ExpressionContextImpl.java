@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -21,6 +21,7 @@ import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.UnionType;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.expr.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.*;
@@ -46,7 +47,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION_CONTEXT;
 import static org.e2immu.analyser.util.Logger.log;
 
 // cannot even be a @Container, since the VariableContext passed on to us gets modified along the way
-public record ExpressionContextImpl(ResolverRecursion resolver,
+public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver,
                                     TypeInfo enclosingType,
                                     TypeInfo uninspectedEnclosingType,
                                     MethodInfo enclosingMethod,

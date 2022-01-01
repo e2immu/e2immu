@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver;
+package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -28,9 +28,9 @@ public class AnalyseCycle {
     This method returns true when removing me solves the cycle.
     In strict order!
      */
-    static boolean analyseCycle(MethodInfo methodInfo,
-                                Set<MethodInfo> methodsReached,
-                                DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    public static boolean analyseCycle(MethodInfo methodInfo,
+                                       Set<MethodInfo> methodsReached,
+                                       DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         if (!methodsReached.contains(methodInfo) || methodsReached.size() == 1) return false;
         List<MethodInfo> sorted = new ArrayList<>(methodsReached);
         sorted.sort(Comparator.comparing(m -> m.fullyQualifiedName));

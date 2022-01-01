@@ -15,10 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.bytecode.OnDemandInspection;
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.InspectionState;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 
 import java.util.List;
@@ -45,7 +42,7 @@ public interface TypeMap extends InspectionProvider {
 
         void setByteCodeInspector(OnDemandInspection byteCodeInspector);
 
-        TypeInspectionImpl.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);
+        TypeInspection.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);
 
         void setInspectWithJavaParser(InspectWithJavaParser onDemandSourceInspection);
 
@@ -59,18 +56,18 @@ public interface TypeMap extends InspectionProvider {
 
         void registerMethodInspection(MethodInspection.Builder builder);
 
-        TypeInspectionImpl.Builder ensureTypeAndInspection(TypeInfo subType, InspectionState inspectionState);
+        TypeInspection.Builder ensureTypeAndInspection(TypeInfo subType, InspectionState inspectionState);
 
         InspectionState getInspectionState(TypeInfo inMap);
 
         TypeInfo getOrCreateFromPath(String stripDotClass, InspectionState triggerBytecodeInspection);
 
-        TypeInspectionImpl.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState byHand);
+        TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState byHand);
 
         TypeInfo syntheticFunction(int parameters, boolean isVoid);
 
-        TypeInspectionImpl.Builder getOrCreateFromPathReturnInspection(String name, InspectionState startingBytecode);
+        TypeInspection.Builder getOrCreateFromPathReturnInspection(String name, InspectionState startingBytecode);
 
-        Stream<Map.Entry<TypeInfo, TypeInspectionImpl.Builder>> streamTypes();
+        Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes();
     }
 }

@@ -12,10 +12,11 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 

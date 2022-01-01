@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

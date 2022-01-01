@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -283,5 +284,36 @@ public interface TypeInspection extends Inspection {
         Stream<List<MethodInfo>> subTypes = subTypes().stream()
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
         return Stream.concat(Stream.of(mine), subTypes);
+    }
+    
+    interface Builder extends InspectionBuilder<Builder>, TypeInspection {
+
+        boolean finishedInspection();
+
+        TypeInspection build();
+
+        void setInspectionState(InspectionState startingBytecode);
+
+        Builder setParentClass(ParameterizedType objectParameterizedType);
+
+        Builder setTypeNature(TypeNature anInterface);
+
+        Builder addTypeParameter(TypeParameter typeParameter);
+
+        Builder addTypeModifier(TypeModifier aPublic);
+
+        Builder addMethod(MethodInfo methodInfo);
+
+        Builder setFunctionalInterface(boolean b);
+
+        Builder addInterfaceImplemented(ParameterizedType functionalInterfaceType);
+
+        Builder noParent(Primitives primitives);
+
+        Builder addField(FieldInfo fieldInfo);
+
+        Builder addSubType(TypeInfo containerTypeInfo);
+
+        Builder addConstructor(MethodInfo methodInfo);
     }
 }

@@ -12,11 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver;
+package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -28,6 +31,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.resolver.*;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

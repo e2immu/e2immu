@@ -49,7 +49,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // -- a bit of primitives info
 
-    boolean isUnaryMinusOperatorInt() {
+    public boolean isUnaryMinusOperatorInt() {
         return UNARY_MINUS_OPERATOR_INT.equals(fullyQualifiedName()) && this.methodInspection.get().getParameters().size() == 1;
     }
 

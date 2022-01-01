@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;

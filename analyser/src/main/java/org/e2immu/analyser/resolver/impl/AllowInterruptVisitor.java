@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver;
+package org.e2immu.analyser.resolver.impl;
 
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.MethodInfo;

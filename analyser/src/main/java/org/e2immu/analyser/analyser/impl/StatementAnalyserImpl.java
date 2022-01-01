@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;

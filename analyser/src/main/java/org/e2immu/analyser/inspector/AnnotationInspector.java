@@ -19,6 +19,7 @@ import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
+import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 
 import java.util.ArrayList;
 import java.util.List;

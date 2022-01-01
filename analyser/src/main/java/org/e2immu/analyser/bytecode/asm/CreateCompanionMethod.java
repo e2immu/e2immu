@@ -15,7 +15,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.annotationxml.model.MethodItem;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.TypeInfo;
 

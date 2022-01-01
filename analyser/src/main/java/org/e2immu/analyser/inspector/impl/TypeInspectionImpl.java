@@ -12,11 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.inspector;
+package org.e2immu.analyser.inspector.impl;
 
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.Expression;
+import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
+import org.e2immu.analyser.inspector.InspectionState;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
@@ -168,7 +171,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Container(builds = TypeInspectionImpl.class)
-    public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
+    public static class Builder extends AbstractInspectionBuilder<TypeInspection.Builder> implements TypeInspection.Builder {
         private TypeNature typeNature = TypeNature.CLASS;
         private final Set<String> methodAndConstructorNames = new HashSet<>();
         private final List<TypeInfo> permittedWhenSealed = new ArrayList<>();
@@ -432,14 +435,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
                 InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
                         STARTING_JAVA_PARSER;
-                TypeInspectionImpl.Builder subTypeBuilder = typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
+                TypeInspection.Builder subTypeBuilder = typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
                 if (!res.isDollarType()) {
                     addSubType(subTypeBuilder.typeInfo());
                 }
                 log(INSPECTOR, "Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
 
-                subTypeBuilder.recursivelyAddToTypeStore(false, res.isDollarType(), typeStore, cid,
-                        dollarTypesAreNormalTypes);
+                ((TypeInspectionImpl.Builder) subTypeBuilder).recursivelyAddToTypeStore(false,
+                        res.isDollarType(), typeStore, cid, dollarTypesAreNormalTypes);
             }));
         }
     }
@@ -471,7 +474,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return new TypeInspector.DollarResolverResult(subType, parentIsDollarType);
     }
 
-    static String packageName(FieldDeclaration packageNameField) {
+    public static String packageName(FieldDeclaration packageNameField) {
         if (packageNameField != null) {
             if (packageNameField.isFinal() && packageNameField.isStatic()) {
                 Optional<Expression> initializer = packageNameField.getVariable(0).getInitializer();
