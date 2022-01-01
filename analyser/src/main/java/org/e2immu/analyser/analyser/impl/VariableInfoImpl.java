@@ -12,8 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -51,7 +53,7 @@ class VariableInfoImpl implements VariableInfo {
     // ONLY set to values in iteration 0's evaluation
     private final Set<Integer> readAtStatementTimes;
 
-    private final Properties properties = new Properties();
+    private final org.e2immu.analyser.analyser.Properties properties = new Properties();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
 
     // 20211023 needs to be frozen explicitly
@@ -253,49 +255,6 @@ class VariableInfoImpl implements VariableInfo {
 
     // ***************************** MERGE RELATED CODE *********************************
 
-    private record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
-    }
-
-    // it is important to note that the properties are NOT read off the value, but from the properties map
-    // this copying has to have taken place earlier; for each of the variable properties below:
-
-
-    private static final BinaryOperator<DV> MAX_CM = (i1, i2) ->
-            i1.valueIsTrue() || i2.valueIsTrue() ? Level.TRUE_DV :
-                    i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : Level.FALSE_DV;
-
-    private static final List<MergeOp> MERGE = List.of(
-
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
-
-            new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
-            new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
-            new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
-            new MergeOp(IMMUTABLE, DV::min, IMMUTABLE.bestDv),
-            new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
-            new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
-
-            new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
-            new MergeOp(IDENTITY, DV::min, IDENTITY.bestDv),
-
-            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
-    );
-
-    // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
-    private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
-
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
-
-            new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
-            new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
-            new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
-            new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
-
-            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)
-    );
-
     // TESTING ONLY!!
     VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                         Expression stateOfDestination,
@@ -438,50 +397,23 @@ class VariableInfoImpl implements VariableInfo {
             list.add(previous);
         }
         for (MergeOp mergeOp : MERGE_WITHOUT_VALUE_PROPERTIES) {
-            DV commonValue = mergeOp.initial;
+            DV commonValue = mergeOp.initial();
 
             for (VariableInfo vi : list) {
                 if (vi != null) {
-                    DV value = vi.getProperty(mergeOp.property);
-                    commonValue = mergeOp.operator.apply(commonValue, value);
+                    DV value = vi.getProperty(mergeOp.property());
+                    commonValue = mergeOp.operator().apply(commonValue, value);
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
-            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.property)) {
-                groupPropertyValues.set(mergeOp.property, previous.variable(), commonValue);
+            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.property())) {
+                groupPropertyValues.set(mergeOp.property(), previous.variable(), commonValue);
             } else {
                 if (commonValue.isDone()) {
-                    setProperty(mergeOp.property, commonValue);
+                    setProperty(mergeOp.property(), commonValue);
                 }
             }
         }
-    }
-
-    // used by change data
-    public static Map<Property, DV> mergeIgnoreAbsent(Map<Property, DV> m1, Map<Property, DV> m2) {
-        if (m2.isEmpty()) return m1;
-        if (m1.isEmpty()) return m2;
-        Map<Property, DV> map = new HashMap<>();
-        for (MergeOp mergeOp : MERGE) {
-            DV v1 = m1.getOrDefault(mergeOp.property, null);
-            DV v2 = m2.getOrDefault(mergeOp.property, null);
-
-            if (v1 == null) {
-                if (v2 != null) {
-                    map.put(mergeOp.property, v2);
-                }
-            } else {
-                if (v2 == null) {
-                    map.put(mergeOp.property, v1);
-                } else {
-                    DV v = mergeOp.operator.apply(v1, v2);
-                    if (v.isDelayed()) {
-                        map.put(mergeOp.property, v);
-                    }
-                }
-            }
-        }
-        return Map.copyOf(map);
     }
 
     /*

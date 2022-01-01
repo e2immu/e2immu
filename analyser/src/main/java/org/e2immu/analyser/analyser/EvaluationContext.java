@@ -14,6 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.MethodAnalyser;
+import org.e2immu.analyser.analyser.impl.ParameterAnalyser;
+import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyser;
+import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -56,6 +60,10 @@ public interface EvaluationContext {
 
     default StatementAnalyser getCurrentStatement() {
         return null;
+    }
+
+    default boolean haveCurrentStatement() {
+        return getCurrentStatement() != null;
     }
 
     default Location getLocation() {

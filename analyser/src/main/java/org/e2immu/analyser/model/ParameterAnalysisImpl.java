@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analyser.impl.AnalysisImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.FlipSwitch;

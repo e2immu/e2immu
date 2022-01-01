@@ -15,7 +15,7 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.MethodAnalysisImpl;
+import org.e2immu.analyser.analyser.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.junit.jupiter.api.Test;

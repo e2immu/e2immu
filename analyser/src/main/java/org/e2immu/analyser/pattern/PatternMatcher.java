@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.pattern;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.HasNavigationData;
 import org.e2immu.analyser.model.MethodInfo;

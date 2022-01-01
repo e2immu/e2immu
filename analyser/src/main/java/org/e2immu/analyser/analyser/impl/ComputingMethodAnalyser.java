@@ -12,8 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -23,7 +24,6 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -870,7 +870,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         AnalysisStatus statusOfStatementAnalyser = analyserComponents.getStatus(ComputingMethodAnalyser.STATEMENT_ANALYSER);
         if (statusOfStatementAnalyser.isDelayed()) {
             StatementAnalyser lastStatement = firstStatementAnalyser.lastStatement();
-            AnalyserComponents<String, StatementAnalyser.SharedState> analyserComponentsOfStatement = lastStatement.getAnalyserComponents();
+            AnalyserComponents<String, StatementAnalyserSharedState> analyserComponentsOfStatement = lastStatement.getAnalyserComponents();
             LOGGER.warn("Analyser components of last statement {} of {}:\n{}", lastStatement.index(),
                     methodInfo.fullyQualifiedName(),
                     analyserComponentsOfStatement.details());

@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser.impl;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
-import org.e2immu.analyser.analyser.TypeAnalysisImpl;
+import org.e2immu.analyser.analyser.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;

@@ -26,7 +26,7 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.*;
  */
 public class AnalyserComponents<T, S> {
 
-    private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers;
+    private final LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
 
     private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
@@ -39,7 +39,7 @@ public class AnalyserComponents<T, S> {
         return getStatusesAsMap().get(t);
     }
 
-    static class Builder<T, S> {
+    public static class Builder<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
 
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {

@@ -15,7 +15,7 @@
 
 package org.e2immu.analyser.parser.failing;
 
-import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;

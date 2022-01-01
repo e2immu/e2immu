@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
-import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
+import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Messages;

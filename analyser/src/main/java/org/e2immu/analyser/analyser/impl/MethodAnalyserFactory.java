@@ -12,8 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.*;
 
 import java.util.HashMap;

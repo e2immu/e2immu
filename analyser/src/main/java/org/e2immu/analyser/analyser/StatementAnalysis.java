@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analyser.impl.StatementAnalyser;
+import org.e2immu.analyser.analyser.impl.VariableInfoContainerImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -755,9 +758,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return messages.stream();
     }
 
-    LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
-                                                     VariableInfo fieldVi,
-                                                     int statementTime) {
+    public LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
+                                                            VariableInfo fieldVi,
+                                                            int statementTime) {
         // a variable field can have any value when first read in a method.
         // after statement time goes up, this value may have changed completely
         // therefore we return a new local variable each time we read and statement time has gone up.
@@ -781,7 +784,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return createLocalCopy(fieldReference, copy);
     }
 
-    LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
+    public LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
         VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
         return createLocalCopy(original, copy);
     }
@@ -1325,56 +1328,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         };
     }
 
-    /**
-     * Find a variable for reading. Intercepts variable fields and local variables.
-     * This is the general method that must be used by the evaluation context, currentInstance, currentValue
-     *
-     * @param variable the variable
-     * @return the most current variable info object
-     */
-    public VariableInfo initialValueForReading(@NotNull Variable variable,
-                                               int statementTime,
-                                               boolean isNotAssignmentTarget) {
-        String fqn = variable.fullyQualifiedName();
-        if (!variables.isSet(fqn)) {
-            assert !(variable instanceof ParameterInfo) : "Parameter " + variable.fullyQualifiedName() +
-                    " should be known in " + methodAnalysis.getMethodInfo().fullyQualifiedName + ", statement " + index;
-            return new VariableInfoImpl(variable); // no value, no state; will be created by a MarkRead
-        }
-        VariableInfoContainer vic = variables.get(fqn);
-        VariableInfo vi = vic.getPreviousOrInitial();
-        if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference fieldReference) {
-                if (vi.isConfirmedVariableField()) {
-                    LocalVariableReference copy = createCopyOfVariableField(fieldReference, vi, statementTime);
-                    if (!variables.isSet(copy.fullyQualifiedName())) {
-                        // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
-                        return new VariableInfoImpl(variable);
-                    }
-                    return variables.get(copy.fullyQualifiedName()).getPreviousOrInitial();
-                }
-                if (vi.statementTimeDelayed()) {
-                    return new VariableInfoImpl(variable);
-                }
-            }
-            if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
-                StatementAnalysis relevantLoop = mostEnclosingLoop();
-                if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
-                        LocalVariableReference localCopy = createLocalLoopCopy(vi.variable(), relevantLoop.index);
-                        // at this point we are certain the local copy exists
-                        VariableInfoContainer newVic = variables.get(localCopy.fullyQualifiedName());
-                        return newVic.getPreviousOrInitial();
-                    }
-                    return vi; // we don't participate in the modification process?
-                }
-                return new VariableInfoImpl(variable); // no value, no state
-            }
-        } // else we need to go to the variable itself
-        return vi;
-    }
-
-    private StatementAnalysis mostEnclosingLoop() {
+    public StatementAnalysis mostEnclosingLoop() {
         StatementAnalysis sa = this;
         while (sa != null) {
             if (sa.statement instanceof LoopStatement) {
@@ -1384,7 +1338,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         throw new UnsupportedOperationException();
     }
-
 
     public record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

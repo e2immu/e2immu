@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -129,7 +130,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ChangeData merge(ChangeData other) {
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
-            Map<Property, DV> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
+            Map<Property, DV> combinedProperties = VariableInfo.mergeIgnoreAbsent(properties, other.properties);
             return new ChangeData(other.value == null ? value : other.value,
                     delays.merge(other.delays),
                     other.stateIsDelayed, // and not a merge!
@@ -366,8 +367,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void raiseError(Identifier identifier, Message.Label messageLabel) {
             assert evaluationContext != null;
-            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-            if (statementAnalyser != null) {
+            if (evaluationContext.haveCurrentStatement()) {
                 Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel);
                 messages.add(message);
             } else { // e.g. companion analyser
@@ -377,8 +377,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void raiseError(Identifier identifier, Message.Label messageLabel, String extra) {
             assert evaluationContext != null;
-            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-            if (statementAnalyser != null) {
+            if (evaluationContext.haveCurrentStatement()) {
                 Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel, extra);
                 messages.add(message);
             } else {
@@ -665,7 +664,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitializers(fa.fieldAnalysis, fa.primaryType));
         }
 
-        private void markVariablesFromSubFieldInitializers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo subType) {
+        private void markVariablesFromSubFieldInitializers(FieldAnalysis fieldAnalysis, TypeInfo subType) {
             assert evaluationContext != null;
             Expression initialValue = fieldAnalysis.getInitializerValue();
             if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;

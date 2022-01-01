@@ -15,7 +15,7 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.Container;

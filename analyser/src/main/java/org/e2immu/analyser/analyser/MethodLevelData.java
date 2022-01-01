@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.impl.StatementAnalyser;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -91,13 +92,13 @@ public class MethodLevelData {
          */
     }
 
-    record SharedState(StatementAnalyserResult.Builder builder,
-                       EvaluationContext evaluationContext,
-                       StatementAnalysis statementAnalysis,
-                       String logLocation,
-                       MethodLevelData previous,
-                       String previousIndex,
-                       StateData stateData) {
+    public record SharedState(StatementAnalyserResult.Builder builder,
+                              EvaluationContext evaluationContext,
+                              StatementAnalysis statementAnalysis,
+                              String logLocation,
+                              MethodLevelData previous,
+                              String previousIndex,
+                              StateData stateData) {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -106,7 +107,7 @@ public class MethodLevelData {
             .add(COMBINE_PRECONDITION, this::combinePrecondition)
             .build();
 
-    public AnalysisStatus analyse(StatementAnalyser.SharedState sharedState,
+    public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
                                   StatementAnalysis statementAnalysis,
                                   MethodLevelData previous,
                                   String previousIndex,
