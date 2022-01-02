@@ -47,6 +47,8 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
@@ -58,6 +60,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final StatementAnalysis parent;
     public final boolean inSyncBlock;
     public final MethodAnalysis methodAnalysis;
+    public final Location location;
 
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
@@ -83,7 +86,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
         stateData = new StateData(statement instanceof LoopStatement);
-        flowData = new FlowData(location());
+        location = new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
+        flowData = new FlowData(location);
     }
 
     static StatementAnalysis startOfBlockStatementAnalysis(StatementAnalysis sa, int block) {
@@ -452,8 +456,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     @Override
-    public LocationImpl location() {
-        return new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
+    public Location location() {
+        return location;
     }
 
     // ****************************************************************************************
@@ -1620,4 +1624,192 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return res;
     }
 
+
+    @Override
+    public DV isEscapeAlwaysExecutedInCurrentBlock() {
+        if (!flowData().interruptsFlowIsSet()) {
+            log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
+            return flowData().interruptStatus().causesOfDelay();
+        }
+        InterruptsFlow bestAlways = flowData().bestAlwaysInterrupt();
+        boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
+        if (escapes) {
+            return DV.fromBoolDv(flowData().getGuaranteedToBeReachedInCurrentBlock().equals(FlowData.ALWAYS));
+        }
+        return DV.FALSE_DV;
+    }
+
+    @Override
+    public Variable obtainLoopVar() {
+        Structure structure = statement().getStructure();
+        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+        return lvc.localVariableReference;
+    }
+
+    // updates variables.get(loopVar)
+    @Override
+    public void evaluationOfForEachVariable(Variable loopVar,
+                                            Expression evaluatedIterable,
+                                            CausesOfDelay someValueWasDelayed,
+                                            EvaluationContext evaluationContext) {
+        LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
+        VariableInfoContainer vic = findForWriting(loopVar);
+        vic.ensureEvaluation(location(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+                statementTime(EVALUATION), Set.of());
+        Map<Property, DV> valueProperties = Map.of(); // FIXME
+        Expression instance = Instance.forLoopVariable(index(), loopVar, valueProperties);
+        vic.setValue(instance, LinkedVariables.EMPTY, Map.of(), false);
+        vic.setLinkedVariables(linked, EVALUATION);
+    }
+
+
+    /*
+    not directly in EvaluationResult, because we could have ENN = 0 on a local field copy, and ENN = 1 on the field itself.
+    that is only "leveled out" using the dependency graph of static assignments
+
+    the presence of the IN_NOT_NULL_CONTEXT flag implies that CNN was 0
+     */
+    @Override
+    public void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
+        for (Map.Entry<Variable, EvaluationResult.ChangeData> e : changeDataMap.entrySet()) {
+            Variable variable = e.getKey();
+            EvaluationResult.ChangeData changeData = e.getValue();
+            if (changeData.getProperty(IN_NOT_NULL_CONTEXT).valueIsTrue()) {
+                VariableInfoContainer vic = findOrNull(variable);
+                VariableInfo vi = vic.best(EVALUATION);
+                if (vi != null && !(vi.variable() instanceof ParameterInfo)) {
+                    DV externalNotNull = vi.getProperty(Property.EXTERNAL_NOT_NULL);
+                    DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
+                    if (vi.valueIsSet() && externalNotNull.equals(MultiLevel.NULLABLE_DV)
+                            && notNullExpression.equals(MultiLevel.NULLABLE_DV)) {
+                        Variable primary = Objects.requireNonNullElse(vic.variableNature().localCopyOf(), variable);
+                        ensure(Message.newMessage(location(),
+                                Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Variable: " + primary.simpleName()));
+                    }
+                }
+            }
+            if (changeData.getProperty(CANDIDATE_FOR_NULL_PTR_WARNING).valueIsTrue()) {
+                ensureCandidateVariableForNullPtrWarning(variable);
+            }
+        }
+    }
+
+    @Override
+    public void potentiallyRaiseNullPointerWarningENN() {
+        candidateVariablesForNullPtrWarningStream().forEach(variable -> {
+            VariableInfo vi = findOrNull(variable, VariableInfoContainer.Level.MERGE);
+            DV cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
+            if (cnn.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+                ensure(Message.newMessage(location(), Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
+                        "Variable: " + variable.fullyQualifiedName()));
+            }
+        });
+    }
+
+    @Override
+    public CausesOfDelay applyPrecondition(Precondition precondition,
+                                           EvaluationContext evaluationContext,
+                                           ConditionManager localConditionManager) {
+        if (precondition != null) {
+            Expression preconditionExpression = precondition.expression();
+            if (preconditionExpression.isBoolValueFalse()) {
+                ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
+                stateData().setPreconditionAllowEquals(Precondition.empty(primitives()));
+            } else {
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(precondition.expression());
+                if (translated != null) {
+                    Precondition pc = new Precondition(translated, precondition.causes());
+                    stateData().setPrecondition(pc, preconditionExpression.isDelayed());
+                }
+                if (preconditionExpression.isDelayed()) {
+                    log(DELAYED, "Apply of {}, {} is delayed because of precondition",
+                            index(), methodAnalysis.getMethodInfo().fullyQualifiedName);
+                    return preconditionExpression.causesOfDelay();
+                }
+                Expression result = localConditionManager.evaluate(evaluationContext, preconditionExpression);
+                if (result.isBoolValueFalse()) {
+                    ensure(Message.newMessage(location, Message.Label.INCOMPATIBLE_PRECONDITION));
+                }
+            }
+        } else if (!stateData().preconditionIsFinal()) {
+            // undo a potential previous delay, so that no precondition is seen to be present
+            stateData().setPrecondition(null, true);
+        }
+        return CausesOfDelay.EMPTY;
+    }
+
+    /*
+As the first action in 'apply', we need to ensure that all variables exist, and have a proper assignmentId and readId.
+
+We need to do:
+- generally ensure a EVALUATION level for each variable occurring, with correct assignmentId, readId
+- create fields + local copies of variable fields, because they don't exist in the first iteration
+- link the fields to their local copies (or at least, compute these links)
+
+Local variables, This, Parameters will already exist, minimally in INITIAL level
+Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
+*/
+    @Override
+    public void ensureVariables(EvaluationContext evaluationContext,
+                                Variable variable,
+                                EvaluationResult.ChangeData changeData,
+                                int newStatementTime) {
+        VariableInfoContainer vic;
+        if (!variableIsSet(variable.fullyQualifiedName())) {
+            assert variable.variableNature() instanceof VariableNature.NormalLocalVariable :
+                    "Encountering variable " + variable.fullyQualifiedName() + " of nature " + variable.variableNature();
+            vic = createVariable(evaluationContext, variable, flowData().getInitialTime(),
+                    VariableNature.normal(variable, index()));
+        } else {
+            vic = getVariable(variable.fullyQualifiedName());
+
+        }
+        String id = index() + EVALUATION;
+        VariableInfo initial = vic.getPreviousOrInitial();
+        AssignmentIds assignmentIds = changeData.markAssignment() ? new AssignmentIds(id) : initial.getAssignmentIds();
+        // we do not set readId to the empty set when markAssignment... we'd rather keep the old value
+        // we will compare the recency anyway
+
+        String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
+        int statementTime = statementTimeForVariable(evaluationContext.getAnalyserContext(), variable, newStatementTime);
+
+        vic.ensureEvaluation(location, assignmentIds, readId, statementTime, changeData.readAtStatementTime());
+        if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
+    }
+
+
+    /*
+     we keep track which local variables are assigned in a loop
+
+     add this variable name to all parent loop statements until definition of the local variable
+     in this way, a version can be introduced to be used before this assignment.
+
+     at the same time, a new local copy has to be created in this statement to be used after the assignment
+     */
+
+    @Override
+    public VariableInfoContainer addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
+        StatementAnalysis sa = this;
+        String loopIndex = null;
+        boolean frozen = false;
+        while (sa != null) {
+            if (!sa.variableIsSet(fullyQualifiedName)) return null;
+            VariableInfoContainer localVic = sa.getVariable(fullyQualifiedName);
+            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return null;
+            if (sa.statement() instanceof LoopStatement) {
+                ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
+                loopIndex = sa.index();
+                frozen = ((StatementAnalysisImpl) sa).localVariablesAssignedInThisLoopIsFrozen();
+                break; // we've found the loop
+            }
+            sa = sa.parent();
+        }
+        assert loopIndex != null;
+        if (!frozen) return null; // too early to do an assignment
+        Variable variable = vic.getPreviousOrInitial().variable();
+        Variable loopCopy = createLocalLoopCopy(variable, loopIndex);
+        // loop copy must exist already!
+        return getVariable(loopCopy.fullyQualifiedName());
+    }
 }

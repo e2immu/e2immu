@@ -15,8 +15,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.BreakStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -39,5 +43,39 @@ public record ForwardAnalysisInfo(DV execution, ConditionManager conditionManage
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {
         return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector, switchSelectorIsDelayed);
+    }
+
+    /*
+        this is the statement to be executed (with an ID that can match one of the elements in the map
+         */
+    public Expression conditionInSwitchStatement(EvaluationContext evaluationContext,
+                                                 StatementAnalyser previousStatement,
+                                                 Expression previous,
+                                                 StatementAnalysis statementAnalysis) {
+        if (switchIdToLabels() != null) {
+            Statement statement = previousStatement == null ? null : previousStatement.statement();
+            Expression startFrom;
+            if (statement instanceof BreakStatement || statement instanceof ReturnStatement) {
+                // clear all
+                startFrom = new BooleanConstant(statementAnalysis.primitives(), true);
+            } else {
+                startFrom = previous;
+            }
+            Expression label = switchIdToLabels().get(statementAnalysis.index());
+            if (label != null) {
+                Expression toAdd;
+                if (label == EmptyExpression.DEFAULT_EXPRESSION) {
+                    toAdd = Negation.negate(evaluationContext,
+                            Or.or(evaluationContext, switchIdToLabels().values().stream()
+                                    .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toList()));
+                } else {
+                    toAdd = label;
+                }
+                if (startFrom.isBoolValueTrue()) return toAdd;
+                return And.and(evaluationContext, startFrom, toAdd);
+            }
+            return startFrom;
+        }
+        return previous;
     }
 }

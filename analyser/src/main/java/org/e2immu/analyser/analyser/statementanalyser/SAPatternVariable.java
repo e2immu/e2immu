@@ -1,0 +1,84 @@
+/*
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.e2immu.analyser.analyser.statementanalyser;
+
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.StatementAnalyserSharedState;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.IfElseStatement;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
+
+import java.util.List;
+
+record SAPatternVariable(StatementAnalysis statementAnalysis) {
+
+    /*
+    create local variables Y y = x for every sub-expression x instanceof Y y
+
+    the scope of the variable is determined as follows:
+    (1) if the expression is an if-statement, without else: pos = then block, neg = rest of current block
+    (2) if the expression is an if-statement with else: pos = then block, neg = else block
+    (3) otherwise, only the current expression is accepted (we set to then block)
+    ==> positive: always then block
+    ==> negative: either else or rest of block
+     */
+
+
+    List<Assignment> patternVariables(EvaluationContext evaluationContext, Expression expression) {
+        List<FindInstanceOfPatterns.InstanceOfPositive> instanceOfList = FindInstanceOfPatterns.find(expression);
+        boolean haveElse = statementAnalysis.statement() instanceof IfElseStatement ifElse && !ifElse.elseBlock.isEmpty();
+        StatementAnalysis firstSubBlock = !(statementAnalysis.statement() instanceof IfElseStatement) ? null :
+              statementAnalysis. navigationData().blocks.get().get(0).orElse(null);
+        // create local variables
+        String index = statementAnalysis.index();
+        instanceOfList.stream()
+                .filter(instanceOf -> instanceOf.instanceOf().patternVariable() != null)
+                .filter(instanceOf -> !statementAnalysis.variableIsSet(instanceOf.instanceOf().patternVariable().simpleName()))
+                .forEach(instanceOf -> {
+                    LocalVariableReference lvr = instanceOf.instanceOf().patternVariable();
+                    String scope = instanceOf.positive() ? index + ".0.0" : haveElse ? index + ".1.0" :
+                            indexOnlyIfEscapeInSubBlock(firstSubBlock);
+                    Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
+                            ve.variable() : null;
+                    VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
+                    statementAnalysis.createVariable(evaluationContext, lvr,
+                            VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
+                });
+
+        // add assignments
+        return instanceOfList.stream()
+                .filter(iop -> iop.instanceOf().patternVariable() != null)
+                .map(iop -> new Assignment(evaluationContext.getPrimitives(),
+                        new VariableExpression(iop.instanceOf().patternVariable()), //  PropertyWrapper.propertyWrapper(
+                        iop.instanceOf().expression())) //, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))
+                .toList();
+    }
+
+    private String indexOnlyIfEscapeInSubBlock(StatementAnalysis subBlock) {
+        if (subBlock == null) return "xx";
+        // TODO no idea how to implement... (could be a delay, we have no idea yet because sub-blocks are handled later
+        // and we cannot overwrite VIC's variableNature)
+        return statementAnalysis.navigationData().next.get().map(StatementAnalysis::index).orElse("xx");
+    }
+}

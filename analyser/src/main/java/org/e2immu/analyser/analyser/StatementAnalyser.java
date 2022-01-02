@@ -32,8 +32,6 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>,
 
     StatementAnalysis getStatementAnalysis();
 
-    DV isEscapeAlwaysExecutedInCurrentBlock();
-
     StatementAnalyser lastStatement();
 
     //navigationData.next.get()
@@ -43,4 +41,7 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>,
 
     boolean isDone();
 
+    NavigationData<StatementAnalyser> navigationData();
+
+    StatementAnalyser lastStatementOfSwitchOldStyle(String key);
 }

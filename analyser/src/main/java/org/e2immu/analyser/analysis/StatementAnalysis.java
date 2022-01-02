@@ -17,7 +17,9 @@ package org.e2immu.analyser.analysis;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -148,6 +150,24 @@ public interface StatementAnalysis extends Analysis,
 
     Stream<Variable> candidateVariablesForNullPtrWarningStream();
 
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
+
+    DV isEscapeAlwaysExecutedInCurrentBlock();
+     Variable obtainLoopVar();
+    void evaluationOfForEachVariable(Variable loopVar,
+                                     Expression evaluatedIterable,
+                                     CausesOfDelay someValueWasDelayed,
+                                     EvaluationContext evaluationContext);
+    void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap);
+    void potentiallyRaiseNullPointerWarningENN();
+    CausesOfDelay applyPrecondition(Precondition precondition,
+                                    EvaluationContext evaluationContext,
+                                    ConditionManager localConditionManager);
+    void ensureVariables(EvaluationContext evaluationContext,
+                         Variable variable,
+                         EvaluationResult.ChangeData changeData,
+                         int newStatementTime);
+    VariableInfoContainer addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
 }
