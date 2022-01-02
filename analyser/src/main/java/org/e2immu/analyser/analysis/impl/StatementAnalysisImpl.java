@@ -378,7 +378,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         if (viThis == null) return result;
 
-        FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
+        FieldReference fieldReference = new FieldReference(InspectionProvider.defaultFrom(primitives), fieldInfo);
 
         DelayedVariableExpression dve;
         boolean viThisHasDelayedValue = (dve = viThis.getValue().asInstanceOf(DelayedVariableExpression.class)) != null &&

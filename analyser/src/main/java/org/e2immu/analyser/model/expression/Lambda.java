@@ -196,33 +196,45 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
-            result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
-                    new SimpleSet(new SimpleCause(evaluationContext.getCurrentType(),
-                            CauseOfDelay.Cause.TYPE_ANALYSIS)));
+            result = noLocalAnalysersYet(evaluationContext);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
-            if (methodInfo.hasReturnValue()) {
-                Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv.isDone()) {
-                    InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
-                    result = Objects.requireNonNullElse(inlineValue, srv);
-                } else {
-                    CausesOfDelay causes = srv.causesOfDelay();
-                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
-                            causes);
-                }
-            } else {
-                Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        // FIXME need more here
-                        Property.IDENTITY, DV.FALSE_DV);
-                result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
-            }
+            result = withLocalAnalyser(parameterizedType, methodAnalysis);
             builder.markVariablesFromSubMethod(methodAnalysis);
         }
 
         builder.setExpression(result);
         return builder.build();
+    }
+
+    private Expression withLocalAnalyser(ParameterizedType parameterizedType, MethodAnalysis methodAnalysis) {
+        Expression result;
+        if (methodInfo.hasReturnValue()) {
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            if (srv.isDone()) {
+                InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
+                result = Objects.requireNonNullElse(inlineValue, srv);
+            } else {
+                CausesOfDelay causes = srv.causesOfDelay();
+                result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
+                        causes);
+            }
+        } else {
+            Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    // FIXME need more here
+                    Property.IDENTITY, DV.FALSE_DV);
+            result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
+        }
+        return result;
+    }
+
+    private Expression noLocalAnalysersYet(EvaluationContext evaluationContext) {
+        Expression result;
+        CausesOfDelay causes = evaluationContext.getCurrentType().delay(CauseOfDelay.Cause.LOCAL_PT_ANALYSERS);
+        result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
+                new SimpleSet(new SimpleCause(evaluationContext.getCurrentType(),
+                        CauseOfDelay.Cause.TYPE_ANALYSIS)));
+        return result;
     }
 
     @Override

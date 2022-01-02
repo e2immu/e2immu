@@ -485,7 +485,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     private AnalysisStatus analyseTypesInStatement(StatementAnalyserSharedState sharedState) {
         if (!localAnalysers.isSet()) {
-            Stream<TypeInfo> locallyDefinedTypes = Stream.concat(statementAnalysis.statement().getStructure().findTypeDefinedInStatement().stream(),
+            List<TypeInfo> typeDefinedInStatement = statementAnalysis.statement().getStructure().findTypeDefinedInStatement();
+            Stream<TypeInfo> locallyDefinedTypes = Stream.concat(typeDefinedInStatement.stream(),
                     statement() instanceof LocalClassDeclaration lcd ? Stream.of(lcd.typeInfo) : Stream.empty());
             List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes
                     // those without a sorted type are already in the current primary type's sorted type!!

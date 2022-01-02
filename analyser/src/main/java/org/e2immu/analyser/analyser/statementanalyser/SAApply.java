@@ -275,7 +275,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 reassigned,
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
-        computeLinkedVariables.writeLinkedVariables();
+        computeLinkedVariables.writeClusteredLinkedVariables();
 
         // 1
         CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,

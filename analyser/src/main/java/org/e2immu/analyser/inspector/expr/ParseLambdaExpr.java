@@ -135,6 +135,12 @@ public class ParseLambdaExpr {
                 types, evaluation.inferredReturnType);
         continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
                 applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
+        TypeContext typeContext = expressionContext.typeContext();
+
+        expressionContext.resolver().resolve(typeContext,
+                typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
+                Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
+
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
 

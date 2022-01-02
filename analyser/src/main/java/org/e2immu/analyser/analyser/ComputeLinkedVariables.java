@@ -207,6 +207,29 @@ public class ComputeLinkedVariables {
         return causes;
     }
 
+    /**
+     * This method differs from writeLinkedVariables in that it does not touch variables which do not
+     * yet have an EVALUATION level. It is used in SAApply.
+     */
+    public void writeClusteredLinkedVariables() {
+        for (List<Variable> cluster : clustersStaticallyAssigned) {
+            for (Variable variable : cluster) {
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
+                assert vic != null;
+
+                Map<Variable, DV> map = weightedGraph.links(variable, true);
+                LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
+
+                vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
+                vic.setLinkedVariables(linkedVariables, level);
+            }
+        }
+    }
+
+    /**
+     * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
+     * It touches all variables rather than those in clusters only.
+     */
     public void writeLinkedVariables() {
         statementAnalysis.rawVariableStream()
                 .forEach(e -> {

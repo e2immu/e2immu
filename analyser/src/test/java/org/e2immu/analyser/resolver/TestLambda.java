@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -40,6 +41,17 @@ public class TestLambda extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Lambda_0.class);
         TypeInfo typeInfo = typeMap.get(Lambda_0.class);
         assertNotNull(typeInfo);
+        MethodInfo test = typeInfo.findUniqueMethod("test", 1);
+        Block block = typeMap.getMethodInspection(test).getMethodBody();
+        Statement first = block.structure.statements().get(0);
+        List<TypeInfo> lambdas = first.getStructure().findTypeDefinedInStatement();
+        assertEquals(1, lambdas.size());
+        TypeInfo lambda = lambdas.get(0);
+        assertEquals("org.e2immu.analyser.resolver.testexample.Lambda_0.$1", lambda.fullyQualifiedName);
+        TypeInspection lambdaInspected = lambda.typeInspection.get();
+        assertNotNull(lambdaInspected.methods());
+        TypeResolution lambdaResolved = lambda.typeResolution.get();
+        assertNotNull(lambdaResolved.sortedType());
     }
 
     @Test
