@@ -23,10 +23,13 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
+
 @E2Container
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
-                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider) {
+                                    PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
+                                    AnalyserProgram analyserProgram) {
 
     public AnalyserConfiguration {
         Objects.requireNonNull(patternMatcherProvider);
@@ -46,6 +49,8 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
+        private AnalyserProgram analyserProgram = AnalyserProgram.from(ALL);
+
         public Builder setSkipTransformations(boolean skipTransformations) {
             this.skipTransformations = skipTransformations;
             return this;
@@ -61,11 +66,17 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
+        public Builder setAnalyserProgram(AnalyserProgram analyserProgram) {
+            this.analyserProgram = analyserProgram;
+            return this;
+        }
+
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations,
                     computeContextPropertiesOverAllMethods,
                     patternMatcherProvider == null ?
-                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
+                            (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
+                    analyserProgram);
         }
     }
 
@@ -73,6 +84,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
     public String toString() {
         return "AnalyserConfiguration:" +
                 "\n    skipTransformations=" + skipTransformations +
-                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods;
+                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods+
+                "\n    analyserProgram="+analyserProgram;
     }
 }

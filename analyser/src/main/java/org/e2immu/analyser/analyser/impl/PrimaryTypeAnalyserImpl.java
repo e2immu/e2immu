@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -38,6 +39,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.PRIMARY_TYPE_ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
@@ -240,6 +243,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public void analyse() {
+        if(!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
+
         int iteration = 0;
         AnalysisStatus analysisStatus;
 
@@ -250,6 +255,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             analysisStatus = analyse(iteration, null);
             iteration++;
 
+            if(!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
+                log(ANALYSER, "\n******\nStopping after iteration 0 according to program\n******");
+                return;
+            }
             if (analysisStatus == AnalysisStatus.DONE) break;
         } while (analysisStatus.isProgress());
         if (analysisStatus.isDelayed()) {

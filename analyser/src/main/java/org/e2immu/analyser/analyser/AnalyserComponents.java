@@ -14,11 +14,15 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * @param <T> typically String, as the label of the component. In case of the primary type analyser, T is Analyser.
@@ -41,9 +45,26 @@ public class AnalyserComponents<T, S> {
 
     public static class Builder<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
+        private final AnalyserProgram analyserProgram;
+
+        public Builder(AnalyserProgram analyserProgram) {
+            this.analyserProgram = analyserProgram;
+        }
+
+        public Builder() {
+            this(AnalyserProgram.from(ALL));
+        }
 
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
-            if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
+            return add(t, ALL, supplier);
+        }
+
+        public Builder<T, S> add(T t, AnalyserProgram.Step step, AnalysisResultSupplier<S> supplier) {
+            if (this.analyserProgram.accepts(step)) {
+                if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
+            } else {
+                log(ANALYSER, "Not adding step {}: {} not accepted by program {}", t, step, analyserProgram);
+            }
             return this;
         }
 
@@ -72,7 +93,7 @@ public class AnalyserComponents<T, S> {
                 // execute
                 AnalysisStatus afterExec = supplier.apply(s);
                 assert afterExec != NOT_YET_EXECUTED;
-                if(afterExec == DONE || afterExec == DONE_ALL) {
+                if (afterExec == DONE || afterExec == DONE_ALL) {
                     progress = true;
                 }
                 if (afterExec == DONE_ALL) {

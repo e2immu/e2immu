@@ -45,6 +45,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.FIELD_FINAL;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -111,9 +113,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                .add(COMPUTE_TRANSPARENT_TYPE, sharedState -> computeTransparentType())
-                .add(EVALUATE_INITIALISER, this::evaluateInitializer)
-                .add(ANALYSE_FINAL, this::analyseFinal)
+                .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
+                .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
+                .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
