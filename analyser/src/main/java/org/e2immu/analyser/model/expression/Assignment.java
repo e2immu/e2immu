@@ -266,7 +266,7 @@ public class Assignment extends BaseExpression implements Expression {
                                   Variable at,
                                   Expression resultOfExpression) {
 
-        // see if we need to raise an error (writing to fields outside our class, etc.)
+        // see if we need to raise an error (writing out to fields outside our class, etc.)
         if (at instanceof FieldReference fieldReference) {
 
             // check illegal assignment into nested type

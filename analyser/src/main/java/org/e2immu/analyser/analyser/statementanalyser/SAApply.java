@@ -64,9 +64,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     Finally, general modifications are carried out
      */
-    SAEvaluationOfMainExpression.ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                                               EvaluationResult evaluationResult,
-                                                               List<PrimaryTypeAnalyser> localAnalysers) {
+    ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
+                                  EvaluationResult evaluationResult,
+                                  List<PrimaryTypeAnalyser> localAnalysers) {
         CausesOfDelay delay = evaluationResult.causes();
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 
@@ -146,33 +146,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
 
                 if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
-                    VariableInfoContainer local = statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
-                    // assign the value of the assignment to the local copy created
-                    if (local != null) {
-                        Variable localVar = local.current().variable();
-                        // calculation needs to be done again, this time with the local copy rather than the original
-                        // (so that we can replace the local one with instance)
-                        Expression valueToWrite2 = maybeValueNeedsState(sharedState, vic, localVar, bestValue);
-                        Expression valueToWriteCorrected;
-                        IsVariableExpression ive;
-                        if ((ive = valueToWrite2.asInstanceOf(IsVariableExpression.class)) != null &&
-                                ive.variable().equals(localVar)) {
-                            // not allowing j$2 to be assigned to j$2; assign to initial instead
-                            valueToWriteCorrected = local.getPreviousOrInitial().getValue();
-                        } else {
-                            valueToWriteCorrected = valueToWrite2;
-                        }
-                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
-                        Map<Property, DV> merged2 = SAHelper.mergeAssignment(localVar, valueProperties,
-                                changeData.properties(), groupPropertyValues);
-
-                        LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
-                        local.ensureEvaluation(getLocation(),
-                                new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
-                                statementAnalysis.statementTime(EVALUATION), Set.of());
-                        local.setValue(valueToWriteCorrected, linkedToMain, merged2, false);
-                        existingVariablesNotVisited.remove(localVar);
-                    }
+                    assignmentLocalVariableInLoopDefinedOutside(sharedState, groupPropertyValues,
+                            existingVariablesNotVisited, variable, changeData, vic, bestValue, valueProperties);
                 }
                 if (variable instanceof FieldReference fr) {
                     FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
@@ -189,7 +164,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     Map<Property, DV> merged = SAHelper.mergePreviousAndChange(sharedState.evaluationContext(),
                             variable, vi1.getProperties(),
                             changeData.properties(), groupPropertyValues, true);
-                    vic.setValue(changeData.value(), vi1.getLinkedVariables(), merged, false);
+
+                    LinkedVariables removed = vi1.getLinkedVariables()
+                            .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
+                    vic.setValue(changeData.value(), removed, merged, false);
                 } else {
                     if (variable instanceof This || !evaluationResult.causes().isDelayed()) {
                         // TODO we used to check for "haveDelaysCausedByMethodCalls"; now assuming ALL delays
@@ -253,6 +231,29 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
 
+        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties
+                (sharedState, evaluationResult, localAnalysers, delay, analyserContext, groupPropertyValues);
+
+        // debugging...
+
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
+                .debugConfiguration().evaluationResultVisitors()) {
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
+                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult));
+        }
+
+        return applyStatusAndEnnStatus;
+    }
+
+    /**
+     * Compute the context properties, linked variables, preconditions. Return delays.
+     */
+    private ApplyStatusAndEnnStatus contextProperties(StatementAnalyserSharedState sharedState,
+                                                      EvaluationResult evaluationResult,
+                                                      List<PrimaryTypeAnalyser> localAnalysers,
+                                                      CausesOfDelay delay,
+                                                      AnalyserContext analyserContext,
+                                                      GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
         addToMap(groupPropertyValues, analyserContext);
 
@@ -309,16 +310,37 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Precondition precondition = evaluationResult.precondition();
         delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager()));
+        return new ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
+    }
 
-        // debugging...
+    private void assignmentLocalVariableInLoopDefinedOutside(StatementAnalyserSharedState sharedState, GroupPropertyValues groupPropertyValues, Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Variable variable, EvaluationResult.ChangeData changeData, VariableInfoContainer vic, Expression bestValue, Map<Property, DV> valueProperties) {
+        VariableInfoContainer local = statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
+        // assign the value of the assignment to the local copy created
+        if (local != null) {
+            Variable localVar = local.current().variable();
+            // calculation needs to be done again, this time with the local copy rather than the original
+            // (so that we can replace the local one with instance)
+            Expression valueToWrite2 = maybeValueNeedsState(sharedState, vic, localVar, bestValue);
+            Expression valueToWriteCorrected;
+            IsVariableExpression ive;
+            if ((ive = valueToWrite2.asInstanceOf(IsVariableExpression.class)) != null &&
+                    ive.variable().equals(localVar)) {
+                // not allowing j$2 to be assigned to j$2; assign to initial instead
+                valueToWriteCorrected = local.getPreviousOrInitial().getValue();
+            } else {
+                valueToWriteCorrected = valueToWrite2;
+            }
+            log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
+            Map<Property, DV> merged2 = SAHelper.mergeAssignment(localVar, valueProperties,
+                    changeData.properties(), groupPropertyValues);
 
-        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
-                .debugConfiguration().evaluationResultVisitors()) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult));
+            LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
+            local.ensureEvaluation(getLocation(),
+                    new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
+                    statementAnalysis.statementTime(EVALUATION), Set.of());
+            local.setValue(valueToWriteCorrected, linkedToMain, merged2, false);
+            existingVariablesNotVisited.remove(localVar);
         }
-
-        return new SAEvaluationOfMainExpression.ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
     }
 
 

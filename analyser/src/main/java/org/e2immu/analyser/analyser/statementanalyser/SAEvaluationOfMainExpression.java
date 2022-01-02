@@ -419,13 +419,4 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } // else: we'll keep NEVER
     }
 
-    /*
-        delays on ENN are dealt with later than normal delays on values
-         */
-    record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
-        public AnalysisStatus combinedStatus() {
-            CausesOfDelay delay = status.merge(ennStatus);
-            return AnalysisStatus.of(delay);
-        }
-    }
 }

@@ -279,11 +279,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return notNullAccordingToConditionManager(variable, statementAnalysis::findOrThrow);
     }
 
+    // specific implementation for SAEvaluationContext, currently only used by EvaluationResult.removeFromLinkedVariables
+    // it does not use findForReading because it does not need to switch to local copies
+    @Override
+    public LinkedVariables linkedVariables(Variable variable) {
+        String fqn = variable.fullyQualifiedName();
+        if (!statementAnalysis.variableIsSet(fqn)) return null; // not known
+        VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
+        VariableInfo variableInfo = vic.getPreviousOrInitial();
+        return variableInfo.getLinkedVariables();
+    }
+
     /*
-    Important that the closure is used for local variables and parameters (we'd never find them otherwise).
-    However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
-    have their own local copy.
-     */
+        Important that the closure is used for local variables and parameters (we'd never find them otherwise).
+        However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
+        have their own local copy.
+         */
     private VariableInfo findForReading(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
         if (closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
             return ((SAEvaluationContext) closure).findForReading(variable, statementTime, isNotAssignmentTarget);
