@@ -703,7 +703,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet
-            initialValue = fieldAnalysis.getValueForStatementAnalyser();
+            if(methodAnalysis.getMethodInfo().isConstructor) {
+                initialValue = fieldAnalysis.getInitializerValue();
+            } else {
+                initialValue = fieldAnalysis.getValueForStatementAnalyser();
+            }
             Map<Property, DV> valueMap = evaluationContext.getValueProperties(initialValue);
             valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
 

@@ -329,6 +329,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseNotNull() {
         if (fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL).isDone()) return DONE;
 
+        if (fieldInfo.type.isPrimitiveExcludingVoid()) {
+            log(NOT_NULL, "Field {} is effectively not null, it is of primitive type", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            return DONE;
+        }
+
         DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (isFinal.isDelayed()) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fqn);
@@ -1109,7 +1115,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
-        if(analyserProgram.accepts(FIELD_FINAL)) {
+        if (analyserProgram.accepts(FIELD_FINAL)) {
             CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
                     myTypeAnalyser.getTypeAnalysis());
             check(org.e2immu.annotation.Variable.class, e2.variableField);

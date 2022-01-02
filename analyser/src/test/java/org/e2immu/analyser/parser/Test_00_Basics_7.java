@@ -17,25 +17,17 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
@@ -126,11 +118,15 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals("p", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
+                        String expectInitial = d.iteration() == 0 ? "<f:i>" : "0";
+                        assertEquals(expectInitial, d.variableInfoContainer().getPreviousOrInitial()
+                                .getValue().toString());
                         String expect = d.iteration() == 0 ? "b?p:<f:i>" : "b?p:0";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expect, d.currentValue().toString(),
+                                "Delay: " + d.currentValue().causesOfDelay().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "1+(b?p:<f:i>)" : "";
+                        String expected = d.iteration() == 0 ? "1+(b?p:<f:i>)" : "1+(b?p:0)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -155,16 +151,16 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : I1;
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:0,j:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     // at 1.0.1, i gets incremented, j should not be linked to this.i anymore
                     if ("1.0.1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:0,j:0";
+                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:1,j:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:0,j:0";
+                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:1,j:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -177,17 +173,19 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         // NOTE: it is fine to have i$1 here, as long as it is not with a :0
-                        assertEquals("i$0:0,i$1:1,j:0", d.variableInfo().getLinkedVariables().toString());
+                        // FIXME should this.i still be here?
+                        assertEquals("i$0:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (I1_FQN.equals(d.variableName())) {
                     // exists from 1.0.0 onwards
                     assertTrue(d.iteration() > 0); // does not exist earlier!
-                    assertEquals("instance type int", d.currentValue().toString());
+
                     if ("1.0.0".equals(d.statementId())) {
                         // after the assignment, i becomes a different value
                         String expectLv = "i$1:0,j:0,this.i:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString(), d.statementId());
+                        assertEquals("instance type int", d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // after the assignment, i becomes a different value
@@ -203,6 +201,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (I101_FQN.equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
+                        assertEquals("i$1$1.0.1-E:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     // is primitive
                     if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
@@ -211,12 +210,14 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1.0.2".equals(d.statementId())) {
                         assertEquals("1+" + I1, d.currentValue().toString());
                         assertEquals("1.0.2-C", d.variableInfo().getReadId());
+                        // FIXME why is this not like in "1" ?? with itself included?
+                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         assertEquals("1+" + I1, d.currentValue().toString());
                         assertEquals("1.0.2-C", d.variableInfo().getReadId());
+                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
-                    assertEquals("i$1$1.0.1-E:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (I.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -236,7 +237,8 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                        assertEquals("j:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
+                        String linked = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
+                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // we switch to NOT_INVOLVED, given that the field has been assigned; its external value is of no use
@@ -303,11 +305,21 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 }
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("i".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+            }
+        };
+
         testClass("Basics_7", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }
