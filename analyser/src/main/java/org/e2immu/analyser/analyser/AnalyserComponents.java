@@ -50,7 +50,7 @@ public class AnalyserComponents<T, S> {
         public Builder(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
         }
-        
+
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
             return add(t, ALL, supplier);
         }
@@ -58,8 +58,6 @@ public class AnalyserComponents<T, S> {
         public Builder<T, S> add(T t, AnalyserProgram.Step step, AnalysisResultSupplier<S> supplier) {
             if (this.analyserProgram.accepts(step)) {
                 if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
-            } else {
-                log(ANALYSER, "Not adding step {}: {} not accepted by program {}", t, step, analyserProgram);
             }
             return this;
         }

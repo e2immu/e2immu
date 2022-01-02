@@ -106,12 +106,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         // rest of the order (as determined in PrimaryTypeAnalyser): fields, types
 
         for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
-            builder.add(companionAnalyser.companionMethodName.toString(), (sharedState ->
-                    companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
+            builder.add(companionAnalyser.companionMethodName.toString(), AnalyserProgram.Step.INITIALISE,
+                    (sharedState -> companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
         }
 
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-            builder.add("Parameter " + parameterAnalyser.getParameterInfo().name,
+            builder.add("Parameter " + parameterAnalyser.getParameterInfo().name, AnalyserProgram.Step.INITIALISE,
                     sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
         }
 
@@ -124,10 +124,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             return result.analysisStatus();
         };
 
-        builder.add(STATEMENT_ANALYSER, statementAnalyser)
+        builder.add(STATEMENT_ANALYSER, AnalyserProgram.Step.INITIALISE, statementAnalyser)
+                .add(COMPUTE_MODIFIED, AnalyserProgram.Step.MODIFIED, (sharedState) -> computeModified())
+                .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
-                .add(COMPUTE_MODIFIED, (sharedState) -> computeModified())
-                .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
@@ -882,15 +882,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
-                /*
-                FIXME get this working again?
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
                         lastStatement.getStatementAnalysis().methodLevelData().analyserComponents;
                 LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
                         methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());
-
-                 */
             }
         }
     }

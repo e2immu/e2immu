@@ -25,7 +25,8 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.impl.LocationImpl;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -75,7 +76,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.preconditionForEventual = preconditionForEventual;
         this.eventual = eventual;
         this.precondition = Objects.requireNonNull(precondition);
-        this.singleReturnValue = singleReturnValue;
+        this.singleReturnValue = Objects.requireNonNull(singleReturnValue);
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
         this.analysisMode = analysisMode;
@@ -244,6 +245,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.empty(primitives));
             preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
+            if (!methodInfo.hasReturnValue()) {
+                UnknownExpression u = new UnknownExpression(primitives.voidParameterizedType(),
+                        UnknownExpression.NO_RETURN_VALUE);
+                singleReturnValue.set(u);
+            }
         }
 
         private static CausesOfDelay initialDelay(MethodInfo methodInfo) {
@@ -281,7 +287,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Expression getSingleReturnValue() {
-            return singleReturnValue.getOrDefaultNull();
+            Expression srv = singleReturnValue.getOrDefaultNull();
+            if(srv == null) {
+                return DelayedExpression.forMethod(methodInfo, returnType, LinkedVariables.EMPTY,
+                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
+            }
+            return srv;
         }
 
         @Override

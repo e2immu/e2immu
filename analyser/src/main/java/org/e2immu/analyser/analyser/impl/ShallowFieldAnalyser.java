@@ -56,8 +56,10 @@ public class ShallowFieldAnalyser {
         FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
-        // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        fieldAnalysisBuilder.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
+        if(!fieldAnalysisBuilder.properties.isDone(Property.FINAL)) {
+            // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
+            fieldAnalysisBuilder.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
+        }
 
         // unless annotated with something heavier, ...
         DV notNull;

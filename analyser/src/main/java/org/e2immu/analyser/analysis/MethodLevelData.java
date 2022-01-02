@@ -73,9 +73,8 @@ public class MethodLevelData {
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
         Precondition cp = combinedPrecondition.get();
-        if (cp == null)
-            throw new UnsupportedOperationException("Called too early, haven't had the chance to write a value");
-        return combinedPrecondition.get().expression().causesOfDelay();
+        assert cp != null : "Called too early, haven't had the chance to write a value";
+        return cp.expression().causesOfDelay();
     }
 
 
@@ -102,13 +101,13 @@ public class MethodLevelData {
                               StateData stateData) {
     }
 
-    public AnalyserComponents<String, SharedState> analyserComponents(AnalyserProgram analyserProgram) {
-        return new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
+    public final AnalyserComponents<String, SharedState> analyserComponents =
+         new AnalyserComponents.Builder<String, SharedState>(AnalyserProgram.PROGRAM_ALL)
                 .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
                 .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
                 .add(COMBINE_PRECONDITION, this::combinePrecondition)
                 .build();
-    }
+
 
     public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
                                   StatementAnalysis statementAnalysis,
@@ -121,8 +120,7 @@ public class MethodLevelData {
             StatementAnalyserResult.Builder builder = sharedState.builder();
             SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,
                     logLocation, previous, previousIndex, stateData);
-            AnalyserProgram analyserProgram = evaluationContext.getAnalyserContext().getAnalyserProgram();
-            return analyserComponents(analyserProgram).run(localSharedState);
+            return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, {}", logLocation);
             throw rte;

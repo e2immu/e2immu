@@ -404,7 +404,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 //assert localConditionManager == null : "expected null localConditionManager";
                 assert analyserComponents == null : "expected null analyser components";
 
-                AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+                // no program restrictions at the moment
+                AnalyserProgram analyserProgram = AnalyserProgram.PROGRAM_ALL;
                 analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
                         .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
@@ -500,7 +501,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     private AnalysisStatus freezeAssignmentInBlock(StatementAnalyserSharedState sharedState) {
         if (statementAnalysis.statement() instanceof LoopStatement) {
-            ((StatementAnalysisImpl)statementAnalysis).freezeLocalVariablesAssignedInThisLoop();
+            ((StatementAnalysisImpl) statementAnalysis).freezeLocalVariablesAssignedInThisLoop();
         }
         return DONE; // only in first iteration
     }
@@ -1073,7 +1074,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 }
             }
             if (changeData.getProperty(CANDIDATE_FOR_NULL_PTR_WARNING).valueIsTrue()) {
-                ((StatementAnalysisImpl)statementAnalysis).ensureCandidateVariableForNullPtrWarning(variable);
+                ((StatementAnalysisImpl) statementAnalysis).ensureCandidateVariableForNullPtrWarning(variable);
             }
         }
     }
@@ -1315,7 +1316,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             if (sa.statement() instanceof LoopStatement) {
                 ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
                 loopIndex = sa.index();
-                frozen = ((StatementAnalysisImpl)sa).localVariablesAssignedInThisLoopIsFrozen();
+                frozen = ((StatementAnalysisImpl) sa).localVariablesAssignedInThisLoopIsFrozen();
                 break; // we've found the loop
             }
             sa = sa.parent();
@@ -1430,7 +1431,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         Instance.forCatchOrThis(index(), lvr, analyserContext),
                         analyserContext.defaultImmutable(lvr.parameterizedType(), false),
                         statementAnalysis.navigationData().hasSubBlocks());
-                ((StatementAnalysisImpl)statementAnalysis).putVariable(name, vic);
+                ((StatementAnalysisImpl) statementAnalysis).putVariable(name, vic);
             }
         }
 

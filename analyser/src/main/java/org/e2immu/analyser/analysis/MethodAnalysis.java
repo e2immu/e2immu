@@ -32,9 +32,7 @@ public interface MethodAnalysis extends Analysis {
     /**
      * @return null when not (yet) decided
      */
-    default Expression getSingleReturnValue() {
-        return null;
-    }
+    Expression getSingleReturnValue();
 
     default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
         return Set.of();

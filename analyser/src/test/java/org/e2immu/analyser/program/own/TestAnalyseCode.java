@@ -27,17 +27,18 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
 public class TestAnalyseCode {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnalyseCode.class);
 
     @Test
-    public void inspect() throws IOException {
+    public void test() throws IOException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/main/java")
-                .addSources("src/test/java")
+            //    .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
@@ -62,7 +63,7 @@ public class TestAnalyseCode {
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
-                .addDebugLogTargets(Stream.of(RESOLVER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets(Stream.of(ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

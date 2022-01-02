@@ -74,10 +74,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, annotations, e2));
 
-        // IMPROVE reading preconditions from AAPI...
+        // IMPROVE reading preconditions from AnnotatedAPIs...
         methodAnalysis.setPrecondition(Precondition.empty(analyserContext.getPrimitives()));
-        methodAnalysis.preconditionForEventual.set(Optional.empty());
-
+        if(!methodAnalysis.preconditionForEventual.isSet()) {
+            methodAnalysis.preconditionForEventual.set(Optional.empty());
+        }
         if (explicitlyEmpty) {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
@@ -205,7 +206,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV immutable = analyserContext.defaultImmutable(returnType, true);
         if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
             messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
-                    returnType.toString()));
+                    returnType.typeInfo.fullyQualifiedName));
             return MultiLevel.MUTABLE_DV;
         }
         return immutable;

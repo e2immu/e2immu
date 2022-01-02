@@ -238,7 +238,7 @@ public final class Instance extends BaseExpression implements Expression {
                     ParameterizedType parameterizedType,
                     Diamond diamond,
                     Map<Property, DV> valueProperties) {
-       super(identifier);
+        super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
         this.valueProperties = valueProperties;
@@ -255,7 +255,8 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     private boolean internalChecks() {
-        assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey);
+        assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey) :
+                "Value properties missing! " + valueProperties;
         assert valueProperties.values().stream().noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
         return true;
     }

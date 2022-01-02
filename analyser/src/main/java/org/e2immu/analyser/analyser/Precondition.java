@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -59,8 +60,10 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     }
 
     public Precondition {
-        if (!expression.isUnknown() && expression.returnType().isNotBooleanOrBoxedBoolean()) {
-            throw new UnsupportedOperationException("Need an unknown or boolean value in a precondition, got " + expression);
+        boolean acceptWithoutBoolean = expression.isUnknown() || expression instanceof ContractMark;
+        if (!acceptWithoutBoolean && expression.returnType().isNotBooleanOrBoxedBoolean()) {
+            throw new UnsupportedOperationException("Need an unknown or boolean value in a precondition, got "
+                    + expression+" of type "+expression.returnType());
         }
         Objects.requireNonNull(causes);
     }

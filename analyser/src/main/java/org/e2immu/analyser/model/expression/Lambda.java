@@ -208,8 +208,9 @@ public class Lambda extends BaseExpression implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(srv.causesOfDelay()),
-                            srv.causesOfDelay());
+                    CausesOfDelay causes = srv.causesOfDelay();
+                    result = DelayedExpression.forMethod(methodInfo, implementation, LinkedVariables.delayedEmpty(causes),
+                            causes);
                 }
             } else {
                 Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,

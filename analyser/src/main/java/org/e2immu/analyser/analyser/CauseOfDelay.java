@@ -68,7 +68,8 @@ public interface CauseOfDelay {
         CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         EXT_NN("ext_nn", ""),
         NOT_NULL_PARAMETER("nnp", ""),
-        PROP_MOD("prop_mod", "");
+        PROP_MOD("prop_mod", ""),
+        SINGLE_RETURN_VALUE("svr", "single return value not yet set");
 
         public final String msg;
         public final String label;

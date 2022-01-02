@@ -18,7 +18,11 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.AnalyserProgram;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
@@ -37,6 +41,8 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LinkedVariables.ASSIGNED_DV;
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -44,12 +50,12 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputedParameterAnalyser.class);
-    public static final String CHECK_UNUSED_PARAMETER = "checkUnusedParameter";
-    public static final String ANALYSE_FIRST_ITERATION = "analyseFirstIteration";
-    public static final String ANALYSE_FIELD_ASSIGNMENTS = "analyseFieldAssignments";
-    public static final String ANALYSE_CONTEXT = "analyseContext";
-    public static final String ANALYSE_CONTAINER = "analyseContainer";
-    public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "analyseIndependentNoAssignment";
+    public static final String CHECK_UNUSED_PARAMETER = "PA:checkUnusedParameter";
+    public static final String ANALYSE_FIRST_ITERATION = "PA:analyseFirstIteration";
+    public static final String ANALYSE_FIELD_ASSIGNMENTS = "PA:analyseFieldAssignments";
+    public static final String ANALYSE_CONTEXT = "PA:analyseContext";
+    public static final String ANALYSE_CONTAINER = "PA:analyseContainer";
+    public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
@@ -67,13 +73,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     public final AnalyserComponents<String, SharedState> analyserComponents =
             new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
-            .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
-            .add(ANALYSE_FIRST_ITERATION, this::analyseFirstIteration)
-            .add(ANALYSE_FIELD_ASSIGNMENTS, this::analyseFieldAssignments)
-            .add(ANALYSE_CONTEXT, this::analyseContext)
-            .add(ANALYSE_CONTAINER, this::analyseContainer)
-            .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, this::analyseIndependentNoAssignment)
-            .build();
+                    .add(CHECK_UNUSED_PARAMETER, ITERATION_0, this::checkUnusedParameter)
+                    .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
+                    .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
+                    .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
+                    .add(ANALYSE_CONTAINER, ITERATION_0, this::analyseContainer)
+                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_0, this::analyseIndependentNoAssignment)
+                    .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
         assert sharedState.iteration == 0;
