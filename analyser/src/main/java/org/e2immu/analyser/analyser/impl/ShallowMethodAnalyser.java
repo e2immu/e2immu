@@ -76,7 +76,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         // IMPROVE reading preconditions from AnnotatedAPIs...
         methodAnalysis.setPrecondition(Precondition.empty(analyserContext.getPrimitives()));
-        if(!methodAnalysis.preconditionForEventual.isSet()) {
+        if (!methodAnalysis.preconditionForEventual.isSet()) {
             methodAnalysis.preconditionForEventual.set(Optional.empty());
         }
         if (explicitlyEmpty) {
@@ -206,7 +206,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV immutable = analyserContext.defaultImmutable(returnType, true);
         if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
             messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
-                    returnType.typeInfo.fullyQualifiedName));
+                    returnType.typeInfo == null ? "Return type of " + methodInfo.fullyQualifiedName :
+                            returnType.typeInfo.fullyQualifiedName));
             return MultiLevel.MUTABLE_DV;
         }
         return immutable;
