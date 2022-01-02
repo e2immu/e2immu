@@ -17,14 +17,20 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;

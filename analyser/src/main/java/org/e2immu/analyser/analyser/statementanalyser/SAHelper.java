@@ -15,15 +15,13 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -33,11 +31,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 
 record SAHelper(StatementAnalysis statementAnalysis) {
 

@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.impl.ElementImpl;
 
 public abstract class StatementWithStructure extends ElementImpl implements Statement {
     public final Structure structure;

@@ -26,7 +26,6 @@ import org.e2immu.analyser.inspector.expr.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;

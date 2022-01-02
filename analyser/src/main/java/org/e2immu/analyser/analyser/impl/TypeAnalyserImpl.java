@@ -24,8 +24,10 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImp
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.LocationImpl;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;

@@ -20,8 +20,6 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.inspector.*;
-import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;

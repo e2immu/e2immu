@@ -20,34 +20,34 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.FlowData;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.statement.LocalClassDeclaration;
+import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.statement.Structure;
+import org.e2immu.analyser.model.statement.SynchronizedStatement;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -82,9 +82,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private final SAHelper helper;
-    private final SAApply saApply;
     private final SAEvaluationOfMainExpression saEvaluation;
     private final SASubBlocks saSubBlocks;
+    private final SACheck saCheck;
 
     private StatementAnalyserImpl(AnalyserContext analyserContext,
                                   MethodAnalyser methodAnalyser,
@@ -97,10 +97,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         this.statementAnalysis = new StatementAnalysisImpl(analyserContext.getPrimitives(),
                 methodAnalyser.getMethodAnalysis(), statement, parent, index, inSyncBlock);
         this.helper = new SAHelper(statementAnalysis);
-        saApply = new SAApply(statementAnalysis, myMethodAnalyser);
+        SAApply saApply = new SAApply(statementAnalysis, myMethodAnalyser);
         saEvaluation = new SAEvaluationOfMainExpression(statementAnalysis, saApply,
                 this, localAnalysers);
         saSubBlocks = new SASubBlocks(statementAnalysis, this);
+        saCheck = new SACheck(statementAnalysis);
     }
 
     public static StatementAnalyserImpl recursivelyCreateAnalysisObjects(
@@ -400,16 +401,16 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .add(ANALYSE_INTERRUPTS_FLOW, sharedState -> statementAnalysis.flowData()
                                 .analyseInterruptsFlow(this, previous))
                         .add(FREEZE_ASSIGNMENT_IN_BLOCK, this::freezeAssignmentInBlock)
-                        .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, this::checkNotNullEscapesAndPreconditions)
+                        .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, saCheck::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState ->
                                 statementAnalysis.methodLevelData().analyse(sharedState, statementAnalysis,
                                         previous == null ? null : previous.methodLevelData(),
                                         previous == null ? null : previous.index(),
                                         statementAnalysis.stateData()))
-                        .add(CHECK_UNUSED_RETURN_VALUE, sharedState -> checkUnusedReturnValueOfMethodCall())
-                        .add(CHECK_UNUSED_LOCAL_VARIABLES, sharedState -> checkUnusedLocalVariables())
-                        .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> checkUnusedLoopVariables())
-                        .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> checkUselessAssignments())
+                        .add(CHECK_UNUSED_RETURN_VALUE, sharedState -> saCheck.checkUnusedReturnValueOfMethodCall(analyserContext))
+                        .add(CHECK_UNUSED_LOCAL_VARIABLES, sharedState -> saCheck.checkUnusedLocalVariables(navigationData))
+                        .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> saCheck.checkUnusedLoopVariables(navigationData))
+                        .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> saCheck.checkUselessAssignments(navigationData))
                         .build();
             }
 
@@ -566,233 +567,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         }
         return analysisStatus;
     }
-
-    /*
-    delays on ENN are dealt with later than normal delays on values
-     */
-    record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
-        public AnalysisStatus combinedStatus() {
-            CausesOfDelay delay = status.merge(ennStatus);
-            return AnalysisStatus.of(delay);
-        }
-    }
-
-
-    /*
-    Not-null escapes should not contribute to preconditions.
-    All the rest should.
-     */
-    private AnalysisStatus checkNotNullEscapesAndPreconditions(StatementAnalyserSharedState sharedState) {
-        if (statementAnalysis.statement() instanceof AssertStatement) return DONE; // is dealt with in subBlocks
-        DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
-        CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
-                .merge(statementAnalysis.stateData().conditionManagerForNextStatement.get().causesOfDelay());
-        if (!escapeAlwaysExecuted.valueIsFalse()) {
-            Set<Variable> nullVariables = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                    .findIndividualNullInCondition(sharedState.evaluationContext(), true);
-            for (Variable nullVariable : nullVariables) {
-                log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-
-                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
-                if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
-                }
-            }
-            if (escapeAlwaysExecuted.valueIsTrue()) {
-                // escapeCondition should filter out all != null, == null clauses
-                Expression precondition = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                        .precondition(sharedState.evaluationContext());
-                CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
-                Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
-                if (translated != null) {
-                    log(PRECONDITION, "Escape with precondition {}", translated);
-                    Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                    statementAnalysis.stateData().setPrecondition(pc, preconditionIsDelayed.isDelayed());
-                    return AnalysisStatus.of(preconditionIsDelayed);
-                }
-            }
-
-            if (delays.isDelayed()) return delays;
-        }
-        if (statementAnalysis.stateData().preconditionIsEmpty()) {
-            // it could have been set from the assert statement (subBlocks) or apply via a method call
-            statementAnalysis.stateData().setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives()));
-        } else if (!statementAnalysis.stateData().preconditionIsFinal()) {
-            return statementAnalysis.stateData().getPrecondition().expression().causesOfDelay();
-        }
-        return DONE;
-    }
-
-
-    private void ensureContextNotNullForParent(Variable nullVariable, CausesOfDelay delays, boolean notifyParent) {
-        // move from condition (x!=null) to property
-        VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-        if (!vic.hasEvaluation()) {
-            VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(getLocation(), initial.getAssignmentIds(), initial.getReadId(),
-                    initial.getStatementTime(), initial.getReadAtStatementTimes());
-        }
-        DV valueToSet = delays.isDone() ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV) : delays;
-        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
-    }
-
-
-    /**
-     * We recognize the following situations, looping over the local variables:
-     * <ul>
-     *     <li>NYR + CREATED at the same level</li>
-     *     <li NYR + local variable created higher up + return: <code>int i=0; if(xxx) { i=3; return; }</code></li>
-     *     <li>NYR + escape: <code>int i=0; if(xxx) { i=3; throw new UnsupportedOperationException(); }</code></li>
-     * </ul>
-     * Comes after unused local variable, we do not want 2 errors
-     */
-    private AnalysisStatus checkUselessAssignments() {
-        if (!statementAnalysis.flowData().interruptsFlowIsSet()) {
-            log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
-            return statementAnalysis.flowData().interruptStatus().causesOfDelay();
-        }
-        InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData().bestAlwaysInterrupt();
-        DV reached = statementAnalysis.flowData().getGuaranteedToBeReachedInMethod();
-        if (reached.isDelayed()) return reached.causesOfDelay();
-
-        boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
-        boolean atEndOfBlock = navigationData.next.get().isEmpty();
-        if ((atEndOfBlock || alwaysInterrupts) && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
-            // important to be after this statement, because assignments need to be "earlier" in notReadAfterAssignment
-            String indexEndOfBlock = StringUtil.beyond(index());
-            statementAnalysis.rawVariableStream()
-                    .filter(e -> e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
-                    .map(e -> e.getValue().current())
-                    .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
-                    .filter(this::uselessForDependentVariable)
-                    .filter(vi -> vi.notReadAfterAssignment(indexEndOfBlock))
-                    .forEach(variableInfo -> {
-                        boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                        if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                                isLocalAndLocalToThisBlock ||
-                                variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
-                                        localVariableAssignmentInThisBlock(variableInfo)) {
-                            Location location = getLocation();
-                            Message unusedLv = Message.newMessage(location,
-                                    Message.Label.UNUSED_LOCAL_VARIABLE, variableInfo.name());
-                            if (!statementAnalysis.containsMessage(unusedLv)) {
-                                statementAnalysis.ensure(Message.newMessage(location,
-                                        Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
-                            }
-                        }
-                    });
-        }
-        return DONE;
-    }
-
-    private boolean uselessForDependentVariable(VariableInfo variableInfo) {
-        if (variableInfo.variable() instanceof DependentVariable dv) {
-            return dv.arrayVariable != null && !variableHasBeenReadAfter(dv.arrayVariable,
-                    variableInfo.getAssignmentIds().getLatestAssignment());
-        }
-        return true;
-    }
-
-    private boolean variableHasBeenReadAfter(Variable variable, String assignment) {
-        VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
-        int c = variableInfo.getReadId().compareTo(assignment);
-        return c > 0;
-    }
-
-    private boolean localVariableAssignmentInThisBlock(VariableInfo variableInfo) {
-        assert variableInfo.variable().isLocal();
-        if (!variableInfo.isAssigned()) return false;
-        return StringUtil.inSameBlock(variableInfo.getAssignmentIds().getLatestAssignmentIndex(), index());
-    }
-
-    private AnalysisStatus checkUnusedLocalVariables() {
-        if (navigationData.next.get().isEmpty() && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
-            // at the end of the block, check for variables created in this block
-            // READ is set in the first iteration, so there is no reason to expect delays
-            statementAnalysis.rawVariableStream()
-                    .filter(e -> !(e.getValue().variableNature() instanceof VariableNature.LoopVariable) &&
-                            e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
-                    .map(e -> e.getValue().current())
-                    .filter(vi -> !(vi.variable() instanceof DependentVariable))
-                    .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
-                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
-                            Message.Label.UNUSED_LOCAL_VARIABLE, vi.name())));
-        }
-        return DONE;
-    }
-
-    private AnalysisStatus checkUnusedLoopVariables() {
-        if (statement() instanceof LoopStatement
-                && !statementAnalysis.containsMessage(Message.Label.EMPTY_LOOP)
-                && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
-            statementAnalysis.rawVariableStream()
-                    .filter(e -> e.getValue().variableNature() instanceof VariableNature.LoopVariable loopVariable &&
-                            loopVariable.statementIndex().equals(index()))
-                    .forEach(e -> {
-                        String loopVarFqn = e.getKey();
-                        StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
-                        StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
-                        if (statementAnalysis == null || !statementAnalysis.variableIsSet(loopVarFqn) ||
-                                !statementAnalysis.getVariable(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(getLocation(),
-                                    Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
-                        }
-                    });
-        }
-        return DONE;
-    }
-
-    /*
-     * Can be delayed
-     */
-    private AnalysisStatus checkUnusedReturnValueOfMethodCall() {
-        if (statementAnalysis.statement() instanceof ExpressionAsStatement eas
-                && eas.expression instanceof MethodCall methodCall
-                && myMethodAnalyser.getMethodInfo().isNotATestMethod()) {
-            if (methodCall.methodInfo.returnType().isVoidOrJavaLangVoid()) return DONE;
-            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
-            DV identity = methodAnalysis.getProperty(Property.IDENTITY);
-            if (identity.isDelayed()) {
-                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
-                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
-                return identity.causesOfDelay();
-            }
-            if (identity.valueIsTrue()) return DONE;
-            DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
-            if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
-                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",
-                        index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
-                return modified.causesOfDelay();
-            }
-            if (modified.valueIsFalse()) {
-                MethodInspection methodCallInspection = analyserContext.getMethodInspection(methodCall.methodInfo);
-                if (methodCallInspection.isStatic()) {
-                    // for static methods, we verify if one of the parameters is modifying
-                    CausesOfDelay delays = CausesOfDelay.EMPTY;
-                    for (ParameterInfo parameterInfo : methodCallInspection.getParameters()) {
-                        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                        DV mv = parameterAnalysis.getProperty(MODIFIED_VARIABLE);
-                        if (mv.valueIsTrue()) {
-                            return DONE;
-                        }
-                        if (mv.isDelayed()) {
-                            delays = delays.merge(mv.causesOfDelay());
-                        }
-                    }
-                    if (delays.isDelayed()) {
-                        log(DELAYED, "Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
-                                index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
-                        return delays;
-                    }
-                }
-
-                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.IGNORING_RESULT_OF_METHOD_CALL,
-                        methodCall.getMethodInfo().fullyQualifiedName()));
-            }
-        }
-        return DONE;
-    }
-
 
     @Override
     public List<StatementAnalyser> lastStatementsOfNonEmptySubBlocks() {

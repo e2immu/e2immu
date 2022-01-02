@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;

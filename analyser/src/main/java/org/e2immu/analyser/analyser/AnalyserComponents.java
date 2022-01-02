@@ -21,8 +21,6 @@ import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * @param <T> typically String, as the label of the component. In case of the primary type analyser, T is Analyser.

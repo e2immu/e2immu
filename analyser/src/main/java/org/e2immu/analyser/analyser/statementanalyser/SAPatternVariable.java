@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.StatementAnalyserSharedState;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.analysis.StatementAnalysis;

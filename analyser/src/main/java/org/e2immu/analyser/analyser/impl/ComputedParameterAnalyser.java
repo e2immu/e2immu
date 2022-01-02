@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;

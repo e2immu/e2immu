@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.ListUtil;

@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.analysis.impl;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Analyser;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;

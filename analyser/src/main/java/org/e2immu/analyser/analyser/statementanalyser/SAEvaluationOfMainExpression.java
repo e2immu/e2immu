@@ -145,7 +145,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
             }
-            StatementAnalyserImpl.ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, localAnalysers.get());
+            ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, localAnalysers.get());
             AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status().merge(analysisStatus.causesOfDelay()));
             CausesOfDelay ennStatus = applyResult.ennStatus();
 
@@ -153,7 +153,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
                 if (!assignments.isBooleanConstant()) {
                     result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
-                    StatementAnalyserImpl.ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result, localAnalysers.get());
+                    ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result, localAnalysers.get());
                     statusPost = assignmentResult.status().merge(analysisStatus.causesOfDelay());
                     ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
                 }
@@ -419,4 +419,13 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         } // else: we'll keep NEVER
     }
 
+    /*
+        delays on ENN are dealt with later than normal delays on values
+         */
+    record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
+        public AnalysisStatus combinedStatus() {
+            CausesOfDelay delay = status.merge(ennStatus);
+            return AnalysisStatus.of(delay);
+        }
+    }
 }

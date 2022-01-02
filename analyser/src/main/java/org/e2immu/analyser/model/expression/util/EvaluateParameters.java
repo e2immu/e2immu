@@ -16,7 +16,10 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;

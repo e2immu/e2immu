@@ -29,7 +29,10 @@ package org.e2immu.analyser.model.util;
   };
 */
 
-import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.InspectionState;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;

@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;

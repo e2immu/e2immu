@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;

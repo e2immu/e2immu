@@ -15,9 +15,11 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
-import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.ConstructorCall;

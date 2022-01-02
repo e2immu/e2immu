@@ -23,7 +23,6 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
-import org.e2immu.analyser.model.statement.AssertStatement;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
@@ -33,10 +32,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
 record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnalyser) {
@@ -65,9 +64,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
     Finally, general modifications are carried out
      */
-    StatementAnalyserImpl.ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                                                EvaluationResult evaluationResult,
-                                                                List<PrimaryTypeAnalyser> localAnalysers) {
+    SAEvaluationOfMainExpression.ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
+                                                               EvaluationResult evaluationResult,
+                                                               List<PrimaryTypeAnalyser> localAnalysers) {
         CausesOfDelay delay = evaluationResult.causes();
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 
@@ -319,7 +318,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult));
         }
 
-        return new StatementAnalyserImpl.ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
+        return new SAEvaluationOfMainExpression.ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
     }
 
 
@@ -340,64 +339,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             map.put(thisVar, merged);
         }
     }
-
-    /*
-    Not-null escapes should not contribute to preconditions.
-    All the rest should.
-     */
-    private AnalysisStatus checkNotNullEscapesAndPreconditions(StatementAnalyserSharedState sharedState) {
-        if (statementAnalysis.statement() instanceof AssertStatement) return DONE; // is dealt with in subBlocks
-        DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
-        CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
-                .merge(statementAnalysis.stateData().conditionManagerForNextStatement.get().causesOfDelay());
-        if (!escapeAlwaysExecuted.valueIsFalse()) {
-            Set<Variable> nullVariables = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                    .findIndividualNullInCondition(sharedState.evaluationContext(), true);
-            for (Variable nullVariable : nullVariables) {
-                log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-
-                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
-                if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
-                }
-            }
-            if (escapeAlwaysExecuted.valueIsTrue()) {
-                // escapeCondition should filter out all != null, == null clauses
-                Expression precondition = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                        .precondition(sharedState.evaluationContext());
-                CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
-                Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
-                if (translated != null) {
-                    log(PRECONDITION, "Escape with precondition {}", translated);
-                    Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-                    statementAnalysis.stateData().setPrecondition(pc, preconditionIsDelayed.isDelayed());
-                    return AnalysisStatus.of(preconditionIsDelayed);
-                }
-            }
-
-            if (delays.isDelayed()) return delays;
-        }
-        if (statementAnalysis.stateData().preconditionIsEmpty()) {
-            // it could have been set from the assert statement (subBlocks) or apply via a method call
-            statementAnalysis.stateData().setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives()));
-        } else if (!statementAnalysis.stateData().preconditionIsFinal()) {
-            return statementAnalysis.stateData().getPrecondition().expression().causesOfDelay();
-        }
-        return DONE;
-    }
-
-    private void ensureContextNotNullForParent(Variable nullVariable, CausesOfDelay delays, boolean notifyParent) {
-        // move from condition (x!=null) to property
-        VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-        if (!vic.hasEvaluation()) {
-            VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(getLocation(), initial.getAssignmentIds(), initial.getReadId(),
-                    initial.getStatementTime(), initial.getReadAtStatementTimes());
-        }
-        DV valueToSet = delays.isDone() ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV) : delays;
-        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
-    }
-
 
     boolean conditionsForOverwritingPreviousAssignment(
             MethodAnalyser methodAnalyser,

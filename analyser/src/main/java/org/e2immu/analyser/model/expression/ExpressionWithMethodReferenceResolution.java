@@ -14,9 +14,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;

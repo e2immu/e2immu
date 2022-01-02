@@ -18,7 +18,6 @@ import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.impl.ElementImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;

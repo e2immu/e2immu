@@ -15,7 +15,10 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
