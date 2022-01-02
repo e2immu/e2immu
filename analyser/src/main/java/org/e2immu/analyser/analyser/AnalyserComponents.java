@@ -50,11 +50,7 @@ public class AnalyserComponents<T, S> {
         public Builder(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
         }
-
-        public Builder() {
-            this(AnalyserProgram.from(ALL));
-        }
-
+        
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
             return add(t, ALL, supplier);
         }

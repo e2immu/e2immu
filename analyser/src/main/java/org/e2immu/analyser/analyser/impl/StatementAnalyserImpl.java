@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -403,7 +404,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 //assert localConditionManager == null : "expected null localConditionManager";
                 assert analyserComponents == null : "expected null analyser components";
 
-                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>()
+                AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+                analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
                         .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
                         .add(ANALYSE_TYPES_IN_STATEMENT, this::analyseTypesInStatement)

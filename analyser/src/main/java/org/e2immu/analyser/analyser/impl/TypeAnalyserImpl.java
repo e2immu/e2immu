@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckIndependent;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -34,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -128,23 +130,26 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
-        check(typeInfo, UtilityClass.class, e2.utilityClass);
-        check(typeInfo, ExtensionClass.class, e2.extensionClass);
-        check(typeInfo, Container.class, e2.container);
-        check(typeInfo, Singleton.class, e2.singleton);
+        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+        if (analyserProgram.accepts(ALL)) {
+            check(typeInfo, UtilityClass.class, e2.utilityClass);
+            check(typeInfo, ExtensionClass.class, e2.extensionClass);
+            check(typeInfo, Container.class, e2.container);
+            check(typeInfo, Singleton.class, e2.singleton);
 
-        check(typeInfo, Independent.class, e2.independent);
-        check(typeInfo, Dependent.class, e2.dependent);
-        CheckIndependent.checkLevel(messages, typeInfo, Independent1.class, e2.independent1, typeAnalysis);
+            check(typeInfo, Independent.class, e2.independent);
+            check(typeInfo, Dependent.class, e2.dependent);
+            CheckIndependent.checkLevel(messages, typeInfo, Independent1.class, e2.independent1, typeAnalysis);
 
-        check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-        CheckImmutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false);
-        CheckImmutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false);
-        CheckImmutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true);
-        CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
-        CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
+            check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
+            CheckImmutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false);
+            CheckImmutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false);
+            CheckImmutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true);
+            CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
+            CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
 
-        checkWorseThanSpecifiedInInterfacesImplemented();
+            checkWorseThanSpecifiedInInterfacesImplemented();
+        }
     }
 
 

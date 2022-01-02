@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -79,6 +80,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final TypeMap typeMap;
+    private final AnalyserProgram analyserProgram;
 
     public AnnotatedAPIAnalyser(List<TypeInfo> types,
                                 Configuration configuration,
@@ -92,6 +94,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.primitives = primitives;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.analyserProgram = AnalyserProgram.PROGRAM_ALL;
 
         log(ANALYSER, "Have {} types", types.size());
 
@@ -587,5 +590,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     @Override
     public boolean inAnnotatedAPIAnalysis() {
         return true;
+    }
+
+    @Override
+    public AnalyserProgram getAnalyserProgram() {
+        return analyserProgram;
     }
 }

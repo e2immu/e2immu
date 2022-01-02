@@ -48,6 +48,8 @@ public record AnalyserProgram(Step step, Set<Step> accepted) {
         private final Set<Step> dependsOn;
     }
 
+    public static final AnalyserProgram PROGRAM_ALL = from(Step.ALL);
+
     public static AnalyserProgram from(Step step) {
         Set<Step> accepted = new HashSet<>();
         recursivelyCollect(step, accepted, new HashSet<>());

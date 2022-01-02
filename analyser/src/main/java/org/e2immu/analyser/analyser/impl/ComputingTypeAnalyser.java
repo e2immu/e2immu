@@ -93,7 +93,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                  AnalyserContext analyserContextInput) {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.COMPUTED);
 
-        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
+        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
                 .add(FIND_ASPECTS, iteration -> findAspects())
                 .add(ANALYSE_TRANSPARENT_TYPES, iteration -> analyseTransparentTypes())
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableCanBeIncreasedByTypeParameters());

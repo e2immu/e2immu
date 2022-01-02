@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
@@ -40,9 +41,16 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     private final SetOnceMap<TypeInfo, TypeAnalyser> typeAnalysers = new SetOnceMap<>();
     private final SetOnceMap<FieldInfo, FieldAnalyser> fieldAnalysers = new SetOnceMap<>();
     private final SetOnceMap<ParameterInfo, ParameterAnalyser> parameterAnalysers = new SetOnceMap<>();
+    private final AnalyserProgram analyserProgram;
 
     public ExpandableAnalyserContextImpl(AnalyserContext parent) {
         this.parent = Objects.requireNonNull(parent);
+        analyserProgram = parent.getAnalyserProgram();
+    }
+
+    @Override
+    public AnalyserProgram getAnalyserProgram() {
+        return analyserProgram;
     }
 
     @Override

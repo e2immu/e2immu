@@ -18,6 +18,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -144,5 +145,15 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             return new FieldReference(this, fieldReference.fieldInfo);
         }
         return fieldReference;
+    }
+
+    /**
+     * Important that we can override this (even if we run in a non-ALL mode for the source,
+     * we want to run the AnnotatedAPI analyser in ALL mode).
+     *
+     * @return the program that determines which analyser components will be executed
+     */
+    default AnalyserProgram getAnalyserProgram() {
+        return getConfiguration().analyserConfiguration().analyserProgram();
     }
 }

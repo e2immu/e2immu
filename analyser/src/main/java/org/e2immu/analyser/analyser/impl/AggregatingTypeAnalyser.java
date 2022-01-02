@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -47,7 +48,8 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         typeAnalysis.freezeApprovedPreconditionsE1();
         typeAnalysis.freezeApprovedPreconditionsE2();
 
-        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
+        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER));

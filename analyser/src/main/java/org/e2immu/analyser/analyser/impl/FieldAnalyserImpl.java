@@ -26,6 +26,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -45,8 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.FIELD_FINAL;
-import static org.e2immu.analyser.config.AnalyserProgram.Step.TRANSPARENT;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -112,7 +112,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
-        analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+        AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
+        analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
                 .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
                 .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
@@ -1107,32 +1108,38 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
-        log(ANALYSER, "Checking field {}", fqn);
+        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+        if(analyserProgram.accepts(FIELD_FINAL)) {
+            CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
+                    myTypeAnalyser.getTypeAnalysis());
+            check(org.e2immu.annotation.Variable.class, e2.variableField);
+        }
+        if (analyserProgram.accepts(ALL)) {
+            log(ANALYSER, "Checking field {}", fqn);
 
-        check(NotNull.class, e2.notNull);
-        check(NotNull1.class, e2.notNull1);
-        CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
-                myTypeAnalyser.getTypeAnalysis());
-        CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
-                myTypeAnalyser.getTypeAnalysis());
+            check(NotNull.class, e2.notNull);
+            check(NotNull1.class, e2.notNull1);
 
-        // dynamic type annotations
-        check(Container.class, e2.container);
+            CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
+                    myTypeAnalyser.getTypeAnalysis());
 
-        check(E1Immutable.class, e2.e1Immutable);
-        check(E1Container.class, e2.e1Container);
-        CheckImmutable.check(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true);
-        CheckImmutable.check(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false);
-        check(ERContainer.class, e2.eRContainer);
+            // dynamic type annotations
+            check(Container.class, e2.container);
 
-        check(org.e2immu.annotation.Variable.class, e2.variableField);
-        check(Modified.class, e2.modified);
-        check(Nullable.class, e2.nullable);
+            check(E1Immutable.class, e2.e1Immutable);
+            check(E1Container.class, e2.e1Container);
+            CheckImmutable.check(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true);
+            CheckImmutable.check(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false);
+            check(ERContainer.class, e2.eRContainer);
 
-        checkLinks.checkLinksForFields(messages, fieldInfo, fieldAnalysis);
-        checkLinks.checkLink1sForFields(messages, fieldInfo, fieldAnalysis);
+            check(Modified.class, e2.modified);
+            check(Nullable.class, e2.nullable);
 
-        checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
+            checkLinks.checkLinksForFields(messages, fieldInfo, fieldAnalysis);
+            checkLinks.checkLink1sForFields(messages, fieldInfo, fieldAnalysis);
+
+            checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
+        }
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {

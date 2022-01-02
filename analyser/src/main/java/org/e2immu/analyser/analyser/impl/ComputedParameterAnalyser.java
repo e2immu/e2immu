@@ -65,7 +65,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     record SharedState(int iteration) {
     }
 
-    public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+    public final AnalyserComponents<String, SharedState> analyserComponents =
+            new AnalyserComponents.Builder<String, SharedState>(analyserContext.getAnalyserProgram())
             .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
             .add(ANALYSE_FIRST_ITERATION, this::analyseFirstIteration)
             .add(ANALYSE_FIELD_ASSIGNMENTS, this::analyseFieldAssignments)

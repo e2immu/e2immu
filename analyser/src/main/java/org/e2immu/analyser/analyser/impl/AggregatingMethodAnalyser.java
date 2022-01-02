@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -61,7 +62,8 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.preconditionForEventual.set(Optional.empty());
         methodAnalysis.setEventual(MethodAnalysis.NOT_EVENTUAL);
 
-        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
+        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
                 .add(MODIFIED, iteration -> this.aggregate(Property.MODIFIED_METHOD, DV::max, DV.MIN_INT_DV))
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE, DV::min, DV.MAX_INT_DV))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT, DV::min, DV.MAX_INT_DV))

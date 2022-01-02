@@ -21,8 +21,8 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -30,6 +30,7 @@ import org.e2immu.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -145,44 +146,47 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
-        if (!methodInfo.isConstructor) {
-            if (!methodInfo.isVoid()) {
-                check(NotNull.class, e2.notNull);
-                check(NotNull1.class, e2.notNull1);
-                check(Fluent.class, e2.fluent);
-                check(Identity.class, e2.identity);
-                check(Container.class, e2.container);
+        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+        if (analyserProgram.accepts(ALL)) {
+            if (!methodInfo.isConstructor) {
+                if (!methodInfo.isVoid()) {
+                    check(NotNull.class, e2.notNull);
+                    check(NotNull1.class, e2.notNull1);
+                    check(Fluent.class, e2.fluent);
+                    check(Identity.class, e2.identity);
+                    check(Container.class, e2.container);
 
-                check(E1Immutable.class, e2.e1Immutable);
-                check(E1Container.class, e2.e1Container);
-                CheckImmutable.check(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true);
-                CheckImmutable.check(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false);
-                check(BeforeMark.class, e2.beforeMark);
-                check(ERContainer.class, e2.eRContainer);
+                    check(E1Immutable.class, e2.e1Immutable);
+                    check(E1Container.class, e2.e1Container);
+                    CheckImmutable.check(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true);
+                    CheckImmutable.check(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false);
+                    check(BeforeMark.class, e2.beforeMark);
+                    check(ERContainer.class, e2.eRContainer);
 
-                checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
+                    checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
 
-                check(Nullable.class, e2.nullable);
+                    check(Nullable.class, e2.nullable);
 
-                check(Dependent.class, e2.dependent);
-                check(Independent.class, e2.independent);
-                CheckIndependent.checkLevel(messages, methodInfo, Independent1.class, e2.independent1, methodAnalysis);
+                    check(Dependent.class, e2.dependent);
+                    check(Independent.class, e2.independent);
+                    CheckIndependent.checkLevel(messages, methodInfo, Independent1.class, e2.independent1, methodAnalysis);
+                }
+
+                check(NotModified.class, e2.notModified);
+                check(Modified.class, e2.modified);
             }
 
-            check(NotModified.class, e2.notModified);
-            check(Modified.class, e2.modified);
+            CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
+
+            CheckEventual.checkOnly(messages, methodInfo, methodAnalysis);
+            CheckEventual.checkMark(messages, methodInfo, methodAnalysis);
+            CheckEventual.checkTestMark(messages, methodInfo, methodAnalysis);
+
+            checkWorseThanOverriddenMethod();
         }
-
-        CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
-
-        CheckEventual.checkOnly(messages, methodInfo, methodAnalysis);
-        CheckEventual.checkMark(messages, methodInfo, methodAnalysis);
-        CheckEventual.checkTestMark(messages, methodInfo, methodAnalysis);
-
         getParameterAnalysers().forEach(ParameterAnalyser::check);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::check);
 
-        checkWorseThanOverriddenMethod();
     }
 
     private static final Set<Property> CHECK_WORSE_THAN_PARENT = Set.of(Property.NOT_NULL_EXPRESSION,

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -97,7 +98,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
 
-        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
+        AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
+        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>(analyserProgram);
         assert firstStatementAnalyser != null;
 
         // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
@@ -880,11 +882,15 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
+                /*
+                FIXME get this working again?
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
                         lastStatement.getStatementAnalysis().methodLevelData().analyserComponents;
                 LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
                         methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());
+
+                 */
             }
         }
     }

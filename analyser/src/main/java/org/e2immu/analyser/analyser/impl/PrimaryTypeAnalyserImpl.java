@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.config.AnalyserProgram.PROGRAM_ALL;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -189,7 +190,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
 
-        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
+        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);

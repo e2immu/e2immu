@@ -18,7 +18,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.AnalyserProgram;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -26,6 +29,7 @@ import org.e2immu.annotation.*;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -70,26 +74,29 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     public void check() {
-        log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        check(NotModified.class, e2.notModified);
-        check(Modified.class, e2.modified);
+        AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
+        if (analyserProgram.accepts(ALL)) {
+            log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
+            E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+            check(NotModified.class, e2.notModified);
+            check(Modified.class, e2.modified);
 
-        check(NotNull.class, e2.notNull);
-        check(NotNull1.class, e2.notNull1);
-        check(Nullable.class, e2.nullable);
+            check(NotNull.class, e2.notNull);
+            check(NotNull1.class, e2.notNull1);
+            check(Nullable.class, e2.nullable);
 
-        check(Independent.class, e2.independent);
-        check(Independent1.class, e2.independent1);
-        check(Dependent.class, e2.dependent);
+            check(Independent.class, e2.independent);
+            check(Independent1.class, e2.independent1);
+            check(Dependent.class, e2.dependent);
 
-        check(BeforeMark.class, e2.beforeMark);
-        check(E1Immutable.class, e2.e1Immutable);
-        check(E1Container.class, e2.e1Container);
-        check(E2Immutable.class, e2.e2Immutable);
-        check(E2Container.class, e2.e2Container);
+            check(BeforeMark.class, e2.beforeMark);
+            check(E1Immutable.class, e2.e1Immutable);
+            check(E1Container.class, e2.e1Container);
+            check(E2Immutable.class, e2.e2Immutable);
+            check(E2Container.class, e2.e2Container);
 
-        checkWorseThanParent();
+            checkWorseThanParent();
+        }
     }
 
     @Override

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -101,11 +102,13 @@ public class MethodLevelData {
                               StateData stateData) {
     }
 
-    public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
-            .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
-            .add(COMBINE_PRECONDITION, this::combinePrecondition)
-            .build();
+    public AnalyserComponents<String, SharedState> analyserComponents(AnalyserProgram analyserProgram) {
+        return new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
+                .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
+                .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
+                .add(COMBINE_PRECONDITION, this::combinePrecondition)
+                .build();
+    }
 
     public AnalysisStatus analyse(StatementAnalyserSharedState sharedState,
                                   StatementAnalysis statementAnalysis,
@@ -118,7 +121,8 @@ public class MethodLevelData {
             StatementAnalyserResult.Builder builder = sharedState.builder();
             SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,
                     logLocation, previous, previousIndex, stateData);
-            return analyserComponents.run(localSharedState);
+            AnalyserProgram analyserProgram = evaluationContext.getAnalyserContext().getAnalyserProgram();
+            return analyserComponents(analyserProgram).run(localSharedState);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, {}", logLocation);
             throw rte;
