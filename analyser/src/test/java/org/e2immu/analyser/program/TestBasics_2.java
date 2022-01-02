@@ -24,16 +24,16 @@ public class TestBasics_2 extends CommonTestRunner {
 
     @Test
     public void testALL() throws IOException {
-        testClass("Basics_2", 0, 0, AnalyserProgram.from(AnalyserProgram.Step.ALL),
+        testClass("Basics_2", 0, 1, AnalyserProgram.from(AnalyserProgram.Step.ALL),
                 new DebugConfiguration.Builder()
-                .build());
+                        .build());
     }
 
     @Test
     public void testFieldFinal() throws IOException {
+        // the null pointer exception warning is never raised
         testClass("Basics_2", 0, 0,
                 AnalyserProgram.from(AnalyserProgram.Step.FIELD_FINAL),
-                new DebugConfiguration.Builder()
-                        .build());
+                new DebugConfiguration.Builder().build());
     }
 }
