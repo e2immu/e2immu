@@ -20,16 +20,15 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.DV.FALSE_DV;
 import static org.e2immu.analyser.analyser.DV.TRUE_DV;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -110,15 +109,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
                     assertTrue(d.iteration() < 2);
                     assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDvInitial(d, "immutable@Class_Basics_1", 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    assertDv(d, 2, EFFECTIVELY_E1IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    mustSeeIteration(d, 2);
+                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
                 }
             }
         }

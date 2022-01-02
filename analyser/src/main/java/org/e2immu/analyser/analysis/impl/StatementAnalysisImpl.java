@@ -573,9 +573,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         variables.toImmutableMap().values().forEach(vic -> {
             VariableInfo variableInfo = vic.current();
-            if (variableInfo.variable() instanceof This thisVar) {
-                fromTypeAnalyserIntoInitialThis(evaluationContext, vic, thisVar);
-            }
             if (vic.isInitial()) {
                 if (variableInfo.variable() instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
@@ -681,15 +678,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 vic.setProperty(Property.INDEPENDENT, independent, INITIAL);
             }
         }
-    }
-
-    private void fromTypeAnalyserIntoInitialThis(EvaluationContext evaluationContext,
-                                                 VariableInfoContainer vic,
-                                                 This thisVar) {
-        // only copy EXT_IMM
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(thisVar.typeInfo);
-        DV extImm = typeAnalysis.getProperty(IMMUTABLE);
-        vic.setProperty(EXTERNAL_IMMUTABLE, extImm, INITIAL);
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext,
@@ -1275,8 +1263,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // we do not keep the @NotNull status of a type
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
-        // external: only one relevant
-        properties.put(EXTERNAL_IMMUTABLE, typeAnalysis.getProperty(IMMUTABLE));
+        // external: not relevant
+        properties.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
         properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);

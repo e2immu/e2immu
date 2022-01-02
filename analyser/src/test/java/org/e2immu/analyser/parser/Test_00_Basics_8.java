@@ -38,10 +38,11 @@ import java.io.PrintStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Test_00_Basics_4plus extends CommonTestRunner {
-    public Test_00_Basics_4plus() {
+public class Test_00_Basics_8 extends CommonTestRunner {
+    public Test_00_Basics_8() {
         super(true);
     }
 
@@ -266,9 +267,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof This) {
-                    assertDvInitial(d, "immutable@Class_Basics_6", 2, MultiLevel.MUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    assertDv(d, 2, MultiLevel.MUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    mustSeeIteration(d, 2);
+                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
@@ -530,7 +529,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 }
                 if (d.variable() instanceof This) {
-                    assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                    assertEquals(NOT_INVOLVED_DV, d.getProperty(EXTERNAL_IMMUTABLE));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo pi && "b".equals(pi.name)) {

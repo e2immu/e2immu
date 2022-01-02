@@ -70,7 +70,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 assertTrue(d.condition().isBoolValueTrue());
                 assertTrue(d.state().isBoolValueTrue());
                 assertTrue(d.localConditionManager().precondition().isEmpty());
-                mustSeeIteration(d, 2);
+                mustSeeIteration(d, 1);
             }
         };
 

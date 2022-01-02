@@ -176,8 +176,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
 
             if (ennStatus.isDelayed()) {
-                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
-                        index(), methodInfo().fullyQualifiedName);
+                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable: {}",
+                        index(), methodInfo().fullyQualifiedName, ennStatus);
             }
             return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()));
         } catch (Throwable rte) {
