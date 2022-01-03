@@ -50,7 +50,23 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             DV cnn = d.getProperty(CONTEXT_NOT_NULL);
             DV enn = d.getProperty(EXTERNAL_NOT_NULL);
             if ("setT".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                    }
+                    // now comes the assignment this.t = t;
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("t", d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                    }
+                }
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
+                    }
                     assertEquals(DV.TRUE_DV, d.getProperty(IDENTITY));
                     // not contracted
                     assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));
@@ -72,7 +88,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
 
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        // FIXME      assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     } else {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
