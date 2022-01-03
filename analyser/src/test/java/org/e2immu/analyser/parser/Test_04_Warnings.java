@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
@@ -28,8 +28,6 @@ import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.testexample.Warnings_1;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -82,7 +80,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             AnalysisStatus analysisStatus = d.result().analysisStatus();
-            LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
+
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.state().toString());
@@ -96,6 +94,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 // ERROR: t.trim() result is not used
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
+                    LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
                     assertEquals("org.e2immu.analyser.testexample.Warnings_1.method1(java.lang.String)",
                             location.info.fullyQualifiedName());
                     assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
@@ -106,6 +105,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("Warnings_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                LocationImpl location = (LocationImpl) d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location();
                 assertEquals("org.e2immu.analyser.testexample.Warnings_1.Warnings_1()",
                         location.info.fullyQualifiedName());
 
@@ -498,7 +498,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 1, DV.TRUE_DV, MODIFIED_VARIABLE);
+                    assertDv(d, 0, DV.TRUE_DV, MODIFIED_METHOD);
 
                     // whatever happens, the set remains independent (the int added is independent)
                     assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
