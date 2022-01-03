@@ -573,7 +573,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 newEcd = new ChangeData(null, CausesOfDelay.EMPTY, CausesOfDelay.EMPTY, false,
                         Set.of(), LinkedVariables.EMPTY, removeLv, Map.of());
             } else {
-                newEcd = new ChangeData(value, ecd.delays, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.delays, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, LinkedVariables.EMPTY,
                         removeLv.merge(ecd.toRemoveFromLinkedVariables), ecd.properties);
             }

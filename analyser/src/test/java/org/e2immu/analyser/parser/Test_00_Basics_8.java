@@ -16,29 +16,19 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.testexample.Basics_6;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
+import static org.e2immu.analyser.analyser.Property.CONTEXT_MODIFIED;
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_8 extends CommonTestRunner {
@@ -62,7 +52,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                         assertTrue(d.variableInfo().isAssigned());
                         assertEquals("l", d.currentValue().toString());
                     }
-                    if ("3".equals(d.statementId())) {
+                    if ("3".equals(d.statementId()) || "4".equals(d.statementId()) || "5".equals(d.statementId())) {
                         assertEquals("3" + VariableInfoContainer.Level.EVALUATION,
                                 d.variableInfo().getAssignmentIds().toString());
                         assertEquals("1+l", d.currentValue().toString());
@@ -76,8 +66,11 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 if ("w".equals(d.variableName()) && "1".equals(d.statementId())) {
                     assertEquals("1+l", d.currentValue().toString());
                 }
-                if ("u".equals(d.variableName()) && "4".equals(d.statementId())) {
+                if ("u".equals(d.variableName()) && ("4".equals(d.statementId()) || "5".equals(d.statementId()))) {
                     assertEquals("3+l", d.currentValue().toString());
+                }
+                if(d.variable() instanceof ParameterInfo p && "l".equals(p.name)) {
+                    assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
                 }
             }
 
@@ -93,8 +86,8 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 }
             }
             if ("test4".equals(d.methodInfo().name)) {
+                String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                 if ("j".equals(d.variableName())) {
-                    String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
@@ -102,11 +95,11 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
+                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
                         assertEquals(expectLv, linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
@@ -146,9 +139,27 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                             assertEquals("i$1:0,i$2:1,j0:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
                             assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+
+                            assertEquals("instance type int", d.currentValue().toString());
+                        }
+                        if ("4.0.0.0.2".equals(d.statementId())) {
+                            assertEquals("i$1:0,i$2:1,j0:1,j:1,k:1", linkedVariables);
+                            assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
+                            assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+
+                            assertEquals("instance type int", d.currentValue().toString());
+                            assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        }
+                        if ("4.0.0.0.3".equals(d.statementId())) {
+                            assertEquals("i$1:0,i$2:1,j0:1,j:1,k:1", linkedVariables);
+                            assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
+                            assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+
+                            assertEquals("instance type int", d.currentValue().toString());
+                            assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         }
                         if ("4".equals(d.statementId())) {
-                            assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("i$1:0,i$2:1,j:1,k:1,this.i:1", linkedVariables);
                             assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
                             assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                         }
@@ -182,11 +193,12 @@ public class Test_00_Basics_8 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
-            int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
-            int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
 
             if ("test4".equals(d.methodInfo().name)) {
+                int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
+                int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
+                int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, timeI);
                     assertEquals(1, timeE);

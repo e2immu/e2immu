@@ -269,6 +269,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
         };
+
+        // We're not only relying on the "reassigned" system (see Basics_7) because it ignores variables without
+        // EVALUATION level. Instead, we use ER.toRemoveFromLinkedVariables + variables added to changeData, which moves them
+        // in EVALUATION anyway
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,

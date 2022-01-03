@@ -81,7 +81,8 @@ public class ComputeLinkedVariables {
                                                 EvaluationContext evaluationContext) {
         WeightedGraph<Variable, DV> weightedGraph = new WeightedGraph<>(() -> LinkedVariables.STATICALLY_ASSIGNED_DV);
         Set<CauseOfDelay> delaysInClustering = new HashSet<>();
-        List<Variable> variables = new ArrayList<>(statementAnalysis.numberOfVariables());
+        // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
+        Set<Variable> variables = new HashSet<>();
 
         statementAnalysis.variableEntryStream(level).forEach(e -> {
             VariableInfoContainer vic = e.getValue();
@@ -125,6 +126,7 @@ public class ComputeLinkedVariables {
                         }
                     });
                 }
+                variables.addAll(curated.variables().keySet());
             }
         });
 
@@ -137,7 +139,7 @@ public class ComputeLinkedVariables {
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,
-                                                        List<Variable> variables,
+                                                        Set<Variable> variables,
                                                         DV minInclusive,
                                                         DV maxInclusive) {
         Set<Variable> done = new HashSet<>();
