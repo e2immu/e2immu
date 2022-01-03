@@ -69,7 +69,8 @@ public interface CauseOfDelay {
         EXT_NN("ext_nn", ""),
         NOT_NULL_PARAMETER("nnp", ""),
         PROP_MOD("prop_mod", ""),
-        SINGLE_RETURN_VALUE("svr", "single return value not yet set");
+        SINGLE_RETURN_VALUE("svr", "single return value not yet set"),
+        UNREACHABLE("unreachable", "No data due to unreachable code - used as a precaution");
 
         public final String msg;
         public final String label;

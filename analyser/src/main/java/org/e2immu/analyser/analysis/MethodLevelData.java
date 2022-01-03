@@ -73,7 +73,7 @@ public class MethodLevelData {
     public CausesOfDelay combinedPreconditionIsDelayedSet() {
         if (combinedPrecondition.isFinal()) return CausesOfDelay.EMPTY;
         Precondition cp = combinedPrecondition.get();
-        assert cp != null : "Called too early, haven't had the chance to write a value";
+        if(cp == null) return null;
         return cp.expression().causesOfDelay();
     }
 

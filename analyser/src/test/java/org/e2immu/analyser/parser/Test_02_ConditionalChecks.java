@@ -14,15 +14,16 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.InterruptsFlow;
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +66,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("!a||!b", d.state().toString());
                     assertEquals(FlowData.ALWAYS, inBlock);
                     assertEquals(FlowData.ALWAYS, inMethod);
-                    Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
+                    Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
+                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
@@ -218,11 +220,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 if (d.iteration() > 0) {
                     for (int param : new int[]{0, 1}) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                                d.parameterAnalyses().get(param).getProperty(CONTEXT_NOT_NULL));
-                        assertTrue(d.parameterAnalyses().get(param).getProperty(EXTERNAL_NOT_NULL).isDelayed());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                                d.parameterAnalyses().get(param).getProperty(NOT_NULL_PARAMETER));
+                        assertDv(d.p(param), MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d.p(param), MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_PARAMETER);
                     }
                 }
                 assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
@@ -330,7 +329,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
-                        assertEquals("o/*(ConditionalChecks_4)*/", d.currentValue().toString());
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<vp:org.e2immu.analyser.testexample.ConditionalChecks_4:container@Class_ConditionalChecks_4;immutable@Class_ConditionalChecks_4;independent@Class_ConditionalChecks_4>";
+                            case 1 -> "<vp:org.e2immu.analyser.testexample.ConditionalChecks_4:container@Class_ConditionalChecks_4;immutable@Class_ConditionalChecks_4>";
+                            default -> "o/*(ConditionalChecks_4)*/";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
                     if (O5.equals(d.variableName())) {
@@ -344,11 +348,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ?
-                                "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
-                                RETURN_VALUE;
+                        String expectValue = switch (d.iteration()) {
+                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>";
+                            case 1 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>";
+                            default -> RETURN_VALUE;
+                        };
                         assertEquals(expectValue, d.currentValue().debugOutput());
-                        assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
+                        mustSeeIteration(d, 2);
                     }
                 }
             }
@@ -374,7 +380,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                assertDv(d, 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                mustSeeIteration(d, 2);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
             }
         };
 
@@ -432,7 +440,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

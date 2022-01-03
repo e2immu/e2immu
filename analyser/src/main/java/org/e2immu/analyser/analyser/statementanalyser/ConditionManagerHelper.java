@@ -14,12 +14,15 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
+import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.parser.Primitives;
+
+import java.util.Objects;
 
 class ConditionManagerHelper {
     /*
@@ -38,7 +41,9 @@ class ConditionManagerHelper {
             combinedPrecondition = previous.methodLevelData().combinedPrecondition.get();
             combinedPreconditionIsDelayed = CausesOfDelay.EMPTY;
         } else {
-            combinedPreconditionIsDelayed = previous.methodLevelData().combinedPreconditionIsDelayedSet();
+            combinedPreconditionIsDelayed = Objects.requireNonNullElseGet(
+                    previous.methodLevelData().combinedPreconditionIsDelayedSet(),()->
+                    previous.methodAnalysis().getMethodInfo().delay(CauseOfDelay.Cause.UNREACHABLE));
             combinedPrecondition = Precondition.empty(primitives);
         }
 
