@@ -67,7 +67,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResult,
                                   List<PrimaryTypeAnalyser> localAnalysers) {
-        CausesOfDelay delay = evaluationResult.causes();
+        CausesOfDelay delay = evaluationResult.causesOfDelay();
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 
         if (evaluationResult.addCircularCall()) {
@@ -169,7 +169,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             .remove(changeData.toRemoveFromLinkedVariables().variables().keySet());
                     vic.setValue(changeData.value(), removed, merged, false);
                 } else {
-                    if (variable instanceof This || !evaluationResult.causes().isDelayed()) {
+                    if (variable instanceof This || !evaluationResult.causesOfDelay().isDelayed()) {
                         // TODO we used to check for "haveDelaysCausedByMethodCalls"; now assuming ALL delays
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
@@ -208,7 +208,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (statement() instanceof ForEachStatement) {
             Variable loopVar = statementAnalysis.obtainLoopVar();
             statementAnalysis.evaluationOfForEachVariable(loopVar, evaluationResult.getExpression(),
-                    evaluationResult.causes(), sharedState.evaluationContext());
+                    evaluationResult.causesOfDelay(), sharedState.evaluationContext());
         }
 
         // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
@@ -262,7 +262,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext(),
                     groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
                     groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
-                    evaluationResult.causes(), loopVar);
+                    evaluationResult.causesOfDelay(), loopVar);
         }
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
@@ -306,7 +306,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // odds and ends
 
-        if (evaluationResult.causes().isDone()) {
+        if (evaluationResult.causesOfDelay().isDone()) {
             evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
         }
 

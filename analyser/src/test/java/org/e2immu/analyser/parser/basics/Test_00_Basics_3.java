@@ -65,7 +65,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        assertTrue(d.evaluationResult().causes().isDelayed());
+                        assertTrue(d.evaluationResult().causesOfDelay().isDelayed());
                     } else {
                         assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
                     }

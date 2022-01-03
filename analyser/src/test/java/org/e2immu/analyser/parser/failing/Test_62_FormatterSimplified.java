@@ -145,7 +145,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "null==<f:guide>" : "false";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -231,13 +231,13 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "9==<m:index>&&null!=<f:forwardInfo>" :
                             "9==(new Stack<GuideOnStack>()/*0==this.size()*/).peek().forwardInfo.guide.index()";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<instanceOf:Guide>" :
                             "list.get(forwardInfo.pos) instanceof Guide";
                     assertEquals(expect, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };

@@ -287,7 +287,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // is the method modifying, do we need to wait?
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
         DV modified = alwaysModifying ? DV.TRUE_DV : recursiveCall || partOfCallCycle ? DV.FALSE_DV : modifiedMethod;
-        builder.causeOfContextModificationDelay(methodInfo, modified.isDelayed());
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         DV notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));

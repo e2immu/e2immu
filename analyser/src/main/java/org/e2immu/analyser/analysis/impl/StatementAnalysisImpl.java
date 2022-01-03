@@ -1687,6 +1687,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
+    /*
+    if(x == null) { ...} when we know that x will never be null (or the other way around) based
+    on properties of x rather than the value of x
+     */
     @Override
     public void potentiallyRaiseNullPointerWarningENN() {
         candidateVariablesForNullPtrWarningStream().forEach(variable -> {

@@ -165,7 +165,7 @@ public class Test_16_Modification extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    assertTrue(d.evaluationResult().causes().isDelayed());
+                    assertTrue(d.evaluationResult().causesOfDelay().isDelayed());
                 } else {
                     assertEquals("instance type boolean", d.evaluationResult().value().toString());
                     DV v = d.evaluationResult().changeData().entrySet().stream()

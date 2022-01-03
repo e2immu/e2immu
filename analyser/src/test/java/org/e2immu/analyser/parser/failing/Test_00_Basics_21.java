@@ -60,7 +60,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
                     assertEquals("", cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
@@ -74,7 +74,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     String expectLv = d.iteration() == 0 ? "other:-1" : "other:3";
                     assertEquals(expectLv, cdThis.linkedVariables().toString());
 
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };

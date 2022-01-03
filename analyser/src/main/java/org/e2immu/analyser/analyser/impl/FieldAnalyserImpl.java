@@ -269,8 +269,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
                 log(FINAL, "Set initialiser of field {} to {}", fqn, evaluationResult.value());
-                if (evaluationResult.causes().isDelayed()) {
-                    return evaluationResult.causes();
+                if (evaluationResult.causesOfDelay().isDelayed()) {
+                    return evaluationResult.causesOfDelay();
                 }
                 return DONE;
             }

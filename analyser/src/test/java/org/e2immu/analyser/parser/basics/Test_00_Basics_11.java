@@ -16,23 +16,19 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,15 +49,15 @@ public class Test_00_Basics_11 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo in1 && "in".equals(in1.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         assertEquals(NULLABLE_INSTANCE, value);
-                    }
-                    if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
-                        assertEquals(expectValue, value);
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                     }
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
+                        assertEquals(expect, value);
+                    }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
-                        assertEquals(expectValue, value);
+                        String expect = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
+                        assertEquals(expect, value);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cnn);
                     }
                     if ("4".equals(d.statementId())) {
@@ -73,8 +69,8 @@ public class Test_00_Basics_11 extends CommonTestRunner {
                         assertEquals("in", value);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s1>" : "in";
-                        assertEquals(expectValue, value);
+                        String expect = d.iteration() == 0 ? "<v:s1>" : "in";
+                        assertEquals(expect, value);
                     }
                 }
                 if ("s2".equals(d.variableName())) {
@@ -82,16 +78,33 @@ public class Test_00_Basics_11 extends CommonTestRunner {
                         assertEquals("in", value);
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s2>" : "in";
-                        assertEquals(expectValue, value);
+                        String expect = d.iteration() == 0 ? "<v:s2>" : "in";
+                        assertEquals(expect, value);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cnn);
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
+                    assertTrue(d.statementId().compareTo("2") >= 0);
+                    String expectValue = d.iteration() == 0 ? "<f:out>" : "nullable instance type PrintStream";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    Message error = d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION);
+                    assertEquals(d.iteration() > 0, error != null);
+                }
+            }
+        };
+
         // warning: out potential null pointer (x1) and assert always true (x1)
         testClass("Basics_11", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

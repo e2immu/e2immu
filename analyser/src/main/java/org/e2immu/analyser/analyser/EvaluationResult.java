@@ -62,16 +62,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
                                List<Expression> storedValues,
-                               CausesOfDelay causes,
+                               CausesOfDelay causesOfDelay,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
-                               boolean addCircularCall,
-                               Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelay) {
+                               boolean addCircularCall) {
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
-        boolean noMinInt = causes.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT);
+        boolean noMinInt = causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT);
         assert noMinInt;
     }
 
@@ -145,14 +144,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     combinedProperties);
         }
 
-        public boolean haveContextMethodDelay() {
-            return properties.getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV).isDelayed();
-        }
-
-        public boolean havePropagationModificationDelay() {
-            return properties.getOrDefault(Property.PROPAGATE_MODIFICATION, DV.FALSE_DV).isDelayed();
-        }
-
         public DV getProperty(Property property) {
             return properties.getOrDefault(property, property.falseDv);
         }
@@ -185,7 +176,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
-        private final Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelays = new HashMap<>();
 
         // for a constant EvaluationResult
         public Builder() {
@@ -229,7 +219,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (!ignoreExpression && evaluationResult.value != null) {
                 setExpression(evaluationResult.value);
             }
-
+            this.causesOfDelay = this.causesOfDelay.merge(evaluationResult.causesOfDelay);
             this.messages.addAll(evaluationResult.getMessageStream());
 
             for (Map.Entry<Variable, ChangeData> e : evaluationResult.changeData.entrySet()) {
@@ -245,7 +235,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
                 }
             }
-            causesOfContextModificationDelays.putAll(evaluationResult.causesOfContextModificationDelay);
         }
 
         public void incrementStatementTime() {
@@ -284,8 +273,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     messages,
                     valueChanges,
                     precondition,
-                    addCircularCallOrUndeclaredFunctionalInterface,
-                    Map.copyOf(causesOfContextModificationDelays));
+                    addCircularCallOrUndeclaredFunctionalInterface);
         }
 
         /**
@@ -720,11 +708,5 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives(), causes)));
         }
 
-        // can be called for multiple parameters, a value of 'true' should always survive
-        public void causeOfContextModificationDelay(MethodInfo methodInfo, boolean delay) {
-            if (methodInfo != null) {
-                causesOfContextModificationDelays.merge(methodInfo, delay, (orig, val) -> orig || val);
-            }
-        }
     }
 }

@@ -145,7 +145,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("5".equals(d.statementId()) && "ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
                 assertEquals("<no return value>", d.evaluationResult().value().toString());
-                assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
 

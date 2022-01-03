@@ -407,7 +407,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                             ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
                             : RETURN_VALUE;
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
 
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration

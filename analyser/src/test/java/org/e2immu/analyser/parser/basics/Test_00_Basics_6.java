@@ -370,8 +370,8 @@ public class Test_00_Basics_6 extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertTrue(d.iteration() == 0 || d.evaluationResult().causes().isDone(),
-                        "Got " + d.evaluationResult().causes());
+                assertTrue(d.iteration() == 0 || d.evaluationResult().causesOfDelay().isDone(),
+                        "Got " + d.evaluationResult().causesOfDelay());
 
                 String expectValue = d.iteration() == 0 ? "<m:equals>" : "true";
                 assertEquals(expectValue, d.evaluationResult().value().toString());

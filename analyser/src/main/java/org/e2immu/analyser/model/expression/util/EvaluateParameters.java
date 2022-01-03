@@ -47,7 +47,6 @@ public class EvaluateParameters {
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        builder.causeOfContextModificationDelay(methodInfo, false); // will be overwritten when there's a delay
 
         for (Expression parameterExpression : parameterExpressions) {
             minCnnOverParameters = oneParameterReturnCnn(evaluationContext, forwardEvaluationInfo,
@@ -108,7 +107,7 @@ public class EvaluateParameters {
                 doPropagateModification(recursiveOrPartOfCallCycle, parameterInfo, independent, map);
             }
 
-            doContextModified(methodInfo, recursiveOrPartOfCallCycle, builder, parameterInfo, map);
+            doContextModified(methodInfo, recursiveOrPartOfCallCycle, parameterInfo, map);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
             if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
@@ -129,14 +128,19 @@ public class EvaluateParameters {
         return contextNotNull;
     }
 
-    private static void doPropagateModification(boolean recursiveOrPartOfCallCycle, ParameterInfo parameterInfo, DV independent, Map<Property, DV> map) {
+    private static void doPropagateModification(boolean recursiveOrPartOfCallCycle,
+                                                ParameterInfo parameterInfo,
+                                                DV independent,
+                                                Map<Property, DV> map) {
         if (independent.isDelayed()) {
+            DV pm;
             if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                 // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                map.put(Property.PROPAGATE_MODIFICATION, DV.FALSE_DV);
+                pm = DV.FALSE_DV;
             } else {
-                //   map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE_DV);
+                pm = parameterInfo.delay(CauseOfDelay.Cause.PROP_MOD);
             }
+            map.put(Property.PROPAGATE_MODIFICATION, pm);
         } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
             map.put(Property.PROPAGATE_MODIFICATION, DV.TRUE_DV);
         }
@@ -144,18 +148,18 @@ public class EvaluateParameters {
 
     private static void doContextModified(MethodInfo methodInfo,
                                           boolean recursiveOrPartOfCallCycle,
-                                          EvaluationResult.Builder builder,
                                           ParameterInfo parameterInfo,
                                           Map<Property, DV> map) {
         DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
         if (contextModified == null) {
+            DV cm;
             if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                 // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+                cm = DV.FALSE_DV;
             } else {
-                //  map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE_DV);
-                builder.causeOfContextModificationDelay(methodInfo, true);
+                cm = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_MODIFIED);
             }
+            map.put(Property.CONTEXT_MODIFIED, cm);
         }
     }
 

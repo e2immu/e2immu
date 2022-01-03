@@ -35,6 +35,9 @@ import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {
+
+    public static final String INSTANCE_TYPE_PRINT_STREAM = "instance type PrintStream";
+
     public Test_00_Basics_7() {
         super(true);
     }
@@ -71,20 +74,23 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                        assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
+                        String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
+                        assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // READ IMPLICITLY via the variable 'i'
                         assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                        assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
-                        assertDv(d, 0, DV.TRUE_DV, IDENTITY);
+                        String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
+                        assertEquals(expect, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
 
-                        assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
-                        assertDv(d, 0, DV.TRUE_DV, IDENTITY);
+                        String expect = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
+                        assertEquals(expect, d.currentValue().toString());
+                        assertDv(d, 1, DV.TRUE_DV, IDENTITY);
                     }
 
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL),
@@ -103,31 +109,37 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("instance type PrintStream", d.currentValue().toString());
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        String expect = d.iteration() == 0 ? "<f:out>" : INSTANCE_TYPE_PRINT_STREAM;
+                        assertEquals(expect, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("instance type PrintStream", d.currentValue().toString());
-                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        String expect = d.iteration() == 0 ? "<f:out>" : INSTANCE_TYPE_PRINT_STREAM;
+                        assertEquals(expect, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                 }
 
                 if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
-                    if ("0.0.0".equals(d.statementId()) || "0.0.1".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId())) {
                         assertEquals("p", d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<f:i>" : "p";
+                        assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expectInitial = d.iteration() == 0 ? "<f:i>" : "0";
                         assertEquals(expectInitial, d.variableInfoContainer().getPreviousOrInitial()
                                 .getValue().toString());
-                        String expect = d.iteration() == 0 ? "b?p:<f:i>" : "b?p:0";
+                        String expect = d.iteration() == 0 ? "b?<f:i>:<f:i>" : "b?p:0";
                         assertEquals(expect, d.currentValue().toString(),
                                 "Delay: " + d.currentValue().causesOfDelay().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "1+(b?p:<f:i>)" : "1+(b?p:0)";
+                        String expected = d.iteration() == 0 ? "1+(b?<f:i>:<f:i>)" : "1+(b?p:0)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

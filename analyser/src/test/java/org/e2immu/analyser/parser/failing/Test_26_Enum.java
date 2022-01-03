@@ -100,7 +100,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$0<=2";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };

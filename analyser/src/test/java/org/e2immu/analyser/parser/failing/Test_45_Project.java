@@ -195,7 +195,7 @@ public class Test_45_Project extends CommonTestRunner {
                     String expect = d.iteration() <= 2
                             ? "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=true}"
                             : "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=false}";
-                    assertEquals(expect, d.evaluationResult().causesOfContextModificationDelay().toString());
+                    assertEquals(expect, d.evaluationResult().causesOfDelay().toString());
                 }
             }
         };

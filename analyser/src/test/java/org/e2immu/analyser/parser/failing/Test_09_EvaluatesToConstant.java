@@ -155,7 +155,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
-                assertFalse(d.evaluationResult().causes().isDelayed());
+                assertFalse(d.evaluationResult().causesOfDelay().isDelayed());
             }
             if ("1.0.0".equals(d.statementId())) {
                 assertEquals("\"xzy\"", d.evaluationResult().value().toString());

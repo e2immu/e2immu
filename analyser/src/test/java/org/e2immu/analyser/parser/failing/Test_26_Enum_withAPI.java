@@ -50,7 +50,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     public void test0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 0) {
-                assertFalse(d.evaluationResult().causes().isDelayed());
+                assertFalse(d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
 
@@ -171,7 +171,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                     String expectValue = d.iteration() == 0 ? "1==<m:getCnt>" : "true";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }

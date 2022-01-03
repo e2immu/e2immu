@@ -48,7 +48,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
 
-                assertEquals(d.iteration() == 0, d.evaluationResult().causes().isDelayed());
+                assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
 
