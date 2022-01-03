@@ -27,6 +27,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
@@ -351,7 +352,14 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodInfo test = bc6.findUniqueMethod("test", 1);
 
         MethodAnalysis methodAnalysis = test.methodAnalysis.get();
-        assertEquals(0, methodAnalysis.getComputedCompanions().size());
+        assertEquals(1, methodAnalysis.getComputedCompanions().size());
+
+        MethodInfo companion = methodAnalysis.getComputedCompanions().values().stream().findFirst().orElseThrow();
+        Block block = companion.methodInspection.get().getMethodBody();
+        ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
+        Expression expression = returnStatement.expression;
+        assertEquals("!(new java.util.HashSet<>(strings)/*this.size()==strings.size()*/).contains(\"a\")",
+                expression.debugOutput());
         // See Precondition_4 for a similar example with precondition
     }
 

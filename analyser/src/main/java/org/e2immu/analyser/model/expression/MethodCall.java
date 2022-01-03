@@ -405,7 +405,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult mv = new EvaluateMethodCall(evaluationContext, this).methodValue(modified,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
-            if (mv.value() == objectValue && mv.value().isInstanceOf(Instance.class) && modifiedInstance != null) {
+            if (mv.value() == objectValue && modifiedInstance != null) {
+                // FIXME I removed  && mv.value().isInstanceOf(Instance.class)
                 result = modifiedInstance;
             } else {
                 result = mv.value();
@@ -615,25 +616,26 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance;
 
         IsVariableExpression ive;
-        Expression xx;
-        if (objectValue instanceof Instance || objectValue instanceof ConstructorCall) {
-            newInstance = objectValue;
-            xx = null;
+        Expression createInstanceBasedOn;
+        if (objectValue.isInstanceOf(Instance.class) ||
+                objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
+            newInstance = unwrap(objectValue);
+            createInstanceBasedOn = null;
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
             Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
-            if (current instanceof Instance || current instanceof ConstructorCall) {
-                newInstance = current;
-                xx = null;
+            if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
+                newInstance = unwrap(current);
+                createInstanceBasedOn = null;
             } else {
-                xx = current;
+                createInstanceBasedOn = current;
                 newInstance = null;
             }
         } else {
-            xx = objectValue;
+            createInstanceBasedOn = objectValue;
             newInstance = null;
         }
-        if (xx != null) {
-            ParameterizedType returnType = xx.returnType();
+        if (createInstanceBasedOn != null) {
+            ParameterizedType returnType = createInstanceBasedOn.returnType();
             AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
             DV immutable = analysisProvider.defaultImmutable(returnType, false);
             DV container = analysisProvider.defaultContainer(returnType);
@@ -664,6 +666,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
+    }
+
+    // IMPROVE we're assuming at the moment that the wrapper is used for the companion data
+    // but it could, in theory, be used for e.g. a @NotNull or so
+    private static Expression unwrap(Expression expression) {
+        if (expression instanceof PropertyWrapper pw) {
+            return unwrap(pw.expression());
+        }
+        return expression;
     }
 
 
@@ -830,7 +841,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
 
             if (methodInspection.isStatic() && methodInspection.isFactoryMethod()) {
-                if(typeAnalysis.hiddenContentTypeStatus().isDelayed()) {
+                if (typeAnalysis.hiddenContentTypeStatus().isDelayed()) {
                     return typeAnalysis.hiddenContentTypeStatus();
                 }
                 SetOfTypes hiddenContentTypes = typeAnalysis.getTransparentTypes();
