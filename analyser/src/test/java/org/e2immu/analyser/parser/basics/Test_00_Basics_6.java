@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
@@ -29,6 +29,8 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
