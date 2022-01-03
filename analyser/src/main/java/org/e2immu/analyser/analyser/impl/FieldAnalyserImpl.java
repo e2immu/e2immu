@@ -637,7 +637,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     }
                     added = true;
                     if (vi.isDelayed()) {
-                        log(DELAYED, "Delay consistent value for field {}", fqn);
+                        log(DELAYED, "Delay consistent value for field {} because of {}", fqn,
+                                vi.getValue().toString());
                         delays = delays.merge(vi.getValue().causesOfDelay());
                     }
                 }

@@ -393,5 +393,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void setApprovedPreconditionsE2Delays(CausesOfDelay causes) {
             approvedPreconditionsE2Delays = causes;
         }
+
+        private static final Set<Property> ACCEPTED = Set.of(Property.IMMUTABLE, Property.CONTAINER,
+                Property.INDEPENDENT, Property.EXTENSION_CLASS, Property.UTILITY_CLASS, Property.SINGLETON);
+
+        @Override
+        public void setProperty(Property property, DV i) {
+            assert ACCEPTED.contains(property) : "Do not accept " + property + " on types";
+            super.setProperty(property, i);
+        }
     }
 }

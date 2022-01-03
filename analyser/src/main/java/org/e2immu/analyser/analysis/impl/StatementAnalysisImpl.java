@@ -632,7 +632,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
+            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, CONTAINER);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -745,7 +745,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES
-            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD);
+            = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE);
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
@@ -1291,8 +1291,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_NOT_NULL, extNotNull);
         DV extImm = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
         properties.put(EXTERNAL_IMMUTABLE, extImm);
-        DV mom = fieldAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
-        properties.put(MODIFIED_OUTSIDE_METHOD, mom);
 
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }

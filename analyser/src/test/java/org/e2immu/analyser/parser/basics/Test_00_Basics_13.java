@@ -78,7 +78,7 @@ public class Test_00_Basics_13 extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE_DV, nne);
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                         assertEquals(DV.FALSE_DV, cm);
-                        assertEquals("in2:0", linkedVariables);
+                        assertEquals("", linkedVariables);
                         assertEquals("nullable instance type String", value);
                     }
                     if ("4".equals(d.statementId())) {
@@ -90,7 +90,7 @@ public class Test_00_Basics_13 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("<return value>", value);
-                        assertEquals("return test:0", linkedVariables);
+                        assertEquals("", linkedVariables);
                         assertEquals(MultiLevel.NULLABLE_DV, cnn);
                         assertEquals(MultiLevel.NULLABLE_DV, nne);
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, enn);

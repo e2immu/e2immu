@@ -255,8 +255,6 @@ public class PrimitivesImpl implements Primitives {
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.setTransparentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
@@ -279,8 +277,6 @@ public class PrimitivesImpl implements Primitives {
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
-            builder.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
-            builder.setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             builder.setTransparentTypes(SetOfTypes.EMPTY);
             builder.setImmutableCanBeIncreasedByTypeParameters(false);
         }

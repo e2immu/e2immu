@@ -435,7 +435,7 @@ public final class Instance extends BaseExpression implements Expression {
 
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType.isPrimitiveExcludingVoid()) return "";
+        if (bestType != null && bestType.isPrimitiveExcludingVoid()) return "";
         DV minimalNotNull = valueProperties.getOrDefault(Property.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE_DV);
         if (minimalNotNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return "nullable ";
         return "";
