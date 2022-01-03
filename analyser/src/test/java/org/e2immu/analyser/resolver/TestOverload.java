@@ -15,16 +15,21 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.expression.BinaryOperator;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestOverload extends CommonTest {
@@ -67,5 +72,21 @@ public class TestOverload extends CommonTest {
     @Test
     public void test_4() throws IOException {
         inspectAndResolve(Overload_4.class);
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Overload_5.class);
+        TypeInfo typeInfo = typeMap.get(Overload_5.class);
+        assertNotNull(typeInfo);
+        MethodInfo test = typeInfo.findUniqueMethod("test", 0);
+        Block block = test.methodInspection.get().getMethodBody();
+        IfElseStatement ifStatement = (IfElseStatement) block.structure.statements().get(1);
+        Expression expression = ifStatement.expression;
+        MethodCall mc = (MethodCall) ((BinaryOperator) expression).lhs;
+        MethodInfo methodInfo = mc.methodInfo;
+        // we'd rather not have java.lang.AbstractStringBuilder.length(), because that method is not accessible,
+        // and we decorated the one in CharSequence
+        assertEquals("java.lang.CharSequence.length()", methodInfo.fullyQualifiedName);
     }
 }

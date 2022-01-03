@@ -338,6 +338,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     Set<TypeInfo> visited,
                                                     int distance) {
         TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(typeInfo));
+        boolean shallowAnalysis = !typeInspection.inspector().statements();
         typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .map(this::getMethodInspection)
@@ -346,7 +347,10 @@ public class TypeContext implements TypeAndInspectionProvider {
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +
                                 (!m.isStatic() && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), distance
+                        // add a penalty for shallowly analysed, non-public methods
+                        // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
+                        + (shallowAnalysis && !m.isPublic(this) ? 100 : 0)))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();
