@@ -16,12 +16,13 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -29,8 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.e2immu.analyser.analyser.Property.CONTAINER;
-import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_15plus extends CommonTestRunner {
@@ -63,7 +63,34 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
 
     @Test
     public void test_17() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
+            // the assignment this.string = string causes a delay of one iteration (as it is a field)
+            if ("Basics_17".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo p && "string".equals(p.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("string".equals(d.fieldInfo().name)) {
+                assertEquals("string", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+            }
+        };
+
         testClass("Basics_17", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

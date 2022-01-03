@@ -110,7 +110,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         DV valueToSet = delays.isDone()
                 ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
                 : delays;
-        // FIXME properties from initial are lost... this cannot be right
         vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
     }
 
