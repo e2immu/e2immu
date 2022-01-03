@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -309,6 +310,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             analyser.getMember().setAnalysis(analyser.getAnalysis().build());
             if (analyser instanceof HoldsAnalysers holdsAnalysers) holdsAnalysers.makeImmutable();
         });
+    }
+
+    @Override
+    public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+        return new MethodInspectionImpl.Builder(typeInfo, methodName);
     }
 
     @Override

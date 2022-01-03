@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -89,9 +89,9 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
                     String expectValue = d.iteration() <= 1
-                            ? "<vp:org.e2immu.analyser.testexample.Basics_18.A>" : "a";
+                            ? "<vp:org.e2immu.analyser.testexample.Basics_18.A:immutable@Record_A>" : "a";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }
             }
         };

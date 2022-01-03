@@ -703,7 +703,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet
-            if(methodAnalysis.getMethodInfo().isConstructor) {
+            if (methodAnalysis.getMethodInfo().isConstructor) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser();
@@ -1038,19 +1038,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variableIsSet(fqn)).forEach(cal -> {
                 VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().getVariable(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
-            /*    DV cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
-                DV cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
-                if (cnn4ParentDelay.valueIsTrue() && !cnn4ParentDelayResolved.valueIsTrue()) {
-                    CausesOfDelay delay = new CausesOfDelay.SimpleSet(new CauseOfDelay.VariableCause(calVi.variable(),
-                            location(), CauseOfDelay.Cause.CNN_PARENT)); // TODO improve this system!
-                    groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), delay);
-                } else {
-                    DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
-                    if (cnn4Parent.isDone())
-                        groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
+                DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT, null);
+                if (cnn4Parent != null) {
+                    // we copy, delayed or not!
+                    groupPropertyValues.set(Property.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
                 }
-
-             */
             });
         }
 

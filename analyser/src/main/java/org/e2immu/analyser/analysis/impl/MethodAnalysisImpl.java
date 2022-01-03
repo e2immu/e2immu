@@ -309,7 +309,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return analysisProvider.getProperty(returnType, Property.IMMUTABLE);
         }
 
-        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             DV modified = getProperty(Property.MODIFIED_METHOD);
 
             // @Precondition
@@ -317,7 +317,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 Precondition pc = precondition.get();
                 if (!(pc.expression() instanceof BooleanConstant)) {
                     // generate a companion method, but only when the precondition is non-trivial
-                    new CreatePreconditionCompanion(InspectionProvider.defaultFrom(primitives), analysisProvider)
+                    new CreatePreconditionCompanion(analyserContext, analyserContext)
                             .addPreconditionCompanion(methodInfo, this, pc.expression());
                 }
             }
@@ -356,7 +356,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Dependent @Independent
             DV independent = getProperty(Property.INDEPENDENT);
-            DV formallyIndependent = analysisProvider.defaultIndependent(methodInfo.returnType());
+            DV formallyIndependent = analyserContext.defaultIndependent(methodInfo.returnType());
             doIndependent(e2ImmuAnnotationExpressions, independent, formallyIndependent, dynamicallyImmutable);
         }
 

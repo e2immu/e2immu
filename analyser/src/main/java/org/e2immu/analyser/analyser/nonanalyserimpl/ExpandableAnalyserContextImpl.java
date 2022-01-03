@@ -21,10 +21,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -155,6 +152,11 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
         FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
         if (fa != null) return fa.getFieldAnalysis();
         return parent.getFieldAnalysis(fieldInfo);
+    }
+
+    @Override
+    public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+        return parent.newMethodInspectionBuilder(typeInfo, methodName);
     }
 
     public void addPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {

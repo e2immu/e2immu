@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
@@ -48,7 +48,6 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             DV inBlock = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
             DV inMethod = d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod();
-            Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
 
             if ("method1".equals(d.methodInfo().name)) {
 
@@ -58,6 +57,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("a&&b", d.absoluteState().toString());
                     assertEquals(FlowData.ALWAYS, inBlock);
                     assertEquals(FlowData.CONDITIONALLY, inMethod);
+                    Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();
                     assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.ALWAYS), interruptsFlow);
                 }
                 if ("0".equals(d.statementId())) {
@@ -65,7 +65,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("!a||!b", d.state().toString());
                     assertEquals(FlowData.ALWAYS, inBlock);
                     assertEquals(FlowData.ALWAYS, inMethod);
-                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
+                    Map<InterruptsFlow, DV> interruptsFlow = d.statementAnalysis().flowData().getInterruptsFlow();                    assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.CONDITIONALLY), interruptsFlow);
                     assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.get().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {

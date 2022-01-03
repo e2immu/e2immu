@@ -104,8 +104,13 @@ public record SACheck(StatementAnalysis statementAnalysis) {
             VariableInfo initial = vic.getPreviousOrInitial();
             vic.ensureEvaluation(location(), initial.getAssignmentIds(), initial.getReadId(),
                     initial.getStatementTime(), initial.getReadAtStatementTimes());
+            vic.setValue(initial.getValue(), initial.getLinkedVariables(),
+                    initial.getProperties(), false);
         }
-        DV valueToSet = delays.isDone() ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV) : delays;
+        DV valueToSet = delays.isDone()
+                ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
+                : delays;
+        // FIXME properties from initial are lost... this cannot be right
         vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
     }
 
