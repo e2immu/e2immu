@@ -14,15 +14,27 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.support.Freezable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class Properties extends Freezable {
-    private final Map<Property, DV> map = new HashMap<>();
+public class Properties {
+    public static final Properties EMPTY = Properties.frozen();
+
+    private final Map<Property, DV> map;
+
+    private Properties(Map<Property, DV> map) {
+        this.map = map;
+    }
+
+    public static Properties frozen() {
+        return new Properties(Map.of());
+    }
+
+    public static Properties writable() {
+        return new Properties(new HashMap<>());
+    }
 
     public boolean isDone(Property property) {
         DV v = map.get(property);
@@ -38,6 +50,13 @@ public class Properties extends Freezable {
         Objects.requireNonNull(property);
         Objects.requireNonNull(defaultValue);
         return map.getOrDefault(property, defaultValue);
+    }
+
+    public DV get(Property property) {
+        Objects.requireNonNull(property);
+        DV dv = map.get(property);
+        Objects.requireNonNull(dv);
+        return dv;
     }
 
     public void put(Property property, DV dv) {

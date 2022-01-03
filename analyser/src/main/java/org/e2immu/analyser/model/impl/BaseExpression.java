@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
@@ -120,7 +121,7 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     @Override
     public Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes) {
         return DelayedExpression.forDelayedValueProperties(returnType(),
-                linkedVariables(evaluationContext).changeAllToDelay(causes), causes);
+                linkedVariables(evaluationContext).changeAllToDelay(causes), causes, Properties.EMPTY);
     }
 
     @Override

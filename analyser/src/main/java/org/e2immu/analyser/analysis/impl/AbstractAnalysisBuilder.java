@@ -48,7 +48,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final SetOnceMap<AnnotationExpression, AnnotationCheck> annotationChecks = new SetOnceMap<>();
 
-    public final Properties properties = new Properties();
+    public final Properties properties = Properties.writable();
     public final String simpleName; // for debugging purposes
     public final Primitives primitives;
 

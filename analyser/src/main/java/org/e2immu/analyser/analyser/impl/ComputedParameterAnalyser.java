@@ -249,40 +249,40 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseFieldAssignments(SharedState sharedState) {
         boolean changed = false;
-        CausesOfDelay delays = CausesOfDelay.EMPTY;
 
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) {
             return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
         }
-
-        StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
-                .getLastStatement();
-        Set<FieldInfo> fieldsAssignedInThisMethod =
-                ResolverImpl.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
-                                parameterInfo.owner.typeInfo.primaryType())
-                        .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, fieldInfo))
-                        .collect(Collectors.toSet());
-
-        // find a field that's linked to me; bail out when not all field's values are set.
-        for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            DV assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
-            if (assignedOrLinked.isDelayed()) {
-                delays = delays.merge(assignedOrLinked.causesOfDelay());
-            } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
-                changed |= LinkedVariables.isAssignedOrLinked(assignedOrLinked);
-            }
-        }
-
-        if (delays.isDelayed()) {
-            return delays.addProgress(changed);
-        }
         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
+            StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
+                    .getLastStatement();
+            Set<FieldInfo> fieldsAssignedInThisMethod =
+                    ResolverImpl.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
+                                    parameterInfo.owner.typeInfo.primaryType())
+                            .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, fieldInfo))
+                            .collect(Collectors.toSet());
+
+            // find a field that's linked to me; bail out when not all field's values are set.
+            CausesOfDelay delays = CausesOfDelay.EMPTY;
+            for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
+                DV assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
+                if (assignedOrLinked.isDelayed()) {
+                    delays = delays.merge(assignedOrLinked.causesOfDelay());
+                } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
+                    changed |= LinkedVariables.isAssignedOrLinked(assignedOrLinked);
+                }
+            }
+
+            if (delays.isDelayed()) {
+                return delays.addProgress(changed);
+            }
             parameterAnalysis.freezeAssignedToField();
         }
 
         Map<FieldInfo, DV> map = parameterAnalysis.getAssignedToField();
+        CausesOfDelay delays = CausesOfDelay.EMPTY;
 
         Set<Property> propertiesDelayed = new HashSet<>();
         boolean notAssignedToField = true;

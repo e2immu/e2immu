@@ -54,7 +54,7 @@ public class VariableInfoImpl implements VariableInfo {
     // ONLY set to values in iteration 0's evaluation
     private final Set<Integer> readAtStatementTimes;
 
-    private final org.e2immu.analyser.analyser.Properties properties = new Properties();
+    private final org.e2immu.analyser.analyser.Properties properties = Properties.writable();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
 
     // 20211023 needs to be frozen explicitly

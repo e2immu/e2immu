@@ -88,13 +88,23 @@ public interface FieldAnalysis extends Analysis {
     default Expression getValueForStatementAnalyser() {
         Expression value = getValue();
         if (value.isDelayed() || value.isConstant()) return value;
+
         DV notNull = getProperty(Property.EXTERNAL_NOT_NULL);
         DV immutable = getProperty(Property.EXTERNAL_IMMUTABLE);
         DV container = getProperty(Property.CONTAINER);
         DV independent = getProperty(Property.INDEPENDENT);
-        CausesOfDelay delay = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay()).merge(container.causesOfDelay());
-        if (delay.isDelayed())
-            return DelayedExpression.forDelayedValueProperties(getFieldInfo().type, LinkedVariables.EMPTY, delay);
+
+        CausesOfDelay delay = notNull.causesOfDelay().merge(immutable.causesOfDelay())
+                .merge(independent.causesOfDelay()).merge(container.causesOfDelay());
+
+        if (delay.isDelayed()) {
+            Properties priority = Properties.writable();
+            priority.put(Property.IMMUTABLE, immutable);
+            priority.put(Property.NOT_NULL_EXPRESSION, notNull);
+            priority.put(Property.CONTAINER, container);
+            priority.put(Property.INDEPENDENT, independent);
+            return DelayedExpression.forDelayedValueProperties(getFieldInfo().type, LinkedVariables.EMPTY, delay, priority);
+        }
         return Instance.forField(getFieldInfo(), notNull, immutable, container, independent);
     }
 

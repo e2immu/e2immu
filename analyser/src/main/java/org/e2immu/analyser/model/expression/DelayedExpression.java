@@ -35,16 +35,26 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     private final ParameterizedType parameterizedType;
     private final LinkedVariables linkedVariables;
     private final CausesOfDelay causesOfDelay;
+    private final Properties priorityProperties;
 
     public DelayedExpression(String msg,
                              ParameterizedType parameterizedType,
                              LinkedVariables linkedVariables,
                              CausesOfDelay causesOfDelay) {
+        this(msg, parameterizedType, linkedVariables, causesOfDelay, Properties.EMPTY);
+    }
+
+    public DelayedExpression(String msg,
+                             ParameterizedType parameterizedType,
+                             LinkedVariables linkedVariables,
+                             CausesOfDelay causesOfDelay,
+                             Properties properties) {
         super(Identifier.CONSTANT);
         this.msg = "<" + msg + ">";
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;
+        this.priorityProperties = properties;
     }
 
     public static DelayedExpression forMethod(MethodInfo methodInfo,
@@ -126,9 +136,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
 
     public static Expression forDelayedValueProperties(ParameterizedType parameterizedType,
                                                        LinkedVariables linkedVariables,
-                                                       CausesOfDelay causes) {
+                                                       CausesOfDelay causes,
+                                                       Properties priorityProperties) {
         String msg = "vp:" + parameterizedType.detailedString() + ":" + causes;
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes, priorityProperties);
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo,
@@ -192,6 +203,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         if (property == Property.NOT_NULL_EXPRESSION &&
                 parameterizedType.isPrimitiveExcludingVoid()) return EFFECTIVELY_NOT_NULL_DV;
+        DV priority = priorityProperties.getOrDefaultNull(property);
+        if (priority != null) return priority;
         return causesOfDelay;
     }
 
