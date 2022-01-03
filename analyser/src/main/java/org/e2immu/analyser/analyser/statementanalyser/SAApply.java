@@ -291,9 +291,20 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
         statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
+        // the following statement is necessary to keep this statement from disappearing if it still has to process
+        // EXT_NN (and a similar statement below for EXT_IMM); we go through ALL variables because this may be a statement
+        // such as "throw new Exception()", see Basics_17
+        CausesOfDelay anyEnn = statementAnalysis.variableStream()
+                .map(vi -> vi.getProperty(EXTERNAL_NOT_NULL).causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+
         // 3
         CausesOfDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
+
+        CausesOfDelay anyExtImm = statementAnalysis.variableStream()
+                .map(vi -> vi.getProperty(EXTERNAL_IMMUTABLE).causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 4
         CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
@@ -314,7 +325,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Precondition precondition = evaluationResult.precondition();
         delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager()));
-        return new ApplyStatusAndEnnStatus(delay, ennStatus.merge(extImmStatus).merge(cImmStatus));
+        CausesOfDelay merge = ennStatus.merge(extImmStatus).merge(cImmStatus).merge(anyEnn).merge(anyExtImm);
+        return new ApplyStatusAndEnnStatus(delay, merge);
     }
 
     private void assignmentLocalVariableInLoopDefinedOutside(StatementAnalyserSharedState sharedState, GroupPropertyValues groupPropertyValues, Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Variable variable, EvaluationResult.ChangeData changeData, VariableInfoContainer vic, Expression bestValue, Map<Property, DV> valueProperties) {

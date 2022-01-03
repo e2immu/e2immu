@@ -64,10 +64,11 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
     @Test
     public void test_17() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            mustSeeIteration(d, 2);
 
             // the assignment this.string = string causes a delay of one iteration (as it is a field)
             if ("Basics_17".equals(d.methodInfo().name)) {
+                mustSeeIteration(d, 2);
+
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
