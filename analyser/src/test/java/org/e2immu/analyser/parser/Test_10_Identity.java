@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -26,14 +26,13 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_10_Identity extends CommonTestRunner {
@@ -67,14 +66,17 @@ public class Test_10_Identity extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     assertTrue(d.variableInfo().isRead());
-                    if (d.iteration() > 0) {
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTAINER));
+                    ParameterizedType stringPt = d.variable().parameterizedType();
+                    assertEquals("Type java.lang.String", stringPt.toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                            d.evaluationContext().getAnalyserContext().defaultImmutable(stringPt, true));
 
-                        // there is an explicit @NotNull on the first parameter of debug
-                    } // else: nothing much happening in the first iteration, because LOGGER is still unknown!
+                    String expect = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
+                    assertEquals(expect, d.currentValue().toString());
 
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                    assertDv(d, 1, DV.TRUE_DV, CONTAINER);
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
                 } else if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isRead());
@@ -162,22 +164,19 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
-                if (d.iteration() > 0) {
-                    assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
-                } else {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                }
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
+                String expect = d.iteration() == 0 ? "<m:idem>" : "s";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
 
-                if (d.iteration() >= 1) {
-                    assertEquals("s/*@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
-                } else {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                }
+                String expect = d.iteration() == 0 ? "<m:idem2>" : "s/*@NotNull*/";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
         };

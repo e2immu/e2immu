@@ -39,9 +39,9 @@ public class Basics_6 {
 
     public String test3() {
         String v1 = field;
-        String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4 IMPROVE currently on v1 and field!!!
+        String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4, 5 IMPROVE currently on v1 and field!!!
         String v2 = field;
-        assert v1.equals(v2); // always true... nothing "interrupting"; 5
+        assert v1.equals(v2); // always true... nothing "interrupting"; 6
         return v3;
     }
 
@@ -49,20 +49,20 @@ public class Basics_6 {
         String v1 = field;
         nonPrivateMethod(); // must interrupt, non-private
         String v2 = field;
-        assert v1.equals(v2); // most likely true..."event" in between; + potential null ptr exception 6
+        assert v1.equals(v2); // most likely true..."event" in between; + potential null ptr exception 7
     }
 
     public void test5() {
-        String v1 = field.toLowerCase(); // ; + potential null ptr exception 7
+        String v1 = field.toLowerCase(); // ; + potential null ptr exception 8
         String v2 = field.toLowerCase(); // toLowerCase does not allow interrupts, see TestCommonJavaLang
-        assert v1.equals(v2); // always true (different from IntelliJ!)
+        assert v1.equals(v2); // always true (different from IntelliJ!) 9
     }
 
     public List<String> test6() {
         String v1 = field;
         List<String> twentySeven = new ArrayList<>(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 9, 10
+        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 10, 11
         return twentySeven;
     }
 

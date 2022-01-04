@@ -395,7 +395,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

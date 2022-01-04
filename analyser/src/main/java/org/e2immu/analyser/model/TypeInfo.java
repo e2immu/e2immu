@@ -713,4 +713,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
         return new SimpleSet(newLocation(), cause);
     }
+
+    public boolean isFinal(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        return inspection.modifiers().contains(TypeModifier.FINAL);
+    }
 }

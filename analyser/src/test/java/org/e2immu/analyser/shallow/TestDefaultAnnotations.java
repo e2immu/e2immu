@@ -190,7 +190,8 @@ public class TestDefaultAnnotations {
         MethodInfo get = list.findUniqueMethod("get", 1);
         MethodAnalysis getAnalysis = get.methodAnalysis.get();
 
-        assertEquals(DV.TRUE_DV, getAnalysis.getProperty(Property.CONTAINER));
+        // not @Container because of unbound parameter type
+        assertEquals(DV.FALSE_DV, getAnalysis.getProperty(Property.CONTAINER));
         assertEquals(DV.FALSE_DV, getAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.NOT_INVOLVED_DV, getAnalysis.getProperty(Property.IMMUTABLE));
 

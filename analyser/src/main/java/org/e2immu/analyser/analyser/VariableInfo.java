@@ -131,7 +131,6 @@ public interface VariableInfo {
     }
 
 
-
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }
 
@@ -146,6 +145,7 @@ public interface VariableInfo {
     List<MergeOp> MERGE = List.of(
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
+            new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
             new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
@@ -164,7 +164,8 @@ public interface VariableInfo {
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::max, DV.MIN_INT_DV),
+            new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
@@ -193,9 +194,7 @@ public interface VariableInfo {
                     map.put(mergeOp.property, v1);
                 } else {
                     DV v = mergeOp.operator.apply(v1, v2);
-                    if (v.isDelayed()) {
-                        map.put(mergeOp.property, v);
-                    }
+                    map.put(mergeOp.property, v);
                 }
             }
         }

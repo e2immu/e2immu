@@ -119,6 +119,8 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
 
     @Override
     public DV max(DV other) {
+        if (this == MIN_INT_DV) return other;
+        if (other == MIN_INT_DV) return this;
         if (other.isDelayed()) {
             return merge(other);
         }

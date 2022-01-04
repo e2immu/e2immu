@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -84,7 +84,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
                 if(d.iteration()>0) {
                     assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, immutable);
                 } else {
-                    assertEquals("", immutable.toString());
+                    assertEquals("initial:this.map@NOT_YET_SET", immutable.toString());
                 }
             }
         };

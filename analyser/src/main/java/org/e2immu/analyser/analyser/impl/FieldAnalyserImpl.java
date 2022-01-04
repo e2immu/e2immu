@@ -1198,8 +1198,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         @Override
         public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, condition.causesOfDelay(),
-                    Precondition.empty(getPrimitives()), null);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+                    condition.causesOfDelay(), Precondition.empty(getPrimitives()), CausesOfDelay.EMPTY);
             return FieldAnalyserImpl.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 

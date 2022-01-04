@@ -19,6 +19,8 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// test the requirement on the interface for log to be identity.
+
 public class Identity_4 {
 
     @NotNull
@@ -26,14 +28,6 @@ public class Identity_4 {
 
     interface LogMe<T> {
 
-        /*
-        By default, the log method is @NotModified.
-
-        On the method, @NotModified+@Identity ==> @Independent
-        On the parameter, @NotModified as method ==> @Independent
-
-        If the method were @Modified, both would be @Dependent1 by default.
-         */
         @Identity
         @NotNull
         T log(@NotNull T t);
@@ -49,7 +43,7 @@ public class Identity_4 {
 
     static class LogMeError implements LogMe<String> {
 
-        // ERROR: method is not @Identity
+        // ERROR: method is not @Identity, as required by LogMe.log()
         @Override
         public String log(String t) {
             LOGGER.debug(t);

@@ -149,11 +149,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private void computeMethodPropertiesAfterParameters() {
         computeMethodPropertyIfNecessary(Property.IMMUTABLE, this::computeMethodImmutable);
         computeMethodPropertyIfNecessary(Property.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
-        computeMethodPropertyIfNecessary(Property.CONTAINER, this::computeMethodContainer);
         computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
         computeMethodPropertyIfNecessary(Property.IDENTITY, () -> bestOfOverridesOrWorstValue(Property.IDENTITY));
         computeMethodPropertyIfNecessary(Property.FINALIZER, () -> bestOfOverridesOrWorstValue(Property.FINALIZER));
         computeMethodPropertyIfNecessary(Property.CONSTANT, () -> bestOfOverridesOrWorstValue(Property.CONSTANT));
+        // @Identity must come before @Container
+        computeMethodPropertyIfNecessary(Property.CONTAINER, this::computeMethodContainer);
     }
 
     private void computeMethodPropertyIfNecessary(Property property, Supplier<DV> computer) {
@@ -183,18 +184,38 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         return property.falseDv.maxIgnoreDelay(best);
     }
 
+    /**
+     * Container on methods ONLY when the return value is
+     * - one of the parameters which has been contracted with @Container.
+     * - of a "final" type (so that it cannot be extended) and decorated with @Container (like java.lang.String)
+     * - an array type (which cannot be extended)
+     * However, if a @Container type is returned, we will assume unless annotated otherwise, that the result is
+     * a container.
+     * <p>
+     * Unbound type parameters are definitely NOT @Container, since you can substitute them for any non-@Container type.
+     */
     private DV computeMethodContainer() {
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid() || returnType.isUnboundTypeParameter()) {
+        if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid()) {
             return DV.TRUE_DV;
         }
         if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
         TypeInfo bestType = returnType.bestTypeInfo();
-        if (bestType == null) return DV.TRUE_DV; // unbound type parameter
+        if (bestType == null) return DV.FALSE_DV; // unbound type parameter
+
+        // check formal return type
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
         DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getProperty(Property.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(Property.CONTAINER);
-        return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
+        DV formal = DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
+        if (DV.TRUE_DV.equals(formal)) return DV.TRUE_DV;
+
+        // check identity and parameter contract
+        if (methodAnalysis.properties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).equals(DV.TRUE_DV)) {
+            ParameterAnalysis p0 = parameterAnalyses.get(0);
+            return p0.getProperty(Property.CONTAINER);
+        }
+        return DV.FALSE_DV;
     }
 
     private DV computeModifiedMethod() {

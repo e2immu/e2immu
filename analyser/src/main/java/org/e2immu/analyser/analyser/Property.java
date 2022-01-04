@@ -183,4 +183,9 @@ public enum Property {
         if (cause == null) throw new UnsupportedOperationException("Cannot cause a delay! " + name);
         return cause;
     }
+
+    public DV max(DV x, DV y) {
+        if (bestDv.equals(x) || bestDv.equals(y)) return bestDv;
+        return x.max(y);
+    }
 }

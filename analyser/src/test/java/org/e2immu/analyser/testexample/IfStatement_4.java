@@ -14,13 +14,15 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotNull;
+
 import java.util.Map;
 
 public class IfStatement_4 {
 
     private final Map<String, Integer> map;
 
-    public IfStatement_4(Map<String, Integer> map) {
+    public IfStatement_4(@NotNull(contract = true) Map<String, Integer> map) {
         this.map = map;
     }
 

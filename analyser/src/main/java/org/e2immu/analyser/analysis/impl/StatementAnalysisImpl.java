@@ -1291,20 +1291,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
 
         // start with context properties
-        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(parameterInfo.parameterizedType));
+        ParameterizedType type = parameterInfo.parameterizedType;
+        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(type));
 
         // the value properties are not delayed (there's an assertion in the Instance factory method)
         DV notNull = parameterAnalysis.getProperty(NOT_NULL_PARAMETER)
-                .maxIgnoreDelay(AnalysisProvider.defaultNotNull(parameterInfo.parameterizedType));
+                .maxIgnoreDelay(AnalysisProvider.defaultNotNull(type));
         properties.put(NOT_NULL_EXPRESSION, notNull);
 
-        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(parameterInfo.parameterizedType, false);
-        DV immutable = parameterAnalysis.getProperty(IMMUTABLE).max(formallyImmutable)
+        DV formallyImmutable = evaluationContext.getAnalyserContext().defaultImmutable(type, false);
+        DV immutable = IMMUTABLE.max(parameterAnalysis.getProperty(IMMUTABLE), formallyImmutable)
                 .replaceDelayBy(MUTABLE_DV);
         properties.put(IMMUTABLE, immutable);
 
-        DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(parameterInfo.parameterizedType);
-        DV independent = parameterAnalysis.getProperty(INDEPENDENT).max(formallyIndependent)
+        DV formallyIndependent = evaluationContext.getAnalyserContext().defaultIndependent(type);
+        DV independent = INDEPENDENT.max(parameterAnalysis.getProperty(INDEPENDENT), formallyIndependent)
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV);
         properties.put(INDEPENDENT, independent);
 

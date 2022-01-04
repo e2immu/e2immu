@@ -57,7 +57,6 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     }
 
 
-
     static Map<Property, DV> mergePreviousAndChange(
             EvaluationContext evaluationContext,
             Variable variable,
@@ -69,6 +68,10 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         both.addAll(changeData.keySet());
         both.addAll(GroupPropertyValues.PROPERTIES);
         Map<Property, DV> res = new HashMap<>(changeData);
+
+
+        both.remove(IN_NOT_NULL_CONTEXT);
+        handleInNotNullContext(previous, res);
 
         both.forEach(k -> {
             DV prev = previous.getOrDefault(k, k.valueWhenAbsent());
@@ -96,6 +99,18 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         return res;
     }
 
+    private static void handleInNotNullContext(Map<Property, DV> previous, Map<Property, DV> res) {
+        DV prev = previous.getOrDefault(IN_NOT_NULL_CONTEXT, null);
+        assert prev == null || prev.equals(DV.TRUE_DV);
+        DV change = res.getOrDefault(IN_NOT_NULL_CONTEXT, null);
+        if (change != null) {
+            assert change.equals(DV.TRUE_DV);
+            // leave things as they are
+        } else {
+            if (prev != null) res.put(IN_NOT_NULL_CONTEXT, prev);
+        }
+    }
+
 
     /*
     Variable is target of assignment. In terms of CNN/CM it should be neutral (rather than delayed), as its current value
@@ -104,9 +119,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     There is no overlap between valueProps and variableProps
      */
     static Map<Property, DV> mergeAssignment(Variable variable,
-                                                     Map<Property, DV> valueProps,
-                                                     Map<Property, DV> changeData,
-                                                     GroupPropertyValues groupPropertyValues) {
+                                             Map<Property, DV> valueProps,
+                                             Map<Property, DV> changeData,
+                                             GroupPropertyValues groupPropertyValues) {
         Map<Property, DV> res = new HashMap<>(valueProps);
         res.putAll(changeData);
 

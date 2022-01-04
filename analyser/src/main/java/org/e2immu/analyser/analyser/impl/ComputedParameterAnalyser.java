@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
@@ -202,10 +199,25 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     /*
     Only contracted, but it does inherit.
     Meaning: no argument to this parameter can be of a concrete type that modifies its parameters.
+
+    Types that are final cannot be sub-classed, so we can simply look at the @Container property.
+
+    Say a parameter is of abstract type (i.e., an interface) and you present it with an argument which
+    is not a container, i.e., an implementation of the abstract type that has methods which modify their
+    parameters. This will make e2immu throw errors.
      */
     private AnalysisStatus analyseContainer(SharedState sharedState) {
         DV inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
         if (inMap.isDelayed()) {
+            TypeInfo typeInfo = parameterInfo.parameterizedType.typeInfo;
+            if (typeInfo != null && typeInfo.isFinal(analyserContext)) {
+                DV formal = analyserContext.defaultContainer(parameterInfo.parameterizedType);
+                if (formal.isDone()) {
+                    parameterAnalysis.setProperty(CONTAINER, formal);
+                    return DONE;
+                }
+                return formal.causesOfDelay();
+            }
             DV override = bestOfParameterOverridesForContainer(parameterInfo);
             assert override.isDone();
             parameterAnalysis.setProperty(CONTAINER, override);

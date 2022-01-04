@@ -26,6 +26,7 @@ public interface DV extends WeightedGraph.Weight {
 
     DV MAX_INT_DV = new NoDelay(Integer.MAX_VALUE, "max_int");
 
+    // special value; see explanation at max()
     DV MIN_INT_DV = new SimpleSet(Location.NOT_YET_SET, CauseOfDelay.Cause.MIN_INT);
 
     DV FALSE_DV = new NoDelay(0, "false");
