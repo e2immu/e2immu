@@ -293,8 +293,18 @@ public class InlinedMethod extends BaseExpression implements Expression {
         return Map.copyOf(builder);
     }
 
+    // FIXME this is default stuff have not thought too much about it
     private Map<Property, DV> valuePropertiesOfInstance(Variable variable, AnalyserContext analyserContext) {
-        throw new UnsupportedOperationException("To implement"); // FIXME
+        ParameterizedType parameterizedType = variable.parameterizedType();
+        DV defaultContainer = analyserContext.defaultContainer(parameterizedType);
+        DV defaultImmutable = analyserContext.defaultImmutable(parameterizedType, false);
+        DV defaultIndependent = analyserContext.defaultIndependent(parameterizedType);
+        DV defaultNNe = AnalysisProvider.defaultNotNull(parameterizedType);
+        return Map.of(Property.INDEPENDENT, defaultIndependent,
+                Property.IMMUTABLE, defaultImmutable,
+                Property.NOT_NULL_EXPRESSION, defaultNNe,
+                Property.CONTAINER, defaultContainer,
+                Property.IDENTITY, DV.FALSE_DV);
     }
 
     private int indexOfParameterLinkedToFinalField(EvaluationContext evaluationContext,
