@@ -12,12 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analysis.MethodLevelData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
@@ -26,8 +26,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -56,17 +55,19 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                     assertEquals("in:0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 VariableInfo vi = d.getReturnAsVariable();
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-
                 if (d.iteration() == 0) {
                     assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
-                    assertEquals("effectivelyFinal", vi.getValue().toString());
                     assertSame(DONE, d.result().analysisStatus());
                 } else fail();
             }
@@ -80,14 +81,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                if (d.iteration() == 0) {
-                    assertNull(srv);
-                } else {
-                    assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
-                            srv.debugOutput());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            d.methodAnalysis().getProperty(Property.NOT_NULL_EXPRESSION));
-                }
+                String expectValue = d.iteration() == 0 ? "<m:getEffectivelyFinal>" : "/* inline getEffectivelyFinal */this.effectivelyFinal";
+                assertEquals(expectValue, srv.debugOutput());
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 

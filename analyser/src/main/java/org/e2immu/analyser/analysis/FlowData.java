@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.util.Logger;
@@ -165,10 +166,10 @@ public class FlowData {
 
     public DV execution(DV statementsExecution) {
         // combine with guaranteed to be reached in block
-        if (guaranteedToBeReachedInMethod.isSet()) {
-            return guaranteedToBeReachedInMethod.get().min(statementsExecution);
-        }
-        return guaranteedToBeReachedInMethod.getFirst().min(statementsExecution);
+        if(NEVER.equals(statementsExecution)) return NEVER;
+        DV inMethod = guaranteedToBeReachedInMethod.isSet() ? guaranteedToBeReachedInMethod.get() :
+                guaranteedToBeReachedInMethod.getFirst();
+        return inMethod.min(statementsExecution);
     }
 
     public void setGuaranteedToBeReached(DV execution) {

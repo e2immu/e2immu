@@ -150,14 +150,14 @@ public class VariableInfoImpl implements VariableInfo {
 
     @Override
     public DV getProperty(Property property, DV defaultValue) {
-        if(defaultValue == null) return properties.getOrDefaultNull(property);
+        if (defaultValue == null) return properties.getOrDefaultNull(property);
         return properties.getOrDefault(property, defaultValue);
     }
 
     @Override
     public DV getProperty(Property property) {
         DV dv = properties.getOrDefaultNull(property);
-        if(dv == null) {
+        if (dv == null) {
             return new SimpleSet(new VariableCause(variable, location, property.causeOfDelay()));
         }
         return dv;
@@ -231,7 +231,12 @@ public class VariableInfoImpl implements VariableInfo {
             assert !(value.isInstanceOf(DelayedExpression.class)); // simple safe-guard, others are more difficult to check
             assert !(value.isInstanceOf(DelayedVariableExpression.class));
 
-            setFinalAllowEquals(this.value, value);
+            try {
+                setFinalAllowEquals(this.value, value);
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Variable {}: overwriting final value", variable.fullyQualifiedName());
+                throw ise;
+            }
         }
     }
 
@@ -240,7 +245,7 @@ public class VariableInfoImpl implements VariableInfo {
      */
     public void newVariable(boolean notNull) {
         setProperty(Property.CONTEXT_NOT_NULL, (notNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
-                .max(AnalysisProvider.defaultNotNull( variable.parameterizedType())));
+                .max(AnalysisProvider.defaultNotNull(variable.parameterizedType())));
         setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...

@@ -41,9 +41,9 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
 record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
-                                           SAApply apply,
-                                           StatementAnalyser statementAnalyser,
-                                           SetOnce<List<PrimaryTypeAnalyser>> localAnalysers) {
+                                    SAApply apply,
+                                    StatementAnalyser statementAnalyser,
+                                    SetOnce<List<PrimaryTypeAnalyser>> localAnalysers) {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAEvaluationOfMainExpression.class);
 
     private MethodInfo methodInfo() {
@@ -412,7 +412,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (FlowData.ALWAYS.equals(mine)) combined = execution;
         else if (FlowData.NEVER.equals(mine)) combined = FlowData.NEVER;
         else if (FlowData.CONDITIONALLY.equals(mine)) combined = FlowData.CONDITIONALLY;
-        else throw new UnsupportedOperationException();
+        else if (mine.isDelayed()) combined = mine.causesOfDelay().merge(execution.causesOfDelay());
+        else throw new UnsupportedOperationException("Mine is " + mine);
 
         if (!firstStatement.flowData().getGuaranteedToBeReachedInMethod().equals(FlowData.NEVER) || !combined.equals(FlowData.CONDITIONALLY)) {
             firstStatement.flowData().setGuaranteedToBeReachedInMethod(combined);

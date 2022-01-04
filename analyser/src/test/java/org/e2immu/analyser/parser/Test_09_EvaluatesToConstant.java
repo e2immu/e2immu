@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -53,8 +51,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         }
 
         if ("method3".equals(d.methodInfo().name)) {
+            String expectState = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
             if ("1.0.0".equals(d.statementId())) {
-                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                assertEquals(expectState, d.absoluteState().toString());
 
                 if (d.iteration() >= 1) {
                     Expression value = d.statementAnalysis().stateData().valueOfExpression.get();
@@ -63,12 +62,13 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index())) {
-                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                assertEquals(expectState, d.absoluteState().toString());
                 if (d.iteration() >= 1) {
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                 }
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index())) {
+                assertEquals("false", d.absoluteState().toString());
                 assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
@@ -97,7 +97,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
-                assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                if (d.iteration() == 0) {
+                    assertEquals("<p:param>", d.currentValue().toString());
+                    assertEquals("initial:param@Method_method3_0", d.currentValue().causesOfDelay().toString());
+                } else {
+                    assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                }
                 if ("0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
@@ -113,31 +118,35 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
+
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
+                    String expect = d.iteration() <= 1 ? "<return value>" : "no iteration 2";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+                if ("1.0.1".equals(d.statementId())) {
+                    assertEquals("<return value>", d.currentValue().toString());
                 }
                 if ("1.0.1.0.0".equals(d.statementId())) {
+                    assertEquals("(null==param?\"x\":param)+\"c\"", d.currentValue().toString());
                     if (d.iteration() == 0) {
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                        assertTrue(d.getProperty(Property.EXTERNAL_NOT_NULL).isDelayed());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     } else {
                         fail(); // unreachable, now that the condition is stable
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("return method3:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
                 }
             }
         }
@@ -153,11 +162,17 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
+                // read: someMethod's parameter a may cause modification or not-null, but not known yet
+                String expectDelay = d.iteration() == 0 ? "cm@Parameter_a;cnn@Parameter_a" : "";
+                assertEquals(expectDelay, d.evaluationResult().causesOfDelay().toString());
+            }
             if ("1".equals(d.statementId())) {
-                assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
-                assertFalse(d.evaluationResult().causesOfDelay().isDelayed());
+                String expectValue = d.iteration() == 0 ? "<m:contains>" : "param.contains(\"a\")";
+                assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
+                assertTrue(d.evaluationResult().causesOfDelay().isDone());
                 assertEquals("\"xzy\"", d.evaluationResult().value().toString());
             }
         }
@@ -170,6 +185,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
             assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
+            assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
         }
     };
 
