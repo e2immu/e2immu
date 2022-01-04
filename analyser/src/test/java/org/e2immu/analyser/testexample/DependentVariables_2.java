@@ -16,8 +16,8 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-// variant on DependentVariables_1; now X is accessible in XS
-
+// variant on DependentVariables_1; now X is not transparent anymore in XS
+// XS is an E1Container now
 public class DependentVariables_2 {
 
     @Container
@@ -36,6 +36,10 @@ public class DependentVariables_2 {
 
     @E1Container
     static class XS {
+        @E1Container
+        @Linked1(to = {"XS:xs"})
+        @NotModified
+        @NotNull
         private final X[] xs;
 
         public XS(X[] xs) {
@@ -47,6 +51,8 @@ public class DependentVariables_2 {
             return xs[index];
         }
 
-        public int getI(int index) { return xs[index].i; }
+        public int getI(int index) {
+            return xs[index].i;
+        }
     }
 }
