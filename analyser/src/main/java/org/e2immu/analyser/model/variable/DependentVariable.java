@@ -61,14 +61,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         return owningType;
     }
 
-    // array access
-    public static String fullDependentVariableName(Expression array, Expression index) {
-        return array.toString() + "[" + index.toString() + "]";
-    }
-    public static String simpleDependentVariableName(Expression array, Expression index) {
-        return array.toString() + "[" + index.toString() + "]";
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

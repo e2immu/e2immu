@@ -140,11 +140,14 @@ public class ArrayAccess extends BaseExpression implements Expression {
             DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(),
                     returnType);
             // evaluatedDependentVariable is our best effort at evaluation of the individual components
+            // we need to mark it as read, even if it is delayed!
+            builder.markRead(evaluatedDependentVariable);
 
             if (delayed) {
                 CausesOfDelay causesOfDelay = array.value().causesOfDelay()
                         .merge(indexValue.value().causesOfDelay());
                 Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
+
                 builder.setExpression(dve);
             } else {
                 if (evaluatedDependentVariable.arrayVariable != null) {
@@ -163,7 +166,6 @@ public class ArrayAccess extends BaseExpression implements Expression {
                 } else {
                     builder.setExpression(currentValue);
                 }
-                builder.markRead(evaluatedDependentVariable);
             }
         }
 

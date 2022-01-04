@@ -256,7 +256,7 @@ public class MultiLevel {
     public static DV composeOneLevelLessNotNull(DV dv) {
         if (dv.isDelayed()) return dv;
         int level = level(dv);
-        if (level == 0) return dv;
+        if (level == 0) return NULLABLE_DV;
         int newLevel = level == MAX_LEVEL ? level : level - 1;
         return composeNotNull(newLevel);
     }

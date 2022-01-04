@@ -44,6 +44,7 @@ public class DependentVariables_1 {
         }
 
         @Independent1
+        @Nullable
         public X getX(int index) {
             return xs[index];
         }

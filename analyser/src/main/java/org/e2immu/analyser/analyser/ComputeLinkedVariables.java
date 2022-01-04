@@ -217,7 +217,7 @@ public class ComputeLinkedVariables {
         for (List<Variable> cluster : clustersStaticallyAssigned) {
             for (Variable variable : cluster) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                assert vic != null;
+                assert vic != null: "No variable named "+variable.fullyQualifiedName();
 
                 Map<Variable, DV> map = weightedGraph.links(variable, true);
                 LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
