@@ -1306,7 +1306,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         // and there should be no means of generating an object
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            if (methodAnalyser.getMethodInfo().methodResolution.get().createObjectOfSelf()) {
+            if (methodAnalyser.getMethodInfo().methodResolution.get()
+                    .methodsOfOwnClassReached().stream().anyMatch(m -> m.isConstructor && m.typeInfo == typeInfo)) {
                 log(TYPE_ANALYSER, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.getMethodInfo().fullyQualifiedName());

@@ -628,7 +628,6 @@ public class ResolverImpl implements Resolver {
                     boolean iHelpBreakTheCycle = AnalyseCycle.analyseCycle(methodInfo, methodsReached, methodGraph);
                     methodResolutionBuilder.isIgnoreMeBecauseOfPartOfCallCycle.set(iHelpBreakTheCycle);
 
-                    methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
                     computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.overrides.set(ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
@@ -690,21 +689,6 @@ public class ResolverImpl implements Resolver {
         if (doNotDelay || !delays || allowsInterrupt) {
             methodResolutionBuilder.allowsInterrupts.set(allowsInterrupt);
         }
-    }
-
-
-    // part of @UtilityClass computation in the type analyser
-    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
-        AtomicBoolean createSelf = new AtomicBoolean();
-        methodInfo.methodInspection.get().getMethodBody().visit(element -> {
-            Instance instance;
-            if ((instance = element.asInstanceOf(Instance.class)) != null) {
-                if (instance.parameterizedType().typeInfo == methodInfo.typeInfo) {
-                    createSelf.set(true);
-                }
-            }
-        });
-        methodResolution.createObjectOfSelf.set(createSelf.get());
     }
 
     private void computeStaticMethodCallsOnly(MethodInfo methodInfo,
