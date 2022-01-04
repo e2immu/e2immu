@@ -493,6 +493,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     return value.causesOfDelay();
                 }
                 value = createInlinedMethod(value);
+                if(value.isDelayed()) {
+                    return value.causesOfDelay(); // FINAL
+                }
             }
         }
 
@@ -610,14 +613,24 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
         for (Variable variable : value.variables()) {
             FieldInfo fieldInfo;
-            if (variable instanceof FieldReference fieldReference) {
-                fieldInfo = fieldReference.fieldInfo;
+            FieldReference fieldReference;
+            if (variable instanceof FieldReference fr) {
+                fieldInfo = fr.fieldInfo;
+                fieldReference = fr;
             } else if (variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.CopyOfVariableField cvf) {
                 fieldInfo = cvf.localCopyOf().fieldInfo;
-            } else fieldInfo = null;
+                fieldReference = null;
+            } else {
+                fieldInfo = null;
+                fieldReference = null;
+            }
             if (fieldInfo != null) {
                 DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
-                assert effectivelyFinal.isDone();
+                if (effectivelyFinal.isDelayed()) {
+                    FieldReference fr = fieldReference == null
+                            ? new FieldReference(analyserContext, fieldInfo) : fieldReference;
+                    return DelayedVariableExpression.forField(fr, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
+                }
                 if (effectivelyFinal.valueIsFalse()) {
                     containsVariableFields = true;
                 }

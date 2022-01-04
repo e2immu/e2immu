@@ -695,7 +695,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV valueFromFields = myFieldAnalysers.stream()
                 .filter(fa -> !fa.getFieldInfo().isPrivate())
                 .map(fa -> independenceOfField(fa.getFieldAnalysis()))
-                .reduce(MultiLevel.INDEPENDENT_1_DV, DV::min);
+                .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         if (valueFromFields.isDelayed()) {
             log(DELAYED, "Independence of type {} delayed, waiting for field independence",
                     typeInfo.fullyQualifiedName);

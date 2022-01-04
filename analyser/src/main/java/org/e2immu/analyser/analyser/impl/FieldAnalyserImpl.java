@@ -352,7 +352,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         - the construction methods only
         - all methods
 
-        There are cases to be made for both situations; we simply avoid making a decision here.
+        There are cases to be made for both situations; we simply avoid making a decision here
+        and let the user decide.
+
         Note that as soon as bestOverContext is better that ENN, we still cannot skip the @NotNull of the values,
         because the value would contain the contracted @NotNull at a parameter after assignment.
          */

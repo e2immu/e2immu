@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -24,6 +25,7 @@ import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -38,34 +40,35 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         super(true);
     }
 
-    @Test
-    public void test_20() throws IOException {
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("getFirstC1".equals(d.methodInfo().name)) {
-                EvaluationResult.ChangeData cd = d.findValueChangeByToString("list");
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("getFirstC1".equals(d.methodInfo().name)) {
+            EvaluationResult.ChangeData cd = d.findValueChangeByToString("list");
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, cd.getProperty(CONTEXT_NOT_NULL));
 
-                EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
-                String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
-                assertEquals(expectedLv, cdFirst.linkedVariables().toString());
-            }
-            if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
-                String expectedLv = d.iteration() == 0 ? "list:-1" : "list:2";
-                assertEquals(expectedLv, ci.linkedVariables().toString());
-            }
-            if ("getListC2".equals(d.methodInfo().name)) {
-                EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
-                assertEquals("this.list:3", cd.linkedVariables().toString());
-            }
-            if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
-                String expectedLv = d.iteration() == 0 ? "list:-1" : "list:3";
-                assertEquals(expectedLv, ci.linkedVariables().toString());
-            }
-        };
+            EvaluationResult.ChangeData cdFirst = d.findValueChangeByToString("getFirstC1");
+            String expectedLv = d.iteration() == 0 ? "this.list:-1" : "this.list:3";
+            assertEquals(expectedLv, cdFirst.linkedVariables().toString());
+        }
+        if ("test1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+            EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
+            String expectedLv = d.iteration() == 0 ? "list:-1" : "list:2";
+            assertEquals(expectedLv, ci.linkedVariables().toString());
+        }
+        if ("getListC2".equals(d.methodInfo().name)) {
+            EvaluationResult.ChangeData cd = d.findValueChangeByToString("getListC2");
+            assertEquals("this.list:3", cd.linkedVariables().toString());
+        }
+        if ("test2".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+            EvaluationResult.ChangeData ci = d.findValueChangeByToString("ci");
+            String expectedLv = d.iteration() == 0 ? "list:-1" : "list:3";
+            assertEquals(expectedLv, ci.linkedVariables().toString());
+        }
+    };
 
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
+    StatementAnalyserVariableVisitor createSavv(boolean expectNotNull) {
+        String fieldValue = expectNotNull ? "instance type List<T>" : "nullable instance type List<T>";
+        return d -> {
             if ("C2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
                     assertEquals("list:0,this.list:3", d.variableInfo().getLinkedVariables().toString());
@@ -77,22 +80,25 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             }
             if ("getFirstC1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() == 0 ? "<f:list>" : "instance type List<T>";
+                    String expectValue = d.iteration() == 0 ? "<f:list>" : fieldValue;
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getFirstC1:-1,this.list:0" : "return getFirstC1:3,this.list:0";
+                    String expectLv = d.iteration() == 0 ? "return getFirstC1:-1,this.list:0"
+                            : "return getFirstC1:3,this.list:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "list.get(0)";
                     assertEquals(expectValue, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0,this.list:-1" : "return getFirstC1:0,this.list:3";
+                    String expectLv = d.iteration() == 0 ? "return getFirstC1:0,this.list:-1"
+                            : "return getFirstC1:0,this.list:3";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getListC2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("new ArrayList<>(list)", d.currentValue().toString());
-                    assertEquals("return getListC2:0,this.list:3", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("return getListC2:0,this.list:3",
+                            d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("test1".equals(d.methodInfo().name)) {
@@ -106,7 +112,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
-                                : "instance type ArrayList<I>/*this.contains(new I())&&1==this.size()*/";
+                                : "instance type ArrayList<I>/*this.contains(i)&&1==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         // i:3 gone, because substitution with "new I()"
@@ -114,8 +120,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         // delayed because linking is delayed!
-                        assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
-                        assertDv(d, 1, DV.TRUE_DV, CONTAINER);
+                        assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.TRUE_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
@@ -128,7 +134,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         default -> "ci:0,list:2";
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, DV.TRUE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
                 }
                 if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
@@ -140,18 +146,26 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     };
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                    assertDv(d, 1, DV.FALSE_DV, CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
         };
+    }
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+    FieldAnalyserVisitor createFieldAnalyserVisitor(boolean expectNotNull) {
+        DV expected = expectNotNull ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
+        return d -> {
             if ("list".equals(d.fieldInfo().name) && "C1".equals(d.fieldInfo().owner.simpleName)) {
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+                assertEquals(expected, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
+
+                assertEquals(expectNotNull,
+                        null != d.haveError(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
             }
         };
+    }
 
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+    MethodAnalyserVisitor createMethodAnalyserVisitor(boolean expectNotNull) {
+        return d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
@@ -160,6 +174,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             }
             if ("getFirstC1".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
+                assertEquals(!expectNotNull && d.iteration() > 0,
+                        null != d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
             if ("getFirstC2".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, INDEPENDENT);
@@ -171,27 +187,45 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, INDEPENDENT);
             }
         };
+    }
 
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("I".equals(d.typeInfo().simpleName)) {
-                assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
-            }
-            if ("C1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
-            }
-            if ("C2".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
-                assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
-            }
-        };
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("I".equals(d.typeInfo().simpleName)) {
+            assertEquals(MultiLevel.INDEPENDENT_DV, d.typeAnalysis().getProperty(INDEPENDENT));
+        }
+        if ("C1".equals(d.typeInfo().simpleName)) {
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, IMMUTABLE);
+        }
+        if ("C2".equals(d.typeInfo().simpleName)) {
+            assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, IMMUTABLE);
+            assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableCanBeIncreasedByTypeParameters());
+        }
+    };
 
-        testClass("Basics_20", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+    // if we compute @NotNull over all methods, field C1.list will be @NotNull; alternatively, it will be
+    // @Nullable. This is now a configuration change, which, by default, is "false"
+
+    private void runTest(boolean expectNotNull) throws IOException {
+        testClass("Basics_20", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(createSavv(expectNotNull))
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
+                .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(expectNotNull)
                 .build());
     }
 
+    @Test
+    public void test_20_1() throws IOException {
+        // expect 2 warnings for field initialization in conflict with @NotNull
+        runTest(true);
+    }
+
+    @Test
+    public void test_20_2() throws IOException {
+        // expect 2 potential null pointer warnings
+        runTest(false);
+    }
 }
