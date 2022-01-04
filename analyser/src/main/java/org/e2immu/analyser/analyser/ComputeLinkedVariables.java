@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -55,11 +56,11 @@ public class ComputeLinkedVariables {
     private final List<List<Variable>> clustersDependent;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
-    private final Predicate<Variable> ignore;
+    private final BiPredicate<VariableInfoContainer, Variable> ignore;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    VariableInfoContainer.Level level,
-                                   Predicate<Variable> ignore,
+                                   BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph<Variable, DV> weightedGraph,
                                    List<List<Variable>> clustersStaticallyAssigned,
                                    List<List<Variable>> clustersDependent,
@@ -75,7 +76,7 @@ public class ComputeLinkedVariables {
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 VariableInfoContainer.Level level,
-                                                Predicate<Variable> ignore,
+                                                BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
@@ -88,7 +89,7 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
             Variable variable = vi1.variable();
-            if (!ignore.test(variable)) {
+            if (!ignore.test(vic, variable)) {
                 variables.add(variable);
 
                 AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
@@ -114,7 +115,7 @@ public class ComputeLinkedVariables {
                 LinkedVariables curated = combined
                         .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
                                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
-                        .remove(ignore);
+                        .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
 
                 boolean bidirectional = vic.variableNature().localCopyOf() == null;
                 weightedGraph.addNode(variable, curated.variables(), bidirectional);
@@ -217,7 +218,7 @@ public class ComputeLinkedVariables {
         for (List<Variable> cluster : clustersStaticallyAssigned) {
             for (Variable variable : cluster) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
-                assert vic != null: "No variable named "+variable.fullyQualifiedName();
+                assert vic != null : "No variable named " + variable.fullyQualifiedName();
 
                 Map<Variable, DV> map = weightedGraph.links(variable, true);
                 LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
@@ -238,7 +239,7 @@ public class ComputeLinkedVariables {
                     VariableInfoContainer vic = e.getValue();
 
                     Variable variable = vic.current().variable();
-                    if (!ignore.test(variable)) {
+                    if (!ignore.test(vic, variable)) {
                         Map<Variable, DV> map = weightedGraph.links(variable, true);
                         LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 

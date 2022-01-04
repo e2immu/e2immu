@@ -98,7 +98,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "res:0,return method:0,s:-1" : "res:0,return method:0";
+                        String expectLv = "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -110,7 +110,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<merge:String>" : "res"; // indirection
                         assertEquals(expect, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "res:0,return method:0,s:-1" : "res:0,return method:0";
+                        String expectLv = "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);

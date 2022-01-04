@@ -1050,7 +1050,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                v -> !linkedVariablesMap.containsKey(v) && !isLoopVariableWillDisappearInNextStatement(v),
+                (vic, v) -> !linkedVariablesMap.containsKey(v) || isLoopVariableWillDisappearInNextStatement(vic),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
         computeLinkedVariables.writeLinkedVariables();
@@ -1073,9 +1073,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
     }
 
-    // FIXME this variableNature is in VIC not in Variable
-    private boolean isLoopVariableWillDisappearInNextStatement(Variable v) {
-        if (v.variableNature() instanceof VariableNature.LoopVariable lv) {
+    private boolean isLoopVariableWillDisappearInNextStatement(VariableInfoContainer vic) {
+        if(vic == null) return true;
+        if (vic.variableNature() instanceof VariableNature.LoopVariable lv) {
             return index.equals(lv.statementIndex());
         }
         return false;
