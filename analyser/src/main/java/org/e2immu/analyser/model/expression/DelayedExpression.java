@@ -50,18 +50,22 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                              CausesOfDelay causesOfDelay,
                              Properties properties) {
         super(Identifier.CONSTANT);
-        this.msg = "<" + msg + ">";
+        this.msg = msg;
         this.parameterizedType = parameterizedType;
         this.linkedVariables = linkedVariables;
         this.causesOfDelay = causesOfDelay;
         this.priorityProperties = properties;
     }
 
+    private static String brackets(String msg) {
+        return "<" + msg + ">";
+    }
+
     public static DelayedExpression forMethod(MethodInfo methodInfo,
                                               ParameterizedType concreteReturnType,
                                               LinkedVariables linkedVariables,
                                               CausesOfDelay causesOfDelay) {
-        String msg = "m:" + methodInfo.name;
+        String msg = brackets("m:" + methodInfo.name);
         return new DelayedExpression(msg, concreteReturnType, linkedVariables, causesOfDelay);
     }
 
@@ -71,7 +75,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public static Expression forState(ParameterizedType parameterizedType,
                                       LinkedVariables linkedVariables,
                                       CausesOfDelay causes) {
-        String msg = "s:" + parameterizedType.printSimple();
+        String msg = brackets("s:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
 
@@ -80,25 +84,25 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                           LinkedVariables linkedVariables,
                                           CausesOfDelay causes) {
         assert notNull.ge(EFFECTIVELY_NOT_NULL_DV);
-        String msg = "new:" + parameterizedType.printSimple();
+        String msg = brackets("new:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forReplacementObject(ParameterizedType parameterizedType,
                                                   LinkedVariables linkedVariables,
                                                   CausesOfDelay causes) {
-        String msg = "replace:" + parameterizedType.printSimple();
+        String msg = brackets("replace:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forArrayLength(Primitives primitives, CausesOfDelay causes) {
-        String msg = "delayed array length";
+        String msg = brackets("delayed array length");
         return new DelayedExpression(msg, primitives.intParameterizedType(), LinkedVariables.delayedEmpty(causes), causes);
         // result is an int, so no linked variables
     }
 
     public static Expression forPrecondition(Primitives primitives, CausesOfDelay causes) {
-        String msg = "precondition";
+        String msg = brackets("precondition");
         return new DelayedExpression(msg, primitives.booleanParameterizedType(), LinkedVariables.EMPTY, causes);
     }
 
@@ -106,31 +110,31 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                            ParameterizedType parameterizedType,
                                            LinkedVariables linkedVariables,
                                            CausesOfDelay causes) {
-        String msg = "instanceOf:" + parameterizedType.printSimple();
+        String msg = brackets("instanceOf:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, primitives.booleanParameterizedType(), linkedVariables, causes);
     }
 
     public static Expression forMerge(ParameterizedType parameterizedType,
                                       LinkedVariables linkedVariables,
                                       CausesOfDelay causes) {
-        String msg = "merge:" + parameterizedType.printSimple();
+        String msg = brackets("merge:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
 
     public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType, LinkedVariables linkedVariables, CausesOfDelay causes) {
-        String msg = "loopIsNotEmptyCondition";
+        String msg = brackets("loopIsNotEmptyCondition");
         return new DelayedExpression(msg, booleanParameterizedType, linkedVariables, causes);
     }
 
     public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType,
                                                     LinkedVariables linkedVariables,
                                                     CausesOfDelay causesOfDelay) {
-        String msg = "localVariableInLoop:" + parameterizedType.detailedString();
+        String msg = brackets("localVariableInLoop:" + parameterizedType.detailedString());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causesOfDelay);
     }
 
     public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
-        String msg = "valueOf:" + parameterizedType.detailedString();
+        String msg = brackets("valueOf:" + parameterizedType.detailedString());
         return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
@@ -138,14 +142,14 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        LinkedVariables linkedVariables,
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
-        String msg = "vp:" + parameterizedType.detailedString() + ":" + causes;
+        String msg = brackets("vp:" + parameterizedType.detailedString() + ":" + causes);
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes, priorityProperties);
     }
 
     public static Expression forInitialFieldValue(FieldInfo fieldInfo,
                                                   LinkedVariables linkedVariables,
                                                   CausesOfDelay causesOfDelay) {
-        String msg = "f:" + fieldInfo.name;
+        String msg = brackets("f:" + fieldInfo.name);
         return new DelayedExpression(msg, fieldInfo.type, linkedVariables, causesOfDelay);
     }
 

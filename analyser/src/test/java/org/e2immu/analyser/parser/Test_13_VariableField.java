@@ -12,13 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -47,10 +46,7 @@ public class Test_13_VariableField extends CommonTestRunner {
 
                 // evaluation of the return value, which is 'string' in the current state
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<f:string>" :
-                            // FIXME <v:string$1> should be just string$1 or string$0, depending on 'b'
-                            // to fix that, we should make it to string$2
-                            "string$2";
+                    String expectValue = d.iteration() == 0 ? "<f:string>" : "string$2";
                     assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -78,7 +74,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                     } else if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         // result of merging: FIXME <v:string$0> should not be a delayed variable, but sth else
-                        assertEquals("b?nullable instance type String:<v:string$0>", d.currentValue().toString());
+                        assertEquals("b?nullable instance type String:<not yet assigned>", d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
 
@@ -90,11 +86,11 @@ public class Test_13_VariableField extends CommonTestRunner {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                     } else if ("0.0.0".equals(d.statementId())) {
                         // only seen in iteration 1, the return value has no delays anymore then !!
-                        String expected = "string$0.startsWith(\"abc\")?nullable instance type String:<v:string$1>";
+                        String expected = "string$0.startsWith(\"abc\")?nullable instance type String:<not yet assigned>";
                         assertEquals(expected, d.currentValue().toString());
                     } else if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         // "0" only seen in iteration 1, no delays in the return value anymore
-                        String expected = "string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>";
+                        String expected = "string$0.startsWith(\"abc\")&&b?nullable instance type String:<not yet assigned>";
                         assertEquals(expected, d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
 
@@ -110,7 +106,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                 }
 
                 if (d.variable() instanceof ReturnVariable) {
-                    if("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
                                 "<m:startsWith>?\"abc\"+<f:string>:<return value>" :
                                 "string$0.startsWith(\"abc\")?\"abc\"+string$1:<return value>";
