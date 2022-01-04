@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
@@ -145,7 +145,6 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 assert vi != null;
                 String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
                 assertEquals(expectValue, vi.getValue().toString());
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
             }
             if (d.methodInfo().name.equals("toString")) {
                 FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);

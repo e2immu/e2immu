@@ -43,9 +43,10 @@ public class ArrayAccess extends BaseExpression implements Expression {
         dependentVariable = computeDependentVariable(expression, index, returnType);
     }
 
-    private static DependentVariable computeDependentVariable(Expression expression,
-                                                              Expression index,
-                                                              ParameterizedType returnType) {
+    // also used by Assignment.handleArrayAccess
+    public static DependentVariable computeDependentVariable(Expression expression,
+                                                             Expression index,
+                                                             ParameterizedType returnType) {
         Variable arrayVariable = singleVariable(expression);
         Variable indexVariable = singleVariable(index);
         String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
@@ -54,7 +55,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
                 + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.simpleName()) + "]";
         return new DependentVariable(name, simpleName,
                 arrayVariable == null ? null : arrayVariable.getOwningType(),
-                returnType, indexVariable == null ? List.of() : List.of(indexVariable), arrayVariable);
+                returnType, indexVariable == null ? List.of() : List.of(indexVariable),
+                arrayVariable);
     }
 
     private static Variable singleVariable(Expression expression) {
@@ -135,12 +137,11 @@ public class ArrayAccess extends BaseExpression implements Expression {
             builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
         } else {
             boolean delayed = array.value().isDelayed() || indexValue.value().isDelayed();
-            DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(), returnType);
+            DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(),
+                    returnType);
             // evaluatedDependentVariable is our best effort at evaluation of the individual components
 
-            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                builder.setExpression(NullConstant.NULL_CONSTANT); // not really relevant
-            } else if (delayed) {
+            if (delayed) {
                 CausesOfDelay causesOfDelay = array.value().causesOfDelay()
                         .merge(indexValue.value().causesOfDelay());
                 Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);

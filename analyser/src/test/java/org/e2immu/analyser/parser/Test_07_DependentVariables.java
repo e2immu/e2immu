@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -78,20 +77,20 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
-                }
-                if ("b".equals(d.variableName())) {
+                } else if ("b".equals(d.variableName())) {
                     assertEquals("a", d.variableInfo().getValue().toString());
-                }
-                if ("3".equals(d.statementId())) {
-                    if ("array[a]".equals(d.variableName())) {
-                        fail("This variable should not be produced");
+                } else if ("array".equals(d.variableName())) {
+                    assertEquals("new int[](3)", d.currentValue().toString());
+                } else if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("12", d.currentValue().toString());
                     }
-                    if ("array[b]".equals(d.variableName())) {
-                        fail("This variable should not be produced");
-                    }
-                    if (("array[org.e2immu.analyser.testexample.DependentVariables.method2(int):0:a]").equals(d.variableName())) {
-                        assertEquals("12", d.variableInfo().getValue().toString());
-                    }
+                } else if ("new int[](3)[org.e2immu.analyser.testexample.DependentVariables_0.method2(int):0:a]"
+                        .equals(d.variableName())) {
+                    assertTrue(d.statementId().compareTo("2") >= 0);
+                    assertEquals("12", d.currentValue().toString());
+                } else {
+                    fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
                 }
             }
         };

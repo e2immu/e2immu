@@ -39,9 +39,9 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Test_04_Warnings extends CommonTestRunner {
+public class Test_14_Warnings extends CommonTestRunner {
 
-    public Test_04_Warnings() {
+    public Test_14_Warnings() {
         super(true);
     }
 

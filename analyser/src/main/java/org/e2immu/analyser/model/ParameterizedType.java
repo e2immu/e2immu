@@ -873,7 +873,7 @@ public class ParameterizedType {
     }
 
     public boolean isNumeric() {
-        return arrays == 0 && typeInfo.isNumeric();
+        return arrays == 0 && typeInfo != null && typeInfo.isNumeric();
     }
 
 }

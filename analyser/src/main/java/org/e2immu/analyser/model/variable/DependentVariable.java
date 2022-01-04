@@ -62,7 +62,10 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     // array access
-    public static String dependentVariableName(Expression array, Expression index) {
+    public static String fullDependentVariableName(Expression array, Expression index) {
+        return array.toString() + "[" + index.toString() + "]";
+    }
+    public static String simpleDependentVariableName(Expression array, Expression index) {
         return array.toString() + "[" + index.toString() + "]";
     }
 

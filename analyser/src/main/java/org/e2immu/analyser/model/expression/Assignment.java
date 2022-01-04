@@ -185,50 +185,28 @@ public class Assignment extends BaseExpression implements Expression {
         }
     }
 
+    private record E2(Expression resultOfExpression, Expression assignedToTarget) {
+    }
+
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
-        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyAddAssignmentTarget(ve == null ? null : ve.variable());
 
+        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyAddAssignmentTarget(ve == null ? null : ve.variable());
         EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
 
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
 
-
-        // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
-        IsVariableExpression variableValue;
-        Variable newVariableTarget = (variableValue = targetResult.value().asInstanceOf(IsVariableExpression.class)) != null &&
-                variableValue.variable() instanceof DependentVariable
-                ? variableValue.variable() : variableTarget;
+        Variable newVariableTarget = handleArrayAccess(evaluationContext, targetResult.value(), builder);
 
         log(EXPRESSION, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
-        Expression resultOfExpression;
-        Expression assignedToTarget;
+        E2 e2;
         if (binaryOperator != null) {
-            BinaryOperator operation = new BinaryOperator(identifier,
-                    primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
-                    BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
-            EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
-            builder.compose(operationResult);
-
-            if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
-                // ++i, i += 1
-                resultOfExpression = operationResult.value();
-            } else {
-                // i++
-                Expression post = new VariableExpression(newVariableTarget);
-                EvaluationResult variableOnly = post.evaluate(evaluationContext, forwardEvaluationInfo);
-                resultOfExpression = variableOnly.value();
-                // not composing, any error will have been raised already
-            }
-            assignedToTarget = operationResult.value();
+            e2 = handleBinaryOperator(evaluationContext, forwardEvaluationInfo, newVariableTarget, builder);
         } else {
-            resultOfExpression = valueResult.value();
-            assignedToTarget = valueResult.value();
-
             /*
             we compare to value and not resultOfExpression here, to catch a literal j = j assignment
             the resultOfExpression may be different!
@@ -239,26 +217,78 @@ public class Assignment extends BaseExpression implements Expression {
             if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget)) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
-
-            EvaluationResult currentTargetValue = target.evaluate(evaluationContext, fwd);
-            Expression currentValue = currentTargetValue.value();
-            IsVariableExpression ive2;
-            if (currentValue != null && (currentValue.equals(assignedToTarget) ||
-                    ((ive2 = assignedToTarget.asInstanceOf(IsVariableExpression.class)) != null)
-                            && newVariableTarget.equalsOrEqualToCopy(ive2.variable())) &&
-                    !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
-                log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
-                builder.assignmentToCurrentValue(newVariableTarget);
-                // do continue! we do not want to ignore the assignment
-            }
+            e2 = handleNormalAssignment(evaluationContext, fwd, valueResult.value(), newVariableTarget, builder);
         }
         builder.composeIgnoreExpression(targetResult);
 
-        assert assignedToTarget != null;
-        assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
-        doAssignmentWork(builder, evaluationContext, newVariableTarget, assignedToTarget);
-        assert resultOfExpression != null;
-        return builder.setExpression(resultOfExpression).build();
+        assert e2.assignedToTarget != null;
+        assert e2.assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
+        doAssignmentWork(builder, evaluationContext, newVariableTarget, e2.assignedToTarget);
+        assert e2.resultOfExpression != null;
+        return builder.setExpression(e2.resultOfExpression).build();
+    }
+
+    private Variable handleArrayAccess(EvaluationContext evaluationContext, Expression evaluatedTarget,
+                                       EvaluationResult.Builder builder) {
+        // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
+        IsVariableExpression variableValue;
+        if ((variableValue = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
+                variableValue.variable() instanceof DependentVariable) {
+            return variableValue.variable();
+        }
+        if (target instanceof ArrayAccess access) {
+            EvaluationResult index = access.index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+            EvaluationResult array = access.expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+            builder.compose(index, array);
+            return ArrayAccess.computeDependentVariable(array.value(), index.value(), access.returnType);
+        }
+        return variableTarget;
+    }
+
+    private E2 handleNormalAssignment(EvaluationContext evaluationContext,
+                                      ForwardEvaluationInfo fwd,
+                                      Expression valueResultValue,
+                                      Variable newVariableTarget,
+                                      EvaluationResult.Builder builder) {
+        E2 e2 = new E2(valueResultValue, valueResultValue);
+
+        EvaluationResult currentTargetValue = target.evaluate(evaluationContext, fwd);
+        Expression currentValue = currentTargetValue.value();
+        IsVariableExpression ive2;
+        if (currentValue != null && (currentValue.equals(e2.assignedToTarget) ||
+                ((ive2 = e2.assignedToTarget.asInstanceOf(IsVariableExpression.class)) != null)
+                        && newVariableTarget.equalsOrEqualToCopy(ive2.variable())) &&
+                !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
+            log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
+            builder.assignmentToCurrentValue(newVariableTarget);
+            // do continue! we do not want to ignore the assignment
+        }
+        return e2;
+    }
+
+    private E2 handleBinaryOperator(EvaluationContext evaluationContext,
+                                    ForwardEvaluationInfo forwardEvaluationInfo,
+                                    Variable newVariableTarget,
+                                    EvaluationResult.Builder builder) {
+
+        Expression resultOfExpression;
+        BinaryOperator operation = new BinaryOperator(identifier,
+                primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
+                BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
+        EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
+        builder.compose(operationResult);
+
+        if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
+            // ++i, i += 1
+            resultOfExpression = operationResult.value();
+        } else {
+            // i++
+            Expression post = new VariableExpression(newVariableTarget);
+            EvaluationResult variableOnly = post.evaluate(evaluationContext, forwardEvaluationInfo);
+            resultOfExpression = variableOnly.value();
+            // not composing, any error will have been raised already
+        }
+        return new E2(resultOfExpression, operationResult.value());
     }
 
     private void doAssignmentWork(EvaluationResult.Builder builder,
@@ -283,7 +313,7 @@ public class Assignment extends BaseExpression implements Expression {
         LinkedVariables lvExpression = resultOfExpression.linkedVariables(evaluationContext).minimum(LinkedVariables.ASSIGNED_DV);
         LinkedVariables linkedVariables;
         IsVariableExpression ive = value.asInstanceOf(IsVariableExpression.class);
-        if(ive != null) {
+        if (ive != null) {
             linkedVariables = lvExpression.merge(new LinkedVariables(Map.of(ive.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV)));
         } else {
             linkedVariables = lvExpression;

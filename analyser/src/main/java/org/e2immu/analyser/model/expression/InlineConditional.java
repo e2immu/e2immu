@@ -111,17 +111,19 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        // there is little we can say with certainty until we know that the condition is not trivial, and
+        // one of ifTrue, ifFalse is chosen. See Precondition_3
+        if (condition.isDelayed()) return condition.causesOfDelay();
         if (property == Property.NOT_NULL_EXPRESSION) {
             if (returnType().isPrimitiveExcludingVoid()) {
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
-            Expression c = condition;
-            EvaluationContext child = evaluationContext.child(c);
+            EvaluationContext child = evaluationContext.child(condition);
             DV nneIfTrue = child.getProperty(ifTrue, Property.NOT_NULL_EXPRESSION, true, false);
             if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
                 return nneIfTrue;
             }
-            Expression notC = Negation.negate(evaluationContext, c);
+            Expression notC = Negation.negate(evaluationContext, condition);
             EvaluationContext notChild = evaluationContext.child(notC);
             DV nneIfFalse = notChild.getProperty(ifFalse, Property.NOT_NULL_EXPRESSION, true, false);
             return nneIfFalse.min(nneIfTrue);

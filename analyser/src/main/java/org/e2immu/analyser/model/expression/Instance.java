@@ -211,15 +211,27 @@ public final class Instance extends BaseExpression implements Expression {
                                                 Expression array,
                                                 Variable variable) {
         DV notNull = evaluationContext.getProperty(array, Property.NOT_NULL_EXPRESSION, true, false);
-        if (notNull.isDelayed()) {
-            // FIXME notNull
+
+        // we need to go the base type of the array
+        ParameterizedType baseType = array.returnType().copyWithOneFewerArrays();
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(baseType, true);
+        DV independent = evaluationContext.getAnalyserContext().defaultIndependent(baseType);
+        DV container = evaluationContext.getAnalyserContext().defaultContainer(baseType);
+
+        DV merged = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay()
+                .merge(container.causesOfDelay()));
+        if (merged.isDelayed()) {
             return DelayedExpression.forNewObject(variable.parameterizedType(), notNull,
-                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables(true).stream()), notNull),
-                    notNull.causesOfDelay());
+                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables(true).stream()), merged),
+                    merged.causesOfDelay());
         }
         DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
+
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(Property.NOT_NULL_EXPRESSION, notNullOfElement,
+                        Property.IMMUTABLE, immutable,
+                        Property.INDEPENDENT, independent,
+                        Property.CONTAINER, container,
                         Property.IDENTITY, DV.FALSE_DV));
     }
 

@@ -12,27 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.StringConcat;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
 import static org.e2immu.analyser.analysis.FlowData.NEVER;
-import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -108,8 +110,8 @@ public class Test_05_Final extends CommonTestRunner {
                 if (S1.equals(d.variableName())) {
                     String expectValue = d.iteration() == 0 ? "s1+<f:s3>" : "s1+\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
-                    //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getPropertyOfCurrentValue(NOT_NULL_EXPRESSION));
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
 
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
@@ -117,25 +119,13 @@ public class Test_05_Final extends CommonTestRunner {
                     assertEquals("this.s1:0", d.variableInfo().getLinkedVariables().toString());
                 }
                 if (S5.equals(d.variableName())) {
-                    if ("0.0.0".equals(d.statementId())) {
-                        //assertEquals(Level.DELAY, d.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY));
-                    }
-
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "null==<f:s5>?\"abc\":null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
-                        VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viC.getProperty(IMMUTABLE));
-                        VariableInfo viM = d.variableInfoContainer().current();
-                        //int expectM = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                        //assertEquals(expectM, viM.getProperty(IMMUTABLE));
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().toString());
-                        VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-
-                        //int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE;
-                        //assertEquals(expectImm, viC.getProperty(IMMUTABLE));
                         VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, viE.getProperty(IMMUTABLE));
                     }
@@ -181,27 +171,22 @@ public class Test_05_Final extends CommonTestRunner {
             MethodInfo methodInfo = d.methodInfo();
 
             if ("setS4".equals(methodInfo.name)) {
-                assertDv(d.p(0), MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s1".equals(d.fieldInfo().name)) {
-                if (d.iteration() > 0) {
-                    // cannot properly be assigned/linked to one parameter
-                    assertEquals("[s1+\"abc\",s1]", d.fieldAnalysis().getValue().debugOutput());
-                } else {
-                    assertNull(d.fieldAnalysis().getValue());
-                }
+                String expect = d.iteration() == 0 ? "<f:s1>" : "[s1+\"abc\",s1]";
+                assertEquals(expect, d.fieldAnalysis().getValue().toString());
                 assertEquals("s1:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().getValue());
-                } else {
-                    assertEquals("[null,s2]", d.fieldAnalysis().getValue().debugOutput());
+                String expectValue = d.iteration() == 0 ? "<f:s2>" : "[null,s2]";
+                if (d.iteration() > 0) {
                     assertTrue(d.fieldAnalysis().getValue() instanceof MultiValue);
                 }
+                assertEquals(expectValue, d.fieldAnalysis().getValue().toString());
                 assertEquals("s2:0", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s4".equals(d.fieldInfo().name)) {
