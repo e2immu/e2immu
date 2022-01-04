@@ -1050,7 +1050,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                v -> !linkedVariablesMap.containsKey(v),
+                v -> !linkedVariablesMap.containsKey(v) && !isLoopVariableWillDisappearInNextStatement(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
         computeLinkedVariables.writeLinkedVariables();
@@ -1071,6 +1071,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
+    }
+
+    // FIXME this variableNature is in VIC not in Variable
+    private boolean isLoopVariableWillDisappearInNextStatement(Variable v) {
+        if (v.variableNature() instanceof VariableNature.LoopVariable lv) {
+            return index.equals(lv.statementIndex());
+        }
+        return false;
     }
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
@@ -1216,11 +1224,47 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
             // nothing spectacular; everything handled at the place of creation
-            initializeLocalOrDependentVariable(vic, variable);
+            if (variableInLoop instanceof VariableNature.LoopVariable) {
+                initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
+            } else {
+                initializeLocalOrDependentVariable(vic, variable);
+            }
         } else {
             throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
         }
         return vic;
+    }
+
+    private void initializeLoopVariable(VariableInfoContainer vic, Variable variable, AnalyserContext analyserContext) {
+        // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
+        // otherwise we'll get delays
+        // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
+        // an assignment may be difficult. The value is never used, only local copies are
+
+        ParameterizedType parameterizedType = variable.parameterizedType();
+        DV defaultImmutable = analyserContext.defaultImmutable(parameterizedType, false);
+        DV initialNotNull = AnalysisProvider.defaultNotNull(parameterizedType);
+        DV defaultContainer = analyserContext.defaultContainer(parameterizedType);
+        DV defaultIndependent = analyserContext.defaultIndependent(parameterizedType);
+        Map<Property, DV> valueProperties = Map.of(
+                IDENTITY, DV.FALSE_DV,
+                NOT_NULL_EXPRESSION, initialNotNull,
+                IMMUTABLE, defaultImmutable,
+                CONTAINER, defaultContainer,
+                INDEPENDENT, defaultIndependent
+        );
+        Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
+        Map<Property, DV> properties = Map.of(
+                CONTEXT_MODIFIED, DV.FALSE_DV,
+                EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
+                CONTEXT_NOT_NULL, initialNotNull,
+                EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
+                CONTEXT_IMMUTABLE, defaultImmutable
+        );
+        Map<Property, DV> allProperties = new HashMap<>(properties);
+        allProperties.putAll(valueProperties);
+        vic.setValue(instance, LinkedVariables.EMPTY, allProperties, true);
+        // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
     }
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
@@ -1639,9 +1683,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         VariableInfoContainer vic = findForWriting(loopVar);
         vic.ensureEvaluation(location(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                 statementTime(EVALUATION), Set.of());
-        Map<Property, DV> valueProperties = Map.of(); // FIXME
-        Expression instance = Instance.forLoopVariable(index(), loopVar, valueProperties);
-        vic.setValue(instance, LinkedVariables.EMPTY, Map.of(), false);
+        ParameterizedType parameterizedType = loopVar.parameterizedType();
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+
+        Map<Property, DV> valueProperties = Map.of(
+                Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
+                Property.IMMUTABLE, analyserContext.defaultImmutable(parameterizedType, false),
+                Property.INDEPENDENT, analyserContext.defaultIndependent(parameterizedType),
+                Property.CONTAINER, analyserContext.defaultContainer(parameterizedType),
+                Property.IDENTITY, DV.FALSE_DV);
+        Expression value;
+        if (evaluatedIterable.isDelayed()) {
+            value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),
+                    LinkedVariables.EMPTY, evaluatedIterable.causesOfDelay());
+        } else {
+            value = Instance.forLoopVariable(index(), loopVar, valueProperties);
+        }
+        vic.setValue(value, LinkedVariables.EMPTY, Map.of(), false);
         vic.setLinkedVariables(linked, EVALUATION);
     }
 

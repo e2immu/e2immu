@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -123,23 +120,6 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
                 if (statement() instanceof LoopStatement) {
                     initialiserToEvaluate = lvc.expression;
-                    // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
-                    // otherwise we'll get delays
-                    // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
-                    // an assignment may be difficult. The value is never used, only local copies are
-
-                    DV defaultImmutable = analyserContext.defaultImmutable(lvr.parameterizedType(), false);
-                    DV initialNotNull = AnalysisProvider.defaultNotNull(lvr.parameterizedType());
-                    Map<Property, DV> properties =
-                            Map.of(CONTEXT_MODIFIED, DV.FALSE_DV,
-                                    EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
-                                    CONTEXT_NOT_NULL, initialNotNull,
-                                    EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
-                                    CONTEXT_IMMUTABLE, defaultImmutable);
-                    Map<Property, DV> valueProperties = Map.of(); // FIXME
-                    Instance instance = Instance.forLoopVariable(index(), lvr, valueProperties);
-                    vic.setValue(instance, LinkedVariables.EMPTY, properties, true);
-                    // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                 }

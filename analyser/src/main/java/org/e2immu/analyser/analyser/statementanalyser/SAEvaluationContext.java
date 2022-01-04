@@ -463,11 +463,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                             Expression newObject = Instance.genericMergeResult(statementAnalysis.index(),
                                     e.getValue().current().variable(), valueProperties);
                             translationMap.put(new VariableExpression(variable), newObject);
+                        } else {
+                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
+                                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
+                            translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
                         }
-
-                        Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
-                        translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
                     });
             return mergeValue.translate(translationMap.build());
         }
