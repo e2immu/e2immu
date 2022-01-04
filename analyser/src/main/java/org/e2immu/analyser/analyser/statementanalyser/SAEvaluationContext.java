@@ -477,11 +477,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     /*
     Need to translate local copies of fields into fields.
     Should we do only their first appearance? ($0)
+
+    This method accepts delayed variable expressions as well.
      */
     @Override
     public Expression acceptAndTranslatePrecondition(Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
-        Map<Expression, Expression> translationMap = precondition.variables().stream()
+        Map<Expression, Expression> translationMap = precondition.variables(true).stream()
                 .filter(v -> v instanceof LocalVariableReference lvr &&
                         lvr.variable.nature() instanceof VariableNature.CopyOfVariableField)
                 .collect(Collectors.toUnmodifiableMap(VariableExpression::new,
@@ -494,7 +496,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
             translated = precondition.reEvaluate(evaluationContext, translationMap).getExpression();
         }
-        if (translated.variables().stream()
+        if (translated.variables(false).stream()
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
             return translated;
         }

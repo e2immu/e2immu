@@ -222,8 +222,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     @Override
-    public List<Variable> variables() {
-        return expression.variables();
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return expression.variables(descendIntoFieldReferences);
     }
 
     @Override

@@ -96,7 +96,7 @@ public class OutputMethodInfo {
     }
 
     private static Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
-        Set<String> localNamesFromBody = inspection.getMethodBody().variables().stream()
+        Set<String> localNamesFromBody = inspection.getMethodBody().variables(true).stream()
                 .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
                 .map(Variable::simpleName).collect(Collectors.toSet());
         Set<String> parameterNames = inspection.getParameters().stream()

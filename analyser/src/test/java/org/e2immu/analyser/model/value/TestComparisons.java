@@ -15,11 +15,13 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -313,7 +315,7 @@ public class TestComparisons extends CommonAbstractValue {
 
         Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, j, i, true);
         assertEquals("j>=i", jGeI.toString());
-        assertEquals(2, jGeI.variables().size());
+        assertEquals(2, jGeI.variables(true).size());
         Expression combo2 = newAndAppend(combined, jGeI);
         assertTrue(combo2.isBoolValueFalse(), "Got: " + combo2);
     }
@@ -330,5 +332,14 @@ public class TestComparisons extends CommonAbstractValue {
 
         Expression iGeI1 = GreaterThanZero.greater(minimalEvaluationContext, i, i1, true);
         assertEquals("instance type int==i", newAndAppend(iGeI1, iLeI2).toString());
+    }
+
+    @Test
+    public void testDelayed() {
+        Expression delayedPGe0 = GreaterThanZero.greater(minimalEvaluationContext, delayedP, newInt(0), true);
+        assertEquals("<p:p>>=0", delayedPGe0.toString());
+        assertEquals("[some.type.type(java.lang.String):0:p]", delayedPGe0.variables(true).toString());
+        assertTrue(delayedPGe0.variables(true).stream()
+                .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference));
     }
 }

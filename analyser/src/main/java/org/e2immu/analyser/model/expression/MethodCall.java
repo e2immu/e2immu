@@ -71,7 +71,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // only used in the inequality system
     @Override
     public Variable variable() {
-        List<Variable> variables = object.variables();
+        List<Variable> variables = object.variables(true);
         return variables.size() == 1 ? variables.get(0) : null;
     }
 
@@ -953,9 +953,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public List<Variable> variables() {
-        return Stream.concat(object.variables().stream(),
-                        parameterExpressions.stream().flatMap(e -> e.variables().stream()))
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return Stream.concat(object.variables(descendIntoFieldReferences).stream(),
+                        parameterExpressions.stream().flatMap(e -> e.variables(descendIntoFieldReferences).stream()))
                 .toList();
     }
 

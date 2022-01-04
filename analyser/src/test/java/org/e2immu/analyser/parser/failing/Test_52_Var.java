@@ -95,8 +95,8 @@ public class Test_52_Var extends CommonTestRunner {
                         assertEquals("apply", inlinedMethod2.methodInfo().name);
                         assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                         assertFalse(inlinedMethod.containsVariableFields());
-                        assertEquals(2, inlinedMethod.variables().size());
-                        assertTrue(inlinedMethod.variables().stream().allMatch(v -> v instanceof ParameterInfo));
+                        assertEquals(2, inlinedMethod.variables(true).size());
+                        assertTrue(inlinedMethod.variables(true).stream().allMatch(v -> v instanceof ParameterInfo));
                     } else fail();
                 } else fail();
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));

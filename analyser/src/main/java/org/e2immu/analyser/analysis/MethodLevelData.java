@@ -147,10 +147,11 @@ public class MethodLevelData {
         Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .map(sa -> sa.methodLevelData().combinedPrecondition)
                 .map(EventuallyFinal::get);
+        Precondition empty = Precondition.empty(sharedState.evaluationContext.getPrimitives());
         Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
-                .map(pc -> pc == null ? Precondition.empty(sharedState.evaluationContext.getPrimitives()) : pc)
+                .map(pc -> pc == null ? empty : pc)
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
-                .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
+                .orElse(empty);
 
         CausesOfDelay allDelayed = all.expression().causesOfDelay().merge(previousDelays).merge(subBlockDelays);
 

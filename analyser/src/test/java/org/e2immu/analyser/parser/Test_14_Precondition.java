@@ -13,19 +13,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.testexample.Precondition_4;
 import org.e2immu.analyser.testexample.Precondition_6;
 import org.e2immu.analyser.visitor.*;
@@ -89,7 +90,6 @@ public class Test_14_Precondition extends CommonTestRunner {
     // positive
     @Test
     public void test1() throws IOException {
-
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setPositive1".equals(d.methodInfo().name)) {
@@ -315,7 +315,7 @@ public class Test_14_Precondition extends CommonTestRunner {
     public void test6() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
-                if("0.0.0.0.0".equals(d.statementId())) {
+                if ("0.0.0.0.0".equals(d.statementId())) {
                     assertEquals("b&&i<=-1", d.statementAnalysis().stateData()
                             .conditionManagerForNextStatement.get().absoluteState(d.evaluationContext()).toString());
 
@@ -327,8 +327,8 @@ public class Test_14_Precondition extends CommonTestRunner {
 
                     assertTrue(d.statementAnalysis().stateData()
                             .conditionManagerForNextStatement.get().precondition().isEmpty());
-                   assertEquals("!b||i>=0", d.statementAnalysis()
-                           .methodLevelData().combinedPrecondition.get().expression().toString());
+                    assertEquals("!b||i>=0", d.statementAnalysis()
+                            .methodLevelData().combinedPrecondition.get().expression().toString());
                 }
             }
         };

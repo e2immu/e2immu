@@ -383,7 +383,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DelayedVariableExpression dve;
         boolean viThisHasDelayedValue = (dve = viThis.getValue().asInstanceOf(DelayedVariableExpression.class)) != null &&
                 dve.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo;
-        boolean partialAssignment = viThis.getValue().variables().contains(fieldReference);
+        boolean partialAssignment = viThis.getValue().variables(true).contains(fieldReference);
         if (viThisHasDelayedValue || !partialAssignment) {
             result.add(viThis);
             return result;
@@ -435,7 +435,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private boolean acceptForConditionalInitialization(FieldInfo fieldInfo, Expression value) {
-        List<Variable> variables = value.variables();
+        List<Variable> variables = value.variables(true);
         return variables.stream().noneMatch(v -> v instanceof FieldReference fr && fieldInfo.equals(fr.fieldInfo));
     }
 
@@ -1711,6 +1711,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (preconditionExpression.isDelayed()) {
                     log(DELAYED, "Apply of {}, {} is delayed because of precondition",
                             index(), methodAnalysis.getMethodInfo().fullyQualifiedName);
+                    stateData.setPrecondition(new Precondition(preconditionExpression,
+                            precondition.causes()), true);
                     return preconditionExpression.causesOfDelay();
                 }
                 Expression result = localConditionManager.evaluate(evaluationContext, preconditionExpression);

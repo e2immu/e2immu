@@ -258,7 +258,7 @@ public class And extends BaseExpression implements Expression {
 
         // combinations with equality and inequality (GE)
 
-        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
+        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables(true).size() > 1) {
             // it may be interesting to run the inequality solver
             InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
             Boolean resolve = inequalitySolver.evaluate(value);
@@ -485,8 +485,9 @@ public class And extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
-        return expressions.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toList());
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream())
+                .collect(Collectors.toList());
     }
 
     @Override

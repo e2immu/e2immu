@@ -53,7 +53,7 @@ public record MultiExpression(Expression... expressions) {
     }
 
     public List<Variable> variables() {
-        return stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
+        return stream().flatMap(e -> e.variables(true).stream()).collect(Collectors.toList());
     }
 
     @Override

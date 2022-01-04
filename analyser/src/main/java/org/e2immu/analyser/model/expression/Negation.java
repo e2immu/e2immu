@@ -138,8 +138,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public List<Variable> variables() {
-        return expression.variables();
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return expression.variables(descendIntoFieldReferences);
     }
 
 

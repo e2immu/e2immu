@@ -214,7 +214,7 @@ public final class Instance extends BaseExpression implements Expression {
         if (notNull.isDelayed()) {
             // FIXME notNull
             return DelayedExpression.forNewObject(variable.parameterizedType(), notNull,
-                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables().stream()), notNull),
+                    LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables(true).stream()), notNull),
                     notNull.causesOfDelay());
         }
         DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);

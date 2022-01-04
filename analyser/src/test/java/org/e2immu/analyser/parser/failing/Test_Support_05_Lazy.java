@@ -49,7 +49,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
                         assertEquals("supplier.get()/*@NotNull*/", d.currentValue().toString());
-                        assertEquals(1, d.currentValue().variables().size());
+                        assertEquals(1, d.currentValue().variables(true).size());
                     }
                 }
             }

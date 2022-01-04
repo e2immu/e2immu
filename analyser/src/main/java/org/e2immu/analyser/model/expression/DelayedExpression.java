@@ -218,7 +218,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
-    public List<Variable> variables() {
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
         return List.copyOf(linkedVariables.variables().keySet());
     }
 

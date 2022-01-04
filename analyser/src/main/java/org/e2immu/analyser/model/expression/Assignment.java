@@ -80,7 +80,7 @@ public class Assignment extends BaseExpression implements Expression {
             variableTarget = arrayAccess.dependentVariable;
         } else {
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
-            variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(), null);
+            variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(true), null);
         }
     }
 

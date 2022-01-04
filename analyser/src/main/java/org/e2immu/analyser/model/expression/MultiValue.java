@@ -128,7 +128,7 @@ public class MultiValue extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
         return multiExpression.variables();
     }
 

@@ -154,8 +154,10 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
-        return ListUtil.immutableConcat(condition.variables(), ifTrue.variables(), ifFalse.variables());
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return ListUtil.immutableConcat(condition.variables(descendIntoFieldReferences),
+                ifTrue.variables(descendIntoFieldReferences),
+                ifFalse.variables(descendIntoFieldReferences));
     }
 
     @Override

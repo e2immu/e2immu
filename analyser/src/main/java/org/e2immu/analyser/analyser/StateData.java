@@ -30,7 +30,7 @@ public class StateData   {
 
     /*
      precondition = conditions that cause an escape
-     they are generated in the throws statement, assert statement
+     they are generated in the "throw" statement, assert statement
      are copied upwards, and to the next statement
 
      this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData

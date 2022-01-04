@@ -103,8 +103,9 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
-        return ListUtil.concatImmutable(lhs.variables(), rhs.variables());
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return ListUtil.concatImmutable(lhs.variables(descendIntoFieldReferences),
+                rhs.variables(descendIntoFieldReferences));
     }
 
     @Override
@@ -507,8 +508,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
     }
 
     public static int compareVariables(Expression e1, Expression e2) {
-        Set<Variable> myVariables = new HashSet<>(e1.variables());
-        Set<Variable> otherVariables = new HashSet<>(e2.variables());
+        Set<Variable> myVariables = new HashSet<>(e1.variables(true));
+        Set<Variable> otherVariables = new HashSet<>(e2.variables(true));
         int varDiff = myVariables.size() - otherVariables.size();
         if (varDiff != 0) return varDiff;
         String myVarStr = myVariables.stream().map(vv -> vv.fullyQualifiedName())

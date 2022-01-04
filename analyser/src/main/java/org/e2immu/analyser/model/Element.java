@@ -67,8 +67,10 @@ public interface Element {
 
     // variables, in order of appearance
 
-    default List<Variable> variables() {
-        return subElements().stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
+    default List<Variable> variables(boolean descendIntoFieldReferences) {
+        return subElements().stream()
+                .flatMap(e -> e.variables(descendIntoFieldReferences).stream())
+                .collect(Collectors.toList());
     }
 
     OutputBuilder output(Qualification qualification);

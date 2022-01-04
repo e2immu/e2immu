@@ -32,7 +32,6 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 public class Test_00_Basics_21 extends CommonTestRunner {
@@ -57,8 +56,6 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                     EvaluationResult.ChangeData cd = d.findValueChangeBySubString("other");
                     assertEquals("", cd.linkedVariables().toString());
-                    EvaluationResult.ChangeData cdThis = d.findValueChangeByToString("this");
-                    assertEquals("", cdThis.linkedVariables().toString());
 
                     assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
@@ -121,19 +118,13 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("t$0", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() == 0 ? "<m:get>" : "t$0";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("null!=t$0", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() == 0 ? "<m:isSet>" : "null!=t$0";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

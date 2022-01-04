@@ -128,7 +128,7 @@ public class Test_45_Project extends CommonTestRunner {
                             case 1 -> "[kvStore, org.e2immu.analyser.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, read$7, read$7, result]";
                             default -> "[]";
                         };
-                        assertEquals(expectedVars, d.currentValue().variables().toString());
+                        assertEquals(expectedVars, d.currentValue().variables(true).toString());
                     }
                 }
             }

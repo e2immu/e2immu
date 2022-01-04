@@ -291,7 +291,7 @@ public record ConditionManager(Expression condition,
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {
-        List<Variable> variables = value.variables();
+        List<Variable> variables = value.variables(true);
         if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
             return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
         }

@@ -192,7 +192,7 @@ public class Filter {
                 }
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
-                List<Variable> vars = expression.variables();
+                List<Variable> vars = expression.variables(true);
                 if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope)) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
@@ -224,7 +224,7 @@ public class Filter {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD).valueIsFalse()) return null;
             // none of the arguments to the call can be a parameter
-            if (mc.parameterExpressions.stream().flatMap(e -> e.variables().stream())
+            if (mc.parameterExpressions.stream().flatMap(e -> e.variables(true).stream())
                     .anyMatch(arg -> arg instanceof ParameterInfo)) {
                 return null;
             }

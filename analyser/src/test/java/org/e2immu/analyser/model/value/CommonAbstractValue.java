@@ -15,10 +15,12 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
-import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
@@ -66,6 +68,7 @@ public abstract class CommonAbstractValue {
 
     protected static Variable vp;
     protected static VariableExpression p;
+    protected static DelayedVariableExpression delayedP;
 
     protected static Variable vq;
     protected static VariableExpression q;
@@ -104,7 +107,8 @@ public abstract class CommonAbstractValue {
 
         vp = createParameter(); // nullable
         p = new VariableExpression(vp);
-
+        delayedP = DelayedVariableExpression.forParameter((ParameterInfo) vp,
+                new SimpleSet(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.NOT_INVOLVED)));
         vq = createVariable("q"); // not intercepted
         q = new VariableExpression(vq);
     }
@@ -224,9 +228,9 @@ public abstract class CommonAbstractValue {
 
         @Override
         public DV getProperty(Expression value,
-                               Property property,
-                               boolean duringEvaluation,
-                               boolean ignoreStateInConditionManager) {
+                              Property property,
+                              boolean duringEvaluation,
+                              boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve && property == Property.NOT_NULL_EXPRESSION
                     && !"q".equals(ve.variable().simpleName())) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)

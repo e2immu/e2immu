@@ -698,7 +698,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             Expression initialValue = fieldAnalysis.getInitializerValue();
             if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;
-            initialValue.variables().forEach(variable -> {
+            initialValue.variables(true).forEach(variable -> {
                 Variable v = acceptForMarkingRemoveScopeOfFields(variable, subType);
                 if (v != null) markRead(v);
             });

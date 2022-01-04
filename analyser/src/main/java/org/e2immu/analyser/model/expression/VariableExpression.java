@@ -261,9 +261,9 @@ public final class VariableExpression extends BaseExpression implements Expressi
     }
 
     @Override
-    public List<Variable> variables() {
-        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
-            return ListUtil.concatImmutable(fr.scope.variables(), List.of(variable));
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return ListUtil.concatImmutable(fr.scope.variables(true), List.of(variable));
         }
         return List.of(variable);
     }

@@ -227,8 +227,8 @@ public final class Or extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
-        return expressions.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toList());
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        return expressions.stream().flatMap(v -> v.variables(descendIntoFieldReferences).stream()).collect(Collectors.toList());
     }
 
     // no implementation of any of the filters

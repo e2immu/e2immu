@@ -43,7 +43,7 @@ public record ConditionAndVariableInfo(Expression condition,
     public Expression value() {
         Expression value = variableInfo.getVariableValue(myself);
 
-        List<Variable> variables = value.variables();
+        List<Variable> variables = value.variables(true);
         if (variables.isEmpty()) return value;
         Map<Variable, Expression> replacements = new HashMap<>();
         for (Variable variable : variables) {

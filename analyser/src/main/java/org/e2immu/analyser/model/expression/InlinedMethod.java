@@ -121,11 +121,11 @@ public class InlinedMethod extends BaseExpression implements Expression {
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Set<Variable> targetVariables = translation.values().stream()
-                .flatMap(e -> e.variables().stream()).collect(Collectors.toUnmodifiableSet());
+                .flatMap(e -> e.variables(true).stream()).collect(Collectors.toUnmodifiableSet());
         EvaluationContext closure = new EvaluationContextImpl(evaluationContext, targetVariables);
         EvaluationResult result = expression.reEvaluate(closure, translation);
         if (expression instanceof InlinedMethod im) {
-            Set<Variable> newVariables = new HashSet<>(result.getExpression().variables());
+            Set<Variable> newVariables = new HashSet<>(result.getExpression().variables(true));
             boolean haveVariableFields = newVariables.stream()
                     .anyMatch(v -> v instanceof FieldReference fr && evaluationContext.getAnalyserContext()
                             .getFieldAnalysis(fr.fieldInfo).getProperty(Property.FINAL).valueIsFalse());
@@ -162,7 +162,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variables() {
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
         return List.copyOf(variablesOfExpression);
     }
 

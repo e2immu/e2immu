@@ -162,7 +162,7 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     @Override
-    public List<Variable> variables() {
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
         return List.of(localVariableReference);
     }
 

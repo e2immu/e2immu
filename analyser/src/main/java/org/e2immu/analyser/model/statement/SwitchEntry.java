@@ -94,7 +94,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
-        Variable variable = switchVariableAsExpression.variables().get(0);
+        Variable variable = switchVariableAsExpression.variables(true).get(0);
         boolean primitive = variable.parameterizedType().isPrimitiveExcludingVoid();
         return primitive ? primitives.equalsOperatorInt() : primitives.equalsOperatorObject();
     }

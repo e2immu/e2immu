@@ -172,9 +172,9 @@ public class DelayedVariableExpression extends BaseExpression implements Express
     }
 
     @Override
-    public List<Variable> variables() {
-        if (variable instanceof FieldReference fr && fr.scope != null) {
-            return ListUtil.concatImmutable(List.of(variable), fr.scope.variables());
+    public List<Variable> variables(boolean descendIntoFieldReferences) {
+        if (descendIntoFieldReferences && variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return ListUtil.concatImmutable(List.of(variable), fr.scope.variables(true));
         }
         return List.of(variable);
     }

@@ -542,7 +542,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                                 : "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expected, d.currentValue().toString());
                         String expectVars = d.iteration() == 0 ? "[entry, key, kvStore, result]" : "[kvStore$0]";
-                        assertEquals(expectVars, d.currentValue().variables().stream().map(Variable::toString).sorted().toList().toString());
+                        assertEquals(expectVars, d.currentValue().variables(true).stream().map(Variable::toString).sorted().toList().toString());
                     }
                 }
                 if ("entry".equals(d.variableName())) {

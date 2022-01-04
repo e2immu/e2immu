@@ -611,7 +611,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         Set<Variable> variables = new HashSet<>();
         boolean containsVariableFields = false;
 
-        for (Variable variable : value.variables()) {
+        for (Variable variable : value.variables(true)) {
             FieldInfo fieldInfo;
             FieldReference fieldReference;
             if (variable instanceof FieldReference fr) {
