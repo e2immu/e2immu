@@ -165,10 +165,10 @@ public class ComputeLinkedVariables {
         if (Property.CONTEXT_MODIFIED == property) {
             if (delaysInClustering.isDelayed()) {
                 // a delay on clustering can be caused by a delay on the value to be linked
-                // replace @CM values by those delays
-
+                // replace @CM values by those delays, and inject a dedicated variable delay.
                 Map<Variable, DV> delayedValues = propertyValues.entrySet().stream()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> specificCMDelay(e.getKey(), e.getValue())));
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                                e -> injectContextModifiedDelay(e.getKey(), e.getValue())));
                 return writeProperty(clustersDependent, property, delayedValues);
             }
             return writeProperty(clustersDependent, property, propertyValues);
@@ -182,12 +182,22 @@ public class ComputeLinkedVariables {
         }
     }
 
-    private DV specificCMDelay(Variable variable, DV originalValue) {
-        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(), CauseOfDelay.Cause.CONTEXT_MODIFIED));
-        if(delaysInClustering.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.CONTEXT_MODIFIED &&
-               c instanceof VariableCause vc && vc.variable().equals(variable))) {
-            return originalValue;
+    /**
+     * See Basics_20 for the necessity to delay CM when the clustering of linked variables produced delays.
+     * See Modification_19 for an example where breaking the cyclic dependency is necessary.
+     *
+     * @param variable      the variable for which we are computing the CM property
+     * @param propertyValue the value of the CM property
+     * @return in normal situation, the delaysInClustering augmented with a specific variable delay; if this delay is
+     * already present, we detect a cyclic dependency, and do not inject a delay. Rather, we return the CM property value.
+     */
+    private DV injectContextModifiedDelay(Variable variable, DV propertyValue) {
+        if (delaysInClustering.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.CONTEXT_MODIFIED &&
+                c instanceof VariableCause vc && vc.variable().equals(variable))) {
+            return propertyValue;
         }
+        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(),
+                CauseOfDelay.Cause.CONTEXT_MODIFIED));
         return delaysInClustering.causesOfDelay().merge(specificDelay);
     }
 

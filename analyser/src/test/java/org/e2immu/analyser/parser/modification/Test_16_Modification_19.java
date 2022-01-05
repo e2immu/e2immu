@@ -34,11 +34,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /*
-This is an example of a cyclic dependency between
+This is an example of a cyclic dependency on the ContextModified computation.
+See ComputeLinkedVariables for the actual code breaking the dependency.
 
-1. c = new C1(...) in example1, which needs @Container to produce a value (@Container is one of the value properties)
-2. the field "set" is modified in example1, but this can only be seen when there are no delays on the evaluation,
-yet we have delays caused by "c"
+The sequence is:
+
+1. parameter setC has been assigned to C1.set; it needs the MODIFIED_OUTSIDE_METHOD property from the field.
+2. the MOM of C1.set is computed based on the CONTEXT_MODIFIED property in the VariableInfo of the field in the
+   2 methods where it occurs: size() and example1().
+3. to assign a CM property to a variable, we wait until we have value for that variable. Otherwise, we run into
+   problems as shown in Basics_20.
+   The CM value of set in size() is duly computed.
+4. The CM value of set in example1() being set depends on the evaluation of c.set (rather than this.set).
+   C1 c = new C1(...);
+   To have a value for c, we need the value properties of C1.
+5. Among the value properties for C1 is @Container, which needs the MODIFIED_VARIABLE of all parameters of methods
+   and constructors in C1, and therefore also of setC. This completes the circle.
+
+The solution is to add a dedicated delay each time we let a CM wait because the evaluation was delayed.
+At some point, we can see that this evaluation is delayed exactly by this same delay (the delay has traveled the system.)
+Then, we break, and we assign the CM regardless.
  */
 public class Test_16_Modification_19 extends CommonTestRunner {
 

@@ -34,6 +34,10 @@ import java.io.IOException;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+This test requires the CONTEXT_MODIFICATION assignment to a variable to be delayed when the value of the variable
+is not yet known. See ComputeLinkedVariables.write and Test_16_Modification_19.
+ */
 public class Test_00_Basics_20 extends CommonTestRunner {
     public Test_00_Basics_20() {
         super(true);
