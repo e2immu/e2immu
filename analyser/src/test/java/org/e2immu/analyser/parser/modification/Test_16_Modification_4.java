@@ -17,26 +17,19 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -69,20 +62,20 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // via statical assignments
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
 
             if ("add4".equals(d.methodInfo().name) && "local4".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    assertTrue(d.getProperty(Property.CONTEXT_MODIFIED).isDelayed());
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
 
                     String expect = d.iteration() == 0 ? SET4_DELAYED : "set4";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     String expect = d.iteration() == 0 ? "<f:set4>" : "instance type Set<String>";
                     assertEquals(expect, d.currentValue().toString());
@@ -104,9 +97,8 @@ public class Test_16_Modification_4 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set4")) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
 
                 assertEquals("in4", d.fieldAnalysis().getValue().toString());
                 assertEquals("in4:0", d.fieldAnalysis().getLinkedVariables().toString());
@@ -118,7 +110,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Modification_4".equals(name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add4".equals(name)) {
                 FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);
@@ -131,12 +123,16 @@ public class Test_16_Modification_4 extends CommonTestRunner {
             }
         };
 
-        testClass("Modification_4", 0, 0, new DebugConfiguration.Builder()
+        // we've set the "compute context properties over all methods" to true
+        //  WARN in Field org.e2immu.analyser.testexample.Modification_4.set4 (line 40, pos 5): At least one field initialization is in conflict with @NotNull requirements
+        testClass("Modification_4", 0, 1, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeContextPropertiesOverAllMethods(true).build());
     }
 
 }

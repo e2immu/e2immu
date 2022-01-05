@@ -105,7 +105,7 @@ public interface FieldAnalysis extends Analysis {
             priority.put(Property.INDEPENDENT, independent);
             return DelayedExpression.forDelayedValueProperties(getFieldInfo().type, LinkedVariables.EMPTY, delay, priority);
         }
-        return Instance.forField(getFieldInfo(), notNull, immutable, container, independent);
+        return Instance.forField(getFieldInfo(), value.returnType(), notNull, immutable, container, independent);
     }
 
     boolean isDeclaredFunctionalInterface();

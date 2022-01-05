@@ -257,8 +257,10 @@ public final class Instance extends BaseExpression implements Expression {
         assert internalChecks();
     }
 
-    public static Instance forField(FieldInfo fieldInfo, DV notNull, DV immutable, DV container, DV independent) {
-        return new Instance(fieldInfo.getIdentifier(), fieldInfo.type, Diamond.NO, Map.of(
+    public static Instance forField(FieldInfo fieldInfo,
+                                    ParameterizedType type,
+                                    DV notNull, DV immutable, DV container, DV independent) {
+        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, Diamond.NO, Map.of(
                 Property.NOT_NULL_EXPRESSION, notNull,
                 Property.IMMUTABLE, immutable,
                 Property.CONTAINER, container,

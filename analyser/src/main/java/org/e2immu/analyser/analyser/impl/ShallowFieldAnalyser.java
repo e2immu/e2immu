@@ -59,7 +59,7 @@ public class ShallowFieldAnalyser {
         FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
         boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
 
-        if(!fieldAnalysisBuilder.properties.isDone(Property.FINAL)) {
+        if (!fieldAnalysisBuilder.properties.isDone(Property.FINAL)) {
             // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
             fieldAnalysisBuilder.setProperty(Property.FINAL, DV.fromBoolDv(fieldInfo.isExplicitlyFinal() || enumField));
         }
@@ -108,10 +108,10 @@ public class ShallowFieldAnalyser {
             if (initialiser instanceof ConstantExpression<?> constantExpression) {
                 value = constantExpression;
             } else {
-                value = Instance.forField(fieldInfo, notNull, immutable, typeIsContainer, independent);
+                value = Instance.forField(fieldInfo, initialiser.returnType(), notNull, immutable, typeIsContainer, independent);
             }
         } else {
-            value = Instance.forField(fieldInfo, notNull, immutable, typeIsContainer, independent);
+            value = Instance.forField(fieldInfo, null, notNull, immutable, typeIsContainer, independent);
         }
         fieldAnalysisBuilder.setValue(value);
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
