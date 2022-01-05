@@ -979,7 +979,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
-                        && !(e.getKey() instanceof FieldReference fr && fr.scopeIsThis() && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
+                        && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) // especially local variable copies of the field itself
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
         LinkedVariables linkedVariables = new LinkedVariables(map);

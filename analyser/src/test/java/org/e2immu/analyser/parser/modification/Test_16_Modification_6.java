@@ -17,8 +17,10 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -30,8 +32,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_6 extends CommonTestRunner {
 
@@ -41,53 +42,48 @@ public class Test_16_Modification_6 extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Modification_6";
-        final String SET6 = TYPE + ".set6";
-        final String EXAMPLE6_SET6 = TYPE + ".set6#" + TYPE + ".add6(Modification_6,Set<String>):0:example6";
-        final String EXAMPLE6 = TYPE + ".add6(Modification_6,Set<String>):0:example6";
-        final String VALUES6 = TYPE + ".add6(Modification_6,Set<String>):1:values6";
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("add6".equals(d.methodInfo().name)) {
-                if (VALUES6.equals(d.variableName())) {
-                    assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-                }
+                if (d.variable() instanceof ParameterInfo p && "values6".equals(p.name)) {
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
-                if (EXAMPLE6.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ?
-                            "<parameter:org.e2immu.analyser.testexample.Modification_6.add6(Modification_6,Set<String>):0:example6>" :
-                            "nullable? instance type Modification_6";
+                } else if (d.variable() instanceof ParameterInfo p && "example6".equals(p.name)) {
+                    String expectValue = d.iteration() == 0 ? "<p:example6>"
+                            : "nullable instance type Modification_6/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
-                }
-                if (EXAMPLE6_SET6.equals(d.variableName())) {
-                    if (d.iteration() > 0)
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
-                }
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+
+                } else if ("org.e2immu.analyser.testexample.Modification_6.set6#example6".equals(d.variableName())) {
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertEquals("example6.set6:0", d.variableInfo().getLinkedVariables().toString());
+
+                } else fail("? " + d.variableName());
             }
             if ("Modification_6".equals(d.methodInfo().name)) {
-                if (SET6.equals(d.variableName()) && "0".equals(d.statementId()) && d.iteration() == 3) {
-                    assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+                if (d.variable() instanceof FieldReference fr && "set6".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertEquals("in6:0,this.set6:0", d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int iteration = d.iteration();
             String name = d.fieldInfo().name;
             if (name.equals("set6")) {
 
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
 
                 assertEquals("in6", d.fieldAnalysis().getValue().toString());
+                // in FieldAnalyserImpl.analyseLinked we block all links to field references
+                // that go to the same fieldInfo, disallowing example6.set6:0
                 assertEquals("in6:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                if (iteration >= 1) {
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                    assertDv(d, 0, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                }
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -123,11 +119,12 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     .getProperty(Property.NOT_NULL_PARAMETER));
         };
 
-        testClass("Modification_6", 0, 0, new DebugConfiguration.Builder()
+        // WARN in Field org.e2immu.analyser.testexample.Modification_6.set6 (line 27, pos 5): At least one field initialization is in conflict with @NotNull requirements
+        testClass("Modification_6", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 }
