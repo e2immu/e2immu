@@ -32,8 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_20 extends CommonTestRunner {
     public Test_00_Basics_20() {
@@ -158,8 +157,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
             if ("list".equals(d.fieldInfo().name) && "C1".equals(d.fieldInfo().owner.simpleName)) {
                 assertEquals(expected, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
 
-                assertEquals(expectNotNull,
-                        null != d.haveError(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
+                assertNull(d.haveError(Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
             }
         };
     }
@@ -205,8 +203,8 @@ public class Test_00_Basics_20 extends CommonTestRunner {
     // if we compute @NotNull over all methods, field C1.list will be @NotNull; alternatively, it will be
     // @Nullable. This is now a configuration change, which, by default, is "false"
 
-    private void runTest(boolean expectNotNull) throws IOException {
-        testClass("Basics_20", 0, 2, new DebugConfiguration.Builder()
+    private void runTest(boolean expectNotNull, int warnings) throws IOException {
+        testClass("Basics_20", 0, warnings, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(createSavv(expectNotNull))
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
@@ -219,13 +217,12 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
     @Test
     public void test_20_1() throws IOException {
-        // expect 2 warnings for field initialization in conflict with @NotNull
-        runTest(true);
+        runTest(true, 0);
     }
 
     @Test
     public void test_20_2() throws IOException {
         // expect 2 potential null pointer warnings
-        runTest(false);
+        runTest(false, 2);
     }
 }

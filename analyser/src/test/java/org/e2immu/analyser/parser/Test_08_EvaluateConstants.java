@@ -180,7 +180,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("e".equals(d.fieldInfo().name)) {
-                assertEquals("e:0", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

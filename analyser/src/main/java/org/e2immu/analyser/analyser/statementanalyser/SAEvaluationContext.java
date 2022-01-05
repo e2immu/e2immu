@@ -227,21 +227,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 boolean cmNn = notNullAccordingToConditionManager(variable);
                 return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV);
             }
-
-            if (property == IMMUTABLE) {
-                DV formally = getAnalyserContext().defaultImmutable(variable.parameterizedType(), false);
-                if (formally.equals(IMMUTABLE.bestDv)) return formally; // EFFECTIVELY_E2, for primitives etc.
-                if (isMyself(variable.parameterizedType())) return MultiLevel.MUTABLE_DV;
-                DV formallyInMap = formally.max(inMap);
-                if (formallyInMap.isDelayed()) {
-                    return formally;
-                }
-                DV cImm = getVariableProperty(variable, CONTEXT_IMMUTABLE, duringEvaluation);
-                if (cImm.isDelayed()) {
-                    return cImm;
-                }
-                return cImm.max(formallyInMap);
-            }
             return inMap;
         }
 

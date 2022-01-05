@@ -119,8 +119,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     .getProperty(Property.NOT_NULL_PARAMETER));
         };
 
-        // WARN in Field org.e2immu.analyser.testexample.Modification_6.set6 (line 27, pos 5): At least one field initialization is in conflict with @NotNull requirements
-        testClass("Modification_6", 0, 1, new DebugConfiguration.Builder()
+        testClass("Modification_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

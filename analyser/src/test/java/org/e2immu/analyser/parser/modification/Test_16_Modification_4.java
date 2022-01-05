@@ -124,8 +124,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
         };
 
         // we've set the "compute context properties over all methods" to true
-        //  WARN in Field org.e2immu.analyser.testexample.Modification_4.set4 (line 40, pos 5): At least one field initialization is in conflict with @NotNull requirements
-        testClass("Modification_4", 0, 1, new DebugConfiguration.Builder()
+        testClass("Modification_4", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

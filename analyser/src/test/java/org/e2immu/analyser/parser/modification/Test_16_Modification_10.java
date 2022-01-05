@@ -30,7 +30,8 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_16_Modification_10 extends CommonTestRunner {
 
@@ -51,23 +52,30 @@ public class Test_16_Modification_10 extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            int iteration = d.iteration();
-
             if ("Modification_10".equals(d.methodInfo().name)) {
                 ParameterAnalysis list = d.parameterAnalyses().get(0);
-                ParameterAnalysis set3 = d.parameterAnalyses().get(1);
 
-                if (iteration == 0) {
-                    assertFalse(list.isAssignedToFieldDelaysResolved());
-                } else {
-                    assertTrue(list.isAssignedToFieldDelaysResolved());
-                    assertEquals("c0=1, c1=2, l0=100, l1=100, l2=100, s0=100, s1=100", list.getAssignedToField()
-                            .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
-                }
-                if (iteration >= 2) {
-                    assertEquals(DV.FALSE_DV, list.getProperty(Property.MODIFIED_VARIABLE));
-                    assertFalse(set3.getAssignedToField().isEmpty());
-                }
+                String assigned = switch (d.iteration()) {
+                    case 0 -> "";
+                    case 1 -> "c0=assigned:1, s0=no:100, s1=no:100";
+                    default -> "c0=assigned:1, c1=dependent:2, l0=no:100, l1=no:100, l2=no:100, s0=no:100, s1=no:100";
+                };
+                assertEquals(assigned, list.getAssignedToField().entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
+
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
+                assertEquals(d.iteration() >= 2, list.isAssignedToFieldDelaysResolved());
+
+                ParameterAnalysis set3 = d.parameterAnalyses().get(1);
+                String assigned3 = switch (d.iteration()) {
+                    case 0 -> "";
+                    case 1 -> "c0=no:100, s0=assigned:1, s1=no:100";
+                    default -> "c0=no:100, c1=no:100, l0=no:100, l1=no:100, l2=no:100, s0=assigned:1, s1=no:100";
+                };
+                assertEquals(assigned3, set3.getAssignedToField().entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
+                assertEquals(d.iteration() >= 2, set3.isAssignedToFieldDelaysResolved());
             }
         };
 

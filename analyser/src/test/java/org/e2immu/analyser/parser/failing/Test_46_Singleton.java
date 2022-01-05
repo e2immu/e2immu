@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.failing;
 
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -145,7 +146,7 @@ public class Test_46_Singleton extends CommonTestRunner {
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
                 assertEquals("[false, false]", builder.getValues().stream()
-                        .map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList().toString());
+                        .map(ValueAndPropertyProxy::getValue).toList().toString());
             }
         };
 

@@ -131,9 +131,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 1
-                            ? "<vp:org.e2immu.analyser.testexample.Basics_18.A:immutable@Record_A>" : "a";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("a", d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 }
             }

@@ -22,14 +22,12 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.VariableFirstThen;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -99,16 +97,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public FieldInfo getFieldInfo() {
         return fieldInfo;
-    }
-
-    public interface ValueAndPropertyProxy {
-        Expression getValue();
-
-        DV getProperty(Property property);
-
-        LinkedVariables getLinkedVariables();
-
-        Comparator<ValueAndPropertyProxy> COMPARATOR = (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
     }
 
     @Override

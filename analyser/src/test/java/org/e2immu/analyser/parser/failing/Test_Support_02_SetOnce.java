@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
@@ -63,7 +64,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 String expectValues = d.iteration() == 0 ? "[null, <s:T>]" : "[null, t]";
                 assertEquals(expectValues,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
-                                .map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList().toString());
+                                .map(ValueAndPropertyProxy::getValue).toList().toString());
 
                 assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));

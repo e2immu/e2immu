@@ -26,6 +26,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -379,19 +380,42 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
         assert fieldAnalysis.getValues().size() > 0;
 
-        DV worstOverValues = fieldAnalysis.getValues().stream()
-                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
-                .reduce(DV.MAX_INT_DV, DV::min);
-        assert worstOverValues != DV.MAX_INT_DV;
+        DV worstOverValues = computeWorstNotNullOverValues(computeContextPropertiesOverAllMethods, bestOverContext);
 
-        if (computeContextPropertiesOverAllMethods && worstOverValues.lt(bestOverContext)) {
-            // see Basics_2b; we need the setter to run before the add-method can be called
-            Message message = Message.newMessage(fieldAnalysis.location(), Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
-            messages.add(message);
-        }
         DV finalNotNullValue = worstOverValues.max(bestOverContext);
         fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, finalNotNullValue);
         return AnalysisStatus.of(finalNotNullValue.causesOfDelay());
+    }
+
+    private DV computeWorstNotNullOverValues(boolean computeContextPropertiesOverAllMethods, DV bestOverContext) {
+        DV worstOverValuesUnfiltered = fieldAnalysis.getValues().stream()
+                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                .reduce(DV.MAX_INT_DV, DV::min);
+
+        DV worstOverValues;
+        if (computeContextPropertiesOverAllMethods) {
+            DV worst = fieldAnalysis.getValues().stream()
+                    .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION)
+                    .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                    .reduce(DV.MAX_INT_DV, DV::min);
+            if (worst != DV.MAX_INT_DV) {
+                worstOverValues = worst;
+                if (worstOverValues.lt(bestOverContext)) {
+                    // see Basics_2b; we need the setter to run before the add-method can be called
+                    // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
+                    Message message = Message.newMessage(fieldAnalysis.location(),
+                            Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
+                    messages.add(message);
+                }
+            } else {
+                worstOverValues = worstOverValuesUnfiltered;
+            }
+        } else {
+            // no filtering, there must be at least one value
+            worstOverValues = worstOverValuesUnfiltered;
+            assert worstOverValues != DV.MAX_INT_DV;
+        }
+        return worstOverValues;
     }
 
     private AnalysisStatus fieldErrors() {
@@ -593,7 +617,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     // NOTE: we're also considering non-private methods here, like setters: IS THIS WISE?
 
-    private OccursAndDelay occursInAllConstructors(List<FieldAnalysisImpl.ValueAndPropertyProxy> values,
+    private OccursAndDelay occursInAllConstructors(List<ValueAndPropertyProxy> values,
                                                    boolean ignorePrivateConstructors) {
         boolean occurs = true;
         CausesOfDelay delays = CausesOfDelay.EMPTY;
@@ -601,39 +625,25 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
             DV finalizer = methodAnalyser.getMethodAnalysis().getProperty(Property.FINALIZER);
             assert finalizer.isDone();
+            MethodInfo methodInfo = methodAnalyser.getMethodInfo();
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
-                    methodAnalyser.getMethodInfo().isConstructor && !ignorePrivateConstructors)) {
+                    methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
                     Expression expression = vi.getValue();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
                             && ve.variable() instanceof LocalVariableReference) {
-                        throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
+                        throw new UnsupportedOperationException("Method " + methodInfo.fullyQualifiedName + ": " +
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
-                    values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
-                        @Override
-                        public Expression getValue() {
-                            return vi.getValue();
-                        }
-
-                        @Override
-                        public DV getProperty(Property property) {
-                            return vi.getProperty(property);
-                        }
-
-                        @Override
-                        public LinkedVariables getLinkedVariables() {
-                            return vi.getLinkedVariables();
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "ALL_CONSTR:" + getValue().toString();
-                        }
-                    });
-                    if (!fieldInspection.isStatic() && methodAnalyser.getMethodInfo().isConstructor) {
+                    ValueAndPropertyProxy.Origin origin = methodInfo.methodResolution.get().partOfConstruction()
+                            == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
+                            ? ValueAndPropertyProxy.Origin.CONSTRUCTION : ValueAndPropertyProxy.Origin.METHOD;
+                    ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo proxy =
+                            new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
+                    values.add(proxy);
+                    if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
                         // we'll warn for the combination of field initializer, and occurrence in at least one constructor
                         occurrenceCountForError++;
                     }
@@ -644,7 +654,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         delays = delays.merge(vi.getValue().causesOfDelay());
                     }
                 }
-                if (!added && methodAnalyser.getMethodInfo().isConstructor) {
+                if (!added && methodInfo.isConstructor) {
                     occurs = false;
                 }
             }
@@ -652,9 +662,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return new OccursAndDelay(occurs, occurrenceCountForError, delays);
     }
 
-    private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<FieldAnalysisImpl.ValueAndPropertyProxy> values) {
+    private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<ValueAndPropertyProxy> values) {
         CausesOfDelay delays = CausesOfDelay.EMPTY;
-        FieldAnalysisImpl.ValueAndPropertyProxy latestBlock = null;
+        ValueAndPropertyProxy latestBlock = null;
         for (MethodAnalyser methodAnalyser : staticBlocks) {
             for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                 if (vi.isAssigned()) {
@@ -665,27 +675,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                         throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
                                 fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
-                    latestBlock = new FieldAnalysisImpl.ValueAndPropertyProxy() {
-                        @Override
-                        public Expression getValue() {
-                            return vi.getValue();
-                        }
-
-                        @Override
-                        public DV getProperty(Property property) {
-                            return vi.getProperty(property);
-                        }
-
-                        @Override
-                        public LinkedVariables getLinkedVariables() {
-                            return vi.getLinkedVariables();
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "STATIC_BLOCK:" + getValue().toString();
-                        }
-                    };
+                    latestBlock = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo
+                            (vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
                     delays = delays.merge(vi.getValue().causesOfDelay());
                 }
             }
@@ -702,13 +693,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private AnalysisStatus analyseValues() {
         assert fieldAnalysis.valuesStatus().isDelayed();
-        List<FieldAnalysisImpl.ValueAndPropertyProxy> values = new ArrayList<>();
+        List<ValueAndPropertyProxy> values = new ArrayList<>();
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         if (haveInitialiser) {
             delays = fieldAnalysis.getInitializerValue().causesOfDelay();
             EvaluationContext ec = new EvaluationContextImpl(0,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
-            values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
+            values.add(new ValueAndPropertyProxy() {
                 @Override
                 public Expression getValue() {
                     return fieldAnalysis.getInitializerValue();
@@ -722,6 +713,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 @Override
                 public DV getProperty(Property property) {
                     return ec.getProperty(getValue(), property, false, false);
+                }
+
+                @Override
+                public Origin getOrigin() {
+                    return Origin.INITIALISER;
                 }
 
                 @Override
@@ -765,7 +761,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
                     fieldInfo.type.bestTypeInfo());
-            values.add(0, new FieldAnalysisImpl.ValueAndPropertyProxy() {
+            values.add(0, new ValueAndPropertyProxy() {
                 @Override
                 public Expression getValue() {
                     return nullValue;
@@ -782,13 +778,18 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 }
 
                 @Override
+                public Origin getOrigin() {
+                    return Origin.EMPTY_INITIALISER;
+                }
+
+                @Override
                 public String toString() {
                     return "NO_INIT:" + getValue().toString();
                 }
             });
         }
         // order does not matter for this class, but is handy for testing
-        values.sort(FieldAnalysisImpl.ValueAndPropertyProxy.COMPARATOR);
+        values.sort(ValueAndPropertyProxy.COMPARATOR);
         fieldAnalysis.setValues(values, delays);
         return AnalysisStatus.of(delays);
     }
@@ -820,18 +821,18 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     fieldAnalysis.valuesStatus()));
             return valuesStatus;
         }
-        List<FieldAnalysisImpl.ValueAndPropertyProxy> values = fieldAnalysis.getValues();
+        List<ValueAndPropertyProxy> values = fieldAnalysis.getValues();
 
 
         // compute and set the combined value
         Expression effectivelyFinalValue;
 
         // suppose there are 2 constructors, and the field gets exactly the same value...
-        List<Expression> expressions = values.stream().map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList();
+        List<Expression> expressions = values.stream().map(ValueAndPropertyProxy::getValue).toList();
         Set<Expression> set = new HashSet<>(expressions);
 
         if (set.size() == 1) {
-            FieldAnalysisImpl.ValueAndPropertyProxy proxy = values.get(0);
+            ValueAndPropertyProxy proxy = values.get(0);
             Expression expression = proxy.getValue();
             ConstructorCall constructorCall;
             if ((constructorCall = expression.asInstanceOf(ConstructorCall.class)) != null && constructorCall.constructor() != null) {
