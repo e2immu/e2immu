@@ -48,32 +48,32 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
     @Test
     public void test19() throws IOException {
-        final int LIMIT = 3;
+        final int LIMIT = 4;
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, LIMIT, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("c".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = "nullable instance type Set<String>";
+                        String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "container@Class_C1;immutable@Class_C1;independent@Class_C1";
-                            case 1 -> "assign_to_field@Parameter_setC;initial:this.set@Method_size_0;link:this.set@Method_size_0";
-                            case 2 -> "immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
-                            default -> "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                            case 1 -> "assign_to_field@Parameter_setC;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
+                            case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                            default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                         };
                         assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
                             case 0 -> "immutable@Class_C1;independent@Parameter_setC";
-                            case 1 -> "initial:this.set@Method_size_0;link:this.set@Method_size_0";
-                            default -> "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                            case 1 -> "cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
+                            default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                         };
-                        assertLinked(d, LIMIT, linkDelay, "this.s2");
+                        assertLinked(d, 3, linkDelay, "c:0,this.s2:2");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "c".equals(fr.scope.toString())) {
@@ -83,9 +83,9 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                         // delays in iteration 1, because no value yet
                         String expectedDelay = d.iteration() == 0
-                                ? "immutable@Class_C1;independent@Parameter_setC;link:this.s2@Method_example1_2"
-                                : "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
-                        assertDv(d, expectedDelay, LIMIT, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                                ? "cm:c.set@Method_example1_2;immutable@Class_C1;independent@Parameter_setC;link:this.s2@Method_example1_2"
+                                : "cm:c.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                        assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -94,7 +94,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:set>" : "nullable instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    String expectedDelay = "initial:this.set@Method_size_0;link:this.set@Method_size_0";
+                    String expectedDelay = "cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
                     assertDv(d, expectedDelay, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
@@ -103,7 +103,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("C1".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().isConstructor);
                 String expectedDelay = d.iteration() == 0 ? "cm@Parameter_setC;mom@Parameter_setC" : "mom@Parameter_setC";
-                assertDv(d.p(0), expectedDelay, LIMIT, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), expectedDelay, 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
 
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 String expectAssigned = d.iteration() == 0 ? "[]" : "[set]";
@@ -115,7 +115,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("size".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectedDelay = "initial:this.set@Method_size_0;link:this.set@Method_size_0";
+                String expectedDelay = "cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
                 assertDv(d, expectedDelay, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
@@ -129,9 +129,9 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 String expectedDelay = d.iteration() == 0
-                        ? "immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0"
-                        : "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
-                assertDv(d, expectedDelay, LIMIT, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        ? "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0"
+                        : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -139,20 +139,20 @@ public class Test_16_Modification_19 extends CommonTestRunner {
             if ("C1".equals(d.typeInfo().simpleName)) {
                 assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
                 String expectedDelay = d.iteration() == 0
-                        ? "initial:this.set@Method_size_0;link:this.set@Method_size_0"
-                        : "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
-                assertDv(d, expectedDelay, LIMIT, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        ? "cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0"
+                        : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                assertDv(d, expectedDelay, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
                 String expectContainerDelay = switch (d.iteration()) {
                     case 0 -> "assign_to_field@Parameter_setC";
-                    case 1 -> "immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
-                    default -> "initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                    case 1 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                    default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                 };
-                assertDv(d, expectContainerDelay, LIMIT, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, expectContainerDelay, 3, DV.FALSE_DV, Property.CONTAINER);
             }
         };
 
-        testClass("Modification_19", 0, 0, new DebugConfiguration.Builder()
+        testClass("Modification_19", 0, 2, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

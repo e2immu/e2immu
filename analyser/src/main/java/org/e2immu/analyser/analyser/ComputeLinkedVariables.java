@@ -164,9 +164,11 @@ public class ComputeLinkedVariables {
         /* context modified needs all linking to be done */
         if (Property.CONTEXT_MODIFIED == property) {
             if (delaysInClustering.isDelayed()) {
-                DV delay = delaysInClustering.causesOfDelay();
+                // a delay on clustering can be caused by a delay on the value to be linked
+                // replace @CM values by those delays
+
                 Map<Variable, DV> delayedValues = propertyValues.entrySet().stream()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> delay));
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> specificCMDelay(e.getKey(), e.getValue())));
                 return writeProperty(clustersDependent, property, delayedValues);
             }
             return writeProperty(clustersDependent, property, propertyValues);
@@ -178,6 +180,15 @@ public class ComputeLinkedVariables {
             LOGGER.error("Clusters assigned are: {}", clustersStaticallyAssigned);
             throw ise;
         }
+    }
+
+    private DV specificCMDelay(Variable variable, DV originalValue) {
+        CausesOfDelay specificDelay = new SimpleSet(new VariableCause(variable, statementAnalysis.location(), CauseOfDelay.Cause.CONTEXT_MODIFIED));
+        if(delaysInClustering.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.CONTEXT_MODIFIED &&
+               c instanceof VariableCause vc && vc.variable().equals(variable))) {
+            return originalValue;
+        }
+        return delaysInClustering.causesOfDelay().merge(specificDelay);
     }
 
     private CausesOfDelay writeProperty(List<List<Variable>> clusters,
