@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -28,12 +31,11 @@ import java.util.stream.Stream;
 @E1Immutable
 public class Modification_7 {
 
-    @NotNull
     @Modified
     @Final
     private Set<String> set;
 
-    public Modification_7(@NotNull @Modified Set<String> input) {
+    public Modification_7(@Modified Set<String> input) {
         set = input;
     }
 
@@ -49,6 +51,7 @@ public class Modification_7 {
 
     @Modified
     public void add(String s) {
-        set.add(s);
+        if (set != null)
+            set.add(s);
     }
 }

@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -39,19 +40,10 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
     @Test
     public void test9() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Modification_9";
-        final String S2 = TYPE + ".s2";
-        final String ADD = TYPE + ".add(String)";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
-                }
-                if ("2".equals(d.statementId())) {
-                    assertEquals(d.iteration() >= 1,
-                            d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
-                }
+                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
@@ -67,16 +59,15 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "instance type HashSet<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:0" : "theSet:0,this.s2:0";
+                        String expectLv = "theSet:0,this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if (S2.equals(d.variableName())) {
-                    if (d.iteration() > 0) {
-                        assertEquals("theSet:0,this.s2:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                    if (("2".equals(d.statementId()) || "3".equals(d.statementId())) && d.iteration() > 1) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                    assertEquals("theSet:0,this.s2:0", d.variableInfo().getLinkedVariables().toString());
+
+                    if (("2".equals(d.statementId()) || "3".equals(d.statementId()))) {
                         assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
                     if ("3".equals(d.statementId())) {
@@ -87,7 +78,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (ADD.equals(d.methodInfo().fullyQualifiedName) && d.iteration() > 1) {
+            if ("add".equals(d.methodInfo().fullyQualifiedName)) {
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };

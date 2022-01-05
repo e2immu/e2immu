@@ -47,7 +47,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test7() throws IOException {
-        testClass("Modification_7", 0, 0, new DebugConfiguration.Builder()
+        //WARN in Method org.e2immu.analyser.testexample.Modification_7.stream() (line 44, pos 9): Potential null pointer exception: Variable: set
+        testClass("Modification_7", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
