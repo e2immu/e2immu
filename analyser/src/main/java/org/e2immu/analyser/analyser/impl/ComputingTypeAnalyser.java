@@ -334,7 +334,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     typeAnalyser.analyseTransparentTypes();
                 }
                 CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
-                if (delays2.isDelayed()) {
+                if (delays2.isDone()) {
                     explicitTypesFromParent = typeAnalysis.getExplicitTypes(analyserContext);
                 } else {
                     log(DELAYED, "Wait for hidden content types to arrive {}, parent {}", typeInfo.fullyQualifiedName,

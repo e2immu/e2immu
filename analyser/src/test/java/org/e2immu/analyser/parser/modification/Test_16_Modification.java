@@ -14,28 +14,23 @@
 
 package org.e2immu.analyser.parser.modification;
 
-import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.*;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -147,13 +142,10 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_15".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertTrue(d.iteration() < 2 || "1".equals(d.statementId()));
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                         assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                         assertDv(d, 0, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
-
                 } else if (d.variable() instanceof FieldReference fr && "input".equals(fr.fieldInfo.name)) {
                     assertEquals("1", d.statementId());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
@@ -169,7 +161,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_15".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()

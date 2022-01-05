@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -42,9 +43,9 @@ public class Test_16_Modification_5 extends CommonTestRunner {
                     "in5".equals(p.name) && "0".equals(d.statementId())) {
                 assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
             }
-            if ("Modification_5".equals(d.methodInfo().name) &&
-                    "org.e2immu.analyser.testexample.Modification_5.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
-                assertDv(d, 3, DV.TRUE_DV, Property.FINAL);
+            if ("Modification_5".equals(d.methodInfo().name)
+                    && d.variable() instanceof FieldReference fr && "set5".equals(fr.fieldInfo.name)
+                    && "0".equals(d.statementId())) {
                 String expectValue = "new HashSet<>(in5)/*this.size()==in5.size()*/";
                 assertEquals(expectValue, d.currentValue().toString());
             }
@@ -58,6 +59,7 @@ public class Test_16_Modification_5 extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set5".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.TRUE_DV, Property.FINAL);
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };

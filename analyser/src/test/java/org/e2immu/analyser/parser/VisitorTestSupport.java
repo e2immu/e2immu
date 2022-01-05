@@ -72,6 +72,7 @@ public abstract class VisitorTestSupport {
         } else {
             assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     public void assertDv(CommonVisitorData d, int delayedBeforeIteration, DV expect, Property property) {
@@ -82,6 +83,7 @@ public abstract class VisitorTestSupport {
         } else {
             assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     public void assertDv(CommonVisitorData d, String delayed, int delayedBeforeIteration, DV expect, Property property) {
@@ -92,6 +94,7 @@ public abstract class VisitorTestSupport {
         } else {
             assertEquals(expect, value, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     public void assertDv(StatementAnalyserVisitor.Data d, int delayedBeforeIteration, DV expect, DV actual) {
@@ -101,6 +104,7 @@ public abstract class VisitorTestSupport {
         } else {
             assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + actual);
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     public void assertDv(StatementAnalyserVisitor.Data d, int delayedBeforeIteration, AnalysisStatus expect, AnalysisStatus actual) {
@@ -110,6 +114,7 @@ public abstract class VisitorTestSupport {
         } else {
             assertEquals(expect, actual, "Expected " + expect + " from iteration " + d.iteration() + ">=" + delayedBeforeIteration + ", but got " + actual);
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     public void assertCurrentValue(StatementAnalyserVariableVisitor.Data d, int delayedBeforeIteration, String causesOfDelay, String value) {
@@ -121,6 +126,7 @@ public abstract class VisitorTestSupport {
                     .causesOfDelay() + " for variable " + d.variableName());
             assertEquals(value, d.currentValue().toString());
         }
+        mustSeeIteration(d, delayedBeforeIteration);
     }
 
     /*

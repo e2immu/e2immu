@@ -97,13 +97,8 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else fail();
                 } else fail();
-                if (d.iteration() == 0) {
-                    assertFalse(d.statementAnalysis().stateData().preconditionIsFinal());
-                    assertFalse(d.statementAnalysis().stateData().preconditionIsEmpty());
-                } else {
-                    assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
-                    assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
-                }
+                assertTrue(d.statementAnalysis().stateData().preconditionIsFinal());
+                assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
             }
         };
 
@@ -113,7 +108,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
@@ -124,11 +119,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
             if ("clearAndLog".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPrecondition());
-                } else {
-                    assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
-                }
+                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
 
