@@ -365,7 +365,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
                         m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
-                .peek(m -> LOGGER.info("Considering " + m.getMethodInfo().fullyQualifiedName))
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
@@ -1058,6 +1057,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV contract = fieldAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contract.isDone()) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contract);
+            log(MODIFICATION, "Field {} is modified? Contract: {}", fqn, contract);
             return DONE;
         }
         assert fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD).isDelayed();
@@ -1096,6 +1096,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
+        fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contextModifications);
+        log(DELAYED, "Field @Modified delayed because of {}", contextModifications);
         return contextModifications;
     }
 

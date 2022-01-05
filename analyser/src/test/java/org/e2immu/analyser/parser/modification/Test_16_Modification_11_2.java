@@ -72,7 +72,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     };
                     assertEquals(expect, d.currentValue().toString());
                     String expectDelay = switch (d.iteration()) {
-                        case 0 -> "initial:this.set@NOT_YET_SET";
+                        case 0 -> "initial:this.set@Method_getSet_0";
                         case 1 -> "ext_nn@Field_set";
                         default -> "";
                     };

@@ -71,7 +71,6 @@ public class Test_05_Final extends CommonTestRunner {
 
                         // p4 never came in a not-null context
                         assertTrue(d.variableInfo().isRead());
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
                     } else fail();
                 }
             }

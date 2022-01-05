@@ -146,7 +146,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {
-            return new SimpleSet(new SimpleCause(fieldInfo, CauseOfDelay.Cause.INITIAL_VALUE));
+            return fieldInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }
 
         @Override

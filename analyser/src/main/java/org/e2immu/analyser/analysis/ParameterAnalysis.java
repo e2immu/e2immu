@@ -37,8 +37,13 @@ public interface ParameterAnalysis extends Analysis {
         return null;
     }
 
+    default CausesOfDelay assignedToFieldDelays() {
+        return CausesOfDelay.EMPTY;
+    }
+
     default boolean isAssignedToFieldDelaysResolved() {
-        return true;
+        CausesOfDelay causesOfDelay = assignedToFieldDelays();
+        return causesOfDelay != null && causesOfDelay.isDone();
     }
 
     default DV getParameterProperty(AnalysisProvider analysisProvider,

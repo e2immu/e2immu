@@ -212,8 +212,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             TypeInfo typeInfo = parameterInfo.parameterizedType.typeInfo;
             if (typeInfo != null && typeInfo.isFinal(analyserContext)) {
                 DV formal = analyserContext.defaultContainer(parameterInfo.parameterizedType);
+                parameterAnalysis.setProperty(CONTAINER, formal);
                 if (formal.isDone()) {
-                    parameterAnalysis.setProperty(CONTAINER, formal);
                     return DONE;
                 }
                 return formal.causesOfDelay();
@@ -262,11 +262,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private AnalysisStatus analyseFieldAssignments(SharedState sharedState) {
         boolean changed = false;
 
-        // no point, we need to have seen the statement+field analysers first.
-        if (sharedState.iteration == 0) {
-            return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
-        }
         if (!parameterAnalysis.assignedToFieldIsFrozen()) {
+            // no point, we need to have seen the statement+field analysers first.
+            if (sharedState.iteration == 0) {
+                CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+                parameterAnalysis.setCausesOfAssignedToFieldDelays(delay);
+                return delay;
+            }
+
             StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                     .getLastStatement();
             Set<FieldInfo> fieldsAssignedInThisMethod =
@@ -371,6 +374,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE);
 
         if (delays.isDelayed()) {
+            parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
             return delays.addProgress(changed);
         }
 

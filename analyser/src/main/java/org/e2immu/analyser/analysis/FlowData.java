@@ -60,7 +60,7 @@ public class FlowData {
     public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
 
     public FlowData(Location location) {
-        CausesOfDelay initialDelay = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_VALUE);
+        CausesOfDelay initialDelay = new SimpleSet(location, CauseOfDelay.Cause.INITIAL_FLOW_VALUE);
         guaranteedToBeReachedInCurrentBlock = new VariableFirstThen<>(initialDelay);
         guaranteedToBeReachedInMethod = new VariableFirstThen<>(initialDelay);
         interruptsFlow = new VariableFirstThen<>(initialDelay);

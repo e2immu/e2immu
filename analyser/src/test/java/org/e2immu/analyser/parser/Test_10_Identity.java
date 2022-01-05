@@ -88,8 +88,6 @@ public class Test_10_Identity extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("return idem:0,s:0", d.variableInfo().getLinkedVariables().toString());
-
-                    assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_PARAMETER);
                 } else fail();
             }
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ReturnVariable) {

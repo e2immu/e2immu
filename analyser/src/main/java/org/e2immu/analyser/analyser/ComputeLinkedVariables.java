@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /*
 Goal:
@@ -163,7 +164,10 @@ public class ComputeLinkedVariables {
         /* context modified needs all linking to be done */
         if (Property.CONTEXT_MODIFIED == property) {
             if (delaysInClustering.isDelayed()) {
-                return delaysInClustering;
+                DV delay = delaysInClustering.causesOfDelay();
+                Map<Variable, DV> delayedValues = propertyValues.entrySet().stream()
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> delay));
+                return writeProperty(clustersDependent, property, delayedValues);
             }
             return writeProperty(clustersDependent, property, propertyValues);
         }

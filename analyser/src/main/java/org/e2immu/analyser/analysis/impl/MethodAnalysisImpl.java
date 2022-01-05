@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -253,7 +251,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private static CausesOfDelay initialDelay(MethodInfo methodInfo) {
-            return new SimpleSet(new SimpleCause(methodInfo, CauseOfDelay.Cause.INITIAL_VALUE));
+            return methodInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
         }
 
         @Override
@@ -288,7 +286,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Expression getSingleReturnValue() {
             Expression srv = singleReturnValue.getOrDefaultNull();
-            if(srv == null) {
+            if (srv == null) {
                 return DelayedExpression.forMethod(methodInfo, returnType, LinkedVariables.EMPTY,
                         methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
             }

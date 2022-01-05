@@ -46,12 +46,10 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("debug".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                assertDv(d, 2, DV.TRUE_DV, FINAL);
                 String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
-                assertDv(d, 2, DV.TRUE_DV, FINAL);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                 String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
                 assertEquals(expectValue, d.currentValue().toString());

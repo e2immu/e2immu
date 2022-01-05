@@ -66,6 +66,11 @@ public class VariableInfoImpl implements VariableInfo {
         this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
     }
 
+    public VariableInfoImpl(Location location, Variable variable) {
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        assert location != Location.NOT_YET_SET;
+    }
+
     // used by merge code
     private VariableInfoImpl(Location location, Variable variable, AssignmentIds assignmentIds, String readId) {
         this.location = Objects.requireNonNull(location);

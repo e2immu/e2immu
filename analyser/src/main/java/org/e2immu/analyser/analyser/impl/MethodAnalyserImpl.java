@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
@@ -233,9 +234,10 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
     @Override
     public CausesOfDelay fromFieldToParametersStatus() {
-        return parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
-                .map(pa -> (CausesOfDelay) new SimpleSet(pa.getParameterAnalysis().location(),
-                        CauseOfDelay.Cause.ASSIGNED_TO_FIELD))
+        CausesOfDelay delay = parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
+                .map(pa -> pa.getParameterAnalysis().assignedToFieldDelays())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        log(DELAYED, "Field to parameter for {}: {}", methodInfo.fullyQualifiedName, delay);
+        return delay;
     }
 }

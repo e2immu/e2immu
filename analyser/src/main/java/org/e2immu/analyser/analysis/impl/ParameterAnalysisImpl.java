@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
@@ -22,7 +23,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 
 import java.util.Map;
@@ -54,7 +55,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
         private final SetOnceMap<FieldInfo, DV> assignedToField = new SetOnceMap<>();
-        private final FlipSwitch delaysOnFieldsResolved = new FlipSwitch();
+        private final EventuallyFinal<CausesOfDelay> causesOfAssignedToFieldDelays = new EventuallyFinal<>();
         public final Location location;
         private final AnalysisProvider analysisProvider;
 
@@ -70,12 +71,17 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public boolean isAssignedToFieldDelaysResolved() {
-            return delaysOnFieldsResolved.isSet();
+        public CausesOfDelay assignedToFieldDelays() {
+            return causesOfAssignedToFieldDelays.get();
+        }
+
+        public void setCausesOfAssignedToFieldDelays(CausesOfDelay causesOfDelay) {
+            assert causesOfDelay.isDelayed();
+            causesOfAssignedToFieldDelays.setVariable(causesOfDelay);
         }
 
         public void resolveFieldDelays() {
-            if (!delaysOnFieldsResolved.isSet()) delaysOnFieldsResolved.set();
+            if (!causesOfAssignedToFieldDelays.isFinal()) causesOfAssignedToFieldDelays.setFinal(CausesOfDelay.EMPTY);
         }
 
         @Override
@@ -117,7 +123,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.NOT_NULL_PARAMETER));
 
             // @Independent1; @Independent, @Dependent not shown
-            DV independentType = analysisProvider.defaultIndependent( parameterInfo.parameterizedType);
+            DV independentType = analysisProvider.defaultIndependent(parameterInfo.parameterizedType);
             DV independent = getProperty(Property.INDEPENDENT);
             if (independent.equals(MultiLevel.INDEPENDENT_DV) && independentType.lt(MultiLevel.INDEPENDENT_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent, true);

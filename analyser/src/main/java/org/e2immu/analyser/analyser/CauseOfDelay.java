@@ -40,6 +40,7 @@ public interface CauseOfDelay {
         TYPE_ANALYSIS("type_analysis", "Type analysis missing"),
         HIDDEN_CONTENT("transparent", "Hidden content of type has not yet been determined"),
         INITIAL_VALUE("initial", "Not yet initialized"),
+        INITIAL_FLOW_VALUE("initial_flow_value", "Flow not yet initialized"),
         APPROVED_PRECONDITIONS("approved_pc", "Approved preconditions for field"),
         TO_IMPLEMENT("to_implement", "Temporary; needs implementation"),
         FIRST_ITERATION("it0", "Certain actions cannot be done in the first iteration"),

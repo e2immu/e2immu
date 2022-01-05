@@ -553,4 +553,11 @@ public class Test_14_Warnings extends CommonTestRunner {
         testClass("Warnings_12", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+
+    @Test
+    public void test13() throws IOException {
+        testClass("Warnings_13", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

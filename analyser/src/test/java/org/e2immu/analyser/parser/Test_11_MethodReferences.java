@@ -84,7 +84,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
                 if(d.iteration()>0) {
                     assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, immutable);
                 } else {
-                    assertEquals("initial:this.map@NOT_YET_SET", immutable.toString());
+                    assertEquals("initial:this.map@Method_stream_0", immutable.toString());
                 }
             }
         };

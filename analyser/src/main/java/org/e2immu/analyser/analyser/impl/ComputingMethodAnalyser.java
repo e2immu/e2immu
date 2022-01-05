@@ -493,7 +493,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     return value.causesOfDelay();
                 }
                 value = createInlinedMethod(value);
-                if(value.isDelayed()) {
+                if (value.isDelayed()) {
                     return value.causesOfDelay(); // FINAL
                 }
             }
@@ -734,6 +734,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         if (contextModified.isDelayed()) {
             log(DELAYED, "Method {}: Not deciding on @Modified yet: no context modified",
                     methodInfo.distinguishingName());
+            methodAnalysis.setProperty(property, contextModified);
             return contextModified.causesOfDelay();
         }
 

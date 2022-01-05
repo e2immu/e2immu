@@ -303,7 +303,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             assert !(variable instanceof ParameterInfo) :
                     "Parameter " + variable.fullyQualifiedName() + " should be known in " + methodInfo().fullyQualifiedName
                             + ", statement " + statementAnalysis.index();
-            return new VariableInfoImpl(variable); // no value, no state; will be created by a MarkRead
+            return new VariableInfoImpl(getLocation(), variable); // no value, no state; will be created by a MarkRead
         }
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
@@ -313,12 +313,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     LocalVariableReference copy = statementAnalysis.createCopyOfVariableField(fieldReference, vi, statementTime);
                     if (!statementAnalysis.variableIsSet(copy.fullyQualifiedName())) {
                         // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
-                        return new VariableInfoImpl(variable);
+                        return new VariableInfoImpl(getLocation(), variable);
                     }
                     return statementAnalysis.getVariable(copy.fullyQualifiedName()).getPreviousOrInitial();
                 }
                 if (vi.statementTimeDelayed()) {
-                    return new VariableInfoImpl(variable);
+                    return new VariableInfoImpl(getLocation(), variable);
                 }
             }
             if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
@@ -332,7 +332,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     }
                     return vi; // we don't participate in the modification process?
                 }
-                return new VariableInfoImpl(variable); // no value, no state
+                return new VariableInfoImpl(getLocation(), variable); // no value, no state
             }
         } // else we need to go to the variable itself
         return vi;
