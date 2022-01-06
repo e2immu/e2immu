@@ -62,7 +62,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     // via statical assignments
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
 
@@ -75,7 +75,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     String expect = d.iteration() == 0 ? "<f:set4>" : "instance type Set<String>";
                     assertEquals(expect, d.currentValue().toString());
@@ -97,7 +97,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set4")) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
 
                 assertEquals("in4", d.fieldAnalysis().getValue().toString());
@@ -110,7 +110,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Modification_4".equals(name)) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add4".equals(name)) {
                 FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);

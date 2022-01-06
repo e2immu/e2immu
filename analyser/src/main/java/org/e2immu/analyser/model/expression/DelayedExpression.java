@@ -88,6 +88,13 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
 
+    public static Expression forArrayAccessValue(ParameterizedType parameterizedType,
+                                                 LinkedVariables linkedVariables,
+                                                 CausesOfDelay causes) {
+        String msg = brackets("array-access:" + parameterizedType.printSimple());
+        return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
+    }
+
     public static Expression forReplacementObject(ParameterizedType parameterizedType,
                                                   LinkedVariables linkedVariables,
                                                   CausesOfDelay causes) {

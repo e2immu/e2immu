@@ -168,7 +168,7 @@ public class DelayedVariableExpression extends BaseExpression implements Express
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return new LinkedVariables(Map.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV));
+        return new LinkedVariables(Map.of(variable, causesOfDelay));
     }
 
     @Override

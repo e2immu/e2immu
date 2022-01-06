@@ -43,7 +43,11 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                if("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                } else {
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                }
             }
         };
 
@@ -59,16 +63,22 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "instance type HashSet<String>";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = "theSet:0,this.s2:0";
+                        String expectLv = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:0" : "theSet:0,this.s2:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
-                    assertEquals("theSet:0,this.s2:0", d.variableInfo().getLinkedVariables().toString());
+                    String expectLinked;
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        expectLinked = "theSet:0,this.s2:0";
+                    } else {
+                        expectLinked = d.iteration() == 0 ? "s:-1,theSet:0,this.s2:0" : "theSet:0,this.s2:0";
+                    }
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
 
                     if (("2".equals(d.statementId()) || "3".equals(d.statementId()))) {
-                        assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
@@ -85,7 +95,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s2".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

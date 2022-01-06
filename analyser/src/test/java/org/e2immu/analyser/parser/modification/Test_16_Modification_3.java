@@ -98,7 +98,8 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                         assertEquals("instance type HashSet<String>", vi1.getValue().toString());
                         assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
                     }
-                    assertEquals(LINKS_LOCAL3_SET3, d.variableInfo().getLinkedVariables().toString());
+                    String expectedLinks = d.iteration() == 0 ? LINKS_LOCAL3_SET3 + ",v:-1" : LINKS_LOCAL3_SET3;
+                    assertEquals(expectedLinks, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("add3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
@@ -110,17 +111,18 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isRead());
-                    assertEquals(LINKS_LOCAL3_SET3, d.variableInfo().getLinkedVariables().toString());
+                    String expectedLinks = d.iteration() == 0 ? LINKS_LOCAL3_SET3 + ",v:-1" : LINKS_LOCAL3_SET3;
+                    assertEquals(expectedLinks, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                     assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
         };
 
@@ -129,7 +131,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().size());
                 assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getValue().toString());
-                assertDv(d, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 

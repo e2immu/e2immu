@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -158,14 +159,12 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                     outputBuilder.add(Space.ONE);
                 }
                 added = true;
-                String header = linkedVariables.isDelayed() ? "{DL " : "{L ";
-                outputBuilder.add(new Text(header))
-                        .add(linkedVariables.variables().entrySet().stream()
-                                .map(e -> e.getKey().output(qualification)
-                                        .add(Symbol.COLON)
-                                        .add(new Text(e.getValue().toString())))
-                                .collect(OutputBuilder.joining(Symbol.COMMA)))
-                        .add(new Text("}"));
+                String prefix = linkedVariables.isDelayed() ? "{DL " : "{L ";
+                String main = linkedVariables.variables().entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().simpleName()))
+                        .map(e -> e.getKey().simpleName() + ":" + e.getValue().toString())
+                        .collect(Collectors.joining(",", prefix, "}"));
+                outputBuilder.add(new Text(main));
             }
             if (castType != null) {
                 if (added) {

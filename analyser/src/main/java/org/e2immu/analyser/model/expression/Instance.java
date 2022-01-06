@@ -220,12 +220,13 @@ public final class Instance extends BaseExpression implements Expression {
 
         DV merged = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay()
                 .merge(container.causesOfDelay()));
+        DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
+
         if (merged.isDelayed()) {
-            return DelayedExpression.forNewObject(variable.parameterizedType(), notNull,
+            return DelayedExpression.forArrayAccessValue(variable.parameterizedType(),
                     LinkedVariables.sameValue(Stream.concat(Stream.of(variable), array.variables(true).stream()), merged),
                     merged.causesOfDelay());
         }
-        DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
 
         return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL,
                 Map.of(Property.NOT_NULL_EXPRESSION, notNullOfElement,

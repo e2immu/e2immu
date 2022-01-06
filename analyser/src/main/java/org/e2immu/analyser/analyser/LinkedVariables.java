@@ -257,6 +257,12 @@ public class LinkedVariables {
         return new LinkedVariables(map);
     }
 
+    public LinkedVariables changeAllTo(DV value) {
+        Map<Variable, DV> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> value));
+        return new LinkedVariables(map);
+    }
+
     public DV value(Variable variable) {
         return variables.get(variable);
     }

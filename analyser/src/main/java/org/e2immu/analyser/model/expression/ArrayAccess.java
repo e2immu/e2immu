@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -155,11 +156,14 @@ public class ArrayAccess extends BaseExpression implements Expression {
                             MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 }
                 Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
-                if (currentValue.isDelayed()) {
+                if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
                     // we have no value yet
                     Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
                             evaluatedDependentVariable);
-                    LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext);
+                    DV independent = determineIndependentOfArrayBase(evaluationContext, array.value());
+                    LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext)
+                            .changeAllTo(independent)
+                            .merge(LinkedVariables.of(evaluatedDependentVariable, LinkedVariables.ASSIGNED_DV));
                     builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
                     Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
                     builder.setExpression(wrappedObject);
@@ -176,5 +180,32 @@ public class ArrayAccess extends BaseExpression implements Expression {
             builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }
         return builder.build();
+    }
+
+    /*
+    if the array base type is transparent, the independence of the elements in INDEPENDENT_1
+    If the array base type is not E2, we should return DEPENDENT.
+    See DependentVariables_1,_2
+     */
+    private DV determineIndependentOfArrayBase(EvaluationContext evaluationContext, Expression value) {
+        ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
+        TypeInfo bestTypeInfo = arrayBaseType.bestTypeInfo();
+        if (bestTypeInfo != null) {
+            TypeInfo currentType = evaluationContext.getCurrentType();
+            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
+            DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
+            if (partOfHiddenContent.isDelayed()) {
+                return partOfHiddenContent;
+            }
+            if (partOfHiddenContent.valueIsTrue()) {
+                return MultiLevel.INDEPENDENT_1_DV;
+            }
+        }
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(arrayBaseType, false);
+        if (immutable.isDelayed()) {
+            return immutable;
+        }
+        int immutableLevel = MultiLevel.level(immutable);
+        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 }
