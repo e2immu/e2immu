@@ -14,27 +14,24 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
+
 import java.util.HashSet;
 import java.util.Set;
 
 /*
-simplest modification of Modification_11 that causes delay problems.
+Breaking an infinite delay loop; see explanation in Test_16_Modification_2.
 
-1: In example 1, CM van 's2' only when we knew CM of parameter 'setC'
-2: In C1(), 'setC' is modified only when we know if 'set' is modified
-3: In C1, set is modified only when we know that the links have been established in statement 2 of example1,
-   because set is read in that method
-4: Links have not been established in 2, 1, 0, because we do not know the modification status of 's2'
-
-This is an infinite delay.
-
-C1 is not transparent in Modification_20, but Set<String> is transparent in C1
+Set<String> is now transparent in C1; C1 is not transparent in Modification_20.
+addAll is non-modifying as compared to modifying in _19
  */
 public class Modification_20 {
 
     final Set<String> s2 = new HashSet<>();
 
     static class C1 {
+        @Nullable
         final Set<String> set;
 
         C1(Set<String> setC) {
@@ -48,7 +45,7 @@ public class Modification_20 {
         return addAll(c.set, localD.set);
     }
 
-    // non-modifying as compared to modifying in _19
+    @NotModified
     private static boolean addAll(Set<String> c, Set<String> d) {
         return c.size() == d.size();
     }

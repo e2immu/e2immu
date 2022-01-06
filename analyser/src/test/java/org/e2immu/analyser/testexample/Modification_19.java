@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /*
+Breaking an infinite delay loop; see explanation in Test_16_Modification_2.
+
 Here, Set<String> is not transparent in C1, so there is a link between c and s2.
 See Modification_21 where the size() method is not present.
  */

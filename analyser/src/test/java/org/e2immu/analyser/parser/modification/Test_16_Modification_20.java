@@ -32,24 +32,13 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// detailed explanation in Test_16_Modification_19; note the 2 differences compared to that test.
 public class Test_16_Modification_20 extends CommonTestRunner {
 
     public Test_16_Modification_20() {
         super(true);
     }
 
-    /*
-    What do we know, when?
-
-    In iteration 1:
-    - links of fields 'set' and 's2' are established
-    - addAll does not change the parameters
-
-    In iteration 2:
-    - in example1(), 'c.set' and 'd.set' are not modified (CM = FALSE)
-    - in example1(), 'c' has value, linked variables
-
-     */
     @Test
     public void test20() throws IOException {
 
@@ -68,7 +57,12 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             if ("example1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        String expectedDelay = switch (d.iteration()) {
+                            case 0 -> "cm:this@Method_example1_0;immutable@Class_C1;independent@Parameter_setC;link:this.s2@Method_example1_0";
+                            case 1 -> "cm:this@Method_example1_0;initial@Field_set;link:this.s2@Method_example1_0";
+                            default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this@Method_example1_0;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_0;link:this.s2@Method_example1_2";
+                        };
+                        assertDv(d, expectedDelay, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
@@ -80,23 +74,15 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                    String expectValue = d.iteration() <= 1 ? "<f:set>" : "instance type Set<String>";
+                    String expectValue = d.iteration() <= 3 ? "<f:set>" : "nullable instance type Set<String>";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("c".equals(d.variableName())) {
-                    String expectLinked;
-                    String expectValue;
+                    String expectValue = d.iteration() <= 3 ? "<new:C1>" : "new C1(s2)";
+                    String expectLinked = d.iteration() <= 2 ? "c:0,this.s2:-1" : "c:0";
 
-                    if ("2".equals(d.statementId())) {
-                        expectValue = d.iteration() <= 1 ? "<new:C1>" : "new C1(s2)";
-                        expectLinked = d.iteration() <= 1 ? "c:0,this.s2:-1" : "this.s2";
-                    } else {
-                        // "0", "1"...
-                        expectValue = d.iteration() == 0 ? "<new:C1>" : "new C1(s2)";
-                        expectLinked = d.iteration() == 0 ? "c:0,this.s2:-1" : "this.s2";
-                    }
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString(), d.statementId());
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString(), "where? " + d.statementId());
+                    assertEquals(expectValue, d.currentValue().toString(), "where? " + d.statementId());
                 }
             }
         };
@@ -110,14 +96,14 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
             // addAll will not modify its parameters
             if ("addAll".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), "cm@Parameter_c", 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), "cm@Parameter_d", 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                assertLinked(d, 1, "?", "c.set:0,localD.set:0,setC:0");
+                assertLinked(d, 0, "?", "setC:0");
 
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
@@ -153,7 +139,8 @@ public class Test_16_Modification_20 extends CommonTestRunner {
             }
         };
 
-        testClass("Modification_20", 0, 0, new DebugConfiguration.Builder()
+        //WARN in Method org.e2immu.analyser.testexample.Modification_20.example1() (line 43, pos 9): Potential null pointer exception: Variable: set
+        testClass("Modification_20", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

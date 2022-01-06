@@ -20,8 +20,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /*
-Infinite loop is broken, but too harshly.
-Note that 'set' is transparent in C1, but obviously not in Mod21.
+Breaking an infinite delay loop; see explanation in Test_16_Modification_2.
+
+Set<String> is transparent in C1; C1 is not transparent in Modification_20.
+addAll is modifying, as in _19 but not in _20.
  */
 public class Modification_21 {
 

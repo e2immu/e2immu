@@ -206,7 +206,8 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
-        testClass("Modification_21", 0, 0, new DebugConfiguration.Builder()
+        //WARN in Method org.e2immu.analyser.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
+        testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
