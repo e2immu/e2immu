@@ -16,10 +16,10 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -140,7 +140,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 2, "initial@Field_s|ext_nn@Field_s", "nullable instance type String");
+                        assertCurrentValue(d, 2, "initial@Field_s|initial:this.s@Method_setS1_1", "nullable instance type String");
                         assertFalse(d.variableInfo().isAssigned());
                         if (d.iteration() == 0) {
                             assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
@@ -216,7 +216,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
-                    assertCurrentValue(d, 2, "initial@Field_s|ext_nn@Field_s", "nullable instance type String");
+                    assertCurrentValue(d, 2,
+                            "initial@Field_s|initial:this.s@Method_setS1_1",
+                            "nullable instance type String");
 
                     String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
                             : "return getS:0,s$0:1,this.s:0";

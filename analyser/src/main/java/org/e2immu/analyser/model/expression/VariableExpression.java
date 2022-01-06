@@ -216,7 +216,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
                 builder.setExpression(shortCut);
             }
         }
-        return builder.build();
+        return builder.build(forwardEvaluationInfo.isNotAssignmentTarget());
     }
 
     static Expression adjustScope(EvaluationContext evaluationContext,

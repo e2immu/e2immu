@@ -74,14 +74,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
-                if("0".equals(d.statementId())) {
-                    String expectValue = "nullable instance type Set<String>/*@Identity*/";
-                    assertEquals(expectValue, d.currentValue().toString());
-                }
-                if("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<p:p0>" : "nullable instance type Set<String>/*@Identity*/";
-                    assertEquals(expectValue, d.currentValue().toString());
-                }
+                String expectValue = "nullable instance type Set<String>/*@Identity*/";
+                assertEquals(expectValue, d.currentValue().toString());
+
                 assertEquals(NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);

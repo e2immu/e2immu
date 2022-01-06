@@ -55,27 +55,23 @@ public class Test_16_Modification_10 extends CommonTestRunner {
             if ("Modification_10".equals(d.methodInfo().name)) {
                 ParameterAnalysis list = d.parameterAnalyses().get(0);
 
-                String assigned = switch (d.iteration()) {
-                    case 0 -> "";
-                    case 1 -> "c0=assigned:1, s0=no:100, s1=no:100";
-                    default -> "c0=assigned:1, c1=dependent:2, l0=no:100, l1=no:100, l2=no:100, s0=no:100, s1=no:100";
-                };
+                String assigned = d.iteration() == 0 ? ""
+                        : "c0=assigned:1, c1=dependent:2, l0=no:100, l1=no:100, l2=no:100, s0=no:100, s1=no:100";
+
                 assertEquals(assigned, list.getAssignedToField().entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
 
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                assertEquals(d.iteration() >= 2, list.isAssignedToFieldDelaysResolved());
+                assertEquals(d.iteration() >= 1, list.isAssignedToFieldDelaysResolved());
 
                 ParameterAnalysis set3 = d.parameterAnalyses().get(1);
-                String assigned3 = switch (d.iteration()) {
-                    case 0 -> "";
-                    case 1 -> "c0=no:100, s0=assigned:1, s1=no:100";
-                    default -> "c0=no:100, c1=no:100, l0=no:100, l1=no:100, l2=no:100, s0=assigned:1, s1=no:100";
-                };
+                String assigned3 = d.iteration() == 0 ? ""
+                        : "c0=no:100, c1=no:100, l0=no:100, l1=no:100, l2=no:100, s0=assigned:1, s1=no:100";
+
                 assertEquals(assigned3, set3.getAssignedToField().entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
-                assertEquals(d.iteration() >= 2, set3.isAssignedToFieldDelaysResolved());
+                assertEquals(d.iteration() >= 1, set3.isAssignedToFieldDelaysResolved());
             }
         };
 

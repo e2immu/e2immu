@@ -67,23 +67,21 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
 
             // the assignment this.string = string causes a delay of one iteration (as it is a field)
             if ("Basics_17".equals(d.methodInfo().name)) {
-                mustSeeIteration(d, 2);
-
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "string".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
                 }
             }
@@ -93,13 +91,13 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             if ("string".equals(d.fieldInfo().name)) {
                 assertEquals("string", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Basics_17".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
 

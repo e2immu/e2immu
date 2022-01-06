@@ -263,9 +263,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public EvaluationResult build() {
+            return build(true);
+        }
+
+        public EvaluationResult build(boolean includeDelaysOnValue) {
             if (value != null) {
                 valueChanges.values().forEach(cd -> addCausesOfDelay(cd.delays));
-                addCausesOfDelay(value.causesOfDelay());
+                if (includeDelaysOnValue) {
+                    // this is the default; but when assigning to a variable, there is no reason to worry about
+                    // the delays on that value; Container_0
+                    addCausesOfDelay(value.causesOfDelay());
+                }
             }
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
@@ -300,7 +308,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            DV notNullValue = evaluationContext.getProperty(value, Property.NOT_NULL_EXPRESSION, true, false);
+            //DV notNullValue = evaluationContext.getProperty(value, Property.NOT_NULL_EXPRESSION, true, false);
             //  if (notNullValue < notNullRequired) { // also do delayed values
             // so intrinsically we can have null.
             // if context not null is already high enough, don't complain

@@ -100,8 +100,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertEquals("<p:param>", d.currentValue().toString());
                     assertEquals("initial:param@Method_method3_0", d.currentValue().causesOfDelay().toString());
+                    assertNull(d.getProperty(Property.IDENTITY));
                 } else {
                     assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
+                    assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));
                 }
                 if ("0".equals(d.statementId())) {
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);

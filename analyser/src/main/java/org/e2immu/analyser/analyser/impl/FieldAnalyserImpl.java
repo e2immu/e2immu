@@ -339,6 +339,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (isFinal.isDelayed()) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, isFinal);
             return isFinal.causesOfDelay();
         }
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
@@ -370,11 +371,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
         if (bestOverContext.isDelayed()) {
             log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
             return bestOverContext.causesOfDelay();
         }
 
         if (fieldAnalysis.valuesStatus().isDelayed()) {
             log(DELAYED, "Delay @NotNull until all values are known");
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus();
         }
         assert fieldAnalysis.getValues().size() > 0;
@@ -469,6 +472,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV immutable = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IMMUTABLE);
         if (immutable.isDelayed()) {
             log(DELAYED, "Field {} independent delayed: wait for immutable", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(Property.INDEPENDENT, immutable);
             return immutable.causesOfDelay();
         }
         int immutableLevel = MultiLevel.level(immutable);
@@ -483,6 +487,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (staticallyIndependent.isDelayed()) {
             log(DELAYED, "Field {} independent delayed: wait for type independence of {}",
                     fieldInfo.fullyQualifiedName(), fieldInfo.type);
+            fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
             return staticallyIndependent.causesOfDelay();
         }
         fieldAnalysis.setProperty(Property.INDEPENDENT, staticallyIndependent);
@@ -498,6 +503,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV isFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (isFinal.isDelayed()) {
             log(DELAYED, "Delaying @Immutable on {} until we know about @Final", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, isFinal);
             return isFinal.causesOfDelay();
         }
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
@@ -519,6 +525,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();
         if (valuesStatus.isDelayed()) {
             log(DELAYED, "Delaying @Immutable of field {}, non-parameter values not yet known", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, valuesStatus);
             return valuesStatus;
         }
         CausesOfDelay allLinksStatus = fieldAnalysis.allLinksHaveBeenEstablished();
@@ -527,6 +534,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                  occurs in the constructor
                  */
             log(DELAYED, "Delaying @Immutable of field {}, not all links have been established", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, allLinksStatus);
             return allLinksStatus;
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
@@ -536,6 +544,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;
         if (worstOverValues.isDelayed()) {
             log(DELAYED, "Delay @Immutable on {}, waiting for values", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, worstOverValues);
             return worstOverValues.causesOfDelay();
         }
 
@@ -550,6 +559,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     .reduce(MultiLevel.MUTABLE_DV, DV::max);
             if (bestOverContext.isDelayed()) {
                 log(DELAYED, "Delay @Immutable on {}, waiting for context immutable", fqn);
+                fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, bestOverContext);
                 return bestOverContext.causesOfDelay();
             }
             finalImmutable = bestOverContext.max(worstOverValues);
@@ -562,7 +572,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (correctedImmutable.isDelayed()) {
             log(DELAYED, "Delay @Immutable on {}, waiting for exposure to decide on @BeforeMark", fqn);
             // still, we're already marking
-            fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, finalImmutable);
+            fieldAnalysis.setProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE, correctedImmutable);
             return correctedImmutable.causesOfDelay();
         }
         log(IMMUTABLE_LOG, "Set immutable on field {} to value {}", fqn, correctedImmutable);

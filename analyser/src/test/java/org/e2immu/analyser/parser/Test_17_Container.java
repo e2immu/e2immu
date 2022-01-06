@@ -12,16 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_17_Container extends CommonTestRunner {
 
+    public static final String VALUE_OF_P = "nullable instance type Set<String>/*@Identity*/";
+
     public Test_17_Container() {
         super(true);
     }
@@ -41,45 +45,80 @@ public class Test_17_Container extends CommonTestRunner {
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Container_0";
         final String S = TYPE + ".s";
-        final String P = TYPE + ".setS(Set<String>,String):0:p";
         final String S0 = TYPE + ".s$0$0-E";
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setS".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    // not delayed
+                    assertTrue(d.evaluationResult().causesOfDelay().isDone());
+                }
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
+                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
-                if (P.equals(d.variableName()) && "0".equals(d.statementId())) {
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                }
-                if (P.equals(d.variableName())) {
+                if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertTrue(d.variableInfoContainer().isReadInThisStatement());
 
-                        assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertEquals(VALUE_OF_P, d.currentValue().toString());
+
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
-                        assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
+                        assertEquals(VALUE_OF_P, d.currentValue().toString());
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
-                }
-                if (S.equals(d.variableName())) {
+                } else if (d.variable() instanceof ParameterInfo p && "toAdd".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("p", d.currentValue().toString());
+                        assertEquals("nullable instance type String", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:s>" : "instance type Set<String>/*@Identity*/";
+                        String expected = d.iteration() == 0 ? "<p:toAdd>" : "nullable instance type String";
                         assertEquals(expected, d.currentValue().toString());
                     }
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                } else if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                    assertEquals(S, d.variableName());
+
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("p", d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
                     }
-                }
-                if (S0.equals(d.variableName()) && "1".equals(d.statementId())) {
-                    assertTrue(d.iteration() > 0);
-                    assertEquals("p", d.currentValue().toString());
-                }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:s>" : VALUE_OF_P;
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                } else if (S0.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        fail("Local copy of variable field should not exist here");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.iteration() > 0, "Local copy cannot exist in iteration 0");
+                        assertEquals("p", d.currentValue().toString());
+
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                    }
+                } else if (d.variable() instanceof This) {
+                    assertEquals(TYPE + ".this", d.variableName());
+                } else fail("Variable: " + d.variableName());
             }
 
             if ("getS".equals(d.methodInfo().name)) {
@@ -91,25 +130,29 @@ public class Test_17_Container extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
-                String expectLinked = d.iteration() == 0 ? "" : "p:0";
-                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
-                assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
+                assertEquals("p:0", d.fieldAnalysis().getLinkedVariables().toString());
 
-                // s is of type Set<String>, so we wait for values
-                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, "initial:this.s@Method_setS_1", 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, "initial:this.s@Method_setS_1", 1, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, "initial:this.s@Method_setS_1", 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
             assertEquals(MultiLevel.MUTABLE_DV, set.typeAnalysis.get().getProperty(Property.IMMUTABLE));
         };
-        testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
+
+        //WARN in Method org.e2immu.analyser.testexample.Container_0.setS(java.util.Set<java.lang.String>,java.lang.String) (line 36, pos 9): Potential null pointer exception: Variable: s
+        testClass("Container_0", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)

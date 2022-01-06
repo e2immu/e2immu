@@ -74,7 +74,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                        String expect = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
+                        String expect = INSTANCE_TYPE_INT_IDENTITY;
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {

@@ -67,13 +67,13 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "<f:set>";
-                        case 1 -> "<vp:java.util.Set<java.lang.String>:ext_nn@Field_set>";
+                        case 1 -> "<vp:java.util.Set<java.lang.String>:cnn@Parameter_c;cnn@Parameter_d>";
                         default -> "set";
                     };
                     assertEquals(expect, d.currentValue().toString());
                     String expectDelay = switch (d.iteration()) {
                         case 0 -> "initial:this.set@Method_getSet_0";
-                        case 1 -> "ext_nn@Field_set";
+                        case 1 -> "cnn@Parameter_c;cnn@Parameter_d";
                         default -> "";
                     };
                     assertEquals(expectDelay, d.currentValue().causesOfDelay().toString());
