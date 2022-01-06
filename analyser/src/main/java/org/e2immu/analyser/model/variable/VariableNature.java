@@ -156,6 +156,10 @@ public interface VariableNature {
             }
             return "$" + statementTime;
         }
+
+        public boolean isWriteCopy() {
+            return assignmentId != null;
+        }
     }
 
     /*

@@ -769,25 +769,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
         if (vic.variableNature() instanceof VariableNature.CopyOfVariableField copy) {
-            // when a value has been written to the field, there is no point in copying external field properties.
-            // there will be the value NOT_INVOLVED. This method ensures that it gets copied into the next statement.
-            boolean variableFieldAssignmentCopy = copy.assignmentId() != null;
-
-            ensureTransferOfFieldPropertiesToLocalCopies(evaluationContext, vic, copy, variableFieldAssignmentCopy);
+            ensureTransferOfFieldPropertiesToLocalCopies(evaluationContext, vic, copy);
         }
     }
 
     // See e.g. Container_0 where this is necessary; Basics_3 which shows this can only be done to non-write copies
     private void ensureTransferOfFieldPropertiesToLocalCopies(EvaluationContext evaluationContext,
                                                               VariableInfoContainer vic,
-                                                              VariableNature.CopyOfVariableField copy,
-                                                              boolean variableFieldAssignmentCopy) {
+                                                              VariableNature.CopyOfVariableField copy) {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(copy.localCopyOf().fieldInfo);
         VariableInfoContainer.Level level = vic.hasEvaluation() ? EVALUATION : INITIAL;
         for (Property property : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
             DV value = fieldAnalysis.getProperty(property);
-            if (variableFieldAssignmentCopy) {
+            if (copy.isWriteCopy()) {
+                // FIXME this has to be based on the value written to the field
                 vic.setProperty(property, NOT_INVOLVED_DV, true, level);
             } else {
                 vic.setProperty(property, value, true, level);
@@ -822,7 +818,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
                 for (Property vp : GroupPropertyValues.PROPERTIES) {
                     combined.put(vp, vp == EXTERNAL_NOT_NULL
-                            || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED_DV : vp.falseDv);
+                            || vp == EXTERNAL_IMMUTABLE ? NOT_INVOLVED_DV : vp.falseDv);
                 }
             }
             lvrVic.setValue(initialValue, assignedToOriginal, combined, true);
@@ -1301,9 +1297,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
         Map<Property, DV> properties = Map.of(
                 CONTEXT_MODIFIED, DV.FALSE_DV,
-                EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV,
+                EXTERNAL_NOT_NULL, NOT_INVOLVED_DV,
                 CONTEXT_NOT_NULL, initialNotNull,
-                EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV,
+                EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV,
                 CONTEXT_IMMUTABLE, defaultImmutable
         );
         Map<Property, DV> allProperties = new HashMap<>(properties);
@@ -1315,8 +1311,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Map<Property, DV> map = sharedContext(defaultNotNull);
-        map.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
-        map.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
+        map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
         vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
                 LinkedVariables.EMPTY, map, true);
     }
@@ -1333,8 +1329,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV defaultNotNull = AnalysisProvider.defaultNotNull(methodAnalysis.getMethodInfo().returnType());
         Map<Property, DV> properties = sharedContext(defaultNotNull);
         properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
-        properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
 
         properties.put(IDENTITY, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
@@ -1355,8 +1351,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // external: not relevant
-        properties.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
         vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
