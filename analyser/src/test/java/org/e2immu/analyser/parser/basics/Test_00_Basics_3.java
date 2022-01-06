@@ -196,12 +196,23 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
                         assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
+                        assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
                 if ((TYPE + ".s$2$0:M").equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     assertEquals("1", d.statementId());
                     assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    // we need NOT_INVOLVED here, because this is AFTER writing to the field
+                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                }
+                if ((TYPE + ".s$1").equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
+                    assertEquals("nullable instance type String", d.currentValue().toString());
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {

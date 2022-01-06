@@ -47,6 +47,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -64,7 +65,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
-    public final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
+
+    // make sure to use putVariable to add a variable to this map; facilitates debugging
+    private final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
 
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData;
@@ -549,7 +552,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
         }
-        variables.put(fqn, newVic);
+        putVariable(fqn, newVic);
     }
 
     /**
@@ -608,7 +611,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     if (!variables.isSet(fqn)) {
                         VariableInfoContainer newVic = VariableInfoContainerImpl.existingVariable(vicFrom,
                                 null, copyIsParent, navigationData.hasSubBlocks());
-                        variables.put(fqn, newVic);
+                        putVariable(fqn, newVic);
                     }
                 });
     }
@@ -765,22 +768,31 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 }
             }
         }
-        if(vic.variableNature() instanceof VariableNature.CopyOfVariableField copy) {
-            ensureTransferOfFieldPropertiesToLocalCopies(evaluationContext, vic, copy);
+        if (vic.variableNature() instanceof VariableNature.CopyOfVariableField copy) {
+            // when a value has been written to the field, there is no point in copying external field properties.
+            // there will be the value NOT_INVOLVED. This method ensures that it gets copied into the next statement.
+            boolean variableFieldAssignmentCopy = copy.assignmentId() != null;
+
+            ensureTransferOfFieldPropertiesToLocalCopies(evaluationContext, vic, copy, variableFieldAssignmentCopy);
         }
     }
 
-    // See e.g. Container_0
-    // FIXME this one needs careful conditioning so that we take the correct local copies! Basics 3, Basics 8
+    // See e.g. Container_0 where this is necessary; Basics_3 which shows this can only be done to non-write copies
     private void ensureTransferOfFieldPropertiesToLocalCopies(EvaluationContext evaluationContext,
                                                               VariableInfoContainer vic,
-                                                              VariableNature.CopyOfVariableField copy) {
+                                                              VariableNature.CopyOfVariableField copy,
+                                                              boolean variableFieldAssignmentCopy) {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(copy.localCopyOf().fieldInfo);
-        Map<Property, DV> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
-                .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-        VariableInfoContainer.Level level = vic.hasEvaluation() ? EVALUATION: INITIAL;
-        propertyMap.forEach((k, v)-> vic.setProperty(k, v, true, level));
+        VariableInfoContainer.Level level = vic.hasEvaluation() ? EVALUATION : INITIAL;
+        for (Property property : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
+            DV value = fieldAnalysis.getProperty(property);
+            if (variableFieldAssignmentCopy) {
+                vic.setProperty(property, NOT_INVOLVED_DV, true, level);
+            } else {
+                vic.setProperty(property, value, true, level);
+            }
+        }
     }
 
     private void ensureLocalCopyAtStatementTime(EvaluationContext evaluationContext,
@@ -794,7 +806,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (!variables.isSet(localCopy.fullyQualifiedName())) {
             VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(location(),
                     localCopy, index + INITIAL, navigationData.hasSubBlocks());
-            variables.put(localCopy.fullyQualifiedName(), lvrVic);
+            putVariable(localCopy.fullyQualifiedName(), lvrVic);
             String assignmentIdOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
             Expression initialValue;
@@ -860,7 +872,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                             int statementTime) {
         // a variable field can have any value when first read in a method.
         // after statement time goes up, this value may have changed completely
-        // therefore we return a new local variable each time we read and statement time has gone up.
+        // therefore we return a new local variable each time we read the variable, and statement time has gone up.
 
         // when there are assignments within the same statement time, however, we stick to the assigned value
         // (we temporarily treat the field as a local variable)
@@ -922,6 +934,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return localVariablesAssignedInThisLoop.isFrozen();
     }
 
+    // single point for adding to the variables map, but at the moment, not enforced
     public void putVariable(String name, VariableInfoContainer vic) {
         variables.put(name, vic);
     }
@@ -994,9 +1007,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     if (!variables.isSet(fqn)) {
                         VariableNature nature = vic.variableNature();
                         // created in merge: see Enum_1, a dependent variable created inside the loop
-                        // FIXME only for very special cases!
-                        // VariableNature newNature = nature instanceof VariableNature.NormalLocalVariable
-                        //        ? VariableNature.CREATED_IN_MERGE : nature;
+                        // TODO do we need this? only for very special cases!
+                        // VariableNature newNature = nature instanceof VariableNature.NormalLocalVariable ? VariableNature.CREATED_IN_MERGE : nature;
                         destination = createVariable(evaluationContext, variable, statementTime, nature);
                     } else {
                         destination = vic;
@@ -1238,7 +1250,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable, statementTimeForVariable,
                 variableInLoop, navigationData.hasSubBlocks());
-        variables.put(variable.fullyQualifiedName(), vic);
+        putVariable(variable.fullyQualifiedName(), vic);
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
@@ -1257,6 +1269,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // nothing spectacular; everything handled at the place of creation
             if (variableInLoop instanceof VariableNature.LoopVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
+            } else if (variableInLoop instanceof VariableNature.CopyOfVariableField) {
+                initializeCopyOfLocalVariableField(vic, variable);
             } else {
                 initializeLocalOrDependentVariable(vic, variable);
             }
@@ -1303,6 +1317,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Map<Property, DV> map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
+                LinkedVariables.EMPTY, map, true);
+    }
+
+    // created when merging; generally, the ensure
+    private void initializeCopyOfLocalVariableField(VariableInfoContainer vic, Variable variable) {
+        DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
+        Map<Property, DV> map = sharedContext(defaultNotNull);
         vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
                 LinkedVariables.EMPTY, map, true);
     }
@@ -1663,7 +1685,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         mergeValueAndLoopVar(valueProps, vi.getProperties()),
                         LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV),
                         true);
-                variables.put(loopCopyFqn, newVic);
+                putVariable(loopCopyFqn, newVic);
             } else {
                 // FIXME check mergeValueAndLoopVar -- which properties are we talking about?
                 VariableInfoContainer loopVic = getVariable(loopCopyFqn);

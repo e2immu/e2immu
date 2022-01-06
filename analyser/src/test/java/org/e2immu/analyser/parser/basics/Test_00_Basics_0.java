@@ -86,9 +86,9 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     } else {
                         assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                     }
-                    assertDvInitial(d, "ext_nn@Field_explicitlyFinal",
+                    assertDvInitial(d, "ext_not_null@Field_explicitlyFinal",
                             1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                    assertDv(d, "ext_nn@Field_explicitlyFinal", 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
+                    assertDv(d, "ext_not_null@Field_explicitlyFinal", 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     return;
                 }
                 // this.

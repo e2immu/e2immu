@@ -54,6 +54,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
+        final String I0_2 = I + "$0$2-E";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
@@ -144,9 +145,18 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     }
                 }
             }
-            if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
-                if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                    assertEquals(I0 + "+q", d.currentValue().toString());
+            if ("increment".equals(d.methodInfo().name)) {
+                if (I.equals(d.variableName())) {
+                    if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                        assertEquals(I0 + "+q", d.currentValue().toString());
+                    }
+                }
+                if (I0_2.equals(d.variableName())) {
+                    if ("3".equals(d.statementId())) {
+                        assertEquals("i$0+q", d.currentValue().toString());
+                        assertDv(d,1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                        assertDv(d,1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
+                    }
                 }
             }
             if ("increment3".equals(d.methodInfo().name)) {

@@ -225,7 +225,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
             int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
             int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
-            int numVariables = ((StatementAnalysisImpl) d.statementAnalysis()).variables.size();
+            int numVariables = d.statementAnalysis().numberOfVariables();
 
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {

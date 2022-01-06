@@ -48,7 +48,7 @@ public enum Property {
     NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.NOT_NULL_PARAMETER),
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
-            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_NN),
+            MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXTERNAL_NOT_NULL),
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.VALUE_NOT_NULL),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,

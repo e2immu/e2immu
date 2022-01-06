@@ -113,8 +113,8 @@ public class Test_17_Container extends CommonTestRunner {
                         assertTrue(d.iteration() > 0, "Local copy cannot exist in iteration 0");
                         assertEquals("p", d.currentValue().toString());
 
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
                     }
                 } else if (d.variable() instanceof This) {
                     assertEquals(TYPE + ".this", d.variableName());

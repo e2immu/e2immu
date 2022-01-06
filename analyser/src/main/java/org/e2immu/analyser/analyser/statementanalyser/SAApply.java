@@ -295,7 +295,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // EXT_NN (and a similar statement below for EXT_IMM); we go through ALL variables because this may be a statement
         // such as "throw new Exception()", see Basics_17
         CausesOfDelay anyEnn = statementAnalysis.variableStream()
-                .map(vi -> vi.getProperty(EXTERNAL_NOT_NULL).causesOfDelay())
+                .map(vi -> {
+                    CausesOfDelay causes = vi.getProperty(EXTERNAL_NOT_NULL).causesOfDelay();
+                    if (causes.isDelayed()) {
+                        // decorate, so that we have an idea which variable is the cause of the problem
+                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                                CauseOfDelay.Cause.EXTERNAL_NOT_NULL)));
+                    }
+                    return CausesOfDelay.EMPTY;
+                })
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 3
@@ -303,7 +311,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
         CausesOfDelay anyExtImm = statementAnalysis.variableStream()
-                .map(vi -> vi.getProperty(EXTERNAL_IMMUTABLE).causesOfDelay())
+                .map(vi -> {
+                    CausesOfDelay causes = vi.getProperty(EXTERNAL_IMMUTABLE).causesOfDelay();
+                    if (causes.isDelayed()) {
+                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                                CauseOfDelay.Cause.EXT_IMM)));
+                    }
+                    return CausesOfDelay.EMPTY;
+                })
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 4
