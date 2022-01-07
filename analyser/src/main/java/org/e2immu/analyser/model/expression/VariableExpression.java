@@ -37,19 +37,60 @@ import java.util.stream.Collectors;
 
 @E2Container
 public final class VariableExpression extends BaseExpression implements Expression, IsVariableExpression {
-    private final Variable variable;
-    private final int statementTime;
-    private final String assignmentId;
 
-    public VariableExpression(Variable variable) {
-        this(variable, VariableInfoContainer.NOT_A_VARIABLE_FIELD, null);
+    public interface Suffix {
+
+        default OutputBuilder output() {
+            return new OutputBuilder();
+        }
     }
 
-    public VariableExpression(Variable variable, int statementTime, String assignmentId) {
+    public static final Suffix NO_SUFFIX = new Suffix() {
+    };
+
+    public record VariableField(int statementTime, String assignmentId) implements Suffix {
+        public VariableField {
+            assert statementTime >= 0; // otherwise, no suffix!
+        }
+
+        @Override
+        public String toString() {
+            if (assignmentId == null) return "$" + statementTime;
+            return "$" + assignmentId + "$" + statementTime;
+        }
+
+        @Override
+        public OutputBuilder output() {
+            OutputBuilder outputBuilder = new OutputBuilder();
+            if (assignmentId != null) outputBuilder.add(new Text("$" + assignmentId));
+            outputBuilder.add(new Text("$" + statementTime));
+            return outputBuilder;
+        }
+    }
+
+    public record VariableInLoop(String assignmentId) implements Suffix {
+        @Override
+        public String toString() {
+            return "$" + assignmentId;
+        }
+
+        @Override
+        public OutputBuilder output() {
+            return new OutputBuilder().add(new Text("$" + assignmentId));
+        }
+    }
+
+    private final Variable variable;
+    private final Suffix suffix;
+
+    public VariableExpression(Variable variable) {
+        this(variable, NO_SUFFIX);
+    }
+
+    public VariableExpression(Variable variable, Suffix suffix) {
         super(Identifier.CONSTANT);
         this.variable = variable;
-        this.assignmentId = assignmentId;
-        this.statementTime = statementTime;
+        this.suffix = suffix;
     }
 
     @Override
@@ -57,34 +98,27 @@ public final class VariableExpression extends BaseExpression implements Expressi
         if (this == o) return true;
         if (!(o instanceof VariableExpression that)) return false;
         if (!variable.equals(that.variable)) return false;
-        if (isDependentOnStatementTime()) {
-            return statementTime == that.statementTime && Objects.equals(assignmentId, that.assignmentId);
-        }
-        return true;
+        return Objects.equals(suffix, that.suffix);
     }
 
-    public String getAssignmentId() {
-        return assignmentId;
-    }
-
-    public int getStatementTime() {
-        return statementTime;
+    public Suffix getSuffix() {
+        return suffix;
     }
 
     public boolean isDependentOnStatementTime() {
-        return statementTime != VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+        return suffix instanceof VariableField;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variable, statementTime, assignmentId);
+        return Objects.hash(variable, suffix);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
-            return new VariableExpression(translated, statementTime, assignmentId);
+            return new VariableExpression(translated, suffix);
         }
         Expression translated2 = translationMap.directExpression(this);
         if (translated2 != null) {
@@ -95,7 +129,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
             if (!translatedScope.equals(fieldReference.scope)) {
                 ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
                 return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
-                        translatedType, fieldReference.isStatic), statementTime, assignmentId);
+                        translatedType, fieldReference.isStatic), suffix);
             }
         }
         return this;
@@ -122,12 +156,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
     }
 
     private String id() {
-        if (assignmentId != null) {
-            return variable.fullyQualifiedName() + "$" + assignmentId + "$" + statementTime;
-        }
-        if (statementTime >= 0) {
-            return variable.fullyQualifiedName() + "$" + statementTime;
-        }
+        if (suffix != NO_SUFFIX) return variable.fullyQualifiedName() + suffix;
         return variable.fullyQualifiedName();
     }
 
@@ -173,31 +202,10 @@ public final class VariableExpression extends BaseExpression implements Expressi
             VariableExpression newScope;
             if (scopeInMap != null && (newScope = scopeInMap.asInstanceOf(VariableExpression.class)) != null) {
                 Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-                return builder.setExpression(of(evaluationContext, newFieldRef)).build();
+                return builder.setExpression(new VariableExpression(newFieldRef)).build();
             }
         }
-        return builder.setExpression(of(evaluationContext, variable)).build();
-    }
-
-    public VariableExpression of(EvaluationContext evaluationContext, Variable variable) {
-        if (statementTime == VariableInfoContainer.NOT_A_VARIABLE_FIELD) return this;
-        int newStatementTime;
-        if (statementTime == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-            if (variable instanceof FieldReference fieldReference) {
-                // need to check if we already know?
-                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
-                if (finalDV.isDelayed()) newStatementTime = VariableInfoContainer.VARIABLE_FIELD_DELAY;
-                else if (finalDV.valueIsTrue()) newStatementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-                else {
-                    newStatementTime = evaluationContext.getInitialStatementTime();
-                }
-            } else throw new UnsupportedOperationException();
-        } else {
-            newStatementTime = statementTime;
-        }
-        // TODO is this correct?
-        return new VariableExpression(variable, newStatementTime, assignmentId);
+        return builder.setExpression(new VariableExpression(variable)).build();
     }
 
     @Override
@@ -281,7 +289,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
                     && !fr.scope.equals(scopeResult.value())) {
                 if (!scopeResultIsDelayed.isDelayed()) {
                     FieldReference newFieldRef = new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression());
-                    return new VariableExpression(newFieldRef, ve.statementTime, ve.assignmentId);
+                    return new VariableExpression(newFieldRef, ve.suffix);
                 }
                 return DelayedVariableExpression.forField(fr, scopeResultIsDelayed);
             }
@@ -322,9 +330,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(variable.output(qualification));
-        if (assignmentId != null) outputBuilder.add(new Text("$" + assignmentId));
-        if (statementTime >= 0) outputBuilder.add(new Text("$" + statementTime));
+        OutputBuilder outputBuilder = new OutputBuilder().add(variable.output(qualification)).add(suffix.output());
         return outputBuilder;
     }
 

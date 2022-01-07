@@ -342,12 +342,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return variables.get(variableName).current();
     }
 
+    @Override
+    public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        return variables.stream()
+                .map(e -> e.getValue().current())
+                .filter(v -> v.variable() instanceof FieldReference fieldReference
+                        && fieldReference.fieldInfo == fieldInfo);
+    }
+
+    @Override
+    public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo).toList();
+    }
+
     // next to this.field, and local copies, we also have fields with a non-this scope.
     // all values that contain the field itself get blocked;
-/*
+
     @Override
     public List<VariableInfo> assignmentInfo(FieldInfo fieldInfo) {
-        List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo, false);
+        List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo);
         if (normalValue.isEmpty()) return normalValue;
         List<VariableInfo> result = new ArrayList<>();
         VariableInfo viThis = null;
@@ -399,7 +412,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         return result;
     }
-*/
+
     @Override
     public VariableInfoContainer getVariable(String fullyQualifiedName) {
         return variables.get(fullyQualifiedName);
@@ -1682,9 +1695,9 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         StatementAnalysis sa = this;
         String loopIndex = null;
         while (sa != null) {
-            if (!sa.variableIsSet(fullyQualifiedName)) return ;
+            if (!sa.variableIsSet(fullyQualifiedName)) return;
             VariableInfoContainer localVic = sa.getVariable(fullyQualifiedName);
-            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return ;
+            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return;
             if (sa.statement() instanceof LoopStatement) {
                 ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
                 loopIndex = sa.index();

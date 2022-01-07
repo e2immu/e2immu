@@ -28,9 +28,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -626,7 +624,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             if (fieldInfo != null) {
                 DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
                 if (effectivelyFinal.isDelayed()) {
-                    return DelayedVariableExpression.forField(fieldReference, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
+                    FieldReference fr = fieldReference;
+                    return DelayedVariableExpression.forField(fr, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
                 }
                 if (effectivelyFinal.valueIsFalse()) {
                     containsVariableFields = true;
@@ -903,12 +902,25 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         }
     }
 
+    @Override
+    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        return lastStatement == null ? List.of() : methodAnalysis.getLastStatement().assignmentInfo(fieldInfo);
+    }
 
     @Override
-    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? null :
-                methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+        return lastStatement == null ? List.of() :
+                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo);
+    }
+
+    // occurs as often in a flatMap as not, so a stream version is useful
+    @Override
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        return lastStatement == null ? Stream.empty() :
+                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo);
     }
 
     public VariableInfo getThisAsVariable() {

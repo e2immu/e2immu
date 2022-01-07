@@ -397,8 +397,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-        return null;
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
+        return List.of();
     }
 
     @Override
@@ -412,6 +412,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers() {
+        return Stream.empty();
+    }
+
+    @Override
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
         return Stream.empty();
     }
 

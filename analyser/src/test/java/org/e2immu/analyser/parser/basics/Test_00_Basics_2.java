@@ -133,8 +133,10 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     if (d.iteration() == 1) {
                         if (d.currentValue() instanceof VariableExpression ve) {
-                            assertEquals(0, ve.getStatementTime());
-                            assertNull(ve.getAssignmentId());
+                            if (ve.getSuffix() instanceof VariableExpression.VariableField vf) {
+                                assertEquals(0, vf.statementTime());
+                                assertNull(vf.assignmentId());
+                            } else fail();
                         } else fail();
                     }
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));

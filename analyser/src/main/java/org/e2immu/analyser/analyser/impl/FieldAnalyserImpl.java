@@ -366,8 +366,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
                         m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
-                .map(m -> m.getFieldAsVariable(fieldInfo))
-                .filter(Objects::nonNull)
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .map(vi -> vi.getProperty(Property.CONTEXT_NOT_NULL))
                 .reduce(MultiLevel.NULLABLE_DV, DV::max);
         if (bestOverContext.isDelayed()) {
@@ -449,8 +448,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private boolean isReadInMethod(MethodAnalyser methodAnalyser) {
-        VariableInfo vi = methodAnalyser.getFieldAsVariable(fieldInfo);
-        return vi != null && vi.isRead();
+        return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
     }
 
     /*
@@ -556,8 +554,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             DV bestOverContext = myMethodsAndConstructors.stream()
                     .filter(m -> m.getMethodInfo().isConstructor || m.getMethodInfo().methodResolution.get().partOfConstruction()
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
-                    .map(m -> m.getFieldAsVariable(fieldInfo))
-                    .filter(Objects::nonNull)
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .map(vi -> vi.getProperty(Property.CONTEXT_IMMUTABLE))
                     .reduce(MultiLevel.MUTABLE_DV, DV::max);
             if (bestOverContext.isDelayed()) {
@@ -641,8 +638,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
                     methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
-                VariableInfo vi = methodAnalyser.getFieldAsVariable(fieldInfo);
-                if (vi != null && vi.isAssigned()) {
+                for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
                     Expression expression = vi.getValue();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
@@ -679,18 +675,19 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         ValueAndPropertyProxy latestBlock = null;
         for (MethodAnalyser methodAnalyser : staticBlocks) {
-            VariableInfo vi = methodAnalyser.getFieldAsVariable(fieldInfo);
-            if (vi != null && vi.isAssigned()) {
-                Expression expression = vi.getValue();
-                VariableExpression ve;
-                if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
-                        && ve.variable() instanceof LocalVariableReference) {
-                    throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
-                            fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+            for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+                if (vi.isAssigned()) {
+                    Expression expression = vi.getValue();
+                    VariableExpression ve;
+                    if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                            && ve.variable() instanceof LocalVariableReference) {
+                        throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
+                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                    }
+                    latestBlock = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo
+                            (vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
+                    delays = delays.merge(vi.getValue().causesOfDelay());
                 }
-                latestBlock = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo
-                        (vi, ValueAndPropertyProxy.Origin.STATIC_BLOCK);
-                delays = delays.merge(vi.getValue().causesOfDelay());
             }
         }
         if (latestBlock != null) {
@@ -976,10 +973,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 */
         // we ONLY look at the linked variables of fields that have been assigned to
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
-                .map(m -> m.getFieldAsVariable(fieldInfo))
-                .filter(Objects::nonNull)
-                .filter(VariableInfo::isAssigned)
-                .map(vi -> vi.getLinkedVariables().causesOfDelay())
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
+                        .filter(VariableInfo::isAssigned)
+                        .map(vi -> vi.getLinkedVariables().causesOfDelay()))
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
             log(DELAYED, "LinkedVariables not yet set for {}", fieldInfo.fullyQualifiedName());
@@ -988,8 +984,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 
         Map<Variable, DV> map = allMethodsAndConstructors(true)
-                .map(m -> m.getFieldAsVariable(fieldInfo))
-                .filter(Objects::nonNull)
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
@@ -1033,8 +1028,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
                             m.getMethodInfo().methodResolution.get().partOfConstruction().accessibleFromTheOutside())
-                    .map(m -> m.getFieldAsVariable(fieldInfo))
-                    .filter(Objects::nonNull)
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(Property.FINAL, DV.fromBoolDv(isFinal));
@@ -1088,8 +1082,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         Stream<MethodAnalyser> stream = methodsForModification();
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
-                stream.map(m -> m.getFieldAsVariable(fieldInfo))
-                        .filter(Objects::nonNull)
+                stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                         .filter(VariableInfo::isRead)
                         .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
 
@@ -1101,12 +1094,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         // we only consider methods, not constructors (unless the field is static)!
         Stream<MethodAnalyser> stream2 = methodsForModification();
-        CausesOfDelay contextModifications = stream2
-                .map(m -> m.getFieldAsVariable(fieldInfo))
-                .filter(Objects::nonNull)
-                .filter(VariableInfo::isRead)
-                .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        CausesOfDelay contextModifications = stream2.flatMap(m -> {
+            List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo);
+            return variableInfoList.stream()
+                    .filter(VariableInfo::isRead)
+                    .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());
+        }).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         if (contextModifications.isDone()) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);

@@ -53,54 +53,55 @@ public class AssignmentIncompatibleWithPrecondition {
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
 
-            VariableInfo variableInfo = methodAnalyser.getFieldAsVariable(fieldInfo);
-            boolean assigned = variableInfo != null && variableInfo.isAssigned();
-            if (assigned) {
-                Expression pcExpression = precondition.expression();
-                String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
-                log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
-                        methodAnalyser.getMethodInfo().distinguishingName(), index);
+            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+                boolean assigned = variableInfo.isAssigned();
+                if (assigned) {
+                    Expression pcExpression = precondition.expression();
+                    String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
+                    log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                            methodAnalyser.getMethodInfo().distinguishingName(), index);
 
-                StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
-                StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
-                EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
+                    StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
+                    StatementAnalysis statementAnalysis = statementAnalyser.getStatementAnalysis();
+                    EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
-                VariableExpression ve;
-                if (fieldInfo.type.isNumeric()) {
-                    Expression value = variableInfo.getValue();
-                    if (value instanceof ConstantExpression) {
+                    VariableExpression ve;
+                    if (fieldInfo.type.isNumeric()) {
+                        Expression value = variableInfo.getValue();
+                        if (value instanceof ConstantExpression) {
+                            Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
+                                    variableInfo.getValue(), pcExpression);
+                            if (incompatible != null) return DV.fromBoolDv(incompatible);
+                        } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
+                            // grab some state about this variable
+                            Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get()
+                                    .individualStateInfo(evaluationContext, ve.variable());
+                            if (!state.isBoolValueTrue()) {
+                                Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
+                                EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
+                                Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
+                                return DV.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
+                            }
+                        }
+                    } else if (fieldInfo.type.isBoolean()) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                 variableInfo.getValue(), pcExpression);
                         if (incompatible != null) return DV.fromBoolDv(incompatible);
-                    } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-                        // grab some state about this variable
-                        Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                                .individualStateInfo(evaluationContext, ve.variable());
-                        if (!state.isBoolValueTrue()) {
-                            Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
-                            EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
-                            Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                            return DV.fromBoolDv(!isCompatible(evaluationContext, stateInTermsOfField, pcExpression));
-                        }
-                    }
-                } else if (fieldInfo.type.isBoolean()) {
-                    Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                            variableInfo.getValue(), pcExpression);
-                    if (incompatible != null) return DV.fromBoolDv(incompatible);
-                } else {
-                    // normal object null checking for now
-                    Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                    Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get().state();
-                    Expression combined = And.and(evaluationContext, state, notNull);
+                    } else {
+                        // normal object null checking for now
+                        Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
+                        Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get().state();
+                        Expression combined = And.and(evaluationContext, state, notNull);
 
-                    if (isCompatible(evaluationContext, combined, pcExpression)) {
-                        CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
-                        if (delays.isDelayed()) {
-                            return delays; // IMPROVE we're not gathering them, rather returning the first one here
+                        if (isCompatible(evaluationContext, combined, pcExpression)) {
+                            CausesOfDelay delays = statementAnalysis.stateData().conditionManagerForNextStatementStatus();
+                            if (delays.isDelayed()) {
+                                return delays; // IMPROVE we're not gathering them, rather returning the first one here
+                            }
+                            return DV.FALSE_DV;
                         }
-                        return DV.FALSE_DV;
+                        return DV.TRUE_DV;
                     }
-                    return DV.TRUE_DV;
                 }
             }
         }

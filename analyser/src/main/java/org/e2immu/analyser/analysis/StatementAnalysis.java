@@ -45,6 +45,12 @@ public interface StatementAnalysis extends Analysis,
     @NotNull
     VariableInfo getLatestVariableInfo(String variableName);
 
+    List<VariableInfo> assignmentInfo(FieldInfo fieldInfo);
+
+    List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
+
+    Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
+
     boolean containsMessage(Message.Label messageLabel);
 
     boolean containsMessage(Message message);

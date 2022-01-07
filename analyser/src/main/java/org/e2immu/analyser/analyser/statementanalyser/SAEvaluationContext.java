@@ -336,8 +336,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 && variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null) {
             return variableInfo.getValue();
         }
-        // FIXME this is the one that creates new VE's
-        return getVariableValue(forwardEvaluationInfo.assignmentTarget(), variableInfo);
+        // FIXME instead of forwardEvaluationInfo.assignmentTarget()
+        return getVariableValue(null, variableInfo);
     }
 
     @Override
@@ -573,8 +573,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 assignmentId = null;
             }
             // see Basics_4 for the combination of v==myself, yet VE is returned
-            if (!v.equals(myself) || statementTime >= 0) {
-                return new VariableExpression(v, statementTime, assignmentId);
+            if (!v.equals(myself)) {
+                VariableExpression.Suffix suffix;
+                if (statementTime >= 0) {
+                    suffix = new VariableExpression.VariableField(statementTime, assignmentId);
+                } else {
+                    suffix = VariableExpression.NO_SUFFIX;
+                }
+                return new VariableExpression(v, suffix);
             }
         }
         return value;

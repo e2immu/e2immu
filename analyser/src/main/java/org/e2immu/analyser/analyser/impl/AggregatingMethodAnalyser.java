@@ -155,6 +155,11 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
+        return Stream.of();
+    }
+
+    @Override
     public StatementAnalyserImpl findStatementAnalyser(String index) {
         return null;
     }
@@ -175,7 +180,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-        return null;
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
+        return List.of();
     }
 }

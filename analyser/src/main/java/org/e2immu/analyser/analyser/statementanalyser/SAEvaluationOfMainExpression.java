@@ -251,16 +251,17 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         List<Expression> assignments = new ArrayList<>();
         for (FieldInfo fieldInfo : methodInfo().typeInfo.visibleFields(analyserContext)) {
             if (!fieldInfo.isStatic(analyserContext)) {
-                VariableInfo variableInfo = methodAnalyser.getFieldAsVariable(fieldInfo);
-                if (variableInfo != null && variableInfo.isAssigned()) {
-                    EvaluationResult translated = variableInfo.getValue()
-                            .reEvaluate(sharedState.evaluationContext(), translation);
-                    Assignment assignment = new Assignment(Identifier.generate(),
-                            statementAnalysis.primitives(),
-                            new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
-                            translated.value(), null, null, false);
-                    builder.compose(translated);
-                    assignments.add(assignment);
+                for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+                    if (variableInfo.isAssigned()) {
+                        EvaluationResult translated = variableInfo.getValue()
+                                .reEvaluate(sharedState.evaluationContext(), translation);
+                        Assignment assignment = new Assignment(Identifier.generate(),
+                                statementAnalysis.primitives(),
+                                new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
+                                translated.value(), null, null, false);
+                        builder.compose(translated);
+                        assignments.add(assignment);
+                    }
                 }
             }
         }
