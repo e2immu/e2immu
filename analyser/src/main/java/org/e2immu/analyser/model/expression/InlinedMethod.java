@@ -343,8 +343,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         ConstructorCall constructorCall = scope.asInstanceOf(ConstructorCall.class);
         VariableExpression ve;
         if (constructorCall == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-            Expression value = evaluationContext.currentValue(ve.variable(),
-                    evaluationContext.getInitialStatementTime());
+            Expression value = evaluationContext.currentValue(ve.variable());
             if (value != null) {
                 return value.asInstanceOf(ConstructorCall.class);
             } // else, see Loops_19
@@ -494,7 +493,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
             ensureVariableIsKnown(variable);
             return new VariableExpression(variable);
         }
@@ -521,7 +520,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
+        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
             ensureVariableIsKnown(variable);
             return property.falseDv; // FIXME
         }
@@ -549,7 +548,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         // FIXME should this be delayed? we never want to end up with an InlinedMethod object
         @Override
-        public Instance currentValue(Variable variable, int statementTime) {
+        public Instance currentValue(Variable variable) {
             ensureVariableIsKnown(variable);
             return Instance.forInlinedMethod(identifier, variable.parameterizedType());
         }

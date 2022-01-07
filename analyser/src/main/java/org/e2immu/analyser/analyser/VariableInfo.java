@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -29,7 +27,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.VARIABLE_FIELD_DELAY;
 
 public interface VariableInfo {
     String name();
@@ -71,15 +68,6 @@ public interface VariableInfo {
 
     Stream<Map.Entry<Property, DV>> propertyStream();
 
-    /*
-    if statement time < 0, this means that statement time is irrelevant for this variable.
-
-    Otherwise, it depends on the type of variable.
-    If it is a field reference, it is variable, and this is the time of the latest assignment in this method.
-    If there has not yet been an assignment is this method for a variable field reference, 0 is used.
-     */
-    int getStatementTime();
-
     /**
      * @return the empty set if has not been an assignment in this method yet; otherwise the statement ids
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
@@ -92,9 +80,6 @@ public interface VariableInfo {
 
     String getReadId();
 
-    default boolean statementTimeIsSet() {
-        return getStatementTime() != VARIABLE_FIELD_DELAY;
-    }
 
     default boolean isRead() {
         return !getReadId().equals(NOT_YET_READ);
@@ -102,14 +87,6 @@ public interface VariableInfo {
 
     default boolean isAssigned() {
         return !getAssignmentIds().hasNotYetBeenAssigned();
-    }
-
-    default boolean isConfirmedVariableField() {
-        return getStatementTime() >= 0;
-    }
-
-    default boolean statementTimeDelayed() {
-        return getStatementTime() == VARIABLE_FIELD_DELAY;
     }
 
     default boolean notReadAfterAssignment(String index) {

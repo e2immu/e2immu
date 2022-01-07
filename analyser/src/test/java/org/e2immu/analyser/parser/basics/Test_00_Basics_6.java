@@ -19,14 +19,12 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -37,7 +35,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
@@ -63,18 +60,10 @@ public class Test_00_Basics_6 extends CommonTestRunner {
             if ("test1".equals(d.methodInfo().name)) {
                 if (FIELD.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
-                        assertEquals(expect, d.variableInfo().getStatementTime());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                    }
-                    if ("1".equals(d.statementId())) {
-                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
-                        assertEquals(expect, d.variableInfo().getStatementTime());
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
-                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
-                        assertEquals(expect, d.variableInfo().getStatementTime());
                     }
                 }
 
@@ -121,8 +110,6 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 }
                 if (FIELD.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
-                        assertEquals(expect, d.variableInfo().getStatementTime());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {

@@ -160,7 +160,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 DV inChangeData = changeData.properties.getOrDefault(property, null);
                 if (inChangeData != null) return inChangeData;
             }
-            return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), property, statementTime);
+            return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), property);
         }
         return expression.getProperty(evaluationContext, property, true);
     }
@@ -337,7 +337,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 DV inChangeData = changeData.properties.getOrDefault(property, null);
                 if (inChangeData != null) return inChangeData;
             }
-            return evaluationContext.getPropertyFromPreviousOrInitial(variable, property, statementTime);
+            return evaluationContext.getPropertyFromPreviousOrInitial(variable, property);
         }
 
         public Builder markRead(Variable variable) {
@@ -395,7 +395,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == null) {
                 assert evaluationContext != null;
-                return evaluationContext.currentValue(variable, statementTime, forwardEvaluationInfo);
+                return evaluationContext.currentValue(variable, forwardEvaluationInfo);
             }
             return currentExpression.value;
         }

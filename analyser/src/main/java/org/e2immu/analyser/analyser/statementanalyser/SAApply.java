@@ -434,8 +434,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
                 // do not take vi1 itself, but "the" local copy of the variable
                 EvaluationContext evaluationContext = sharedState.evaluationContext();
-                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable,
-                        statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
+                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable, fwd);
 
                 InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
                         evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);

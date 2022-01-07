@@ -969,7 +969,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
         // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression
         @Override
-        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
             return new VariableExpression(variable);
         }
 

@@ -164,7 +164,7 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
+        public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
             return property.falseDv; // but no delay, see Equals.checkParameter
         }
 
@@ -197,7 +197,7 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrDefaultNull();
                 if (remapping == null)

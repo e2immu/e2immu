@@ -681,16 +681,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                               FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
 
-        // see if we can resolve a delay in statement time
-        if (viInitial.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-            DV effectivelyFinal = fieldAnalysis.getProperty(Property.FINAL);
-            if (effectivelyFinal.isDone()) {
-                vic.setStatementTime(effectivelyFinal.valueIsTrue() ?
-                        VariableInfoContainer.NOT_A_VARIABLE_FIELD : flowData.getInitialTime());
-            }
-            // so from here on, isConfirmedVariableField may be set
-        }
         boolean selfReference = inPartOfConstruction() && !(fieldReference.scopeIsThis());
         Map<Property, DV> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Map<Property, DV> combined = new HashMap<>(map);
@@ -1103,8 +1093,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
 
-        int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
-        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable, statementTimeForVariable,
+        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable,
                 variableInLoop, navigationData.hasSubBlocks());
         putVariable(variable.fullyQualifiedName(), vic);
 
@@ -1537,7 +1526,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
         VariableInfoContainer vic = findForWriting(loopVar);
         vic.ensureEvaluation(location(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
-                statementTime(EVALUATION), Set.of());
+                Set.of());
         ParameterizedType parameterizedType = loopVar.parameterizedType();
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
@@ -1674,9 +1663,8 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         // we will compare the recency anyway
 
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
-        int statementTime = statementTimeForVariable(evaluationContext.getAnalyserContext(), variable, newStatementTime);
 
-        vic.ensureEvaluation(location, assignmentIds, readId, statementTime, changeData.readAtStatementTime());
+        vic.ensureEvaluation(location, assignmentIds, readId, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
     }
 

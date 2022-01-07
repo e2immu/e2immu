@@ -304,15 +304,6 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
 
-                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY
-                                : VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
-                    }
-                    if ("1".equals(d.statementId())) {
-                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY
-                                : VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-                        // this seems to be the one... we have -1 in iteration 1 !!!
-                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                     }
                     // from here on, the return variable is part of the equivalence group
                     // it only receives a value and proper links from iteration 3 onward

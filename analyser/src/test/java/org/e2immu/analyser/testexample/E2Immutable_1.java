@@ -28,7 +28,7 @@ public class E2Immutable_1 {
 
     public E2Immutable_1(String value) {
         this.parent2 = null;
-        level2 = 0;
+        level2 = 99;
         this.value2 = value;
     }
 

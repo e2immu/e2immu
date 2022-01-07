@@ -103,7 +103,7 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+    default Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("In " + getClass());
     }
 
@@ -155,7 +155,7 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
+    default DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
         throw new UnsupportedOperationException();
     }
 
@@ -203,7 +203,7 @@ public interface EvaluationContext {
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).
      */
-    default Expression currentValue(Variable variable, int statementTime) {
+    default Expression currentValue(Variable variable) {
         if (variable.parameterizedType().isPrimitiveExcludingVoid()) return null;
         // a new one with empty state -- we cannot be bothered here.
         return Instance.forTesting(variable.parameterizedType());

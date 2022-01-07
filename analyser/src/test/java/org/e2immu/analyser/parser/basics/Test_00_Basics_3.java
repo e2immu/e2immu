@@ -16,7 +16,6 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
@@ -65,6 +64,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.evaluationResult().causesOfDelay().isDelayed());
+                    } else if(d.iteration() ==1) {
+                        assertEquals("<m:println>", d.evaluationResult().value().toString());
                     } else {
                         assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
                     }
@@ -76,7 +77,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() == 0 ? "<f:s>" : S;
+                String expectValue = switch (d.iteration()) {
+                    case 0 -> "<f:s>";
+                    case 1 -> "<vp:java.lang.String:initial:this.s@Method_setS1_1>";
+                    default -> "s$0";
+                };
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -112,24 +117,23 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (OUT.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
-                        assertCurrentValue(d, 1, "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
-                        assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertCurrentValue(d, 2,
+                                "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     } else if ("0.1.0".equals(d.statementId())) {
                         // NOT present in the first iteration!
                         assertTrue(d.iteration() > 0);
                         assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
-                        assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                     } else if ("0".equals(d.statementId())) {
                         assertInitialValue(d, 0, "", INSTANCE_PRINT_STREAM);
 
-                        assertCurrentValue(d, 1, "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
+                        assertCurrentValue(d, 2,
+                                "initial:java.lang.System.out@Method_setS1_0.0.0", INSTANCE_PRINT_STREAM);
                         assertTrue(d.variableInfoContainer().hasMerge());
                         assertSame(d.variableInfo(), d.variableInfoContainer().best(VariableInfoContainer.Level.MERGE));
 
-                        assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
 
                     // completely independent of the iterations, we always should have @NotNull because of context
@@ -139,23 +143,16 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 2, "initial@Field_s|initial:this.s@Method_setS1_1", "nullable instance type String");
+                        assertCurrentValue(d, 2, "initial@Field_s|initial@Field_s",
+                                "nullable instance type String");
                         assertFalse(d.variableInfo().isAssigned());
-                        if (d.iteration() == 0) {
-                            assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
-                        } else {
-                            assertEquals(1, d.variableInfo().getStatementTime());
-                        }
+
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals("\"xyz\"", d.currentValue().debugOutput());
                         assertTrue(d.variableInfo().isAssigned());
-                        if (d.iteration() == 0) {
-                            assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
-                        } else {
-                            assertEquals(2, d.variableInfo().getStatementTime());
-                        }
+
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                         // not null of assignment
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
@@ -163,11 +160,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     if ("0.1.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().debugOutput());
                         assertTrue(d.variableInfo().isAssigned());
-                        if (d.iteration() == 0) {
-                            assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
-                        } else {
-                            assertEquals(1, d.variableInfo().getStatementTime());
-                        }
+
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
@@ -175,14 +168,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
 
-                        if (d.iteration() == 0) {
-                            assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
-                        } else {
-                            VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                            assertEquals(0, vi1.getStatementTime());
-                            assertEquals(2, d.variableInfo().getStatementTime());
-
-                        }
                         assertEquals("this.s:0", d.variableInfo().getLinkedVariables().toString());
                         assertTrue(d.variableInfo().isAssigned());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
@@ -213,11 +198,10 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
                     assertCurrentValue(d, 2,
-                            "initial@Field_s|initial:this.s@Method_setS1_1",
+                            "initial@Field_s|initial@Field_s",
                             "nullable instance type String");
 
-                    String expectLv = d.iteration() == 0 ? "return getS:0,this.s:0"
-                            : "return getS:0,s$0:1,this.s:0";
+                    String expectLv =  "return getS:0,this.s:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -225,11 +209,15 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());
-                    String expectValue = d.iteration() == 0 ? "<f:s>" : S;
+                    String expectValue = switch (d.iteration()) {
+                        case 0 -> "<f:s>";
+                        case 1 -> "<vp:java.lang.String:initial:this.s@Method_setS1_1>";
+                        default -> "s$0";
+                    };
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // copied from S
-                    assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                 }
             }
@@ -318,8 +306,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         };
 
         testClass("Basics_3", 0, 2, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

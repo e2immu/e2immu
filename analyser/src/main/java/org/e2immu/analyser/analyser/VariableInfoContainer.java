@@ -139,19 +139,12 @@ public interface VariableInfoContainer {
 
     void ensureEvaluation(Location location,
                           AssignmentIds assignmentIds,
-                          String readId, int statementTime, Set<Integer> readAtStatementTimes);
+                          String readId,
+                          Set<Integer> readAtStatementTimes);
 
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
                      boolean atLeastOneBlockExecuted,
                      List<ConditionAndVariableInfo> mergeSources,
                      GroupPropertyValues groupPropertyValues);
-
-    /*
-    Statement time is irrelevant for all but variable fields.
-    The correct value comes in a later iteration; it is set in StatementAnalysis based on information
-    from the field analyser.
-
-     */
-    void setStatementTime(int statementTime);
 }

@@ -180,8 +180,6 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
-                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
-                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
@@ -190,8 +188,6 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
                         assertEquals(expect, d.currentValue().toString());
-                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
-                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                         String linked = "j:0,this.i:0";

@@ -622,7 +622,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             newInstance = unwrap(objectValue);
             createInstanceBasedOn = null;
         } else if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
-            Expression current = evaluationContext.currentValue(ive.variable(), evaluationContext.getInitialStatementTime());
+            Expression current = evaluationContext.currentValue(ive.variable());
             if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
                 newInstance = unwrap(current);
                 createInstanceBasedOn = null;

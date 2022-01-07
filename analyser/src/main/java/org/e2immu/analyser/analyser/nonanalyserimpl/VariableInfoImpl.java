@@ -29,7 +29,6 @@ import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
-import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -59,15 +57,14 @@ public class VariableInfoImpl implements VariableInfo {
 
     // 20211023 needs to be frozen explicitly
     private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
-    private final SetOnce<Integer> statementTime = new SetOnce<>();
 
     // ONLY for testing!
     public VariableInfoImpl(Variable variable) {
-        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
     }
 
     public VariableInfoImpl(Location location, Variable variable) {
-        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
         assert location != Location.NOT_YET_SET;
     }
 
@@ -88,16 +85,12 @@ public class VariableInfoImpl implements VariableInfo {
                      Variable variable,
                      AssignmentIds assignmentIds,
                      String readId,
-                     int statementTime,
                      Set<Integer> readAtStatementTimes,
                      Expression delayedValue) {
         this.location = Objects.requireNonNull(location);
         this.variable = Objects.requireNonNull(variable);
         this.assignmentIds = Objects.requireNonNull(assignmentIds);
         this.readId = Objects.requireNonNull(readId);
-        if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-            this.statementTime.set(statementTime);
-        }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         CausesOfDelay causesOfDelay = initialValue(location, variable);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable, causesOfDelay) : delayedValue);
@@ -121,11 +114,6 @@ public class VariableInfoImpl implements VariableInfo {
     @Override
     public String getReadId() {
         return readId;
-    }
-
-    @Override
-    public int getStatementTime() {
-        return statementTime.getOrDefault(VariableInfoContainer.VARIABLE_FIELD_DELAY);
     }
 
     @Override
@@ -200,17 +188,6 @@ public class VariableInfoImpl implements VariableInfo {
         } catch (RuntimeException e) {
             LOGGER.error("Error setting property {} of {} to {}", property, variable.fullyQualifiedName(), value);
             throw e;
-        }
-    }
-
-    void setStatementTime(int statementTime) {
-        try {
-            if (!this.statementTime.isSet() || statementTime != this.statementTime.get()) {
-                this.statementTime.set(statementTime);
-            }
-        } catch (RuntimeException re) {
-            LOGGER.error("Caught exception while setting statement time of " + variable.fullyQualifiedName());
-            throw re;
         }
     }
 
@@ -325,7 +302,6 @@ public class VariableInfoImpl implements VariableInfo {
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
 
         setValue(mergedValue);
-        mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
         if (!mergedValue.isDelayed()) {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
@@ -372,24 +348,6 @@ public class VariableInfoImpl implements VariableInfo {
         Stream<AssignmentIds> sub = merge.stream().map(cav -> cav.variableInfo().getAssignmentIds());
         Stream<AssignmentIds> inclPrev = atLeastOneBlockExecuted ? sub : Stream.concat(Stream.of(previousIds), sub);
         return new AssignmentIds(currentStatementIdM, inclPrev);
-    }
-
-    /*
-    Compute and set statement time into this object from the previous object and the merge sources.
-     */
-    private void mergeStatementTime(EvaluationContext evaluationContext,
-                                    boolean existingValuesWillBeOverwritten,
-                                    int previousStatementTime,
-                                    List<ConditionAndVariableInfo> mergeSources) {
-        boolean noVariableFieldDelay = (existingValuesWillBeOverwritten || previousStatementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) &&
-                mergeSources.stream()
-                        .map(ConditionAndVariableInfo::variableInfo)
-                        .noneMatch(vi -> vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY);
-        if (noVariableFieldDelay) {
-            int statementTimeToSet = previousStatementTime == NOT_A_VARIABLE_FIELD ?
-                    NOT_A_VARIABLE_FIELD : evaluationContext.getFinalStatementTime();
-            setStatementTime(statementTimeToSet);
-        }
     }
 
     /*

@@ -23,7 +23,10 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.AssertStatement;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -42,15 +45,19 @@ public record SACheck(StatementAnalysis statementAnalysis) {
     private String index() {
         return statementAnalysis.index();
     }
+
     private Statement statement() {
         return statementAnalysis.statement();
     }
+
     private Location location() {
         return statementAnalysis.location();
     }
+
     private MethodInfo methodInfo() {
         return statementAnalysis.methodAnalysis().getMethodInfo();
     }
+
     /*
     Not-null escapes should not contribute to preconditions.
     All the rest should.
@@ -100,7 +107,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         if (!vic.hasEvaluation()) {
             VariableInfo initial = vic.getPreviousOrInitial();
             vic.ensureEvaluation(location(), initial.getAssignmentIds(), initial.getReadId(),
-                    initial.getStatementTime(), initial.getReadAtStatementTimes());
+                    initial.getReadAtStatementTimes());
             vic.setValue(initial.getValue(), initial.getLinkedVariables(),
                     initial.getProperties(), false);
         }
@@ -195,7 +202,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         return DONE;
     }
 
-     AnalysisStatus checkUnusedLoopVariables(NavigationData<StatementAnalyser> navigationData) {
+    AnalysisStatus checkUnusedLoopVariables(NavigationData<StatementAnalyser> navigationData) {
         if (statement() instanceof LoopStatement
                 && !statementAnalysis.containsMessage(Message.Label.EMPTY_LOOP)
                 && methodInfo().isNotATestMethod()) {
@@ -219,7 +226,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
     /*
      * Can be delayed
      */
-     AnalysisStatus checkUnusedReturnValueOfMethodCall(AnalyserContext analyserContext) {
+    AnalysisStatus checkUnusedReturnValueOfMethodCall(AnalyserContext analyserContext) {
         if (statementAnalysis.statement() instanceof ExpressionAsStatement eas
                 && eas.expression instanceof MethodCall methodCall
                 && methodInfo().isNotATestMethod()) {

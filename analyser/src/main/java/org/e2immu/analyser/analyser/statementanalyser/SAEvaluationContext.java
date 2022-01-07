@@ -168,7 +168,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
         if (value instanceof IsVariableExpression ve) {
-            VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
+            VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL : CONTEXT_NOT_NULL);
             if (cnn.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) return true;
             DV nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
@@ -185,7 +185,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public boolean cannotBeModified(Expression value) {
         if (value instanceof IsVariableExpression ve) {
-            VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
+            VariableInfo variableInfo = findForReading(ve.variable(), true);
             DV cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
             if (MultiLevel.isAtLeastEffectivelyE2Immutable(cImm)) return true;
             DV imm = variableInfo.getProperty(IMMUTABLE);
@@ -201,7 +201,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     private DV getVariableProperty(Variable variable, Property property, boolean duringEvaluation) {
         if (duringEvaluation) {
-            return getPropertyFromPreviousOrInitial(variable, property, getInitialStatementTime());
+            return getPropertyFromPreviousOrInitial(variable, property);
         }
         return getProperty(variable, property);
     }
@@ -280,11 +280,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
         have their own local copy.
          */
-    private VariableInfo findForReading(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+    private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
         if (closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
-            return ((SAEvaluationContext) closure).findForReading(variable, statementTime, isNotAssignmentTarget);
+            return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget);
         }
-        return initialValueForReading(variable, statementTime, isNotAssignmentTarget);
+        return initialValueForReading(variable, isNotAssignmentTarget);
     }
 
 
@@ -296,7 +296,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * @return the most current variable info object
      */
     public VariableInfo initialValueForReading(@NotNull Variable variable,
-                                               int statementTime,
                                                boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (!statementAnalysis.variableIsSet(fqn)) {
@@ -308,8 +307,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference && vi.statementTimeDelayed()) {
-                return new VariableInfoImpl(getLocation(), variable);
+            if (vi.variable() instanceof FieldReference fr) {
+                // is it a variable field, or a final field? if we don't know, return an empty VI
+                DV effectivelyFinal = getAnalyserContext().getFieldAnalysis(fr.fieldInfo).getProperty(FINAL);
+                if (effectivelyFinal.isDelayed()) {
+                    return new VariableInfoImpl(getLocation(), variable);
+                }
             }
             if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
@@ -327,8 +330,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     // we pass on the information about the potential newly created local variable copy
     @Override
-    public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
-        VariableInfo variableInfo = findForReading(variable, statementTime, forwardEvaluationInfo.isNotAssignmentTarget());
+    public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
+        VariableInfo variableInfo = findForReading(variable, forwardEvaluationInfo.isNotAssignmentTarget());
 
         // important! do not use variable in the next statement, but variableInfo.variable()
         // we could have redirected from a variable field to a local variable copy
@@ -341,8 +344,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public Expression currentValue(Variable variable, int statementTime) {
-        VariableInfo variableInfo = findForReading(variable, statementTime, true);
+    public Expression currentValue(Variable variable) {
+        VariableInfo variableInfo = findForReading(variable, true);
         Expression value = variableInfo.getValue();
 
         // redirect to other variable
@@ -350,7 +353,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
             assert ve.variable() != variable :
                     "Variable " + variable.fullyQualifiedName() + " has been assigned a VariableValue value pointing to itself";
-            return currentValue(ve.variable(), statementTime);
+            return currentValue(ve.variable());
         }
         return value;
     }
@@ -362,8 +365,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     @Override
-    public DV getPropertyFromPreviousOrInitial(Variable variable, Property property, int statementTime) {
-        VariableInfo vi = findForReading(variable, statementTime, true);
+    public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
+        VariableInfo vi = findForReading(variable, true);
         return vi.getProperty(property);
     }
 
@@ -502,7 +505,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public MethodInfo concreteMethod(Variable variable, MethodInfo abstractMethodInfo) {
         assert abstractMethodInfo.isAbstract();
-        VariableInfo variableInfo = findForReading(variable, getInitialStatementTime(), true);
+        VariableInfo variableInfo = findForReading(variable, true);
         ParameterizedType type = variableInfo.getValue().returnType();
         if (type.typeInfo != null && !type.typeInfo.isAbstract()) {
             return type.typeInfo.findMethodImplementing(abstractMethodInfo);
@@ -523,7 +526,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public boolean hasState(Expression expression) {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            VariableInfo vi = findForReading(ve.variable(), statementAnalysis.statementTime(INITIAL), true);
+            VariableInfo vi = findForReading(ve.variable(), true);
             return vi.getValue() != null && vi.getValue().hasState();
         }
         return expression.hasState();
@@ -533,7 +536,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public Expression state(Expression expression) {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
-            VariableInfo vi = findForReading(ve.variable(), statementAnalysis.statementTime(INITIAL), true);
+            VariableInfo vi = findForReading(ve.variable(), true);
             return vi.getValue().state();
         }
         return expression.state();
