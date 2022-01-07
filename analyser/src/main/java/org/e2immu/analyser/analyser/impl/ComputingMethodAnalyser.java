@@ -607,33 +607,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
      */
     private Expression createInlinedMethod(Expression value) {
         assert value.isDone();
-
-        Set<Variable> variables = new HashSet<>();
-        boolean containsVariableFields = false;
-
-        for (Variable variable : value.variables(true)) {
-            FieldInfo fieldInfo;
-            FieldReference fieldReference;
-            if (variable instanceof FieldReference fr) {
-                fieldInfo = fr.fieldInfo;
-                fieldReference = fr;
-            } else {
-                fieldInfo = null;
-                fieldReference = null;
-            }
-            if (fieldInfo != null) {
-                DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
-                if (effectivelyFinal.isDelayed()) {
-                    FieldReference fr = fieldReference;
-                    return DelayedVariableExpression.forField(fr, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
-                }
-                if (effectivelyFinal.valueIsFalse()) {
-                    containsVariableFields = true;
-                }
-            }
-            variables.add(variable);
-        }
-        return new InlinedMethod(Identifier.generate(), methodInfo, value, variables, containsVariableFields);
+        return InlinedMethod.of(Identifier.generate(), methodInfo, value, analyserContext);
     }
 
 

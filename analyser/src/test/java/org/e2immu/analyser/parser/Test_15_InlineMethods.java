@@ -141,17 +141,21 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 }
             }
             if ("expandSum".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:expandSum>" : "3*k+k*i";
+                String expect = d.iteration() == 0 ? "<m:expandSum>" : "3*k+k*i";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
 
             if ("expand".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "variableField.i";
-                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() <= 1) {
                     assertEquals("svr@Method_expand",
                             d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
-                }
+                } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertTrue(inlinedMethod.containsVariableFields());
+                    assertEquals("variableField.i", inlinedMethod.expression().toString());
+                } else fail();
+
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "variableField.i";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlineMethods_6", 0, 0, new DebugConfiguration.Builder()
@@ -159,7 +163,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 .build());
     }
 
-    // uses InlineMethods6
+    // uses InlineMethods_6
     @Test
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

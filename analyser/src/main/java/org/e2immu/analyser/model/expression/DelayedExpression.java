@@ -160,6 +160,11 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(msg, fieldInfo.type, linkedVariables, causesOfDelay);
     }
 
+    public static Expression forInlinedMethod(ParameterizedType parameterizedType, CausesOfDelay causes) {
+        String msg = brackets("inline");
+        return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.
