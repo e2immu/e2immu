@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -307,8 +308,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference fr) {
+            if (vi.variable() instanceof FieldReference fr && notInConstruction()) {
                 // is it a variable field, or a final field? if we don't know, return an empty VI
+                // in constructors, and sync blocks, this does not hold
+
                 DV effectivelyFinal = getAnalyserContext().getFieldAnalysis(fr.fieldInfo).getProperty(FINAL);
                 if (effectivelyFinal.isDelayed()) {
                     return new VariableInfoImpl(getLocation(), variable);
@@ -322,6 +325,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             }
         } // else we need to go to the variable itself
         return vi;
+    }
+
+    // FIXME add sync blocks etc.
+    private boolean notInConstruction() {
+        return methodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     private boolean isNotMine(Variable variable) {
