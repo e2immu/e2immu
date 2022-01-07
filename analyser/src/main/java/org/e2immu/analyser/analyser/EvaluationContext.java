@@ -55,6 +55,13 @@ public interface EvaluationContext {
         return null;
     }
 
+    // convenient in breakpoints while debugging
+    @SuppressWarnings("unused")
+    default String safeMethodName() {
+        MethodAnalyser ma = getCurrentMethod();
+        return ma == null ? null: ma.getMethodInfo().name;
+    }
+
     default MethodAnalyser getCurrentMethod() {
         return null;
     }
