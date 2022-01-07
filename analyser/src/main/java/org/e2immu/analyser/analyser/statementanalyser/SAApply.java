@@ -412,8 +412,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             return value;
         }
         if (stateIsDelayedInChangeData.isDelayed()) {
-            return DelayedExpression.forState(variable.parameterizedType(),
-                    LinkedVariables.delayedEmpty(stateIsDelayedInChangeData), stateIsDelayedInChangeData);
+            // see Precondition_3, Basics_14: both need breaking the delay loop
+            CausesOfDelay marker = new SimpleSet(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.STATE_DELAYED));
+            if (stateIsDelayedInChangeData.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.STATE_DELAYED &&
+                    c instanceof VariableCause vc && vc.variable().equals(variable) && c.location().equals(vc.location()))) {
+                log(DELAYED, "Breaking delay " + marker);
+            } else {
+                CausesOfDelay merged = stateIsDelayedInChangeData.merge(marker);
+                LinkedVariables lv = LinkedVariables.delayedEmpty(merged);
+                return DelayedExpression.forState(variable.parameterizedType(), lv, merged);
+            }
         }
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
             // variable defined outside loop, now in loop, not delayed

@@ -143,6 +143,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     }
 
     // integer
+    // Example of breaking a state delay in SAApply, maybeValueNeedsState
     @Test
     public void test3() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Precondition_3";
@@ -152,17 +153,16 @@ public class Test_04_Precondition extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                assertEquals(MultiLevel.NULLABLE_DV, d.fieldAnalysis().getProperty(Property.EXTERNAL_NOT_NULL));
+                String expectedDelay = "initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2";
+                assertDv(d, expectedDelay, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             String name = d.methodInfo().name;
             if ("setInteger".equals(name)) {
-                if (d.iteration() > 0) {
-                    assertEquals("null==integer&&ii>=0",
-                            d.methodAnalysis().getPrecondition().expression().toString());
-                }
+                String expectPrecondition = notConditionIn0(d.iteration());
+                assertEquals(expectPrecondition, d.methodAnalysis().getPrecondition().expression().toString());
             }
         };
 
@@ -175,7 +175,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertTrue(d.variableInfo().isRead());
-                        String expectValue = d.iteration() == 0 ? "<f:integer>" : "nullable instance type Integer";
+                        String expectValue = d.iteration() <= 1 ? "<f:integer>" : "nullable instance type Integer";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
@@ -191,14 +191,14 @@ public class Test_04_Precondition extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(RETURN_VAR, d.variableName());
                     if ("1".equals(d.statementId())) {
-                        if (d.iteration() == 0) {
+                        if (d.iteration() <= 1) {
                             // not <s:Integer> because both state and value are delayed; preference to value (see EvaluationResult.assignment)
                             assertEquals("<p:ii>>=0?<p:ii>:null", d.currentValue().toString());
                         } else {
                             assertEquals("ii", d.currentValue().toString());
                         }
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
                     }
                 }
             }
@@ -207,7 +207,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "null!=<f:integer>" : "null!=integer$0";
+                    String expect = conditionIn0(d.iteration());
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
@@ -215,7 +215,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<p:ii>>=0?<p:ii>:null" : "ii";
+                    String expect = d.iteration() <= 1 ? "<p:ii>>=0?<p:ii>:null" : "ii";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -233,17 +233,17 @@ public class Test_04_Precondition extends CommonTestRunner {
                     assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "null!=<f:integer>" : "null!=integer$0";
-                    assertEquals(expectCondition, d.condition().toString());
+                    String expect = conditionIn0(d.iteration());
+                    assertEquals(expect, d.condition().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.localConditionManager().isDelayed());
 
                     assertTrue(d.statementAnalysis().variableIsSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     assertTrue(variableInfo.isAssigned());
 
-                    if (d.iteration() == 0) {
+                    if (d.iteration() <= 1) {
                         assertFalse(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
                     } else {
                         assertTrue(d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
@@ -257,20 +257,20 @@ public class Test_04_Precondition extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     assertTrue(variableInfo.isAssigned());
 
-                    String expect = d.iteration() == 0 ? "null==<f:integer>&&ii>=0" : "null==integer&&ii>=0";
+                    String expect = notConditionIn0(d.iteration());
                     assertEquals(expect, d.statementAnalysis().methodLevelData()
                             .combinedPrecondition.get().expression().toString());
-                    assertEquals(d.iteration() == 0,
+                    assertEquals(d.iteration() <= 1,
                             d.statementAnalysis().methodLevelData().combinedPrecondition.isVariable());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.localConditionManager().isDelayed());
 
                     assertTrue(d.statementAnalysis().variableIsSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     assertTrue(variableInfo.isAssigned());
 
-                    if (d.iteration() > 0) {
+                    if (d.iteration() > 1) {
                         assertNotNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     }
                 }
@@ -285,6 +285,23 @@ public class Test_04_Precondition extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+    private static String conditionIn0(int iteration) {
+        return switch (iteration) {
+            case 0 -> "null!=<f:integer>";
+            case 1 -> "null!=<vp:java.lang.Integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>";
+            default -> "null!=integer$0";
+        };
+    }
+
+    private static String notConditionIn0(int iteration) {
+        return switch (iteration) {
+            case 0 -> "null==<f:integer>&&ii>=0";
+            case 1 -> "null==<vp:java.lang.Integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>&&ii>=0";
+            default -> "null==integer&&ii>=0";
+        };
+    }
+
 
     @Test
     public void test4() throws IOException {

@@ -61,6 +61,7 @@ public interface CauseOfDelay {
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),
         SINGLE_RETURN_VALUE("svr", "single return value not yet set"),
         SINGLETON("singleton", ""),
+        STATE_DELAYED("state", "variable cannot get value because state is delayed"),
         TEMP_MM("temp_mm", "Temporary modified method"),
         TO_IMPLEMENT("to_implement", "Temporary; needs implementation"),
         TYPE_ANALYSIS("type_analysis", "Type analysis missing"),

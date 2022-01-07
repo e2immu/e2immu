@@ -159,6 +159,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 .build());
     }
 
+    // uses InlineMethods6
     @Test
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -172,7 +173,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
             }
         };
         testClass(List.of("InlineMethods_6", "InlineMethods_7"), 0, 0, new DebugConfiguration.Builder()
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
