@@ -83,10 +83,4 @@ public interface Variable extends OneVariable {
     default VariableNature variableNature() {
         return VariableNature.METHOD_WIDE;
     }
-
-    default boolean equalsOrEqualToCopy(Variable other) {
-        if (equals(other)) return true;
-        Variable copy = other.variableNature().localCopyOf();
-        return equals(copy);
-    }
 }

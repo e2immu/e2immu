@@ -73,12 +73,6 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
-            if ("i$2".equals(d.variableName())) {
-                if ("2.0.0".equals(d.statementId())) {
-                    assertTrue(d.iteration() > 0);
-                    assertEquals("instance type int", d.currentValue().debugOutput());
-                }
-            }
             if ("i".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
                     boolean expect = d.statementId().startsWith("2");

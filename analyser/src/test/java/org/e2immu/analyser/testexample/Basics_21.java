@@ -20,6 +20,8 @@ import org.e2immu.annotation.*;
 Minimal clone of SetOnce; to detect infinite loops when there are self-references.
 All is green until the copy() method comes into play.
  */
+@E2Container(after = "t")
+@Independent1
 public class Basics_21<T> {
 
     @Final(after = "t")
@@ -56,7 +58,7 @@ public class Basics_21<T> {
 
     @Modified
     @Mark("t")
-    public void copy(@NotNull @NotModified Basics_21<T> other) {
+    public void copy(@NotNull Basics_21<T> other) {
         if (other.isSet()) {
             set(other.get());
         }

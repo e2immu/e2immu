@@ -257,7 +257,7 @@ public class Assignment extends BaseExpression implements Expression {
         IsVariableExpression ive2;
         if (currentValue != null && (currentValue.equals(e2.assignedToTarget) ||
                 ((ive2 = e2.assignedToTarget.asInstanceOf(IsVariableExpression.class)) != null)
-                        && newVariableTarget.equalsOrEqualToCopy(ive2.variable())) &&
+                        && newVariableTarget.equals(ive2.variable())) &&
                 !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);

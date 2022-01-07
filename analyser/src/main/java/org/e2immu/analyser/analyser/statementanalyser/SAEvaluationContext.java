@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
@@ -343,8 +344,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
         // important! do not use variable in the next statement, but variableInfo.variable()
         // we could have redirected from a variable field to a local variable copy
-        if (forwardEvaluationInfo.assignToField()
-                && variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null) {
+        if (forwardEvaluationInfo.assignToField() && variable instanceof LocalVariableReference) {
             return variableInfo.getValue();
         }
         // FIXME instead of forwardEvaluationInfo.assignmentTarget()
@@ -564,35 +564,27 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
         Expression value = variableInfo.getValue();
         Variable v = variableInfo.variable();
-        if (value.isInstanceOf(Instance.class)) {
-            int statementTime;
-            String assignmentId;
+        if (value.isInstanceOf(Instance.class) && !v.equals(myself)) {
+            VariableExpression.Suffix suffix;
             if (v instanceof FieldReference fieldReference) {
                 FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
                 DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
-                if (finalDV.isDelayed()) {
-                    statementTime = VariableInfoContainer.VARIABLE_FIELD_DELAY;
-                } else if (finalDV.valueIsTrue()) {
-                    statementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                if (finalDV.isDelayed() || finalDV.valueIsTrue()) {
+                    suffix = VariableExpression.NO_SUFFIX;
                 } else {
-                    statementTime = getInitialStatementTime();
+                    String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
+                    suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
                 }
-                assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
-                // FIXME add Loop based on VariableNature etc.
             } else {
-                statementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-                assignmentId = null;
-            }
-            // see Basics_4 for the combination of v==myself, yet VE is returned
-            if (!v.equals(myself)) {
-                VariableExpression.Suffix suffix;
-                if (statementTime >= 0) {
-                    suffix = new VariableExpression.VariableField(statementTime, assignmentId);
+                VariableInfoContainer vic = statementAnalysis.getVariable(v.fullyQualifiedName());
+                if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+                    suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
                 } else {
                     suffix = VariableExpression.NO_SUFFIX;
                 }
-                return new VariableExpression(v, suffix);
             }
+            // see Basics_4 for the combination of v==myself, yet VE is returned
+            return new VariableExpression(v, suffix);
         }
         return value;
     }

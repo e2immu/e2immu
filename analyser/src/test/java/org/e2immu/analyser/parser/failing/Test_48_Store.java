@@ -104,18 +104,6 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
-                if ("countRemoved$1.0.0".equals(d.variableName())) {
-                    if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
-                        assertTrue(d.iteration() > 0);
-                        if (d.variable().variableNature() instanceof VariableNature.CopyOfVariableInLoop copy) {
-                            assertEquals("1.0.0", copy.statementIndex());
-                        } else {
-                            fail();
-                        }
-                        assertEquals("1+countRemoved$1.0.0", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                    }
-                }
             }
         };
         testClass("Store_2", 0, 1, new DebugConfiguration.Builder()

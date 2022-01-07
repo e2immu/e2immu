@@ -118,8 +118,7 @@ public class ComputeLinkedVariables {
                                 immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
                         .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
 
-                boolean bidirectional = vic.variableNature().localCopyOf() == null;
-                weightedGraph.addNode(variable, curated.variables(), bidirectional);
+                weightedGraph.addNode(variable, curated.variables(), true);
                 if (curated.isDelayed()) {
                     curated.variables().forEach((v, value) -> {
                         if (value.isDelayed()) {

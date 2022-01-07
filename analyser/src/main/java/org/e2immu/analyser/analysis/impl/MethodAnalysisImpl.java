@@ -180,7 +180,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // the value here (size will be one)
         public final VariableFirstThen<CausesOfDelay, Optional<Precondition>> preconditionForEventual;
-        private final SetOnce<Eventual> eventual = new SetOnce<>();
+        private final VariableFirstThen<CausesOfDelay, Eventual> eventual;
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
 
@@ -220,7 +220,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay eventualStatus() {
-            return null;
+            return eventual.isFirst() ? eventual.getFirst() : CausesOfDelay.EMPTY;
         }
 
         @Override
@@ -243,6 +243,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.empty(primitives));
             preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
+            eventual = new VariableFirstThen<>(initialDelay(methodInfo));
             if (!methodInfo.hasReturnValue()) {
                 UnknownExpression u = new UnknownExpression(primitives.voidParameterizedType(),
                         UnknownExpression.NO_RETURN_VALUE);
@@ -393,7 +394,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Eventual getEventual() {
-            return eventual.getOrDefaultNull();
+            return eventual.get();
         }
 
         public void setFirstStatement(StatementAnalysis firstStatement) {
@@ -402,6 +403,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void addCompanion(CompanionMethodName companionMethodName, MethodInfo companion) {
             computedCompanions.put(companionMethodName, companion);
+        }
+
+        public void setEventualDelay(CausesOfDelay eventual) {
+            this.eventual.setFirst(eventual);
         }
 
         public void setEventual(Eventual eventual) {

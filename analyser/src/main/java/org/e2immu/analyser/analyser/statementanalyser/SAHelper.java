@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 
@@ -35,7 +34,6 @@ import java.util.Set;
 import static org.e2immu.analyser.analyser.Property.*;
 
 record SAHelper(StatementAnalysis statementAnalysis) {
-
 
     static Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
@@ -138,15 +136,6 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
 
         return res;
-    }
-
-    static boolean assignmentToNonCopy(VariableInfoContainer vic, EvaluationResult evaluationResult) {
-        if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop) {
-            Variable original = vic.variableNature().localCopyOf();
-            EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(original);
-            return changeData != null && changeData.markAssignment();
-        }
-        return false;
     }
 
     public void visitStatementVisitors(String statementId,

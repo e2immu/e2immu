@@ -156,7 +156,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         delay = delay.merge(effFinal.causesOfDelay());
                     }
                 }
-            } else if (!SAHelper.assignmentToNonCopy(vic, evaluationResult)) {
+            } else  {
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
 

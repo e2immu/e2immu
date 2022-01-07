@@ -245,6 +245,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis, typeAnalysis, analyserContext);
         MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
         if (eventual.causesOfDelay().isDelayed()) {
+            methodAnalysis.setEventualDelay(eventual.causesOfDelay());
             return eventual.causesOfDelay();
         }
         methodAnalysis.setEventual(eventual);

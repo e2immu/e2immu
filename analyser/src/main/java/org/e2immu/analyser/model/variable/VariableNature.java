@@ -41,14 +41,6 @@ public interface VariableNature {
         return null;
     }
 
-    default Variable localCopyOf() {
-        return null;
-    }
-
-    default String suffix() {
-        return "";
-    }
-
     default boolean acceptForSubBlockMerging(String index) {
         return true;
     }
@@ -128,44 +120,6 @@ public interface VariableNature {
         @Override
         public boolean acceptForSubBlockMerging(String index) {
             return !index.equals(parentBlockIndex);
-        }
-    }
-
-    /*
-    situation 5: local copy of variable defined outside loop, potentially assigned inside the loop
-    assignmentId null means: not assigned in the loop
-
-    statement index is the one of the loop!
-    assignment ID when there has been an assignment inside the loop
-     */
-    record CopyOfVariableInLoop(String statementIndex,
-                                Variable localCopyOf) implements VariableNature {
-        public CopyOfVariableInLoop {
-            assert localCopyOf != null;
-        }
-
-        public String suffix() {
-            return "$" + statementIndex;
-        }
-
-        @Override
-        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex));
-        }
-
-        @Override
-        public boolean acceptForSubBlockMerging(String index) {
-            return !index.equals(statementIndex);
-        }
-
-        @Override
-        public boolean acceptVariableForMerging(String index) {
-            return !index.equals(statementIndex);
-        }
-
-        @Override
-        public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
-            return statementIndex;
         }
     }
 

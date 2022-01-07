@@ -1567,10 +1567,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     DV notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
                     if (vi.valueIsSet() && externalNotNull.equals(MultiLevel.NULLABLE_DV)
                             && notNullExpression.equals(MultiLevel.NULLABLE_DV)) {
-                        Variable primary = Objects.requireNonNullElse(vic.variableNature().localCopyOf(), variable);
-                        ensure(Message.newMessage(location(),
-                                Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Variable: " + primary.simpleName()));
+                        ensure(Message.newMessage(location(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Variable: " + variable.simpleName()));
                     }
                 }
             }

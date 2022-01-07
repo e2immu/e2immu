@@ -49,8 +49,7 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<m:isSet>";
-                        case 1 -> "null!=<f:t>";
+                        case 0, 1 -> "<m:isSet>";
                         default -> "null!=other.t";
                     };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -112,33 +111,35 @@ public class Test_00_Basics_21 extends CommonTestRunner {
             if ("copy".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() >= 1,
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertDv(d.p(0), 2, DV.FALSE_DV, CONTEXT_MODIFIED);
+                assertDv(d.p(0), 2, DV.FALSE_DV, MODIFIED_VARIABLE);
             }
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("get".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() == 0 ? "<m:get>" : "t$0";
+                String expect = d.iteration() <= 1 ? "<m:get>" : "t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isSet".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                String expect = d.iteration() == 0 ? "<m:isSet>" : "null!=t$0";
+                String expect = d.iteration() <= 1 ? "<m:isSet>" : "null!=t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Basics_21".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.EVENTUALLY_E2IMMUTABLE_DV, IMMUTABLE);
             }
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -179,15 +179,6 @@ public class LinkedVariables {
         return Objects.hash(variables, causesOfDelay);
     }
 
-    public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {
-        if (isEmpty()) return this;
-        Map<Variable, DV> remaining = variables.entrySet().stream()
-                .filter(e -> e.getKey() instanceof LocalVariableReference lvr &&
-                        variable.equals(lvr.variable.nature().localCopyOf()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new LinkedVariables(remaining);
-    }
-
     public boolean contains(Variable variable) {
         return variables.containsKey(variable);
     }
