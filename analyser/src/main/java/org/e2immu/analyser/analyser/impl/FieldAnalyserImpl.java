@@ -296,35 +296,62 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus analyseContainer() {
         if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER).isDone()) return DONE;
 
-        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-        if (bestType == null || !bestType.isAbstract()) {
-            // value does not matter
-            fieldAnalysis.setProperty(Property.CONTAINER, DV.FALSE_DV);
-            return DONE;
-        }
-
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
-        DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
-        if (typeContainer.isDelayed()) return typeContainer.causesOfDelay();
-        if (typeContainer.valueIsTrue()) {
+        TypeInfo formalType = fieldInfo.type.bestTypeInfo();
+        if (formalType == null) {
+            // unbound parameter types are @Container locally: there's no modifying methods you can call on them
             fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
             return DONE;
         }
 
-        // only worth doing something when the field is statically not a container
-        DV parameterModification = methodsForModification()
-                .flatMap(method -> method.getParameterAnalysers().stream())
-                .map(pa -> pa.getParameterAnalysis().getProperty(Property.MODIFIED_VARIABLE))
-                .reduce(Property.MODIFIED_VARIABLE.falseDv, DV::max);
-        if (parameterModification.isDelayed()) {
-            log(MODIFICATION, "Delaying @Container on field {}, some parameters have no @Modified status yet",
-                    fqn);
-            return parameterModification.causesOfDelay();
+        AnalysisStatus formal = containerOfType(formalType);
+        if (formal != null) return formal;
+
+        if (fieldAnalysis.valuesStatus().isDelayed()) {
+            log(DELAYED, "Delaying @Container on field {}, want values", fqn);
+            fieldAnalysis.setProperty(Property.CONTAINER, fieldAnalysis.valuesStatus());
+            return fieldAnalysis.valuesStatus();
         }
-        boolean allParametersNotModified = parameterModification.valueIsFalse();
-        log(MODIFICATION, "Set @Container on {} to {}", fqn, allParametersNotModified);
-        fieldAnalysis.setProperty(Property.CONTAINER, DV.fromBoolDv(allParametersNotModified));
+        AnalysisStatus values = null;
+        for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
+            if (!(proxy.getValue() instanceof NullConstant)) {
+                ParameterizedType concreteType = proxy.getValue().returnType();
+                TypeInfo concreteTypeInfo = concreteType.typeInfo;
+                if (concreteTypeInfo != null && formalType != concreteTypeInfo) {
+                    AnalysisStatus concrete = containerOfType(concreteTypeInfo);
+                    if (concrete != null) {
+                        if (values != null) {
+                            values = values.combine(concrete);
+                        } else {
+                            values = concrete;
+                        }
+                    }
+                } // either done already, or unbound parameter type, which is fine
+            } // else: the null constant can be anything
+        }
+        if(values != null) return values;
+
+        // both the formal and the concrete type are marked @Container; this must be a container too
+        log(MODIFICATION, "Field {} is a @Container, because formal and concrete type are", fqn);
+        fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
         return DONE;
+    }
+
+    private AnalysisStatus containerOfType(TypeInfo formalType) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
+        DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
+        if (typeContainer.isDelayed()) return typeContainer.causesOfDelay();
+        if (typeContainer.valueIsFalse()) {
+            fieldAnalysis.setProperty(Property.CONTAINER, DV.FALSE_DV);
+            log(MODIFICATION, "Field {} is not a @Container (type is not a @Container)", fqn);
+            return DONE;
+        }
+        if (formalType.isFinal(analyserContext) && typeContainer.valueIsTrue()) {
+            // java.lang.String, enum classes which are containers... they cannot be subclassed
+            log(MODIFICATION, "Field {} is a @Container (final, and type is @Container)", fqn);
+            fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
+            return DONE;
+        }
+        return null;
     }
 
     private AnalysisStatus analyseNotNull() {

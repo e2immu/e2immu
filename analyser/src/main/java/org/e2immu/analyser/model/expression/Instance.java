@@ -273,6 +273,7 @@ public final class Instance extends BaseExpression implements Expression {
         assert EvaluationContext.VALUE_PROPERTIES.stream().allMatch(valueProperties::containsKey) :
                 "Value properties missing! " + valueProperties;
         assert valueProperties.values().stream().noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
+        assert !parameterizedType.isJavaLangString() || valueProperties.get(Property.CONTAINER).valueIsTrue();
         return true;
     }
 

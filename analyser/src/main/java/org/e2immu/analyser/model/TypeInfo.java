@@ -714,8 +714,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         return new SimpleSet(newLocation(), cause);
     }
 
+    // in other words, cannot be subclassed
     public boolean isFinal(InspectionProvider inspectionProvider) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        return inspection.modifiers().contains(TypeModifier.FINAL);
+        return inspection.modifiers().contains(TypeModifier.FINAL) || inspection.typeNature() == TypeNature.ENUM;
     }
 }
