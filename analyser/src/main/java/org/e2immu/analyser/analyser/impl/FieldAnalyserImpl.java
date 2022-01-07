@@ -875,10 +875,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
                 DV immutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-                if (immutable.isDelayed()) {
-                    // see analyseImmutable, @BeforeMark
-                    immutable = fieldAnalysis.getProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE);
-                }
+                //if (immutable.isDelayed()) { FIXME ignoring for now
+                //    // see analyseImmutable, @BeforeMark
+                //    immutable = fieldAnalysis.getProperty(Property.PARTIAL_EXTERNAL_IMMUTABLE);
+                //}
                 boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
                 if (immutable.isDelayed() && !fieldOfOwnType) {
