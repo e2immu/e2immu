@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +29,8 @@ public class Container_7 {
     private static final int oneTwoThree = 123;
     private static final int nineEightSeven = 987;
 
+    // NOTE! this one is not a container, because it is not static
+    @E2Immutable
     public class Complex {
         final int i, j;
 
@@ -47,7 +47,7 @@ public class Container_7 {
         return map;
     }
 
-    @E2Container
+    @ERContainer
     @NotNull
     @NotModified
     public final Map<String, Complex> MAP2 = Map.copyOf(put(put(new HashMap<>(), ABC, new Complex(oneTwoThree, nineEightSeven)),
