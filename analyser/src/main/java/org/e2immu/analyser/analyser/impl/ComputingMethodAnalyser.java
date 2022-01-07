@@ -28,7 +28,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -617,9 +619,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             if (variable instanceof FieldReference fr) {
                 fieldInfo = fr.fieldInfo;
                 fieldReference = fr;
-            } else if (variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.CopyOfVariableField cvf) {
-                fieldInfo = cvf.localCopyOf().fieldInfo;
-                fieldReference = null;
             } else {
                 fieldInfo = null;
                 fieldReference = null;
@@ -627,9 +626,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             if (fieldInfo != null) {
                 DV effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(Property.FINAL);
                 if (effectivelyFinal.isDelayed()) {
-                    FieldReference fr = fieldReference == null
-                            ? new FieldReference(analyserContext, fieldInfo) : fieldReference;
-                    return DelayedVariableExpression.forField(fr, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
+                    return DelayedVariableExpression.forField(fieldReference, fieldInfo.delay(CauseOfDelay.Cause.FIELD_FINAL));
                 }
                 if (effectivelyFinal.valueIsFalse()) {
                     containsVariableFields = true;
@@ -906,25 +903,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         }
     }
 
-    @Override
-    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? List.of() : methodAnalysis.getLastStatement().assignmentInfo(fieldInfo);
-    }
 
     @Override
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies) {
+    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? List.of() :
-                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo, includeLocalCopies);
-    }
-
-    // occurs as often in a flatMap as not, so a stream version is useful
-    @Override
-    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies) {
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? Stream.empty() :
-                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo, includeLocalCopies);
+        return lastStatement == null ? null :
+                methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getThisAsVariable() {

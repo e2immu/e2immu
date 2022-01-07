@@ -68,7 +68,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expect = d.iteration() == 0 ? "<f:i>" : "i$0";
                     assertEquals(expect, d.currentValue().toString());
-                    String expectLv = d.iteration() == 0 ? "return getI:0,this.i:0" : "i$0:1,return getI:0,this.i:0";
+                    String expectLv = "return getI:0,this.i:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }

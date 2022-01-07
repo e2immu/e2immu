@@ -27,8 +27,6 @@ import java.util.stream.Stream;
 public interface MethodAnalyser extends Analyser, HoldsAnalysers {
     Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers();
 
-    Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies);
-
     StatementAnalyser findStatementAnalyser(String index);
 
     void logAnalysisStatuses();
@@ -37,9 +35,7 @@ public interface MethodAnalyser extends Analyser, HoldsAnalysers {
 
     boolean hasCode();
 
-    List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies);
-
-    List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo);
+    VariableInfo getFieldAsVariable(FieldInfo fieldInfo);
 
     CausesOfDelay fromFieldToParametersStatus();
 

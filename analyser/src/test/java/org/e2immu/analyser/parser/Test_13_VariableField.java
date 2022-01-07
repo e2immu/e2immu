@@ -29,6 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /*
+FIXME want extra examples of
+
+- VF assigned to other VF
+- VF with companion methods
+- VF local assignment changes to instance after time increase
+
 continuation of some examples that are in Basics 2, 3, 6, 7, 8, 14, 15
  */
 public class Test_13_VariableField extends CommonTestRunner {

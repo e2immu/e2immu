@@ -47,15 +47,6 @@ public interface VariableInfo {
 
     Expression getValue();
 
-    default Expression getVariableValue(Variable myself) {
-        Expression value = getValue();
-        Variable v = variable();
-        if (!v.equals(myself) && value.isInstanceOf(Instance.class)) {
-            return new VariableExpression(v);
-        }
-        return value;
-    }
-
     default boolean isDelayed() {
         return !valueIsSet();
     }

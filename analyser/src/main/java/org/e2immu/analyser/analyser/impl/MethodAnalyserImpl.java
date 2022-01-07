@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.*;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -224,12 +223,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         methodAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
         parameterAnalysers.forEach(ParameterAnalyser::write);
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::write);
-    }
-
-    @Override
-    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
-        return getFieldAsVariable(fieldInfo, false).stream().filter(VariableInfo::isAssigned)
-                .toList();
     }
 
     @Override

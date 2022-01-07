@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -37,35 +38,53 @@ import java.util.stream.Collectors;
 @E2Container
 public final class VariableExpression extends BaseExpression implements Expression, IsVariableExpression {
     private final Variable variable;
-    private final String name;
-
-    public VariableExpression(Variable variable, String name) {
-        super(Identifier.CONSTANT);
-        this.variable = variable;
-        this.name = name;
-    }
+    private final int statementTime;
+    private final String assignmentId;
 
     public VariableExpression(Variable variable) {
-        this(variable, variable.fullyQualifiedName());
+        this(variable, VariableInfoContainer.NOT_A_VARIABLE_FIELD, null);
+    }
+
+    public VariableExpression(Variable variable, int statementTime, String assignmentId) {
+        super(Identifier.CONSTANT);
+        this.variable = variable;
+        this.assignmentId = assignmentId;
+        this.statementTime = statementTime;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof VariableExpression that)) return false;
-        return variable.equals(that.variable);
+        if (!variable.equals(that.variable)) return false;
+        if (isDependentOnStatementTime()) {
+            return statementTime == that.statementTime && Objects.equals(assignmentId, that.assignmentId);
+        }
+        return true;
+    }
+
+    public String getAssignmentId() {
+        return assignmentId;
+    }
+
+    public int getStatementTime() {
+        return statementTime;
+    }
+
+    public boolean isDependentOnStatementTime() {
+        return statementTime != VariableInfoContainer.NOT_A_VARIABLE_FIELD;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variable);
+        return Objects.hash(variable, statementTime, assignmentId);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
-            return new VariableExpression(translated);
+            return new VariableExpression(translated, statementTime, assignmentId);
         }
         Expression translated2 = translationMap.directExpression(this);
         if (translated2 != null) {
@@ -76,7 +95,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
             if (!translatedScope.equals(fieldReference.scope)) {
                 ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
                 return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
-                        translatedType, fieldReference.isStatic));
+                        translatedType, fieldReference.isStatic), statementTime, assignmentId);
             }
         }
         return this;
@@ -99,7 +118,17 @@ public final class VariableExpression extends BaseExpression implements Expressi
             variableValue = (VariableExpression) inlineConditional.condition;
         else if (v instanceof VariableExpression ve) variableValue = ve;
         else throw new UnsupportedOperationException();
-        return name.compareTo(variableValue.name);
+        return id().compareTo(variableValue.id());
+    }
+
+    private String id() {
+        if (assignmentId != null) {
+            return variable.fullyQualifiedName() + "$" + assignmentId + "$" + statementTime;
+        }
+        if (statementTime >= 0) {
+            return variable.fullyQualifiedName() + "$" + statementTime;
+        }
+        return variable.fullyQualifiedName();
     }
 
     @Override
@@ -130,6 +159,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
                 // causes problems with local copies (Loops_19)
                 //   return dve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 builder.markRead(dve.variable());
+                return builder.setExpression(dve).build();
             }
             return builder.setExpression(inMap).build();
         }
@@ -143,10 +173,31 @@ public final class VariableExpression extends BaseExpression implements Expressi
             VariableExpression newScope;
             if (scopeInMap != null && (newScope = scopeInMap.asInstanceOf(VariableExpression.class)) != null) {
                 Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-                return builder.setExpression(new VariableExpression(newFieldRef)).build();
+                return builder.setExpression(of(evaluationContext, newFieldRef)).build();
             }
         }
-        return builder.setExpression(this).build();
+        return builder.setExpression(of(evaluationContext, variable)).build();
+    }
+
+    public VariableExpression of(EvaluationContext evaluationContext, Variable variable) {
+        if (statementTime == VariableInfoContainer.NOT_A_VARIABLE_FIELD) return this;
+        int newStatementTime;
+        if (statementTime == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+            if (variable instanceof FieldReference fieldReference) {
+                // need to check if we already know?
+                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+                DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
+                if (finalDV.isDelayed()) newStatementTime = VariableInfoContainer.VARIABLE_FIELD_DELAY;
+                else if (finalDV.valueIsTrue()) newStatementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                else {
+                    newStatementTime = evaluationContext.getInitialStatementTime();
+                }
+            } else throw new UnsupportedOperationException();
+        } else {
+            newStatementTime = statementTime;
+        }
+        // TODO is this correct?
+        return new VariableExpression(variable, newStatementTime, assignmentId);
     }
 
     @Override
@@ -229,7 +280,8 @@ public final class VariableExpression extends BaseExpression implements Expressi
                     && ve.variable() instanceof FieldReference fr
                     && !fr.scope.equals(scopeResult.value())) {
                 if (!scopeResultIsDelayed.isDelayed()) {
-                    return new VariableExpression(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                    FieldReference newFieldRef = new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression());
+                    return new VariableExpression(newFieldRef, ve.statementTime, ve.assignmentId);
                 }
                 return DelayedVariableExpression.forField(fr, scopeResultIsDelayed);
             }
@@ -270,7 +322,10 @@ public final class VariableExpression extends BaseExpression implements Expressi
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(variable.output(qualification));
+        OutputBuilder outputBuilder = new OutputBuilder().add(variable.output(qualification));
+        if (assignmentId != null) outputBuilder.add(new Text("$" + assignmentId));
+        if (statementTime >= 0) outputBuilder.add(new Text("$" + statementTime));
+        return outputBuilder;
     }
 
     @Override
@@ -334,9 +389,4 @@ public final class VariableExpression extends BaseExpression implements Expressi
     public Variable variable() {
         return variable;
     }
-
-    public String name() {
-        return name;
-    }
-
 }

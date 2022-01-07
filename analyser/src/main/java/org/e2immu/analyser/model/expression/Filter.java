@@ -23,7 +23,9 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -234,13 +236,11 @@ public class Filter {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         if ((ve = v.asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fr
-                && acceptScope(fr.scope)) return new FieldReferenceAndTranslationMap(fr, builder.build());
-        if (acceptAndRemapLocalCopy && ((ve = v.asInstanceOf(VariableExpression.class)) != null)
-                && ve.variable() instanceof LocalVariableReference lvr
-                && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy
-                && acceptScope(copy.localCopyOf().scope)) {
-            return new FieldReferenceAndTranslationMap(copy.localCopyOf(),
-                    builder.put(lvr, copy.localCopyOf()).build());
+                && acceptScope(fr.scope)) {
+            if (acceptAndRemapLocalCopy) {
+                builder.put(ve, new VariableExpression(ve.variable()));
+            }
+            return new FieldReferenceAndTranslationMap(fr, builder.build());
         }
         return null;
     }
@@ -269,13 +269,13 @@ public class Filter {
         }
         if (v instanceof IsVariableExpression variableValue) {
             if (variableValue.variable() instanceof FieldReference fieldReference &&
-                    acceptScope(fieldReference.scope)) return new FieldReferenceAndTranslationMap(fieldReference, null);
-            if (acceptAndRemapLocalCopy &&
-                    variableValue.variable() instanceof LocalVariableReference lvr &&
-                    lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
-                    acceptScope(copy.localCopyOf().scope)) {
-                return new FieldReferenceAndTranslationMap(copy.localCopyOf(),
-                        new TranslationMapImpl.Builder().put(lvr, copy.localCopyOf()).build());
+                    acceptScope(fieldReference.scope)) {
+                if (acceptAndRemapLocalCopy && variableValue instanceof VariableExpression ve) {
+                    TranslationMap tm = new TranslationMapImpl.Builder()
+                            .put(v, new VariableExpression(ve.variable())).build();
+                    return new FieldReferenceAndTranslationMap(fieldReference, tm);
+                }
+                return new FieldReferenceAndTranslationMap(fieldReference, null);
             }
         }
         return null;

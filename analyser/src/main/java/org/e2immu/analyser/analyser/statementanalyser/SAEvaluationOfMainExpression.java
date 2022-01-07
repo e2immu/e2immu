@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,17 +66,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         List<Expression> expressionsFromInitAndUpdate =
                 new SAInitializersAndUpdaters(statementAnalysis)
                         .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
-        Either<CausesOfDelay, List<Expression>> expressionsFromLocalVariablesInLoop =
-                ((StatementAnalysisImpl) statementAnalysis).localVariablesInLoop(sharedState);
+        CausesOfDelay causes = ((StatementAnalysisImpl) statementAnalysis).localVariablesInLoop();
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!
          */
-        AnalysisStatus analysisStatus = expressionsFromLocalVariablesInLoop.isLeft()
-                ? expressionsFromLocalVariablesInLoop.getLeft() : DONE;
-        if (expressionsFromLocalVariablesInLoop.isRight()) {
-            expressionsFromInitAndUpdate.addAll(expressionsFromLocalVariablesInLoop.getRight());
-        }
+        AnalysisStatus analysisStatus = AnalysisStatus.of(causes);
 
         Structure structure = statementAnalysis.statement().getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
@@ -257,17 +251,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         List<Expression> assignments = new ArrayList<>();
         for (FieldInfo fieldInfo : methodInfo().typeInfo.visibleFields(analyserContext)) {
             if (!fieldInfo.isStatic(analyserContext)) {
-                for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                    if (variableInfo.isAssigned()) {
-                        EvaluationResult translated = variableInfo.getValue()
-                                .reEvaluate(sharedState.evaluationContext(), translation);
-                        Assignment assignment = new Assignment(Identifier.generate(),
-                                statementAnalysis.primitives(),
-                                new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
-                                translated.value(), null, null, false);
-                        builder.compose(translated);
-                        assignments.add(assignment);
-                    }
+                VariableInfo variableInfo = methodAnalyser.getFieldAsVariable(fieldInfo);
+                if (variableInfo != null && variableInfo.isAssigned()) {
+                    EvaluationResult translated = variableInfo.getValue()
+                            .reEvaluate(sharedState.evaluationContext(), translation);
+                    Assignment assignment = new Assignment(Identifier.generate(),
+                            statementAnalysis.primitives(),
+                            new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
+                            translated.value(), null, null, false);
+                    builder.compose(translated);
+                    assignments.add(assignment);
                 }
             }
         }

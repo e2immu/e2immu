@@ -48,13 +48,9 @@ public class Test_00_Basics_7 extends CommonTestRunner {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
         final String I0 = "i$0";
         final String I1 = "i$1";
-        final String I0_FQN = I + "$0";
-        final String I1_FQN = I + "$1";
-        final String I101_FQN = I + "$1$1.0.1-E";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
-        final String I0_2 = I + "$0$2-E";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
@@ -75,8 +71,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                        String expect = INSTANCE_TYPE_INT_IDENTITY;
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         // READ IMPLICITLY via the variable 'i'
@@ -151,13 +146,6 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(I0 + "+q", d.currentValue().toString());
                     }
                 }
-                if (I0_2.equals(d.variableName())) {
-                    if ("3".equals(d.statementId())) {
-                        assertEquals("i$0+q", d.currentValue().toString());
-                        assertDv(d,1, NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                        assertDv(d,1, NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
-                    }
-                }
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
@@ -174,74 +162,20 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : I1;
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
+                        String expectLv =  "j:0,this.i:0" ;
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     // at 1.0.1, i gets incremented, j should not be linked to this.i anymore
                     if ("1.0.1".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:1,j:0";
+                        String expectLv = "j:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0" : "i$1:1,j:0";
+                        String expectLv = "j:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (I0_FQN.equals(d.variableName())) {
-                    if ("0".equals(d.statementId())) {
-                        assertTrue(d.iteration() > 0); // does not exist earlier!
 
-                        assertEquals("i$0:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-                        assertEquals("instance type int", d.currentValue().toString());
-                    }
-                    if ("1.0.3".equals(d.statementId())) {
-                        // NOTE: it is fine to have i$1 here, as long as it is not with a :0
-                        // FIXME should this.i still be here?
-                        assertEquals("i$0:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                }
-                if (I1_FQN.equals(d.variableName())) {
-                    // exists from 1.0.0 onwards
-                    assertTrue(d.iteration() > 0); // does not exist earlier!
-
-                    if ("1.0.0".equals(d.statementId())) {
-                        // after the assignment, i becomes a different value
-                        String expectLv = "i$1:0,j:0,this.i:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString(), d.statementId());
-                        assertEquals("instance type int", d.currentValue().toString());
-                    }
-                    if ("1.0.1".equals(d.statementId())) {
-                        // after the assignment, i becomes a different value
-                        assertEquals("i$1:0,j:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
-                    }
-                    if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("i$1:0,j:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
-                    }
-                    if ("1".equals(d.statementId())) {
-                        assertEquals("i$1:0", d.variableInfo().getLinkedVariables().toString(), d.statementId());
-                    }
-                }
-                if (I101_FQN.equals(d.variableName())) {
-                    if ("1".equals(d.statementId())) {
-                        assertFalse(d.variableInfoContainer().hasEvaluation());
-                        assertEquals("i$1$1.0.1-E:0,this.i:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                    // is primitive
-                    if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                        fail("Should not follow the path 102-103-1M-new it-1E-100");
-                    }
-                    if ("1.0.2".equals(d.statementId())) {
-                        assertEquals("1+" + I1, d.currentValue().toString());
-                        assertEquals("1.0.2-C", d.variableInfo().getReadId());
-                        // FIXME why is this not like in "1" ?? with itself included?
-                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                    if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("1+" + I1, d.currentValue().toString());
-                        assertEquals("1.0.2-C", d.variableInfo().getReadId());
-                        assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
-                    }
-                }
                 if (I.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
@@ -260,7 +194,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                        String linked = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
+                        String linked = "j:0,this.i:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {

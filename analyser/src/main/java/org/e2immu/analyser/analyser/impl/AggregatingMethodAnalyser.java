@@ -155,11 +155,6 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies) {
-        return Stream.of();
-    }
-
-    @Override
     public StatementAnalyserImpl findStatementAnalyser(String index) {
         return null;
     }
@@ -180,7 +175,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean b) {
-        return List.of();
+    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+        return null;
     }
 }

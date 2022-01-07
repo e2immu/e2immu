@@ -47,6 +47,9 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
     public String getLatestAssignment() {
         return ids.isEmpty() ? "-" : ids.floor("~");
     }
+    public String getLatestAssignmentNullWhenEmpty() {
+        return ids.isEmpty() ? null : ids.floor("~");
+    }
 
     @Override
     public int compareTo(AssignmentIds o) {

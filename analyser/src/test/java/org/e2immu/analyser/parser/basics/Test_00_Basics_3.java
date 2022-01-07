@@ -56,7 +56,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
     public void test() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
-        final String S_0 = "s$0";
         final String THIS = TYPE + ".this";
         final String OUT = "java.lang.System.out";
         final String GET_S_RET_VAR = TYPE + ".getS()";
@@ -77,7 +76,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() == 0 ? "<f:s>" : S_0;
+                String expectValue = d.iteration() == 0 ? "<f:s>" : S;
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -200,20 +199,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertDv(d, 0, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
-                if ((TYPE + ".s$2$0:M").equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    assertEquals("1", d.statementId());
-                    assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
-                    // we need NOT_INVOLVED here, because this is AFTER writing to the field
-                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_IMMUTABLE);
-                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                }
-                if ((TYPE + ".s$1").equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    assertEquals("nullable instance type String", d.currentValue().toString());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
-                    assertDv(d, 2, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
-                }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -240,7 +225,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(GET_S_RET_VAR, d.variableName());
-                    String expectValue = d.iteration() == 0 ? "<f:s>" : S_0;
+                    String expectValue = d.iteration() == 0 ? "<f:s>" : S;
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // copied from S
@@ -333,8 +318,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         };
 
         testClass("Basics_3", 0, 2, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

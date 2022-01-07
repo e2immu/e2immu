@@ -67,9 +67,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
                 ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
-                if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted.valueIsTrue());
-                }
             }
             if (escapeAlwaysExecuted.valueIsTrue()) {
                 // escapeCondition should filter out all != null, == null clauses

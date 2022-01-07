@@ -392,4 +392,8 @@ public interface EvaluationContext {
     default VariableInfo findOrThrow(Variable variable) {
         throw new UnsupportedOperationException();
     }
+
+    default Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
+        throw new UnsupportedOperationException();
+    }
 }

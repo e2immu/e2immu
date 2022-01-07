@@ -186,6 +186,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
     /*
     We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
 
+    FIXME we'll need code to replace special VE's by normal VEs
      */
     public Map<Expression, Expression> translationMap(EvaluationContext evaluationContext,
                                                       List<Expression> parameters,
@@ -218,9 +219,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
                 }
             } else if (variable instanceof FieldReference fr) {
                 fieldReference = fr;
-            } else if (variable instanceof LocalVariableReference lvr
-                    && lvr.variableNature() instanceof VariableNature.CopyOfVariableField cvf) {
-                fieldReference = cvf.localCopyOf();
             }
 
             if (fieldReference != null) {

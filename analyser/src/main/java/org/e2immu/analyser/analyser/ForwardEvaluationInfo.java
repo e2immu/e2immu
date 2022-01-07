@@ -59,7 +59,7 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
         return new ForwardEvaluationInfo(Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV), true, assignmentTarget);
     }
 
-    // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
+    // the NULLABLE on not-null is because we intend to set it, so it really does not matter what the current value is
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV),
             false, null);

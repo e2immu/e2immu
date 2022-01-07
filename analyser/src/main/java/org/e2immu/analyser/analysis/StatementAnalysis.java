@@ -45,12 +45,6 @@ public interface StatementAnalysis extends Analysis,
     @NotNull
     VariableInfo getLatestVariableInfo(String variableName);
 
-    Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies);
-
-    List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies);
-
-    List<VariableInfo> assignmentInfo(FieldInfo fieldInfo);
-
     boolean containsMessage(Message.Label messageLabel);
 
     boolean containsMessage(Message message);
@@ -64,12 +58,6 @@ public interface StatementAnalysis extends Analysis,
     boolean noIncompatiblePrecondition();
 
     Stream<Message> messageStream();
-
-    LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
-                                                     VariableInfo fieldVi,
-                                                     int statementTime);
-
-    LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop);
 
     /*
         create a variable, potentially even assign an initial value and a linked variables set.
@@ -166,5 +154,5 @@ public interface StatementAnalysis extends Analysis,
                          Variable variable,
                          EvaluationResult.ChangeData changeData,
                          int newStatementTime);
-    VariableInfoContainer addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
+    void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
 }

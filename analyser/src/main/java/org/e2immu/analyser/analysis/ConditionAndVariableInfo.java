@@ -41,7 +41,7 @@ public record ConditionAndVariableInfo(Expression condition,
     }
 
     public Expression value() {
-        Expression value = variableInfo.getVariableValue(myself);
+        Expression value = evaluationContext.getVariableValue(myself, variableInfo);
 
         List<Variable> variables = value.variables(true);
         if (variables.isEmpty()) return value;

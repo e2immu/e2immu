@@ -21,8 +21,8 @@ import org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
@@ -119,7 +119,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
 
                 Expression bestValue = SAHelper.bestValue(changeData, vi1);
-                Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue);
+                Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
@@ -146,8 +146,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
 
                 if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
-                    assignmentLocalVariableInLoopDefinedOutside(sharedState, groupPropertyValues,
-                            existingVariablesNotVisited, variable, changeData, vic, bestValue, valueProperties);
+                    statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                 }
                 if (variable instanceof FieldReference fr) {
                     FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
@@ -259,7 +258,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         if (statement() instanceof ForEachStatement) {
             Variable loopVar = statementAnalysis.obtainLoopVar();
-            potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext(),
+            potentiallyUpgradeCnnOfLocalLoopVariable(sharedState.evaluationContext(),
                     groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
                     groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
                     evaluationResult.causesOfDelay(), loopVar);
@@ -344,36 +343,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return new ApplyStatusAndEnnStatus(delay, merge);
     }
 
-    private void assignmentLocalVariableInLoopDefinedOutside(StatementAnalyserSharedState sharedState, GroupPropertyValues groupPropertyValues, Map<Variable, VariableInfoContainer> existingVariablesNotVisited, Variable variable, EvaluationResult.ChangeData changeData, VariableInfoContainer vic, Expression bestValue, Map<Property, DV> valueProperties) {
-        VariableInfoContainer local = statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
-        // assign the value of the assignment to the local copy created
-        if (local != null) {
-            Variable localVar = local.current().variable();
-            // calculation needs to be done again, this time with the local copy rather than the original
-            // (so that we can replace the local one with instance)
-            Expression valueToWrite2 = maybeValueNeedsState(sharedState, vic, localVar, bestValue);
-            Expression valueToWriteCorrected;
-            IsVariableExpression ive;
-            if ((ive = valueToWrite2.asInstanceOf(IsVariableExpression.class)) != null &&
-                    ive.variable().equals(localVar)) {
-                // not allowing j$2 to be assigned to j$2; assign to initial instead
-                valueToWriteCorrected = local.getPreviousOrInitial().getValue();
-            } else {
-                valueToWriteCorrected = valueToWrite2;
-            }
-            log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
-            Map<Property, DV> merged2 = SAHelper.mergeAssignment(localVar, valueProperties,
-                    changeData.properties(), groupPropertyValues);
-
-            LinkedVariables linkedToMain = LinkedVariables.of(variable, LinkedVariables.STATICALLY_ASSIGNED_DV);
-            local.ensureEvaluation(getLocation(),
-                    new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
-                    statementAnalysis.statementTime(EVALUATION), Set.of());
-            local.setValue(valueToWriteCorrected, linkedToMain, merged2, false);
-            existingVariablesNotVisited.remove(localVar);
-        }
-    }
-
 
     private void importContextModifiedValuesForThisFromSubTypes(AnalyserContext analyserContext,
                                                                 List<PrimaryTypeAnalyser> localAnalysers,
@@ -437,39 +406,44 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     Expression maybeValueNeedsState(StatementAnalyserSharedState sharedState,
                                     VariableInfoContainer vic,
                                     Variable variable,
-                                    Expression value) {
-        boolean valueIsDelayed = value.isDelayed();
-        if (valueIsDelayed || !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) {
-            // not applicable
+                                    Expression value,
+                                    CausesOfDelay stateIsDelayedInChangeData) {
+        if (value.isDelayed()) {
             return value;
         }
-        // variable defined outside loop, now in loop, not delayed
+        if (stateIsDelayedInChangeData.isDelayed()) {
+            return DelayedExpression.forState(variable.parameterizedType(),
+                    LinkedVariables.delayedEmpty(stateIsDelayedInChangeData), stateIsDelayedInChangeData);
+        }
+        if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
+            // variable defined outside loop, now in loop, not delayed
 
-        ConditionManager localConditionManager = sharedState.localConditionManager();
+            ConditionManager localConditionManager = sharedState.localConditionManager();
 
-        if (!localConditionManager.state().isBoolValueTrue()) {
-            Expression state = localConditionManager.state();
+            if (!localConditionManager.state().isBoolValueTrue()) {
+                Expression state = localConditionManager.state();
 
-            ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
-            // do not take vi1 itself, but "the" local copy of the variable
-            EvaluationContext evaluationContext = sharedState.evaluationContext();
-            Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable,
-                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
+                ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
+                // do not take vi1 itself, but "the" local copy of the variable
+                EvaluationContext evaluationContext = sharedState.evaluationContext();
+                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(variable,
+                        statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
 
-            InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
-                    evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
-            return inlineConditional.optimise(evaluationContext.dropConditionManager());
+                InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
+                        evaluationContext.getAnalyserContext(), state, value, valueOfVariablePreAssignment);
+                return inlineConditional.optimise(evaluationContext.dropConditionManager());
+            }
         }
         return value;
     }
 
 
-    void potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(EvaluationContext evaluationContext,
-                                                         Map<Variable, DV> externalNotNull,
-                                                         Map<Variable, DV> contextNotNull,
-                                                         Expression value,
-                                                         CausesOfDelay delays,
-                                                         Variable loopVar) {
+    void potentiallyUpgradeCnnOfLocalLoopVariable(EvaluationContext evaluationContext,
+                                                  Map<Variable, DV> externalNotNull,
+                                                  Map<Variable, DV> contextNotNull,
+                                                  Expression value,
+                                                  CausesOfDelay delays,
+                                                  Variable loopVar) {
         assert contextNotNull.containsKey(loopVar); // must be present!
         if (delays.isDelayed()) {
             // we want to avoid a particular value on EVAL for the loop variable
@@ -483,12 +457,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                 contextNotNull.put(loopVar, oneLevelLess);
                 externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED_DV);
-
-                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar, statementAnalysis.index());
-                if (contextNotNull.containsKey(copyVar)) {
-                    // can be delayed to the next iteration
-                    contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                }
             }
         }
     }

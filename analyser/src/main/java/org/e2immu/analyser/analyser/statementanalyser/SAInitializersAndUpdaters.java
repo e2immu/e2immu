@@ -14,11 +14,16 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.ForwardAnalysisInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -29,9 +34,6 @@ import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import static org.e2immu.analyser.analyser.Property.*;
 
 record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
@@ -91,14 +93,14 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             Expression initialiserToEvaluate;
 
             if (expression instanceof LocalVariableCreation lvc) {
-                LocalVariableReference lvr;
+
                 VariableInfoContainer vic;
                 String name = lvc.localVariable.name();
                 if (!statementAnalysis.variableIsSet(name)) {
 
                     // create the local (loop) variable
 
-                    lvr = new LocalVariableReference(lvc.localVariable);
+                    LocalVariableReference lvr = new LocalVariableReference(lvc.localVariable);
                     VariableNature variableNature;
                     if (statement() instanceof LoopStatement) {
                         variableNature = new VariableNature.LoopVariable(index());
@@ -107,14 +109,11 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     } else {
                         variableNature = new VariableNature.NormalLocalVariable(index());
                     }
-                    vic = statementAnalysis.createVariable(evaluationContext,
+                    statementAnalysis.createVariable(evaluationContext,
                             lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
                     if (statement() instanceof LoopStatement) {
                         ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(lvr.fullyQualifiedName());
                     }
-                } else {
-                    vic = statementAnalysis.getVariable(name);
-                    lvr = (LocalVariableReference) vic.current().variable();
                 }
 
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
@@ -135,10 +134,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         if (statementAnalysis.statement() instanceof LoopStatement) {
             for (Expression expression : statementAnalysis.statement().getStructure().updaters()) {
                 expression.visit(e -> {
-                    VariableExpression ve;
-                    if (e instanceof Assignment assignment
-                            && (ve = assignment.target.asInstanceOf(VariableExpression.class)) != null) {
-                        ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(ve.name());
+                    if (e instanceof Assignment assignment && assignment.target.isInstanceOf(VariableExpression.class)) {
                         expressionsToEvaluate.add(assignment); // we do evaluate the assignment no that the var will be there
                     }
                 });

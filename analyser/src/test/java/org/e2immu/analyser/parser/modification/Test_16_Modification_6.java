@@ -29,7 +29,6 @@ import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -100,10 +99,8 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 VariableInfo set6VariableInfo = d.getFieldAsVariable(set6);
                 assertNull(set6VariableInfo); // this variable does not occur!
 
-                List<VariableInfo> vis = d.methodAnalysis().getLastStatement()
-                        .latestInfoOfVariablesReferringTo(set6, false);
-                assertEquals(1, vis.size());
-                VariableInfo vi = vis.get(0);
+                VariableInfo vi = d.methodAnalysis().getLastStatement().getLatestVariableInfo(set6.fullyQualifiedName());
+                assertNotNull(vi);
                 if (d.iteration() > 0) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, vi.getProperty(Property.NOT_NULL_EXPRESSION));
                     assertEquals(DV.TRUE_DV, vi.getProperty(Property.CONTEXT_MODIFIED));

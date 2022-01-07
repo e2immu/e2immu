@@ -90,31 +90,25 @@ public class Test_00_Basics_8 extends CommonTestRunner {
                 String linkedVariables = d.variableInfo().getLinkedVariables().toString();
                 if ("j".equals(d.variableName())) {
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,this.i:0" : "i$1:1,j:0,this.i:0";
-                        assertEquals(expectLv, linkedVariables, d.statementId());
+                        assertEquals("j:0,this.i:0", linkedVariables, d.statementId());
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
-                        assertEquals(expectLv, linkedVariables, d.statementId());
+                        assertEquals("j:0,k:0,this.i:0", linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0,this.i:0" : "i$1:1,i$2:1,j0:0,j:0,k:0,this.i:0";
-                        assertEquals(expectLv, linkedVariables, d.statementId());
+                        assertEquals("j0:0,j:0,k:0,this.i:0", linkedVariables, d.statementId());
                     }
                     if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
                             "4.0.0.0.3".equals(d.statementId()) || "4.0.0.0.4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j0:0,j:0,k:0" : "i$1:1,i$2:1,j0:0,j:0,k:0";
-                        assertEquals(expectLv, linkedVariables, "At " + d.statementId());
+                        assertEquals("j0:0,j:0,k:0", linkedVariables, "At " + d.statementId());
                     }
                     if ("4.0.0".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0" : "i$1:1,i$2:1,j:0,k:0";
-                        assertEquals(expectLv, linkedVariables, "At " + d.statementId());
+                        assertEquals("j:0,k:0", linkedVariables, "At " + d.statementId());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? "j:0,k:0,this.i:0" : "i$1:1,i$2:1,j:0,k:0,this.i:0";
-                        assertEquals(expectLv, linkedVariables, d.statementId());
+                        assertEquals("j:0,k:0,this.i:0", linkedVariables, d.statementId());
                     }
                 }
                 if ("k".equals(d.variableName())) {

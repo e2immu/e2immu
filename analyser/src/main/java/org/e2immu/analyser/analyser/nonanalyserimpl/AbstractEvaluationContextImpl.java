@@ -22,9 +22,7 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -92,20 +90,11 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         Set<Variable> notNullVariablesInCondition = conditionManager
                 .findIndividualNullInCondition(this, false);
         if (notNullVariablesInCondition.contains(variable)) return true;
-        FieldReference fieldReference;
         if (variable instanceof FieldReference fr) {
-            fieldReference = fr;
-        } else if (variable instanceof LocalVariableReference lvr &&
-                lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-            fieldReference = copy.localCopyOf();
-            VariableInfo variableInfo = findField.apply(fieldReference);
-            if (variableInfo.isAssigned()) return false;
-            // IMPROVE this is only valid if the statement time of the local copy is the same as that of the precondition
-            // but how to do that?
-        } else return false;
-
-        Set<Variable> notNullVariablesInPrecondition = conditionManager
-                .findIndividualNullInPrecondition(this, false);
-        return notNullVariablesInPrecondition.contains(fieldReference);
+            Set<Variable> notNullVariablesInPrecondition = conditionManager
+                    .findIndividualNullInPrecondition(this, false);
+            return notNullVariablesInPrecondition.contains(fr);
+        }
+        return false;
     }
 }

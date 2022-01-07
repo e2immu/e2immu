@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
+import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.*;
@@ -29,13 +30,12 @@ import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -308,31 +308,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference fieldReference) {
-                if (vi.isConfirmedVariableField()) {
-                    LocalVariableReference copy = statementAnalysis.createCopyOfVariableField(fieldReference, vi, statementTime);
-                    if (!statementAnalysis.variableIsSet(copy.fullyQualifiedName())) {
-                        // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
-                        return new VariableInfoImpl(getLocation(), variable);
-                    }
-                    return statementAnalysis.getVariable(copy.fullyQualifiedName()).getPreviousOrInitial();
-                }
-                if (vi.statementTimeDelayed()) {
-                    return new VariableInfoImpl(getLocation(), variable);
-                }
+            if (vi.variable() instanceof FieldReference && vi.statementTimeDelayed()) {
+                return new VariableInfoImpl(getLocation(), variable);
             }
             if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
-                if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
-                        LocalVariableReference localCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), relevantLoop.index);
-                        // at this point we are certain the local copy exists
-                        VariableInfoContainer newVic = statementAnalysis.getVariable(localCopy.fullyQualifiedName());
-                        return newVic.getPreviousOrInitial();
-                    }
-                    return vi; // we don't participate in the modification process?
+                if (!relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
+                    return new VariableInfoImpl(getLocation(), variable); // no value, no state
                 }
-                return new VariableInfoImpl(getLocation(), variable); // no value, no state
             }
         } // else we need to go to the variable itself
         return vi;
@@ -353,7 +336,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 && variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null) {
             return variableInfo.getValue();
         }
-        return variableInfo.getVariableValue(forwardEvaluationInfo.assignmentTarget());
+        // FIXME this is the one that creates new VE's
+        return getVariableValue(forwardEvaluationInfo.assignmentTarget(), variableInfo);
     }
 
     @Override
@@ -468,11 +452,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public Expression acceptAndTranslatePrecondition(Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
-        Map<Expression, Expression> translationMap = precondition.variables(true).stream()
-                .filter(v -> v instanceof LocalVariableReference lvr &&
-                        lvr.variable.nature() instanceof VariableNature.CopyOfVariableField)
-                .collect(Collectors.toUnmodifiableMap(VariableExpression::new,
-                        v -> new VariableExpression(((LocalVariableReference) v).variable.nature().localCopyOf())));
+        Map<Expression, Expression> translationMap = new HashMap<>();
+        precondition.visit(e -> {
+            if (e instanceof VariableExpression ve && ve.isDependentOnStatementTime()) {
+                translationMap.put(ve, new VariableExpression(ve.variable()));
+            }
+        });
         Expression translated;
         if (translationMap.isEmpty()) {
             translated = precondition;
@@ -559,4 +544,39 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return statementAnalysis.findOrThrow(variable);
     }
 
+    /**
+     * @param myself       can be null, when target of an assignment
+     * @param variableInfo the variable info from which to extract the value
+     * @return the value, potentially replaced by a VariableExpression
+     */
+    @Override
+    public Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
+        Expression value = variableInfo.getValue();
+        Variable v = variableInfo.variable();
+        if (value.isInstanceOf(Instance.class)) {
+            int statementTime;
+            String assignmentId;
+            if (v instanceof FieldReference fieldReference) {
+                FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+                DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
+                if (finalDV.isDelayed()) {
+                    statementTime = VariableInfoContainer.VARIABLE_FIELD_DELAY;
+                } else if (finalDV.valueIsTrue()) {
+                    statementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                } else {
+                    statementTime = getInitialStatementTime();
+                }
+                assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
+                // FIXME add Loop based on VariableNature etc.
+            } else {
+                statementTime = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                assignmentId = null;
+            }
+            // see Basics_4 for the combination of v==myself, yet VE is returned
+            if (!v.equals(myself) || statementTime >= 0) {
+                return new VariableExpression(v, statementTime, assignmentId);
+            }
+        }
+        return value;
+    }
 }

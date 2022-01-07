@@ -435,7 +435,7 @@ public class VariableInfoImpl implements VariableInfo {
                                   Expression stateOfDestination,
                                   boolean atLeastOneBlockExecuted,
                                   List<ConditionAndVariableInfo> mergeSources) {
-        Expression currentValue = getVariableValue(variable);
+        Expression currentValue = evaluationContext.getVariableValue(variable, this);
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
         if (mergeSources.isEmpty()) {
@@ -450,11 +450,11 @@ public class VariableInfoImpl implements VariableInfo {
                 mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).toList();
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav ->
-                currentValue.equals(cav.variableInfo().getVariableValue(variable)));
+                currentValue.equals(evaluationContext.getVariableValue(variable, cav.variableInfo())));
         if (allValuesIdentical) return currentValue;
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
-                .allMatch(cav -> specialEquals(reduced.get(0).variableInfo().getVariableValue(variable),
-                        cav.variableInfo().getVariableValue(variable)));
+                .allMatch(cav -> specialEquals(evaluationContext.getVariableValue(variable, reduced.get(0).variableInfo()),
+                        evaluationContext.getVariableValue(variable, cav.variableInfo())));
         if (allReducedIdentical) return reduced.get(0).value();
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);

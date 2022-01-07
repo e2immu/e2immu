@@ -33,7 +33,6 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
-import org.e2immu.support.Either;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -343,26 +342,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return variables.get(variableName).current();
     }
 
-    @Override
-    public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
-        return variables.stream()
-                .map(e -> e.getValue().current())
-                .filter(v -> v.variable() instanceof FieldReference fieldReference &&
-                        fieldReference.fieldInfo == fieldInfo ||
-                        allowLocalCopies && v.variable() instanceof LocalVariableReference lvr &&
-                                lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
-                                copy.localCopyOf().fieldInfo == fieldInfo
-                );
-    }
-
-    @Override
-    public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
-        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).toList();
-    }
-
     // next to this.field, and local copies, we also have fields with a non-this scope.
     // all values that contain the field itself get blocked;
-
+/*
     @Override
     public List<VariableInfo> assignmentInfo(FieldInfo fieldInfo) {
         List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo, false);
@@ -417,7 +399,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         return result;
     }
-
+*/
     @Override
     public VariableInfoContainer getVariable(String fullyQualifiedName) {
         return variables.get(fullyQualifiedName);
@@ -587,8 +569,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom != null) {
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
-        // this comes AFTER explicitly propagating already existing local copies of confirmed variables
-        variables.toImmutableMap().values().forEach(vic -> ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic));
     }
 
     /* explicitly copy local variables from above or previous (they cannot be created on demand)
@@ -749,82 +729,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE);
 
-    private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
-        if (vic.hasEvaluation()) {
-            VariableInfo eval = vic.best(VariableInfoContainer.Level.EVALUATION);
-            VariableInfo initial = vic.getPreviousOrInitial();
-            if (eval.variable() instanceof FieldReference fieldReference &&
-                    initial.isConfirmedVariableField() && !eval.getReadAtStatementTimes().isEmpty()) {
-
-                AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                Map<Property, DV> propertyMap = FROM_FIELD_ANALYSER_TO_PROPERTIES.stream()
-                        .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-                LinkedVariables assignedToOriginal = LinkedVariables.of(fieldReference, LinkedVariables.STATICALLY_ASSIGNED_DV);
-
-                for (int statementTime : eval.getReadAtStatementTimes()) {
-                    ensureLocalCopyAtStatementTime(evaluationContext, initial, fieldReference, analyserContext,
-                            propertyMap, assignedToOriginal, statementTime);
-                }
-            }
-        }
-        if (vic.variableNature() instanceof VariableNature.CopyOfVariableField copy) {
-            ensureTransferOfFieldPropertiesToLocalCopies(evaluationContext, vic, copy);
-        }
-    }
-
-    // See e.g. Container_0 where this is necessary; Basics_3 which shows this can only be done to non-write copies
-    private void ensureTransferOfFieldPropertiesToLocalCopies(EvaluationContext evaluationContext,
-                                                              VariableInfoContainer vic,
-                                                              VariableNature.CopyOfVariableField copy) {
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(copy.localCopyOf().fieldInfo);
-        VariableInfoContainer.Level level = vic.hasEvaluation() ? EVALUATION : INITIAL;
-        for (Property property : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
-            DV value = fieldAnalysis.getProperty(property);
-            if (copy.isWriteCopy()) {
-                // FIXME this has to be based on the value written to the field
-                vic.setProperty(property, NOT_INVOLVED_DV, true, level);
-            } else {
-                vic.setProperty(property, value, true, level);
-            }
-        }
-    }
-
-    private void ensureLocalCopyAtStatementTime(EvaluationContext evaluationContext,
-                                                VariableInfo initial,
-                                                FieldReference fieldReference,
-                                                AnalyserContext analyserContext,
-                                                Map<Property, DV> propertyMap,
-                                                LinkedVariables assignedToOriginal,
-                                                int statementTime) {
-        LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
-        if (!variables.isSet(localCopy.fullyQualifiedName())) {
-            VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(location(),
-                    localCopy, index + INITIAL, navigationData.hasSubBlocks());
-            putVariable(localCopy.fullyQualifiedName(), lvrVic);
-            String assignmentIdOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-
-            Expression initialValue;
-            Map<Property, DV> combined;
-            if (statementTime == initial.getStatementTime() &&
-                    initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0) {
-                initialValue = initial.getValue();
-                combined = initial.getProperties();
-            } else {
-                initialValue = Instance.localCopyOfVariableField(index, fieldReference, analyserContext);
-                Map<Property, DV> valueMap = evaluationContext.getValueProperties(initialValue);
-                combined = new HashMap<>(propertyMap);
-                valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
-                for (Property vp : GroupPropertyValues.PROPERTIES) {
-                    combined.put(vp, vp == EXTERNAL_NOT_NULL
-                            || vp == EXTERNAL_IMMUTABLE ? NOT_INVOLVED_DV : vp.falseDv);
-                }
-            }
-            lvrVic.setValue(initialValue, assignedToOriginal, combined, true);
-        }
-    }
-
     @Override
     public void ensureMessages(Stream<Message> messageStream) {
         messageStream.forEach(this::ensure);
@@ -860,63 +764,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public Stream<Message> messageStream() {
         return messages.stream();
-    }
-
-    @Override
-    public LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
-                                                            VariableInfo fieldVi,
-                                                            int statementTime) {
-        // a variable field can have any value when first read in a method.
-        // after statement time goes up, this value may have changed completely
-        // therefore we return a new local variable each time we read the variable, and statement time has gone up.
-
-        // when there are assignments within the same statement time, however, we stick to the assigned value
-        // (we temporarily treat the field as a local variable)
-        // so we need to know: have there been assignments AFTER the latest statement time increase?
-
-        String copyAssignmentId;
-        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-        if (statementTime == fieldVi.getStatementTime() &&
-                fieldVi.getAssignmentIds().getLatestAssignment().compareTo(indexOfStatementTime) >= 0) {
-            copyAssignmentId = fieldVi.getAssignmentIds().getLatestAssignment(); // double $
-        } else {
-            copyAssignmentId = null; // single $
-        }
-
-        VariableNature.CopyOfVariableField copy = new VariableNature.CopyOfVariableField(statementTime,
-                copyAssignmentId, fieldReference);
-        // the statement time of the field indicates the time of the latest assignment
-        return createLocalCopy(fieldReference, copy);
-    }
-
-    @Override
-    public LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
-        VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
-        return createLocalCopy(original, copy);
-    }
-
-    private LocalVariableReference createLocalCopy(Variable original, VariableNature copy) {
-        String lvSimple;
-        if (original instanceof FieldReference fr && !fr.scopeIsThis()) {
-            if (fr.scope == null) {
-                lvSimple = (fr.isStatic ? fr.fieldInfo.owner.simpleName : "this") + "." + original.simpleName();
-            } else if (fr.scope instanceof VariableExpression ve) {
-                lvSimple = ve.variable().simpleName() + "." + original.simpleName();
-            } else {
-                lvSimple = fr.scope.minimalOutput() + "." + original.simpleName();
-            }
-        } else {
-            lvSimple = original.simpleName();
-        }
-        LocalVariable localVariable = new LocalVariable.Builder()
-                .addModifier(LocalVariableModifier.FINAL)
-                .setName(original.fullyQualifiedName() + copy.suffix())
-                .setSimpleName(lvSimple + copy.suffix())
-                .setNature(copy)
-                .setParameterizedType(original.parameterizedType())
-                .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
-                .build();
-        return new LocalVariableReference(localVariable);
     }
 
     public void ensureLocalVariableAssignedInThisLoop(String name) {
@@ -1265,8 +1112,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // nothing spectacular; everything handled at the place of creation
             if (variableInLoop instanceof VariableNature.LoopVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
-            } else if (variableInLoop instanceof VariableNature.CopyOfVariableField) {
-                initializeCopyOfLocalVariableField(vic, variable);
             } else {
                 initializeLocalOrDependentVariable(vic, variable);
             }
@@ -1313,14 +1158,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Map<Property, DV> map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-        vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
-                LinkedVariables.EMPTY, map, true);
-    }
-
-    // created when merging; generally, the ensure
-    private void initializeCopyOfLocalVariableField(VariableInfoContainer vic, Variable variable) {
-        DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
-        Map<Property, DV> map = sharedContext(defaultNotNull);
         vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
                 LinkedVariables.EMPTY, map, true);
     }
@@ -1650,54 +1487,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return methodLevelData;
     }
 
-    public Either<CausesOfDelay, List<Expression>> localVariablesInLoop(StatementAnalyserSharedState sharedState) {
-        if (localVariablesAssignedInThisLoop == null) {
-            return Either.right(List.of()); // not for us
+    public CausesOfDelay localVariablesInLoop() {
+        if (localVariablesAssignedInThisLoop == null || localVariablesAssignedInThisLoop.isFrozen()) {
+            return CausesOfDelay.EMPTY;
         }
-        // part 3, iteration 1+: ensure local loop variable copies and their values
-
-        if (!localVariablesAssignedInThisLoop.isFrozen()) {
-            return Either.left(new SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED)); // DELAY
-        }
-        List<Expression> expressionsToEvaluate = new ArrayList<>();
-        localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
-            assert statement() instanceof LoopStatement;
-
-            VariableInfoContainer vic = findForWriting(fqn); // must exist already
-            VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
-            // assign to local variable that has been created at Level 2 in this statement
-            String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            LocalVariableReference loopCopy = createLocalLoopCopy(vi.variable(), index());
-            String loopCopyFqn = loopCopy.fullyQualifiedName();
-            String read = index() + EVALUATION;
-            Expression newValue = Instance.localVariableInLoop(index(), vi.variable(),
-                    sharedState.evaluationContext().getAnalyserContext());
-            Map<Property, DV> valueProps = sharedState.evaluationContext().getValueProperties(newValue);
-            if (!variableIsSet(loopCopyFqn)) {
-                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(location(),
-                        loopCopy, assigned,
-                        read,
-                        newValue,
-                        mergeValueAndLoopVar(valueProps, vi.getProperties()),
-                        LinkedVariables.of(vi.variable(), LinkedVariables.STATICALLY_ASSIGNED_DV),
-                        true);
-                putVariable(loopCopyFqn, newVic);
-            } else {
-                // FIXME check mergeValueAndLoopVar -- which properties are we talking about?
-                VariableInfoContainer loopVic = getVariable(loopCopyFqn);
-                loopVic.setValue(newValue, LinkedVariables.EMPTY, valueProps, true);
-            }
-        });
-        return Either.right(expressionsToEvaluate);
+        return new SimpleSet(location(), CauseOfDelay.Cause.LOCAL_VARS_ASSIGNED); // DELAY
     }
-
-    private static Map<Property, DV> mergeValueAndLoopVar(Map<Property, DV> value,
-                                                          Map<Property, DV> loopVar) {
-        Map<Property, DV> res = new HashMap<>(value);
-        res.putAll(loopVar);
-        return res;
-    }
-
 
     @Override
     public DV isEscapeAlwaysExecutedInCurrentBlock() {
@@ -1883,27 +1678,20 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
      */
 
     @Override
-    public VariableInfoContainer addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
+    public void addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
         StatementAnalysis sa = this;
         String loopIndex = null;
-        boolean frozen = false;
         while (sa != null) {
-            if (!sa.variableIsSet(fullyQualifiedName)) return null;
+            if (!sa.variableIsSet(fullyQualifiedName)) return ;
             VariableInfoContainer localVic = sa.getVariable(fullyQualifiedName);
-            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return null;
+            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return ;
             if (sa.statement() instanceof LoopStatement) {
                 ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
                 loopIndex = sa.index();
-                frozen = ((StatementAnalysisImpl) sa).localVariablesAssignedInThisLoopIsFrozen();
                 break; // we've found the loop
             }
             sa = sa.parent();
         }
         assert loopIndex != null;
-        if (!frozen) return null; // too early to do an assignment
-        Variable variable = vic.getPreviousOrInitial().variable();
-        Variable loopCopy = createLocalLoopCopy(variable, loopIndex);
-        // loop copy must exist already!
-        return getVariable(loopCopy.fullyQualifiedName());
     }
 }

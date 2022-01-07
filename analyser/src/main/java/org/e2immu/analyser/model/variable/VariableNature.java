@@ -132,37 +132,6 @@ public interface VariableNature {
     }
 
     /*
-    situation 4: local (read) copy of a variable field
-
-    localCopyOf = field, statement time 0 -> name is field$0
-    if the assignment id is not null, there has been an assignment inside the method, and the name becomes
-      field$
-    */
-    record CopyOfVariableField(int statementTime,
-                               String assignmentId,
-                               FieldReference localCopyOf) implements VariableNature {
-        public CopyOfVariableField {
-            assert localCopyOf != null;
-        }
-
-        @Override
-        public boolean ignoreCurrent(String index) {
-            return assignmentId != null && assignmentId.startsWith(index);
-        }
-
-        public String suffix() {
-            if (assignmentId != null) {
-                return "$" + statementTime + "$" + assignmentId;
-            }
-            return "$" + statementTime;
-        }
-
-        public boolean isWriteCopy() {
-            return assignmentId != null;
-        }
-    }
-
-    /*
     situation 5: local copy of variable defined outside loop, potentially assigned inside the loop
     assignmentId null means: not assigned in the loop
 

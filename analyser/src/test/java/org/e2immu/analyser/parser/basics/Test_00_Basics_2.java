@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -42,7 +43,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
     private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
-    private static final String STRING_0 = "string$0";
 
     private static final String THIS = TYPE + ".this";
     private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
@@ -110,14 +110,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
 
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                 }
-                if (STRING_0.equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-
-                    assertEquals("nullable instance type String", d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
-                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(EXTERNAL_NOT_NULL));
-                }
             }
             if ("setString".equals(d.methodInfo().name)) {
                 if (STRING_FIELD.equals(d.variableName())) {
@@ -136,14 +128,15 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                 }
-                if (STRING_0.equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
-                }
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "<f:string>" : STRING_0;
+                    String expectValue = d.iteration() == 0 ? "<f:string>" : "string$0";
                     assertEquals(expectValue, d.currentValue().toString());
+                    if (d.iteration() == 1) {
+                        if (d.currentValue() instanceof VariableExpression ve) {
+                            assertEquals(0, ve.getStatementTime());
+                            assertNull(ve.getAssignmentId());
+                        } else fail();
+                    }
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                 }

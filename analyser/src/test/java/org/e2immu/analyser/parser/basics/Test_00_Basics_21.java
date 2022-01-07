@@ -135,10 +135,10 @@ public class Test_00_Basics_21 extends CommonTestRunner {
         };
 
         testClass("Basics_21", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
