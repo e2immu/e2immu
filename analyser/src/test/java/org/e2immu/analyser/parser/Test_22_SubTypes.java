@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -21,8 +21,11 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -127,9 +130,47 @@ public class Test_22_SubTypes extends CommonTestRunner {
         testClass("SubTypes_4", 3, 0, new DebugConfiguration.Builder().build());
     }
 
+    // contains some standard loop stuff
     @Test
     public void test_5() throws IOException {
-        testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder().build());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            VariableNature variableNature = d.variableInfoContainer().variableNature();
+            if ("sum".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if (variableNature instanceof VariableNature.LoopVariable loop) {
+                        assertEquals("1", loop.statementIndex());
+                    } else fail();
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "i";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "i";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("sum".equals(d.variableName())) {
+                    if("0".equals(d.statementId())) {
+                        assertEquals("0", d.currentValue().toString());
+                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:sum>+<v:i>" : "sum+i";
+                        assertEquals(expected, d.currentValue().toString());
+                        if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+                            assertEquals("1", outside.statementIndex());
+                        } else fail("Of " + variableNature.getClass());
+                        assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
+                    }
+                    if("1".equals(d.statementId())) {
+                        assertEquals("instance type int", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 
     @Test

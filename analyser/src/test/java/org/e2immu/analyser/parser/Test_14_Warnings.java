@@ -16,10 +16,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -305,7 +304,9 @@ public class Test_14_Warnings extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Warnings_4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    assertEquals("Set.copyOf(input)", d.currentValue().toString());
+                    String expected = d.iteration() == 0
+                            ? "<vp:java.util.Set<java.lang.String>:initial@Class_Warnings_4>" : "Set.copyOf(input)";
+                    assertEquals(expected, d.currentValue().toString());
                     assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
                     // because immutableOfHiddenContent = @ERContainer
                     assertEquals("this.set:0", d.variableInfo().getLinkedVariables().toString());
@@ -410,27 +411,24 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
-                ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
-                assertEquals(MultiLevel.NULLABLE_DV, parameterAnalysis.getProperty(NOT_NULL_EXPRESSION));
-
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                // parameter: unused, but we see that only in the 2nd iteration
                 assertDv(d.p(0), 1, DV.FALSE_DV, MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, NOT_NULL_PARAMETER);
 
+                // method
+                assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(FLUENT));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.methodAnalysis().getProperty(NOT_NULL_EXPRESSION));
+                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()",
-                            d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic4>"
+                        : "Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
-                else
-                    assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                String expected = d.iteration() == 0 ? "<m:methodMustNotBeStatic5>" : "this";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 1, DV.FALSE_DV, MODIFIED_METHOD);
                 assertDv(d, 1, DV.TRUE_DV, FLUENT);
@@ -485,12 +483,13 @@ public class Test_14_Warnings extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addToSet".equals(d.methodInfo().name)) {
 
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 if ("MustBeContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertTrue(d.methodInfo().methodResolution.get().overrides().isEmpty());
 
-                    assertEquals(DV.FALSE_DV, p0.getProperty(MODIFIED_VARIABLE));
-                    assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
+                    assertDv(d, DV.TRUE_DV, CONTAINER);
+                    assertDv(d, DV.FALSE_DV, MODIFIED_METHOD); // default value
+                    assertDv(d.p(0), DV.FALSE_DV, MODIFIED_VARIABLE);
+                    assertDv(d.p(0), MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 }
 
                 if ("IsNotAContainer".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -498,10 +497,9 @@ public class Test_14_Warnings extends CommonTestRunner {
                             .getOverrides(d.evaluationContext().getAnalyserContext());
                     assertFalse(overrides.isEmpty());
 
-                    assertDv(d, 0, DV.TRUE_DV, MODIFIED_METHOD);
-
+                    assertDv(d, DV.FALSE_DV, MODIFIED_METHOD); // method modifies parameter, not a field!
                     // whatever happens, the set remains independent (the int added is independent)
-                    assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(INDEPENDENT));
+                    assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
                 }
             }
         };

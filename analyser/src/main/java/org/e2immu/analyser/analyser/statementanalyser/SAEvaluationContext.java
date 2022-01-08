@@ -611,7 +611,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     suffix = VariableExpression.NO_SUFFIX;
                 }
             } else {
-                VariableInfoContainer vic = statementAnalysis.getVariable(v.fullyQualifiedName());
+                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
                 if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                     suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
                 } else {

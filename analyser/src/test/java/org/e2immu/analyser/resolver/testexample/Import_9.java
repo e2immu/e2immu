@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,22 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+import static java.lang.System.out;
+import static java.util.Arrays.stream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-
-public class Test_21_StaticImports extends CommonTestRunner {
-    public Test_21_StaticImports() {
-        super(true);
+public class Import_9 {
+    public static void test1() {
+        int[] integers = {1, 2, 3};
+        int sum = stream(integers).sum();
+        out.println("Sum is " + sum);
+        assertEquals(6, sum);
     }
-
-    @Test
-    public void testStaticImports() throws IOException {
-        testClass("StaticImports_0", 0, 0, new DebugConfiguration.Builder().build());
-    }
-
 }

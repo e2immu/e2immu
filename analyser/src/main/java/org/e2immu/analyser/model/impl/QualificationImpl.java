@@ -34,7 +34,7 @@ In each method, the fields list gets filled.
 The typesNotImported are computed once per primary type.
 For this reason, a hierarchical implementations seems most efficient.
 
-The this list is not read recursively but only from the nearest level
+The unifiedThis list is not read recursively but only from the nearest level
 where there is data.
  */
 

@@ -1184,9 +1184,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Map<Property, DV> properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // value properties
+        properties.put(IDENTITY, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
         properties.put(IMMUTABLE, IMMUTABLE.falseDv);
-        // we do not keep the @NotNull status of a type
+        properties.put(INDEPENDENT, INDEPENDENT.falseDv);
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // external: not relevant

@@ -23,9 +23,11 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 
 import java.util.*;
@@ -121,7 +123,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Expression bestValue = SAHelper.bestValue(changeData, vi1);
                 Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
 
-                log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+                if (Logger.isLogEnabled(ANALYSER)) {
+                    log(ANALYSER, "Write value {} to variable {}",
+                            valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
+                            variable.fullyQualifiedName());
+                }
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<Property, DV> valueProperties = sharedState.evaluationContext()
                         .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
@@ -156,7 +162,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         delay = delay.merge(effFinal.causesOfDelay());
                     }
                 }
-            } else  {
+            } else {
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
 

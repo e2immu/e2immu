@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -21,16 +21,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_25_FieldResolution extends CommonTestRunner {
-
-    public Test_25_FieldResolution() {
-        super(false);
+public class Test_23_SideEffects extends CommonTestRunner {
+    public Test_23_SideEffects() {
+        super(true);
     }
 
     @Test
-    public void test0() throws IOException {
-        testClass("FieldResolution_0", 0, 0, new DebugConfiguration.Builder()
-                .build());
+    public void test_0() throws IOException {
+        testClass("SideEffects_0", 0, 0, new DebugConfiguration.Builder().build());
     }
+
 
 }
