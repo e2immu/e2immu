@@ -78,13 +78,13 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "container@Class_C1;immutable@Class_C1;independent@Class_C1";
                             case 1 -> "assign_to_field@Parameter_setC;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
-                            case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                            case 2 -> "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                             default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                         };
                         assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
 
                         String linkDelay = switch (d.iteration()) {
-                            case 0 -> "immutable@Class_C1;independent@Parameter_setC";
+                            case 0 -> "assign_to_field@Parameter_setC;immutable@Class_C1";
                             case 1 -> "cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:this.set@Method_size_0";
                             default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                         };
@@ -98,7 +98,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                         // delays in iteration 1, because no value yet
                         String expectedDelay = d.iteration() == 0
-                                ? "cm:c.set@Method_example1_2;immutable@Class_C1;independent@Parameter_setC;link:this.s2@Method_example1_2"
+                                ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;immutable@Class_C1;link:this.s2@Method_example1_2"
                                 : "cm:c.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                         assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -144,7 +144,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                 assertTrue(((FieldAnalysisImpl.Builder) d.fieldAnalysis()).allLinksHaveBeenEstablished().isDone());
 
                 String expectedDelay = d.iteration() == 0
-                        ? "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0"
+                        ? "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0"
                         : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                 assertDv(d, expectedDelay, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
@@ -160,7 +160,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                 String expectContainerDelay = switch (d.iteration()) {
                     case 0 -> "assign_to_field@Parameter_setC";
-                    case 1 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;independent@Parameter_setC;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
+                    case 1 -> "assign_to_field@Parameter_setC;cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;immutable@Class_C1;initial:this.set@Method_size_0;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                     default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                 };
                 assertDv(d, expectContainerDelay, 3, DV.FALSE_DV, Property.CONTAINER);

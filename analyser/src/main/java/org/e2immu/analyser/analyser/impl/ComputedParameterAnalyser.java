@@ -74,7 +74,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
                     .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
                     .add(ANALYSE_CONTAINER, ITERATION_0, this::analyseContainer)
-                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_0, this::analyseIndependentNoAssignment)
+                    .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
                     .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
@@ -141,6 +141,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {
         if (parameterAnalysis.properties.isDone(INDEPENDENT)) return DONE;
+
+        // in the first iteration, no statements have been analysed yet
+        if (sharedState.iteration == 0) {
+            CausesOfDelay delay = parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+            parameterAnalysis.setProperty(INDEPENDENT, delay);
+            return delay;
+        }
+
+        // we're not only dealing with "noFieldsInvolved", but actually also with constructors
 
         if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
             // we wait until the other analyser has finished, since we need the properties it computes

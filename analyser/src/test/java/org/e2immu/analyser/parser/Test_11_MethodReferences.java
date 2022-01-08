@@ -93,8 +93,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
-                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+                assertDv(d.p(0), 1,MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);

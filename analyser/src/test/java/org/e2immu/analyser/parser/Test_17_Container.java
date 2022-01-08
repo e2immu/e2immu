@@ -403,7 +403,8 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<p:coll5>" : "nullable instance type Collection<String>/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
-                    assertEquals("coll5:0", d.variableInfo().getLinkedVariables().toString());
+                    String expectLinked = d.iteration()==0 ? "coll5:0,this:-1": "coll5:0";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }

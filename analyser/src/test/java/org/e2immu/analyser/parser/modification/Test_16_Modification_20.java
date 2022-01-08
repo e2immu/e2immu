@@ -58,7 +58,7 @@ public class Test_16_Modification_20 extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar && "Modification_20".equals(thisVar.typeInfo.simpleName)) {
                     if ("0".equals(d.statementId())) {
                         String expectedDelay = switch (d.iteration()) {
-                            case 0 -> "cm:this@Method_example1_0;immutable@Class_C1;independent@Parameter_setC;link:this.s2@Method_example1_0";
+                            case 0 -> "assign_to_field@Parameter_setC;cm:this@Method_example1_0;immutable@Class_C1;link:this.s2@Method_example1_0";
                             case 1 -> "cm:this@Method_example1_0;initial@Field_set;link:this.s2@Method_example1_0";
                             default -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this@Method_example1_0;initial@Field_set;link:c@Method_example1_2;link:this.s2@Method_example1_0;link:this.s2@Method_example1_2";
                         };
