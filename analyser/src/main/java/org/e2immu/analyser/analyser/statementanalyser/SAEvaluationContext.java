@@ -291,22 +291,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return initialValueForReading(variable, isNotAssignmentTarget);
     }
 
-    // FIXME this is a literal copy from the super type; we should be able to improve on speed here (6x create new VI)
-    // getProperty on IsVariableExpression ends up using findForReading -> initialValueForReading
-    // use that VI to speed up things
-    @Override
-    public Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
-        if(value.isInstanceOf(IsVariableExpression.class)) {
-            // TODO
-        }
-        Map<Property, DV> builder = new HashMap<>();
-        for (Property property : VALUE_PROPERTIES) {
-            DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
-            builder.put(property, v);
-        }
-        return Map.copyOf(builder);
-    }
-
     /**
      * Find a variable for reading. Intercepts variable fields and local variables.
      * This is the general method that must be used by the evaluation context, currentInstance, currentValue
@@ -314,8 +298,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * @param variable the variable
      * @return the most current variable info object
      */
-    public VariableInfo initialValueForReading(@NotNull Variable variable,
-                                               boolean isNotAssignmentTarget) {
+    public VariableInfo initialValueForReading(@NotNull Variable variable, boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (!statementAnalysis.variableIsSet(fqn)) {
             assert !(variable instanceof ParameterInfo) :

@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT_MODIFICATION;
@@ -664,21 +666,34 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         fieldReference.fieldInfo.owner)) {
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
-                throw new UnsupportedOperationException("To implement");
-                /*
-
-
-                Map<VariableProperty,Integer> valueProperties = evaluationContext.getValueProperties(scope);
-                Expression newScope = valueProperties.values().stream().anyMatch(v -> v < 0)
-                        ? DelayedExpression.forInstance(scope)
-                        : Instance.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, valueProperties);
+                Map<Property, DV> valueProperties;
+                if (scopeContainsUnavailableVariables(fieldReference.scope)) {
+                    valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                            Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
+                            Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
+                            Property.CONTAINER, DV.TRUE_DV,
+                            Property.IDENTITY, DV.FALSE_DV);
+                } else {
+                    valueProperties = evaluationContext.getValueProperties(fieldReference.scope);
+                }
+                Expression newScope = Instance.genericFieldAccess(evaluationContext.getAnalyserContext(),
+                        fieldReference.fieldInfo, valueProperties);
                 return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-
-                 */
             }
             return null;
         }
 
+        private boolean scopeContainsUnavailableVariables(Expression scope) {
+            AtomicBoolean res = new AtomicBoolean();
+            scope.visit(e -> {
+                if (e instanceof VariableExpression ve && !evaluationContext.isPresent(ve.variable())) {
+                    res.set(true);
+                }
+            });
+            return res.get();
+        }
+
+        // a variable is read/written/assigned inside a sub-method (fields can be assigned to!, local variables cannot)
         public void markVariablesFromSubMethod(MethodAnalysis methodAnalysis) {
             StatementAnalysis statementAnalysis = methodAnalysis.getLastStatement();
             if (statementAnalysis == null) return; // nothing we can do here

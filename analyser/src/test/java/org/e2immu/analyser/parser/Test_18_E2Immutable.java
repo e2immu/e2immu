@@ -16,7 +16,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -341,7 +340,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() <= 1 ? "<m:setI>" : "<no return value>";
+                String expectValue = d.iteration() == 0 ? "<m:setI>" : "<no return value>";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -369,11 +368,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
             if ("getI".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() == 0 ? "<m:getI>" : "i$0";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

@@ -186,9 +186,9 @@ public interface EvaluationContext {
         return getValueProperties(value, false);
     }
 
-    /*
-    computed/copied during assignment. Critical that NNE is present!
-     */
+    // NOTE: when the value is a VariableExpression pointing to a variable field, variable in loop or anything that
+    // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
+    // should be able to do better/faster.
     default Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
         Map<Property, DV> builder = new HashMap<>();
         for (Property property : VALUE_PROPERTIES) {

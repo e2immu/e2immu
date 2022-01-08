@@ -220,8 +220,11 @@ public class Lambda extends BaseExpression implements Expression {
                         causes);
             }
         } else {
+            // the lambda
             Map<Property, DV> valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    // FIXME need more here
+                    Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
+                    Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
+                    Property.CONTAINER, DV.TRUE_DV,
                     Property.IDENTITY, DV.FALSE_DV);
             result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
         }
