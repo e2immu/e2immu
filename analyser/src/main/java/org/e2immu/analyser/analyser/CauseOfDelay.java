@@ -54,6 +54,7 @@ public interface CauseOfDelay {
         MODIFIED_METHOD("mm", "The method's modification status has not yet been determined"),
         MODIFIED_OUTSIDE_METHOD("mom", "modified outside method"),
         MODIFIED_VARIABLE("mod_var", "modified variable"),
+        MODIFIED_CYCLE("mod_cycle", "modification of cyclic method calls"),
         NEXT_C_IMM("next_c_imm", ""),
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),

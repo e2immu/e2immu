@@ -19,10 +19,11 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -39,7 +40,20 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("CyclicReferences_0", 0, 0, new DebugConfiguration.Builder().build());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int numParameters = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("CyclicReferences_0".equals(d.methodInfo().name) && numParameters == 1) {
+                if (d.variable() instanceof FieldReference fr && "field2".equals(fr.fieldInfo.name)) {
+                    if("0".equals(d.statementId())) {
+                        assertEquals("\"cde\"", d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+        };
+        testClass("CyclicReferences_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 
     @Test
@@ -115,8 +129,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         };
 
         testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

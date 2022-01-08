@@ -28,7 +28,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -127,7 +129,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
         builder.add(STATEMENT_ANALYSER, AnalyserProgram.Step.INITIALISE, statementAnalyser)
                 .add(COMPUTE_MODIFIED, AnalyserProgram.Step.MODIFIED, (sharedState) -> computeModified())
-                .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
+                .add(COMPUTE_MODIFIED_CYCLES, AnalyserProgram.Step.MODIFIED,
+                        (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
@@ -632,6 +635,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         return false;
     }
 
+    /*
+    Compute modified "external" cycles not really needed, since the analyser handles each primary type separately.
+    So they will be executed in a particular order anyway.
+    This method deals with cyclic calls within the primary type, which the analyser can handle together.
+
+    The MethodCall expression has separate logic to not change the CNN of the object for cyclic and recursive calls.
+    Similar code exists in EvaluateParameters.
+     */
     private AnalysisStatus computeModifiedInternalCycles() {
         boolean isCycle = methodInfo.partOfCallCycle();
         if (!isCycle) return DONE;
@@ -668,7 +679,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             return DONE;
         }
         // wait
-
+        if (modified.valueIsFalse()) {
+            log(DELAYED, "Delaying @Modified of method {}, cycle", methodInfo.fullyQualifiedName);
+            return methodInfo.delay(CauseOfDelay.Cause.MODIFIED_CYCLE);
+        }
+        log(DELAYED, "Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
         return modified.causesOfDelay();
     }
 

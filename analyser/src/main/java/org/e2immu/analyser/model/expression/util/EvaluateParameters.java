@@ -150,16 +150,14 @@ public class EvaluateParameters {
                                           boolean recursiveOrPartOfCallCycle,
                                           ParameterInfo parameterInfo,
                                           Map<Property, DV> map) {
-        DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
-        if (contextModified == null) {
-            DV cm;
-            if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
-                // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
-                cm = DV.FALSE_DV;
-            } else {
-                cm = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_MODIFIED);
+        if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
+            map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        } else {
+            DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
+            if (contextModified == null) {
+                CausesOfDelay delay = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_MODIFIED);
+                map.put(Property.CONTEXT_MODIFIED, delay);
             }
-            map.put(Property.CONTEXT_MODIFIED, cm);
         }
     }
 

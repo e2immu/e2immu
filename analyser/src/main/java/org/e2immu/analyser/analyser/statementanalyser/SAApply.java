@@ -210,25 +210,26 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     evaluationResult.causesOfDelay(), sharedState.evaluationContext());
         }
 
+        /* CyclicReferences_0 doesn't like this code; for now, we go without
         // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
         // This should not happen when due to an assignment, the loop copy also gets a new value. See loop above,
         // where we remove the loop copy from existingVarsNotVisited. Example in Loops_2, 9, 10
         for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
             VariableInfoContainer vic = e.getValue();
             if (vic.hasEvaluation()) {
-                /* so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
+                 so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
                  (this happened because an evaluation was ensured for some other reason than the pure
                   evaluation of the expression).
                 At least for IMMUTABLE we need to copy the value from previous into evaluation, because
                 the next statement will copy it from there
-                 */
+
                 VariableInfo prev = vic.getPreviousOrInitial();
                 DV immPrev = prev.getProperty(IMMUTABLE);
                 if (immPrev.isDone()) {
                     vic.setProperty(IMMUTABLE, immPrev, EVALUATION);
                 }
             }
-        }
+        }*/
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties
                 (sharedState, evaluationResult, localAnalysers, delay, analyserContext, groupPropertyValues);
