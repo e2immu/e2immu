@@ -120,6 +120,18 @@ public interface EvaluationContext {
                         parameterInfo.parameterAnalysis.get(parameterInfo.fullyQualifiedName()));
     }
 
+    // will have a more performant implementation in SAEvaluationContext,
+    // because getVariableProperty is pretty expensive
+    default Map<Property, DV> getProperties(Expression value, Set<Property> properties, boolean duringEvaluation,
+                                            boolean ignoreStateInConditionManager) {
+        Map<Property, DV> builder = new HashMap<>();
+        for (Property property : properties) {
+            DV v = getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
+            builder.put(property, v);
+        }
+        return Map.copyOf(builder);
+    }
+
     /**
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
@@ -183,19 +195,14 @@ public interface EvaluationContext {
     Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
 
     default Map<Property, DV> getValueProperties(Expression value) {
-        return getValueProperties(value, false);
+        return getProperties(value, VALUE_PROPERTIES, true, false);
     }
 
     // NOTE: when the value is a VariableExpression pointing to a variable field, variable in loop or anything that
     // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
     // should be able to do better/faster.
     default Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
-        Map<Property, DV> builder = new HashMap<>();
-        for (Property property : VALUE_PROPERTIES) {
-            DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
-            builder.put(property, v);
-        }
-        return Map.copyOf(builder);
+        return getProperties(value, VALUE_PROPERTIES, true, ignoreConditionInConditionManager);
     }
 
     /*

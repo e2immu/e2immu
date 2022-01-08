@@ -38,6 +38,8 @@ import org.e2immu.support.SetOnce;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -210,6 +212,44 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return getProperty(variable, property);
     }
 
+    // vectorized version of getVariableProperty
+    private Map<Property, DV> getVariableProperties(Variable variable, Set<Property> properties, boolean duringEvaluation) {
+        if (duringEvaluation) {
+            return getPropertiesFromPreviousOrInitial(variable, properties);
+        }
+        return getProperties(variable, properties);
+    }
+
+    // identical to getProperty, but then for multiple properties!
+    @Override
+    public Map<Property, DV> getProperties(Expression value, Set<Property> properties, boolean duringEvaluation,
+                                           boolean ignoreStateInConditionManager) {
+
+        if (value instanceof IsVariableExpression ve) {
+            Variable variable = ve.variable();
+            // read what's in the property map (all values should be there) at initial or current level
+            Map<Property, DV> map = getVariableProperties(variable, properties, duringEvaluation);
+            DV nne = map.getOrDefault(NOT_NULL_EXPRESSION, null);
+            DV updated = nneForVariable(duringEvaluation, variable, nne);
+            map.put(NOT_NULL_EXPRESSION, updated);
+            return map;
+        }
+
+        // this one is more difficult to vectorize
+        Map<Property, DV> map = new HashMap<>();
+        for (Property property : properties) {
+            DV dv;
+            if (NOT_NULL_EXPRESSION == property) {
+                dv = nneForValue(value, ignoreStateInConditionManager);
+            } else {
+                dv = value.getProperty(this, property, true);
+            }
+            map.put(property, dv);
+        }
+        return map;
+    }
+
+    // identical to getProperties, but then for a single property!
     @Override
     public DV getProperty(Expression value, Property property, boolean duringEvaluation,
                           boolean ignoreStateInConditionManager) {
@@ -219,48 +259,56 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // read what's in the property map (all values should be there) at initial or current level
             DV inMap = getVariableProperty(variable, property, duringEvaluation);
             if (property == NOT_NULL_EXPRESSION) {
-                if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
-                    return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                }
-                DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
-                DV cnnInMap = cnn.max(inMap);
-                if (cnnInMap.isDelayed()) {
-                    // we return even if cmNn would be ENN, because our value could be higher
-                    return cnnInMap;
-                }
-                boolean cmNn = notNullAccordingToConditionManager(variable);
-                return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV);
+                return nneForVariable(duringEvaluation, variable, inMap);
             }
             return inMap;
         }
 
         if (NOT_NULL_EXPRESSION == property) {
-            if (ignoreStateInConditionManager) {
-                EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
-                        myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
-                        iteration, conditionManager.withoutState(getPrimitives()), closure);
-                return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
-            }
-
-            DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
-            // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
-
-            if (directNN.equals(MultiLevel.NULLABLE_DV)) {
-                Expression valueIsNull = Equals.equals(Identifier.generate(),
-                        this, value, NullConstant.NULL_CONSTANT, false);
-                Expression evaluation = conditionManager.evaluate(this, valueIsNull);
-                if (evaluation.isBoolValueFalse()) {
-                    // IMPROVE should not necessarily be ENN, could be ContentNN depending
-                    return MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(directNN);
-                }
-            }
-            return directNN;
+            return nneForValue(value, ignoreStateInConditionManager);
         }
 
         // redirect to Value.getProperty()
         // this is the only usage of this method; all other evaluation of a Value in an evaluation context
         // must go via the current method
         return value.getProperty(this, property, true);
+    }
+
+    private DV nneForValue(Expression value, boolean ignoreStateInConditionManager) {
+        if (ignoreStateInConditionManager) {
+            EvaluationContext customEc = new SAEvaluationContext(statementAnalysis,
+                    myMethodAnalyser, statementAnalyser, analyserContext, localAnalysers,
+                    iteration, conditionManager.withoutState(getPrimitives()), closure);
+            return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
+        }
+
+        DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
+        // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
+
+        if (directNN.equals(MultiLevel.NULLABLE_DV)) {
+            Expression valueIsNull = Equals.equals(Identifier.generate(),
+                    this, value, NullConstant.NULL_CONSTANT, false);
+            Expression evaluation = conditionManager.evaluate(this, valueIsNull);
+            if (evaluation.isBoolValueFalse()) {
+                // IMPROVE should not necessarily be ENN, could be ContentNN depending
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(directNN);
+            }
+        }
+        return directNN;
+    }
+
+    private DV nneForVariable(boolean duringEvaluation, Variable variable, DV inMap) {
+        if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
+            return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        }
+        DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
+        DV cnnInMap = cnn.max(inMap);
+        if (cnnInMap.isDelayed()) {
+            // we return even if cmNn would be ENN, because our value could be higher
+            return cnnInMap;
+        }
+        boolean cmNn = notNullAccordingToConditionManager(variable);
+        return cnnInMap.max(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV);
     }
 
     @Override
@@ -378,7 +426,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             return variableInfo.getValue();
         }
         // on the LHS of an assignment, we do not expand variables that hold {1, 2, 3} array initializers
-        if(forwardEvaluationInfo.isAssignmentTarget() && variableInfo.getValue() instanceof ArrayInitializer) {
+        if (forwardEvaluationInfo.isAssignmentTarget() && variableInfo.getValue() instanceof ArrayInitializer) {
             return new VariableExpression(variable);
         }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
@@ -406,10 +454,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return vi.getProperty(property); // ALWAYS from the map!!!!
     }
 
+    // vectorized version of getProperty
+    private Map<Property, DV> getProperties(Variable variable, Set<Property> properties) {
+        VariableInfo vi = statementAnalysis.findOrThrow(variable);
+        return properties.stream().collect(Collectors.toMap(e -> e, vi::getProperty));
+    }
+
     @Override
     public DV getPropertyFromPreviousOrInitial(Variable variable, Property property) {
         VariableInfo vi = findForReading(variable, true);
         return vi.getProperty(property);
+    }
+
+    // vectorized version of getPropertyFromPreviousOrInitial
+    public Map<Property, DV> getPropertiesFromPreviousOrInitial(Variable variable, Set<Property> properties) {
+        VariableInfo vi = findForReading(variable, true);
+        return properties.stream().collect(Collectors.toMap(e -> e, vi::getProperty));
     }
 
     @Override
