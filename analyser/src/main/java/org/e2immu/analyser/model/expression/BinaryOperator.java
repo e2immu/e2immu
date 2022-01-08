@@ -130,7 +130,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         ForwardEvaluationInfo forward = allowsForNullOperands(primitives)
-                ? forwardEvaluationInfo.copyDefault() : forwardEvaluationInfo.copyNotNull();
+                ? forwardEvaluationInfo.copyDefault() : forwardEvaluationInfo.notNullNotAssignment();
         EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
         EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
@@ -256,7 +256,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
     private EvaluationResult shortCircuit(EvaluationContext evaluationContext,
                                           ForwardEvaluationInfo forwardEvaluationInfo,
                                           boolean and) {
-        ForwardEvaluationInfo forward = forwardEvaluationInfo.copyNotNull();
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.notNullNotAssignment();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         Primitives primitives = evaluationContext.getPrimitives();
 

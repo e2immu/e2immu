@@ -109,7 +109,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 builder.setProperty(thisType, Property.CONTEXT_MODIFIED, modified); // without being "read"
             }
         } else {
-            scopeForward = forwardEvaluationInfo.copyNotNull();
+            scopeForward = forwardEvaluationInfo.notNullNotAssignment();
         }
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, scopeForward);
         builder.compose(scopeResult);

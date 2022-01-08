@@ -45,6 +45,10 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
         return notAssignmentTarget;
     }
 
+    public boolean isAssignmentTarget() {
+        return !notAssignmentTarget;
+    }
+
     public String toString() {
         return new StringJoiner(", ", ForwardEvaluationInfo.class.getSimpleName() + "[", "]")
                 .add("notAssignmentTarget=" + notAssignmentTarget)
@@ -68,10 +72,16 @@ public record ForwardEvaluationInfo(Map<Property, DV> properties,
             Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
             true, null);
 
-    public ForwardEvaluationInfo copyNotNull() {
+    public ForwardEvaluationInfo notNullNotAssignment() {
         return new ForwardEvaluationInfo(
                 Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
                 true, assignmentTarget);
+    }
+
+    public ForwardEvaluationInfo notNullKeepAssignment() {
+        return new ForwardEvaluationInfo(
+                Map.of(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV),
+                notAssignmentTarget, assignmentTarget);
     }
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {

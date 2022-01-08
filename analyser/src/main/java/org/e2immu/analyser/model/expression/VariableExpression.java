@@ -214,7 +214,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
         EvaluationResult scopeResult;
         if (variable instanceof FieldReference fr && fr.scope != null) {
             // do not continue modification onto This: we want modifications on this only when there's a direct method call
-            ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.copyNotNull() :
+            ForwardEvaluationInfo forward = fr.scopeIsThis() ? forwardEvaluationInfo.notNullNotAssignment() :
                     forwardEvaluationInfo.copyModificationEnsureNotNull();
             scopeResult = fr.scope.evaluate(evaluationContext, forward);
             builder.compose(scopeResult);

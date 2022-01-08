@@ -377,6 +377,10 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (forwardEvaluationInfo.assignToField() && variable instanceof LocalVariableReference) {
             return variableInfo.getValue();
         }
+        // on the LHS of an assignment, we do not expand variables that hold {1, 2, 3} array initializers
+        if(forwardEvaluationInfo.isAssignmentTarget() && variableInfo.getValue() instanceof ArrayInitializer) {
+            return new VariableExpression(variable);
+        }
         // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
         return getVariableValue(null, variableInfo);
     }

@@ -199,7 +199,7 @@ public class Assignment extends BaseExpression implements Expression {
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
 
-        Variable newVariableTarget = handleArrayAccess(evaluationContext, targetResult.value(), builder);
+        Variable newVariableTarget = handleArrayAccess(targetResult.value());
 
         log(EXPRESSION, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
@@ -228,19 +228,14 @@ public class Assignment extends BaseExpression implements Expression {
         return builder.setExpression(e2.resultOfExpression).build();
     }
 
-    private Variable handleArrayAccess(EvaluationContext evaluationContext, Expression evaluatedTarget,
-                                       EvaluationResult.Builder builder) {
-        // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
+    // in a normal assignment, we use the "unevaluated" variable
+    // in case of array access, like integers[3] in Warnings_1, this becomes a different variable.
+    // this method deals with that.
+    private Variable handleArrayAccess(Expression evaluatedTarget) {
         IsVariableExpression variableValue;
         if ((variableValue = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
                 variableValue.variable() instanceof DependentVariable) {
             return variableValue.variable();
-        }
-        if (target instanceof ArrayAccess access) {
-            EvaluationResult index = access.index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-            EvaluationResult array = access.expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-            builder.compose(index, array);
-            return ArrayAccess.computeDependentVariable(array.value(), index.value(), access.returnType);
         }
         return variableTarget;
     }

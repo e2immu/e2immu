@@ -44,10 +44,10 @@ public class ArrayAccess extends BaseExpression implements Expression {
         dependentVariable = computeDependentVariable(expression, index, returnType);
     }
 
-    // also used by Assignment.handleArrayAccess
-    public static DependentVariable computeDependentVariable(Expression expression,
-                                                             Expression index,
-                                                             ParameterizedType returnType) {
+
+    private static DependentVariable computeDependentVariable(Expression expression,
+                                                              Expression index,
+                                                              ParameterizedType returnType) {
         Variable arrayVariable = singleVariable(expression);
         Variable indexVariable = singleVariable(index);
         String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
@@ -125,50 +125,60 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult array = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
-        EvaluationResult indexValue = index.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
+        EvaluationResult array = expression.evaluate(evaluationContext, forwardEvaluationInfo.notNullKeepAssignment());
+        EvaluationResult indexValue = index.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
-        if (array.value() instanceof ArrayInitializer arrayValue && indexValue.value() instanceof Numeric in) {
+
+        Expression arrayValue = array.value();
+        if (arrayValue instanceof ArrayInitializer initializer && indexValue.value() instanceof Numeric in) {
             // known array, known index (a[] = {1,2,3}, a[2] == 3)
             int intIndex = in.getNumber().intValue();
-            if (intIndex < 0 || intIndex >= arrayValue.multiExpression.expressions().length) {
+            if (intIndex < 0 || intIndex >= initializer.multiExpression.expressions().length) {
                 throw new ArrayIndexOutOfBoundsException();
             }
-            builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
+            builder.setExpression(initializer.multiExpression.expressions()[intIndex]);
         } else {
-            boolean delayed = array.value().isDelayed() || indexValue.value().isDelayed();
-            DependentVariable evaluatedDependentVariable = computeDependentVariable(array.value(), indexValue.value(),
+            boolean delayed = arrayValue.isDelayed() || indexValue.value().isDelayed();
+            DependentVariable evaluatedDependentVariable = computeDependentVariable(arrayValue, indexValue.value(),
                     returnType);
-            // evaluatedDependentVariable is our best effort at evaluation of the individual components
-            // we need to mark it as read, even if it is delayed!
-            builder.markRead(evaluatedDependentVariable);
-
-            if (delayed) {
-                CausesOfDelay causesOfDelay = array.value().causesOfDelay()
-                        .merge(indexValue.value().causesOfDelay());
-                Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
-
-                builder.setExpression(dve);
+            if (evaluatedDependentVariable.arrayVariable != null) {
+                builder.markRead(evaluatedDependentVariable.arrayVariable);
+            }
+            if (forwardEvaluationInfo.isAssignmentTarget()) {
+                builder.setExpression(new VariableExpression(evaluatedDependentVariable));
             } else {
-                if (evaluatedDependentVariable.arrayVariable != null) {
-                    builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, array.value(),
-                            MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-                }
-                Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
-                if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
-                    // we have no value yet
-                    Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, array.value(),
-                            evaluatedDependentVariable);
-                    DV independent = determineIndependentOfArrayBase(evaluationContext, array.value());
-                    LinkedVariables linkedVariables = array.value().linkedVariables(evaluationContext)
-                            .changeAllTo(independent)
-                            .merge(LinkedVariables.of(evaluatedDependentVariable, LinkedVariables.ASSIGNED_DV));
-                    builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
-                    Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
-                    builder.setExpression(wrappedObject);
+
+                // evaluatedDependentVariable is our best effort at evaluation of the individual components
+                // we need to mark it as read, even if it is delayed!
+                builder.markRead(evaluatedDependentVariable);
+
+                if (delayed) {
+                    CausesOfDelay causesOfDelay = arrayValue.causesOfDelay()
+                            .merge(indexValue.value().causesOfDelay());
+                    Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
+
+                    builder.setExpression(dve);
                 } else {
-                    builder.setExpression(currentValue);
+                    if (evaluatedDependentVariable.arrayVariable != null) {
+                        builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, arrayValue,
+                                MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                    }
+                    Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
+                    if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
+                        // we have no value yet
+                        Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, arrayValue,
+                                evaluatedDependentVariable);
+                        DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
+                        LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
+                                .changeAllTo(independent)
+                                .merge(LinkedVariables.of(evaluatedDependentVariable, LinkedVariables.ASSIGNED_DV));
+                        builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
+                        Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
+                        builder.setExpression(wrappedObject);
+                    } else {
+                        builder.setExpression(currentValue);
+                    }
                 }
             }
         }

@@ -72,7 +72,7 @@ public class Warnings_1 {
     private static void checkForEach() {
         int[] integers = {1, 2, 3};
         for (int loopVar : integers) {
-            // ERROR: loopVar is not used
+            // WARN: loopVar is not used
             System.out.println("hello!");
         }
     }
@@ -80,6 +80,7 @@ public class Warnings_1 {
     public static int method5(boolean x) {
         int a;
         if(x) {
+            // ERROR: overwriting previous assignment
             a = 5;
         }
         a = 6;

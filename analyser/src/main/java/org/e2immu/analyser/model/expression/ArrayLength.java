@@ -90,7 +90,7 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult result = scope.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
+        EvaluationResult result = scope.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value() instanceof ArrayInitializer arrayInitializer) {

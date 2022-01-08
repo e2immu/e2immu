@@ -114,7 +114,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertTrue(d.haveError(Message.Label.USELESS_ASSIGNMENT).detailedMessage().endsWith("integers[i]"));
+                assertTrue(d.haveError(Message.Label.USELESS_ASSIGNMENT).detailedMessage().endsWith("integers[0]"));
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -179,7 +179,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                         assertEquals("2" + E, read);
 
                         // the standardized name is the evaluation value of expression and index, in this particular case, both constants
-                    } else if ("integers[i]".equals(d.variableName())) {
+                    } else if ("integers[0]".equals(d.variableName())) {
                         assertEquals("2" + E, assigned);
                         assertTrue(read.compareTo(assigned) < 0);
                         assertEquals("3", d.currentValue().toString());
@@ -243,8 +243,8 @@ public class Test_14_Warnings extends CommonTestRunner {
         testClass("Warnings_1", 5, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

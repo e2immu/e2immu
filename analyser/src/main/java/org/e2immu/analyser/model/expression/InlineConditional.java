@@ -164,7 +164,7 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult conditionResult = condition.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
+        EvaluationResult conditionResult = condition.evaluate(evaluationContext, forwardEvaluationInfo.notNullNotAssignment());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
         boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType());
