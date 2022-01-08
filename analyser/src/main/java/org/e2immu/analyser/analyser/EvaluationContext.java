@@ -59,7 +59,7 @@ public interface EvaluationContext {
     @SuppressWarnings("unused")
     default String safeMethodName() {
         MethodAnalyser ma = getCurrentMethod();
-        return ma == null ? null: ma.getMethodInfo().name;
+        return ma == null ? null : ma.getMethodInfo().name;
     }
 
     default MethodAnalyser getCurrentMethod() {
@@ -180,8 +180,7 @@ public interface EvaluationContext {
     }
 
     // DO NOT change this set unless you adapt NewObject as well; it maintains a set of value properties
-    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
-            NOT_NULL_EXPRESSION, INDEPENDENT);
+    Set<Property> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
 
     default Map<Property, DV> getValueProperties(Expression value) {
         return getValueProperties(value, false);
@@ -194,7 +193,7 @@ public interface EvaluationContext {
         Map<Property, DV> builder = new HashMap<>();
         for (Property property : VALUE_PROPERTIES) {
             DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
-            builder.put(property, v); // also put the -1's in, easier to detect if there are delays!
+            builder.put(property, v);
         }
         return Map.copyOf(builder);
     }

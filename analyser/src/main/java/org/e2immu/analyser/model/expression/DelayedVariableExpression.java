@@ -60,6 +60,12 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return forField(fieldReference, new SimpleSet(causeOfDelay));
     }
 
+    public static DelayedVariableExpression forBreakingInitialisationDelay(FieldReference fieldReference,
+                                                                           CauseOfDelay causeOfDelay) {
+        return new DelayedVariableExpression("<f*:" + fieldReference.fieldInfo.name + ">",
+                "<field*:" + fieldReference.fullyQualifiedName() + ">", fieldReference, new SimpleSet(causeOfDelay));
+    }
+
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<f:" + fieldReference.fieldInfo.name + ">",

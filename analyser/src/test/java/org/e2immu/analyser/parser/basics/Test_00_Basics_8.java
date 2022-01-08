@@ -216,9 +216,9 @@ public class Test_00_Basics_8 extends CommonTestRunner {
         };
 
         testClass("Basics_8", 0, 3, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

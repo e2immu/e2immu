@@ -328,7 +328,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 } // either done already, or unbound parameter type, which is fine
             } // else: the null constant can be anything
         }
-        if(values != null) return values;
+        if (values != null) return values;
 
         // both the formal and the concrete type are marked @Container; this must be a container too
         log(MODIFICATION, "Field {} is a @Container, because formal and concrete type are", fqn);
@@ -370,11 +370,17 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return isFinal.causesOfDelay();
         }
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
-            log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this primary type",
-                    fqn);
+            log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this primary type", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
             return DONE;
         }
+        // whatever we do, if one of the values is the null constant, then the result must be nullable
+        if (fieldAnalysis.valuesStatus().isDelayed()) {
+            log(DELAYED, "Delay @NotNull until all values are known");
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, fieldAnalysis.valuesStatus());
+            return fieldAnalysis.valuesStatus();
+        }
+        assert fieldAnalysis.getValues().size() > 0;
 
         /*
         The choice here is between deciding the @NotNull based on the value and the context of
@@ -390,6 +396,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         boolean computeContextPropertiesOverAllMethods = analyserContext.getConfiguration().analyserConfiguration()
                 .computeContextPropertiesOverAllMethods();
 
+        // if one of the values is the constant null value (and we're not trying to boost @NotNull) then return NULLABLE immediately
+        if (!computeContextPropertiesOverAllMethods &&
+                fieldAnalysis.getValues().stream().anyMatch(proxy -> proxy.getValue() instanceof NullConstant)) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: one of its values is the null constant", fqn);
+            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
+            return DONE;
+        }
+
         DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
                         m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
@@ -402,13 +416,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return bestOverContext.causesOfDelay();
         }
 
-        if (fieldAnalysis.valuesStatus().isDelayed()) {
-            log(DELAYED, "Delay @NotNull until all values are known");
-            fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, fieldAnalysis.valuesStatus());
-            return fieldAnalysis.valuesStatus();
-        }
-        assert fieldAnalysis.getValues().size() > 0;
-
         DV worstOverValues = computeWorstNotNullOverValues(computeContextPropertiesOverAllMethods, bestOverContext);
 
         DV finalNotNullValue = worstOverValues.max(bestOverContext);
@@ -418,31 +425,39 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private DV computeWorstNotNullOverValues(boolean computeContextPropertiesOverAllMethods, DV bestOverContext) {
         DV worstOverValuesUnfiltered = fieldAnalysis.getValues().stream()
+                .filter(ValueAndPropertyProxy::validValueProperties)
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
 
         DV worstOverValues;
         if (computeContextPropertiesOverAllMethods) {
-            DV worst = fieldAnalysis.getValues().stream()
-                    .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION)
-                    .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
-                    .reduce(DV.MAX_INT_DV, DV::min);
-            if (worst != DV.MAX_INT_DV) {
-                worstOverValues = worst;
-                if (worstOverValues.lt(bestOverContext)) {
-                    // see Basics_2b; we need the setter to run before the add-method can be called
-                    // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
-                    Message message = Message.newMessage(fieldAnalysis.location(),
-                            Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
-                    messages.add(message);
-                }
-            } else {
-                worstOverValues = worstOverValuesUnfiltered;
-            }
+            worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered);
         } else {
             // no filtering, there must be at least one value
             worstOverValues = worstOverValuesUnfiltered;
             assert worstOverValues != DV.MAX_INT_DV;
+        }
+        return worstOverValues;
+    }
+
+    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered) {
+        DV worstOverValues;
+        DV worst = fieldAnalysis.getValues().stream()
+                .filter(ValueAndPropertyProxy::validValueProperties)
+                .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION)
+                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                .reduce(DV.MAX_INT_DV, DV::min);
+        if (worst != DV.MAX_INT_DV) {
+            worstOverValues = worst;
+            if (worstOverValues.lt(bestOverContext)) {
+                // see Basics_2b; we need the setter to run before the add-method can be called
+                // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
+                Message message = Message.newMessage(fieldAnalysis.location(),
+                        Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
+                messages.add(message);
+            }
+        } else {
+            worstOverValues = worstOverValuesUnfiltered;
         }
         return worstOverValues;
     }
@@ -565,8 +580,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return allLinksStatus;
         }
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
+                .filter(ValueAndPropertyProxy::validValueProperties)
                 .filter(proxy -> !(proxy.getValue() instanceof NullConstant))
-                .map(proxy -> proxy.getProperty(Property.IMMUTABLE))
+                .map(proxy -> isMyOwnType(proxy.getValue().returnType())
+                        ? myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE)
+                        : proxy.getProperty(Property.IMMUTABLE))
                 .reduce(DV.MAX_INT_DV, DV::min);
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;
         if (worstOverValues.isDelayed()) {
@@ -606,6 +624,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable);
 
         return DONE;
+    }
+
+    private boolean isMyOwnType(ParameterizedType returnType) {
+        if (returnType.typeInfo == null) return false;
+        return returnType.typeInfo == fieldInfo.owner;
     }
 
     private DV correctForExposureBefore(DV immutable) {
@@ -676,15 +699,24 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     ValueAndPropertyProxy.Origin origin = methodInfo.methodResolution.get().partOfConstruction()
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
                             ? ValueAndPropertyProxy.Origin.CONSTRUCTION : ValueAndPropertyProxy.Origin.METHOD;
-                    ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo proxy =
-                            new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
+                    ValueAndPropertyProxy proxy;
+                    boolean viIsDelayed;
+                    if (vi.getValue().causesOfDelay().causesStream().anyMatch(cause -> cause instanceof VariableCause vc
+                            && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                            && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
+                        proxy = breakDelayProxy(origin);
+                        viIsDelayed = false;
+                    } else {
+                        proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
+                        viIsDelayed = vi.isDelayed();
+                    }
                     values.add(proxy);
                     if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
                         // we'll warn for the combination of field initializer, and occurrence in at least one constructor
                         occurrenceCountForError++;
                     }
                     added = true;
-                    if (vi.isDelayed()) {
+                    if (viIsDelayed) {
                         log(DELAYED, "Delay consistent value for field {} because of {}", fqn,
                                 vi.getValue().toString());
                         delays = delays.merge(vi.getValue().causesOfDelay());
@@ -696,6 +728,37 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         return new OccursAndDelay(occurs, occurrenceCountForError, delays);
+    }
+
+    private ValueAndPropertyProxy breakDelayProxy(ValueAndPropertyProxy.Origin origin) {
+        Expression value = new DelayedExpression("break initialization delay",
+                fieldInfo.type, LinkedVariables.EMPTY, CausesOfDelay.EMPTY);
+        return new ValueAndPropertyProxy() {
+            @Override
+            public Origin getOrigin() {
+                return origin;
+            }
+
+            @Override
+            public Expression getValue() {
+                return value;
+            }
+
+            @Override
+            public DV getProperty(Property property) {
+                throw new UnsupportedOperationException("Filter on validValueProperties!");
+            }
+
+            @Override
+            public LinkedVariables getLinkedVariables() {
+                return null;
+            }
+
+            @Override
+            public boolean validValueProperties() {
+                return false;
+            }
+        };
     }
 
     private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<ValueAndPropertyProxy> values) {

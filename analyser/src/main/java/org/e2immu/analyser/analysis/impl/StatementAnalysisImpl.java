@@ -681,15 +681,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                               FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
 
-        boolean selfReference = inPartOfConstruction() && !(fieldReference.scopeIsThis());
         Map<Property, DV> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Map<Property, DV> combined = new HashMap<>(map);
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
         if (!viInitial.valueIsSet()) {
-            // we don't have an initial value yet
-            if (methodAnalysis.getMethodInfo().isConstructor) {
+            // we don't have an initial value yet; the initial field value is only visible in constructors
+            // and then only to direct references (this.field)
+            if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis()) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser();
@@ -705,7 +705,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
             initialValue = viInitial.getValue();
             assert initialValue.isDone();
-            // add the value properties from the current value to combined
+            // add the value properties from the current value to combined (do not set to initial!!)
             Map<Property, DV> valueMap = evaluationContext.getValueProperties(viInitial.getValue());
             valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
         }

@@ -63,8 +63,15 @@ public class VariableInfoImpl implements VariableInfo {
         this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
     }
 
+    // used for returning delayed values
     public VariableInfoImpl(Location location, Variable variable) {
         this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), null);
+        assert location != Location.NOT_YET_SET;
+    }
+
+    // used to break initialisation delay
+    public VariableInfoImpl(Location location, Variable variable, Expression value) {
+        this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
         assert location != Location.NOT_YET_SET;
     }
 

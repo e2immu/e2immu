@@ -43,6 +43,8 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.log;
 
 class SAEvaluationContext extends AbstractEvaluationContextImpl {
     private final boolean disableEvaluationOfMethodCallsUsingCompanionMethods;
@@ -289,6 +291,21 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return initialValueForReading(variable, isNotAssignmentTarget);
     }
 
+    // FIXME this is a literal copy from the super type; we should be able to improve on speed here (6x create new VI)
+    // getProperty on IsVariableExpression ends up using findForReading -> initialValueForReading
+    // use that VI to speed up things
+    @Override
+    public Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        if(value.isInstanceOf(IsVariableExpression.class)) {
+            // TODO
+        }
+        Map<Property, DV> builder = new HashMap<>();
+        for (Property property : VALUE_PROPERTIES) {
+            DV v = getProperty(value, property, true, ignoreConditionInConditionManager);
+            builder.put(property, v);
+        }
+        return Map.copyOf(builder);
+    }
 
     /**
      * Find a variable for reading. Intercepts variable fields and local variables.
@@ -309,12 +326,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference fr && notInConstruction()) {
+            if (variable instanceof FieldReference fr && situationForVariableFieldReference(fr)) {
                 // is it a variable field, or a final field? if we don't know, return an empty VI
                 // in constructors, and sync blocks, this does not hold
-
-                DV effectivelyFinal = getAnalyserContext().getFieldAnalysis(fr.fieldInfo).getProperty(FINAL);
-                if (effectivelyFinal.isDelayed()) {
+                FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+                DV effectivelyFinal = fieldAnalysis.getProperty(FINAL);
+                if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValueYet(fieldAnalysis)) {
+                    VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
+                    if (breakDelay != null) return breakDelay;
                     return new VariableInfoImpl(getLocation(), variable);
                 }
             }
@@ -328,7 +347,35 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return vi;
     }
 
-    // FIXME add sync blocks etc.
+    // E2Immutable_1
+    private VariableInfo breakDelay(FieldReference fr, FieldAnalysis fieldAnalysis) {
+        CausesOfDelay causes = fieldAnalysis.getValue().causesOfDelay();
+        assert causes.isDelayed();
+        Location here = getLocation();
+        boolean cyclicDependency = causes.causesStream()
+                .anyMatch(cause -> cause instanceof VariableCause vc && vc.cause() == CauseOfDelay.Cause.INITIAL_VALUE
+                        && vc.variable().equals(fr)
+                        && vc.location().equals(here));
+        if (cyclicDependency) {
+            log(DELAYED, "Breaking the delay by inserting a special delayed value");
+            CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
+            Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, cause);
+            return new VariableInfoImpl(getLocation(), fr, dve);
+        }
+        return null;
+    }
+
+    /**
+     * E2Immutable_1; multiple constructors, don't come to a conclusion too quickly
+     * On the other hand, we have to be careful not to cause an infinite delay.
+     * To break this delay, we need to return a VI with an instance object rather than a delay.
+     * The getVariableValue() method then has to pick up this instance, and keep the variable.
+     */
+    private boolean noValueYet(FieldAnalysis fieldAnalysis) {
+        return fieldAnalysis.getValue().isDelayed();
+    }
+
+    // IMPROVE add sync blocks etc.
     private boolean notInConstruction() {
         return methodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
@@ -347,7 +394,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (forwardEvaluationInfo.assignToField() && variable instanceof LocalVariableReference) {
             return variableInfo.getValue();
         }
-        // FIXME instead of forwardEvaluationInfo.assignmentTarget()
+        // NOTE: we use null instead of forwardEvaluationInfo.assignmentTarget()
         return getVariableValue(null, variableInfo);
     }
 
@@ -555,6 +602,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return statementAnalysis.findOrThrow(variable);
     }
 
+    private boolean situationForVariableFieldReference(FieldReference fieldReference) {
+        // true outside construction; inside construction, does not hold for this.i but does hold for other.i
+        return notInConstruction() || !fieldReference.scopeIsThis();
+    }
+
     /**
      * @param myself       can be null, when target of an assignment
      * @param variableInfo the variable info from which to extract the value
@@ -569,11 +621,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (v instanceof FieldReference fieldReference) {
                 FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
                 DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
-                if (finalDV.isDelayed() || finalDV.valueIsTrue()) {
-                    suffix = VariableExpression.NO_SUFFIX;
-                } else {
+                if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
                     String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
                     suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
+                } else {
+                    suffix = VariableExpression.NO_SUFFIX;
                 }
             } else {
                 VariableInfoContainer vic = statementAnalysis.getVariable(v.fullyQualifiedName());

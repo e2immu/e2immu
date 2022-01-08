@@ -30,6 +30,7 @@ public interface CauseOfDelay {
         CONTEXT_MODIFIED("cm", "Context modified not yet been determined"),
         CONTEXT_NOT_NULL_FOR_PARENT("cnn_parent", ""),
         CONTEXT_NOT_NULL("cnn", ""),
+        BREAK_INIT_DELAY("break_init_delay", "cyclic dependency in initalisation"),
         EXT_IMM("ext_imm", "Variable's EXTERNAL_IMMUTABLE value not yet determined"),
         EXTENSION_CLASS("extension_class", ""),
         EXTERNAL_NOT_NULL("ext_not_null", "Variable's EXTERNAL_NOT_NULL value not yet determined"),

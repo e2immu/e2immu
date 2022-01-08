@@ -45,6 +45,10 @@ public interface ValueAndPropertyProxy {
 
     LinkedVariables getLinkedVariables();
 
+    // needed because a specific Proxy instance (created in FieldAnalyserImpl.breakDelayProxy)
+    // which cannot yet guarantee correct values
+    default boolean validValueProperties() { return true; }
+
     Comparator<ValueAndPropertyProxy> COMPARATOR =
             (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
 
