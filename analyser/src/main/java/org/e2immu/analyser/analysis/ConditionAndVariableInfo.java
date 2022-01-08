@@ -36,8 +36,10 @@ public record ConditionAndVariableInfo(Expression condition,
                                        Variable myself,
                                        EvaluationContext evaluationContext) {
     // for testing
-    public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-        this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0", "-", null, variableInfo.variable(), null);
+    public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, EvaluationContext evaluationContext) {
+        this(condition, variableInfo, false, VariableNature.METHOD_WIDE,
+                null, "0", "-",
+                null, variableInfo.variable(), evaluationContext);
     }
 
     public Expression value() {

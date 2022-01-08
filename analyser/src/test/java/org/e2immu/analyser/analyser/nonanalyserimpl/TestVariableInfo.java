@@ -81,13 +81,17 @@ public class TestVariableInfo extends CommonVariableInfo {
         // try { ... c = b; } or synchronized(...) { c = b; }
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        List<ConditionAndVariableInfo> list = List.of(new ConditionAndVariableInfo(TRUE, viB));
+        List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(TRUE, viB));
         VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, true, list);
 
         Expression res = viC2.getValue();
         assertEquals("4", res.toString());
         viC2.mergePropertiesIgnoreValue(true, viA, list);
         assertEquals(DV.FALSE_DV, viC2.getProperty(IDENTITY));
+    }
+
+    private ConditionAndVariableInfo newConditionAndVariableInfo(Expression e, VariableInfoImpl vi) {
+        return new ConditionAndVariableInfo(e, vi, minimalEvaluationContext);
     }
 
     @Test
@@ -105,7 +109,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, DV.FALSE_DV);
 
         // situation: boolean x = ...; int c = a; if(x) c = b;
-        List<ConditionAndVariableInfo> xViB = List.of(new ConditionAndVariableInfo(x, viB));
+        List<ConditionAndVariableInfo> xViB = List.of(newConditionAndVariableInfo(x, viB));
 
         VariableInfoImpl viC = viA.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, xViB);
         assertNotSame(viA, viC);
@@ -138,7 +142,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, DV.TRUE_DV);
 
         // situation: if(x) return b;
-        List<ConditionAndVariableInfo> xViB = List.of(new ConditionAndVariableInfo(x, viB));
+        List<ConditionAndVariableInfo> xViB = List.of(newConditionAndVariableInfo(x, viB));
 
         VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, xViB);
         assertNotSame(ret, ret2);
@@ -179,7 +183,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(IDENTITY, DV.TRUE_DV);
 
         // situation: if(x==3) return b;
-        List<ConditionAndVariableInfo> x3ViB = List.of(new ConditionAndVariableInfo(xEquals3, viB));
+        List<ConditionAndVariableInfo> x3ViB = List.of(newConditionAndVariableInfo(xEquals3, viB));
 
         VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, x3ViB);
         assertNotSame(ret2, ret);
@@ -199,7 +203,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viA.setProperty(IDENTITY, DV.TRUE_DV);
 
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
-        List<ConditionAndVariableInfo> x4ViA = List.of(new ConditionAndVariableInfo(xEquals4, viA));
+        List<ConditionAndVariableInfo> x4ViA = List.of(newConditionAndVariableInfo(xEquals4, viA));
 
         VariableInfoImpl ret3 = ret2.mergeIntoNewObject(minimalEvaluationContext, state, false, x4ViA);
         assertNotSame(ret3, ret2);
@@ -241,7 +245,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.setValue(Instance.forTesting(viA.variable().parameterizedType()));
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType(), "no idea");
-        List<ConditionAndVariableInfo> uViB = List.of(new ConditionAndVariableInfo(unknown, viB));
+        List<ConditionAndVariableInfo> uViB = List.of(newConditionAndVariableInfo(unknown, viB));
 
         try {
             VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, uViB);
@@ -272,8 +276,8 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        List<ConditionAndVariableInfo> list = List.of(new ConditionAndVariableInfo(x, viA),
-                new ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
+        List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(x, viA),
+                newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
@@ -301,8 +305,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        List<ConditionAndVariableInfo> list = List.of(new ConditionAndVariableInfo(x, viA),
-                new ConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
+        List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(x, viA),
+                newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
 

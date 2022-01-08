@@ -180,7 +180,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // the value here (size will be one)
         public final VariableFirstThen<CausesOfDelay, Optional<Precondition>> preconditionForEventual;
-        private final VariableFirstThen<CausesOfDelay, Eventual> eventual;
+        private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
 
@@ -210,7 +210,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public boolean eventualIsSet() {
-            return eventual.isSet();
+            return eventual.isFinal();
         }
 
         @Override
@@ -220,7 +220,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay eventualStatus() {
-            return eventual.isFirst() ? eventual.getFirst() : CausesOfDelay.EMPTY;
+            return eventual.get().causesOfDelay();
         }
 
         @Override
@@ -243,7 +243,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.analysisProvider = analysisProvider;
             precondition.setVariable(Precondition.empty(primitives));
             preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
-            eventual = new VariableFirstThen<>(initialDelay(methodInfo));
+            eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));
             if (!methodInfo.hasReturnValue()) {
                 UnknownExpression u = new UnknownExpression(primitives.voidParameterizedType(),
                         UnknownExpression.NO_RETURN_VALUE);
@@ -265,7 +265,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                     (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
                     preconditionForEventual.getOrDefault(Optional.empty()).orElse(null),
-                    eventual.getOrDefault(NOT_EVENTUAL),
+                    eventual.get(),
                     precondition.isFinal() ? precondition.get() : Precondition.empty(primitives),
                     analysisMode(),
                     properties.toImmutableMap(),
@@ -362,7 +362,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         protected void writeEventual(Eventual eventual) {
             ContractMark contractMark = new ContractMark(eventual.fields());
             preconditionForEventual.set(Optional.of(new Precondition(contractMark, List.of())));
-            this.eventual.set(eventual);
+            this.eventual.setFinal(eventual);
         }
 
         @Override
@@ -405,12 +405,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             computedCompanions.put(companionMethodName, companion);
         }
 
-        public void setEventualDelay(CausesOfDelay eventual) {
-            this.eventual.setFirst(eventual);
+        public void setEventualDelay(Eventual eventual) {
+            assert eventual.causesOfDelay().isDelayed();
+            this.eventual.setVariable(eventual);
         }
 
         public void setEventual(Eventual eventual) {
-            this.eventual.set(eventual);
+            this.eventual.setFinal(eventual);
         }
 
         @Override

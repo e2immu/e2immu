@@ -401,6 +401,6 @@ public interface EvaluationContext {
     }
 
     default Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
-        throw new UnsupportedOperationException();
+        return variableInfo.getValue();
     }
 }
