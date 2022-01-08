@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -383,7 +384,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_8() throws IOException {
         testClass("E2Immutable_8", 0, 0, new DebugConfiguration.Builder()
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
 
@@ -406,15 +407,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 2 ? "<f:sub>" : "new Sub()";
+                    String expectValue = d.iteration() <= 2 ? "<f:sub>" : "instance type Sub";
                     assertEquals(expectValue, d.currentValue().toString());
 
-                    // no linked variables, but initially delayed
-                    String expectLinked = d.iteration() <= 2 ? "*" : "";
                     assertEquals("this.sub:0", d.variableInfo().getLinkedVariables().toString());
-
-                    //int expectBreakDelay = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    //assertEquals(expectBreakDelay, d.getProperty(EXTERNAL_IMMUTABLE_BREAK_DELAY));
 
                     assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
@@ -435,11 +431,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("sub".equals(d.fieldInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.fieldAnalysis().getValue());
-                } else {
-                    assertEquals("new Sub()", d.fieldAnalysis().getValue().toString());
-                }
+                String expected = d.iteration() <= 1 ? "<f:sub>" : "new Sub()";
+                assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
 
