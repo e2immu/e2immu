@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.Sum;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +23,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSum extends CommonAbstractValue {
 
+    private static Expression sum(Expression e1, Expression e2) {
+        return Sum.sum(minimalEvaluationContext, e1, e2);
+    }
+
+    private static Expression product(Expression e1, Expression e2) {
+        return Product.product(minimalEvaluationContext, e1, e2);
+    }
+
     @Test
     public void test1() {
-        Expression s = Sum.sum(minimalEvaluationContext, newInt(1), i);
+        Expression s = sum(newInt(1), i);
         assertEquals("1+i", s.toString());
-        Expression s2 = Sum.sum(minimalEvaluationContext, newInt(2), s);
+        Expression s2 = sum(newInt(2), s);
         assertEquals("3+i", s2.toString());
+    }
+
+    @Test
+    public void test2() {
+        Expression s = sum(newInt(1), sum(i, newInt(3)));
+        assertEquals("4+i", s.toString());
+        Expression s2 = sum(sum(newInt(3), newInt(2)), sum(s, newInt(-9)));
+        assertEquals("i", s2.toString());
+        Expression s3 = sum(sum(s2, newInt(3)), negate(s2));
+        assertEquals("3", s3.toString());
+    }
+
+    @Test
+    public void test3() {
+        Expression s = sum(sum(newInt(-1), product(j, newInt(-3))), product(newInt(2), i));
+        assertEquals("-1+2*i+-3*j", s.toString());
     }
 }

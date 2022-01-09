@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Equals extends BinaryOperator {
 
@@ -84,20 +85,41 @@ public class Equals extends BinaryOperator {
             if (result != null) return result;
         }
 
-        Set<Expression> leftTerms = terms(l);
-        Set<Expression> rightTerms = terms(r);
-        CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
+        Expression[] terms = Stream.concat(Sum.expandTerms(evaluationContext, l, false),
+                Sum.expandTerms(evaluationContext, r, true)).toArray(Expression[]::new);
+        Arrays.sort(terms);
+        Expression[] termsOfProducts = Sum.makeProducts(evaluationContext, terms);
 
-        if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true);
-        Expression newLeft = sum(evaluationContext, ct.leftTerms);
-        Expression newRight = sum(evaluationContext, ct.rightTerms);
-
-        if (ct.common.isEmpty()) {
-            return newLeft.compareTo(newRight) < 0 ? new Equals(identifier, primitives, newLeft, newRight) :
-                    new Equals(identifier, primitives, newRight, newLeft);
+        if (termsOfProducts.length == 0) {
+            return new BooleanConstant(primitives, true);
         }
+        if (termsOfProducts.length == 1) {
+            if (termsOfProducts[0] instanceof Numeric) {
+                return new BooleanConstant(primitives, false);
+            }
+            IntConstant zero = new IntConstant(primitives, 0);
+            if(termsOfProducts[0] instanceof Negation neg) {
+                return new Equals(identifier, primitives, zero, neg.expression);
+            }
+            return new Equals(identifier, primitives, zero, termsOfProducts[0]);
+        }
+        Expression newLeft;
+        Expression newRight;
+        if (termsOfProducts.length == 2) {
+            if (termsOfProducts[0] instanceof Negation neg) {
+                newLeft = neg.expression;
+                newRight = termsOfProducts[1];
+            } else {
+                newLeft = termsOfProducts[0];
+                newRight = Negation.negate(evaluationContext, termsOfProducts[1]);
+            }
+        } else {
+            newLeft = Sum.wrapInSum(evaluationContext, termsOfProducts, termsOfProducts.length - 1);
+            newRight = Negation.negate(evaluationContext, termsOfProducts[1]);
+        }
+
         // recurse
-        return Equals.equals(identifier, evaluationContext, newLeft, newRight);
+        return new Equals(identifier, primitives, newLeft, newRight);
     }
 
     // (a ? null: b) == null with guaranteed b != null --> !a

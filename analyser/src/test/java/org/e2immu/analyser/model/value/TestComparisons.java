@@ -16,10 +16,7 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.GreaterThanZero;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.Sum;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.jupiter.api.Test;
@@ -342,4 +339,38 @@ public class TestComparisons extends CommonAbstractValue {
         assertTrue(delayedPGe0.variables(true).stream()
                 .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference));
     }
+
+    @Test
+    public void testLoops1() {
+        Instance i1 = Instance.forLoopVariable("0", vi, Instance.primitiveValueProperties());
+
+        // -1-(instance type int)+i>=1
+        Expression s1 = Sum.sum(minimalEvaluationContext, newInt(-1), Negation.negate(minimalEvaluationContext, i1));
+        Expression s2 = Sum.sum(minimalEvaluationContext, s1, i);
+        Expression e1 = GreaterThanZero.greater(minimalEvaluationContext, s2, newInt(1), true);
+        if (e1 instanceof GreaterThanZero gt) {
+            assertEquals("-2-(instance type int)+i", gt.expression().toString());
+        } else fail();
+
+        assertEquals("-2-(instance type int)+i>=0", e1.toString());
+        GreaterThanZero.XB extract1 = ((GreaterThanZero) e1).extract(minimalEvaluationContext);
+        assertEquals("-(instance type int)+i", extract1.x().toString());
+        assertEquals(2.0d, extract1.b());
+        assertFalse(extract1.lessThan());
+
+        // 1+instance type int>=i
+        Expression s3 = Sum.sum(minimalEvaluationContext, newInt(1), i1);
+        Expression e2 = GreaterThanZero.greater(minimalEvaluationContext, s3, i, true);
+        assertEquals("1+instance type int>=i", e2.toString());
+
+        GreaterThanZero.XB extract2 = ((GreaterThanZero) e2).extract(minimalEvaluationContext);
+        assertEquals("instance type int-i", extract2.x().toString());
+        assertEquals(-1.0d, extract2.b());
+        assertFalse(extract2.lessThan());
+
+        // solution: must be constant false (simplify to n>=i+2 && n <=i+1)
+        assertEquals("false", newAndAppend(e1, e2).toString());
+        assertEquals("false", newAndAppend(e2, e1).toString());
+    }
+
 }

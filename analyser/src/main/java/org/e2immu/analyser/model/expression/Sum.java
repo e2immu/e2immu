@@ -25,8 +25,8 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class Sum extends BinaryOperator {
 
@@ -69,42 +69,24 @@ public class Sum extends BinaryOperator {
         if (l instanceof Numeric ln && r instanceof Numeric rn)
             return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
 
-        // any unknown lingering
-        //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        // similar code in Equals (common terms)
 
-        // a + (b+c)
-        if (l instanceof Numeric ln && r instanceof Sum s && s.lhs instanceof Numeric l2) {
-            return Sum.sum(identifier, evaluationContext,
-                    IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue()), s.rhs);
+        Expression[] terms = Stream.concat(expandTerms(evaluationContext, l, false),
+                expandTerms(evaluationContext, r, false)).toArray(Expression[]::new);
+        Arrays.sort(terms);
+        Expression[] termsOfProducts = makeProducts(evaluationContext, terms);
+        if (termsOfProducts.length == 0) return new IntConstant(primitives, 0);
+        if (termsOfProducts.length == 1) return termsOfProducts[0];
+        Expression newL, newR;
+        if (termsOfProducts.length == 2) {
+            newL = termsOfProducts[0];
+            newR = termsOfProducts[1];
+        } else {
+            newL = wrapInSum(evaluationContext, termsOfProducts, termsOfProducts.length - 1);
+            newR = termsOfProducts[termsOfProducts.length - 1];
         }
 
-        // (a+b) + (c+d)
-        if (l instanceof Sum s1 && r instanceof Sum s2) {
-            Expression[] expressions = new Expression[]{s1.lhs, s1.rhs, s2.lhs, s2.rhs};
-            Arrays.sort(expressions);
-            if (!s1.lhs.equals(expressions[0]) || !s1.rhs.equals(expressions[1])) {
-                return Sum.sum(identifier, evaluationContext, Sum.sum(evaluationContext, expressions[0], expressions[1]),
-                        Sum.sum(evaluationContext, expressions[2], expressions[3]));
-            }
-        }
-        // a + x*a
-        if (l instanceof Product lp && lp.lhs instanceof Numeric lpLn && r.equals(lp.rhs))
-            return Product.product(evaluationContext,
-                    IntConstant.intOrDouble(primitives, 1 + lpLn.doubleValue()), r);
-        if (r instanceof Product rp && rp.lhs instanceof Numeric rpLn && l.equals(rp.rhs))
-            return Product.product(evaluationContext, IntConstant.intOrDouble(primitives,
-                    1 + rpLn.doubleValue()), l);
-
-        // n*a + m*a
-        if (l instanceof Product lp && r instanceof Product rp &&
-                lp.lhs instanceof Numeric lpLn && rp.lhs instanceof Numeric rpLn &&
-                lp.rhs.equals(rp.rhs)) {
-            return Product.product(evaluationContext,
-                    IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue()), lp.rhs);
-        }
-
-        Sum s = l.compareTo(r) < 0 ? new Sum(Identifier.generate(), primitives, l, r)
-                : new Sum(Identifier.generate(), primitives, r, l);
+        Sum s = new Sum(Identifier.generate(), primitives, newL, newR);
 
         // re-running the sum to solve substitutions of variables to constants
         if (tryAgain) {
@@ -112,6 +94,73 @@ public class Sum extends BinaryOperator {
         }
 
         return s;
+    }
+
+    static Expression[] makeProducts(EvaluationContext evaluationContext, Expression[] terms) {
+        Primitives primitives = evaluationContext.getPrimitives();
+        List<Expression> result = new ArrayList<>(terms.length);
+        int pos = 1;
+        result.add(terms[0]); // set the first
+        while (pos < terms.length) {
+            Expression e = terms[pos];
+            int latestIndex = result.size() - 1;
+            Expression latest = result.get(latestIndex);
+            if (e instanceof Numeric n1 && latest instanceof Numeric n2) {
+                Expression sum = IntConstant.intOrDouble(primitives, n1.doubleValue() + n2.doubleValue());
+                result.set(latestIndex, sum);
+            } else {
+                Factor f1 = getFactor(latest);
+                Factor f2 = getFactor(e);
+                if (f1.term.equals(f2.term)) {
+                    if (f1.factor == -f2.factor) {
+                        result.set(latestIndex, new IntConstant(primitives, 0));
+                    } else {
+                        Expression f = IntConstant.intOrDouble(primitives, f1.factor + f2.factor);
+                        Expression product = Product.product(evaluationContext, f, f1.term);
+                        result.set(latestIndex, product);
+                    }
+                } else {
+                    result.add(e);
+                }
+            }
+            pos++;
+        }
+        Collections.sort(result);
+        result.removeIf(e -> e instanceof Numeric n && n.doubleValue() == 0);
+        return result.toArray(Expression[]::new);
+    }
+
+    private record Factor(double factor, Expression term) {
+    }
+
+    private static Factor getFactor(Expression term) {
+        if (term instanceof Negation neg) {
+            Factor f = getFactor(neg.expression);
+            return new Factor(-f.factor, f.term);
+        }
+        if (term instanceof Product p && p.lhs instanceof Numeric n) {
+            return new Factor(n.doubleValue(), p.rhs);
+        }
+        return new Factor(1, term);
+    }
+
+
+    // we have more than 2 terms, that's a sum of sums...
+    static Expression wrapInSum(EvaluationContext evaluationContext, Expression[] expressions, int i) {
+        assert i >= 2;
+        if (i == 2) return Sum.sum(evaluationContext, expressions[0], expressions[1]);
+        return Sum.sum(evaluationContext, wrapInSum(evaluationContext, expressions, i - 1), expressions[i - 1]);
+    }
+
+    public static Stream<Expression> expandTerms(EvaluationContext evaluationContext, Expression expression, boolean negate) {
+        if (expression instanceof Sum sum) {
+            return Stream.concat(expandTerms(evaluationContext, sum.lhs, negate),
+                    expandTerms(evaluationContext, sum.rhs, negate));
+        }
+        if (negate) {
+            return Stream.of(Negation.negate(evaluationContext, expression));
+        }
+        return Stream.of(expression);
     }
 
     @Override
@@ -163,5 +212,23 @@ public class Sum extends BinaryOperator {
         if (removeLhs) return rhs;
         if (removeRhs) return lhs;
         return new Sum(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
+    }
+
+    // recursive method
+    public Double numericPartOfLhs() {
+        if (lhs instanceof Numeric n) return n.doubleValue();
+        if (lhs instanceof Sum s) return s.numericPartOfLhs();
+        return null;
+    }
+
+    // can only be called when there is a numeric part somewhere!
+    public Expression nonNumericPartOfLhs(EvaluationContext evaluationContext) {
+        if (lhs instanceof Numeric) return rhs;
+        if (lhs instanceof Sum s) {
+            // the numeric part is somewhere inside lhs
+            Expression nonNumeric = s.nonNumericPartOfLhs(evaluationContext);
+            return Sum.sum(evaluationContext, nonNumeric, rhs);
+        }
+        throw new UnsupportedOperationException();
     }
 }

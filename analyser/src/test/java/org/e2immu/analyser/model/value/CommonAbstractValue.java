@@ -120,7 +120,7 @@ public abstract class CommonAbstractValue {
                 if (Set.of("a", "b", "c", "d").contains(name)) return PRIMITIVES.booleanParameterizedType();
                 if (Set.of("i", "j", "k").contains(name)) return PRIMITIVES.intParameterizedType();
                 if (Set.of("s", "t", "p").contains(name)) return PRIMITIVES.stringParameterizedType();
-                return null;
+                return PRIMITIVES.intParameterizedType(); // to have something
             }
 
             @Override

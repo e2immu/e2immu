@@ -102,19 +102,20 @@ public class GreaterThanZero extends BaseExpression implements Expression {
 
     public XB extract(EvaluationContext evaluationContext) {
         if (expression instanceof Sum sumValue) {
-            if (sumValue.lhs instanceof Numeric ln) {
-                Expression v = sumValue.rhs;
+            Double d = sumValue.numericPartOfLhs();
+            if(d != null) {
+                Expression v = sumValue.nonNumericPartOfLhs(evaluationContext);
                 Expression x;
                 boolean lessThan;
                 double b;
                 if (v instanceof Negation ne) {
                     x = ne.expression;
                     lessThan = true;
-                    b = ln.doubleValue();
+                    b = d;
                 } else {
                     x = v;
                     lessThan = false;
-                    b = ((Numeric) Negation.negate(evaluationContext, sumValue.lhs)).doubleValue();
+                    b = -d;
                 }
                 return new XB(x, b, lessThan);
             }
