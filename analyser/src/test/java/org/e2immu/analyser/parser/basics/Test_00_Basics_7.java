@@ -150,7 +150,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             if ("increment3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
-                    String expected = d.iteration() == 0 ? "-1+<f:i>==<f:i>" : "true";
+                    String expected = d.iteration() == 0 ? "-1==<f:i>-<f:i>" : "true";
                     if ("1.0.3".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -250,7 +250,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "-1+<f:i>==<f:i>" : "true";
+                String expected = d.iteration() == 0 ? "-1==<f:i>-<f:i>" : "true";
                 assertEquals(expected, d.methodAnalysis().getLastStatement()
                         .getVariable(INC3_RETURN_VAR).current().getValue().toString());
                 if (d.iteration() > 0) {

@@ -349,7 +349,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>";
+                            case 0 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>";
                             case 1 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>";
                             default -> RETURN_VALUE;
                         };
