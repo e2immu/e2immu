@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Equals extends BinaryOperator {
 
@@ -84,20 +85,93 @@ public class Equals extends BinaryOperator {
             if (result != null) return result;
         }
 
-        Set<Expression> leftTerms = terms(l);
-        Set<Expression> rightTerms = terms(r);
-        CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
+        Expression[] terms = Stream.concat(Sum.expandTerms(evaluationContext, l, false),
+                Sum.expandTerms(evaluationContext, r, true)).toArray(Expression[]::new);
+        Arrays.sort(terms);
+        Expression[] termsOfProducts = Sum.makeProducts(evaluationContext, terms);
 
-        if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true);
-        Expression newLeft = sum(evaluationContext, ct.leftTerms);
-        Expression newRight = sum(evaluationContext, ct.rightTerms);
-
-        if (ct.common.isEmpty()) {
-            return newLeft.compareTo(newRight) < 0 ? new Equals(identifier, primitives, newLeft, newRight) :
-                    new Equals(identifier, primitives, newRight, newLeft);
+        if (termsOfProducts.length == 0) {
+            return new BooleanConstant(primitives, true);
         }
+        if (termsOfProducts.length == 1) {
+            if (termsOfProducts[0] instanceof Numeric) {
+                return new BooleanConstant(primitives, false);
+            }
+            IntConstant zero = new IntConstant(primitives, 0);
+            if (termsOfProducts[0] instanceof Negation neg) {
+                return new Equals(identifier, primitives, zero, neg.expression);
+            }
+            // 0 == 3*x --> 0 == x
+            if (termsOfProducts[0] instanceof Product p && p.lhs instanceof Numeric) {
+                return new Equals(identifier, primitives, zero, p.rhs);
+            }
+            return new Equals(identifier, primitives, zero, termsOfProducts[0]);
+        }
+        Expression newLeft;
+        Expression newRight;
+
+        // 4 == xx; -4 == -x, ...
+        if (termsOfProducts[0] instanceof Numeric numeric) {
+            // -4 + -x --> -4 == x
+            double d = numeric.doubleValue();
+            if (d < 0 && termsOfProducts[1] instanceof Negation neg) {
+                newLeft = termsOfProducts[0];
+                newRight = wrapSum(evaluationContext, termsOfProducts, true);
+                // 4 + i == 0 --> -4 == i
+            } else if (d > 0 && !(termsOfProducts[1] instanceof Negation)) {
+                newLeft = IntConstant.intOrDouble(primitives, -d);
+                newRight = wrapSum(evaluationContext, termsOfProducts, false);
+                // -4 + x == 0 --> 4 == x
+            } else if (d < 0) {
+                newLeft = IntConstant.intOrDouble(primitives, -d);
+                newRight = wrapSum(evaluationContext, termsOfProducts, false);
+            } else {
+                newLeft = termsOfProducts[0];
+                newRight = wrapSum(evaluationContext, termsOfProducts, true);
+            }
+        } else if (termsOfProducts[0] instanceof Negation neg) {
+            newLeft = neg.expression;
+            newRight = wrapSum(evaluationContext, termsOfProducts, false);
+        } else {
+            newLeft = termsOfProducts[0];
+            newRight = wrapSum(evaluationContext, termsOfProducts, true);
+        }
+
         // recurse
-        return Equals.equals(identifier, evaluationContext, newLeft, newRight);
+        return new Equals(identifier, primitives, newLeft, newRight);
+    }
+
+    private static Expression wrapSum(EvaluationContext evaluationContext,
+                                      Expression[] termsOfProducts,
+                                      boolean negate) {
+        if (termsOfProducts.length == 2) {
+            return negate ? Negation.negate(evaluationContext, termsOfProducts[1]) : termsOfProducts[1];
+        }
+        return wrapSum(evaluationContext, termsOfProducts, 1, termsOfProducts.length, negate);
+    }
+
+    private static Expression wrapSum(EvaluationContext evaluationContext,
+                                      Expression[] termsOfProducts,
+                                      int start, int end,
+                                      boolean negate) {
+        if (end - start == 2) {
+            Expression s1 = termsOfProducts[start];
+            Expression t1 = negate ? Negation.negate(evaluationContext, s1) : s1;
+            Expression s2 = termsOfProducts[start + 1];
+            Expression t2 = negate ? Negation.negate(evaluationContext, s2) : s2;
+            return Sum.sum(evaluationContext, t1, t2);
+        }
+        Expression t1 = wrapSum(evaluationContext, termsOfProducts, start, end - 1, negate);
+        Expression s2 = termsOfProducts[end - 1];
+        Expression t2 = negate ? Negation.negate(evaluationContext, s2) : s2;
+        return Sum.sum(evaluationContext, t1, t2);
+    }
+
+    // we have more than 2 terms, that's a sum of sums...
+    static Expression wrapInSum(EvaluationContext evaluationContext, Expression[] expressions, int i) {
+        assert i >= 2;
+        if (i == 2) return Sum.sum(evaluationContext, expressions[0], expressions[1]);
+        return Sum.sum(evaluationContext, wrapInSum(evaluationContext, expressions, i - 1), expressions[i - 1]);
     }
 
     // (a ? null: b) == null with guaranteed b != null --> !a

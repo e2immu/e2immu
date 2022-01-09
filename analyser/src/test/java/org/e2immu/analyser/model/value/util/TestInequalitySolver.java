@@ -42,7 +42,7 @@ public class TestInequalitySolver extends CommonAbstractValue {
         Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3)));
         Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
                 Sum.sum(minimalEvaluationContext, i2, minusJ3), newInt(1), true);
-        assertEquals("2*i-(3*j)>=1", i2Minus3JGe1.toString());
+        assertEquals("-1+2*i>=3*j", i2Minus3JGe1.toString());
 
         assertTrue(inequalitySolver.evaluate(i2Minus3JGe1));
     }

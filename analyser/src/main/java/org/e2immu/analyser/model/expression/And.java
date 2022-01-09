@@ -338,34 +338,42 @@ public class And extends BaseExpression implements Expression {
         if (value instanceof GreaterThanZero ge2 && prev instanceof GreaterThanZero ge1) {
             GreaterThanZero.XB xb1 = ge1.extract(evaluationContext);
             GreaterThanZero.XB xb2 = ge2.extract(evaluationContext);
-            if (xb1.x().equals(xb2.x())) {
+            Expression notXb2x = Negation.negate(evaluationContext, xb2.x());
+            Boolean reverse = xb1.x().equals(xb2.x()) ? Boolean.FALSE : xb1.x().equals(notXb2x) ? Boolean.TRUE : null;
+            if (reverse != null) {
+                Expression xb1x = xb1.x();
+                double xb1b = xb1.b();
+                double xb2b = reverse ? -xb2.b(): xb2.b();
+                boolean xb1lt = xb1.lessThan();
+                boolean xb2lt = reverse != xb2.lessThan();
+
                 // x>= b1 && x >= b2, with < or > on either
-                if (xb1.lessThan() && xb2.lessThan()) {
+                if (xb1lt && xb2lt) {
                     // x <= b1 && x <= b2
                     // (1) b1 > b2 -> keep b2
-                    if (xb1.b() > xb2.b()) return Action.REPLACE;
+                    if (xb1b > xb2b) return Action.REPLACE;
                     // (2) b1 < b2 -> keep b1
-                    if (xb1.b() < xb2.b()) return Action.SKIP;
+                    if (xb1b < xb2b) return Action.SKIP;
                     if (ge1.allowEquals()) return Action.REPLACE;
                     return Action.SKIP;
                 }
-                if (!xb1.lessThan() && !xb2.lessThan()) {
+                if (!xb1lt && !xb2lt) {
                     // x >= b1 && x >= b2
                     // (1) b1 > b2 -> keep b1
-                    if (xb1.b() > xb2.b()) return Action.SKIP;
+                    if (xb1b > xb2b) return Action.SKIP;
                     // (2) b1 < b2 -> keep b2
-                    if (xb1.b() < xb2.b()) return Action.REPLACE;
+                    if (xb1b < xb2b) return Action.REPLACE;
                     // (3) b1 == b2 -> > or >=
                     if (ge1.allowEquals()) return Action.REPLACE;
                     return Action.SKIP;
                 }
 
                 // !xb1.lessThan: x >= b1 && x <= b2; otherwise: x <= b1 && x >= b2
-                if (xb1.b() > xb2.b()) return !xb1.lessThan() ? Action.FALSE : Action.ADD;
-                if (xb1.b() < xb2.b()) return !xb1.lessThan() ? Action.ADD : Action.FALSE;
+                if (xb1b > xb2b) return !xb1lt ? Action.FALSE : Action.ADD;
+                if (xb1b < xb2b) return !xb1lt ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals() && ge2.allowEquals()) {
                     Expression newValue = Equals.equals(evaluationContext,
-                            IntConstant.intOrDouble(primitives, xb1.b()), xb1.x()); // null-checks are irrelevant here
+                            IntConstant.intOrDouble(primitives, xb1b), xb1x); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }

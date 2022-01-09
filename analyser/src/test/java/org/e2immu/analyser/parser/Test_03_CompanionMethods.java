@@ -230,9 +230,9 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("append", CompanionMethodName.Action.MODIFICATION, "Len"));
             Expression appendCompanionValue = appendCa.getValue();
-            assertEquals("Integer.toString(i).length()+pre==this.length()",
+            assertEquals("this.length()==Integer.toString(i).length()+pre",
                     appendCa.getValue().toString());
-            if (appendCompanionValue instanceof Equals eq && eq.lhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
+            if (appendCompanionValue instanceof Equals eq && eq.rhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
                 assertSame(lengthCall.methodInfo, stringLength);
             } else fail();
 
@@ -287,7 +287,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setAddModificationHelper".equals(d.methodInfo().name)) {
-                assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1+j==i:AnnotatedAPI.isKnown(true)?1+j==i:1+j>=i&&i>=j",
+                assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1==i-j:AnnotatedAPI.isKnown(true)?1==i-j:1-i+j>=0&&i>=j",
                         d.evaluationResult().value().toString());
             }
         };
@@ -391,7 +391,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1+strings.size()>=this.size()&&this.size()>=strings.size()*/",
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1-this.size()+strings.size()>=0&&this.size()>=strings.size()*/",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {

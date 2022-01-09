@@ -59,4 +59,23 @@ public class TestEquals extends CommonAbstractValue {
         Expression right = i;
         assertEquals("false", Equals.equals(minimalEvaluationContext, left, right).toString());
     }
+
+    @Test
+    public void testSort() {
+        assertEquals("-4==i", Equals.equals(minimalEvaluationContext, newInt(-4), i).toString());
+        assertEquals("-4==i", Equals.equals(minimalEvaluationContext, newInt(4), negate(i)).toString());
+    }
+
+    @Test
+    public void test1() {
+        assertEquals("true", Equals.equals(minimalEvaluationContext, newInt(-4), newInt(-4)).toString());
+        assertEquals("0==i", Equals.equals(minimalEvaluationContext, i, negate(i)).toString());
+    }
+
+    @Test
+    public void test2() {
+        Expression sum = Sum.sum(minimalEvaluationContext, i, j);
+        assertEquals("i+j", sum.toString());
+        assertEquals("-4==i+j", Equals.equals(minimalEvaluationContext, sum, newInt(-4)).toString());
+    }
 }

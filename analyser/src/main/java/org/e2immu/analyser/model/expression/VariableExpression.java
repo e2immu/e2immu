@@ -163,7 +163,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
     @Override
     public boolean isNumeric() {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        return typeInfo.isNumeric();
+        return typeInfo != null && typeInfo.isNumeric();
     }
 
     /*
