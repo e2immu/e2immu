@@ -170,6 +170,11 @@ public interface VariableNature {
         public boolean isLocalVariableInLoopDefinedOutside() {
             return true;
         }
+
+        @Override
+        public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
+            return statementIndex;
+        }
     }
 
     /*

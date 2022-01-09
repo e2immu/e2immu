@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -68,7 +69,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals("\"abc\"", d.currentValue().toString());
                 }
             }
-            if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
+            if (d.variable() instanceof This) {
                 if ("2.0.0".equals(d.statementId())) {
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
@@ -83,7 +84,12 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "instance type int";
+                    assertTrue(d.variableInfoContainer().hasMerge());
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? "0" : "1+i$2";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {
@@ -91,7 +97,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }

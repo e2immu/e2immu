@@ -406,7 +406,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return fieldAnalysis.getValue().isDelayed();
     }
 
-    // IMPROVE add sync blocks etc.
+    // IMPROVE add sync blocks etc. any other moments where statement time does not matter to variable fields
     private boolean notInConstruction() {
         return methodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
@@ -415,7 +415,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return getCurrentType() != variable.getOwningType();
     }
 
-    // we pass on the information about the potential newly created local variable copy
+    // getVariableValue potentially returns a new VariableExpression with a different name, pointing to the same variable
+    // this happens in the case of confirmed variable fields, where the name indicates the statement time;
+    // and in the case of variables assigned in a loop defined outside, where the name indicates the loop statement id
     @Override
     public Expression currentValue(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableInfo variableInfo = findForReading(variable, forwardEvaluationInfo.isNotAssignmentTarget());
@@ -477,30 +479,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return analyserContext;
     }
 
-        /*
-        The linkedVariables of a VariableExpression redirect to this method, because we have
-        access to a lot more information about the variable.
-
-        @Override
-        public LinkedVariables linkedVariables(Variable variable) {
-            Boolean hidden = variable.parameterizedType().isTransparent(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
-            int value;
-            if (hidden == null) {
-                value = LinkedVariables.DELAYED_VALUE;
-            } else if (hidden) {
-                VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
-                int immutable = variableInfo.getProperty(IMMUTABLE);
-                int level = MultiLevel.level(immutable);
-                value = MultiLevel.independentCorrespondingToImmutableLevel(level);
-                if (value == MultiLevel.INDEPENDENT) return LinkedVariables.EMPTY;
-            } else {
-                // accessible, like an assignment to the variable
-                value = LinkedVariables.ASSIGNED;
-            }
-            return new LinkedVariables(Map.of(variable, value), value == LinkedVariables.DELAYED_VALUE);
-        }
-        */
-
     @Override
     public int getInitialStatementTime() {
         return statementAnalysis.flowData().getInitialTime();
@@ -523,7 +501,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (statementAnalysis.statement() instanceof LoopStatement) {
             TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
             statementAnalysis.rawVariableStream()
-                    .filter(e -> statementAnalysis.index().equals(e.getValue()
+                    .filter(e -> statementIndex().equals(e.getValue()
                             .variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable()))
                     .forEach(e -> {
                         VariableInfo eval = e.getValue().best(EVALUATION);
@@ -536,7 +514,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         if (delays.isDone()) {
                             Expression newObject = Instance.genericMergeResult(statementAnalysis.index(),
                                     e.getValue().current().variable(), valueProperties);
-                            translationMap.put(new VariableExpression(variable), newObject);
+                            VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(statementIndex());
+                            VariableExpression ve = new VariableExpression(variable, suffix);
+                            translationMap.put(ve, newObject);
                         } else {
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
                                     eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
@@ -663,27 +643,47 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     public Expression getVariableValue(Variable myself, VariableInfo variableInfo) {
         Expression value = variableInfo.getValue();
         Variable v = variableInfo.variable();
-        if (value.isInstanceOf(Instance.class) && !v.equals(myself)) {
+        boolean isInstance = value.isInstanceOf(Instance.class);
+
+        // variable fields
+
+        if (isInstance && !v.equals(myself) && v instanceof FieldReference fieldReference) {
+            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+            DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             VariableExpression.Suffix suffix;
-            if (v instanceof FieldReference fieldReference) {
-                FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
-                if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
-                    String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
-                    suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
-                } else {
-                    suffix = VariableExpression.NO_SUFFIX;
-                }
+            if (finalDV.valueIsFalse() && situationForVariableFieldReference(fieldReference)) {
+                String assignmentId = variableInfo.getAssignmentIds().getLatestAssignmentNullWhenEmpty();
+                suffix = new VariableExpression.VariableField(getInitialStatementTime(), assignmentId);
             } else {
-                VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
-                if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
-                    suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
-                } else {
-                    suffix = VariableExpression.NO_SUFFIX;
-                }
+                suffix = VariableExpression.NO_SUFFIX;
             }
             // see Basics_4 for the combination of v==myself, yet VE is returned
             return new VariableExpression(v, suffix);
+        }
+        if (!v.equals(myself)) {
+            VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
+            if (vic != null && vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+
+                // variables in loop defined outside
+                if (isInstance) {
+                    VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
+                    return new VariableExpression(v, suffix);
+                }
+                // do not return a value when it has not yet been written to
+                if (!value.isDelayed() && !(value instanceof UnknownExpression)) {
+                    VariableInfo prev = vic.getPreviousOrInitial();
+                    String latestAssignment = prev.getAssignmentIds().getLatestAssignment();
+                    if (latestAssignment.compareTo(outside.statementIndex()) < 0
+                            && statementIndex().startsWith(outside.statementIndex())) {
+                        // has not yet been assigned in the loop, and we're in that loop
+                        VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(outside.statementIndex());
+                        return new VariableExpression(v, suffix);
+                    }
+                }
+            }
+            if (isInstance) {
+                return new VariableExpression(v);
+            }
         }
         return value;
     }
