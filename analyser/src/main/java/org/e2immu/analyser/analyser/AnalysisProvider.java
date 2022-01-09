@@ -23,6 +23,9 @@ import org.e2immu.analyser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public interface AnalysisProvider {
     Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
@@ -260,4 +263,19 @@ public interface AnalysisProvider {
         return bestType.delay(CauseOfDelay.Cause.TYPE_ANALYSIS);
     }
 
+    default DV defaultValueProperty(Property property, ParameterizedType formalType) {
+        return switch (property) {
+            case IMMUTABLE -> defaultImmutable(formalType, false);
+            case INDEPENDENT -> defaultIndependent(formalType);
+            case IDENTITY -> DV.FALSE_DV;
+            case CONTAINER -> defaultContainer(formalType);
+            case NOT_NULL_EXPRESSION -> defaultNotNull(formalType);
+            default -> throw new UnsupportedOperationException("property: " + property);
+        };
+    }
+
+    default Map<Property, DV> defaultValueProperties(ParameterizedType parameterizedType) {
+        return EvaluationContext.VALUE_PROPERTIES.stream()
+                .collect(Collectors.toUnmodifiableMap(p -> p, p -> defaultValueProperty(p, parameterizedType)));
+    }
 }

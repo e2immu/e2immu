@@ -282,14 +282,12 @@ public final class Instance extends BaseExpression implements Expression {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Instance instance = (Instance) o;
-        return identifier.equals(instance.identifier) &&
-                parameterizedType.equals(instance.parameterizedType) &&
-                valueProperties.equals(instance.valueProperties);
+        return identifier.equals(instance.identifier) && parameterizedType.equals(instance.parameterizedType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, valueProperties);
+        return Objects.hash(identifier, parameterizedType);
     }
 
     @Override

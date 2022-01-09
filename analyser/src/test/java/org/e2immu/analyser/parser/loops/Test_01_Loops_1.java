@@ -92,7 +92,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";
-                        assertEquals(expectValue, d.variableInfo().getValue().toString());
+//                        assertEquals(expectValue, d.variableInfo().getValue().toString());
                     }
                 }
             }
@@ -131,6 +131,10 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertEquals(expectState, d.absoluteState().toString());
 
                     assertDv(d, 1, CONDITIONALLY, execution);
+                }
+                if ("3".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+instance type int>=n";
+                    assertEquals(expectState, d.state().toString());
                 }
             }
         };

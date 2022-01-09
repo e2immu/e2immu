@@ -507,13 +507,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         VariableInfo eval = e.getValue().best(EVALUATION);
                         Variable variable = eval.variable();
 
-                        Map<Property, DV> valueProperties = getValueProperties(eval.getValue());
+                        // what happens when eval.getValue() is the null constant? we cannot properly compute
+                        // @Container on the null constant; that would have to come from a real value.
+                        Expression bestValue = eval.getValue();
+                        Map<Property, DV> valueProperties;
+                        if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
+                            valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
+                        } else {
+                            valueProperties = getValueProperties(eval.getValue());
+                        }
+
                         CausesOfDelay delays = valueProperties.values().stream()
                                 .map(DV::causesOfDelay)
                                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
                         if (delays.isDone()) {
-                            Expression newObject = Instance.genericMergeResult(statementAnalysis.index(),
-                                    e.getValue().current().variable(), valueProperties);
+                            Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
+                                    valueProperties);
                             VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(statementIndex());
                             VariableExpression ve = new VariableExpression(variable, suffix);
                             translationMap.put(ve, newObject);

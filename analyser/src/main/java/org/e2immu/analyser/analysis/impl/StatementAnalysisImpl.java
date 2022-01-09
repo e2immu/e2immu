@@ -1130,24 +1130,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // an assignment may be difficult. The value is never used, only local copies are
 
         ParameterizedType parameterizedType = variable.parameterizedType();
-        DV defaultImmutable = analyserContext.defaultImmutable(parameterizedType, false);
-        DV initialNotNull = AnalysisProvider.defaultNotNull(parameterizedType);
-        DV defaultContainer = analyserContext.defaultContainer(parameterizedType);
-        DV defaultIndependent = analyserContext.defaultIndependent(parameterizedType);
-        Map<Property, DV> valueProperties = Map.of(
-                IDENTITY, DV.FALSE_DV,
-                NOT_NULL_EXPRESSION, initialNotNull,
-                IMMUTABLE, defaultImmutable,
-                CONTAINER, defaultContainer,
-                INDEPENDENT, defaultIndependent
-        );
+        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
         Map<Property, DV> properties = Map.of(
                 CONTEXT_MODIFIED, DV.FALSE_DV,
                 EXTERNAL_NOT_NULL, NOT_INVOLVED_DV,
-                CONTEXT_NOT_NULL, initialNotNull,
+                CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV,
-                CONTEXT_IMMUTABLE, defaultImmutable
+                CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE)
         );
         Map<Property, DV> allProperties = new HashMap<>(properties);
         allProperties.putAll(valueProperties);
@@ -1531,12 +1521,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = loopVar.parameterizedType();
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
-        Map<Property, DV> valueProperties = Map.of(
-                Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
-                Property.IMMUTABLE, analyserContext.defaultImmutable(parameterizedType, false),
-                Property.INDEPENDENT, analyserContext.defaultIndependent(parameterizedType),
-                Property.CONTAINER, analyserContext.defaultContainer(parameterizedType),
-                Property.IDENTITY, DV.FALSE_DV);
+        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
         Expression value;
         if (evaluatedIterable.isDelayed()) {
             value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),

@@ -360,23 +360,14 @@ public class InlinedMethod extends BaseExpression implements Expression {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
 
-        // IMPROVE this is vanilla code, verify!
-        DV defaultContainer = analyserContext.defaultContainer(parameterizedType);
-        DV defaultImmutable = analyserContext.defaultImmutable(parameterizedType, false);
-        DV defaultIndependent = analyserContext.defaultIndependent(parameterizedType);
-        DV defaultNNe = AnalysisProvider.defaultNotNull(parameterizedType);
-        CausesOfDelay merged = defaultContainer.causesOfDelay().merge(defaultImmutable.causesOfDelay())
-                .merge(defaultIndependent.causesOfDelay()).merge(defaultNNe.causesOfDelay());
+        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        CausesOfDelay merged = valueProperties.values().stream()
+                .map(DV::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (merged.isDelayed()) {
             return DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
-                    evaluationContext.linkedVariables(variable).changeAllToDelay(merged),
-                    merged);
+                    evaluationContext.linkedVariables(variable).changeAllToDelay(merged), merged);
         }
-        Map<Property, DV> valueProperties = Map.of(Property.INDEPENDENT, defaultIndependent,
-                Property.IMMUTABLE, defaultImmutable,
-                Property.NOT_NULL_EXPRESSION, defaultNNe,
-                Property.CONTAINER, defaultContainer,
-                Property.IDENTITY, DV.FALSE_DV);
         return Instance.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
                 VariableIdentifier.variable(variable))), variable.parameterizedType(), valueProperties);
     }
