@@ -59,7 +59,7 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public String simpleName() {
-        return variable.simpleName();
+        return variable.name();
     }
 
     @Override

@@ -308,8 +308,7 @@ public class VariableInfoImpl implements VariableInfo {
 
         Expression beforePostProcess = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
-        Expression mergedValue = postProcessState.isBoolValueTrue() ? beforePostProcess
-                : postProcess(evaluationContext, beforePostProcess, postProcessState);
+        Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
         setValue(mergedValue);
         if (!mergedValue.isDelayed()) {
             setMergedValueProperties(evaluationContext, mergedValue);
@@ -323,7 +322,7 @@ public class VariableInfoImpl implements VariableInfo {
     private Expression postProcess(EvaluationContext evaluationContext,
                                    Expression beforePostProcess,
                                    Expression postProcessState) {
-        if(!beforePostProcess.isDelayed() && !postProcessState.isDelayed()) {
+        if(postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
             Expression reEval = beforePostProcess.evaluate(child, ForwardEvaluationInfo.DEFAULT).getExpression();
             return reEval;

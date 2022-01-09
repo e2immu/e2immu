@@ -85,8 +85,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().hasMerge());
-                    // FIXME 2+ should be 1+
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "2+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
@@ -98,8 +97,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    // FIXME 2+ should be 1+ reeval
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "2+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
@@ -135,7 +135,7 @@ public class TestTypeInfoStream {
                 .build());
         LocalVariable mapLocalVariable = new LocalVariable.Builder()
                 .setOwningType(testTypeInfo)
-                .setName("map").setSimpleName("map")
+                .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType(), typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
@@ -151,17 +151,17 @@ public class TestTypeInfoStream {
                         new Block.BlockBuilder(Identifier.generate())
                                 .addStatement(
                                         new ExpressionAsStatement(Identifier.generate(),
-                                                new LocalVariableCreation(Identifier.generate(), inspectionProvider,
-                                                        mapLocalVariable,
-                                                        creationExpression, false)
+                                                new LocalVariableCreation(primitives,
+                                                        List.of(new LocalVariableCreation.Declaration(Identifier.generate(),
+                                                                mapLocalVariable, creationExpression)), false)
                                         )
                                 )
                                 .addStatement(
                                         new ForEachStatement(Identifier.generate(), null,
-                                                new LocalVariableCreation(inspectionProvider,
+                                                new LocalVariableCreation(primitives,
                                                         new LocalVariable.Builder()
                                                                 .setOwningType(testTypeInfo)
-                                                                .setName("entry").setSimpleName("entry")
+                                                                .setName("entry")
                                                                 .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType(), typeT)))
                                                                 .build()),
                                                 new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),

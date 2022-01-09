@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
@@ -78,9 +79,10 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         if (forwardAnalysisInfo.catchVariable() != null) {
             // inject a catch(E1 | E2 e) { } exception variable, directly with assigned value, "read"
             LocalVariableCreation catchVariable = forwardAnalysisInfo.catchVariable();
-            String name = catchVariable.localVariable.name();
+            LocalVariable catchLv = catchVariable.declarations.get(0).localVariable();
+            String name = catchLv.name();
             if (!statementAnalysis.variableIsSet(name)) {
-                LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
+                LocalVariableReference lvr = new LocalVariableReference(catchLv);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(location(), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, analyserContext),
                         analyserContext.defaultImmutable(lvr.parameterizedType(), false),
@@ -90,42 +92,47 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         }
 
         for (Expression expression : statementAnalysis.statement().getStructure().initialisers()) {
-            Expression initialiserToEvaluate;
+
 
             if (expression instanceof LocalVariableCreation lvc) {
-
-                VariableInfoContainer vic;
-                String name = lvc.localVariable.name();
-                if (!statementAnalysis.variableIsSet(name)) {
-
-                    // create the local (loop) variable
-
-                    LocalVariableReference lvr = new LocalVariableReference(lvc.localVariable);
-                    VariableNature variableNature;
-                    if (statement() instanceof LoopStatement) {
-                        variableNature = new VariableNature.LoopVariable(index());
-                    } else if (statement() instanceof TryStatement) {
-                        variableNature = new VariableNature.TryResource(index());
-                    } else {
-                        variableNature = new VariableNature.NormalLocalVariable(index());
-                    }
-                    statementAnalysis.createVariable(evaluationContext,
-                            lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
-                    if (statement() instanceof LoopStatement) {
-                        ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(lvr.fullyQualifiedName());
-                    }
-                }
-
-                // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
+                boolean addInitializersSeparately;
                 if (statement() instanceof LoopStatement) {
-                    initialiserToEvaluate = lvc.expression;
+                    addInitializersSeparately = true;
                 } else {
-                    initialiserToEvaluate = lvc; // == expression
+                    expressionsToEvaluate.add(lvc);
+                    addInitializersSeparately = false;
                 }
-            } else initialiserToEvaluate = expression;
+                for (LocalVariableCreation.Declaration declaration : lvc.declarations) {
+                    String name = declaration.localVariable().name();
+                    if (!statementAnalysis.variableIsSet(name)) {
 
-            if (initialiserToEvaluate != null && initialiserToEvaluate != EmptyExpression.EMPTY_EXPRESSION) {
-                expressionsToEvaluate.add(initialiserToEvaluate);
+                        // create the local (loop) variable
+
+                        LocalVariableReference lvr = new LocalVariableReference(declaration.localVariable());
+                        VariableNature variableNature;
+                        if (statement() instanceof LoopStatement) {
+                            variableNature = new VariableNature.LoopVariable(index());
+                        } else if (statement() instanceof TryStatement) {
+                            variableNature = new VariableNature.TryResource(index());
+                        } else {
+                            variableNature = new VariableNature.NormalLocalVariable(index());
+                        }
+                        statementAnalysis.createVariable(evaluationContext,
+                                lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableNature);
+                        if (statement() instanceof LoopStatement) {
+                            ((StatementAnalysisImpl) statementAnalysis).ensureLocalVariableAssignedInThisLoop(lvr.fullyQualifiedName());
+                        }
+                    }
+
+                    // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
+                    if (addInitializersSeparately && declaration.expression() != EmptyExpression.EMPTY_EXPRESSION) {
+                        expressionsToEvaluate.add(declaration.expression());
+                    }
+                }
+            } else {
+                if (expression != null && expression != EmptyExpression.EMPTY_EXPRESSION) {
+                    expressionsToEvaluate.add(expression);
+                }
             }
         }
 

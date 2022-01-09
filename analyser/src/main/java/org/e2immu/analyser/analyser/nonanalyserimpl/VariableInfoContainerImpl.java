@@ -289,11 +289,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(property);
-
-        if (Level.INITIAL.equals(level) && previousOrInitial.isLeft()) {
-            // not writing on a previous FIXME why not? example: This external immutable, statement 1
-            //return;
-        }
         VariableInfoImpl variableInfo = getToWrite(level);
         variableInfo.setProperty(property, value);
     }
@@ -441,7 +436,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     }
                 });
         for (Property property : GroupPropertyValues.PROPERTIES) {
-            // FIXME check that valueWhenAbsent is correct
             groupPropertyValues.setIfKeyAbsent(property, v, property.valueWhenAbsent());
         }
     }
@@ -457,17 +451,29 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(evaluationContext);
         assert merge != null : "For variable " + getPreviousOrInitial().variable().fullyQualifiedName();
 
+        Expression postProcess = activate(postProcessState, evaluationContext);
+
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
             VariableInfoImpl vii = existing.mergeIntoNewObject(evaluationContext, stateOfDestination,
-                    postProcessState, atLeastOneBlockExecuted,
+                    postProcess, atLeastOneBlockExecuted,
                     mergeSources, groupPropertyValues);
             merge.set(vii);
         } else {
             merge.get().mergeIntoMe(evaluationContext, stateOfDestination,
-                    postProcessState, atLeastOneBlockExecuted, existing,
+                    postProcess, atLeastOneBlockExecuted, existing,
                     mergeSources, groupPropertyValues);
         }
         return merge.get().getValue();
+    }
+
+    // post-processing the state is only done under certain limited conditions, currently ONLY to
+    // merge variables, defined outside the loop but assigned inside, back to the outside of the loop.
+    private Expression activate(Expression postProcessState, EvaluationContext evaluationContext) {
+        if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside
+                && outside.statementIndex().equals(evaluationContext.statementIndex())) {
+            return postProcessState;
+        }
+        return null;
     }
 }

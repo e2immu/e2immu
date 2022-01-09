@@ -80,12 +80,13 @@ public class ForEachStatement extends LoopStatement {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+        LocalVariable lv = lvc.declarations.get(0).localVariable();
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(lvc.isVar ? new OutputBuilder().add(new Text("var")) :
-                        lvc.localVariable.parameterizedType().output(qualification))
+                        lv.parameterizedType().output(qualification))
                 .add(Space.ONE)
-                .add(new Text(lvc.localVariable.name()))
+                .add(new Text(lv.name()))
                 .add(Symbol.COLON)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

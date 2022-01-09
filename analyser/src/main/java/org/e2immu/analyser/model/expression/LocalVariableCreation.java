@@ -25,40 +25,36 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class LocalVariableCreation extends BaseExpression implements Expression {
-
-    public final LocalVariable localVariable;
-    public final LocalVariableReference localVariableReference;
-    public final Expression expression;
-    private final InspectionProvider inspectionProvider;
+    public final List<Declaration> declarations;
+    private final Primitives primitives;
     public final boolean isVar;
 
-    public LocalVariableCreation(
-            @NotNull InspectionProvider inspectionProvider,
-            @NotNull LocalVariable localVariable) {
-        this(Identifier.generate(), inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION, false);
+    public record Declaration(Identifier identifier, LocalVariable localVariable, Expression expression) {
+        public LocalVariableReference localVariableReference() {
+            return new LocalVariableReference(localVariable, expression);
+        }
     }
 
-    public LocalVariableCreation(
-            Identifier identifier,
-            @NotNull InspectionProvider inspectionProvider,
-            @NotNull LocalVariable localVariable,
-            @NotNull Expression expression,
-            boolean isVar) {
-        super(identifier);
-        this.localVariable = Objects.requireNonNull(localVariable);
-        this.expression = Objects.requireNonNull(expression);
-        this.inspectionProvider = inspectionProvider;
-        localVariableReference = new LocalVariableReference(localVariable, expression);
+    public LocalVariableCreation(Primitives primitives, LocalVariable localVariable) {
+        this(primitives, List.of(new Declaration(Identifier.generate(), localVariable,
+                EmptyExpression.EMPTY_EXPRESSION)), false);
+    }
+
+    public LocalVariableCreation(Primitives primitives, List<Declaration> declarations, boolean isVar) {
+        super(declarations.get(0).identifier);
+        this.declarations = declarations;
+        this.primitives = primitives;
         this.isVar = isVar;
     }
 
@@ -67,20 +63,20 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LocalVariableCreation that = (LocalVariableCreation) o;
-        return localVariable.equals(that.localVariable) &&
-                expression.equals(that.expression);
+        return declarations.equals(that.declarations) && isVar == that.isVar;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(localVariable, expression);
+        return Objects.hash(declarations, isVar);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new LocalVariableCreation(identifier,
-                inspectionProvider, translationMap.translateLocalVariable(localVariable),
-                translationMap.translateExpression(expression), isVar);
+        List<Declaration> translated = declarations.stream().map(d ->
+                new Declaration(d.identifier, translationMap.translateLocalVariable(d.localVariable),
+                        translationMap.translateExpression(d.expression))).toList();
+        return new LocalVariableCreation(primitives, translated, isVar);
     }
 
     @Override
@@ -90,34 +86,46 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public ParameterizedType returnType() {
-        return inspectionProvider.getPrimitives().voidParameterizedType();
+        return primitives.voidParameterizedType();
     }
 
     @Override
     public OutputBuilder output(Qualification qualification) {
+        LocalVariable lv0 = declarations.get(0).localVariable;
+        // annotations
         OutputBuilder outputBuilder = new OutputBuilder()
-                .add(localVariable.annotations().stream()
+                .add(lv0.annotations().stream()
                         .map(ae -> ae.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         if (!outputBuilder.isEmpty()) {
             outputBuilder.add(Space.ONE);
         }
+
+        // modifiers
         OutputBuilder mods = new OutputBuilder()
-                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers()))
+                .add(Arrays.stream(LocalVariableModifier.toJava(lv0.modifiers()))
                         .map(s -> new OutputBuilder().add(new Text(s)))
                         .collect(OutputBuilder.joining(Space.ONE)));
         if (!mods.isEmpty()) {
             mods.add(Space.ONE);
         }
         outputBuilder.add(mods);
+
+        // var or type
         if (isVar) {
             outputBuilder.add(new Text("var"));
         } else {
-            outputBuilder.add(localVariable.parameterizedType().output(qualification));
+            outputBuilder.add(lv0.parameterizedType().output(qualification));
         }
-        outputBuilder.add(Space.ONE).add(new Text(localVariable.name()));
-        if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            outputBuilder.add(Symbol.assignment("=")).add(expression.output(qualification));
-        }
+
+        // declarations
+        outputBuilder.add(Space.ONE);
+        outputBuilder.add(declarations.stream().map(declaration -> {
+            OutputBuilder ob = new OutputBuilder().add(new Text(declaration.localVariable.name()));
+            if (declaration.expression != EmptyExpression.EMPTY_EXPRESSION) {
+                ob.add(Symbol.assignment("=")).add(declaration.expression.output(qualification));
+            }
+            return ob;
+        }).collect(OutputBuilder.joining(Symbol.COMMA)));
         return outputBuilder;
     }
 
@@ -133,43 +141,64 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of(
-                expression.typesReferenced(),
-                localVariable.parameterizedType().typesReferenced(true));
+        Stream<Map.Entry<TypeInfo, Boolean>> s1 = declarations.stream()
+                .flatMap(d -> d.expression.typesReferenced().stream());
+        Stream<Map.Entry<TypeInfo, Boolean>> s2 = declarations.stream()
+                .flatMap(d -> d.localVariable.parameterizedType().typesReferenced(true).stream());
+        return Stream.concat(s1, s2).collect(UpgradableBooleanMap.collector());
     }
 
     @Override
     public List<? extends Element> subElements() {
-        if (expression == EmptyExpression.EMPTY_EXPRESSION) return List.of();
-        return List.of(expression);
+        return declarations.stream().map(Declaration::expression)
+                .filter(e -> e != EmptyExpression.EMPTY_EXPRESSION).toList();
     }
 
     @Override
     public List<LocalVariableReference> newLocalVariables() {
-        return List.of(localVariableReference);
+        return declarations.stream().map(Declaration::localVariableReference).toList();
     }
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        if (expression == EmptyExpression.EMPTY_EXPRESSION) {
-            return new EvaluationResult.Builder(evaluationContext)
-                    .setExpression(expression)
-                    .build();
+        EvaluationResult.Builder builder = null;
+        EvaluationResult result = null;
+        for (Declaration declaration : declarations) {
+            EvaluationResult assigned;
+            if (declaration.expression == EmptyExpression.EMPTY_EXPRESSION) {
+                assigned = new EvaluationResult.Builder(evaluationContext)
+                        .setExpression(declaration.expression)
+                        .build();
+            } else {
+                Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
+                        new VariableExpression(declaration.localVariableReference()), declaration.expression);
+                assigned = assignment.evaluate(evaluationContext, forwardEvaluationInfo);
+            }
+            if (result == null) {
+                result = assigned;
+            } else {
+                if (builder == null) {
+                    builder = new EvaluationResult.Builder(evaluationContext);
+                    builder.compose(result);
+                }
+                builder.compose(assigned);
+            }
         }
-        Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
-                new VariableExpression(localVariableReference), expression);
-        return assignment.evaluate(evaluationContext, forwardEvaluationInfo);
+        assert builder != null || result != null;
+        return builder != null ? builder.build() : result;
     }
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return List.of(localVariableReference);
+        return declarations.stream().map(d -> (Variable) d.localVariableReference()).toList();
     }
 
     @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
-            expression.visit(predicate);
+            for (Declaration declaration : declarations) {
+                declaration.expression.visit(predicate);
+            }
         }
     }
 }

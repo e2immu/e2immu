@@ -15,11 +15,13 @@
 package org.e2immu.analyser.resolver;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.UnevaluatedAnnotationParameterValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -100,5 +102,31 @@ public class TestBasics extends CommonTest {
     @Test
     public void test_4() throws IOException {
         inspectAndResolve(Basics_4.class);
+    }
+
+
+    @Test
+    public void test_5() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Basics_5.class);
+        TypeInfo typeInfo = typeMap.get(Basics_5.class);
+        MethodInfo method2 = typeInfo.findUniqueMethod("method2", 0);
+        Block block = method2.methodInspection.get().getMethodBody();
+        Statement s0 = block.structure.statements().get(0);
+        if (s0 instanceof ExpressionAsStatement eas) {
+            if (eas.expression instanceof LocalVariableCreation lvc) {
+                assertEquals(2, lvc.declarations.size());
+
+                LocalVariableCreation.Declaration d0 = lvc.declarations.get(0);
+                assertEquals("i", d0.localVariable().name());
+                assertEquals("4", d0.expression().toString());
+                assertEquals("Type int", d0.localVariable().parameterizedType().toString());
+
+                LocalVariableCreation.Declaration d1 = lvc.declarations.get(1);
+                assertEquals("j", d1.localVariable().name());
+                assertEquals("<empty>", d1.expression().toString());
+                assertEquals(VariableNature.METHOD_WIDE, d1.localVariable().nature());
+                assertEquals("Type int", d1.localVariable().parameterizedType().toString());
+            } else fail();
+        } else fail();
     }
 }

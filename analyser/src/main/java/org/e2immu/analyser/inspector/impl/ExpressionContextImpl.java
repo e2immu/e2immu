@@ -396,7 +396,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
             LocalVariableCreation localVariableCreation = (LocalVariableCreation) tryExpressionContext
                     .parseExpressionStartVoid(resource);
-            tryExpressionContext.variableContext.add(localVariableCreation.localVariable, localVariableCreation.expression);
+            for (LocalVariableCreation.Declaration declaration : localVariableCreation.declarations) {
+                tryExpressionContext.variableContext.add(declaration.localVariable(), declaration.expression());
+            }
             resources.add(localVariableCreation);
         }
         Block tryBlock = tryExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
@@ -419,8 +421,8 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             String name = parameter.getName().asString();
             LocalVariable localVariable = new LocalVariable.Builder()
                     .setOwningType(owningType())
-                    .setName(name).setSimpleName(name).setParameterizedType(typeOfVariable).build();
-            LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
+                    .setName(name).setParameterizedType(typeOfVariable).build();
+            LocalVariableCreation lvc = new LocalVariableCreation(typeContext.getPrimitives(), localVariable);
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(Identifier.from(catchClause), lvc, unionOfTypes);
             ExpressionContextImpl catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
@@ -627,28 +629,40 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             }
             if (expression.isVariableDeclarationExpr()) {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
-                VariableDeclarator var = vde.getVariable(0);
-                ParameterizedType parameterizedType;
-                Expression initializer;
-                boolean isVar = "var".equals(var.getType().asString());
-                if (isVar) {
-                    // run initializer without info
-                    initializer = var.getInitializer()
-                            .map(this::parseExpressionStartVoid).orElse(EmptyExpression.EMPTY_EXPRESSION);
-                    parameterizedType = initializer.returnType();
-                } else {
-                    parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
-                    initializer = var.getInitializer()
-                            .map(i -> parseExpression(i, new ForwardReturnTypeInfo(parameterizedType)))
-                            .orElse(EmptyExpression.EMPTY_EXPRESSION);
+                VariableDeclarator vd0 = vde.getVariable(0);
+                List<AnnotationExpression> annotations = vde.getAnnotations().stream()
+                        .map(ae -> AnnotationInspector.inspect(this, ae)).toList();
+                Set<LocalVariableModifier> modifiers = vde.getModifiers().stream()
+                        .map(LocalVariableModifier::from).collect(Collectors.toUnmodifiableSet());
+                boolean isVar = "var".equals(vd0.getType().asString());
+                List<LocalVariableCreation.Declaration> declarations = new LinkedList<>();
+                for (VariableDeclarator variableDeclarator : vde.getVariables()) {
+                    ParameterizedType parameterizedType;
+                    Expression initializer;
+
+                    if (isVar) {
+                        // run initializer without info
+                        initializer = variableDeclarator.getInitializer()
+                                .map(this::parseExpressionStartVoid).orElse(EmptyExpression.EMPTY_EXPRESSION);
+                        parameterizedType = initializer.returnType();
+                    } else {
+                        parameterizedType = ParameterizedTypeFactory.from(typeContext, variableDeclarator.getType());
+                        initializer = variableDeclarator.getInitializer()
+                                .map(i -> parseExpression(i, new ForwardReturnTypeInfo(parameterizedType)))
+                                .orElse(EmptyExpression.EMPTY_EXPRESSION);
+                    }
+                    LocalVariable.Builder localVariable = new LocalVariable.Builder()
+                            .setName(variableDeclarator.getNameAsString())
+                            .setParameterizedType(parameterizedType);
+                    localVariable.setAnnotations(annotations);
+                    localVariable.setModifiers(modifiers);
+                    LocalVariable lv = localVariable.setOwningType(owningType()).build();
+                    LocalVariableCreation.Declaration declaration = new LocalVariableCreation.Declaration
+                            (Identifier.from(variableDeclarator), lv, initializer);
+                    declarations.add(declaration);
+                    variableContext.add(lv, initializer);
                 }
-                LocalVariable.Builder localVariable = new LocalVariable.Builder()
-                        .setName(var.getNameAsString()).setSimpleName(var.getNameAsString())
-                        .setParameterizedType(parameterizedType);
-                vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
-                vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
-                LocalVariable lv = localVariable.setOwningType(owningType()).build();
-                return new LocalVariableCreation(identifier, typeContext, lv, initializer, isVar);
+                return new LocalVariableCreation(typeContext.getPrimitives(), List.copyOf(declarations), isVar);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
@@ -738,7 +752,6 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
                 LocalVariableReference patternVariable = instanceOfExpr.getPattern().map(pattern ->
                         new LocalVariableReference(new LocalVariable.Builder()
-                                .setSimpleName(pattern.getNameAsString())
                                 .setName(pattern.getNameAsString())
                                 .setOwningType(enclosingType)
                                 .setParameterizedType(type)

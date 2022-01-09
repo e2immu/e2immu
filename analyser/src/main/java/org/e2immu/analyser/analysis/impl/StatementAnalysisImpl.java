@@ -1506,7 +1506,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public Variable obtainLoopVar() {
         Structure structure = statement().getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        return lvc.localVariableReference;
+        return lvc.declarations.get(0).localVariableReference();
     }
 
     // updates variables.get(loopVar)

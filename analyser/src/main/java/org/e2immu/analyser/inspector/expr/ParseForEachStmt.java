@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 
+import java.util.List;
+
 public class ParseForEachStmt {
 
     public static Statement parse(ExpressionContext expressionContext, String label, ForEachStmt forEachStmt) {
@@ -46,16 +48,16 @@ public class ParseForEachStmt {
         }
         LocalVariable localVariable = new LocalVariable.Builder()
                 .setOwningType(expressionContext.owningType())
-                .setName(name).setSimpleName(name)
+                .setName(name)
                 .setParameterizedType(parameterizedType)
                 .build();
         newVariableContext.add(localVariable, expression);
         Block block = expressionContext.newVariableContextForEachLoop(newVariableContext)
                 .parseBlockOrStatement(forEachStmt.getBody());
-        LocalVariableCreation lvc = new LocalVariableCreation(
-                Identifier.from(vde),
-                expressionContext.typeContext(),
-                localVariable, EmptyExpression.EMPTY_EXPRESSION, isVar);
+        LocalVariableCreation.Declaration declaration = new LocalVariableCreation.Declaration(Identifier.from(vde),
+                localVariable, EmptyExpression.EMPTY_EXPRESSION);
+        List<LocalVariableCreation.Declaration> declarations = List.of(declaration);
+        LocalVariableCreation lvc = new LocalVariableCreation(expressionContext.typeContext().getPrimitives(), declarations, isVar);
         return new ForEachStatement(Identifier.positionFrom(forEachStmt), label, lvc, expression,
                 Identifier.positionFrom(forEachStmt.getIterable()), block);
     }

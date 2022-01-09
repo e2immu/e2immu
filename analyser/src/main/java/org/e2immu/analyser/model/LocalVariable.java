@@ -16,7 +16,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.variable.VariableNature;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /*
 The VariableNature of a LocalVariable is copied into VariableInfoContainer; both have often the same object.
@@ -26,7 +28,6 @@ This always the case when the variable was created by the inspection (rather tha
 the analyser. Then, they have identical values.)
 */
 public record LocalVariable(Set<LocalVariableModifier> modifiers,
-                            String simpleName,
                             String name,
                             ParameterizedType parameterizedType,
                             List<AnnotationExpression> annotations,
@@ -35,7 +36,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
     // testing!
     public LocalVariable(String name, ParameterizedType parameterizedType) {
-        this(Set.of(), name, name, parameterizedType, List.of(), parameterizedType.typeInfo, VariableNature.METHOD_WIDE);
+        this(Set.of(), name, parameterizedType, List.of(), parameterizedType.typeInfo, VariableNature.METHOD_WIDE);
     }
 
     public LocalVariable {
@@ -45,8 +46,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
-        return new LocalVariable(modifiers, simpleName,
-                name, translationMap.translateType(parameterizedType), annotations, owningType, nature);
+        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType, nature);
     }
 
     @Override
@@ -67,16 +67,11 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         return "LocalVariable " + name + " of " + parameterizedType;
     }
 
-    public String simpleName() {
-        return simpleName;
-    }
-
     public static class Builder {
-        private final List<AnnotationExpression> annotations = new ArrayList<>();
-        private final Set<LocalVariableModifier> modifiers = new HashSet<>();
+        private List<AnnotationExpression> annotations;
+        private Set<LocalVariableModifier> modifiers;
         private ParameterizedType parameterizedType;
         private String name;
-        private String simpleName;
         private TypeInfo owningType;
         private VariableNature nature = VariableNature.METHOD_WIDE;
 
@@ -90,24 +85,13 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
             return this;
         }
 
-        public Builder setSimpleName(String name) {
-            this.simpleName = name;
-            return this;
-        }
-
         public Builder setParameterizedType(ParameterizedType parameterizedType) {
             this.parameterizedType = parameterizedType;
             return this;
         }
 
-        public Builder addModifier(LocalVariableModifier modifier) {
-            this.modifiers.add(modifier);
-            return this;
-        }
-
-        public Builder addAnnotation(AnnotationExpression annotationExpression) {
-            this.annotations.add(annotationExpression);
-            return this;
+        public void setModifiers(Set<LocalVariableModifier> modifiers) {
+            this.modifiers = modifiers;
         }
 
         public Builder setNature(VariableNature nature) {
@@ -116,8 +100,13 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         }
 
         public LocalVariable build() {
-            return new LocalVariable(modifiers, simpleName,
-                    name, parameterizedType, annotations, owningType, nature);
+            return new LocalVariable(modifiers == null ? Set.of() : Set.copyOf(modifiers),
+                    name, parameterizedType, annotations == null ? List.of() : List.copyOf(annotations), owningType,
+                    nature);
+        }
+
+        public void setAnnotations(List<AnnotationExpression> annotations) {
+            this.annotations = annotations;
         }
     }
 }

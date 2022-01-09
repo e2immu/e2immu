@@ -75,8 +75,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
         Structure structure = statementAnalysis.statement().getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
-            // TODO do we need this? statementAnalysis.ensureLinkedVariables1();
-            // try-statement has no main expression, and it may not have initialisers; break; continue; ...
+            // try-statement has no main expression, and it may not have initializers; break; continue; ...
             if (statementAnalysis.stateData().valueOfExpression.isVariable()) {
                 setFinalAllowEquals(statementAnalysis.stateData().valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
             }
