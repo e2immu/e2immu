@@ -449,6 +449,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public Expression merge(EvaluationContext evaluationContext,
                             Expression stateOfDestination,
+                            Expression postProcessState,
                             boolean atLeastOneBlockExecuted,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
@@ -458,11 +459,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
-            VariableInfoImpl vii = existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted,
+            VariableInfoImpl vii = existing.mergeIntoNewObject(evaluationContext, stateOfDestination,
+                    postProcessState, atLeastOneBlockExecuted,
                     mergeSources, groupPropertyValues);
             merge.set(vii);
         } else {
-            merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing,
+            merge.get().mergeIntoMe(evaluationContext, stateOfDestination,
+                    postProcessState, atLeastOneBlockExecuted, existing,
                     mergeSources, groupPropertyValues);
         }
         return merge.get().getValue();

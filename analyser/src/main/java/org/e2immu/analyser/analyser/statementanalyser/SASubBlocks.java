@@ -35,6 +35,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
     private String index() {
         return statementAnalysis.index();
     }
+
     private Statement statement() {
         return statementAnalysis.statement();
     }
@@ -209,13 +210,16 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTimeWithEscape, index());
             }
 
+            Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
+
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).copyBackLocalCopies(evaluationContext,
-                    sharedState.localConditionManager().state(), lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
+                    sharedState.localConditionManager().state(), addToStateAfterStatement,
+                    lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
             analysisStatus = analysisStatus.combine(copyStatus);
 
             // compute the escape situation of the sub-blocks
-            Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
+
             if (!addToStateAfterStatement.isBoolValueTrue()) {
                 ConditionManager newLocalConditionManager = sharedState.localConditionManager()
                         .newForNextStatementDoNotChangePrecondition(evaluationContext, addToStateAfterStatement);
@@ -228,8 +232,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (statementAnalysis.flowData().timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
+            Expression postProcessState = new BooleanConstant(statementAnalysis.primitives(), true);
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).copyBackLocalCopies(evaluationContext,
-                    sharedState.localConditionManager().state(), List.of(), false, maxTime);
+                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime);
             analysisStatus = analysisStatus.combine(copyStatus);
         }
 

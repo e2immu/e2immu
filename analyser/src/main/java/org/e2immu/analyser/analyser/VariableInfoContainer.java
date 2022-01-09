@@ -144,6 +144,7 @@ public interface VariableInfoContainer {
 
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
+                     Expression postProcessState,
                      boolean atLeastOneBlockExecuted,
                      List<ConditionAndVariableInfo> mergeSources,
                      GroupPropertyValues groupPropertyValues);

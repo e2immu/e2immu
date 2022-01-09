@@ -23,10 +23,7 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.Negation;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -253,9 +250,10 @@ public class VariableInfoImpl implements VariableInfo {
     // TESTING ONLY!!
     VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                         Expression stateOfDestination,
+                                        Expression postProcessState,
                                         boolean atLeastOneBlockExecuted,
                                         List<ConditionAndVariableInfo> mergeSources) {
-        return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
+        return mergeIntoNewObject(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, mergeSources,
                 new GroupPropertyValues());
     }
 
@@ -265,6 +263,7 @@ public class VariableInfoImpl implements VariableInfo {
      */
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                                Expression stateOfDestination,
+                                               Expression postProcessState,
                                                boolean atLeastOneBlockExecuted,
                                                List<ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues) {
@@ -273,7 +272,7 @@ public class VariableInfoImpl implements VariableInfo {
         String mergedReadId = mergedReadId(evaluationContext, getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
                 variable, mergedAssignmentIds, mergedReadId);
-        newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
+        newObject.mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, this, mergeSources,
                 groupPropertyValues);
         return newObject;
     }
@@ -281,10 +280,11 @@ public class VariableInfoImpl implements VariableInfo {
     // test only!
     void mergeIntoMe(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
+                     Expression postProcessState,
                      boolean atLeastOneBlockExecuted,
                      VariableInfoImpl previous,
                      List<ConditionAndVariableInfo> mergeSources) {
-        mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, previous, mergeSources,
+        mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, previous, mergeSources,
                 new GroupPropertyValues());
     }
 
@@ -299,15 +299,17 @@ public class VariableInfoImpl implements VariableInfo {
      */
     public void mergeIntoMe(EvaluationContext evaluationContext,
                             Expression stateOfDestination,
+                            Expression postProcessState,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != this;
 
-        Expression mergedValue = evaluationContext.replaceLocalVariables(
+        Expression beforePostProcess = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
-
+        Expression mergedValue = postProcessState.isBoolValueTrue() ? beforePostProcess
+                : postProcess(evaluationContext, beforePostProcess, postProcessState);
         setValue(mergedValue);
         if (!mergedValue.isDelayed()) {
             setMergedValueProperties(evaluationContext, mergedValue);
@@ -316,6 +318,17 @@ public class VariableInfoImpl implements VariableInfo {
         if (evaluationContext.isMyself(variable)) {
             setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
         }
+    }
+
+    private Expression postProcess(EvaluationContext evaluationContext,
+                                   Expression beforePostProcess,
+                                   Expression postProcessState) {
+        if(!beforePostProcess.isDelayed() && !postProcessState.isDelayed()) {
+            EvaluationContext child = evaluationContext.childState(postProcessState);
+            Expression reEval = beforePostProcess.evaluate(child, ForwardEvaluationInfo.DEFAULT).getExpression();
+            return reEval;
+        }
+        return beforePostProcess;
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {

@@ -824,6 +824,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     public AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
                                               Expression stateOfConditionManagerBeforeExecution,
+                                              Expression postProcessState,
                                               List<ConditionAndLastStatement> lastStatements,
                                               boolean atLeastOneBlockExecuted,
                                               int statementTime) {
@@ -885,7 +886,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     if (toMerge.size() > 0) {
                         try {
-                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent,
+                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, postProcessState, ignoreCurrent,
                                     toMerge, groupPropertyValues);
 
                             LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
