@@ -1314,8 +1314,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         throw new UnsupportedOperationException();
     }
 
-    /*
-    We've encountered a break or continue statement, and need to find the corresponding loop...
+    /**
+     * We've encountered a break or continue statement, and need to find the corresponding loop...
+     *
+     * @param breakOrContinue null for a return statement
+     * @return the loop and the number of steps up to compute the state; null if the parameter was null, and there is no loop
      */
     @Override
     public FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue) {
@@ -1323,12 +1326,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         int cnt = 0;
         while (sa != null) {
             if (sa.statement() instanceof LoopStatement loop &&
-                    (!breakOrContinue.hasALabel() || loop.label != null && loop.label.equals(breakOrContinue.label))) {
+                    (breakOrContinue == null
+                            || !breakOrContinue.hasALabel()
+                            || loop.label != null && loop.label.equals(breakOrContinue.label))) {
                 return new FindLoopResult(sa, cnt);
             }
             sa = sa.parent();
             cnt++;
         }
+        if (breakOrContinue == null) return null;
         throw new UnsupportedOperationException();
     }
 

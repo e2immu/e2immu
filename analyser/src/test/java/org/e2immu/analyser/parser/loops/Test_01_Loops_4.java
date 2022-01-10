@@ -39,16 +39,15 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    // the variable is local to the loop, so it leaves NO state behind
-                    assertEquals("true", d.state().toString());
+                    assertEquals("0!=instance type int", d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
 
                     // state after a forEach only when there was an interrupt caused by "break"
-                    assertEquals("true", d.conditionManagerForNextStatement().state().toString());
+                    assertEquals("0!=instance type int", d.conditionManagerForNextStatement().state().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expectState = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
+                    String expectState = "0!=instance type int";
                     assertEquals(expectState, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -95,11 +94,9 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // we do not want 0 here!
-                        String expect = d.iteration() == 0
-                                ? "<v:i>>=10?0:instance type int"
-                                : "0==instance type int?4:0";
+                        String expect = "0==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectVars = d.iteration() == 0 ? "[method]" : "[]";
+                        String expectVars = "[]";
                         assertEquals(expectVars, d.currentValue().variables(true).toString());
                     }
                 }

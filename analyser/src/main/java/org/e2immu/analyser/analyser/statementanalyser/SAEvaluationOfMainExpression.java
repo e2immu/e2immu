@@ -140,6 +140,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
             }
             ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, localAnalysers.get());
+
+            // post-process
+
             AnalysisStatus statusPost = AnalysisStatus.of(applyResult.status().merge(analysisStatus.causesOfDelay()));
             CausesOfDelay ennStatus = applyResult.ennStatus();
 
@@ -162,6 +165,13 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 value = eval_IfElse_Assert(sharedState, value);
             } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
                 eval_Switch(sharedState, value, switchStatement);
+            } else if(statementAnalysis.statement() instanceof ReturnStatement) {
+                StatementAnalysis.FindLoopResult loop = statementAnalysis.findLoopByLabel(null);
+                if(loop != null) {
+                    Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), loop.steps());
+                    Expression notState = Negation.negate(sharedState.evaluationContext(), state);
+                    loop.statementAnalysis().stateData().addStateOfInterrupt(index(), notState, state.isDelayed());
+                }
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
