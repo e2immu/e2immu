@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.StringUtil;
 
 public interface VariableNature {
@@ -26,14 +27,6 @@ public interface VariableNature {
     }
 
     default boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-        return false;
-    }
-
-    /*
-    Is true starting from the eval expression of the loop statement, down to all statements in the block.
-    Is true at all times for variables declared in the loop statement's init (for, forEach)
-    */
-    default boolean isLocalVariableInLoopDefinedOutside() {
         return false;
     }
 
@@ -54,6 +47,8 @@ public interface VariableNature {
     }
 
     NormalLocalVariable METHOD_WIDE = new NormalLocalVariable();
+
+    default VariableExpression.Suffix suffix() { return VariableExpression.NO_SUFFIX; }
 
     /*
     situation 1: normal variable (default value, rather than null)
@@ -130,10 +125,6 @@ public interface VariableNature {
     Only stored in the VIC, because the LocalVariable has been created before we know statement IDs.
      */
     record LoopVariable(String statementIndex) implements VariableNature {
-        @Override
-        public boolean isLocalVariableInLoopDefinedOutside() {
-            return false;
-        }
 
         @Override
         public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
@@ -166,14 +157,15 @@ public interface VariableNature {
      */
     record VariableDefinedOutsideLoop(VariableNature previousVariableNature,
                                       String statementIndex) implements VariableNature {
-        @Override
-        public boolean isLocalVariableInLoopDefinedOutside() {
-            return true;
-        }
 
         @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
             return statementIndex;
+        }
+
+        @Override
+        public VariableExpression.Suffix suffix() {
+            return new VariableExpression.VariableInLoop(statementIndex());
         }
     }
 

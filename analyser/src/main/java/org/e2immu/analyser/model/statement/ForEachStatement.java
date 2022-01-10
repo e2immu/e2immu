@@ -57,6 +57,11 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
+    public boolean hasExitCondition() {
+        return false;
+    }
+
+    @Override
     public Statement translate(TranslationMap translationMap) {
         return new ForEachStatement(identifier, label,
                 (LocalVariableCreation) translationMap.translateExpression(structure.initialisers().get(0)),

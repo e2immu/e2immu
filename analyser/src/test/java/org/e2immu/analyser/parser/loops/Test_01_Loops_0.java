@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -62,8 +63,8 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             if ("res1".equals(d.variableName())) {
                 assertTrue(d.variable() instanceof LocalVariableReference);
                 boolean expect = d.statementId().startsWith("2");
-                boolean inLoop = d.variableInfoContainer().variableNature().isLocalVariableInLoopDefinedOutside();
-                assertEquals(expect, inLoop);
+                assertEquals(expect, d.variableInfoContainer().variableNature()
+                        instanceof VariableNature.VariableDefinedOutsideLoop);
 
                 if ("2.0.0".equals(d.statementId())) {
                     assertEquals("\"abc\"", d.currentValue().toString());
@@ -77,8 +78,8 @@ public class Test_01_Loops_0 extends CommonTestRunner {
             if ("i".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
                     boolean expect = d.statementId().startsWith("2");
-                    boolean inLoop = d.variableInfoContainer().variableNature().isLocalVariableInLoopDefinedOutside();
-                    assertEquals(expect, inLoop);
+                    assertEquals(expect, d.variableInfoContainer().variableNature()
+                            instanceof VariableNature.VariableDefinedOutsideLoop);
                 } else fail();
                 if ("1".equals(d.statementId())) {
                     assertEquals("0", d.currentValue().toString());

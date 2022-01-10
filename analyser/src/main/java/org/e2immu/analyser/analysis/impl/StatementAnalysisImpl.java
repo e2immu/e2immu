@@ -534,7 +534,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
                     vic, navigationData.hasSubBlocks());
-        } else if (!vic.variableNature().isLocalVariableInLoopDefinedOutside()
+        } else if (!(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
                 && statement instanceof LoopStatement && variable.isLocal()) {
             // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
             // the variable itself will not be used anymore, only its "local copy" associated with the loop
@@ -1389,11 +1389,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
         if (!variables.isSet(variableName)) return false;
         VariableInfoContainer vic = variables.get(variableName);
-        if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) return false;
+        if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) return false;
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
 
-        if(vic.variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+        if (vic.variableNature() instanceof VariableNature.LoopVariable loopVariable) {
             // a loop variable is not merged back to its defining level, so it is local to this block
             // exactly when the parent is the defining statement
             return parent != null && loopVariable.statementIndex().equals(parent.index());
@@ -1536,7 +1536,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         Expression value;
         if (evaluatedIterable.isDelayed() || delayed.isDelayed()) {
-            CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay(): delayed;
+            CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
             value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),
                     LinkedVariables.delayedEmpty(causes), causes);
         } else {
@@ -1692,7 +1692,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         while (sa != null) {
             if (!sa.variableIsSet(fullyQualifiedName)) return;
             VariableInfoContainer localVic = sa.getVariable(fullyQualifiedName);
-            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return;
+            if (!(localVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) return;
             if (sa.statement() instanceof LoopStatement) {
                 ((StatementAnalysisImpl) sa).ensureLocalVariableAssignedInThisLoop(fullyQualifiedName);
                 loopIndex = sa.index();

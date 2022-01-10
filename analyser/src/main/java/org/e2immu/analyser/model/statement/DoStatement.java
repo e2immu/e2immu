@@ -35,6 +35,11 @@ public class DoStatement extends LoopStatement {
     }
 
     @Override
+    public boolean hasExitCondition() {
+        return true;
+    }
+
+    @Override
     public Statement translate(TranslationMap translationMap) {
         return new DoStatement(identifier, label, translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block()));

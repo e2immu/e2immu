@@ -368,7 +368,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     return new VariableInfoImpl(getLocation(), variable);
                 }
             }
-            if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
+            if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
                 if (!relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     return new VariableInfoImpl(getLocation(), variable); // no value, no state
@@ -501,40 +501,47 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (statementAnalysis.statement() instanceof LoopStatement) {
             TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
             statementAnalysis.rawVariableStream()
-                    .filter(e -> statementIndex().equals(e.getValue()
-                            .variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable()))
-                    .forEach(e -> {
-                        VariableInfo eval = e.getValue().best(EVALUATION);
-                        Variable variable = eval.variable();
-
-                        // what happens when eval.getValue() is the null constant? we cannot properly compute
-                        // @Container on the null constant; that would have to come from a real value.
-                        Expression bestValue = eval.getValue();
-                        Map<Property, DV> valueProperties;
-                        if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
-                            valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
-                        } else {
-                            valueProperties = getValueProperties(eval.getValue());
-                        }
-
-                        CausesOfDelay delays = valueProperties.values().stream()
-                                .map(DV::causesOfDelay)
-                                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-                        if (delays.isDone()) {
-                            Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
-                                    valueProperties);
-                            VariableExpression.Suffix suffix = new VariableExpression.VariableInLoop(statementIndex());
-                            VariableExpression ve = new VariableExpression(variable, suffix);
-                            translationMap.put(ve, newObject);
-                        } else {
-                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
-                            translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
-                        }
-                    });
+                    .map(Map.Entry::getValue)
+                    .filter(this::isReplaceVariable)
+                    .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
             return mergeValue.translate(translationMap.build());
         }
         return mergeValue;
+    }
+
+    private void addToTranslationMapBuilder(VariableInfoContainer vic,
+                                            TranslationMapImpl.Builder translationMap) {
+        VariableInfo eval = vic.best(EVALUATION);
+        Variable variable = eval.variable();
+
+        // what happens when eval.getValue() is the null constant? we cannot properly compute
+        // @Container on the null constant; that would have to come from a real value.
+        Expression bestValue = eval.getValue();
+        Map<Property, DV> valueProperties;
+        if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
+            valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
+        } else {
+            valueProperties = getValueProperties(eval.getValue());
+        }
+
+        CausesOfDelay delays = valueProperties.values().stream()
+                .map(DV::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delays.isDone()) {
+            Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
+                    valueProperties);
+            VariableExpression.Suffix suffix = vic.variableNature().suffix();
+            VariableExpression ve = new VariableExpression(variable, suffix);
+            translationMap.put(ve, newObject);
+        } else {
+            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
+                    eval.getLinkedVariables().remove(v -> v.equals(variable)).changeAllToDelay(delays), delays);
+            translationMap.put(DelayedVariableExpression.forVariable(variable, delays), delayed);
+        }
+    }
+
+    private boolean isReplaceVariable(VariableInfoContainer vic) {
+        return statementIndex().equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
     }
 
     /*

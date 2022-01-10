@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;

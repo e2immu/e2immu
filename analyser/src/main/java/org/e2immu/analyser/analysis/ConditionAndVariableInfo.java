@@ -22,9 +22,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public record ConditionAndVariableInfo(Expression condition,
                                        VariableInfo variableInfo,
@@ -43,12 +41,12 @@ public record ConditionAndVariableInfo(Expression condition,
                 null, variableInfo.variable(), evaluationContext);
     }
 
+    public Expression value() { return evaluationContext.getVariableValue(myself, variableInfo); }
     /*
     The purpose of this code is to replace variables that will not exist outside the block, with Instances.
     See Loops_2, where value "s" is replaced by "instance type String"
-     */
-    public Expression value() {
 
+    public Expression value() {
         Expression value = evaluationContext.getVariableValue(myself, variableInfo);
         if (value.isDelayed()) {
             return value;
@@ -57,13 +55,27 @@ public record ConditionAndVariableInfo(Expression condition,
         List<Variable> variables = value.variables(true);
         if (variables.isEmpty()) return value;
         Map<Expression, Expression> replacements = new HashMap<>();
+        Set<Variable> variablesToReplace = new HashSet<>();
         for (Variable variable : variables) {
             // Test 26 Enum 1 shows that the variable may not exist
             VariableInfoContainer vic = lastStatement.getVariableOrDefaultNull(variable.fullyQualifiedName());
             if (vic != null && !vic.variableNature().acceptForSubBlockMerging(indexOfCurrentStatement)) {
-                Expression currentValue = vic.current().getValue();
-                replacements.put(new VariableExpression(variable), currentValue);
+             variablesToReplace.add(variable);
             }
+        }
+        for(Variable variable: variablesToReplace) {
+            VariableInfoContainer vic = lastStatement.getVariableOrDefaultNull(variable.fullyQualifiedName());
+            Expression currentValue = vic.current().getValue();
+            assert !currentValue.isDelayed(); // because then value should have been delayed as well!
+            List<Variable> variablesInCurrent = currentValue.variables(true);
+            Expression replacement;
+            if(Collections.disjoint(variablesInCurrent, variablesToReplace)) {
+               replacement = currentValue;
+            } else {
+                Map<Property, DV> valueProperties = evaluationContext.getValueProperties(currentValue);
+                replacement = Instance.genericMergeResult(evaluationContext.statementIndex(), variable, valueProperties);
+            }
+            replacements.put(new VariableExpression(variable), replacement);
         }
         if (replacements.isEmpty()) return value;
 
@@ -74,6 +86,8 @@ public record ConditionAndVariableInfo(Expression condition,
             return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
                     LinkedVariables.delayedEmpty(delayed), delayed);
         }
-        return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);
+        return replaced;
     }
+
+     */
 }

@@ -153,7 +153,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // LVs start empty, the changeData.linkedVariables will be added later
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
 
-                if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
+                if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                     statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                 }
                 if (variable instanceof FieldReference fr) {

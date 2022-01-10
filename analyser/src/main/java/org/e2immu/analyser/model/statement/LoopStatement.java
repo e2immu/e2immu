@@ -31,4 +31,13 @@ public abstract class LoopStatement extends StatementWithExpression {
     public List<? extends Element> subElements() {
         return List.of(expression, structure.block());
     }
+
+    /**
+     * Do we need to enrich the next statement's state with the exit condition of the loop?
+     * A forEach has no exit, do-while and while do have one; the for statement has one if it does not define
+     * its own loop variables.
+     *
+     * @return whether the loop statement has an exit condition
+     */
+    public abstract boolean hasExitCondition();
 }

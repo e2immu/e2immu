@@ -15,12 +15,15 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ForStatement extends LoopStatement {
@@ -47,6 +50,19 @@ public class ForStatement extends LoopStatement {
                 .setExpressionIsCondition(true)
                 .setUpdaters(updaters)
                 .setBlock(block).build(), label);
+    }
+
+    // for(int i=0; i<x; i++) has no exit condition: 'i' in 'i<x' is a locally created variable
+    // int i; for(i=0; i<x; i++) has one... the variable 'i' in 'i<x' persists after the loop
+    @Override
+    public boolean hasExitCondition() {
+        Set<Variable> locallyCreated = structure.initialisers().stream()
+                .filter(i -> i instanceof LocalVariableCreation)
+                .flatMap(i -> ((LocalVariableCreation) i).declarations.stream())
+                .map(LocalVariableCreation.Declaration::localVariableReference)
+                .collect(Collectors.toUnmodifiableSet());
+        return structure.expression().variables(true).stream()
+                .noneMatch(locallyCreated::contains);
     }
 
     @Override

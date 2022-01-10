@@ -39,9 +39,12 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
-                    assertEquals(expect, d.state().toString());
+                    // the variable is local to the loop, so it leaves NO state behind
+                    assertEquals("true", d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+
+                    // state after a forEach only when there was an interrupt caused by "break"
+                    assertEquals("true", d.conditionManagerForNextStatement().state().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
@@ -56,44 +59,45 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
-                        assertEquals("0", loopVariable.statementIndex());
+                    if (d.statementId().startsWith("0")) {
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+                            assertEquals("0", loopVariable.statementIndex());
+                        } else {
+                            fail();
+                        }
                     } else {
-                        fail();
+                        fail("Variable should not exist here: " + d.statementId());
                     }
+
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$0";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("1+i", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$0";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("1+i", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$0";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("1+i", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals("org.e2immu.analyser.testexample.Loops_4.method()", d.variableName());
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         // delayed state
-                        String expect = "4";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("4", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1==<v:i>?4:<return value>" : "0==i$0?4:<return value>";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("0==i?4:<return value>", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<replace:int><=9?<merge:int>:<return value>"
-                                : "instance type int<=9?instance type int:<return value>";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        // there should be no i here anymore!!
+                        assertEquals("0==instance type int?4:<return value>", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
+                        // we do not want 0 here!
                         String expect = d.iteration() == 0
-                                ? "<replace:int>>=10?0:<replace:int><=9&&<replace:int><=9?<merge:int>:<return value>"
-                                : "instance type int>=10?0:instance type int";
+                                ? "<v:i>>=10?0:instance type int"
+                                : "0==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
                         String expectVars = d.iteration() == 0 ? "[method]" : "[]";
                         assertEquals(expectVars, d.currentValue().variables(true).toString());
@@ -105,11 +109,11 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:i><=9" : "i$0<=9";
+                    String expectValue = "i<=9";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "1==<v:i>" : "0==i$0";
+                    String expectValue = "0==i";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }

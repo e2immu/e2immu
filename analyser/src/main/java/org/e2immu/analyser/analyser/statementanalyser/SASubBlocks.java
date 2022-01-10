@@ -355,14 +355,17 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         /*
         loop statements: result should be !condition || <any exit of exactly this loop, no return> ...
-        forEach loop does not have a condition.
+        forEach loop does not have an exit condition.
          */
-        if (statementAnalysis.statement() instanceof LoopStatement &&
-                !(statementAnalysis.statement() instanceof ForEachStatement)) {
+        if (statementAnalysis.statement() instanceof LoopStatement loopStatement) {
             List<Expression> ors = new ArrayList<>();
             statementAnalysis.stateData().statesOfInterruptsStream().forEach(stateOnInterrupt ->
                     ors.add(evaluationContext.replaceLocalVariables(stateOnInterrupt)));
-            ors.add(evaluationContext.replaceLocalVariables(Negation.negate(evaluationContext, list.get(0).condition)));
+            if(loopStatement.hasExitCondition()) {
+                // the exit condition cannot contain local variables
+                ors.add(Negation.negate(evaluationContext, list.get(0).condition));
+            }
+            if(ors.isEmpty()) return TRUE;
             return Or.or(evaluationContext, ors.toArray(Expression[]::new));
         }
 
