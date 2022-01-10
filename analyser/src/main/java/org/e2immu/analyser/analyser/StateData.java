@@ -15,17 +15,24 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.Or;
+import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
-public class StateData   {
+public class StateData {
 
-    public StateData(boolean isLoop ) {
+    public StateData(boolean isLoop) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
+        statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
     }
 
     /*
@@ -78,7 +85,7 @@ public class StateData   {
     }
 
     public CausesOfDelay conditionManagerForNextStatementStatus() {
-        if(conditionManagerForNextStatement.isFinal()) return CausesOfDelay.EMPTY;
+        if (conditionManagerForNextStatement.isFinal()) return CausesOfDelay.EMPTY;
         return conditionManagerForNextStatement.get().causesOfDelay();
     }
 
@@ -91,9 +98,11 @@ public class StateData   {
     }
 
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
+    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
 
     // states of interrupt
 
+    // we're adding the break and return states
     public void addStateOfInterrupt(String index, Expression state, boolean stateIsDelayed) {
         EventuallyFinal<Expression> cd = statesOfInterrupts.getOrCreate(index, i -> new EventuallyFinal<>());
         if (stateIsDelayed) {
@@ -103,12 +112,38 @@ public class StateData   {
         }
     }
 
-    public Stream<Expression> statesOfInterruptsStream() {
-        return statesOfInterrupts.stream().map(e -> e.getValue().get());
+    public void addStateOfReturnInLoop(String index, Expression state, boolean stateIsDelayed) {
+        EventuallyFinal<Expression> cd = statesOfReturnInLoop.getOrCreate(index, i -> new EventuallyFinal<>());
+        if (stateIsDelayed) {
+            cd.setVariable(state);
+        } else {
+            setFinalAllowEquals(cd, state);
+        }
     }
 
     public CausesOfDelay valueOfExpressionIsDelayed() {
         if (valueOfExpression.isFinal()) return CausesOfDelay.EMPTY;
         return valueOfExpression.get().causesOfDelay();
+    }
+
+    // (break 1 || break 2 ||...|| breakN) && return 1 && ... && return N && !condition
+    public Expression combineInterruptsAndExit(LoopStatement loopStatement,
+                                               Expression condition,
+                                               EvaluationContext evaluationContext) {
+
+        List<Expression> ors = new ArrayList<>();
+        statesOfInterrupts.stream().map(Map.Entry::getValue).forEach(e ->
+                ors.add(evaluationContext.replaceLocalVariables(e.get())));
+        List<Expression> ands = new ArrayList<>();
+        statesOfReturnInLoop.stream().map(Map.Entry::getValue).forEach(e ->
+                ands.add(evaluationContext.replaceLocalVariables(e.get())));
+        if (!ors.isEmpty()) {
+            ands.add(Or.or(evaluationContext, ors.toArray(Expression[]::new)));
+        }
+        if (loopStatement.hasExitCondition() && !condition.isBoolValueTrue()) {
+            // the exit condition cannot contain local variables
+            ands.add(Negation.negate(evaluationContext, evaluationContext.replaceLocalVariables(condition)));
+        }
+        return And.and(evaluationContext, ands.toArray(Expression[]::new));
     }
 }

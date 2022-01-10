@@ -38,11 +38,13 @@ public class Test_01_Loops_5 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
+                    // if(i==1)...
                     // instead of 1==i$1, it is 0==i$1 because i's value is i$1+1
                     String expect = d.iteration() == 0 ? "1==<v:i>" : "0==i$1";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("2".equals(d.statementId())) {
+                    // assert i >= 10, with i == 1+instance type int
                     String expect = d.iteration() == 0 ? "<v:i>>=9" : "instance type int>=9";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
@@ -50,13 +52,10 @@ public class Test_01_Loops_5 extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
-            if ("i$1".equals(d.variableName())) {
-                assertTrue(d.iteration() > 0);
-                if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("1+i$1", d.currentValue().toString());
-                }
-            }
             if ("i".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable);
+                }
                 if ("1.0.0".equals(d.statementId())) {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
                         assertEquals("1", v.statementIndex());
@@ -65,8 +64,8 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
+                    assertTrue(d.variableInfoContainer().hasMerge());
                     String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
-                    if (d.iteration() > 0) assertTrue(d.variableInfoContainer().hasMerge());
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
@@ -76,14 +75,16 @@ public class Test_01_Loops_5 extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                 String expectReturn = d.iteration() == 0 ? "1==<v:i>?5:<return value>" :
-                        "instance type int<=9?instance type int:<return value>";
+                        "0==instance type int?5:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                String expectState = d.iteration() == 0 ? "<v:i>>=10" : "instance type int>=10";
-                assertEquals(expectState, d.state().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    String expectState = d.iteration() == 0 ? "<v:i>>=10" : "instance type int>=10";
+                    assertEquals(expectState, d.state().toString());
+                }
             }
         };
         // expect: warning: always true in assert

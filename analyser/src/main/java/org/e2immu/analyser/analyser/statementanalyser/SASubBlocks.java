@@ -358,15 +358,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         forEach loop does not have an exit condition.
          */
         if (statementAnalysis.statement() instanceof LoopStatement loopStatement) {
-            List<Expression> ors = new ArrayList<>();
-            statementAnalysis.stateData().statesOfInterruptsStream().forEach(stateOnInterrupt ->
-                    ors.add(evaluationContext.replaceLocalVariables(stateOnInterrupt)));
-            if(loopStatement.hasExitCondition()) {
-                // the exit condition cannot contain local variables
-                ors.add(Negation.negate(evaluationContext, list.get(0).condition));
-            }
-            if(ors.isEmpty()) return TRUE;
-            return Or.or(evaluationContext, ors.toArray(Expression[]::new));
+            return statementAnalysis.stateData()
+                    .combineInterruptsAndExit(loopStatement, list.get(0).condition, evaluationContext);
         }
 
         if (statementAnalysis.statement() instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {

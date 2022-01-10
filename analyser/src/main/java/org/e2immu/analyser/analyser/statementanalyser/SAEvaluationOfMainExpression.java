@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
@@ -155,23 +154,23 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
                 }
             }
+            if (ennStatus.isDelayed()) {
+                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable: {}",
+                        index(), methodInfo().fullyQualifiedName, ennStatus);
+            }
 
             Expression value = result.value();
             assert value != null; // EmptyExpression in case there really is no value
             boolean valueIsDelayed = value.isDelayed() || statusPost != DONE;
 
+            CausesOfDelay stateForLoop = CausesOfDelay.EMPTY;
             if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
                     statementAnalysis.statement() instanceof AssertStatement)) {
                 value = eval_IfElse_Assert(sharedState, value);
             } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
                 eval_Switch(sharedState, value, switchStatement);
-            } else if(statementAnalysis.statement() instanceof ReturnStatement) {
-                StatementAnalysis.FindLoopResult loop = statementAnalysis.findLoopByLabel(null);
-                if(loop != null) {
-                    Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), loop.steps());
-                    Expression notState = Negation.negate(sharedState.evaluationContext(), state);
-                    loop.statementAnalysis().stateData().addStateOfInterrupt(index(), notState, state.isDelayed());
-                }
+            } else if (statementAnalysis.statement() instanceof ReturnStatement) {
+                stateForLoop = addLoopReturnStatesToState(sharedState);
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
@@ -179,15 +178,28 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
             statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
 
-            if (ennStatus.isDelayed()) {
-                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable: {}",
-                        index(), methodInfo().fullyQualifiedName, ennStatus);
-            }
-            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()));
+            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop));
         } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
             throw rte;
         }
+    }
+
+    private CausesOfDelay addLoopReturnStatesToState(StatementAnalyserSharedState sharedState) {
+        StatementAnalysis.FindLoopResult loop = statementAnalysis.findLoopByLabel(null);
+        if (loop != null) {
+            Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), loop.steps());
+            Expression notState = Negation.negate(sharedState.evaluationContext(), state);
+            loop.statementAnalysis().stateData().addStateOfReturnInLoop(index(), notState, state.isDelayed());
+            if (state.isDelayed()) {
+                // we'll have to come back
+                CausesOfDelay stateForLoop = state.causesOfDelay();
+                log(DELAYED, "Delaying statement {} in {} because of state propagation to loop",
+                        index(), methodInfo().fullyQualifiedName, stateForLoop);
+                return stateForLoop;
+            }
+        }
+        return CausesOfDelay.EMPTY;
     }
 
 
