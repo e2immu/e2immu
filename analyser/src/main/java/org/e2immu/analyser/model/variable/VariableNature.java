@@ -132,7 +132,7 @@ public interface VariableNature {
     record LoopVariable(String statementIndex) implements VariableNature {
         @Override
         public boolean isLocalVariableInLoopDefinedOutside() {
-            return true;
+            return false;
         }
 
         @Override

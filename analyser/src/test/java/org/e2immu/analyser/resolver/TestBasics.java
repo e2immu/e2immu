@@ -120,12 +120,16 @@ public class TestBasics extends CommonTest {
                 assertEquals("i", d0.localVariable().name());
                 assertEquals("4", d0.expression().toString());
                 assertEquals("Type int", d0.localVariable().parameterizedType().toString());
+                assertTrue(d0.localVariable().modifiers().contains(LocalVariableModifier.FINAL));
 
                 LocalVariableCreation.Declaration d1 = lvc.declarations.get(1);
                 assertEquals("j", d1.localVariable().name());
                 assertEquals("<empty>", d1.expression().toString());
                 assertEquals(VariableNature.METHOD_WIDE, d1.localVariable().nature());
                 assertEquals("Type int", d1.localVariable().parameterizedType().toString());
+                assertTrue(d1.localVariable().modifiers().contains(LocalVariableModifier.FINAL));
+
+                assertEquals("final int i=4,j", lvc.minimalOutput());
             } else fail();
         } else fail();
     }

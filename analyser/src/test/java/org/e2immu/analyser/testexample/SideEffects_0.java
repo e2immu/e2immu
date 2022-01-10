@@ -16,11 +16,12 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 /*
- must be with AnnotatedAPI because @NoModifications on System.out
+ must be with AnnotatedAPI because @IgnoreModifications on System.out
 
- this one tests "static side effects only"
+ "Static Side Effects Only" is a concept that still needs implementation.
  */
 
 public class SideEffects_0 {
@@ -51,7 +52,7 @@ public class SideEffects_0 {
     }
 
     @NotModified
-    public static void printForLoop(String[] ks) { // @NullNotAllowed should be here, but we don't have the computation engine yet
+    public static void printForLoop(@NotNull String[] ks) {
         for (String k : ks) {
             System.out.println("This is " + k);
         }

@@ -30,6 +30,4 @@ public class Test_23_SideEffects extends CommonTestRunner {
     public void test_0() throws IOException {
         testClass("SideEffects_0", 0, 0, new DebugConfiguration.Builder().build());
     }
-
-
 }

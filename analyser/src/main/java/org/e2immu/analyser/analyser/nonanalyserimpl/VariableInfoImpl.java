@@ -23,7 +23,10 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
@@ -36,6 +39,8 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
+import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
@@ -306,8 +311,8 @@ public class VariableInfoImpl implements VariableInfo {
                             GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != this;
 
-        Expression beforePostProcess = evaluationContext.replaceLocalVariables(
-                previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
+        Expression mergeValue = previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources);
+        Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue);
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
         setValue(mergedValue);
         if (!mergedValue.isDelayed()) {
@@ -322,9 +327,10 @@ public class VariableInfoImpl implements VariableInfo {
     private Expression postProcess(EvaluationContext evaluationContext,
                                    Expression beforePostProcess,
                                    Expression postProcessState) {
-        if(postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
+        if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
             Expression reEval = beforePostProcess.evaluate(child, ForwardEvaluationInfo.DEFAULT).getExpression();
+            log(EXPRESSION, "Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
             return reEval;
         }
         return beforePostProcess;

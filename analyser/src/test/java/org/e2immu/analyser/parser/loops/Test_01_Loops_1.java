@@ -87,8 +87,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         // statement says: res="abc", but the value takes the state into account
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
-                        // clearly, NNE has to follow the value rather than the actual assignment
-// FIXME                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";

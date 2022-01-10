@@ -1128,7 +1128,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
         // otherwise we'll get delays
         // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
-        // an assignment may be difficult. The value is never used, only local copies are
+        // an assignment may be difficult.
 
         ParameterizedType parameterizedType = variable.parameterizedType();
         Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
@@ -1392,6 +1392,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) return false;
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
+
+        if(vic.variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+            // a loop variable is not merged back to its defining level, so it is local to this block
+            // exactly when the parent is the defining statement
+            return parent != null && loopVariable.statementIndex().equals(parent.index());
+        }
+
         if (parent == null) return true;
         return !parent.variableIsSet(variableName);
     }
@@ -1522,16 +1529,31 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = loopVar.parameterizedType();
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
-        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        Map<Property, DV> valueProperties = new HashMap<>(analyserContext.defaultValueProperties(parameterizedType));
+        DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
+        valueProperties.put(NOT_NULL_EXPRESSION, nne);
+        CausesOfDelay delayed = valueProperties.values().stream()
+                .map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         Expression value;
-        if (evaluatedIterable.isDelayed()) {
+        if (evaluatedIterable.isDelayed() || delayed.isDelayed()) {
+            CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay(): delayed;
             value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),
-                    LinkedVariables.EMPTY, evaluatedIterable.causesOfDelay());
+                    LinkedVariables.delayedEmpty(causes), causes);
         } else {
-            value = Instance.forLoopVariable(index(), loopVar, valueProperties);
+            value = Instance.forLoopVariable(index(), loopVar, Map.copyOf(valueProperties));
         }
-        vic.setValue(value, LinkedVariables.EMPTY, Map.of(), false);
+        vic.setValue(value, LinkedVariables.EMPTY, valueProperties, false);
         vic.setLinkedVariables(linked, EVALUATION);
+    }
+
+    private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {
+        if (delays.isDelayed()) {
+            // we want to avoid a particular value on EVAL for the loop variable
+            return delays;
+        }
+        DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
+        return nne.isDelayed() || nne.lt(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV)
+                ? nne : MultiLevel.composeOneLevelLessNotNull(nne);
     }
 
 

@@ -24,7 +24,7 @@ public class Basics_5 {
     }
 
     public int method2() {
-        int i = 4, j;
+        final int i = 4, j;
         j = i + 8;
         return i + j;
     }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.*;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
+import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -263,14 +265,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // the second one is across clusters of variables
         addToMap(groupPropertyValues, analyserContext);
 
-        if (statement() instanceof ForEachStatement) {
-            Variable loopVar = statementAnalysis.obtainLoopVar();
-            potentiallyUpgradeCnnOfLocalLoopVariable(sharedState.evaluationContext(),
-                    groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
-                    groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
-                    evaluationResult.causesOfDelay(), loopVar);
-        }
-
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
             return changeData == null ? LinkedVariables.EMPTY : changeData.linkedVariables();
@@ -449,30 +443,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
         return value;
-    }
-
-
-    void potentiallyUpgradeCnnOfLocalLoopVariable(EvaluationContext evaluationContext,
-                                                  Map<Variable, DV> externalNotNull,
-                                                  Map<Variable, DV> contextNotNull,
-                                                  Expression value,
-                                                  CausesOfDelay delays,
-                                                  Variable loopVar) {
-        assert contextNotNull.containsKey(loopVar); // must be present!
-        if (delays.isDelayed()) {
-            // we want to avoid a particular value on EVAL for the loop variable
-            contextNotNull.put(loopVar, delays);
-            externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED_DV);
-        } else {
-            DV nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
-            boolean variableNotNull = nne.ge(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
-            if (variableNotNull) {
-                DV oneLevelLess = MultiLevel.composeOneLevelLessNotNull(nne);
-
-                contextNotNull.put(loopVar, oneLevelLess);
-                externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED_DV);
-            }
-        }
     }
 
     void addToMap(GroupPropertyValues groupPropertyValues, AnalyserContext analyserContext) {

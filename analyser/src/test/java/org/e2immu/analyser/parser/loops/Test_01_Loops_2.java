@@ -14,20 +14,31 @@
 
 package org.e2immu.analyser.parser.loops;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.Property.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analysis.FlowData.ALWAYS;
+import static org.junit.jupiter.api.Assertions.*;
 
+/*
+the loop variable "s" gets a value in evaluation only when the forEach expression is evaluated without delay.
+the variable is not merged back into the loop statement; its value is replaced in ConditionAndVariableInfo.
+
+The decision not to merge back prompts some exception code.
+
+ */
 public class Test_01_Loops_2 extends CommonTestRunner {
 
     public Test_01_Loops_2() {
@@ -43,79 +54,92 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.evaluationResult().value()
                             .getProperty(d.evaluationResult().evaluationContext(), NOT_NULL_EXPRESSION, true));
                 }
-                if ("1.0.0".equals(d.statementId()) && d.iteration() > 0) {
-                    assertEquals("s$1", d.evaluationResult().value().toString());
+                // res = s, only statement in loop
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("s", d.evaluationResult().value().toString());
                 }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("s".equals(d.variableName())) {
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+                        assertEquals("1", loopVariable.statementIndex());
+                    } else fail();
                     assertEquals("java.lang.String", d.variableInfo().variable()
                             .parameterizedType().typeInfo.fullyQualifiedName);
                     if ("1".equals(d.statementId())) {
-                        String expectValue = "nullable instance type String";
+                        String expectValue = "instance type String";
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertFalse(d.variableInfoContainer().hasMerge());
+
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
 
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertEquals("instance type String", d.currentValue().toString());
 
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
 
-                        String expectLv = d.iteration() == 0 ? "res:0,s:0" : "res:0,s$1:1,s:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("res:0,s:0", d.variableInfo().getLinkedVariables().toString());
                     }
-                }
-                if ("s$1".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
-                    }
-                }
-                if ("res$1".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    if ("1.0.0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(IMMUTABLE));
-                    }
+                    assertFalse("2".equals(d.statementId()) || "0".equals(d.statementId()));
                 }
                 if ("res".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
-                        assertEquals(expectValue, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "res:0,s:0" : "res:0,s$1:1,s:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+                            assertEquals("1", outside.statementIndex());
+                        } else fail();
+
+                        assertEquals("s", d.currentValue().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertEquals("res:0,s:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+                            assertEquals("1", outside.statementIndex());
+                        } else fail();
+                        // loop is guaranteed to be executed, so this value overwrites the one from statement 0
+                        assertEquals("instance type String", d.currentValue().toString());
                     }
+
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable normal) {
+                            assertEquals("", normal.parentBlockIndex);
+                        } else fail();
+
+                        assertEquals("instance type String", d.currentValue().toString());
                         String expectLv = "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<merge:String>" : "res"; // indirection
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("res", d.currentValue().toString());
 
                         String expectLv = "res:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
+                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                DV execution = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("true", d.condition().debugOutput());
+                    assertEquals("true", d.absoluteState().debugOutput());
+                    assertEquals(ALWAYS, execution);
                 }
             }
         };
@@ -124,6 +148,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
         // executed inside the block
         testClass("Loops_2", 1, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

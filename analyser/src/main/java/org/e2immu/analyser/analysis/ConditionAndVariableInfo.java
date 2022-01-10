@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.Instance;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
@@ -42,27 +43,37 @@ public record ConditionAndVariableInfo(Expression condition,
                 null, variableInfo.variable(), evaluationContext);
     }
 
+    /*
+    The purpose of this code is to replace variables that will not exist outside the block, with Instances.
+    See Loops_2, where value "s" is replaced by "instance type String"
+     */
     public Expression value() {
+
         Expression value = evaluationContext.getVariableValue(myself, variableInfo);
+        if (value.isDelayed()) {
+            return value;
+        }
 
         List<Variable> variables = value.variables(true);
         if (variables.isEmpty()) return value;
-        Map<Variable, Expression> replacements = new HashMap<>();
+        Map<Expression, Expression> replacements = new HashMap<>();
         for (Variable variable : variables) {
             // Test 26 Enum 1 shows that the variable may not exist
             VariableInfoContainer vic = lastStatement.getVariableOrDefaultNull(variable.fullyQualifiedName());
             if (vic != null && !vic.variableNature().acceptForSubBlockMerging(indexOfCurrentStatement)) {
                 Expression currentValue = vic.current().getValue();
-                replacements.put(variable, currentValue);
+                replacements.put(new VariableExpression(variable), currentValue);
             }
         }
         if (replacements.isEmpty()) return value;
 
-        if (value.isDelayed()) {
+        Expression replaced = value.reEvaluate(evaluationContext, replacements).value();
+        Map<Property, DV> valueProperties = evaluationContext.getValueProperties(replaced);
+        CausesOfDelay delayed = valueProperties.values().stream().map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delayed.isDelayed()) {
             return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(),
-                    variableInfo.getLinkedVariables().changeAllToDelay(value.causesOfDelay()), value.causesOfDelay());
+                    LinkedVariables.delayedEmpty(delayed), delayed);
         }
-        Map<Property, DV> valueProperties = evaluationContext.getValueProperties(value);
         return Instance.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), valueProperties);
     }
 }
