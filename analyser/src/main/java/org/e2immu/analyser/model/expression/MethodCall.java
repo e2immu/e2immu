@@ -567,50 +567,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()
-                .forEach(companionMethodName -> {
-                    CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
-                    MethodInfo aspectMethod;
-                    if (companionMethodName.aspect() != null) {
-                        aspectMethod = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
-                        assert aspectMethod != null : "Expect aspect method to be known";
-                    } else {
-                        aspectMethod = null;
-                    }
-
-                    Filter.FilterResult<MethodCall> filterResult;
-
-                    if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
-                        newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
-                        filterResult = null; // there is no "pre"
-                    } else {
-                        // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
-                        // pre, post, and the parameter(s) of the add method.
-                        // post is already OK (it is the new value of the aspect method)
-                        // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
-                        // the parameters are available
-
-                        if (aspectMethod != null && !methodInfo.isConstructor) {
-                            // first: pre (POST CONDITION, MODIFICATION)
-                            filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, newState.get(), List.of());
-                        } else {
-                            filterResult = null;
-                        }
-                    }
-
-                    Expression companionValueTranslated = translateCompanionValue(evaluationContext, companionAnalysis,
-                            filterResult, newState.get(), parameterValues);
-
-                    boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
-                    if (remove) {
-                        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-                        Filter.FilterResult<Expression> res = filter.filter(newState.get(),
-                                new Filter.ExactValue(filter.getDefaultRest(), companionValueTranslated));
-                        newState.set(res.rest());
-                    } else {
-                        Expression startFrom = filterResult != null ? filterResult.rest() : newState.get();
-                        newState.set(And.and(evaluationContext, startFrom, companionValueTranslated));
-                    }
-                });
+                .forEach(companionMethodName -> companionMethod(evaluationContext, methodInfo, methodAnalysis,
+                        parameterValues, newState, companionMethodName));
         if (containsEmptyExpression(newState.get())) {
             newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
         }
@@ -618,6 +576,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         IsVariableExpression ive;
         Expression createInstanceBasedOn;
+        boolean inLoop = false;
         if (objectValue.isInstanceOf(Instance.class) ||
                 objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor) {
             newInstance = unwrap(objectValue);
@@ -631,6 +590,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 createInstanceBasedOn = current;
                 newInstance = null;
             }
+            inLoop = ive instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
         } else {
             createInstanceBasedOn = objectValue;
             newInstance = null;
@@ -648,7 +608,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         Expression modifiedInstance;
-        if (newState.get().isBoolValueTrue()) {
+        if (newState.get().isBoolValueTrue() || inLoop) {
             modifiedInstance = newInstance;
         } else {
             modifiedInstance = PropertyWrapper.addState(newInstance, newState.get());
@@ -660,6 +620,56 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
+    }
+
+    private static void companionMethod(EvaluationContext evaluationContext,
+                                        MethodInfo methodInfo,
+                                        MethodAnalysis methodAnalysis,
+                                        List<Expression> parameterValues,
+                                        AtomicReference<Expression> newState,
+                                        CompanionMethodName companionMethodName) {
+        CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
+        MethodInfo aspectMethod;
+        if (companionMethodName.aspect() != null) {
+            aspectMethod = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
+            assert aspectMethod != null : "Expect aspect method to be known";
+        } else {
+            aspectMethod = null;
+        }
+
+        Filter.FilterResult<MethodCall> filterResult;
+
+        if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
+            newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
+            filterResult = null; // there is no "pre"
+        } else {
+            // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
+            // pre, post, and the parameter(s) of the add method.
+            // post is already OK (it is the new value of the aspect method)
+            // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
+            // the parameters are available
+
+            if (aspectMethod != null && !methodInfo.isConstructor) {
+                // first: pre (POST CONDITION, MODIFICATION)
+                filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, newState.get(), List.of());
+            } else {
+                filterResult = null;
+            }
+        }
+
+        Expression companionValueTranslated = translateCompanionValue(evaluationContext, companionAnalysis,
+                filterResult, newState.get(), parameterValues);
+
+        boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
+        if (remove) {
+            Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+            Filter.FilterResult<Expression> res = filter.filter(newState.get(),
+                    new Filter.ExactValue(filter.getDefaultRest(), companionValueTranslated));
+            newState.set(res.rest());
+        } else {
+            Expression startFrom = filterResult != null ? filterResult.rest() : newState.get();
+            newState.set(And.and(evaluationContext, startFrom, companionValueTranslated));
+        }
     }
 
     // IMPROVE we're assuming at the moment that the wrapper is used for the companion data

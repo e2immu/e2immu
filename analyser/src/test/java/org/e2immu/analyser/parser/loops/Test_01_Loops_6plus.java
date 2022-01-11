@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -217,6 +216,12 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                 }
                 if ("result".equals(d.variableName())) {
+                    if ("3.0.1.0.1.0.0".equals(d.statementId())) {
+                        // important: because we're in a loop, we're not just adding one element; therefore,
+                        // we cannot keep count, and erase all state
+                        String expect = d.iteration() == 0 ? "<v:result>" : "instance type Map<String,String>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                     if ("4".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
                         assertEquals("result:0", d.variableInfo().getLinkedVariables().toString());
@@ -233,7 +238,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
                                 ? "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||<m:compareTo><=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
-                                : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo((nullable instance type Instant).toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:FOUT!!!";
+                                : "map.entrySet().isEmpty()||queried.contains((instance type Entry<String,String>).getKey())||(instance type Entry<String,String>).getValue().compareTo((nullable instance type Instant).toString())<=0?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectLv = "result:0,return method:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
