@@ -127,6 +127,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             } else {
                 result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
             }
+            if(statementAnalysis.statement() instanceof LoopStatement && statementAnalysis.rangeData().rangeDelays().isDelayed()) {
+                statementAnalysis.rangeData().computeRange(statement(), result);
+            }
             if (statementAnalysis.statement() instanceof ThrowStatement) {
                 if (methodInfo().hasReturnValue()) {
                     result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);

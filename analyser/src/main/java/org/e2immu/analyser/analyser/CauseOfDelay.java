@@ -45,6 +45,7 @@ public interface CauseOfDelay {
         IMMUTABLE("immutable_type", "Type's IMMUTABLE status has not yet been determined"),
         IN_NN_CONTEXT("in_nn_context", ""),
         INITIAL_FLOW_VALUE("initial_flow_value", "Flow not yet initialized"),
+        INITIAL_RANGE("initial_range", "Range not yet set"),
         INITIAL_TIME("initial_time", "Initial time not yet set"),
         INITIAL_VALUE("initial", "Not yet initialized"),
         LINKING("link", "Delay in linking"),

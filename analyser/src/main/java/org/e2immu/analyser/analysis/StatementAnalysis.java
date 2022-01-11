@@ -125,6 +125,8 @@ public interface StatementAnalysis extends Analysis,
 
     StateData stateData();
 
+    RangeData rangeData();
+
     boolean inSyncBlock();
 
     int statementTime(VariableInfoContainer.Level merge);

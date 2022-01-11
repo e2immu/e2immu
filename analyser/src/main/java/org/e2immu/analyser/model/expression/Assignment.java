@@ -46,7 +46,7 @@ public class Assignment extends BaseExpression implements Expression {
 
     // if null, and binary operator not null, then the primitive operator counts (i += value)
     // if true, we have ++i
-    // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
+    // if false, we have i++
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
 
@@ -160,6 +160,14 @@ public class Assignment extends BaseExpression implements Expression {
         return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), target))
                 .add(Symbol.assignment(operator))
                 .add(outputInParenthesis(qualification, precedence(), value));
+    }
+
+    public boolean isPostfix() {
+        return prefixPrimitiveOperator == Boolean.FALSE;
+    }
+
+    public boolean isPostfixPlusPlus() {
+        return isPostfix() && "+=".equals(assignmentOperator.name);
     }
 
     @Override

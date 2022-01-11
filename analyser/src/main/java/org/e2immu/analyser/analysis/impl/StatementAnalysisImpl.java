@@ -72,6 +72,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData;
     public final FlowData flowData;
+    public final RangeData rangeData;
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
@@ -91,10 +92,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         stateData = new StateData(statement instanceof LoopStatement);
         location = new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
         flowData = new FlowData(location);
-    }
-
-    static StatementAnalysis startOfBlockStatementAnalysis(StatementAnalysis sa, int block) {
-        return sa == null ? null : sa.startOfBlockStatementAnalysis(block);
+        rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location): null;
     }
 
     static StatementAnalysis recursivelyCreateAnalysisObjects(
@@ -184,6 +182,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (!navigationData.blocks.isSet()) return null;
         List<Optional<StatementAnalysis>> list = navigationData.blocks.get();
         return i >= list.size() ? null : list.get(i).orElse(null);
+    }
+
+    @Override
+    public RangeData rangeData() {
+        return rangeData;
     }
 
     @Override
