@@ -49,6 +49,34 @@ public class Assignment extends BaseExpression implements Expression {
     // if false, we have i++
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
+    public final boolean hackForLoop;
+
+    private Assignment(Identifier identifier,
+                       Primitives primitives,
+                       @NotNull Expression target,
+                       @NotNull Expression value,
+                       MethodInfo assignmentOperator,
+                       Boolean prefixPrimitiveOperator,
+                       boolean complainAboutAssignmentOutsideType,
+                       Variable variableTarget,
+                       MethodInfo binaryOperator,
+                       boolean hackForLoop) {
+        super(identifier);
+        this.primitives = primitives;
+        this.target = target;
+        this.value = value;
+        this.assignmentOperator = assignmentOperator;
+        this.prefixPrimitiveOperator = prefixPrimitiveOperator;
+        this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
+        this.variableTarget = variableTarget;
+        this.binaryOperator = binaryOperator;
+        this.hackForLoop = hackForLoop;
+    }
+
+    public Expression cloneWithHackForLoop() {
+        return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
+                complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true);
+    }
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
         this(Identifier.generate(), primitives,
@@ -82,6 +110,7 @@ public class Assignment extends BaseExpression implements Expression {
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
             variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(true), null);
         }
+        hackForLoop = false;
     }
 
     @Override
@@ -162,12 +191,12 @@ public class Assignment extends BaseExpression implements Expression {
                 .add(outputInParenthesis(qualification, precedence(), value));
     }
 
-    public boolean isPostfix() {
-        return prefixPrimitiveOperator == Boolean.FALSE;
+    public boolean isPlusEquals() {
+        return assignmentOperator != null && "+=".equals(assignmentOperator.name);
     }
 
-    public boolean isPostfixPlusPlus() {
-        return isPostfix() && "+=".equals(assignmentOperator.name);
+    public boolean isMinusEquals() {
+        return assignmentOperator != null && "-=".equals(assignmentOperator.name);
     }
 
     @Override
@@ -231,9 +260,19 @@ public class Assignment extends BaseExpression implements Expression {
 
         assert e2.assignedToTarget != null;
         assert e2.assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
-        doAssignmentWork(builder, evaluationContext, newVariableTarget, e2.assignedToTarget);
+        Expression finalValue = hackForLoop ? makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay()) : e2.assignedToTarget;
+        // we by-pass the result of normal assignment which raises the i=i assign to myself error
+        doAssignmentWork(builder, evaluationContext, newVariableTarget, finalValue);
         assert e2.resultOfExpression != null;
         return builder.setExpression(e2.resultOfExpression).build();
+    }
+
+    private Expression makeHackInstance(EvaluationContext evaluationContext, CausesOfDelay causes) {
+        if(causes.isDelayed()) {
+            return DelayedVariableExpression.forVariable(variableTarget, causes);
+        }
+        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(target.returnType());
+        return Instance.forVariableInLoopDefinedOutside(identifier, target.returnType(), valueProperties);
     }
 
     // in a normal assignment, we use the "unevaluated" variable

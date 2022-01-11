@@ -31,10 +31,13 @@ import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.TryStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
@@ -91,9 +94,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             }
         }
 
+        Set<Variable> variableCreatedInLoop = new HashSet<>();
         for (Expression expression : statementAnalysis.statement().getStructure().initialisers()) {
-
-
             if (expression instanceof LocalVariableCreation lvc) {
                 boolean addInitializersSeparately;
                 if (statement() instanceof LoopStatement) {
@@ -104,6 +106,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 }
                 for (LocalVariableCreation.Declaration declaration : lvc.declarations) {
                     String name = declaration.localVariable().name();
+                    variableCreatedInLoop.add(declaration.localVariableReference());
+
                     if (!statementAnalysis.variableIsSet(name)) {
 
                         // create the local (loop) variable
@@ -141,8 +145,14 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
         if (statementAnalysis.statement() instanceof LoopStatement) {
             for (Expression expression : statementAnalysis.statement().getStructure().updaters()) {
                 expression.visit(e -> {
-                    if (e instanceof Assignment assignment && assignment.target.isInstanceOf(VariableExpression.class)) {
-                        expressionsToEvaluate.add(assignment); // we do evaluate the assignment no that the var will be there
+                    VariableExpression ve;
+                    if (e instanceof Assignment assignment && ((ve = assignment.target.asInstanceOf(VariableExpression.class)) != null)) {
+                        boolean locallyCreated = variableCreatedInLoop.contains(ve.variable());
+                        if(locallyCreated) {
+                            expressionsToEvaluate.add(assignment.value);
+                        } else {
+                            expressionsToEvaluate.add(assignment.cloneWithHackForLoop());
+                        }
                     }
                 });
             }

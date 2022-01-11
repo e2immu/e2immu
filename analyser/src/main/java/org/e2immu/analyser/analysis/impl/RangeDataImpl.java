@@ -69,20 +69,28 @@ public class RangeDataImpl implements RangeData {
                 Expression updateExpression = result.storedValues().get(1);
                 VariableExpression variable;
                 Expression update;
-                if (updateExpression instanceof VariableExpression ve) {
-                    // this is a bit of a special situation: i++ gets evaluated into i, with a "post" increment not visible
-                    // now obviously i-- also gets this treatment :-)
+                if (updateExpression instanceof IntConstant increment) {
+                    // += 1, -= 1, ++ post+pre, -- post+pre
                     Expression updater = statement.getStructure().updaters().get(0);
-                    if (updater instanceof Assignment assignment && assignment.isPostfix()) {
-                        int increment = assignment.isPostfixPlusPlus() ? 1 : -1;
-                        update = new IntConstant(result.evaluationContext().getPrimitives(), increment);
-                        variable = ve;
+                    if (updater instanceof Assignment assignment) {
+                        int i;
+                        if (assignment.isPlusEquals()) {
+                            i = increment.constant();
+                        } else if (assignment.isMinusEquals()) {
+                            i = -increment.constant();
+                        } else {
+                            range.set(Range.NO_RANGE);
+                            return;
+                        }
+                        update = new IntConstant(result.evaluationContext().getPrimitives(), i);
+                        variable = new VariableExpression(lvr);
                     } else {
                         range.set(Range.NO_RANGE);
                         return;
                     }
                 } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
                         && sum.rhs instanceof VariableExpression ve && ve.variable().equals(lvr)) {
+                    // normal situation i = i + 4
                     update = increment;
                     variable = ve;
                 } else {

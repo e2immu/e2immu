@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -123,38 +122,6 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(VariableIdentifier.variable(variable, index),
                 parameterizedType, diamond, valueProperties);
     }
-    /*
-     local variable, defined outside a loop, will be assigned inside the loop
-     don't assume that this instance is non-null straight away; state is also generic at this point
-     */
-
-    public static Expression localVariableInLoop(String index, Variable variable, AnalysisProvider analysisProvider) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        DV immutable = defaultImmutable(parameterizedType, analysisProvider);
-        DV independent = defaultIndependent(parameterizedType, analysisProvider);
-        DV container = defaultContainer(parameterizedType, analysisProvider);
-        if (independent.isDelayed() || immutable.isDelayed() || container.isDelayed()) {
-            CausesOfDelay causes = independent.causesOfDelay().merge(immutable.causesOfDelay()).merge(container.causesOfDelay());
-            return DelayedExpression.forLocalVariableInLoop(parameterizedType, LinkedVariables.delayedEmpty(causes),
-                    causes);
-        }
-        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
-                Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
-                        Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
-                        Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
-                        Property.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        Property.IDENTITY, DV.FALSE_DV)));
-    }
-
-    public static Instance localCopyOfVariableField(String index, Variable variable, AnalysisProvider analysisProvider) {
-        ParameterizedType parameterizedType = variable.parameterizedType();
-        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType, Diamond.SHOW_ALL,
-                Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(parameterizedType),
-                        Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
-                        Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
-                        Property.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        Property.IDENTITY, DV.FALSE_DV)));
-    }
 
     /*
     not-null always in properties
@@ -162,16 +129,6 @@ public final class Instance extends BaseExpression implements Expression {
     public static Instance initialValueOfParameter(ParameterInfo parameterInfo, Properties valueProperties) {
         return new Instance(VariableIdentifier.variable(parameterInfo), parameterInfo.parameterizedType,
                 Diamond.SHOW_ALL, valueProperties);
-    }
-
-    public static Instance initialValueOfExternalVariableField(FieldReference fieldReference,
-                                                               String index,
-                                                               DV minimalNotNull,
-                                                               AnalysisProvider analysisProvider) {
-        ParameterizedType parameterizedType = fieldReference.parameterizedType();
-        return new Instance(VariableIdentifier.variable(fieldReference, index),
-                fieldReference.parameterizedType(), Diamond.SHOW_ALL,
-                analysisProvider.defaultValueProperties(parameterizedType, minimalNotNull));
     }
 
     // null-status derived from variable in evaluation context
@@ -209,6 +166,13 @@ public final class Instance extends BaseExpression implements Expression {
                                           Properties valueProperties) {
         return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
     }
+
+    public static Instance forVariableInLoopDefinedOutside(Identifier identifier,
+                                                           ParameterizedType parameterizedType,
+                                                           Properties valueProperties) {
+        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
+    }
+
 
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,

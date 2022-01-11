@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser;
@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Logger;
@@ -38,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -177,7 +177,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     vic.setValue(changeData.value(), removed, merged, false);
                 } else {
                     if (variable instanceof This || !evaluationResult.causesOfDelay().isDelayed()) {
-                        // TODO we used to check for "haveDelaysCausedByMethodCalls"; now assuming ALL delays
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
                         // so we must integrate set properties
@@ -217,27 +216,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             statementAnalysis.evaluationOfForEachVariable(loopVar, evaluationResult.getExpression(),
                     evaluationResult.causesOfDelay(), sharedState.evaluationContext());
         }
-
-        /* CyclicReferences_0 doesn't like this code; for now, we go without
-        // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
-        // This should not happen when due to an assignment, the loop copy also gets a new value. See loop above,
-        // where we remove the loop copy from existingVarsNotVisited. Example in Loops_2, 9, 10
-        for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
-            VariableInfoContainer vic = e.getValue();
-            if (vic.hasEvaluation()) {
-                 so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
-                 (this happened because an evaluation was ensured for some other reason than the pure
-                  evaluation of the expression).
-                At least for IMMUTABLE we need to copy the value from previous into evaluation, because
-                the next statement will copy it from there
-
-                VariableInfo prev = vic.getPreviousOrInitial();
-                DV immPrev = prev.getProperty(IMMUTABLE);
-                if (immPrev.isDone()) {
-                    vic.setProperty(IMMUTABLE, immPrev, EVALUATION);
-                }
-            }
-        }*/
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties
                 (sharedState, evaluationResult, localAnalysers, delay, analyserContext, groupPropertyValues);

@@ -88,7 +88,7 @@ public class Test_21_Range extends CommonTestRunner {
         };
         // 2x: always false, block not executed
         testClass("Range_0", 4, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

@@ -377,12 +377,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
-
-    // IMPROVE this is really not good (res can have only 2 values, 3 and 4)
-    // 16, 17 are variants, same problem
-
-    // ideal solution: we know that 'i' is in a range
-    // temporary solution: 'i' becomes 'instance type int'
+    
     @Test
     public void test_15() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -392,10 +387,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals("4", d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("-1==i-p&&p>=0&&p<=9?4:3", d.currentValue().toString());
+                        assertEquals("i==p?4:3", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
+                        // FIXME
                         String expected =  "p>=0&&p<=9?4:3";
                         assertEquals(expected, d.currentValue().toString());
                     }
