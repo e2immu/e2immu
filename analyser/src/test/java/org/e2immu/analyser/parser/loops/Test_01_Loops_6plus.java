@@ -20,11 +20,13 @@ import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -340,16 +342,6 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
-                if ("i$2".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    if ("2.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
-                    }
-                    if ("2.0.2".equals(d.statementId())) {
-                        String expect = "1+i$2";
-                        assertEquals(expect, d.currentValue().toString());
-                    }
-                }
                 if ("j".equals(d.variableName())) {
                     if ("2.0.0.0.0".equals(d.statementId())) {
                         assertEquals("10", d.currentValue().toString());
@@ -359,20 +351,8 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "6==<v:i>?<s:int>:3==<v:i>?10:9" : "6==i$2?11:3==i$2?10:9";
+                        String expect = d.iteration() == 0 ? "6==<v:i>?11:3==<v:i>?10:9" : "6==i$2?11:3==i$2?10:9";
                         assertEquals(expect, d.currentValue().toString());
-                    }
-                }
-                if ("j$2".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    if ("2.0.0.0.0".equals(d.statementId()) || "2.0.0".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
-                    }
-                    if ("2.0.1.0.0".equals(d.statementId())) {
-                        assertEquals("11", d.currentValue().toString());
-                    }
-                    if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
-                        assertEquals("6==i$2?11:instance type int", d.currentValue().toString());
                     }
                 }
             }
@@ -401,21 +381,52 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
     // IMPROVE this is really not good (res can have only 2 values, 3 and 4)
     // 16, 17 are variants, same problem
 
+    // ideal solution: we know that 'i' is in a range
+    // temporary solution: 'i' becomes 'instance type int'
     @Test
     public void test_15() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertEquals("4", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("-1==i-p&&p>=0&&p<=9?4:3", d.currentValue().toString());
+                    }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<replace:int><=9?<merge:int>:3"
-                                : "instance type int<=9?instance type int:3";
+                        // value is not 4! p could be greater than 10, and then i can never reach p
+                        String expected =  "p>=0&&p<=9?4:3";
                         assertEquals(expected, d.currentValue().toString());
                     }
+                }
+                if ("i".equals(d.variableName())) {
+                    assertNotEquals("0", d.statementId());
+                    assertNotEquals("2", d.statementId());
+                    if ("1.0.0".equals(d.statementId())) {
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable lv) {
+                            assertEquals("1", lv.statementIndex());
+                        } else fail();
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                var list = d.statementAnalysis().stateData().statesOfInterruptsStream().toList();
+                if ("1".equals(d.statementId())) {
+                    assertEquals(1, list.size());
+                    String breakStmtIndex = list.get(0).getKey();
+                    assertEquals("1.0.0.0.1", breakStmtIndex);
+                    Expression state = list.get(0).getValue().get();
+                    assertEquals("i<=9&&-1==i-p", state.toString());
                 }
             }
         };
         testClass("Loops_15", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

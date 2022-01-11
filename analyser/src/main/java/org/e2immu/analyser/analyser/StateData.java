@@ -25,6 +25,7 @@ import org.e2immu.support.SetOnceMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -99,6 +100,11 @@ public class StateData {
 
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
+
+    // mainly for testing
+    public Stream<Map.Entry<String, EventuallyFinal<Expression>>> statesOfInterruptsStream() {
+        return statesOfInterrupts == null ? Stream.of() : statesOfInterrupts.stream();
+    }
 
     // states of interrupt
 
