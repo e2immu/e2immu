@@ -430,7 +430,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         DV combined;
         if (FlowData.ALWAYS.equals(mine)) combined = execution;
         else if (FlowData.NEVER.equals(mine)) combined = FlowData.NEVER;
-        else if (FlowData.CONDITIONALLY.equals(mine)) combined = FlowData.CONDITIONALLY;
+        else if (FlowData.CONDITIONALLY.equals(mine)) combined = FlowData.CONDITIONALLY.min(execution);
         else if (mine.isDelayed()) combined = mine.causesOfDelay().merge(execution.causesOfDelay());
         else throw new UnsupportedOperationException("Mine is " + mine);
 

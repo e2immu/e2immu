@@ -132,7 +132,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                 }
                 if ("1.0.2.0.0".equals(d.statementId())) {
-                    String expect = "{break=computed:2}"; // ALWAYS=value 2, see FlowData
+                    String expect = "{break=ALWAYS:2}"; // ALWAYS=value 2, see FlowData
                     assertEquals(expect, d.statementAnalysis().flowData().getInterruptsFlow().toString());
                     if (d.iteration() == 0) {
                         assertFalse(d.statementAnalysis().flowData().blockExecution.isSet());

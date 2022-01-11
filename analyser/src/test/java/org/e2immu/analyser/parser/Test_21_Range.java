@@ -40,8 +40,13 @@ public class Test_21_Range extends CommonTestRunner {
                             range.toString());
                     Expression conditions = range.conditions(d.evaluationContext());
                     assertEquals("i<=9&&i>=0", conditions.toString());
-
+                }
+                if ("0.0.0".equals(d.statementId())) {
                     assertEquals("i<=9&&i>=0", d.condition().toString());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    assertEquals("i<=9&&i>=0", d.condition().toString());
+                    assertEquals("i<=9&&i>=0", d.absoluteState().toString());
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
@@ -82,7 +87,7 @@ public class Test_21_Range extends CommonTestRunner {
             }
         };
         // 2x: always false, block not executed
-        testClass("Range_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("Range_0", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

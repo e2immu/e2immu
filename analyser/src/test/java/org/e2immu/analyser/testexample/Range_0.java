@@ -22,7 +22,10 @@ public class Range_0 {
             if (i == -1) {
                 System.out.println("not reachable 1");
             }
-            if (i == 10) {
+            if (i == 11) {
+                System.out.println("not reachable 2");
+            }
+            if (i == 10) { // FIXME currently accepted because i's value is i+1
                 System.out.println("not reachable 2");
             }
         }

@@ -373,4 +373,12 @@ public class TestComparisons extends CommonAbstractValue {
         assertEquals("false", newAndAppend(e2, e1).toString());
     }
 
+    @Test
+    public void testRange() {
+        Expression gt0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
+        Expression lt10 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(10), false);
+        Expression eq10 = Equals.equals(minimalEvaluationContext, i, newInt(10));
+        assertEquals("false", newAndAppend(gt0, lt10, eq10).toString());
+        assertEquals("false", newAndAppend(eq10, gt0, lt10).toString());
+    }
 }

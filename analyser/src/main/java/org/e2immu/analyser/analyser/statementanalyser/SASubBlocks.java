@@ -360,8 +360,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         forEach loop does not have an exit condition.
          */
         if (statementAnalysis.statement() instanceof LoopStatement loopStatement) {
-            return statementAnalysis.stateData()
-                    .combineInterruptsAndExit(loopStatement, list.get(0).condition, evaluationContext);
+            return statementAnalysis.stateData().combineInterruptsAndExit(loopStatement, list.get(0).condition, evaluationContext);
         }
 
         if (statementAnalysis.statement() instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
@@ -450,7 +449,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
                                                          Expression value,
                                                          CausesOfDelay valueIsDelayed) {
-        Structure structure = statement().getStructure();
         Expression condition;
         ConditionManager cm;
         if (firstBlockExecution.equals(FlowData.NEVER)) {
@@ -458,32 +456,43 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             condition = null;
         } else {
             Primitives primitives = statementAnalysis.primitives();
-            if (statement() instanceof LoopStatement) {
-                Expression range = statementAnalysis.rangeData().extraState(evaluationContext);
-                if (range != Range.NO_RANGE) {
-                    condition = range;
-                    cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
-                            condition, condition.causesOfDelay());
-                } else if (statement() instanceof ForEachStatement) {
-                    // the expression is not a condition; however, we add one to ensure that the content is not empty
-                    condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
-                    cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
-                            condition.causesOfDelay());
-                } else {
-                    cm = localConditionManager;
-                    condition = new BooleanConstant(primitives, true);
-                }
-            } else if (structure.expressionIsCondition()) {
-                cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value,
-                        value.causesOfDelay());
-                condition = value;
-            } else {
-                cm = localConditionManager;
+            cm = conditionManagerForFirstBlock(localConditionManager, evaluationContext, primitives, value, valueIsDelayed);
+            if (cm == localConditionManager) {
                 condition = new BooleanConstant(primitives, true);
+            } else {
+                condition = cm.condition();
             }
         }
         return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
                 false, null);
+    }
+
+    private ConditionManager conditionManagerForFirstBlock(ConditionManager localConditionManager,
+                                                           EvaluationContext evaluationContext,
+                                                           Primitives primitives,
+                                                           Expression value,
+                                                           CausesOfDelay valueIsDelayed) {
+        Structure structure = statement().getStructure();
+        if (statement() instanceof LoopStatement) {
+            Range range = statementAnalysis.rangeData().getRange();
+            if (range != Range.NO_RANGE) {
+                Expression condition = statementAnalysis.rangeData().extraState(evaluationContext);
+                return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
+                        condition, condition.causesOfDelay());
+            }
+            if (statement() instanceof ForEachStatement) {
+                // the expression is not a condition; however, we add one to ensure that the content is not empty
+                Expression condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
+                return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
+                        condition.causesOfDelay());
+            }
+        }
+        // there are loop statements which are not forEach, and do not have a range, but do have a condition!
+        if (structure.expressionIsCondition()) {
+            return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value,
+                    value.causesOfDelay());
+        }
+        return localConditionManager;
     }
 
     private Expression isNotEmpty(EvaluationContext evaluationContext, Expression value, boolean valueIsDelayed) {
