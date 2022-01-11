@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analysis.impl;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.RangeData;
@@ -44,11 +41,6 @@ public class RangeDataImpl implements RangeData {
     }
 
     @Override
-    public void setRangeDelay(CausesOfDelay causes) {
-        range.setFirst(causes);
-    }
-
-    @Override
     public void setRange(Range range) {
         this.range.set(range);
     }
@@ -65,6 +57,8 @@ public class RangeDataImpl implements RangeData {
 
     @Override
     public void computeRange(Statement statement, EvaluationResult result) {
+        BooleanConstant TRUE = new BooleanConstant(result.evaluationContext().getPrimitives(), true);
+
         if (statement instanceof ForStatement) {
             if (statement.getStructure().initialisers().size() == 1
                     && statement.getStructure().initialisers().get(0) instanceof LocalVariableCreation lvc
@@ -100,13 +94,22 @@ public class RangeDataImpl implements RangeData {
                 if (causes.isDelayed()) {
                     log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
                     range.setFirst(causes);
-                } else {
-                    computeRange(result.evaluationContext(), variable, init, update, condition);
+                    return;
                 }
+                computeRange(result.evaluationContext(), variable, init, update, condition);
                 return;
             }
         }
         range.set(Range.NO_RANGE);
+    }
+
+    public Expression extraState(EvaluationContext evaluationContext) {
+        if (range.isSet()) {
+            return range.get().conditions(evaluationContext);
+        }
+        CausesOfDelay causes = range.getFirst();
+        return DelayedExpression.forState(evaluationContext.getPrimitives().booleanParameterizedType(),
+                LinkedVariables.delayedEmpty(causes), causes);
     }
 
     /**
@@ -128,7 +131,7 @@ public class RangeDataImpl implements RangeData {
             if (condition instanceof GreaterThanZero gt0) {
                 GreaterThanZero.XB xb = gt0.extract(evaluationContext);
                 if (loopVar.equals(xb.x())) {
-                    int endExcl = (int) (xb.b() + (gt0.allowEquals() ? 1 : 0));
+                    int endExcl = (int) (xb.b() + (gt0.allowEquals() ? (increment < 0 ? -1 : 1) : 0));
                     if (xb.lessThan() && start < endExcl && increment > 0 || !xb.lessThan() && start > endExcl && increment < 0) {
                         Range r = new NumericRange(start, endExcl, increment, loopVar);
                         log(EXPRESSION, "Identified range {}", r);

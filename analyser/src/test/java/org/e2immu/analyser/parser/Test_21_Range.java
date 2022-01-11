@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -33,32 +35,49 @@ public class Test_21_Range extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
                     assertEquals("NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i]",
-                            d.statementAnalysis().rangeData().getRange().toString());
+                            range.toString());
+                    Expression conditions = range.conditions(d.evaluationContext());
+                    assertEquals("i<=9&&i>=0", conditions.toString());
+
+                    assertEquals("i<=9&&i>=0", d.condition().toString());
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
                     assertEquals("NumericRange[startIncl=0, endExcl=11, increment=1, variableExpression=i]",
-                            d.statementAnalysis().rangeData().getRange().toString());
+                            range.toString());
+                    Expression conditions = range.conditions(d.evaluationContext());
+                    assertEquals("i<=10&&i>=0", conditions.toString());
                 }
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
                     assertEquals("NumericRange[startIncl=0, endExcl=12, increment=1, variableExpression=i]",
-                            d.statementAnalysis().rangeData().getRange().toString());
+                            range.toString());
+                    Expression conditions = range.conditions(d.evaluationContext());
+                    assertEquals("i<=11&&i>=0", conditions.toString());
                 }
             }
             if ("method4".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("NumericRange[startIncl=13, endExcl=1, increment=-1, variableExpression=i]",
-                            d.statementAnalysis().rangeData().getRange().toString());
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("NumericRange[startIncl=13, endExcl=-1, increment=-1, variableExpression=i]",
+                            range.toString());
+                    Expression conditions = range.conditions(d.evaluationContext());
+                    assertEquals("i<=13&&i>=0", conditions.toString());
                 }
             }
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
                     assertEquals("NumericRange[startIncl=0, endExcl=14, increment=4, variableExpression=i]",
-                            d.statementAnalysis().rangeData().getRange().toString());
+                            range.toString());
+                    Expression conditions = range.conditions(d.evaluationContext());
+                    assertEquals("i<=13&&i>=0", conditions.toString());
                 }
             }
         };

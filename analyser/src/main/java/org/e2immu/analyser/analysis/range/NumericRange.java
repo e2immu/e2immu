@@ -18,7 +18,10 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 
-// a proper range
+/**
+ * a proper range: start <= i < endExcl when i>0, and endExcl < i <= startExcl when i < 0
+ */
+
 public record NumericRange(int startIncl,
                            int endExcl,
                            int increment,
@@ -36,8 +39,15 @@ public record NumericRange(int startIncl,
             return Equals.equals(evaluationContext, start, variableExpression);
         }
         IntConstant end = new IntConstant(evaluationContext.getPrimitives(), endExcl);
-        Expression geStart = GreaterThanZero.greater(evaluationContext, variableExpression, start, true);
-        Expression ltEnd = GreaterThanZero.less(evaluationContext, variableExpression, end, false);
+        Expression geStart;
+        Expression ltEnd;
+        if (startIncl < endExcl) {
+            geStart = GreaterThanZero.greater(evaluationContext, variableExpression, start, true);
+            ltEnd = GreaterThanZero.less(evaluationContext, variableExpression, end, false);
+        } else {
+            geStart = GreaterThanZero.less(evaluationContext, variableExpression, start, true);
+            ltEnd = GreaterThanZero.greater(evaluationContext, variableExpression, end, false);
+        }
         return And.and(evaluationContext, geStart, ltEnd);
     }
 

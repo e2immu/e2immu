@@ -231,10 +231,10 @@ public class FlowData {
         return interruptsFlow.isSet() && ALWAYS.equals(interruptsFlow.get().get(ESCAPE));
     }
 
-    public static final DV DEFAULT_EXECUTION = new NoDelay(3);
-    public static final DV ALWAYS = new NoDelay(2);
-    public static final DV CONDITIONALLY = new NoDelay(1);
-    public static final DV NEVER = new NoDelay(0);
+    public static final DV DEFAULT_EXECUTION = new NoDelay(3, "DEFAULT_EXECUTION");
+    public static final DV ALWAYS = new NoDelay(2, "ALWAYS");
+    public static final DV CONDITIONALLY = new NoDelay(1, "CONDITIONALLY");
+    public static final DV NEVER = new NoDelay(0, "NEVER");
 
     /**
      * Call occurs before the actual analysis of the statement.

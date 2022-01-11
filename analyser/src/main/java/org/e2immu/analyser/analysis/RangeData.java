@@ -15,15 +15,17 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.range.Range;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
 
 public interface RangeData {
 
     CausesOfDelay rangeDelays();
 
-    void setRangeDelay(CausesOfDelay causes);
+    Expression extraState(EvaluationContext evaluationContext);
 
     void setRange(Range range);
 

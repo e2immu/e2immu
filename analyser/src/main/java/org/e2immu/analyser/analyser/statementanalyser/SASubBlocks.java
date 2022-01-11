@@ -18,10 +18,12 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -448,24 +450,37 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
                                                          Expression value,
                                                          CausesOfDelay valueIsDelayed) {
-        Structure structure = statementAnalysis.statement().getStructure();
+        Structure structure = statement().getStructure();
         Expression condition;
         ConditionManager cm;
         if (firstBlockExecution.equals(FlowData.NEVER)) {
             cm = null;
             condition = null;
-        } else if (statementAnalysis.statement() instanceof ForEachStatement) {
-            // the expression is not a condition; however, we add one to ensure that the content is not empty
-            condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
-            cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(), condition,
-                    condition.causesOfDelay());
-        } else if (structure.expressionIsCondition()) {
-            cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(), value,
-                    value.causesOfDelay());
-            condition = value;
         } else {
-            cm = localConditionManager;
-            condition = new BooleanConstant(statementAnalysis.primitives(), true);
+            Primitives primitives = statementAnalysis.primitives();
+            if (statement() instanceof LoopStatement) {
+                Expression range = statementAnalysis.rangeData().extraState(evaluationContext);
+                if (range != Range.NO_RANGE) {
+                    condition = range;
+                    cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
+                            condition, condition.causesOfDelay());
+                } else if (statement() instanceof ForEachStatement) {
+                    // the expression is not a condition; however, we add one to ensure that the content is not empty
+                    condition = isNotEmpty(evaluationContext, value, valueIsDelayed.isDelayed());
+                    cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition,
+                            condition.causesOfDelay());
+                } else {
+                    cm = localConditionManager;
+                    condition = new BooleanConstant(primitives, true);
+                }
+            } else if (structure.expressionIsCondition()) {
+                cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, value,
+                        value.causesOfDelay());
+                condition = value;
+            } else {
+                cm = localConditionManager;
+                condition = new BooleanConstant(primitives, true);
+            }
         }
         return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
                 false, null);
