@@ -86,7 +86,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().hasMerge());
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$2";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
@@ -98,7 +98,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$2";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -113,7 +113,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                                     d.evaluationContext());
                     assertEquals(ALWAYS, exec);
                 } else fail();
-                String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+instance type int>=n";
+                String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+i>=n";
                 assertEquals(expectState, d.state().toString());
 
                 assertEquals(ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());

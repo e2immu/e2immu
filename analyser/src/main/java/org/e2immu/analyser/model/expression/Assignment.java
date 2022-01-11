@@ -49,7 +49,7 @@ public class Assignment extends BaseExpression implements Expression {
     // if false, we have i++
     public final Boolean prefixPrimitiveOperator;
     public final boolean complainAboutAssignmentOutsideType;
-    public final boolean hackForLoop;
+    public final boolean hackForUpdatersInForLoop;
 
     private Assignment(Identifier identifier,
                        Primitives primitives,
@@ -60,7 +60,7 @@ public class Assignment extends BaseExpression implements Expression {
                        boolean complainAboutAssignmentOutsideType,
                        Variable variableTarget,
                        MethodInfo binaryOperator,
-                       boolean hackForLoop) {
+                       boolean hackForUpdatersInForLoop) {
         super(identifier);
         this.primitives = primitives;
         this.target = target;
@@ -70,9 +70,10 @@ public class Assignment extends BaseExpression implements Expression {
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.variableTarget = variableTarget;
         this.binaryOperator = binaryOperator;
-        this.hackForLoop = hackForLoop;
+        this.hackForUpdatersInForLoop = hackForUpdatersInForLoop;
     }
 
+    // see explanation below (makeHackInstance); called in SAInitializersAndUpdaters
     public Expression cloneWithHackForLoop() {
         return new Assignment(identifier, primitives, target, value, assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType, variableTarget, binaryOperator, true);
@@ -110,7 +111,7 @@ public class Assignment extends BaseExpression implements Expression {
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
             variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(true), null);
         }
-        hackForLoop = false;
+        hackForUpdatersInForLoop = false;
     }
 
     @Override
@@ -260,15 +261,24 @@ public class Assignment extends BaseExpression implements Expression {
 
         assert e2.assignedToTarget != null;
         assert e2.assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
-        Expression finalValue = hackForLoop ? makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay()) : e2.assignedToTarget;
+        Expression finalValue = hackForUpdatersInForLoop
+                ? makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay()) : e2.assignedToTarget;
         // we by-pass the result of normal assignment which raises the i=i assign to myself error
         doAssignmentWork(builder, evaluationContext, newVariableTarget, finalValue);
         assert e2.resultOfExpression != null;
         return builder.setExpression(e2.resultOfExpression).build();
     }
 
+    /*
+    The "hack" consists of, when faced with an updater i=i+1 which is executed at evaluation in the loop,
+    to replace i=i+1 with i=instance, while still evaluating i+1.
+    If we don't do this, the variable will appear updated (1+instance) throughout the loop, which messes up all kinds
+    of comparisons.
+
+    We've chosen this approach over a blanket search for variables which should get an instance value.
+     */
     private Expression makeHackInstance(EvaluationContext evaluationContext, CausesOfDelay causes) {
-        if(causes.isDelayed()) {
+        if (causes.isDelayed()) {
             return DelayedVariableExpression.forVariable(variableTarget, causes);
         }
         Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(target.returnType());

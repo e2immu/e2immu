@@ -52,7 +52,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "res2";
+                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -90,7 +90,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                     }
                 }
@@ -132,7 +132,7 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                     assertDv(d, 1, CONDITIONALLY, execution);
                 }
                 if ("3".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+instance type int>=n";
+                    String expectState = d.iteration() == 0 ? "<v:i>>=n" : "1+i>=n";
                     assertEquals(expectState, d.state().toString());
                 }
             }

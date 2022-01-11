@@ -74,7 +74,7 @@ public class Test_01_Loops_5 extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                 String expectReturn = d.iteration() == 0 ? "1==<v:i>?5:<return value>" :
-                        "1==instance type int?5:<return value>";
+                        "1==i?5:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }
         };
