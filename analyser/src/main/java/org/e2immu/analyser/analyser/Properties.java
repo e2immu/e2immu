@@ -17,6 +17,9 @@ package org.e2immu.analyser.analyser;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.*;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 public class Properties {
@@ -28,12 +31,16 @@ public class Properties {
         this.map = map;
     }
 
-    public static Properties frozen() {
+    private static Properties frozen() {
         return new Properties(Map.of());
     }
 
     public static Properties writable() {
         return new Properties(new HashMap<>());
+    }
+
+    public static Properties of(Map<Property, DV> map) {
+        return new Properties(Map.copyOf(map));
     }
 
     public boolean isDone(Property property) {
@@ -59,6 +66,10 @@ public class Properties {
         return dv;
     }
 
+    public void overwrite(Property property, DV dv) {
+        map.put(property, dv);
+    }
+    
     public void put(Property property, DV dv) {
         Objects.requireNonNull(dv);
         Objects.requireNonNull(property);
@@ -70,11 +81,82 @@ public class Properties {
         }
     }
 
+    public Properties combine(Properties other) {
+        if (map.isEmpty()) return other;
+        map.putAll(other.map);
+        return this;
+    }
+
+    public CausesOfDelay delays() {
+        return map.values().stream().map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+    }
+
+    public boolean containsKey(Property property) {
+        return map.containsKey(property);
+    }
+
     public Stream<Map.Entry<Property, DV>> stream() {
         return map.entrySet().stream();
     }
 
     public Map<Property, DV> toImmutableMap() {
         return Map.copyOf(map);
+    }
+
+    public Properties immutable() {
+        return new Properties(Map.copyOf(map));
+    }
+
+    public static Collector<Property, Properties, Properties> collect(Function<Property, DV> mapper) {
+        return collect(mapper, false);
+    }
+
+    public static Collector<Property, Properties, Properties> collect(Function<Property, DV> mapper, boolean writable) {
+        return new Collector<>() {
+            @Override
+            public Supplier<Properties> supplier() {
+                return Properties::writable;
+            }
+
+            @Override
+            public BiConsumer<Properties, Property> accumulator() {
+                return (p, e) -> p.put(e, mapper.apply(e));
+            }
+
+            @Override
+            public BinaryOperator<Properties> combiner() {
+                return Properties::combine;
+            }
+
+            @Override
+            public Function<Properties, Properties> finisher() {
+                return writable ? p->p : Properties::immutable;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                if (writable) {
+                    return Set.of(Characteristics.UNORDERED, Characteristics.IDENTITY_FINISH);
+                }
+                return Set.of(Characteristics.UNORDERED);
+            }
+        };
+    }
+
+    public void merge(Property key, DV value, BiFunction<DV, DV, DV> remapping) {
+        map.merge(key, value, remapping);
+    }
+
+    public void removeAll(Set<Property> properties) {
+        map.keySet().removeAll(properties);
+    }
+
+    public DV remove(Property property) {
+        return map.remove(property);
+    }
+
+    @Override
+    public String toString() {
+        return map.toString();
     }
 }

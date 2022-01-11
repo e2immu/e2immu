@@ -124,6 +124,14 @@ public interface VariableInfoContainer {
                   Map<Property, DV> propertiesToSet,
                   boolean initialOrEvaluation);
 
+    // FIXME temp hack, this should become the native method
+    default void setValue(Expression value,
+                  LinkedVariables linkedVariables,
+                  Properties propertiesToSet,
+                  boolean initialOrEvaluation) {
+        setValue(value, linkedVariables, propertiesToSet.toImmutableMap(), initialOrEvaluation);
+    }
+
     default void setProperty(Property property, DV value, Level level) {
         setProperty(property, value, true, level);
     }

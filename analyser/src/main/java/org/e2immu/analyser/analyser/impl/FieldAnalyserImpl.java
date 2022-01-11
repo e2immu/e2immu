@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.impl;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
@@ -951,13 +952,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable.lt(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV);
                 if (downgradeFromNewInstanceWithConstructor) {
-                    Map<Property, DV> valueProperties = Map.of(
+                    Properties valueProperties = Properties.of(Map.of(
                             Property.NOT_NULL_EXPRESSION, proxy.getProperty(Property.NOT_NULL_EXPRESSION),
                             Property.IMMUTABLE, proxy.getProperty(Property.IMMUTABLE),
                             Property.INDEPENDENT, proxy.getProperty(Property.INDEPENDENT),
                             Property.CONTAINER, proxy.getProperty(Property.CONTAINER),
                             Property.IDENTITY, proxy.getProperty(Property.IDENTITY)
-                    );
+                    ));
                     effectivelyFinalValue = constructorCall.removeConstructor(valueProperties);
                 } else {
                     effectivelyFinalValue = constructorCall;

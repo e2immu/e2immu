@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser;
@@ -131,11 +132,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             variable.fullyQualifiedName());
                 }
                 // first do the properties that come with the value; later, we'll write the ones in changeData
-                Map<Property, DV> valueProperties = sharedState.evaluationContext()
+                Properties valueProperties = sharedState.evaluationContext()
                         .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
-                CausesOfDelay valuePropertiesIsDelayed = valueProperties.values().stream()
-                        .map(DV::causesOfDelay)
-                        .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                CausesOfDelay valuePropertiesIsDelayed = valueProperties.delays();
 
                 boolean valueToWriteIsDelayed = valueToWrite.isDelayed();
                 Expression valueToWritePossiblyDelayed;
@@ -149,7 +148,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     valueToWritePossiblyDelayed = valueToWrite;
                 }
 
-                Map<Property, DV> merged = SAHelper.mergeAssignment(variable, valueProperties, changeData.properties(), groupPropertyValues);
+                Properties changeDataProperties = Properties.of(changeData.properties());
+                Properties merged = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties, groupPropertyValues);
                 // LVs start empty, the changeData.linkedVariables will be added later
                 vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
 

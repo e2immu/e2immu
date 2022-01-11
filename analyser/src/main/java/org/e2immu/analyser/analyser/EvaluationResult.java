@@ -666,13 +666,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         fieldReference.fieldInfo.owner)) {
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
-                Map<Property, DV> valueProperties;
+                Properties valueProperties;
                 if (scopeContainsUnavailableVariables(fieldReference.scope)) {
-                    valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    valueProperties =Properties.of( Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                             Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                             Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                             Property.CONTAINER, DV.TRUE_DV,
-                            Property.IDENTITY, DV.FALSE_DV);
+                            Property.IDENTITY, DV.FALSE_DV));
                 } else {
                     valueProperties = evaluationContext.getValueProperties(fieldReference.scope);
                 }

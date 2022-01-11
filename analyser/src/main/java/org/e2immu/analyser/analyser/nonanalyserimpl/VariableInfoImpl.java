@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
@@ -337,8 +338,8 @@ public class VariableInfoImpl implements VariableInfo {
     }
 
     private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
-        Map<Property, DV> map = evaluationContext.getValueProperties(mergedValue, false);
-        map.forEach(this::setProperty);
+        Properties map = evaluationContext.getValueProperties(mergedValue, false);
+        map.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
 
     private static String mergedReadId(EvaluationContext evaluationContext,
@@ -482,8 +483,9 @@ public class VariableInfoImpl implements VariableInfo {
                 .reduce(DV.MIN_INT_DV, DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
-        Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, worstNotNullIncludingCurrent);
-        // FIXME
+        ParameterizedType pt = variable.parameterizedType(); // FIXME is this correct?
+        Properties valueProperties = evaluationContext.getAnalyserContext()
+                .defaultValueProperties(pt, worstNotNullIncludingCurrent);
         return mergeHelper.noConclusion(valueProperties);
     }
 

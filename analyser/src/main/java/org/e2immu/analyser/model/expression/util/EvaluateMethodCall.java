@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
@@ -33,7 +34,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
+import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
@@ -204,16 +206,11 @@ public class EvaluateMethodCall {
             methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
         } else if (modified.valueIsTrue()) {
             DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
-            DV immutable = methodAnalysis.getProperty(IMMUTABLE);
-            DV independent = methodAnalysis.getProperty(INDEPENDENT);
-            DV container = methodAnalysis.getProperty(CONTAINER);
-            CausesOfDelay delays = notNull.causesOfDelay().merge(immutable.causesOfDelay()).merge(independent.causesOfDelay())
-                    .merge(container.causesOfDelay());
+            Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
+            CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {
                 methodValue = DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesForDelay.apply(delays), delays);
             } else {
-                Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, notNull,
-                        IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, DV.FALSE_DV);
                 methodValue = Instance.forMethodResult(Identifier.joined(ListUtil.immutableConcat(
                                 List.of(methodInfo.identifier, objectValue.getIdentifier()),
                                 parameters.stream().map(Expression::getIdentifier).toList())),
@@ -254,7 +251,7 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            Map<Property, DV> valueProperties = Instance.primitiveValueProperties();
+            Properties valueProperties = Instance.primitiveValueProperties();
             return Instance.forGetInstance(identifier, primitives.stringParameterizedType(), valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
@@ -263,15 +260,12 @@ public class EvaluateMethodCall {
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
         ParameterizedType parameterizedType = objectValue.returnType();
-        DV immutable = analyserContext.defaultImmutable(parameterizedType, false);
-        DV independent = analyserContext.defaultIndependent(parameterizedType);
-        DV container = analyserContext.defaultContainer(parameterizedType);
-        if (immutable.isDelayed() || independent.isDelayed() || container.isDelayed()) {
-            return DelayedExpression.forValueOf(parameterizedType, immutable.causesOfDelay()
-                    .merge(independent.causesOfDelay()).merge(container.causesOfDelay()));
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType,
+                MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        CausesOfDelay delayed = valueProperties.delays();
+        if (delayed.isDelayed()) {
+            return DelayedExpression.forValueOf(parameterizedType, delayed);
         }
-        Map<Property, DV> valueProperties = Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                IMMUTABLE, immutable, INDEPENDENT, independent, CONTAINER, container, IDENTITY, DV.FALSE_DV);
         return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
     }
 

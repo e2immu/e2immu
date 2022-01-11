@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -636,20 +637,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (createInstanceBasedOn != null) {
             ParameterizedType returnType = createInstanceBasedOn.returnType();
-            AnalysisProvider analysisProvider = evaluationContext.getAnalyserContext();
-            DV immutable = analysisProvider.defaultImmutable(returnType, false);
-            DV container = analysisProvider.defaultContainer(returnType);
-            DV independent = analysisProvider.defaultIndependent(returnType);
-            CausesOfDelay causesOfDelay = immutable.causesOfDelay().merge(container.causesOfDelay()).merge(independent.causesOfDelay());
+            Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(returnType,
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            CausesOfDelay causesOfDelay = valueProperties.delays();
             if (causesOfDelay.isDelayed()) {
                 return DelayedExpression.forMethod(methodInfo, objectValue.returnType(),
                         objectValue.linkedVariables(evaluationContext).changeAllToDelay(causesOfDelay), causesOfDelay);
             }
-            var valueProperties = Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                    Property.IMMUTABLE, immutable,
-                    Property.INDEPENDENT, independent,
-                    Property.CONTAINER, container,
-                    Property.IDENTITY, DV.FALSE_DV);
             newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
         }
 

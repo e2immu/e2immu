@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -213,7 +212,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getVariableProperty
-    private Map<Property, DV> getVariableProperties(Variable variable, Set<Property> properties, boolean duringEvaluation) {
+    private Properties getVariableProperties(Variable variable, Set<Property> properties, boolean duringEvaluation) {
         if (duringEvaluation) {
             return getPropertiesFromPreviousOrInitial(variable, properties);
         }
@@ -222,31 +221,31 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     // identical to getProperty, but then for multiple properties!
     @Override
-    public Map<Property, DV> getProperties(Expression value, Set<Property> properties, boolean duringEvaluation,
-                                           boolean ignoreStateInConditionManager) {
+    public Properties getProperties(Expression value, Set<Property> toCompute, boolean duringEvaluation,
+                                    boolean ignoreStateInConditionManager) {
 
         if (value instanceof IsVariableExpression ve) {
             Variable variable = ve.variable();
             // read what's in the property map (all values should be there) at initial or current level
-            Map<Property, DV> map = getVariableProperties(variable, properties, duringEvaluation);
-            DV nne = map.getOrDefault(NOT_NULL_EXPRESSION, null);
+            Properties properties = getVariableProperties(variable, toCompute, duringEvaluation);
+            DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
             DV updated = nneForVariable(duringEvaluation, variable, nne);
-            map.put(NOT_NULL_EXPRESSION, updated);
-            return map;
+            properties.overwrite(NOT_NULL_EXPRESSION, updated);
+            return properties;
         }
 
         // this one is more difficult to vectorize
-        Map<Property, DV> map = new HashMap<>();
-        for (Property property : properties) {
+        Properties properties = Properties.writable();
+        for (Property property : toCompute) {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else {
                 dv = value.getProperty(this, property, true);
             }
-            map.put(property, dv);
+            properties.put(property, dv);
         }
-        return map;
+        return properties;
     }
 
     // identical to getProperties, but then for a single property!
@@ -457,9 +456,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getProperty
-    private Map<Property, DV> getProperties(Variable variable, Set<Property> properties) {
+    private Properties getProperties(Variable variable, Set<Property> properties) {
         VariableInfo vi = statementAnalysis.findOrThrow(variable);
-        return properties.stream().collect(Collectors.toMap(e -> e, vi::getProperty));
+        return properties.stream().collect(Properties.collect(vi::getProperty, true));
     }
 
     @Override
@@ -469,9 +468,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     // vectorized version of getPropertyFromPreviousOrInitial
-    public Map<Property, DV> getPropertiesFromPreviousOrInitial(Variable variable, Set<Property> properties) {
+    public Properties getPropertiesFromPreviousOrInitial(Variable variable, Set<Property> properties) {
         VariableInfo vi = findForReading(variable, true);
-        return properties.stream().collect(Collectors.toMap(e -> e, vi::getProperty));
+        return properties.stream().collect(Properties.collect(vi::getProperty, true));
     }
 
     @Override
@@ -517,16 +516,14 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         // what happens when eval.getValue() is the null constant? we cannot properly compute
         // @Container on the null constant; that would have to come from a real value.
         Expression bestValue = eval.getValue();
-        Map<Property, DV> valueProperties;
+        Properties valueProperties;
         if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
             valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
         } else {
             valueProperties = getValueProperties(eval.getValue());
         }
 
-        CausesOfDelay delays = valueProperties.values().stream()
-                .map(DV::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        CausesOfDelay delays = valueProperties.delays();
         if (delays.isDone()) {
             Expression newObject = Instance.genericMergeResult(statementAnalysis.index(), variable,
                     valueProperties);

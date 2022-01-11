@@ -116,12 +116,11 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     There is no overlap between valueProps and variableProps
      */
-    static Map<Property, DV> mergeAssignment(Variable variable,
-                                             Map<Property, DV> valueProps,
-                                             Map<Property, DV> changeData,
-                                             GroupPropertyValues groupPropertyValues) {
-        Map<Property, DV> res = new HashMap<>(valueProps);
-        res.putAll(changeData);
+    static Properties mergeAssignment(Variable variable,
+                                      Properties valueProps,
+                                      Properties changeData,
+                                      GroupPropertyValues groupPropertyValues) {
+        Properties res = valueProps.combine(changeData);
 
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway

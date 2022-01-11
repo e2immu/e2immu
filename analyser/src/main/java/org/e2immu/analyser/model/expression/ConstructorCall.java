@@ -94,7 +94,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
 
-    public Expression removeConstructor(Map<Property, DV> valueProperties) {
+    public Expression removeConstructor(Properties valueProperties) {
         assert arrayInitializer == null;
         return new Instance(identifier, parameterizedType, diamond, valueProperties);
     }

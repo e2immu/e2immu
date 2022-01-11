@@ -23,9 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public interface AnalysisProvider {
     Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
@@ -274,8 +271,22 @@ public interface AnalysisProvider {
         };
     }
 
-    default Map<Property, DV> defaultValueProperties(ParameterizedType parameterizedType) {
+    default Properties defaultValueProperties(ParameterizedType parameterizedType) {
+        return defaultValueProperties(parameterizedType, false);
+    }
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable) {
         return EvaluationContext.VALUE_PROPERTIES.stream()
-                .collect(Collectors.toUnmodifiableMap(p -> p, p -> defaultValueProperty(p, parameterizedType)));
+                .collect(Properties.collect(p -> defaultValueProperty(p, parameterizedType), writable));
+    }
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
+        return defaultValueProperties(parameterizedType, valueForNotNullExpression, false);
+    }
+
+    default Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression, boolean writable) {
+        return EvaluationContext.VALUE_PROPERTIES.stream()
+                .collect(Properties.collect(p -> p == Property.NOT_NULL_EXPRESSION ? valueForNotNullExpression :
+                        defaultValueProperty(p, parameterizedType), writable));
     }
 }

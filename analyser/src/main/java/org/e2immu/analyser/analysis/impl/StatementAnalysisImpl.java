@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analysis.impl;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
@@ -681,8 +682,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                               FieldReference fieldReference) {
         VariableInfo viInitial = vic.best(INITIAL);
 
-        Map<Property, DV> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
-        Map<Property, DV> combined = new HashMap<>(map);
+        Properties map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Expression initialValue;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
@@ -694,20 +694,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser();
             }
-            Map<Property, DV> valueMap = evaluationContext.getValueProperties(initialValue);
-            valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
+            Properties valueMap = evaluationContext.getValueProperties(initialValue);
+            valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
 
             // copy into initial
 
-            vic.setValue(initialValue, LinkedVariables.EMPTY, combined, true);
+            vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);
         } else {
             // only set properties copied from the field
-            map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
+            map.stream().forEach(e -> vic.setProperty(e.getKey(), e.getValue(), INITIAL));
             initialValue = viInitial.getValue();
             assert initialValue.isDone();
             // add the value properties from the current value to combined (do not set to initial!!)
-            Map<Property, DV> valueMap = evaluationContext.getValueProperties(viInitial.getValue());
-            valueMap.forEach((k, v) -> combined.merge(k, v, DV::max));
+            Properties valueMap = evaluationContext.getValueProperties(viInitial.getValue());
+            valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
         }
 
         /* copy into evaluation, but only if there is no assignment and no reading
@@ -724,8 +724,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (!viEval.valueIsSet() && !initialValue.isUnknown() && !viEval.isRead()) {
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
                 // end of the apply phase, even for variables that aren't read
-                combined.keySet().removeAll(GroupPropertyValues.PROPERTIES);
-                vic.setValue(initialValue, viInitial.getLinkedVariables(), combined, false);
+                map.removeAll(GroupPropertyValues.PROPERTIES);
+                vic.setValue(initialValue, viInitial.getLinkedVariables(), map, false);
             }
         }
     }
@@ -1131,24 +1131,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // an assignment may be difficult.
 
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
         Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
-        Map<Property, DV> properties = Map.of(
+        Properties properties = Properties.of(Map.of(
                 CONTEXT_MODIFIED, DV.FALSE_DV,
                 EXTERNAL_NOT_NULL, NOT_INVOLVED_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV,
                 CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE)
-        );
-        Map<Property, DV> allProperties = new HashMap<>(properties);
-        allProperties.putAll(valueProperties);
+        ));
+        Properties allProperties = valueProperties.combine(properties);
         vic.setValue(instance, LinkedVariables.EMPTY, allProperties, true);
         // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
     }
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
-        Map<Property, DV> map = sharedContext(defaultNotNull);
+        Properties map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
         vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
@@ -1157,7 +1156,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(methodAnalysis.getMethodInfo().returnType());
-        Map<Property, DV> properties = sharedContext(defaultNotNull);
+        Properties properties = sharedContext(defaultNotNull);
         properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
         properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
@@ -1172,7 +1171,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private void initializeThis(VariableInfoContainer vic, AnalyserContext analyserContext, This thisVar) {
         // context properties
-        Map<Property, DV> properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+        Properties properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // value properties
         properties.put(IDENTITY, IDENTITY.falseDv);
@@ -1193,20 +1192,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
 
         // start with context properties
-        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
+        Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
 
         // the value and its properties are taken from the field analyser
         Expression value = fieldAnalysis.getValueForStatementAnalyser();
-        Map<Property, DV> valueProps = evaluationContext.getValueProperties(value);
-        properties.putAll(valueProps);
+        Properties valueProps = evaluationContext.getValueProperties(value);
+        Properties combined = properties.combine(valueProps);
 
         // the external properties
         DV extNotNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
-        properties.put(EXTERNAL_NOT_NULL, extNotNull);
+        combined.put(EXTERNAL_NOT_NULL, extNotNull);
         DV extImm = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
-        properties.put(EXTERNAL_IMMUTABLE, extImm);
+        combined.put(EXTERNAL_IMMUTABLE, extImm);
 
-        vic.setValue(value, LinkedVariables.EMPTY, properties, true);
+        vic.setValue(value, LinkedVariables.EMPTY, combined, true);
     }
 
     private void initializeParameter(VariableInfoContainer vic, EvaluationContext evaluationContext, ParameterInfo parameterInfo) {
@@ -1214,7 +1213,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // start with context properties
         ParameterizedType type = parameterInfo.parameterizedType;
-        Map<Property, DV> properties = sharedContext(AnalysisProvider.defaultNotNull(type));
+        Properties properties = sharedContext(AnalysisProvider.defaultNotNull(type));
 
         // the value properties are not delayed (there's an assertion in the Instance factory method)
         DV notNull = parameterAnalysis.getProperty(NOT_NULL_PARAMETER)
@@ -1245,7 +1244,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV mom = parameterAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
         properties.put(MODIFIED_OUTSIDE_METHOD, mom);
 
-        Expression value = Instance.initialValueOfParameter(parameterInfo, notNull, immutable, independent, container, identity);
+        Expression value = Instance.initialValueOfParameter(parameterInfo, properties);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 
@@ -1267,18 +1266,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
     }
 
-    private Map<Property, DV> sharedContext(DV contextNotNull) {
-        Map<Property, DV> result = new HashMap<>();
+    private Properties sharedContext(DV contextNotNull) {
+        Properties result = Properties.writable();
         result.put(CONTEXT_NOT_NULL, contextNotNull);
         result.put(CONTEXT_IMMUTABLE, MUTABLE_DV);
         result.put(CONTEXT_MODIFIED, DV.FALSE_DV);
         return result;
     }
 
-    private Map<Property, DV> fieldPropertyMap(AnalyserContext analyserContext,
+    private Properties fieldPropertyMap(AnalyserContext analyserContext,
                                                FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-        Map<Property, DV> result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
+        Properties result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
 
         for (Property vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
             DV value = fieldAnalysis.getFieldProperty(analyserContext, fieldInfo, fieldInfo.type.bestTypeInfo(), vp);
@@ -1535,18 +1534,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ParameterizedType parameterizedType = loopVar.parameterizedType();
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
 
-        Map<Property, DV> valueProperties = new HashMap<>(analyserContext.defaultValueProperties(parameterizedType));
         DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
-        valueProperties.put(NOT_NULL_EXPRESSION, nne);
-        CausesOfDelay delayed = valueProperties.values().stream()
-                .map(DV::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, nne, true);
+
+        CausesOfDelay delayed = valueProperties.delays();
         Expression value;
         if (evaluatedIterable.isDelayed() || delayed.isDelayed()) {
             CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
             value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),
                     LinkedVariables.delayedEmpty(causes), causes);
         } else {
-            value = Instance.forLoopVariable(index(), loopVar, Map.copyOf(valueProperties));
+            value = Instance.forLoopVariable(index(), loopVar, valueProperties);
         }
         vic.setValue(value, LinkedVariables.EMPTY, valueProperties, false);
         vic.setLinkedVariables(linked, EVALUATION);

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -360,10 +361,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         ParameterizedType parameterizedType = variable.parameterizedType();
 
-        Map<Property, DV> valueProperties = analyserContext.defaultValueProperties(parameterizedType);
-        CausesOfDelay merged = valueProperties.values().stream()
-                .map(DV::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType);
+        CausesOfDelay merged = valueProperties.delays();
         if (merged.isDelayed()) {
             return DelayedExpression.forMethod(methodInfo, variable.parameterizedType(),
                     evaluationContext.linkedVariables(variable).changeAllToDelay(merged), merged);
@@ -528,12 +527,12 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Map<Property, DV> getValueProperties(Expression value) {
+        public Properties getValueProperties(Expression value) {
             return evaluationContext.getValueProperties(value);
         }
 
         @Override
-        public Map<Property, DV> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+        public Properties getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
             return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
         }
 

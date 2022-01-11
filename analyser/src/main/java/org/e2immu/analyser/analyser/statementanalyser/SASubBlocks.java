@@ -198,7 +198,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 maxTime = lastStatements.stream()
                         .map(StatementAnalysisImpl.ConditionAndLastStatement::lastStatement)
                         .mapToInt(sa -> sa.getStatementAnalysis().flowData().getTimeAfterSubBlocks())
-                        .max().orElseThrow() + increment;
+                        .max().orElse(statementAnalysis.flowData().getTimeAfterEvaluation()) + increment;
             }
             int maxTimeWithEscape;
             if (executions.stream().allMatch(ExecutionOfBlock::escapesAlways)) {
