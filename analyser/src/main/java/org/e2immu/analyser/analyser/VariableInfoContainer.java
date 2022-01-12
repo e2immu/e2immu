@@ -126,9 +126,9 @@ public interface VariableInfoContainer {
 
     // FIXME temp hack, this should become the native method
     default void setValue(Expression value,
-                  LinkedVariables linkedVariables,
-                  Properties propertiesToSet,
-                  boolean initialOrEvaluation) {
+                          LinkedVariables linkedVariables,
+                          Properties propertiesToSet,
+                          boolean initialOrEvaluation) {
         setValue(value, linkedVariables, propertiesToSet.toImmutableMap(), initialOrEvaluation);
     }
 
@@ -153,6 +153,7 @@ public interface VariableInfoContainer {
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
                      Expression postProcessState,
+                     Expression overwriteValue,
                      boolean atLeastOneBlockExecuted,
                      List<ConditionAndVariableInfo> mergeSources,
                      GroupPropertyValues groupPropertyValues);

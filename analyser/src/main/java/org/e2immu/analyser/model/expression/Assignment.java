@@ -261,12 +261,19 @@ public class Assignment extends BaseExpression implements Expression {
 
         assert e2.assignedToTarget != null;
         assert e2.assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
-        Expression finalValue = hackForUpdatersInForLoop
-                ? makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay()) : e2.assignedToTarget;
+        Expression finalValue;
+        Expression expression;
+        if (hackForUpdatersInForLoop) {
+            finalValue = makeHackInstance(evaluationContext, e2.assignedToTarget.causesOfDelay());
+            expression = e2.assignedToTarget;
+        } else {
+            finalValue = e2.assignedToTarget;
+            expression = e2.resultOfExpression;
+        }
         // we by-pass the result of normal assignment which raises the i=i assign to myself error
         doAssignmentWork(builder, evaluationContext, newVariableTarget, finalValue);
-        assert e2.resultOfExpression != null;
-        return builder.setExpression(e2.resultOfExpression).build();
+        assert expression != null;
+        return builder.setExpression(expression).build();
     }
 
     /*

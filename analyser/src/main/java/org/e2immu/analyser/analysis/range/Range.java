@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.Primitives;
 
 public interface Range {
     /**
@@ -26,6 +28,12 @@ public interface Range {
      * @return if "i" is the variable, a boolean expression like 0<=i && i<=10
      */
     Expression conditions(EvaluationContext evaluationContext);
+
+    Expression exitState(EvaluationContext evaluationContext);
+
+    default Expression exitValue(Primitives primitives, Variable variable) {
+        return null;
+    }
 
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
@@ -50,6 +58,11 @@ public interface Range {
         }
 
         @Override
+        public Expression exitState(EvaluationContext evaluationContext) {
+            return new BooleanConstant(evaluationContext.getPrimitives(), true);
+        }
+
+        @Override
         public int loopCount() {
             return 0;
         }
@@ -64,6 +77,11 @@ public interface Range {
         @Override
         public Expression conditions(EvaluationContext evaluationContext) {
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
+        }
+
+        @Override
+        public Expression exitState(EvaluationContext evaluationContext) {
+            return new BooleanConstant(evaluationContext.getPrimitives(), false);
         }
 
         @Override
@@ -84,6 +102,11 @@ public interface Range {
         }
 
         @Override
+        public Expression exitState(EvaluationContext evaluationContext) {
+            return new BooleanConstant(evaluationContext.getPrimitives(), true);
+        }
+
+        @Override
         public int loopCount() {
             return NO_IDEA;
         }
@@ -98,6 +121,11 @@ public interface Range {
 
         @Override
         public Expression conditions(EvaluationContext evaluationContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Expression exitState(EvaluationContext evaluationContext) {
             throw new UnsupportedOperationException();
         }
 

@@ -92,7 +92,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         stateData = new StateData(statement instanceof LoopStatement);
         location = new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
         flowData = new FlowData(location);
-        rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location): null;
+        rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
     }
 
     static StatementAnalysis recursivelyCreateAnalysisObjects(
@@ -865,6 +865,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
+                    Expression overwriteValue;
+                    if (statement instanceof LoopStatement) {
+                        Expression exit = rangeData.getRange().exitValue(primitives, variable);
+                        if(stateData.noExitViaReturnOrBreak()) {
+                            overwriteValue = exit;
+                        } else {
+                            overwriteValue = null;
+                        }
+                    } else {
+                        overwriteValue = null;
+                    }
                     List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
                             .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
                             .map(e2 -> {
@@ -889,7 +900,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     if (toMerge.size() > 0) {
                         try {
-                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, postProcessState, ignoreCurrent,
+                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution,
+                                    postProcessState, overwriteValue, ignoreCurrent,
                                     toMerge, groupPropertyValues);
 
                             LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
@@ -1280,7 +1292,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     private Properties fieldPropertyMap(AnalyserContext analyserContext,
-                                               FieldInfo fieldInfo) {
+                                        FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
         Properties result = sharedContext(AnalysisProvider.defaultNotNull(fieldInfo.type));
 

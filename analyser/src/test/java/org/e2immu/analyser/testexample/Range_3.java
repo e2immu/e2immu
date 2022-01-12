@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Constant;
+
 // normal ranges, 2nd method: loop variable already exists
 public class Range_3 {
 
@@ -28,7 +30,7 @@ public class Range_3 {
             }
         }
     }
-/*
+
     public static void method2() {
         int i = 3; // WARNING: useless assignment
         for (i = 0; i < 11; i += 1) {
@@ -36,33 +38,39 @@ public class Range_3 {
         }
     }
 
-    public static void method3() {
-        int i;
-        for (i = 0; i < 12; ++i) {
+    @Constant("12")
+    public static int method3() {
+        int i = 0;
+        for (; i < 12; ++i) {
             System.out.println("!" + i);
         }
+        return i;
     }
 
-    public static void method4() {
+    @Constant("0")
+    public static int method4() {
         int i;
         for (i = 13; i >= 0; i--) {
             System.out.println("!" + i);
         }
+        return i;
     }
 
-    public static void method5() {
+    @Constant("16")
+    public static int method5() {
         int i;
         for (i = 0; i < 14; i = i + 4) {
             System.out.println("!" + i);
         }
+        return i;
     }
 
     public static void method6() {
         int i;
-        for ( i = 11; i >= 1; i -= 2) {
+        for (i = 11; i >= 1; i -= 2) {
             if (i == 4) {
                 System.out.println("Not reachable 3");
             }
         }
-    }*/
+    }
 }

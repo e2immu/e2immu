@@ -695,7 +695,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     return new VariableExpression(v, suffix);
                 }
                 // do not return a value when it has not yet been written to
-                if (!value.isDelayed() && !(value instanceof UnknownExpression)) {
+                if (!value.isDelayed()) {
                     VariableInfo prev = vic.getPreviousOrInitial();
                     String latestAssignment = prev.getAssignmentIds().getLatestAssignment();
                     if (latestAssignment.compareTo(outside.statementIndex()) < 0

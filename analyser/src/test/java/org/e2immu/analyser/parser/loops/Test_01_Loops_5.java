@@ -73,7 +73,7 @@ public class Test_01_Loops_5 extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                String expectReturn = d.iteration() == 0 ? "1==<v:i>?5:<return value>" :
+                String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:<return value>" :
                         "1==i?5:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }
@@ -81,7 +81,7 @@ public class Test_01_Loops_5 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    String expectState = d.iteration() == 0 ? "<v:i>>=10" : "i>=10";
+                    String expectState = d.iteration() == 0 ? "<s:boolean>&&(!<loopIsNotEmptyCondition>||1!=<v:i>)" : "1!=i&&(i>=10||i<=-1)";
                     assertEquals(expectState, d.state().toString());
                 }
             }

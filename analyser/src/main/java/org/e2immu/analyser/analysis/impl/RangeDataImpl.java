@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnce;
 
 import java.util.stream.Stream;
 
@@ -41,6 +42,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class RangeDataImpl implements RangeData {
     private final Location location;
     private final EventuallyFinal<Range> range = new EventuallyFinal<>();
+    private final SetOnce<Message> uselessAssignment = new SetOnce<>();
 
     public RangeDataImpl(Location location) {
         range.setVariable(new Range.Delayed(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE))));
@@ -49,6 +51,11 @@ public class RangeDataImpl implements RangeData {
 
     @Override
     public Stream<Message> messages() {
+        Stream<Message> streamOfUselessAssignment = uselessAssignment.isSet() ? Stream.of(uselessAssignment.get()) : Stream.of();
+        return Stream.concat(streamOfRangeObject(), streamOfUselessAssignment);
+    }
+
+    private Stream<Message> streamOfRangeObject() {
         Range r = range.get();
         if (r.isDelayed()) return Stream.of();
         if (r == Range.EMPTY) {
@@ -85,6 +92,9 @@ public class RangeDataImpl implements RangeData {
             if (r == null) {
                 r = forStatementSingleAssignedLocalVariable(statement, statementAnalysis, result);
             }
+            if (r == null) {
+                r = forStatementNoInitializer(statement, statementAnalysis, result);
+            }
             if (r != null) {
                 if (r.isDelayed()) setDelayed(r);
                 else setRange(r);
@@ -92,6 +102,48 @@ public class RangeDataImpl implements RangeData {
             }
         }
         setRange(Range.NO_RANGE);
+    }
+
+    // int i=a; for(; i >=,<=b; i += c) {...do not write ...}
+    private Range forStatementNoInitializer(Statement statement,
+                                            StatementAnalysis statementAnalysis,
+                                            EvaluationResult result) {
+        if (statement.getStructure().initialisers().isEmpty()
+                && !statement.getStructure().updaters().isEmpty()
+                && statement.getStructure().updaters().get(0) instanceof Assignment updater
+                && updater.variableTarget != null) {
+            Variable variable = updater.variableTarget;
+            DV modified = loopVariableIsModified(statementAnalysis, variable);
+            if (modified.isDelayed()) {
+                return new Range.Delayed(modified.causesOfDelay());
+            }
+            if (modified.equals(DV.TRUE_DV)) {
+                return Range.NO_RANGE;
+            }
+            // storedValues: updater, using hack so that only the variable expression remains, condition(1)
+            if (result.storedValues().size() != 2) return Range.NO_RANGE;
+            Expression init = result.evaluationContext().currentValue(variable);
+            Expression updateExpression = result.storedValues().get(0); // i++ --> i$1+1
+
+            VariableExpression ve;
+            Expression update;
+            if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
+                    && sum.rhs instanceof VariableExpression sve && sve.variable().equals(variable)) {
+                // normal situation i = i + 4
+                update = increment;
+                ve = sve;
+            } else {
+                return Range.NO_RANGE;
+            }
+            Expression condition = result.value();
+            CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
+            if (causes.isDelayed()) {
+                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                return new Range.Delayed(causes);
+            }
+            return computeRange(result.evaluationContext(), ve, init, update, condition);
+        }
+        return null;
     }
 
     // int i=...; for(i=a; i >=,<=b; i += c) {...do not write ...}
@@ -109,31 +161,28 @@ public class RangeDataImpl implements RangeData {
             if (modified.equals(DV.TRUE_DV)) {
                 return Range.NO_RANGE;
             }
-            // storedValues: init (just 1), updaters, condition(1)
+            // storedValues: init (just 1), updaters, using hack so that only the variable expression remains, condition(1)
             if (result.storedValues().size() != 3) return Range.NO_RANGE;
-            Expression init = result.storedValues().get(0);
-            Expression updateExpression = result.storedValues().get(1);
+            Expression init = result.storedValues().get(0); // i=0 --> 0
+
+            // check for useless assignment on the initialiser... something we cannot do with the standard code
+            // in SACheck
+            VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
+            assert !vic.isInitial();
+            VariableInfo previous = vic.getPreviousOrInitial();
+            boolean uselessAssignment = previous.isAssigned() && !previous.isRead();
+            if (uselessAssignment && !this.uselessAssignment.isSet()) {
+                this.uselessAssignment.set(Message.newMessage(location, Message.Label.USELESS_ASSIGNMENT));
+            }
+            Expression updateExpression = result.storedValues().get(1); // i++ --> i$1+1
+
+            VariableExpression ve;
             Expression update;
-            if (updateExpression instanceof IntConstant increment) {
-                // += 1, -= 1, ++ post+pre, -- post+pre
-                Expression updateUnevaluated = statement.getStructure().updaters().get(0);
-                if (updateUnevaluated instanceof Assignment updater) {
-                    int i;
-                    if (updater.isPlusEquals()) {
-                        i = increment.constant();
-                    } else if (updater.isMinusEquals()) {
-                        i = -increment.constant();
-                    } else {
-                        return Range.NO_RANGE;
-                    }
-                    update = new IntConstant(result.evaluationContext().getPrimitives(), i);
-                } else {
-                    return Range.NO_RANGE;
-                }
-            } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
-                    && sum.rhs instanceof VariableExpression ve && ve.variable().equals(variable)) {
+            if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
+                    && sum.rhs instanceof VariableExpression sve && sve.variable().equals(variable)) {
                 // normal situation i = i + 4
                 update = increment;
+                ve = sve;
             } else {
                 return Range.NO_RANGE;
             }
@@ -143,7 +192,6 @@ public class RangeDataImpl implements RangeData {
                 log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
                 return new Range.Delayed(causes);
             }
-            VariableExpression ve = new VariableExpression(variable);
             return computeRange(result.evaluationContext(), ve, init, update, condition);
         }
         return null;

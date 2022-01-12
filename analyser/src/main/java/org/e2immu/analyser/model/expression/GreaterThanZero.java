@@ -103,7 +103,7 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     public XB extract(EvaluationContext evaluationContext) {
         if (expression instanceof Sum sumValue) {
             Double d = sumValue.numericPartOfLhs();
-            if(d != null) {
+            if (d != null) {
                 Expression v = sumValue.nonNumericPartOfLhs(evaluationContext);
                 Expression x;
                 boolean lessThan;
@@ -276,8 +276,13 @@ public class GreaterThanZero extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-        GreaterThanZero gtz = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
-        return new EvaluationResult.Builder().compose(er).setExpression(gtz).build();
+        Expression expression;
+        if (er.value() instanceof Numeric numeric) {
+            expression = new BooleanConstant(evaluationContext.getPrimitives(), numeric.doubleValue() == 0);
+        } else {
+            expression = new GreaterThanZero(identifier, booleanParameterizedType, er.getExpression(), allowEquals);
+        }
+        return new EvaluationResult.Builder().compose(er).setExpression(expression).build();
     }
 
     @Override

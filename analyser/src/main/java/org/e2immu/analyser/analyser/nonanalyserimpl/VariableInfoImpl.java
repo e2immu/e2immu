@@ -259,8 +259,8 @@ public class VariableInfoImpl implements VariableInfo {
                                         Expression postProcessState,
                                         boolean atLeastOneBlockExecuted,
                                         List<ConditionAndVariableInfo> mergeSources) {
-        return mergeIntoNewObject(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, mergeSources,
-                new GroupPropertyValues());
+        return mergeIntoNewObject(evaluationContext, stateOfDestination, postProcessState, null,
+                atLeastOneBlockExecuted, mergeSources, new GroupPropertyValues());
     }
 
     /*
@@ -270,6 +270,7 @@ public class VariableInfoImpl implements VariableInfo {
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                                Expression stateOfDestination,
                                                Expression postProcessState,
+                                               Expression overwriteValue,
                                                boolean atLeastOneBlockExecuted,
                                                List<ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues) {
@@ -278,8 +279,8 @@ public class VariableInfoImpl implements VariableInfo {
         String mergedReadId = mergedReadId(evaluationContext, getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
                 variable, mergedAssignmentIds, mergedReadId);
-        newObject.mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, this, mergeSources,
-                groupPropertyValues);
+        newObject.mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, overwriteValue,
+                atLeastOneBlockExecuted, this, mergeSources, groupPropertyValues);
         return newObject;
     }
 
@@ -287,11 +288,12 @@ public class VariableInfoImpl implements VariableInfo {
     void mergeIntoMe(EvaluationContext evaluationContext,
                      Expression stateOfDestination,
                      Expression postProcessState,
+                     Expression overwriteValue,
                      boolean atLeastOneBlockExecuted,
                      VariableInfoImpl previous,
                      List<ConditionAndVariableInfo> mergeSources) {
-        mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, atLeastOneBlockExecuted, previous, mergeSources,
-                new GroupPropertyValues());
+        mergeIntoMe(evaluationContext, stateOfDestination, postProcessState, overwriteValue, atLeastOneBlockExecuted,
+                previous, mergeSources, new GroupPropertyValues());
     }
 
     void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
@@ -306,13 +308,19 @@ public class VariableInfoImpl implements VariableInfo {
     public void mergeIntoMe(EvaluationContext evaluationContext,
                             Expression stateOfDestination,
                             Expression postProcessState,
+                            Expression overwriteValue,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != this;
 
-        Expression mergeValue = previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources);
+        Expression mergeValue;
+        if (overwriteValue != null) {
+            mergeValue = overwriteValue;
+        } else {
+            mergeValue = previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources);
+        }
         Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue);
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
         setValue(mergedValue);

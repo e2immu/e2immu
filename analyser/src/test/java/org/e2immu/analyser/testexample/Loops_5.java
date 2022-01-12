@@ -31,5 +31,24 @@ public class Loops_5 {
         return 0;
     }
 
+    @Constant("1")
+    public static int method2() {
+        int i = 0;
+        for (; i < 10; i++) {
+            if (i == 1) break;
+        }
+        assert i == 1; // always true
+        return i;
+    }
 
+    // more realistic -- do we know that the exit point has gone?
+    @Constant(absent = true)
+    public static int method3() {
+        int i = 0;
+        for (; i < 10; i++) {
+            if (i == 1) break;
+        }
+        assert i == 1 || i == 10; // always true
+        return i;
+    }
 }

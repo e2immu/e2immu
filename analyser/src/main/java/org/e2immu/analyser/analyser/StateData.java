@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.support.EventuallyFinal;
@@ -134,7 +133,7 @@ public class StateData {
 
     // (break 1 || break 2 ||...|| breakN) && return 1 && ... && return N && !condition
     public Expression combineInterruptsAndExit(LoopStatement loopStatement,
-                                               Expression condition,
+                                               Expression negatedConditionOrExitState,
                                                EvaluationContext evaluationContext) {
 
         List<Expression> ors = new ArrayList<>();
@@ -146,10 +145,14 @@ public class StateData {
         if (!ors.isEmpty()) {
             ands.add(Or.or(evaluationContext, ors.toArray(Expression[]::new)));
         }
-        if (loopStatement.hasExitCondition() && !condition.isBoolValueTrue()) {
+        if (loopStatement.hasExitCondition() && !negatedConditionOrExitState.isBoolValueFalse()) {
             // the exit condition cannot contain local variables
-            ands.add(Negation.negate(evaluationContext, evaluationContext.replaceLocalVariables(condition)));
+            ands.add(evaluationContext.replaceLocalVariables(negatedConditionOrExitState));
         }
         return And.and(evaluationContext, ands.toArray(Expression[]::new));
+    }
+
+    public boolean noExitViaReturnOrBreak() {
+        return statesOfInterrupts.isEmpty() && statesOfReturnInLoop.isEmpty();
     }
 }

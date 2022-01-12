@@ -16,8 +16,9 @@ package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.Primitives;
 
 /**
  * a proper range: start <= i < endExcl when i>0, and endExcl < i <= startExcl when i < 0
@@ -30,6 +31,24 @@ public record NumericRange(int startIncl,
 
     public NumericRange {
         assert startIncl < endExcl && increment > 0 || startIncl > endExcl && increment < 0;
+    }
+
+    // not relevant, because a real exit value is given
+    @Override
+    public Expression exitState(EvaluationContext evaluationContext) {
+        return new BooleanConstant(evaluationContext.getPrimitives(), true);
+    }
+
+    @Override
+    public Expression exitValue(Primitives primitives, Variable variable) {
+        if (variableExpression.variable().equals(variable)) {
+            int absIncrement = increment < 0 ? -increment : increment;
+            int diff = increment < 0 ? startIncl - endExcl : endExcl - startIncl;
+            int moduloOfStart = diff % absIncrement;
+            int value = endExcl + (increment > 0 ? moduloOfStart : 1 - moduloOfStart);
+            return new IntConstant(primitives, value);
+        }
+        return null;
     }
 
     @Override

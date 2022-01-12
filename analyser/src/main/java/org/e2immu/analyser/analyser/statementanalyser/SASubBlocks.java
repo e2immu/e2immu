@@ -360,7 +360,22 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         forEach loop does not have an exit condition.
          */
         if (statementAnalysis.statement() instanceof LoopStatement loopStatement) {
-            return statementAnalysis.stateData().combineInterruptsAndExit(loopStatement, list.get(0).condition, evaluationContext);
+            Expression negatedConditionOrExitState;
+            Range range = statementAnalysis.rangeData().getRange();
+            if (range.isDelayed()) {
+                negatedConditionOrExitState = DelayedExpression.forState(statementAnalysis.primitives()
+                        .booleanParameterizedType(), LinkedVariables.delayedEmpty(range.causesOfDelay()), range.causesOfDelay());
+            } else {
+                // at the moment there is no Range which does not return a boolean constant
+                Expression exit = range.exitState(evaluationContext);
+                if (!exit.isBooleanConstant()) {
+                    negatedConditionOrExitState = exit;
+                } else {
+                    negatedConditionOrExitState = Negation.negate(evaluationContext, list.get(0).condition);
+                }
+            }
+            return statementAnalysis.stateData()
+                    .combineInterruptsAndExit(loopStatement, negatedConditionOrExitState, evaluationContext);
         }
 
         if (statementAnalysis.statement() instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {

@@ -59,7 +59,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable());
         try {
-            overwritten.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, true, viB, List.of());
+            overwritten.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viB, List.of());
             fail();
         } catch (UnsupportedOperationException e) {
             // OK
@@ -121,7 +121,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals(DV.FALSE_DV, viC.getProperty(IDENTITY));
 
         // in a second iteration, we may encounter:
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, false, viA, xViB);
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, false, viA, xViB);
         // this should execute without raising exceptions
     }
 
@@ -280,7 +280,7 @@ public class TestVariableInfo extends CommonVariableInfo {
                 newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, true, viC, list);
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viC, list);
         assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
         viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
@@ -308,7 +308,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(x, viA),
                 newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, true, viC, list);
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viC, list);
 
         Expression res = viC.getValue();
         assertEquals("3", res.toString());
