@@ -251,101 +251,10 @@ public final class Instance extends BaseExpression implements Expression {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
-            /*
-            // value properties
-            case NOT_NULL_EXPRESSION -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                throw new UnsupportedOperationException("Need a value for NOT_NULL_EXPRESSION");
-            }
-            case INDEPENDENT -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield MultiLevel.DEPENDENT;
-                int defaultValue = parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
-                if (defaultValue < 0) {
-                    throw new UnsupportedOperationException("Need a value for INDEPENDENT");
-                }
-                yield defaultValue;
-            }
-            case IDENTITY -> valueProperties.getOrDefault(variableProperty, Level.FALSE);
-            case IMMUTABLE -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield MultiLevel.MUTABLE;
-                int defaultValue = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-                if (defaultValue < 0) {
-                    throw new UnsupportedOperationException("Need a value for IMMUTABLE");
-                }
-                yield defaultValue;
-
-            }
-            case CONTAINER -> {
-                Integer inMap = valueProperties.getOrDefault(variableProperty, null);
-                if (inMap != null) yield inMap;
-                if (evaluationContext.isMyself(parameterizedType)) yield Level.FALSE;
-                int defaultValue = parameterizedType.defaultContainer(evaluationContext.getAnalyserContext());
-                if (defaultValue < 0) {
-                    throw new UnsupportedOperationException("Need a value for CONTAINER");
-                }
-                yield defaultValue;
-            }*/
             case IDENTITY, IMMUTABLE, NOT_NULL_EXPRESSION, CONTAINER, INDEPENDENT -> valueProperties.get(property);
             case CONTEXT_MODIFIED, IGNORE_MODIFICATIONS -> DV.FALSE_DV;
             default -> throw new UnsupportedOperationException("NewObject has no value for " + property);
         };
-        /*
-        switch (variableProperty) {
-            case NOT_NULL_EXPRESSION: {
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType))
-                    return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return minimalNotNull;
-            }
-            case IDENTITY:
-                return Level.fromBool(identity);
-
-            case CONTEXT_MODIFIED:
-            case CONTEXT_MODIFIED_DELAY:
-            case PROPAGATE_MODIFICATION_DELAY:
-            case IGNORE_MODIFICATIONS:
-                return Level.FALSE;
-
-            case INDEPENDENT:
-                return parameterizedType.defaultIndependent(evaluationContext.getAnalyserContext());
-
-            case CONTAINER: { // must be pretty similar to the code in ParameterAnalysis, because every parameter will be of this type
-                Boolean transparent = parameterizedType.isTransparent(evaluationContext.getAnalyserContext(),
-                        evaluationContext.getCurrentType());
-                if (transparent == Boolean.TRUE) return Level.TRUE;
-                // if implicit is null, we cannot return FALSE, we'll have to wait!
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                int withoutDelay;
-                if (bestType != null) {
-                    withoutDelay = evaluationContext.getAnalyserContext()
-                            .getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
-                } else {
-                    withoutDelay = Level.FALSE;
-                }
-                return transparent == null && withoutDelay != Level.TRUE ? Level.DELAY : withoutDelay;
-            }
-            case IMMUTABLE: {
-                int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext(), false);
-                if (constructor != null) {
-                    if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
-                        return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
-                    if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
-                        return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
-                }
-                assert immutable != Level.DELAY || evaluationContext.translatedDelay(this.toString(),
-                        parameterizedType.bestTypeInfo().fullyQualifiedName + DelayDebugger.D_IMMUTABLE,
-                        this + "@" + evaluationContext.statementIndex() + DelayDebugger.D_IMMUTABLE);
-                return immutable;
-            }
-            default:
-        }*/
-        // @NotModified should not be asked here
-        //throw new UnsupportedOperationException("Asking for " + variableProperty);
     }
 
     @Override

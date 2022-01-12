@@ -309,20 +309,22 @@ public class Assignment extends BaseExpression implements Expression {
                                       Expression valueResultValue,
                                       Variable newVariableTarget,
                                       EvaluationResult.Builder builder) {
-        E2 e2 = new E2(valueResultValue, valueResultValue);
 
         EvaluationResult currentTargetValue = target.evaluate(evaluationContext, fwd);
         Expression currentValue = currentTargetValue.value();
         IsVariableExpression ive2;
-        if (currentValue != null && (currentValue.equals(e2.assignedToTarget) ||
-                ((ive2 = e2.assignedToTarget.asInstanceOf(IsVariableExpression.class)) != null)
+        if (currentValue != null && (currentValue.equals(valueResultValue) ||
+                ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
                         && newVariableTarget.equals(ive2.variable())) &&
                 !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
-            // do continue! we do not want to ignore the assignment
+            // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment
+            // we'll assign to the value
+            Expression previous = evaluationContext.currentValue(newVariableTarget);
+            return new E2(valueResultValue, previous);
         }
-        return e2;
+        return new E2(valueResultValue, valueResultValue);
     }
 
     private E2 handleBinaryOperator(EvaluationContext evaluationContext,

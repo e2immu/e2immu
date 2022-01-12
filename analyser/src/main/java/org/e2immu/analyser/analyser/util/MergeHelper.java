@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -161,6 +162,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion(Properties variableProperties) {
+        CausesOfDelay delay = variableProperties.delays();
+        if(delay.isDelayed()) {
+            return DelayedVariableExpression.forVariable(vi.variable(), delay);
+        }
         return Instance.genericMergeResult(evaluationContext.getCurrentStatement().index(), vi.variable(), variableProperties);
     }
 

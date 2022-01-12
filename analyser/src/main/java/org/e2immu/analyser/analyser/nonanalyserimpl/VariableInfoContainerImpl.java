@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -134,16 +135,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public static VariableInfoContainerImpl newCatchVariable(Location location,
                                                              LocalVariableReference lvr,
                                                              String index,
-                                                             Expression value,
-                                                             DV immutable,
+                                                             Instance value,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(index + Level.INITIAL),
                 index + Level.EVALUATION, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value);
-        initial.setProperty(Property.IMMUTABLE, immutable);
-        initial.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-        initial.setProperty(Property.IDENTITY, DV.FALSE_DV);
+        value.valueProperties().stream().forEach(e -> initial.setProperty(e.getKey(), e.getValue()));
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);

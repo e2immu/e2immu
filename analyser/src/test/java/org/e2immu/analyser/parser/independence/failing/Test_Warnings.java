@@ -12,18 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.parser.independence.failing;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Modified;
 
-import java.util.List;
+import org.e2immu.analyser.config.DebugConfiguration;
 
-public class Warnings_13 {
+import org.e2immu.analyser.parser.CommonTestRunner;
 
-    public static void modifyImmutableList(@E2Container @Modified List<StringBuilder> builders) {
-        for (StringBuilder builder : builders) {
-            builder.append("!");
-        }
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
+
+public class Test_Warnings extends CommonTestRunner {
+
+    public Test_Warnings() {
+        super(true);
+    }
+
+
+    /*
+    Annotated @E2Container
+     */
+    @Test
+    public void test13() throws IOException {
+        testClass("Warnings_13", 1, 0, new DebugConfiguration.Builder()
+                .build());
     }
 }

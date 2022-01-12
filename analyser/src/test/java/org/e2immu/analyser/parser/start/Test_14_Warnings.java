@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -125,7 +127,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().variableIsSet("loopVar")); // created in 1.0.0
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertDv(d, 1, FlowData.ALWAYS, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
+                    assertDv(d, 1, FlowData.CONDITIONALLY, d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod());
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -513,7 +515,6 @@ public class Test_14_Warnings extends CommonTestRunner {
                 .build());
     }
 
-
     @Test
     public void test8() throws IOException {
         // field initializer
@@ -550,14 +551,29 @@ public class Test_14_Warnings extends CommonTestRunner {
         // See also VariableScope_1, but this one focuses on the warnings
         // re-assigning a variable
         // throws declaration, but nothing thrown TODO
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("writeLine".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+                    }
+                }
+                if("e".equals(d.variableName())) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("instance type IOException", d.currentValue().toString());
+                        assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));
+                    }
+                }
+                if ("ioe".equals(d.variableName())) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("e", d.currentValue().toString());
+                    }
+                }
+            }
+        };
         testClass("Warnings_12", 1, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
-
-    @Test
-    public void test13() throws IOException {
-        testClass("Warnings_13", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

@@ -88,7 +88,6 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 LocalVariableReference lvr = new LocalVariableReference(catchLv);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(location(), lvr, index(),
                         Instance.forCatchOrThis(index(), lvr, analyserContext),
-                        analyserContext.defaultImmutable(lvr.parameterizedType(), false),
                         statementAnalysis.navigationData().hasSubBlocks());
                 ((StatementAnalysisImpl) statementAnalysis).putVariable(name, vic);
             }

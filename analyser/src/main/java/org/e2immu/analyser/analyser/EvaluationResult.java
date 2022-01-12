@@ -73,7 +73,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
         boolean noMinInt = causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT);
-        assert noMinInt;
+        assert noMinInt : "Causes of delay: " + causesOfDelay;
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
@@ -668,7 +668,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 }
                 Properties valueProperties;
                 if (scopeContainsUnavailableVariables(fieldReference.scope)) {
-                    valueProperties =Properties.of( Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
+                    valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                             Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                             Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                             Property.CONTAINER, DV.TRUE_DV,

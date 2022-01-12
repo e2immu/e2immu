@@ -29,6 +29,7 @@ public class Properties {
 
     private Properties(Map<Property, DV> map) {
         this.map = map;
+        //assert map.values().stream().noneMatch(v -> v == DV.MIN_INT_DV);
     }
 
     private static Properties frozen() {
@@ -69,7 +70,7 @@ public class Properties {
     public void overwrite(Property property, DV dv) {
         map.put(property, dv);
     }
-    
+
     public void put(Property property, DV dv) {
         Objects.requireNonNull(dv);
         Objects.requireNonNull(property);
@@ -130,7 +131,7 @@ public class Properties {
 
             @Override
             public Function<Properties, Properties> finisher() {
-                return writable ? p->p : Properties::immutable;
+                return writable ? p -> p : Properties::immutable;
             }
 
             @Override

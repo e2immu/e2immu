@@ -485,15 +485,15 @@ public class VariableInfoImpl implements VariableInfo {
             // all are delayed, they're not all identical delayed field references.
             return mergeHelper.delayedConclusion(valuesDelayed);
         }
-        // no clue
 
+        // no clue, but try to do something with @NotNull
         DV worstNotNull = reduced.stream().map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
                 .reduce(DV.MIN_INT_DV, DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
-        ParameterizedType pt = variable.parameterizedType(); // FIXME is this correct?
-        Properties valueProperties = evaluationContext.getAnalyserContext()
-                .defaultValueProperties(pt, worstNotNullIncludingCurrent);
+        ParameterizedType pt = variable.parameterizedType();
+        DV nne = worstNotNullIncludingCurrent == DV.MIN_INT_DV ? MultiLevel.NULLABLE_DV: worstNotNullIncludingCurrent;
+        Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne);
         return mergeHelper.noConclusion(valueProperties);
     }
 
