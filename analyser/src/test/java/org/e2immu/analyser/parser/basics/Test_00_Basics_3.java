@@ -53,7 +53,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
+        final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_3";
         final String S = TYPE + ".s";
         final String THIS = TYPE + ".this";
         final String OUT = "java.lang.System.out";
@@ -72,7 +72,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Basics_3.s>" : "true";
+                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.parser.basics.testexample.Basics_3.s>" : "true";
                     assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }

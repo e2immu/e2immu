@@ -40,7 +40,7 @@ public class Test_00_Basics_8 extends CommonTestRunner {
     // assignment ids for local variables
     @Test
     public void test8() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Basics_8";
+        final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_8";
         final String I = TYPE + ".i";
         final String I0 = "i$0";
         final String I1 = "i$1";

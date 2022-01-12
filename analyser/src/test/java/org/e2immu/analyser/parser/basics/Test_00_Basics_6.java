@@ -29,7 +29,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.testexample.Basics_6;
+import org.e2immu.analyser.parser.basics.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
     // basic statement timing
     @Test
     public void test6() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
+        final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

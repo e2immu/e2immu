@@ -81,7 +81,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    assertEquals("org.e2immu.analyser.testexample.Loops_4.method()", d.variableName());
+                    assertEquals("org.e2immu.analyser.parser.loops.testexample.Loops_4.method()", d.variableName());
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         // delayed state
                         assertEquals("4", d.currentValue().toString());

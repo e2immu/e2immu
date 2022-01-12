@@ -42,7 +42,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.EventuallyE1Immutable_0";
+        final String TYPE = "org.e2immu.analyser.parser.failing.testexample.EventuallyE1Immutable_0";
         final String STRING = TYPE + ".string";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) && "0".equals(d.statementId())) {

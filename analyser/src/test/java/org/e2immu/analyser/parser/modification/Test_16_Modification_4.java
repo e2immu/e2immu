@@ -48,7 +48,7 @@ public class Test_16_Modification_4 extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
-        final String SET4 = "org.e2immu.analyser.testexample.Modification_4.set4";
+        final String SET4 = "org.e2immu.analyser.parser.modification.testexample.Modification_4.set4";
         final String SET4_DELAYED = "<f:set4>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

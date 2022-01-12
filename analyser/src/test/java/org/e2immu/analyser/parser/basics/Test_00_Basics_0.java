@@ -34,7 +34,7 @@ import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_0 extends CommonTestRunner {
-    private static final String TYPE = "org.e2immu.analyser.testexample.Basics_0";
+    private static final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_0";
 
     public Test_00_Basics_0() {
         super(false);

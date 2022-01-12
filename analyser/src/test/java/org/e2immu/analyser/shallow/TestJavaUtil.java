@@ -51,7 +51,7 @@ public class TestJavaUtil {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
         AnnotatedAPIConfiguration.Builder annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs("src/test/java")
-                .addReadAnnotatedAPIPackages("org.e2immu.analyser.testannotatedapi." + className);
+                .addReadAnnotatedAPIPackages(getClass().getPackageName() + ".testexample." + className);
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())

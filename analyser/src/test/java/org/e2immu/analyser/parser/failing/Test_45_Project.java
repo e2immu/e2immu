@@ -42,7 +42,7 @@ public class Test_45_Project extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        final String CONTAINER = "org.e2immu.analyser.testexample.Project_0.Container";
+        final String CONTAINER = "org.e2immu.analyser.parser.failing.testexample.Project_0.Container";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
@@ -123,9 +123,9 @@ public class Test_45_Project extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
-                            case 0 -> "[kvStore, org.e2immu.analyser.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, container.read, container.read, container.read, result]";
+                            case 0 -> "[kvStore, org.e2immu.analyser.parser.failing.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, container.read, container.read, container.read, result]";
                             // NOTE: read$7 is still present (copy of variable field)
-                            case 1 -> "[kvStore, org.e2immu.analyser.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, read$7, read$7, result]";
+                            case 1 -> "[kvStore, org.e2immu.analyser.parser.failing.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, read$7, read$7, result]";
                             default -> "[]";
                         };
                         assertEquals(expectedVars, d.currentValue().variables(true).toString());
@@ -187,14 +187,14 @@ public class Test_45_Project extends CommonTestRunner {
      */
     @Test
     public void test_2() throws IOException {
-        final String CONTAINER = "[org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)]";
+        final String CONTAINER = "[org.e2immu.analyser.parser.failing.testexample.Project_2.Container.Container(java.lang.String)]";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     String expect = d.iteration() <= 2
-                            ? "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=true}"
-                            : "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=false}";
+                            ? "{org.e2immu.analyser.parser.failing.testexample.Project_2.Container.Container(java.lang.String)=true}"
+                            : "{org.e2immu.analyser.parser.failing.testexample.Project_2.Container.Container(java.lang.String)=false}";
                     assertEquals(expect, d.evaluationResult().causesOfDelay().toString());
                 }
             }

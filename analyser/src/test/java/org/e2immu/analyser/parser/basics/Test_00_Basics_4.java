@@ -15,31 +15,17 @@
 
 package org.e2immu.analyser.parser.basics;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.UnknownExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.Basics_6;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_4 extends CommonTestRunner {
@@ -50,7 +36,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
     // i = i + 1 on a field
     @Test
     public void test4() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Basics_4";
+        final String TYPE = "org.e2immu.analyser.parser.basics.testexample.Basics_4";
         final String I = TYPE + ".i";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

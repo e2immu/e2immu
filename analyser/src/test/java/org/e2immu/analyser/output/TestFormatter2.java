@@ -206,7 +206,7 @@ public class TestFormatter2 {
         return new OutputBuilder()
                 .add(new Text("package"))
                 .add(Space.ONE)
-                .add(new Text("org.e2immu.analyser.testexample"))
+                .add(new Text("org.e2immu.analyser.parser.failing.testexample"))
                 .add(Symbol.SEMICOLON)
                 .add(Space.NEWLINE)
                 .add(new Text("import"))
@@ -361,7 +361,7 @@ public class TestFormatter2 {
     public void testExample1() {
         FormattingOptions options = FormattingOptions.DEFAULT;
         assertEquals("""
-                        package org.e2immu.analyser.testexample;
+                        package org.e2immu.analyser.parser.failing.testexample;
                         import java.util.Set;
                         @Dependent
                         @E1Container
@@ -469,7 +469,7 @@ public class TestFormatter2 {
 
         return new OutputBuilder().add(new Text("package"))
                 .add(Space.ONE)
-                .add(new Text("org.e2immu.analyser.testexample"))
+                .add(new Text("org.e2immu.analyser.parser.failing.testexample"))
                 .add(Symbol.SEMICOLON)
                 .add(Space.NEWLINE)
                 .add(new Text("import"))
@@ -576,7 +576,7 @@ public class TestFormatter2 {
     @Test
     public void testExample3() {
         assertEquals("""
-                        package org.e2immu.analyser.testexample;
+                        package org.e2immu.analyser.parser.failing.testexample;
                         import java.util.ArrayList;
                         import java.util.List;
                         import org.e2immu.annotation.Constant;

@@ -55,7 +55,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
-                } else if ("org.e2immu.analyser.testexample.Modification_6.set6#example6".equals(d.variableName())) {
+                } else if ("org.e2immu.analyser.parser.modification.testexample.Modification_6.set6#example6".equals(d.variableName())) {
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     assertEquals("example6.set6:0", d.variableInfo().getLinkedVariables().toString());
 

@@ -16,28 +16,19 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.visitor.CommonVisitorData;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
-    public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
     public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
 
@@ -114,8 +104,9 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
         extraClassPath.forEach(inputConfigurationBuilder::addClassPath);
 
+        String prefix = getClass().getPackageName() + ".testexample";
         classNames.forEach(className -> inputConfigurationBuilder
-                .addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
+                .addRestrictSourceToPackages(prefix + "." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
@@ -215,8 +206,8 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
         } else {
             filteredMessages = messages.stream()
                     .filter(m -> m.message() != Message.Label.TYPE_HAS_HIGHER_VALUE_FOR_INDEPENDENT ||
-                            ((LocationImpl)m.location()).info == null ||
-                            !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java."))
+                            ((LocationImpl) m.location()).info == null ||
+                            !((LocationImpl) m.location()).info.getTypeInfo().packageName().startsWith("java."))
                     .toList();
         }
         filteredMessages

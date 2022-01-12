@@ -45,7 +45,7 @@ public class Test_16_Modification_2 extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("org.e2immu.analyser.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
+            if ("org.e2immu.analyser.parser.modification.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
                 String expect = d.iteration() == 0 ? GET_FIRST_VALUE_DELAYED : GET_FIRST_VALUE;
                 assertEquals(expect, d.currentValue().toString());
             }

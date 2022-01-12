@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
-    public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
+    public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.parser.basics.testexample";
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
     public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
 

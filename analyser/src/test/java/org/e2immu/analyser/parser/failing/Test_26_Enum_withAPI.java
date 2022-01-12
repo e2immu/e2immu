@@ -23,7 +23,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.Enum_0;
+import org.e2immu.analyser.parser.failing.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 

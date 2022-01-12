@@ -35,7 +35,7 @@ public class TestFormatter3 {
 
         return new OutputBuilder().add(new Text("package"))
                 .add(Space.ONE)
-                .add(new Text("org.e2immu.analyser.testexample"))
+                .add(new Text("org.e2immu.analyser.parser.failing.testexample"))
                 .add(Symbol.SEMICOLON)
                 .add(Space.NEWLINE)
                 .add(new Text("import"))
@@ -167,7 +167,7 @@ public class TestFormatter3 {
         OutputBuilder example = createExample0();
 
         assertEquals("""
-                  package org.e2immu.analyser.testexample;
+                  package org.e2immu.analyser.parser.failing.testexample;
                   import java.util.stream.Stream;
                   import org.e2immu.annotation.NotModified;
                   import org.e2immu.annotation.NotNull;

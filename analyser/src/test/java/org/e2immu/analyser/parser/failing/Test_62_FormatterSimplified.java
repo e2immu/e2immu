@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.FormatterSimplified_9;
+import org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_9;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -171,9 +171,9 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         DV expectCnn = switch (d.variableName()) {
-                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo",
-                                    "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE_DV;
+                            case "org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                            case "org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_6.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo",
+                                    "org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE_DV;
                             default -> throw new UnsupportedOperationException("? " + d.variableName());
                         };
                         assertEquals(expectCnn, d.getProperty(Property.CONTEXT_NOT_NULL), d.variableName());
@@ -254,7 +254,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
                         // the type is in the same primary type, so we ignore IMMUTABLE if we don't know it yet
                         String expectLv = d.iteration() == 0 ? "?"
-                                : "(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
+                                : "(new java.util.Stack<org.e2immu.analyser.parser.failing.testexample.FormatterSimplified_9.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }

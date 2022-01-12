@@ -43,7 +43,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
 
     @Test
     public void test12() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Modification_12";
+        final String TYPE = "org.e2immu.analyser.parser.modification.testexample.Modification_12";
         final String PARENT_CLASS_THIS = TYPE + ".ParentClass.this";
         final String PARENT_CLASS_SET = TYPE + ".ParentClass.set";
 
@@ -74,7 +74,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                     assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertEquals(DV.TRUE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -93,7 +93,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 if (d.statementAnalysis().statement() instanceof ExpressionAsStatement expressionAsStatement) {
                     Expression expression = expressionAsStatement.expression;
                     if (expression instanceof MethodCall methodCall) {
-                        assertEquals("org.e2immu.analyser.testexample.Modification_12.ParentClass.clearAndLog()",
+                        assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_12.ParentClass.clearAndLog()",
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else fail();
                 } else fail();
@@ -111,9 +111,11 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
+                if (d.iteration() > 0) {
+                    assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
+                }
                 assertTrue(d.getThisAsVariable().isRead());
-                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -137,7 +139,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {
-                assertEquals("org.e2immu.analyser.testexample", typeInfo.packageNameOrEnclosingType.getLeft());
+                assertEquals("org.e2immu.analyser.parser.failing.testexample", typeInfo.packageNameOrEnclosingType.getLeft());
             }
         };
 

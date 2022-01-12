@@ -548,7 +548,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                 }
 
-                if ("org.e2immu.analyser.testexample.Loops_19.Date.time#entry$1.getValue().read".equals(d.variableName())) {
+                if ("org.e2immu.analyser.parser.loops.testexample.Loops_19.Date.time#entry$1.getValue().read".equals(d.variableName())) {
                     assertTrue(d.iteration() >= 2);
                     String expected = d.iteration() == 2 ? "<f:time>" : "instance type long";
                     assertEquals(expected, d.currentValue().toString());
@@ -565,7 +565,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                 }
 
-                if ("org.e2immu.analyser.testexample.Loops_19.Container.read#container".equals(d.variableName())) {
+                if ("org.e2immu.analyser.parser.loops.testexample.Loops_19.Container.read#container".equals(d.variableName())) {
                     if ("1.0.1.0.1".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:read>" : "";
                         assertEquals(expectValue, d.currentValue().toString());

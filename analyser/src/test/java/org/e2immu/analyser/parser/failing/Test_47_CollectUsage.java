@@ -21,7 +21,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.CollectUsage_0;
+import org.e2immu.analyser.parser.failing.testexample.CollectUsage_0;
 import org.e2immu.analyser.usage.CollectUsages;
 import org.junit.jupiter.api.Test;
 

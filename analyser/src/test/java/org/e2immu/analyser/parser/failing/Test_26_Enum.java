@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.Enum_7;
+import org.e2immu.analyser.parser.failing.testexample.Enum_7;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -182,7 +182,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Enum_3";
+        final String TYPE = "org.e2immu.analyser.parser.failing.testexample.Enum_3";
         final String ONE = TYPE + ".ONE";
         final String TWO = TYPE + ".TWO";
         final String THREE = TYPE + ".THREE";

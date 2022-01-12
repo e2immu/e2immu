@@ -22,7 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.InspectionGaps_1;
+import org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -54,9 +54,9 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
 
         TypeInfo typeInfo = typeContext.getFullyQualified(InspectionGaps_1.class);
 
-        assertEquals("org.e2immu.analyser.testexample.InspectionGaps_1.method1(M0 extends java.util.Set<M0>)," +
-                        "org.e2immu.analyser.testexample.InspectionGaps_1.method2(M0 extends java.util.List<M0>)," +
-                        "org.e2immu.analyser.testexample.InspectionGaps_1.method3(java.lang.String)",
+        assertEquals("org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method1(M0 extends java.util.Set<M0>)," +
+                        "org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method2(M0 extends java.util.List<M0>)," +
+                        "org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method3(java.lang.String)",
                 typeInfo.typeInspection.get().methods()
                         .stream().map(m -> m.distinguishingName).sorted().collect(Collectors.joining(",")));
     }

@@ -45,10 +45,10 @@ public class Test_00_Basics_7 extends CommonTestRunner {
     // more on statement time
     @Test
     public void test7() throws IOException {
-        final String I = "org.e2immu.analyser.testexample.Basics_7.i";
+        final String I = "org.e2immu.analyser.parser.basics.testexample.Basics_7.i";
         final String I0 = "i$0";
         final String I1 = "i$1";
-        final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
+        final String INC3_RETURN_VAR = "org.e2immu.analyser.parser.basics.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
 

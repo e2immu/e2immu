@@ -103,7 +103,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 }
             }
             if ("add3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr && "set3".equals(fr.fieldInfo.name)) {
-                assertEquals("org.e2immu.analyser.testexample.Modification_3.set3", d.variableName());
+                assertEquals("org.e2immu.analyser.parser.modification.testexample.Modification_3.set3", d.variableName());
                 if ("0".equals(d.statementId())) {
                     assertEquals(LINKS_LOCAL3_SET3, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;

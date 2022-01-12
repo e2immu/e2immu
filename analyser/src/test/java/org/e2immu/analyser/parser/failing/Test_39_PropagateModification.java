@@ -28,7 +28,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.Consumer_0;
+import org.e2immu.analyser.parser.failing.testexample.Consumer_0;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -154,7 +154,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
         // verify that the default for accept is @Modified
         TypeInfo classWithConsumer = typeContext.getFullyQualified(
-                "org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
+                "org.e2immu.analyser.parser.failing.testexample.PropagateModification_7.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
         assertTrue(accept.isAbstract());
         assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));
@@ -243,7 +243,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
         TypeInfo classWithConsumer = typeContext.getFullyQualified(
-                "org.e2immu.analyser.testexample.PropagateModification_8.ClassWithConsumer", true);
+                "org.e2immu.analyser.parser.failing.testexample.PropagateModification_8.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
         assertTrue(accept.isAbstract());
         assertEquals(DV.FALSE_DV, accept.getAnalysis().getProperty(Property.MODIFIED_METHOD));

@@ -42,7 +42,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test7() throws IOException {
-        //WARN in Method org.e2immu.analyser.testexample.Modification_7.stream() (line 44, pos 9): Potential null pointer exception: Variable: set
+        //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_7.stream() (line 44, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_7", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
@@ -64,7 +64,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test13() throws IOException {
-        final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
+        final String INNER_THIS = "org.e2immu.analyser.parser.modification.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
                 assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
@@ -206,7 +206,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
-        //WARN in Method org.e2immu.analyser.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
+        //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());

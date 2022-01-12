@@ -20,7 +20,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.testexample.InspectionGaps_1;
+import org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
@@ -79,9 +79,9 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
 
         TypeInfo typeInfo = typeContext.getFullyQualified(InspectionGaps_1.class);
 
-        assertEquals("org.e2immu.analyser.testexample.InspectionGaps_1.method1(M0 extends java.util.Set<M0>)," +
-                        "org.e2immu.analyser.testexample.InspectionGaps_1.method2(M0 extends java.util.List<M0>)," +
-                        "org.e2immu.analyser.testexample.InspectionGaps_1.method3(java.lang.String)",
+        assertEquals("org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method1(M0 extends java.util.Set<M0>)," +
+                        "org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method2(M0 extends java.util.List<M0>)," +
+                        "org.e2immu.analyser.parser.failing.testexample.InspectionGaps_1.method3(java.lang.String)",
                 typeInfo.typeInspection.get().methods()
                         .stream().map(m -> m.distinguishingName).sorted().collect(Collectors.joining(",")));
     }
@@ -175,7 +175,7 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
     public void test_14() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("flatMap".equals(d.methodInfo().name)) {
-                assertEquals("org.e2immu.analyser.testexample.InspectionGaps_14.flatMap(java.util.function.Function<? super T,? extends java.util.stream.Stream<? extends R>>)", d.methodInfo().fullyQualifiedName);
+                assertEquals("org.e2immu.analyser.parser.failing.testexample.InspectionGaps_14.flatMap(java.util.function.Function<? super T,? extends java.util.stream.Stream<? extends R>>)", d.methodInfo().fullyQualifiedName);
             }
         };
         testClass("InspectionGaps_14", 1, 1,
