@@ -19,7 +19,11 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.parser.Message;
+
+import java.util.stream.Stream;
 
 public interface RangeData {
 
@@ -32,4 +36,6 @@ public interface RangeData {
     Range getRange();
 
     void computeRange(Statement statement, EvaluationResult result);
+
+    Stream<Message> messages(Location location);
 }

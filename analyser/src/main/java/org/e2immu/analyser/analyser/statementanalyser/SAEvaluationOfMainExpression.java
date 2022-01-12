@@ -129,6 +129,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             }
             if (statementAnalysis.statement() instanceof LoopStatement && statementAnalysis.rangeData().rangeDelays().isDelayed()) {
                 statementAnalysis.rangeData().computeRange(statement(), result);
+                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages(statementAnalysis.location()));
             }
             if (statementAnalysis.statement() instanceof ThrowStatement) {
                 if (methodInfo().hasReturnValue()) {

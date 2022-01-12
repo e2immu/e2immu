@@ -88,7 +88,54 @@ public class Test_21_Range extends CommonTestRunner {
         };
         // 2x: always false, block not executed
         testClass("Range_0", 4, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("EMPTY", range.toString());
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("EMPTY", range.toString());
+                }
+            }
+            if ("method3".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("NumericRange[startIncl=1, endExcl=10, increment=20, variableExpression=i]", range.toString());
+                    assertEquals(1, range.loopCount());
+                }
+            }
+            if ("method4".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("INFINITE", range.toString());
+                }
+            }
+            if ("method5".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("INFINITE", range.toString());
+                }
+            }
+            if ("method6".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Range range = d.statementAnalysis().rangeData().getRange();
+                    assertEquals("INFINITE", range.toString());
+                }
+            }
+        };
+        // EMPTY -> error; INFINITE + once -> warning
+        testClass("Range_1", 2, 4, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

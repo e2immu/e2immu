@@ -31,12 +31,24 @@ public class Range_1 {
 
     public static void method3() {
         for (int i = 1; i < 10; i += 20) {
-            System.out.println("not reachable");
+            System.out.println("executed once");
         }
     }
 
     public static void method4() {
         for (int i = 1; i < 10; i += 0) {
+            System.out.println("infinite loop");
+        }
+    }
+
+    public static void method5() {
+        for (int i = 1; i < 10; i -= 1) {
+            System.out.println("infinite loop");
+        }
+    }
+
+    public static void method6() {
+        for (int i = 10; i >= 0; i = i + 1) {
             System.out.println("infinite loop");
         }
     }

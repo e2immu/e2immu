@@ -26,7 +26,10 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.support.VariableFirstThen;
+
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
@@ -38,6 +41,23 @@ public class RangeDataImpl implements RangeData {
 
     public RangeDataImpl(Location location) {
         range = new VariableFirstThen<>(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE)));
+    }
+
+    @Override
+    public Stream<Message> messages(Location location) {
+        if(range.isFirst()) return Stream.of();
+        Range r = range.get();
+        if(r == Range.EMPTY) {
+            return Stream.of(Message.newMessage(location, Message.Label.EMPTY_LOOP));
+        }
+        if(r == Range.INFINITE_LOOP) {
+            return Stream.of(Message.newMessage(location, Message.Label.INFINITE_LOOP_CONDITION));
+        }
+        int count = r.loopCount();
+        if(count == 1) {
+            return Stream.of(Message.newMessage(location, Message.Label.LOOP_ONCE));
+        }
+        return Stream.of();
     }
 
     @Override
@@ -144,6 +164,19 @@ public class RangeDataImpl implements RangeData {
                         Range r = new NumericRange(start, endExcl, increment, loopVar);
                         log(EXPRESSION, "Identified range {}", r);
                         setRange(r);
+                        return;
+                    }
+                    // int i=10; i<10; i++      int i=10; i>=11; i--
+                    if (xb.lessThan() && start >= endExcl || !xb.lessThan() && start < endExcl && increment < 0) {
+                        setRange(Range.EMPTY);
+                        return;
+                    }
+                    if (xb.lessThan() && increment < 0 || !xb.lessThan() && increment > 0) {
+                        setRange(Range.INFINITE_LOOP);
+                        return;
+                    }
+                    if (increment == 0) {
+                        setRange(Range.INFINITE_LOOP);
                         return;
                     }
                 }
