@@ -128,8 +128,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
             }
             if (statementAnalysis.statement() instanceof LoopStatement && statementAnalysis.rangeData().rangeDelays().isDelayed()) {
-                statementAnalysis.rangeData().computeRange(statement(), result);
-                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages(statementAnalysis.location()));
+                statementAnalysis.rangeData().computeRange(statementAnalysis, result);
+                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
             }
             if (statementAnalysis.statement() instanceof ThrowStatement) {
                 if (methodInfo().hasReturnValue()) {
@@ -171,6 +171,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
                     statementAnalysis.statement() instanceof AssertStatement)) {
                 value = eval_IfElse_Assert(sharedState, value);
+                if(value.isDelayed()) {
+                    // for example, an if(...) inside a loop, when the loop's range is being computed
+                    stateForLoop = value.causesOfDelay();
+                }
             } else if (!valueIsDelayed && statementAnalysis.statement() instanceof HasSwitchLabels switchStatement) {
                 eval_Switch(sharedState, value, switchStatement);
             } else if (statementAnalysis.statement() instanceof ReturnStatement) {
@@ -371,6 +375,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
     private Expression eval_IfElse_Assert(StatementAnalyserSharedState sharedState, Expression value) {
         assert value != null;
+
+        if (sharedState.localConditionManager().isDelayed()) {
+            CausesOfDelay causes = sharedState.localConditionManager().causesOfDelay();
+            return DelayedExpression.forCondition(statementAnalysis.primitives().booleanParameterizedType(),
+                    LinkedVariables.delayedEmpty(causes), causes);
+        }
 
         Expression evaluated = sharedState.localConditionManager().evaluate(sharedState.evaluationContext(), value);
 

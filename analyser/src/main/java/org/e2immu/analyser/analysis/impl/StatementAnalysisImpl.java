@@ -912,10 +912,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                         // in previous iterations there was data for us, but now there isn't; copy from I/E into M
                         destination.copyFromEvalIntoMerge(groupPropertyValues);
+                        linkedVariablesMap.put(variable, destination.best(MERGE).getLinkedVariables());
                     } else {
                         for (Property property : GroupPropertyValues.PROPERTIES) {
                             groupPropertyValues.set(property, variable, current.getProperty(property));
                         }
+                        // FIXME also add to linkedVariablesMap?
                     }
                 }
             } else {

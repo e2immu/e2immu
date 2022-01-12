@@ -17,7 +17,9 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.RangeData;
+import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.range.NumericRange;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
@@ -36,25 +38,26 @@ import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class RangeDataImpl implements RangeData {
-
+    private final Location location;
     private final VariableFirstThen<CausesOfDelay, Range> range;
 
     public RangeDataImpl(Location location) {
         range = new VariableFirstThen<>(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE)));
+        this.location = location;
     }
 
     @Override
-    public Stream<Message> messages(Location location) {
-        if(range.isFirst()) return Stream.of();
+    public Stream<Message> messages() {
+        if (range.isFirst()) return Stream.of();
         Range r = range.get();
-        if(r == Range.EMPTY) {
+        if (r == Range.EMPTY) {
             return Stream.of(Message.newMessage(location, Message.Label.EMPTY_LOOP));
         }
-        if(r == Range.INFINITE_LOOP) {
+        if (r == Range.INFINITE_LOOP) {
             return Stream.of(Message.newMessage(location, Message.Label.INFINITE_LOOP_CONDITION));
         }
         int count = r.loopCount();
-        if(count == 1) {
+        if (count == 1) {
             return Stream.of(Message.newMessage(location, Message.Label.LOOP_ONCE));
         }
         return Stream.of();
@@ -76,15 +79,22 @@ public class RangeDataImpl implements RangeData {
     }
 
     @Override
-    public void computeRange(Statement statement, EvaluationResult result) {
-        BooleanConstant TRUE = new BooleanConstant(result.evaluationContext().getPrimitives(), true);
-
+    public void computeRange(StatementAnalysis statementAnalysis, EvaluationResult result) {
+        Statement statement = statementAnalysis.statement();
         if (statement instanceof ForStatement) {
             if (statement.getStructure().initialisers().size() == 1
                     && statement.getStructure().initialisers().get(0) instanceof LocalVariableCreation lvc
                     && lvc.declarations.size() == 1) {
                 LocalVariableReference lvr = lvc.declarations.get(0).localVariableReference();
-
+                DV modified = loopVariableIsModified(statementAnalysis, lvr);
+                if (modified.isDelayed()) {
+                    range.setFirst(modified.causesOfDelay());
+                    return;
+                }
+                if (modified.equals(DV.TRUE_DV)) {
+                    range.set(Range.NO_RANGE);
+                    return;
+                }
                 Expression init = result.storedValues().get(0);
                 Expression updateExpression = result.storedValues().get(1);
                 VariableExpression variable;
@@ -129,6 +139,25 @@ public class RangeDataImpl implements RangeData {
             }
         }
         range.set(Range.NO_RANGE);
+    }
+
+    /*
+    The code above currently only works when the loop variable is not modified inside the loop.
+
+     */
+    private DV loopVariableIsModified(StatementAnalysis statementAnalysis, LocalVariableReference lvr) {
+        StatementAnalysis first = statementAnalysis.navigationData().blocks.get().get(0).orElse(null);
+        if (first == null) return DV.FALSE_DV;
+        StatementAnalysis last = first.lastStatement();
+        VariableInfoContainer vic = last.findOrNull(lvr);
+        if (vic == null) {
+            return new SimpleSet(new VariableCause(lvr, location, CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT));
+        }
+        VariableInfo current = vic.current();
+        if (current.getAssignmentIds().getLatestAssignment().compareTo(first.index()) >= 0) {
+            return DV.TRUE_DV;
+        }
+        return DV.FALSE_DV;
     }
 
     public Expression extraState(EvaluationContext evaluationContext) {

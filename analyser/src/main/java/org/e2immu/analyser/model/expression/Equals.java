@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -114,7 +113,7 @@ public class Equals extends BinaryOperator {
         if (termsOfProducts[0] instanceof Numeric numeric) {
             // -4 + -x --> -4 == x
             double d = numeric.doubleValue();
-            if (d < 0 && termsOfProducts[1] instanceof Negation neg) {
+            if (d < 0 && termsOfProducts[1] instanceof Negation) {
                 newLeft = termsOfProducts[0];
                 newRight = wrapSum(evaluationContext, termsOfProducts, true);
                 // 4 + i == 0 --> -4 == i
@@ -165,13 +164,6 @@ public class Equals extends BinaryOperator {
         Expression s2 = termsOfProducts[end - 1];
         Expression t2 = negate ? Negation.negate(evaluationContext, s2) : s2;
         return Sum.sum(evaluationContext, t1, t2);
-    }
-
-    // we have more than 2 terms, that's a sum of sums...
-    static Expression wrapInSum(EvaluationContext evaluationContext, Expression[] expressions, int i) {
-        assert i >= 2;
-        if (i == 2) return Sum.sum(evaluationContext, expressions[0], expressions[1]);
-        return Sum.sum(evaluationContext, wrapInSum(evaluationContext, expressions, i - 1), expressions[i - 1]);
     }
 
     // (a ? null: b) == null with guaranteed b != null --> !a
@@ -284,88 +276,6 @@ public class Equals extends BinaryOperator {
                     Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifTrue, c)));
         }
         return null;
-    }
-
-    public static Expression recursiveTryToRewriteConstantEqualsInline(EvaluationContext evaluationContext,
-                                                                       Expression c,
-                                                                       InlineConditional inlineConditional) {
-
-        Expression recursively1;
-        if (inlineConditional.ifTrue instanceof InlineConditional inlineTrue) {
-            recursively1 = recursiveTryToRewriteConstantEqualsInline(evaluationContext, c, inlineTrue);
-        } else recursively1 = null;
-
-        Expression recursively2;
-        if (inlineConditional.ifFalse instanceof InlineConditional inlineFalse) {
-            recursively2 = recursiveTryToRewriteConstantEqualsInline(evaluationContext, c, inlineFalse);
-        } else recursively2 = null;
-
-        Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-
-        boolean equalsToIfTrue;
-        boolean equalsToIfFalse;
-
-        if (c instanceof NullConstant) {
-            // if recursivelyX is not null, isNotNull0 will always be true
-            equalsToIfTrue = recursively1 == null && !evaluationContext.isNotNull0(inlineConditional.ifTrue, false);
-            equalsToIfFalse = recursively2 == null && !evaluationContext.isNotNull0(inlineConditional.ifFalse, false);
-        } else {
-            equalsToIfTrue = c.equals(inlineConditional.ifTrue);
-            equalsToIfFalse = c.equals(inlineConditional.ifFalse);
-        }
-        if (equalsToIfTrue) {
-            if (recursively2 != null) return Or.or(evaluationContext, inlineConditional.condition, recursively2);
-            if (!equalsToIfFalse) return inlineConditional.condition;
-        }
-        if (equalsToIfFalse) {
-            if (recursively1 != null) return Or.or(evaluationContext, notCondition, recursively1);
-            if (!equalsToIfTrue) return notCondition;
-            // FIXME here it goes wrong: !notNull does not mean: always null
-        }
-        List<Expression> ors = new ArrayList<>();
-        if (recursively1 != null) {
-            ors.add(And.and(evaluationContext, inlineConditional.condition, recursively1));
-        }
-        if (recursively2 != null) {
-            ors.add(And.and(evaluationContext, notCondition, recursively2));
-        }
-        if (!ors.isEmpty()) {
-            return Or.or(evaluationContext, ors);
-        }
-        return null;
-    }
-
-
-    private static Expression sum(EvaluationContext evaluationContext, List<Expression> terms) {
-        if (terms.size() == 0) return new IntConstant(evaluationContext.getPrimitives(), 0);
-        if (terms.size() == 1) return terms.get(0);
-        Collections.sort(terms);
-        return terms.stream().reduce((t1, t2) -> Sum.sum(evaluationContext, t1, t2)).orElseThrow();
-    }
-
-    private static CommonTerms computeCommonTerms(Set<Expression> leftTerms, Set<Expression> rightTerms) {
-        List<Expression> common = new ArrayList<>(Math.min(leftTerms.size(), rightTerms.size()));
-        List<Expression> left = new ArrayList<>(leftTerms.size());
-        Set<Expression> right = new HashSet<>(rightTerms); // make the copy
-        for (Expression expression : leftTerms) {
-            if (right.contains(expression)) {
-                common.add(expression);
-                right.remove(expression);
-            } else {
-                left.add(expression);
-            }
-        }
-        return new CommonTerms(common, left, new ArrayList<>(right));
-    }
-
-    public record CommonTerms(List<Expression> common, List<Expression> leftTerms, List<Expression> rightTerms) {
-    }
-
-    private static Set<Expression> terms(Expression e) {
-        if (e instanceof Sum sum) {
-            return SetUtil.immutableUnion(terms(sum.lhs), terms(sum.rhs));
-        }
-        return Set.of(e);
     }
 
     @Override

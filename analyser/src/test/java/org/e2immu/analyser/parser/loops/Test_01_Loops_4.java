@@ -38,17 +38,17 @@ public class Test_01_Loops_4 extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "!<c:boolean>||!<loopIsNotEmptyCondition>" : "1!=instance type int";
                 if ("0".equals(d.statementId())) {
-                    assertEquals("1!=instance type int", d.state().toString());
+                    assertEquals(expected, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
 
                     // state after a forEach only when there was an interrupt caused by "break"
-                    assertEquals("1!=instance type int", d.conditionManagerForNextStatement().state().toString());
+                    assertEquals(expected, d.conditionManagerForNextStatement().state().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expectState = "1!=instance type int";
-                    assertEquals(expectState, d.state().toString());
+                    assertEquals(expected, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
             }
@@ -76,6 +76,8 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                     }
                     if ("0".equals(d.statementId())) {
                         assertEquals("instance type int", d.currentValue().toString());
+                        assertEquals("0-E", d.variableInfo().getReadId());
+                        assertFalse(d.variableInfoContainer().hasMerge());
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -85,16 +87,21 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                         assertEquals("4", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("1==i?4:<return value>", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<return value>" : "1==i?4:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         // there should be no i here anymore!!
-                        assertEquals("1==instance type int?4:<return value>", d.currentValue().toString());
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:<return value>" :
+                                "1==instance type int?4:<return value>";
+                        assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // we do not want 0 here!
-                        String expect = "1==instance type int?4:0";
+                        String expect = d.iteration() == 0
+                                ? "!<c:boolean>||!<loopIsNotEmptyCondition>?0:<c:boolean>&&<loopIsNotEmptyCondition>&&<c:boolean>&&<loopIsNotEmptyCondition>&&<c:boolean>?4:<return value>"
+                                : "1==instance type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
                         String expectVars = "[]";
                         assertEquals(expectVars, d.currentValue().variables(true).toString());

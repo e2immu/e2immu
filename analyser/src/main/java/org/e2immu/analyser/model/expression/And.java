@@ -281,6 +281,18 @@ public class And extends BaseExpression implements Expression {
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.FALSE;
                 }
+                // x == a%r && y == a
+                if (ev1.rhs instanceof Remainder remainder && ev2.rhs.equals(remainder.lhs)) {
+                    // let's evaluate x == y%r; if true, we can skip; if false, we can bail out
+                    Expression yModR = Remainder.remainder(evaluationContext, ev2.lhs, remainder.rhs);
+                    if (yModR.isNumeric() && ev1.lhs.isNumeric()) {
+                        if (yModR.equals(ev1.lhs)) {
+                            return Action.REPLACE;
+                        }
+                        return Action.FALSE;
+                    }
+                    // this is a very limited implementation!!
+                }
             }
 
             // EQ and NOT EQ
@@ -343,7 +355,7 @@ public class And extends BaseExpression implements Expression {
             if (reverse != null) {
                 Expression xb1x = xb1.x();
                 double xb1b = xb1.b();
-                double xb2b = reverse ? -xb2.b(): xb2.b();
+                double xb2b = reverse ? -xb2.b() : xb2.b();
                 boolean xb1lt = xb1.lessThan();
                 boolean xb2lt = reverse != xb2.lessThan();
 

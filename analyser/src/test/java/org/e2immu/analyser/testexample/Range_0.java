@@ -51,4 +51,12 @@ public class Range_0 {
             System.out.println("!" + i);
         }
     }
+
+    public static void method6() {
+        for (int i = 11; i >= 1; i -= 2) {
+            if (i == 4) {
+                System.out.println("Not reachable 3");
+            }
+        }
+    }
 }

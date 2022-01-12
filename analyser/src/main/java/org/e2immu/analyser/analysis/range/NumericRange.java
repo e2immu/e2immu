@@ -16,6 +16,7 @@ package org.e2immu.analyser.analysis.range;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
 
 /**
@@ -48,7 +49,19 @@ public record NumericRange(int startIncl,
             geStart = GreaterThanZero.less(evaluationContext, variableExpression, start, true);
             ltEnd = GreaterThanZero.greater(evaluationContext, variableExpression, end, false);
         }
-        return And.and(evaluationContext, geStart, ltEnd);
+        int absIncrement = increment < 0 ? -increment : increment;
+        if (absIncrement == 1) {
+            return And.and(evaluationContext, geStart, ltEnd);
+        }
+
+        // if increment == 2, we have either odd or even values, depending on the start value
+        // so we add (i % increment)==modOfStart
+        int moduloOfStart = startIncl % absIncrement;
+        Expression modulo = Remainder.remainder(evaluationContext, variableExpression,
+                new IntConstant(evaluationContext.getPrimitives(), absIncrement));
+        Expression moduloEquals = Equals.equals(evaluationContext, modulo,
+                new IntConstant(evaluationContext.getPrimitives(), moduloOfStart));
+        return And.and(evaluationContext, geStart, ltEnd, moduloEquals);
     }
 
     @Override

@@ -12,28 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analysis;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analysis.range.Range;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.parser.Message;
+// updates of the loop variable
+public class Range_2 {
 
-import java.util.stream.Stream;
-
-public interface RangeData {
-
-    CausesOfDelay rangeDelays();
-
-    Expression extraState(EvaluationContext evaluationContext);
-
-    void setRange(Range range);
-
-    Range getRange();
-
-    void computeRange(StatementAnalysis statementAnalysis, EvaluationResult result);
-
-    Stream<Message> messages();
+    public static void method1() {
+        for (int i = 11; i >= 1; i -= 2) {
+           System.out.println("i = "+i);
+           i++;
+        }
+    }
 }

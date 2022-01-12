@@ -74,7 +74,8 @@ public interface CauseOfDelay {
         VALUE_INDEPENDENT("independent", "The value's INDEPENDENT status has not yet been determined"),
         VALUE_NOT_NULL("not_null", "The value's NOT_NULL status has not yet been determined"),
         VALUE("value", "The value has not yet been determined"),
-        VARIABLE_DOES_NOT_EXIST("var_missing", "Variable does not (yet) exist");
+        VARIABLE_DOES_NOT_EXIST("var_missing", "Variable does not (yet) exist"),
+        WAIT_FOR_ASSIGNMENT("wait_for_assignment", "Wait to see if variable is assigned or not");
 
         public final String msg;
         public final String label;

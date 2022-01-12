@@ -15,12 +15,15 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Equals;
+import org.e2immu.analyser.model.expression.Remainder;
 import org.e2immu.analyser.model.expression.Sum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestEquals extends CommonAbstractValue {
     @BeforeAll
@@ -77,5 +80,36 @@ public class TestEquals extends CommonAbstractValue {
         Expression sum = Sum.sum(minimalEvaluationContext, i, j);
         assertEquals("i+j", sum.toString());
         assertEquals("-4==i+j", Equals.equals(minimalEvaluationContext, sum, newInt(-4)).toString());
+    }
+
+    @Test
+    public void testModulo1() {
+        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
+        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(4), i);
+        assertEquals("1==i%2", e1.toString());
+        assertEquals("4==i", e2.toString());
+        assertTrue(i.compareTo(iMod2) > 0);
+        assertEquals("false", And.and(minimalEvaluationContext, e1, e2).toString());
+    }
+
+    @Test
+    public void testModulo2() {
+        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
+        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(5), i);
+        assertEquals("1==i%2", e1.toString());
+        assertEquals("5==i", e2.toString());
+        assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
+    }
+
+    @Test
+    public void testModulo3() {
+        Expression iMod2 = Remainder.remainder(minimalEvaluationContext, i, newInt(2));
+        Expression e1 = Equals.equals(minimalEvaluationContext, newInt(1), iMod2);
+        Expression e2 = Equals.equals(minimalEvaluationContext, newInt(5), i);
+        assertEquals("1==i%2", e1.toString());
+        assertEquals("5==i", e2.toString());
+        assertEquals("5==i", And.and(minimalEvaluationContext, e1, e2).toString());
     }
 }
