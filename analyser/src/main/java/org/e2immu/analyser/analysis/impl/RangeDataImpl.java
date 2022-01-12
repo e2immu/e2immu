@@ -28,8 +28,9 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.support.VariableFirstThen;
+import org.e2immu.support.EventuallyFinal;
 
 import java.util.stream.Stream;
 
@@ -39,17 +40,17 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class RangeDataImpl implements RangeData {
     private final Location location;
-    private final VariableFirstThen<CausesOfDelay, Range> range;
+    private final EventuallyFinal<Range> range = new EventuallyFinal<>();
 
     public RangeDataImpl(Location location) {
-        range = new VariableFirstThen<>(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE)));
+        range.setVariable(new Range.Delayed(new SimpleSet(new SimpleCause(location, CauseOfDelay.Cause.INITIAL_RANGE))));
         this.location = location;
     }
 
     @Override
     public Stream<Message> messages() {
-        if (range.isFirst()) return Stream.of();
         Range r = range.get();
+        if (r.isDelayed()) return Stream.of();
         if (r == Range.EMPTY) {
             return Stream.of(Message.newMessage(location, Message.Label.EMPTY_LOOP));
         }
@@ -63,9 +64,12 @@ public class RangeDataImpl implements RangeData {
         return Stream.of();
     }
 
-    @Override
-    public void setRange(Range range) {
-        this.range.set(range);
+    void setDelayed(Range delayed) {
+        this.range.setVariable(delayed);
+    }
+
+    void setRange(Range range) {
+        this.range.setFinal(range);
     }
 
     @Override
@@ -74,78 +78,137 @@ public class RangeDataImpl implements RangeData {
     }
 
     @Override
-    public CausesOfDelay rangeDelays() {
-        return range.isFirst() ? range.getFirst() : CausesOfDelay.EMPTY;
-    }
-
-    @Override
     public void computeRange(StatementAnalysis statementAnalysis, EvaluationResult result) {
         Statement statement = statementAnalysis.statement();
         if (statement instanceof ForStatement) {
-            if (statement.getStructure().initialisers().size() == 1
-                    && statement.getStructure().initialisers().get(0) instanceof LocalVariableCreation lvc
-                    && lvc.declarations.size() == 1) {
-                LocalVariableReference lvr = lvc.declarations.get(0).localVariableReference();
-                DV modified = loopVariableIsModified(statementAnalysis, lvr);
-                if (modified.isDelayed()) {
-                    range.setFirst(modified.causesOfDelay());
-                    return;
-                }
-                if (modified.equals(DV.TRUE_DV)) {
-                    range.set(Range.NO_RANGE);
-                    return;
-                }
-                Expression init = result.storedValues().get(0);
-                Expression updateExpression = result.storedValues().get(1);
-                VariableExpression variable;
-                Expression update;
-                if (updateExpression instanceof IntConstant increment) {
-                    // += 1, -= 1, ++ post+pre, -- post+pre
-                    Expression updater = statement.getStructure().updaters().get(0);
-                    if (updater instanceof Assignment assignment) {
-                        int i;
-                        if (assignment.isPlusEquals()) {
-                            i = increment.constant();
-                        } else if (assignment.isMinusEquals()) {
-                            i = -increment.constant();
-                        } else {
-                            range.set(Range.NO_RANGE);
-                            return;
-                        }
-                        update = new IntConstant(result.evaluationContext().getPrimitives(), i);
-                        variable = new VariableExpression(lvr);
-                    } else {
-                        range.set(Range.NO_RANGE);
-                        return;
-                    }
-                } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
-                        && sum.rhs instanceof VariableExpression ve && ve.variable().equals(lvr)) {
-                    // normal situation i = i + 4
-                    update = increment;
-                    variable = ve;
-                } else {
-                    range.set(Range.NO_RANGE);
-                    return;
-                }
-                Expression condition = result.value();
-                CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
-                if (causes.isDelayed()) {
-                    log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
-                    range.setFirst(causes);
-                    return;
-                }
-                computeRange(result.evaluationContext(), variable, init, update, condition);
+            Range r = forStatementSingleCreatedLocalVariable(statement, statementAnalysis, result);
+            if (r == null) {
+                r = forStatementSingleAssignedLocalVariable(statement, statementAnalysis, result);
+            }
+            if (r != null) {
+                if (r.isDelayed()) setDelayed(r);
+                else setRange(r);
                 return;
             }
         }
-        range.set(Range.NO_RANGE);
+        setRange(Range.NO_RANGE);
+    }
+
+    // int i=...; for(i=a; i >=,<=b; i += c) {...do not write ...}
+    private Range forStatementSingleAssignedLocalVariable(Statement statement,
+                                                          StatementAnalysis statementAnalysis,
+                                                          EvaluationResult result) {
+        if (statement.getStructure().initialisers().size() == 1
+                && statement.getStructure().initialisers().get(0) instanceof Assignment assignment
+                && assignment.variableTarget != null) {
+            Variable variable = assignment.variableTarget;
+            DV modified = loopVariableIsModified(statementAnalysis, variable);
+            if (modified.isDelayed()) {
+                return new Range.Delayed(modified.causesOfDelay());
+            }
+            if (modified.equals(DV.TRUE_DV)) {
+                return Range.NO_RANGE;
+            }
+            // storedValues: init (just 1), updaters, condition(1)
+            if (result.storedValues().size() != 3) return Range.NO_RANGE;
+            Expression init = result.storedValues().get(0);
+            Expression updateExpression = result.storedValues().get(1);
+            Expression update;
+            if (updateExpression instanceof IntConstant increment) {
+                // += 1, -= 1, ++ post+pre, -- post+pre
+                Expression updateUnevaluated = statement.getStructure().updaters().get(0);
+                if (updateUnevaluated instanceof Assignment updater) {
+                    int i;
+                    if (updater.isPlusEquals()) {
+                        i = increment.constant();
+                    } else if (updater.isMinusEquals()) {
+                        i = -increment.constant();
+                    } else {
+                        return Range.NO_RANGE;
+                    }
+                    update = new IntConstant(result.evaluationContext().getPrimitives(), i);
+                } else {
+                    return Range.NO_RANGE;
+                }
+            } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
+                    && sum.rhs instanceof VariableExpression ve && ve.variable().equals(variable)) {
+                // normal situation i = i + 4
+                update = increment;
+            } else {
+                return Range.NO_RANGE;
+            }
+            Expression condition = result.value();
+            CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
+            if (causes.isDelayed()) {
+                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                return new Range.Delayed(causes);
+            }
+            VariableExpression ve = new VariableExpression(variable);
+            return computeRange(result.evaluationContext(), ve, init, update, condition);
+        }
+        return null;
+    }
+
+    // for(int i=a; i >=,<=b; i += ++ c) {...do not write i ...}
+    private Range forStatementSingleCreatedLocalVariable(Statement statement,
+                                                         StatementAnalysis statementAnalysis,
+                                                         EvaluationResult result) {
+        if (statement.getStructure().initialisers().size() == 1
+                && statement.getStructure().initialisers().get(0) instanceof LocalVariableCreation lvc
+                && lvc.declarations.size() == 1) {
+            LocalVariableReference lvr = lvc.declarations.get(0).localVariableReference();
+            DV modified = loopVariableIsModified(statementAnalysis, lvr);
+            if (modified.isDelayed()) {
+                return new Range.Delayed(modified.causesOfDelay());
+            }
+            if (modified.equals(DV.TRUE_DV)) {
+                return Range.NO_RANGE;
+            }
+            Expression init = result.storedValues().get(0);
+            Expression updateExpression = result.storedValues().get(1);
+            VariableExpression variable;
+            Expression update;
+            if (updateExpression instanceof IntConstant increment) {
+                // += 1, -= 1, ++ post+pre, -- post+pre
+                Expression updater = statement.getStructure().updaters().get(0);
+                if (updater instanceof Assignment assignment) {
+                    int i;
+                    if (assignment.isPlusEquals()) {
+                        i = increment.constant();
+                    } else if (assignment.isMinusEquals()) {
+                        i = -increment.constant();
+                    } else {
+                        return Range.NO_RANGE;
+                    }
+                    update = new IntConstant(result.evaluationContext().getPrimitives(), i);
+                    variable = new VariableExpression(lvr);
+                } else {
+                    return Range.NO_RANGE;
+                }
+            } else if (updateExpression instanceof Sum sum && sum.lhs instanceof IntConstant increment
+                    && sum.rhs instanceof VariableExpression ve && ve.variable().equals(lvr)) {
+                // normal situation i = i + 4
+                update = increment;
+                variable = ve;
+            } else {
+                return Range.NO_RANGE;
+            }
+            Expression condition = result.value();
+            CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
+            if (causes.isDelayed()) {
+                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                return new Range.Delayed(causes);
+            }
+            return computeRange(result.evaluationContext(), variable, init, update, condition);
+        }
+        return null;
     }
 
     /*
     The code above currently only works when the loop variable is not modified inside the loop.
 
      */
-    private DV loopVariableIsModified(StatementAnalysis statementAnalysis, LocalVariableReference lvr) {
+    private DV loopVariableIsModified(StatementAnalysis statementAnalysis, Variable lvr) {
         StatementAnalysis first = statementAnalysis.navigationData().blocks.get().get(0).orElse(null);
         if (first == null) return DV.FALSE_DV;
         StatementAnalysis last = first.lastStatement();
@@ -161,10 +224,10 @@ public class RangeDataImpl implements RangeData {
     }
 
     public Expression extraState(EvaluationContext evaluationContext) {
-        if (range.isSet()) {
+        if (range.isFinal()) {
             return range.get().conditions(evaluationContext);
         }
-        CausesOfDelay causes = range.getFirst();
+        CausesOfDelay causes = range.get().causesOfDelay();
         return DelayedExpression.forState(evaluationContext.getPrimitives().booleanParameterizedType(),
                 LinkedVariables.delayedEmpty(causes), causes);
     }
@@ -177,11 +240,11 @@ public class RangeDataImpl implements RangeData {
      * @param updatedValue updated value
      * @param condition    the condition
      */
-    private void computeRange(EvaluationContext evaluationContext,
-                              VariableExpression loopVar,
-                              Expression initialValue,
-                              Expression updatedValue,
-                              Expression condition) {
+    private Range computeRange(EvaluationContext evaluationContext,
+                               VariableExpression loopVar,
+                               Expression initialValue,
+                               Expression updatedValue,
+                               Expression condition) {
         if (initialValue instanceof IntConstant init && updatedValue instanceof IntConstant update) {
             int start = init.getValue();
             int increment = update.getValue();
@@ -192,25 +255,21 @@ public class RangeDataImpl implements RangeData {
                     if (xb.lessThan() && start < endExcl && increment > 0 || !xb.lessThan() && start > endExcl && increment < 0) {
                         Range r = new NumericRange(start, endExcl, increment, loopVar);
                         log(EXPRESSION, "Identified range {}", r);
-                        setRange(r);
-                        return;
+                        return r;
                     }
                     // int i=10; i<10; i++      int i=10; i>=11; i--
                     if (xb.lessThan() && start >= endExcl || !xb.lessThan() && start < endExcl && increment < 0) {
-                        setRange(Range.EMPTY);
-                        return;
+                        return Range.EMPTY;
                     }
                     if (xb.lessThan() && increment < 0 || !xb.lessThan() && increment > 0) {
-                        setRange(Range.INFINITE_LOOP);
-                        return;
+                        return Range.INFINITE_LOOP;
                     }
                     if (increment == 0) {
-                        setRange(Range.INFINITE_LOOP);
-                        return;
+                        return Range.INFINITE_LOOP;
                     }
                 }
             }
         }
-        range.set(Range.NO_RANGE);
+        return Range.NO_RANGE;
     }
 }

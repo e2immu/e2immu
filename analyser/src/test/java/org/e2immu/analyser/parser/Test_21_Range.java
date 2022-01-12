@@ -34,7 +34,7 @@ public class Test_21_Range extends CommonTestRunner {
 
     private Range checkRange(StatementAnalyserVisitor.Data d, String rangeExpected, String conditionExpected) {
         if (d.iteration() == 0) {
-            CausesOfDelay causes = d.statementAnalysis().rangeData().rangeDelays();
+            CausesOfDelay causes = d.statementAnalysis().rangeData().getRange().causesOfDelay();
             assertTrue(causes.isDelayed());
             assertEquals(CauseOfDelay.Cause.WAIT_FOR_ASSIGNMENT, causes.causesStream().findFirst().orElseThrow().cause());
             return null;
@@ -161,6 +161,38 @@ public class Test_21_Range extends CommonTestRunner {
             }
         };
         testClass("Range_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    checkRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i]",
+                            "i<=9&&i>=0");
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        assertTrue(d.condition().isDelayed());
+                    } else {
+                        assertEquals("i<=9&&i>=0", d.condition().toString());
+                    }
+                }
+                if ("1.0.1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        assertTrue(d.condition().isDelayed());
+                    } else {
+                        assertEquals("i<=9&&i>=0", d.condition().toString());
+                        assertEquals("i<=9&&i>=0", d.absoluteState().toString());
+                    }
+                }
+            }
+        };
+        // 3x: always false, block not executed
+        testClass("Range_3", 6, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

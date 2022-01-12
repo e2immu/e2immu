@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
+import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
@@ -127,9 +128,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             } else {
                 result = toEvaluate.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
             }
-            if (statementAnalysis.statement() instanceof LoopStatement && statementAnalysis.rangeData().rangeDelays().isDelayed()) {
-                statementAnalysis.rangeData().computeRange(statementAnalysis, result);
-                statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
+            if (statementAnalysis.statement() instanceof LoopStatement) {
+                Range range = statementAnalysis.rangeData().getRange();
+                if (range.isDelayed()) {
+                    statementAnalysis.rangeData().computeRange(statementAnalysis, result);
+                    statementAnalysis.ensureMessages(statementAnalysis.rangeData().messages());
+                }
             }
             if (statementAnalysis.statement() instanceof ThrowStatement) {
                 if (methodInfo().hasReturnValue()) {
@@ -171,7 +175,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (!valueIsDelayed && (statementAnalysis.statement() instanceof IfElseStatement ||
                     statementAnalysis.statement() instanceof AssertStatement)) {
                 value = eval_IfElse_Assert(sharedState, value);
-                if(value.isDelayed()) {
+                if (value.isDelayed()) {
                     // for example, an if(...) inside a loop, when the loop's range is being computed
                     stateForLoop = value.causesOfDelay();
                 }

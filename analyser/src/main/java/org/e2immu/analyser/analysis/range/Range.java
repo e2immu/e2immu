@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analysis.range;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.BooleanConstant;
@@ -25,6 +26,14 @@ public interface Range {
      * @return if "i" is the variable, a boolean expression like 0<=i && i<=10
      */
     Expression conditions(EvaluationContext evaluationContext);
+
+    default CausesOfDelay causesOfDelay() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    default boolean isDelayed() {
+        return causesOfDelay().isDelayed();
+    }
 
     int NO_IDEA = -1;
     int INFINITE = -2;
@@ -84,4 +93,17 @@ public interface Range {
             return "NO RANGE";
         }
     };
+
+    record Delayed(CausesOfDelay causesOfDelay) implements Range {
+
+        @Override
+        public Expression conditions(EvaluationContext evaluationContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int loopCount() {
+            throw new UnsupportedOperationException();
+        }
+    }
 }

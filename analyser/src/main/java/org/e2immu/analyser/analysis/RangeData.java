@@ -25,11 +25,7 @@ import java.util.stream.Stream;
 
 public interface RangeData {
 
-    CausesOfDelay rangeDelays();
-
     Expression extraState(EvaluationContext evaluationContext);
-
-    void setRange(Range range);
 
     Range getRange();
 

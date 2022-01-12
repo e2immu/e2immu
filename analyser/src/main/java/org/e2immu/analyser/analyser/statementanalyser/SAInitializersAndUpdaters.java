@@ -149,8 +149,10 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     if (e instanceof Assignment assignment && ((ve = assignment.target.asInstanceOf(VariableExpression.class)) != null)) {
                         boolean locallyCreated = variableCreatedInLoop.contains(ve.variable());
                         if(locallyCreated) {
+                            // for(int i=0; i...)
                             expressionsToEvaluate.add(assignment.value);
                         } else {
+                            // when exactly?  int i=9; for(; ...; i++) or int i; for(i=3; ...; i++)
                             expressionsToEvaluate.add(assignment.cloneWithHackForLoop());
                         }
                     }

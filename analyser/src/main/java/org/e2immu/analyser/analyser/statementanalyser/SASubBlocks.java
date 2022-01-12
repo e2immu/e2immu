@@ -474,14 +474,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                            CausesOfDelay valueIsDelayed) {
         Structure structure = statement().getStructure();
         if (statement() instanceof LoopStatement) {
-            CausesOfDelay causesOfDelay = statementAnalysis.rangeData().rangeDelays();
-            if (causesOfDelay.isDelayed()) {
+            Range range = statementAnalysis.rangeData().getRange();
+            if (range.isDelayed()) {
+                CausesOfDelay causesOfDelay = range.causesOfDelay();
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
                         DelayedExpression.forUnspecifiedLoopCondition(primitives.booleanParameterizedType(),
                                 LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay),
                         causesOfDelay);
             }
-            Range range = statementAnalysis.rangeData().getRange();
+
             if (range != Range.NO_RANGE) {
                 Expression condition = statementAnalysis.rangeData().extraState(evaluationContext);
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives,
