@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -56,6 +57,11 @@ public class ArrayLength extends BaseExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayLength(primitives, translationMap.translateExpression(scope));
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return scope.causesOfDelay();
     }
 
     @Override

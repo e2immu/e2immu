@@ -235,6 +235,9 @@ class JavaLang {
             return null;
         }
 
+        @NotNull
+        String[] split(String regex) { return null; }
+
         boolean startsWith$Value$Len(int len, String s, boolean retVal) {
             return s.length() <= len && retVal;
         }

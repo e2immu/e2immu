@@ -98,23 +98,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /*
-    factory method for new variables
-     */
-    public static VariableInfoContainerImpl newLocalCopyOfVariableField(
-            Location location,
-            Variable variable,
-            String readId,
-            boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(location, variable, NOT_YET_ASSIGNED,
-                readId, Set.of(), null);
-        VariableNature variableNature = variable instanceof LocalVariableReference lvr
-                ? lvr.variable.nature() : VariableNature.METHOD_WIDE;
-        // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
-        return new VariableInfoContainerImpl(variableNature, Either.right(initial),
-                statementHasSubBlocks ? new SetOnce<>() : null, null);
-    }
-
-    /*
     factory method for new variables, explicitly setting the variableNature
      */
     public static VariableInfoContainerImpl newVariable(Location location,
@@ -406,10 +389,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     .forEach(e ->
                             setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
-            if (previous.valueIsSet()) {
-                evaluation.setValue(previous.getValue());
-            }
+            evaluation.setValue(previous.getValue());
             evaluation.setLinkedVariables(previous.getLinkedVariables());
+        } else if (previous.getValue().isDelayed() && evaluation.getValue().isDelayed()) {
+            // copy the delay, so that we know what the cause of delay is
+            // this also speeds up Context Modified, see Container_3
+            evaluation.setValue(previous.getValue());
         }
     }
 

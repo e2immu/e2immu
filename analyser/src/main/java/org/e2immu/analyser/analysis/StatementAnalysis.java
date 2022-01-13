@@ -149,7 +149,7 @@ public interface StatementAnalysis extends Analysis,
 
     DV isEscapeAlwaysExecutedInCurrentBlock();
      Variable obtainLoopVar();
-    void evaluationOfForEachVariable(Variable loopVar,
+    CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
                                      Expression evaluatedIterable,
                                      CausesOfDelay someValueWasDelayed,
                                      EvaluationContext evaluationContext);

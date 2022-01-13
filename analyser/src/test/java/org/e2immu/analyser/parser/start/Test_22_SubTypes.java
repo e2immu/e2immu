@@ -142,11 +142,11 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertEquals("1", loop.statementIndex());
                     } else fail();
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<vl:i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "instance type int";
+                        String expected = d.iteration() == 0 ? "<vl:i>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -156,7 +156,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:sum>+<localVariableInLoop:int>" : "i+sum$1";
+                        String expected = d.iteration() == 0 ? "<v:sum>+<vl:i>" : "i+sum$1";
                         assertEquals(expected, d.currentValue().toString());
                         if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                             assertEquals("1", outside.statementIndex());
@@ -165,7 +165,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<loopIsNotEmptyCondition>?<v:sum>+<localVariableInLoop:int>:0"
+                                ? "<loopIsNotEmptyCondition>?<v:sum>+<vl:i>:0"
                                 : "instance type boolean?instance type int+sum:0";
                         assertEquals(expected, d.currentValue().toString());
                     }

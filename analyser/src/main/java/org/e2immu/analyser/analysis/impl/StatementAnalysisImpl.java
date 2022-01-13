@@ -868,7 +868,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Expression overwriteValue;
                     if (statement instanceof LoopStatement) {
                         Expression exit = rangeData.getRange().exitValue(primitives, variable);
-                        if(stateData.noExitViaReturnOrBreak()) {
+                        if (stateData.noExitViaReturnOrBreak()) {
                             overwriteValue = exit;
                         } else {
                             overwriteValue = null;
@@ -1543,7 +1543,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     // updates variables.get(loopVar)
     @Override
-    public void evaluationOfForEachVariable(Variable loopVar,
+    public CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
                                             Expression evaluatedIterable,
                                             CausesOfDelay someValueWasDelayed,
                                             EvaluationContext evaluationContext) {
@@ -1561,13 +1561,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression value;
         if (evaluatedIterable.isDelayed() || delayed.isDelayed()) {
             CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
-            value = DelayedExpression.forLocalVariableInLoop(loopVar.parameterizedType(),
-                    LinkedVariables.delayedEmpty(causes), causes);
+            value = DelayedVariableExpression.forLocalVariableInLoop(loopVar, causes);
         } else {
             value = Instance.forLoopVariable(index(), loopVar, valueProperties);
         }
         vic.setValue(value, LinkedVariables.EMPTY, valueProperties, false);
         vic.setLinkedVariables(linked, EVALUATION);
+        return value.causesOfDelay();
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

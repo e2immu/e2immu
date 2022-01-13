@@ -72,16 +72,19 @@ public class DelayedVariableExpression extends BaseExpression implements Express
                 "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference, causesOfDelay);
     }
 
-    public static Expression forVariable(Variable variable, CauseOfDelay cause) {
-        return forVariable(variable, new SimpleSet(cause));
-    }
-
     public static Expression forVariable(Variable variable, CausesOfDelay causesOfDelay) {
         if (variable instanceof FieldReference fieldReference) return forField(fieldReference, causesOfDelay);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
         return new DelayedVariableExpression("<v:" + variable.simpleName() + ">",
                 "<variable:" + variable.fullyQualifiedName() + ">", variable, causesOfDelay);
     }
+
+
+    public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay) {
+        String msg = "<vl:" + variable.simpleName() + ">";
+        return new DelayedVariableExpression(msg, msg, variable, causesOfDelay);
+    }
+
 
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet

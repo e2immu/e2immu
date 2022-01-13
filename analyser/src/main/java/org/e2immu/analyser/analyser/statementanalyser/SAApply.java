@@ -24,10 +24,8 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.InlineConditional;
-import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Logger;
@@ -211,10 +209,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         the expression of the forEach statement has been evaluated. For this reason, we need to handle
         this separately.
          */
+
         if (statement() instanceof ForEachStatement) {
             Variable loopVar = statementAnalysis.obtainLoopVar();
-            statementAnalysis.evaluationOfForEachVariable(loopVar, evaluationResult.getExpression(),
-                    evaluationResult.causesOfDelay(), sharedState.evaluationContext());
+            CausesOfDelay evalForEach = statementAnalysis.evaluationOfForEachVariable(loopVar,
+                    evaluationResult.getExpression(), evaluationResult.causesOfDelay(), sharedState.evaluationContext());
+            delay = delay.merge(evalForEach);
         }
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties

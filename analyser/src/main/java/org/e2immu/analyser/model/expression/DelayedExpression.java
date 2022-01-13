@@ -140,13 +140,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(msg, booleanParameterizedType, linkedVariables, causes);
     }
 
-    public static Expression forLocalVariableInLoop(ParameterizedType parameterizedType,
-                                                    LinkedVariables linkedVariables,
-                                                    CausesOfDelay causesOfDelay) {
-        String msg = brackets("localVariableInLoop:" + parameterizedType.detailedString());
-        return new DelayedExpression(msg, parameterizedType, linkedVariables, causesOfDelay);
-    }
-
     public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
         String msg = brackets("valueOf:" + parameterizedType.detailedString());
         return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
