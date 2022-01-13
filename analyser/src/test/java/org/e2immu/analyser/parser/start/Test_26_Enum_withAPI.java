@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -23,7 +23,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.failing.testexample.Enum_0;
+import org.e2immu.analyser.parser.start.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 

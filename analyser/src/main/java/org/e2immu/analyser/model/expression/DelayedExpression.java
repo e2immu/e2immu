@@ -141,7 +141,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     public static Expression forValueOf(ParameterizedType parameterizedType, CausesOfDelay causesOfDelay) {
-        String msg = brackets("valueOf:" + parameterizedType.detailedString());
+        String msg = brackets("valueOf:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
     }
 
@@ -149,7 +149,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                        LinkedVariables linkedVariables,
                                                        CausesOfDelay causes,
                                                        Properties priorityProperties) {
-        String msg = brackets("vp:" + parameterizedType.detailedString() + ":" + causes);
+        String msg = brackets("vp:" + parameterizedType.printSimple() + ":" + causes);
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes, priorityProperties);
     }
 

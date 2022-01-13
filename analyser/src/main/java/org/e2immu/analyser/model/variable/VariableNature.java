@@ -50,15 +50,15 @@ public interface VariableNature {
 
     default VariableExpression.Suffix suffix() { return VariableExpression.NO_SUFFIX; }
 
-    /*
-    situation 1: normal variable (default value, rather than null)
-    local variable gets VIC value (analysis only) for merging
-   */
+    /**
+     * situation 1: normal variable (default value, rather than null)
+     * local variable gets VIC value (analysis only) for merging
+     */
     class NormalLocalVariable implements VariableNature {
         public final String parentBlockIndex;
 
         // do not move up beyond block of definition!
-        public NormalLocalVariable() {
+        private NormalLocalVariable() {
             parentBlockIndex = "";
         }
 

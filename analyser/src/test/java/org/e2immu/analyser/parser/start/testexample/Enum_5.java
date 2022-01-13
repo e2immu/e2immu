@@ -12,27 +12,26 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.ERContainer;
 
-public enum Enum_1 {
+@ERContainer
+public enum Enum_5 {
     ONE(1), TWO(2), THREE(3);
 
     public final int cnt;
 
-    Enum_1(int cnt) {
+    Enum_5(int cnt) {
         this.cnt = cnt;
     }
 
-    //@NotModified when A API, @Modified otherwise
-    public int best(Enum_1 other) {
-        return Math.max(cnt, other.cnt);
+    public int getCnt() {
+        return cnt;
     }
 
-    public int posInList() {
-        for (int i = 0; i < values().length; i++) {
-            if (values()[i] == this) return i;
-        }
-        throw new UnsupportedOperationException();
+    @ERContainer(absent = true) // don't write when the same value
+    public static Enum_5 returnTwo() {
+        return Enum_5.valueOf("TWO");
     }
 }

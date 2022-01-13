@@ -824,6 +824,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 action = Merge.Action.IGNORE;
             }
+            // FIXME and remove?? See Basics_22, Enum_1?
             list.add(new MergeAction(vic, action));
         });
     }
@@ -884,27 +885,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
-                    Expression overwriteValue;
-                    if (statement instanceof LoopStatement) {
-                        Expression exit = rangeData.getRange().exitValue(primitives, variable);
-                        if (stateData.noExitViaReturnOrBreak()) {
-                            overwriteValue = exit;
-                        } else {
-                            overwriteValue = null;
-                        }
-                    } else {
-                        overwriteValue = null;
-                    }
+                    Expression overwriteValue = overwrite(variable);
                     List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
                             fqn, inSwitchStatementOldStyle);
-                    boolean ignoreCurrent;
-                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature().ignoreCurrent(index) && !atLeastOneBlockExecuted ||
-                            variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
-                            destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
-                        ignoreCurrent = true;
-                    } else {
-                        ignoreCurrent = atLeastOneBlockExecuted;
-                    }
+                    boolean ignoreCurrent = ignoreCurrent(atLeastOneBlockExecuted, destination, toMerge);
                     if (toMerge.size() > 0) {
                         try {
                             Merge merge = new Merge(evaluationContext, destination);
@@ -954,8 +938,49 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 variablesWhereMergeOverwrites);
     }
 
+    /**
+     * In some rare situations we do not want to merge, but to write a specific value.
+     * This is the case when the exit value of a loop is known; see Range_3
+     */
+    private Expression overwrite(Variable variable) {
+        Expression overwriteValue;
+        if (statement instanceof LoopStatement) {
+            Expression exit = rangeData.getRange().exitValue(primitives, variable);
+            if (stateData.noExitViaReturnOrBreak()) {
+                overwriteValue = exit;
+            } else {
+                overwriteValue = null;
+            }
+        } else {
+            overwriteValue = null;
+        }
+        return overwriteValue;
+    }
+
+    /**
+     * atLeastOneBlockExecuted: e.g.: if(..) { .. } else { ... }
+     * !atLeastOneBlockExecuted: e.g.: if(...) { ... }. We're not guaranteed to execute the block
+     * if the variable is assigned in both, then the current value (eval of "if") can be ignored
+     * otherwise, we merge current and the one block
+     *
+     * Enum_1 shows FIXME
+     *
+     * @param atLeastOneBlockExecuted information from the statement analyser
+     * @param destination             the VIC to write into
+     * @param toMerge                 the list of blocks from the statement analyser
+     * @return a rare deviation from atLeastOneBlockExecuted
+     */
+    private boolean ignoreCurrent(boolean atLeastOneBlockExecuted,
+                                  VariableInfoContainer destination,
+                                  List<ConditionAndVariableInfo> toMerge) {
+        if (toMerge.size() == 1 && destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
+            return true;
+        }
+        return atLeastOneBlockExecuted;
+    }
+
     private List<ConditionAndVariableInfo> filterSubBlocks(EvaluationContext evaluationContext, List<ConditionAndLastStatement> lastStatements, Variable variable, String fqn, boolean inSwitchStatementOldStyle) {
-        List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
+        return lastStatements.stream()
                 .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
                 .map(e2 -> {
                     VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
@@ -969,7 +994,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                             evaluationContext);
                 })
                 .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
-        return toMerge;
     }
 
     private void contextNotNullForParent(List<ConditionAndLastStatement> lastStatements, GroupPropertyValues groupPropertyValues, String fqn) {
@@ -1107,12 +1131,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             return navigationData.next.get().get().navigateTo(target);
         }
         throw new UnsupportedOperationException("? have index " + index + ", looking for " + target);
-    }
-
-    private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {
-        if (fr.fieldInfo.isExplicitlyFinal()) return true;
-        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-        return fieldAnalysis.getProperty(FINAL).valueIsTrue();
     }
 
     /*

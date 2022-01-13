@@ -299,7 +299,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             CausesOfDelay delays = typeAnalysisStaticEnclosing.hiddenContentTypeStatus();
             if (delays.isDone()) {
                 typeAnalysis.setTransparentTypes(typeAnalysisStaticEnclosing.getTransparentTypes());
-                typeAnalysis.explicitTypes.copy(typeAnalysisStaticEnclosing.explicitTypes);
+                typeAnalysis.copyExplicitTypes(typeAnalysisStaticEnclosing);
             } else {
                 log(DELAYED, "Hidden content of inner class {} computed together with that of enclosing class {}",
                         typeInfo.simpleName, staticEnclosing.fullyQualifiedName);
@@ -315,8 +315,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Set<ParameterizedType> explicitTypesFromSubTypes = typeInspection.subTypes().stream()
                 .filter(TypeInfo::isStatic)
                 .flatMap(st -> {
-                    TypeAnalysisImpl.Builder stAna = (TypeAnalysisImpl.Builder) analyserContext.getTypeAnalysis(st);
-                    return stAna.explicitTypes.get().types().stream();
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(st);
+                    return typeAnalysis.getExplicitTypes(analyserContext).stream();
                 }).collect(Collectors.toUnmodifiableSet());
 
         // STEP 5: ensure + collect from parent
@@ -400,7 +400,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         allTypes.removeAll(allExplicitTypes);
         allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
-        typeAnalysis.explicitTypes.set(new SetOfTypes(allExplicitTypes));
+        typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
         typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
         log(IMMUTABLE_LOG, "Transparent data types for {} are: [{}]", typeInfo.fullyQualifiedName, allTypes);
         return DONE;

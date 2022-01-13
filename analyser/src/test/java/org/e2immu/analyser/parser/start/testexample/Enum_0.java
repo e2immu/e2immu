@@ -12,26 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
+public enum Enum_0 {
+    ONE, TWO, THREE;
 
-@ERContainer
-public enum Enum_5 {
-    ONE(1), TWO(2), THREE(3);
-
-    public final int cnt;
-
-    Enum_5(int cnt) {
-        this.cnt = cnt;
-    }
-
-    public int getCnt() {
-        return cnt;
-    }
-
-    @ERContainer(absent = true) // don't write when the same value
-    public static Enum_5 returnTwo() {
-        return Enum_5.valueOf("TWO");
+    public boolean isThree() {
+        return this == THREE;
     }
 }

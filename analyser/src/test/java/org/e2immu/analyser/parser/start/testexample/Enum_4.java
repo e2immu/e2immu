@@ -12,38 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotModified;
 
 @ERContainer
-public enum Enum_3 {
+public enum Enum_4 {
     ONE(1), TWO(2), THREE(3);
 
     public final int cnt;
 
-    Enum_3(int cnt) {
+    Enum_4(int cnt) {
         this.cnt = cnt;
     }
 
-    @NotModified
-    public int best(Enum_3 other) {
-        return cnt > other.cnt ? cnt : other.cnt;
+    public int getCnt() {
+        return cnt;
     }
 
     @Constant("THREE")
-    public static Enum_3 highest() {
+    public static Enum_4 highest() {
+        assert 1 == ONE.getCnt(); // warning: always true
+        assert 2 == TWO.cnt;      // warning: always true
         return THREE;
     }
 
-    public int posInList() {
-        Enum_3[] array = values();
-        assert 3 == array.length;
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == this) return i;
-        }
-        throw new UnsupportedOperationException();
-    }
+
 }

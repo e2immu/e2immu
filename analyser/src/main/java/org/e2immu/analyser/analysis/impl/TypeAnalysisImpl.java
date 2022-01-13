@@ -27,6 +27,7 @@ import org.e2immu.support.*;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
@@ -175,7 +176,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
         private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
-        public final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
+        private final SetOnce<SetOfTypes> explicitTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
 
@@ -346,7 +347,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
+            if (!explicitTypes.isSet() && getTypeInfo().shallowAnalysis()) {
+                Set<ParameterizedType> set = typeInfo.typeInspection.get().typesOfMethodsAndConstructors(InspectionProvider.DEFAULT);
+                Set<ParameterizedType> filtered = set.stream().filter(pt -> pt.typeInfo != null && pt.typeInfo.typeInspection.isSet()).collect(Collectors.toUnmodifiableSet());
+                explicitTypes.set(new SetOfTypes(filtered));
+                return filtered;
+            }
             return explicitTypes.get(typeInfo.fullyQualifiedName).types();
+        }
+
+        public void setExplicitTypes(SetOfTypes explicitTypes) {
+            this.explicitTypes.set(explicitTypes);
+        }
+
+        public void copyExplicitTypes(Builder other) {
+            this.explicitTypes.copy(other.explicitTypes);
         }
 
         @Override

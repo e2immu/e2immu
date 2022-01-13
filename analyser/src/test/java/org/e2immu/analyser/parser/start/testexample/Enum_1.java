@@ -12,22 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.ERContainer;
-import org.e2immu.annotation.NotNull1;
 
-@ERContainer
-public enum Enum_7 {
-    ONE, TWO, THREE;
+public enum Enum_1 {
+    ONE(1), TWO(2), THREE(3);
 
-    @NotNull1
-    public static Enum_7[] rearranged() {
-        Enum_7[] v = values();
-        Enum_7 tmp = v[0];
-        v[0] = v[1];
-        v[1] = v[2];
-        v[2] = tmp;
-        return v;
+    public final int cnt;
+
+    Enum_1(int cnt) {
+        this.cnt = cnt;
+    }
+
+    //@NotModified when A API, @Modified otherwise
+    public int best(Enum_1 other) {
+        return Math.max(cnt, other.cnt);
+    }
+
+    public int posInList() {
+        for (int i = 0; i < values().length; i++) {
+            if (values()[i] == this) return i;
+        }
+        throw new UnsupportedOperationException();
     }
 }

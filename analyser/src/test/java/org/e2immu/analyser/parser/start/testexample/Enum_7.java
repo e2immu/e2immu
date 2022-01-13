@@ -12,12 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-public enum Enum_0 {
+import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.NotNull1;
+
+@ERContainer
+public enum Enum_7 {
     ONE, TWO, THREE;
 
-    public boolean isThree() {
-        return this == THREE;
+    @NotNull1
+    public static Enum_7[] rearranged() {
+        Enum_7[] v = values();
+        Enum_7 tmp = v[0];
+        v[0] = v[1];
+        v[1] = v[2];
+        v[2] = tmp;
+        return v;
     }
 }

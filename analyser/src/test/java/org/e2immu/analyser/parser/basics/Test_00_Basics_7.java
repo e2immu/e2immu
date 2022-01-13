@@ -111,7 +111,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:out>" : INSTANCE_TYPE_PRINT_STREAM;
+                        String expect = d.iteration() == 0 ? "b?<f:out>:instance type PrintStream" : INSTANCE_TYPE_PRINT_STREAM;
                         assertEquals(expect, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(EXTERNAL_NOT_NULL));

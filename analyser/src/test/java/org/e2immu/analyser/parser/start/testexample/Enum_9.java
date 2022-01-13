@@ -12,27 +12,41 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-public enum Enum_2 {
-    ONE(1, "un"), TWO(2, "zwei"), THREE(3);
 
-    public static final Enum_2 MAX = THREE;
+import org.e2immu.annotation.Container;
+import org.junit.jupiter.api.Test;
 
-    public final int cnt;
-    private final String msg;
+import static org.e2immu.analyser.parser.start.testexample.Enum_9.Writable.ONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    Enum_2(int cnt) {
-        this(cnt, "=" + cnt);
+public class Enum_9 {
+
+    @Container
+    enum Writable {
+
+        ONE(1), TWO(2), THREE(3);
+
+        private int cnt;
+
+        Writable(int cnt) {
+            this.cnt = cnt;
+        }
+
+        public int getCnt() {
+            return cnt;
+        }
+
+        public void setCnt(int cnt) {
+            this.cnt = cnt;
+        }
     }
 
-    Enum_2(int cnt, String msg) {
-        this.cnt = cnt;
-        this.msg = msg;
-    }
-
-    @Override
-    public String toString() {
-        return msg;
+    @Test
+    public void test() {
+        assertEquals(1, ONE.cnt);
+        ONE.setCnt(3);
+        assertEquals(3, ONE.cnt);
     }
 }
