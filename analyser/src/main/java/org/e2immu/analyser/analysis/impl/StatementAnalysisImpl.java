@@ -17,6 +17,7 @@ package org.e2immu.analyser.analysis.impl;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.inspector.MethodResolution;
@@ -896,9 +897,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     }
                     if (toMerge.size() > 0) {
                         try {
-                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution,
-                                    postProcessState, overwriteValue, ignoreCurrent,
-                                    toMerge, groupPropertyValues);
+                            Merge merge = new Merge(evaluationContext, destination);
+                            merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
+                                    ignoreCurrent, toMerge, groupPropertyValues);
 
                             LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
@@ -1534,9 +1535,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     // updates variables.get(loopVar)
     @Override
     public CausesOfDelay evaluationOfForEachVariable(Variable loopVar,
-                                            Expression evaluatedIterable,
-                                            CausesOfDelay someValueWasDelayed,
-                                            EvaluationContext evaluationContext) {
+                                                     Expression evaluatedIterable,
+                                                     CausesOfDelay someValueWasDelayed,
+                                                     EvaluationContext evaluationContext) {
         LinkedVariables linked = evaluatedIterable.linkedVariables(evaluationContext);
         VariableInfoContainer vic = findForWriting(loopVar);
         vic.ensureEvaluation(location(), new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,

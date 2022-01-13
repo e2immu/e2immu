@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
@@ -29,7 +28,6 @@ import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -203,7 +201,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         };
     }
 
-    private VariableInfoImpl currentExcludingMerge() {
+    VariableInfoImpl currentExcludingMerge() {
         if (evaluation.isSet()) return evaluation.get();
         if (previousOrInitial.isLeft()) return (VariableInfoImpl) previousOrInitial.getLeft().best(levelForPrevious);
         return previousOrInitial.getRight();
@@ -423,41 +421,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    @Override
-    public Expression merge(EvaluationContext evaluationContext,
-                            Expression stateOfDestination,
-                            Expression postProcessState,
-                            Expression overwriteValue,
-                            boolean atLeastOneBlockExecuted,
-                            List<ConditionAndVariableInfo> mergeSources,
-                            GroupPropertyValues groupPropertyValues) {
-        Objects.requireNonNull(mergeSources);
-        Objects.requireNonNull(evaluationContext);
-        assert merge != null : "For variable " + getPreviousOrInitial().variable().fullyQualifiedName();
-
-        Expression postProcess = activate(postProcessState, evaluationContext);
-
-        VariableInfoImpl existing = currentExcludingMerge();
-        if (!merge.isSet()) {
-            VariableInfoImpl vii = existing.mergeIntoNewObject(evaluationContext, stateOfDestination,
-                    postProcess, overwriteValue, atLeastOneBlockExecuted,
-                    mergeSources, groupPropertyValues);
-            merge.set(vii);
-        } else {
-            merge.get().mergeIntoMe(evaluationContext, stateOfDestination,
-                    postProcess, overwriteValue, atLeastOneBlockExecuted, existing,
-                    mergeSources, groupPropertyValues);
-        }
-        return merge.get().getValue();
+    void setMerge(VariableInfoImpl vii) {
+        merge.set(vii);
     }
 
-    // post-processing the state is only done under certain limited conditions, currently ONLY to
-    // merge variables, defined outside the loop but assigned inside, back to the outside of the loop.
-    private Expression activate(Expression postProcessState, EvaluationContext evaluationContext) {
-        if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside
-                && outside.statementIndex().equals(evaluationContext.statementIndex())) {
-            return postProcessState;
-        }
-        return null;
+    VariableInfoImpl getMerge() {
+        return merge.get();
+    }
+
+    public boolean canMerge() {
+        return merge != null;
     }
 }

@@ -149,12 +149,4 @@ public interface VariableInfoContainer {
                           AssignmentIds assignmentIds,
                           String readId,
                           Set<Integer> readAtStatementTimes);
-
-    Expression merge(EvaluationContext evaluationContext,
-                     Expression stateOfDestination,
-                     Expression postProcessState,
-                     Expression overwriteValue,
-                     boolean atLeastOneBlockExecuted,
-                     List<ConditionAndVariableInfo> mergeSources,
-                     GroupPropertyValues groupPropertyValues);
 }

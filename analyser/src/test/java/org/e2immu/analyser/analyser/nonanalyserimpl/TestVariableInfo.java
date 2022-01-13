@@ -44,10 +44,11 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setValue(four);
         viB.setProperty(CONTAINER, DV.TRUE_DV);
 
-        VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, false, List.of());
+        VariableInfoImpl vii = new MergeHelper(minimalEvaluationContext, viB).mergeIntoNewObject(TRUE, TRUE, false, List.of());
 
         assertSame(four, vii.getValue());
-        vii.mergePropertiesIgnoreValue(false, viB, List.of());
+        new MergeHelper(minimalEvaluationContext, vii)
+                .mergePropertiesIgnoreValue(false, viB, List.of());
         assertEquals(DV.TRUE_DV, vii.getProperty(CONTAINER));
     }
 
@@ -59,7 +60,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable());
         try {
-            overwritten.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viB, List.of());
+            new MergeHelper(minimalEvaluationContext, overwritten).mergeIntoMe(TRUE, TRUE, null, true, viB, List.of());
             fail();
         } catch (UnsupportedOperationException e) {
             // OK
@@ -82,11 +83,12 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(TRUE, viB));
-        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, true, list);
+        VariableInfoImpl viC2 = new MergeHelper(minimalEvaluationContext, viC).mergeIntoNewObject(TRUE, TRUE, true, list);
 
         Expression res = viC2.getValue();
         assertEquals("4", res.toString());
-        viC2.mergePropertiesIgnoreValue(true, viA, list);
+        new MergeHelper(minimalEvaluationContext, viC2)
+                .mergePropertiesIgnoreValue(true, viA, list);
         assertEquals(DV.FALSE_DV, viC2.getProperty(IDENTITY));
     }
 
@@ -111,17 +113,18 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c = a; if(x) c = b;
         List<ConditionAndVariableInfo> xViB = List.of(newConditionAndVariableInfo(x, viB));
 
-        VariableInfoImpl viC = viA.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, false, xViB);
+        VariableInfoImpl viC = new MergeHelper(minimalEvaluationContext, viA).mergeIntoNewObject(TRUE, TRUE, false, xViB);
         assertNotSame(viA, viC);
 
         Expression res = viC.getValue();
         assertEquals("instance type boolean?4:3", res.toString());
 
-        viC.mergePropertiesIgnoreValue(true, viA, xViB);
+        MergeHelper mhC = new MergeHelper(minimalEvaluationContext, viC);
+        mhC.mergePropertiesIgnoreValue(true, viA, xViB);
         assertEquals(DV.FALSE_DV, viC.getProperty(IDENTITY));
 
         // in a second iteration, we may encounter:
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, false, viA, xViB);
+        mhC.mergeIntoMe(TRUE, TRUE, null, false, viA, xViB);
         // this should execute without raising exceptions
     }
 
@@ -144,12 +147,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: if(x) return b;
         List<ConditionAndVariableInfo> xViB = List.of(newConditionAndVariableInfo(x, viB));
 
-        VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, false, xViB);
+        VariableInfoImpl ret2 = new MergeHelper(minimalEvaluationContext, ret)
+                .mergeIntoNewObject(TRUE, TRUE, false, xViB);
         assertNotSame(ret, ret2);
 
         Expression value2 = ret2.getValue();
         assertEquals("instance type boolean?4:<return value:boolean>", value2.debugOutput());
-        ret2.mergePropertiesIgnoreValue(false, ret, xViB);
+        new MergeHelper(minimalEvaluationContext, ret2).mergePropertiesIgnoreValue(false, ret, xViB);
         assertEquals(DV.FALSE_DV, ret2.getProperty(IDENTITY));
 
         // OK let's continue
@@ -185,11 +189,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: if(x==3) return b;
         List<ConditionAndVariableInfo> x3ViB = List.of(newConditionAndVariableInfo(xEquals3, viB));
 
-        VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, false, x3ViB);
+        VariableInfoImpl ret2 = new MergeHelper(minimalEvaluationContext, ret)
+                .mergeIntoNewObject(TRUE, TRUE, false, x3ViB);
         assertNotSame(ret2, ret);
         assertEquals("3==instance type int?4:<return value:boolean>", ret2.getValue().debugOutput());
 
-        ret2.mergePropertiesIgnoreValue(false, ret, x3ViB);
+        new MergeHelper(minimalEvaluationContext, ret2)
+                .mergePropertiesIgnoreValue(false, ret, x3ViB);
         assertEquals(DV.FALSE_DV, ret2.getProperty(IDENTITY));
 
         // OK let's continue, but with another if in between
@@ -205,11 +211,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
         List<ConditionAndVariableInfo> x4ViA = List.of(newConditionAndVariableInfo(xEquals4, viA));
 
-        VariableInfoImpl ret3 = ret2.mergeIntoNewObject(minimalEvaluationContext, state, TRUE, false, x4ViA);
+        MergeHelper mergeHelper = new MergeHelper(minimalEvaluationContext, ret2);
+        VariableInfoImpl ret3 = mergeHelper.mergeIntoNewObject(state, TRUE, false, x4ViA);
         assertNotSame(ret3, ret2);
         assertEquals("4==instance type int?3:3==instance type int?4:<return value:boolean>",
                 ret3.getValue().debugOutput());
-        ret3.mergePropertiesIgnoreValue(false, ret2, x4ViA);
+        new MergeHelper(minimalEvaluationContext, ret3)
+                .mergePropertiesIgnoreValue(false, ret2, x4ViA);
         assertEquals(DV.FALSE_DV, ret3.getProperty(IDENTITY));
 
         // situation:
@@ -248,11 +256,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         List<ConditionAndVariableInfo> uViB = List.of(newConditionAndVariableInfo(unknown, viB));
 
         try {
-            VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, TRUE, false, uViB);
+            MergeHelper mergeHelper = new MergeHelper(minimalEvaluationContext, viC);
+            VariableInfoImpl viC2 = mergeHelper.mergeIntoNewObject(TRUE, TRUE, false, uViB);
             assertNotSame(viA, viC2);
             assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
-            viC2.mergePropertiesIgnoreValue(false, viA, uViB);
+            MergeHelper mergeHelper2 = new MergeHelper(minimalEvaluationContext, viC2);
+            mergeHelper2.mergePropertiesIgnoreValue(false, viA, uViB);
             assertEquals(DV.FALSE_DV, viC2.getProperty(IDENTITY));
         } catch (NullPointerException nullPointerException) {
             // OK! there is no current type
@@ -280,10 +290,11 @@ public class TestVariableInfo extends CommonVariableInfo {
                 newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viC, list);
+        MergeHelper mergeHelper = new MergeHelper(minimalEvaluationContext, viC);
+        mergeHelper.mergeIntoMe(TRUE, TRUE, null, true, viC, list);
         assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
-        viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
+        mergeHelper.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
         assertEquals(DV.FALSE_DV, viC.getProperty(IDENTITY));
     }
 
@@ -308,12 +319,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         List<ConditionAndVariableInfo> list = List.of(newConditionAndVariableInfo(x, viA),
                 newConditionAndVariableInfo(Negation.negate(minimalEvaluationContext, x), viB));
 
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, TRUE, null, true, viC, list);
+        MergeHelper mergeHelper = new MergeHelper(minimalEvaluationContext, viC);
+        mergeHelper.mergeIntoMe(TRUE, TRUE, null, true, viC, list);
 
         Expression res = viC.getValue();
         assertEquals("3", res.toString());
 
-        viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
+        mergeHelper.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
         assertEquals(DV.TRUE_DV, viC.getProperty(CONTAINER));
     }
 }
