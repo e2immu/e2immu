@@ -142,29 +142,32 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertEquals("1", loop.statementIndex());
                     } else fail();
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "i";
+                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "i";
+                        String expected = d.iteration() == 0 ? "<localVariableInLoop:int>" : "instance type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("sum".equals(d.variableName())) {
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         assertEquals("0", d.currentValue().toString());
                         assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:sum>+<v:i>" : "sum+i";
+                        String expected = d.iteration() == 0 ? "<v:sum>+<localVariableInLoop:int>" : "i+sum$1";
                         assertEquals(expected, d.currentValue().toString());
                         if (variableNature instanceof VariableNature.VariableDefinedOutsideLoop outside) {
                             assertEquals("1", outside.statementIndex());
                         } else fail("Of " + variableNature.getClass());
-                        assertDv(d, 1, DV.FALSE_DV, Property.IDENTITY);
+                        assertDv(d, DV.FALSE_DV, Property.IDENTITY);
                     }
-                    if("1".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<loopIsNotEmptyCondition>?<v:sum>+<localVariableInLoop:int>:0"
+                                : "instance type boolean?instance type int+sum:0";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -199,7 +202,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

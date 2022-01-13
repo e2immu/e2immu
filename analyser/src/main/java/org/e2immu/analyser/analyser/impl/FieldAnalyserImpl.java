@@ -38,8 +38,11 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
+import org.e2immu.support.Either;
+import org.e2immu.support.EventuallyFinal;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -57,6 +60,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     // analyser components, constants are used in tests and delay debugging
     public static final String COMPUTE_TRANSPARENT_TYPE = "computeTransparentType";
+    public static final String ANONYMOUS_TYPE_ANALYSER = "anonymousTypeAnalyser";
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
     public static final String ANALYSE_FINAL_VALUE = "analyseFinalValue";
@@ -75,7 +79,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public final String fqn; // of fieldInfo, saves a lot of typing
     public final FieldInspection fieldInspection;
     public final FieldAnalysisImpl.Builder fieldAnalysis;
-    public final MethodAnalyser sam;
+    public final EventuallyFinal<PrimaryTypeAnalyser> anonymousTypeAnalyser = new EventuallyFinal<>();
     private final boolean fieldCanBeWrittenFromOutsideThisPrimaryType;
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
@@ -95,7 +99,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     public FieldAnalyserImpl(FieldInfo fieldInfo,
                              TypeInfo primaryType,
                              TypeAnalysis ownerTypeAnalysis,
-                             MethodAnalyser sam,
                              AnalyserContext nonExpandableAnalyserContext) {
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
@@ -109,13 +112,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
-        this.sam = sam;
         fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isAccessibleOutsideOfPrimaryType() &&
                 !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
-
         AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
+                .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, this::runAnonymousTypeAnalyser)
                 .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
                 .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
@@ -249,9 +251,22 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     @Override
     public void write() {
+        assert anonymousTypeAnalyser.isFinal();
+        if (anonymousTypeAnalyser.get() != null) {
+            anonymousTypeAnalyser.get().write();
+        }
+
         // before we check, we copy the properties into annotations
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         fieldAnalysis.transferPropertiesToAnnotations(e2);
+    }
+
+    @Override
+    public void makeImmutable() {
+        assert anonymousTypeAnalyser.isFinal();
+        if (anonymousTypeAnalyser.get() != null) {
+            anonymousTypeAnalyser.get().makeImmutable();
+        }
     }
 
     private AnalysisStatus evaluateInitializer(SharedState sharedState) {
@@ -280,6 +295,65 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
         fieldAnalysis.setInitialiserValue(nullValue);
         return DONE;
+    }
+
+    private AnalysisStatus runAnonymousTypeAnalyser(SharedState sharedState) {
+        if (!anonymousTypeAnalyser.isFinal()) {
+
+            if (fieldInspection.fieldInitialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
+                if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
+
+                    TypeInfo typeInfo = typeFromInitialiser(fieldInitialiser.initialiser());
+                    if (typeInfo != null) {
+                        SortedType sortedType = typeInfo.typeResolution.get().sortedType();
+                        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
+                                List.of(sortedType),
+                                analyserContext.getConfiguration(),
+                                analyserContext.getPrimitives(),
+                                Either.left(analyserContext.getPatternMatcher()),
+                                analyserContext.getE2ImmuAnnotationExpressions());
+                        primaryTypeAnalyser.initialize();
+                        anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
+                        recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);
+                    }
+                }
+            }
+            if (!anonymousTypeAnalyser.isFinal()) anonymousTypeAnalyser.setFinal(null);
+        }
+
+        AnalysisStatus analysisStatus = DONE;
+        PrimaryTypeAnalyser analyser = anonymousTypeAnalyser.get();
+        if (analyser != null) {
+            log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
+            AnalysisStatus lambdaStatus = analyser.analyse(sharedState.iteration(), sharedState.closure());
+            log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
+            analysisStatus = analysisStatus.combine(lambdaStatus);
+            messages.addAll(analyser.getMessageStream());
+        }
+
+        return analysisStatus;
+    }
+
+    private void recursivelyAddPrimaryTypeAnalyserToAnalyserContext(PrimaryTypeAnalyser analyser) {
+        AnalyserContext context = analyserContext;
+        while (context != null) {
+            if (context instanceof ExpandableAnalyserContextImpl expandable) {
+                expandable.addPrimaryTypeAnalyser(analyser);
+            }
+            context = context.getParent();
+        }
+    }
+
+
+    private TypeInfo typeFromInitialiser(Expression initialiser) {
+        if (initialiser instanceof Lambda lambda) {
+            return lambda.definesType();
+        }
+        if (initialiser instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+            return cc.anonymousClass();
+        }
+        return null;
     }
 
 

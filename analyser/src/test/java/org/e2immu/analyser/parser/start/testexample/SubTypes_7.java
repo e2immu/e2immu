@@ -14,14 +14,7 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Identity;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-
-import java.util.Iterator;
-import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class SubTypes_7 {
 

@@ -148,17 +148,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                     Analyser analyser;
                     if (mfs instanceof FieldInfo fieldInfo) {
                         if (!fieldInfo.fieldAnalysis.isSet()) {
-                            MethodAnalyser samAnalyser;
-                            if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-                                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
-                                MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
-                                if (sam != null) {
-                                    samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
-                                            "No method analyser for " + sam.fullyQualifiedName);
-                                } else samAnalyser = null;
-                            } else samAnalyser = null;
                             TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
-                            analyser = new FieldAnalyserImpl(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
+                            analyser = new FieldAnalyserImpl(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis,
+                                    this);
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {
                             analyser = null;
