@@ -442,6 +442,4 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             throw rte;
         }
     }
-
-
 }

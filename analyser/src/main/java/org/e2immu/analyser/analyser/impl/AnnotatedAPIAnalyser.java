@@ -391,17 +391,17 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     @Override
     public FieldAnalyserImpl getFieldAnalyser(FieldInfo fieldInfo) {
-        return null; // IMPROVE ME
+        return null;
     }
 
     @Override
     public Stream<FieldAnalyser> fieldAnalyserStream() {
-        return Stream.empty(); // IMPROVE ME
+        return Stream.empty();
     }
 
     @Override
     public MethodAnalyserImpl getMethodAnalyser(MethodInfo methodInfo) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -424,7 +424,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
     @Override
     public TypeAnalyserImpl getTypeAnalyser(TypeInfo typeInfo) {
-        throw new UnsupportedOperationException();
+        return null; // we don't have those
     }
 
     @Override

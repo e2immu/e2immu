@@ -37,10 +37,6 @@ public interface MethodAnalyser extends Analyser, HoldsAnalysers {
 
     boolean hasCode();
 
-    List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo);
-
-    List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo);
-
     CausesOfDelay fromFieldToParametersStatus();
 
     MethodAnalysis getMethodAnalysis();

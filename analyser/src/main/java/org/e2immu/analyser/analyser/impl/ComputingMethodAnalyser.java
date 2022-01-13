@@ -892,19 +892,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         }
     }
 
-    @Override
-    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? List.of() : methodAnalysis.getLastStatement().assignmentInfo(fieldInfo);
-    }
-
-    @Override
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? List.of() :
-                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo);
-    }
-
     // occurs as often in a flatMap as not, so a stream version is useful
     @Override
     public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {

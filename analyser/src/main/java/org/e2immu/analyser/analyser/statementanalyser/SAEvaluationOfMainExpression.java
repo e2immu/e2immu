@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
@@ -269,8 +270,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
              */
         AnalyserContext analyserContext = sharedState.evaluationContext().getAnalyserContext();
 
-        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(eci.methodInfo);
-        assert methodAnalyser != null : "Cannot find method analyser for " + eci.methodInfo;
+        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(eci.methodInfo);
+        assert methodAnalysis != null : "Cannot find method analysis for " + eci.methodInfo.fullyQualifiedName;
 
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
         EvaluationResult.Builder builder = new EvaluationResult.Builder();
@@ -287,7 +288,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         List<Expression> assignments = new ArrayList<>();
         for (FieldInfo fieldInfo : methodInfo().typeInfo.visibleFields(analyserContext)) {
             if (!fieldInfo.isStatic(analyserContext)) {
-                for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+                for (VariableInfo variableInfo : methodAnalysis.getFieldAsVariable(fieldInfo)) {
                     if (variableInfo.isAssigned()) {
                         EvaluationResult translated = variableInfo.getValue()
                                 .reEvaluate(sharedState.evaluationContext(), translation);

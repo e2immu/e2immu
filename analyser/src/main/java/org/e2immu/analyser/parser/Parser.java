@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import com.github.javaparser.ParseException;
 import org.apache.commons.io.IOUtil;
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
@@ -116,8 +117,8 @@ public class Parser {
             typeMap = input.globalTypeContext().typeMap.build();
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
-            runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
-            runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
+           AnalyserContext shallowContext = runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
+            runPrimaryTypeAnalyser(typeMap, shallowContext, resolvedSourceTypes);
         }
 
         return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
@@ -209,7 +210,7 @@ public class Parser {
         }
     }
 
-    private void runPrimaryTypeAnalyser(TypeMap typeMap, List<SortedType> sortedPrimaryTypes) {
+    private void runPrimaryTypeAnalyser(TypeMap typeMap, AnalyserContext shallowContext, List<SortedType> sortedPrimaryTypes) {
         for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
             typeMapVisitor.visit(typeMap);
         }
@@ -217,7 +218,7 @@ public class Parser {
                 sortedPrimaryTypes.stream().map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
         List<List<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
         for (List<SortedType> sortedTypeCycle : groupByCycles) {
-            analyseSortedTypeCycle(sortedTypeCycle);
+            analyseSortedTypeCycle(sortedTypeCycle, shallowContext);
         }
     }
 
@@ -238,8 +239,8 @@ public class Parser {
         return cycles;
     }
 
-    private void analyseSortedTypeCycle(List<SortedType> sortedTypes) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(null, sortedTypes, configuration,
+    private void analyseSortedTypeCycle(List<SortedType> sortedTypes, AnalyserContext analyserContext) {
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
                 getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
         try {
@@ -271,7 +272,7 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private void runShallowAnalyser(TypeMap typeMap, List<SortedType> annotatedAPITypes, List<SortedType> sourceTypes) {
+    private AnalyserContext runShallowAnalyser(TypeMap typeMap, List<SortedType> annotatedAPITypes, List<SortedType> sourceTypes) {
 
         // the following block of code ensures that primary types of the annotated APIs
         // are processed in the correct order
@@ -306,6 +307,7 @@ public class Parser {
                         typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                                 .filter(m -> m.methodInspection.get().isPublic())
                                 .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
+        return annotatedAPIAnalyser;
     }
 
     private static boolean checkOnDuplicates(List<TypeInfo> types) {

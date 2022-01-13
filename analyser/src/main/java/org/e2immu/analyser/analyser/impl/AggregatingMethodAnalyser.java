@@ -178,9 +178,4 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     public void makeImmutable() {
         // nothing
     }
-
-    @Override
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
-        return List.of();
-    }
 }

@@ -226,12 +226,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     @Override
-    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
-        return getFieldAsVariable(fieldInfo).stream().filter(VariableInfo::isAssigned)
-                .toList();
-    }
-
-    @Override
     public CausesOfDelay fromFieldToParametersStatus() {
         CausesOfDelay delay = parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
                 .map(pa -> pa.getParameterAnalysis().assignedToFieldDelays())

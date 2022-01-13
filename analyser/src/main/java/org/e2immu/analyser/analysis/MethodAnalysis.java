@@ -92,9 +92,9 @@ public interface MethodAnalysis extends Analysis {
     default DV getMethodProperty(Property property) {
         return switch (property) {
             case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_METHOD, TEMP_MODIFIED_METHOD,
-                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT-> getPropertyFromMapDelayWhenAbsent(property);
+                    FLUENT, IDENTITY, INDEPENDENT, CONSTANT -> getPropertyFromMapDelayWhenAbsent(property);
             case FINALIZER -> getPropertyFromMapNeverDelay(property);
-                default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
+            default -> throw new PropertyException(Analyser.AnalyserIdentification.METHOD, property);
         };
     }
 
@@ -141,7 +141,7 @@ public interface MethodAnalysis extends Analysis {
             if (test != null) return "@TestMark: " + fields;
             if (after == null) {
                 if (this == NOT_EVENTUAL) return "NOT_EVENTUAL";
-           //     if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
+                //     if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
                 throw new UnsupportedOperationException();
             }
             return "@Only " + (after ? "after" : "before") + ": " + fields;
@@ -163,4 +163,13 @@ public interface MethodAnalysis extends Analysis {
         }
     }
 
+    default List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
+        StatementAnalysis lastStatement = getLastStatement();
+        return lastStatement == null ? List.of() : getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo);
+    }
+
+    default List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
+        return getFieldAsVariable(fieldInfo).stream().filter(VariableInfo::isAssigned)
+                .toList();
+    }
 }

@@ -397,11 +397,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
-        return List.of();
-    }
-
-    @Override
     public void check() {
         // everything contracted, nothing to check
     }

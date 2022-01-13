@@ -768,7 +768,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
                     methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
-                for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
+                for (VariableInfo vi : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
                     Expression expression = vi.getValue();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
@@ -845,7 +845,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         CausesOfDelay delays = CausesOfDelay.EMPTY;
         ValueAndPropertyProxy latestBlock = null;
         for (MethodAnalyser methodAnalyser : staticBlocks) {
-            for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+            for (VariableInfo vi : methodAnalyser.getMethodAnalysis().getFieldAsVariable(fieldInfo)) {
                 if (vi.isAssigned()) {
                     Expression expression = vi.getValue();
                     VariableExpression ve;
@@ -1281,7 +1281,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         // we only consider methods, not constructors (unless the field is static)!
         Stream<MethodAnalyser> stream2 = methodsForModification();
         CausesOfDelay contextModifications = stream2.flatMap(m -> {
-            List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo);
+            List<VariableInfo> variableInfoList = m.getMethodAnalysis().getFieldAsVariable(fieldInfo);
             return variableInfoList.stream()
                     .filter(VariableInfo::isRead)
                     .map(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).causesOfDelay());

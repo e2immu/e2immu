@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,6 +55,7 @@ when there is a circular dependency that cannot easily be ignored.
  */
 public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyserImpl.class);
+    private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final String name;
@@ -90,8 +92,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.primitives = primitives;
         name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
         primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
-
-        assert (parent == null) == (sortedTypes.stream().allMatch(st -> st.primaryType().isPrimaryType()));
 
         // do the types first, so we can pass on a TypeAnalysis objects
         Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
@@ -237,13 +237,13 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     @Override
     public void analyse() {
         if(!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
-
+        int analyseCount =  callCounterForDebugging.incrementAndGet();
         int iteration = 0;
         AnalysisStatus analysisStatus;
 
         do {
-            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, time {}\n******",
-                    iteration, name);
+            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, #{}\n******",
+                    iteration, name, analyseCount);
 
             analysisStatus = analyse(iteration, null);
             iteration++;

@@ -53,7 +53,7 @@ public class AssignmentIncompatibleWithPrecondition {
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
 
-            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo)) {
+            for (VariableInfo variableInfo : methodAnalyser.getMethodAnalysis().getFieldAsVariable(fieldInfo)) {
                 boolean assigned = variableInfo.isAssigned();
                 if (assigned) {
                     Expression pcExpression = precondition.expression();
