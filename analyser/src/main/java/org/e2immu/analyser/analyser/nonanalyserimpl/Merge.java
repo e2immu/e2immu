@@ -26,6 +26,10 @@ import java.util.Objects;
 
 public record Merge(EvaluationContext evaluationContext, VariableInfoContainer vic) {
 
+    public enum Action {
+        MERGE, REMOVE, IGNORE
+    }
+
     public Expression merge(Expression stateOfDestination,
                             Expression postProcessState,
                             Expression overwriteValue,

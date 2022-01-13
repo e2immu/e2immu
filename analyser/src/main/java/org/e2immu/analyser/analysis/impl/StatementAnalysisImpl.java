@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -800,12 +801,31 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return candidateVariablesForNullPtrWarning.stream();
     }
 
-    private record AcceptForMerging(VariableInfoContainer vic, boolean accept) {
-        // useful for debugging
-        @Override
-        public String toString() {
-            return vic.current().variable().fullyQualifiedName() + ":" + accept;
-        }
+
+    private record MergeAction(VariableInfoContainer vic, Merge.Action action) {
+    }
+
+    private List<MergeAction> mergeActions(List<ConditionAndLastStatement> lastStatements) {
+        List<MergeAction> list = new ArrayList<>();
+        mergeAction(list, variables.stream().map(Map.Entry::getValue), vn -> vn.acceptVariableForMerging(index));
+        Stream<VariableInfoContainer> stream = lastStatements.stream()
+                .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue));
+        mergeAction(list, stream, vn -> vn.acceptForSubBlockMerging(index));
+        return list;
+    }
+
+    private void mergeAction(List<MergeAction> list,
+                             Stream<VariableInfoContainer> stream,
+                             Predicate<VariableNature> predicate) {
+        stream.forEach(vic -> {
+            Merge.Action action;
+            if (predicate.test(vic.variableNature())) {
+                action = Merge.Action.MERGE;
+            } else {
+                action = Merge.Action.IGNORE;
+            }
+            list.add(new MergeAction(vic, action));
+        });
     }
 
     public record ConditionAndLastStatement(Expression condition,
@@ -833,23 +853,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        // first, per variable
+        // some variables will be picked up in the sub-blocks, others in the current block, others in both
+        // we want to see them only once, though
+        Set<String> merged = new HashSet<>();
 
         // we copy to a list, because we may be adding variables (ConditionalInitialization copies)
-        List<AcceptForMerging> variableStream = makeVariableStream(lastStatements).toList();
-        Set<String> merged = new HashSet<>();
+        List<MergeAction> mergeActions = mergeActions(lastStatements);
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
-        for (AcceptForMerging e : variableStream) {
-            VariableInfoContainer vic = e.vic();
+        for (MergeAction mergeAction : mergeActions) {
+            VariableInfoContainer vic = mergeAction.vic;
             VariableInfo current = vic.current();
             Variable variable = current.variable();
             String fqn = variable.fullyQualifiedName();
+            if (!merged.add(fqn)) continue;
 
-            if (e.accept) {
-                // the variable stream comes from multiple blocks; we ensure that merging takes place once only
-                if (merged.add(fqn)) {
+            switch (mergeAction.action) {
+                case MERGE -> {
+                    // the variable stream comes from multiple blocks; we ensure that merging takes place once only
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
                         VariableNature nature = vic.variableNature();
@@ -873,20 +895,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     } else {
                         overwriteValue = null;
                     }
-                    List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
-                            .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
-                            .map(e2 -> {
-                                VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
-                                return new ConditionAndVariableInfo(e2.condition(),
-                                        vic2.current(), e2.alwaysEscapes(),
-                                        vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
-                                        e2.lastStatement().getStatementAnalysis().index(),
-                                        index,
-                                        e2.lastStatement().getStatementAnalysis(),
-                                        variable,
-                                        evaluationContext);
-                            })
-                            .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
+                    List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
+                            fqn, inSwitchStatementOldStyle);
                     boolean ignoreCurrent;
                     if (toMerge.size() == 1 && (toMerge.get(0).variableNature().ignoreCurrent(index) && !atLeastOneBlockExecuted ||
                             variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
@@ -929,27 +939,52 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         // FIXME also add to linkedVariablesMap?
                     }
                 }
-            } else {
-                for (Property property : GroupPropertyValues.PROPERTIES) {
-                    groupPropertyValues.set(property, variable, current.getProperty(property));
+                case IGNORE, REMOVE -> {
+                    for (Property property : GroupPropertyValues.PROPERTIES) {
+                        groupPropertyValues.set(property, variable, current.getProperty(property));
+                    }
                 }
-                // the !merged check here is because some variables appear 2x, once with a positive accept,
-                // and the second time from inside the block with a negative one
-                // if (!merged.contains(fqn)) doNotWrite.add(variable);
             }
 
-            // CNN_FOR_PARENT overwrite
-            lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variableIsSet(fqn)).forEach(cal -> {
-                VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().getVariable(fqn);
-                VariableInfo calVi = calVic.best(EVALUATION);
-                DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT, null);
-                if (cnn4Parent != null) {
-                    // we copy, delayed or not!
-                    groupPropertyValues.set(Property.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
-                }
-            });
+            // CNN_FOR_PARENT overwrite; see Basics_14, from throws statement back to condition
+            contextNotNullForParent(lastStatements, groupPropertyValues, fqn);
         }
 
+        return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
+                variablesWhereMergeOverwrites);
+    }
+
+    private List<ConditionAndVariableInfo> filterSubBlocks(EvaluationContext evaluationContext, List<ConditionAndLastStatement> lastStatements, Variable variable, String fqn, boolean inSwitchStatementOldStyle) {
+        List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
+                .filter(e2 -> e2.lastStatement().getStatementAnalysis().variableIsSet(fqn))
+                .map(e2 -> {
+                    VariableInfoContainer vic2 = e2.lastStatement().getStatementAnalysis().getVariable(fqn);
+                    return new ConditionAndVariableInfo(e2.condition(),
+                            vic2.current(), e2.alwaysEscapes(),
+                            vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch(),
+                            e2.lastStatement().getStatementAnalysis().index(),
+                            index,
+                            e2.lastStatement().getStatementAnalysis(),
+                            variable,
+                            evaluationContext);
+                })
+                .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
+        return toMerge;
+    }
+
+    private void contextNotNullForParent(List<ConditionAndLastStatement> lastStatements, GroupPropertyValues groupPropertyValues, String fqn) {
+        lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variableIsSet(fqn)).forEach(cal -> {
+            VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().getVariable(fqn);
+            VariableInfo calVi = calVic.best(EVALUATION);
+            DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT, null);
+            if (cnn4Parent != null) {
+                // we copy, delayed or not!
+                groupPropertyValues.set(Property.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
+            }
+        });
+    }
+
+    private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext, GroupPropertyValues groupPropertyValues, Map<Variable, LinkedVariables> linkedVariablesMap, Set<Variable> variablesWhereMergeOverwrites) {
         // then, per cluster of variables
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
@@ -975,6 +1010,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
+    }
+
+
+    private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
+        if (inSwitchStatementOldStyle) {
+            assert cav.firstStatementIndexForOldStyleSwitch() != null;
+            // if the variable is assigned in the block, it has to be assigned after the first index
+            // "the block" is the switch statement; otherwise,
+            String cavLatest = cav.variableInfo().getAssignmentIds().getLatestAssignmentIndex();
+            if (cavLatest.compareTo(index) > 0) {
+                return cav.firstStatementIndexForOldStyleSwitch().compareTo(cavLatest) <= 0;
+            }
+            return cav.firstStatementIndexForOldStyleSwitch().compareTo(cav.variableInfo().getReadId()) <= 0;
+        }
+        return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
     }
 
     private boolean isLoopVariableWillDisappearInNextStatement(VariableInfoContainer vic) {
@@ -1063,33 +1113,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (fr.fieldInfo.isExplicitlyFinal()) return true;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
         return fieldAnalysis.getProperty(FINAL).valueIsTrue();
-    }
-
-    private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
-        if (inSwitchStatementOldStyle) {
-            assert cav.firstStatementIndexForOldStyleSwitch() != null;
-            // if the variable is assigned in the block, it has to be assigned after the first index
-            // "the block" is the switch statement; otherwise,
-            String cavLatest = cav.variableInfo().getAssignmentIds().getLatestAssignmentIndex();
-            if (cavLatest.compareTo(index) > 0) {
-                return cav.firstStatementIndexForOldStyleSwitch().compareTo(cavLatest) <= 0;
-            }
-            return cav.firstStatementIndexForOldStyleSwitch().compareTo(cav.variableInfo().getReadId()) <= 0;
-        }
-        return cav.variableInfo().isRead() || cav.variableInfo().isAssigned();
-    }
-
-    // explicitly ignore loop and shadow loop variables, they should not exist beyond the statement ->
-    //  !index.equals(vic.getStatementIndexOfThisLoopOrShadowVariable()))
-
-    // return a stream of all variables that need merging up
-    // note: .distinct() may not work
-    private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
-        return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
-                        e.getValue().variableNature().acceptVariableForMerging(index))),
-                lastStatements.stream().flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(e ->
-                        new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
-        );
     }
 
     /*

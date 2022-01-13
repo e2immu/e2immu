@@ -129,32 +129,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /*
-    factory method for new loop variables
-     */
-    public static VariableInfoContainerImpl newLoopVariable(Location location,
-                                                            LocalVariableReference lvr,
-                                                            String assignedId,
-                                                            String readId,
-                                                            Expression value,
-                                                            Map<Property, DV> properties,
-                                                            LinkedVariables linkedVariables,
-                                                            boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(location, lvr, new AssignmentIds(assignedId), readId, Set.of(),
-                null);
-        initial.setValue(value);
-        properties.forEach(initial::setProperty);
-        initial.ensureProperty(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
-        initial.ensureProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
-        initial.ensureProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
-        initial.ensureProperty(Property.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
-        initial.ensureProperty(Property.CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
-
-        initial.setLinkedVariables(linkedVariables);
-        return new VariableInfoContainerImpl(lvr.variable.nature(),
-                Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
-    }
-
-    /*
    factory method for new variables
     */
     public static VariableInfoContainerImpl existingLocalVariableIntoLoop(VariableInfoContainer previous,

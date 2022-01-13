@@ -88,11 +88,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     // test only!
     void mergeIntoMe(Expression stateOfDestination,
                      Expression postProcessState,
-                     Expression overwriteValue,
                      boolean atLeastOneBlockExecuted,
                      VariableInfoImpl previous,
                      List<ConditionAndVariableInfo> mergeSources) {
-        mergeIntoMe(stateOfDestination, postProcessState, overwriteValue, atLeastOneBlockExecuted,
+        mergeIntoMe(stateOfDestination, postProcessState, null, atLeastOneBlockExecuted,
                 previous, mergeSources, new GroupPropertyValues());
     }
 
