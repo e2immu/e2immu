@@ -203,6 +203,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals("set1", ((ParameterAnalysisImpl.Builder) p0).simpleName);
                 assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -221,6 +222,32 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
-        testClass("SubTypes_7", 0, 0, new DebugConfiguration.Builder().build());
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("SubTypes_7".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+
+            if ("Example7".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            // nested in Example7
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                assertEquals("Example7", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+
+            if ("Example8".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            // nested in Example8
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                assertEquals("Example8", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
+
+        testClass("SubTypes_7", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
     }
 }

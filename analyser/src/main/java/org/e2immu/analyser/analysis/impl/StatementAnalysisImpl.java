@@ -1146,9 +1146,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // otherwise we'll get delays
         // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
         // an assignment may be difficult.
-
+        // FIXME if the loop variable is of enclosed or own type, we'll get delays
+        // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
+        valueProperties.replaceDelaysByMinimalValue();
         Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
         Properties properties = Properties.of(Map.of(
                 CONTEXT_MODIFIED, DV.FALSE_DV,
@@ -1247,7 +1249,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .replaceDelayBy(MultiLevel.DEPENDENT_DV);
         properties.put(INDEPENDENT, independent);
 
-        DV container = parameterAnalysis.getProperty(CONTAINER);
+        // if the parameter is not explicitly annotated as a container, we can take a default value
+        DV container = parameterAnalysis.getProperty(CONTAINER).maxIgnoreDelay(DV.FALSE_DV);
         properties.put(CONTAINER, container);
 
         boolean identity = parameterInfo.index == 0;

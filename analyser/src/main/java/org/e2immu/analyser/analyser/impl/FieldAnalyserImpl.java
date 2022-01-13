@@ -657,9 +657,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV worstOverValuesPrep = fieldAnalysis.getValues().stream()
                 .filter(ValueAndPropertyProxy::validValueProperties)
                 .filter(proxy -> !(proxy.getValue() instanceof NullConstant))
-                .map(proxy -> isMyOwnType(proxy.getValue().returnType())
-                        ? myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE)
-                        : proxy.getProperty(Property.IMMUTABLE))
+                .map(this::immutableOfProxy)
                 .reduce(DV.MAX_INT_DV, DV::min);
         DV worstOverValues = worstOverValuesPrep == DV.MAX_INT_DV ? MultiLevel.MUTABLE_DV : worstOverValuesPrep;
         if (worstOverValues.isDelayed()) {
@@ -699,6 +697,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, correctedImmutable);
 
         return DONE;
+    }
+
+    private DV immutableOfProxy(ValueAndPropertyProxy proxy) {
+        if (isMyOwnType(proxy.getValue().returnType())) {
+            return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
+        }
+        return proxy.getProperty(Property.IMMUTABLE);
     }
 
     private boolean isMyOwnType(ParameterizedType returnType) {
@@ -886,6 +891,16 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
                 @Override
                 public DV getProperty(Property property) {
+                    if (fieldInfo.type.isFunctionalInterface() && properlyDefinedAnonymousType(fieldAnalysis.getInitializerValue())) {
+                        return switch (property) {
+                            case IMMUTABLE, EXTERNAL_IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
+                            case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
+                            case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                            case IDENTITY -> DV.FALSE_DV;
+                            case CONTAINER -> DV.TRUE_DV; // FIXME this should be diverted to the type
+                            default -> throw new UnsupportedOperationException("? who wants to know " + property);
+                        };
+                    }
                     return ec.getProperty(getValue(), property, false, false);
                 }
 
@@ -966,6 +981,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         values.sort(ValueAndPropertyProxy.COMPARATOR);
         fieldAnalysis.setValues(values, delays);
         return AnalysisStatus.of(delays);
+    }
+
+    private boolean properlyDefinedAnonymousType(Expression expression) {
+        return expression instanceof InlinedMethod || expression instanceof Lambda
+                || expression instanceof ConstructorCall cc && cc.anonymousClass() != null
+                || expression instanceof MethodReference;
     }
 
     /*
@@ -1389,6 +1410,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
                 return getProperty(variable, property);
+            }
+            if (value instanceof InlinedMethod) {
+                // an anonymous type, or even an explicit functional interface, has been replaced by an inlined method
+                // we cannot make the mistake of computing a value property on the return value of the method
+                // (i.e. the method may return a mutable object, but the method itself is not mutable)
+                throw new UnsupportedOperationException();
             }
             try {
                 return value.getProperty(this, property, true);

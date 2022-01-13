@@ -921,13 +921,15 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
             DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
+            MultiLevel.Effective fieldE2Immutable;
+            if (fieldIsOfOwnOrInnerClassType(fieldInfo)) {
+                fieldE2Immutable = MultiLevel.Effective.EFFECTIVE; // FIXME as a consequence, anonymous types/lambda's etc can be non-private
+            } else {
+                fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
 
-            // field is of the type of the class being analysed... it will not make the difference.
-            if (fieldImmutable.isDelayed()) {
-                if (typeInfo == fieldInfo.type.typeInfo) {
-                    fieldE2Immutable = MultiLevel.Effective.EFFECTIVE;
-                } else {
+                // field is of the type of the class being analysed... it will not make the difference.
+                if (fieldImmutable.isDelayed()) {
+
                     // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
                     // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
                     ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
@@ -1040,7 +1042,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
                         returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
                     }
-                    boolean returnTypePartOfMyself = returnTypeNestedOrChild(returnType);
+                    boolean returnTypePartOfMyself = fieldIsOfOwnOrInnerClassType(returnType);
                     if (returnTypeImmutable.isDelayed() && !returnTypePartOfMyself) {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.getMethodInfo().distinguishingName());
                         typeAnalysis.setProperty(Property.IMMUTABLE, returnTypeImmutable);
@@ -1070,9 +1072,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                         minLevel = Math.min(minLevel, independentLevel);
                     }
-
-                    // FIXME parameters of functional/abstract type which expose data?
-
                 }
             }
         }
@@ -1103,17 +1102,35 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return DONE;
     }
 
-    private boolean returnTypeNestedOrChild(ParameterizedType returnType) {
-        if (returnType.typeInfo == null) return false;
-        return returnTypeNestedOrChild(returnType.typeInfo);
+    private TypeInfo initializerAssignedToAnonymousType(FieldInfo fieldInfo) {
+        FieldInspection.FieldInitialiser initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
+        if (initialiser == null) return null;
+        Expression expression = initialiser.initialiser();
+        if (expression == null || expression == EmptyExpression.EMPTY_EXPRESSION) return null;
+        ParameterizedType type = expression.returnType();
+        if (type.isFunctionalInterface()) {
+            if (expression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+                return cc.anonymousClass();
+            }
+            if (expression instanceof Lambda lambda) {
+                return lambda.definesType();
+            }
+        }
+        return type.typeInfo;
     }
 
-    private boolean returnTypeNestedOrChild(TypeInfo returnType) {
-        if (returnType == typeInfo) return true;
-        TypeInspection typeInspection = analyserContext.getTypeInspection(returnType);
-        if (typeInspection.isStatic()) return false; // must be a nested (non-static) type
-        return returnType.packageNameOrEnclosingType.isRight() &&
-                returnTypeNestedOrChild(returnType.packageNameOrEnclosingType.getRight());
+    private boolean fieldIsOfOwnOrInnerClassType(ParameterizedType type) {
+        return type.typeInfo != null && type.typeInfo.isEnclosedIn(typeInfo);
+    }
+
+    private boolean fieldIsOfOwnOrInnerClassType(FieldInfo fieldInfo) {
+        if (fieldIsOfOwnOrInnerClassType(fieldInfo.type)) {
+            return true;
+        }
+        // the field can be assigned to an anonymous type, which has a static functional interface type
+        // we want to catch the newly created type
+        TypeInfo anonymousType = initializerAssignedToAnonymousType(fieldInfo);
+        return anonymousType != null && anonymousType.isEnclosedIn(typeInfo);
     }
 
     /* we will implement two schemas

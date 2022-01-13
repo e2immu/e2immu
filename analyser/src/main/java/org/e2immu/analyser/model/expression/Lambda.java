@@ -162,10 +162,14 @@ public class Lambda extends BaseExpression implements Expression {
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(Symbol.LEFT_BRACE);
-            outputBuilder.add(guideGenerator.start());
-            StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-            Block.statementsString(qualification, outputBuilder, guideGenerator, firstStatement);
-            outputBuilder.add(guideGenerator.end());
+            if (methodInfo.methodAnalysis.isSet()) {
+                outputBuilder.add(guideGenerator.start());
+                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
+                Block.statementsString(qualification, outputBuilder, guideGenerator, firstStatement);
+                outputBuilder.add(guideGenerator.end());
+            } else {
+                outputBuilder.add(new Text("... debugging ..."));
+            }
             outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;

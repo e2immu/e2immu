@@ -575,7 +575,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public boolean isPresent(Variable variable) {
-            return variablesOfExpression.contains(variable);
+            return variablesOfExpression.stream().map(VariableExpression::variable).anyMatch(v -> v.equals(variable));
         }
 
         @Override

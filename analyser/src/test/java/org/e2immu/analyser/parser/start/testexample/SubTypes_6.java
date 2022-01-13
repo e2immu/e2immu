@@ -23,9 +23,8 @@ import java.util.function.Function;
 /*
 There is no hidden content, since Function<> and RemoveOne, the types of the fields, are created as lambdas.
 
-SubTypes_6 is E1Container because removeOne is not private.
  */
-@E1Container
+@ERContainer
 public class SubTypes_6 {
 
     @NotModified

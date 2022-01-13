@@ -160,4 +160,18 @@ public class Properties {
     public String toString() {
         return map.toString();
     }
+
+    public void replaceIfDelayed(Property property, DV dv) {
+        assert dv != null;
+        DV inMap = map.get(property);
+        if (inMap == null || inMap.isDelayed()) map.put(property, dv);
+    }
+
+    public void replaceDelaysByMinimalValue() {
+        for (Map.Entry<Property, DV> entry : map.entrySet()) {
+            if (entry.getValue().isDelayed()) {
+                entry.setValue(entry.getKey().falseDv);
+            }
+        }
+    }
 }

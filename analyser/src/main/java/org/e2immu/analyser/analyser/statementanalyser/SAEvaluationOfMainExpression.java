@@ -270,6 +270,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         AnalyserContext analyserContext = sharedState.evaluationContext().getAnalyserContext();
 
         MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(eci.methodInfo);
+        assert methodAnalyser != null : "Cannot find method analyser for " + eci.methodInfo;
+
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
         EvaluationResult.Builder builder = new EvaluationResult.Builder();
         Map<Expression, Expression> translation = new HashMap<>();
