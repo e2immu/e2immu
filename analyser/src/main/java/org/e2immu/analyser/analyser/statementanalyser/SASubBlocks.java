@@ -215,7 +215,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
 
             // need timeAfterSubBlocks set already
-            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).copyBackLocalCopies(evaluationContext,
+            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
                     sharedState.localConditionManager().state(), addToStateAfterStatement,
                     lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
             analysisStatus = analysisStatus.combine(copyStatus);
@@ -235,7 +235,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 statementAnalysis.flowData().setTimeAfterSubBlocks(maxTime, index());
             }
             Expression postProcessState = new BooleanConstant(statementAnalysis.primitives(), true);
-            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).copyBackLocalCopies(evaluationContext,
+            AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
                     sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime);
             analysisStatus = analysisStatus.combine(copyStatus);
         }

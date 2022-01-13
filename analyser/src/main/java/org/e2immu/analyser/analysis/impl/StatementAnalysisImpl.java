@@ -779,10 +779,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
-    public boolean localVariablesAssignedInThisLoopIsFrozen() {
-        return localVariablesAssignedInThisLoop.isFrozen();
-    }
-
     // single point for adding to the variables map, but at the moment, not enforced
     public void putVariable(String name, VariableInfoContainer vic) {
         variables.put(name, vic);
@@ -825,12 +821,12 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param statementTime           the statement time of subBlocks
      */
-    public AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
-                                              Expression stateOfConditionManagerBeforeExecution,
-                                              Expression postProcessState,
-                                              List<ConditionAndLastStatement> lastStatements,
-                                              boolean atLeastOneBlockExecuted,
-                                              int statementTime) {
+    public AnalysisStatus mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
+                                                      Expression stateOfConditionManagerBeforeExecution,
+                                                      Expression postProcessState,
+                                                      List<ConditionAndLastStatement> lastStatements,
+                                                      boolean atLeastOneBlockExecuted,
+                                                      int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
@@ -1104,7 +1100,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                 Variable variable,
                                                 int statementTime,
                                                 VariableNature variableInLoop) {
-        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) {
             throw new UnsupportedOperationException("Already exists: " +
@@ -1305,11 +1300,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             result.put(vp, value);
         }
         return result;
-    }
-
-    private boolean inPartOfConstruction() {
-        return methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
-                MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     @Override
