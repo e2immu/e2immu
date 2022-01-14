@@ -540,20 +540,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
                     vic, navigationData.hasSubBlocks());
-        } else if (!(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)
-                && statement instanceof LoopStatement && variable.isLocal()) {
-            // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
-            // the variable itself will not be used anymore, only its "local copy" associated with the loop
-            // however, the loop may turn out to be completely empty, in which case the initial value is kept
-            // so we must keep the initial value
-            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
         } else if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) {
-            return; // skip
+            return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
+        } else if (conditionsToMoveVariableInsideLoop(variable, vic)) {
+            // move a local variable, not defined in this loop, inside the loop
+            // the result is a va
+            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
         }
         putVariable(fqn, newVic);
+    }
+
+    private boolean conditionsToMoveVariableInsideLoop(Variable variable,
+                                                       VariableInfoContainer vic) {
+        if (!(statement instanceof LoopStatement)) return false; // we must move inside a loop
+        return variable.isLocal() && !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
     }
 
     /**
@@ -1034,7 +1037,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic.variableNature() instanceof VariableNature.LoopVariable lv) {
             return index.equals(lv.statementIndex());
         }
-        if(vic.variableNature() instanceof VariableNature.Pattern pattern) {
+        if (vic.variableNature() instanceof VariableNature.Pattern pattern) {
             return index.equals(pattern.parentBlockIndex());
         }
         return false;

@@ -878,4 +878,11 @@ public class ParameterizedType {
         return arrays == 0 && typeInfo != null && typeInfo.isNumeric();
     }
 
+    public boolean isLong() {
+        return typeInfo != null && typeInfo.isLong();
+    }
+
+    public boolean isInt() {
+        return typeInfo != null && typeInfo.isInt();
+    }
 }

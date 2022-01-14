@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -64,6 +65,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
+    private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
     public static final String ANALYSE_TRANSPARENT_TYPES = "analyseTransparentTypes";
     public static final String ANALYSE_IMMUTABLE_CAN_BE_INCREASED = "analyseImmutableCanBeIncreased";
@@ -178,7 +180,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
-        log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
+        log(ANALYSER, "Analysing type {}, call #{}", typeInfo.fullyQualifiedName,
+                callCounterForDebugging.incrementAndGet());
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()

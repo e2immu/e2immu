@@ -12,30 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
+import java.util.Collection;
 
-/*
-Example of a cast which messes with the immutability rules:
- */
-@E2Container
-public class Cast_0<T> {
+public class Var_2<X> {
 
-    private final T t;
+    public final Collection<X> xes;
 
-    public Cast_0(T input) {
-        t = input;
+    public Var_2(Collection<X> xes) {
+        this.xes = xes;
     }
 
-    @NotModified
-    public T getT() {
-        return t;
+    public String method() {
+        var all = new StringBuilder();
+        for (var i : new int[]{1, 2, 3}) {
+            all.append(i);
+        }
+        for (var s : new String[]{"abc", "def"}) {
+            all.append(s);
+        }
+        // Collection<E> implements Iterable<E> directly
+        for (var x : xes) {
+            all.append(x.toString());
+        }
+        return all.toString();
     }
 
-    @NotModified
-    public String getTAsString() {
-        return (String) t;
-    }
 }

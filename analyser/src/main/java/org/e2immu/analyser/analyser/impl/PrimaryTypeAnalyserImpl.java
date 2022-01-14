@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +54,6 @@ when there is a circular dependency that cannot easily be ignored.
  */
 public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyserImpl.class);
-    private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final String name;
@@ -124,10 +122,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                     for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
                         parameterAnalysersBuilder.put(parameterAnalyser.getParameterInfo(), parameterAnalyser);
                     }
-                    // this has to happen before the regular analysers, because there are no delays
-                    //if (methodAnalyser instanceof ShallowMethodAnalyser) {
-                    //     methodAnalyser.analyse(0, null);
-                    // }
                     methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                     // finalizers are done early, before the first assignments
                     if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
@@ -241,13 +235,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         }
 
         if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
-        int analyseCount = callCounterForDebugging.incrementAndGet();
         int iteration = 0;
         AnalysisStatus analysisStatus;
 
         do {
-            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, #{}\n******",
-                    iteration, name, analyseCount);
+            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******",
+                    iteration, name);
 
             analysisStatus = analyse(iteration, null);
             iteration++;

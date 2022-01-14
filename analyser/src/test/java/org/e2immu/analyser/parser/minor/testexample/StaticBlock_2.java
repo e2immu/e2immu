@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
@@ -21,10 +21,10 @@ import org.e2immu.annotation.Variable;
 import java.util.HashMap;
 import java.util.Map;
 
-// also look at the static blocks of sub-types (test @Variable instead of @Final)
+// also look at constructors (test @Variable instead of @Final)
 // test @Nullable instead of @NotNull
 
-public class StaticBlock_3 {
+public class StaticBlock_2 {
 
     @Variable
     @Nullable
@@ -42,9 +42,7 @@ public class StaticBlock_3 {
         return map.get(s); // should raise a warning!
     }
 
-    static class SubType {
-        static {
-            map = null;
-        }
+    public StaticBlock_2() {
+        map = null;
     }
 }

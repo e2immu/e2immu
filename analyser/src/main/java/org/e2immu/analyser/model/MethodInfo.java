@@ -344,4 +344,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public CausesOfDelay delay(CauseOfDelay.Cause cause) {
         return new SimpleSet(newLocation(), cause);
     }
+
+    private static final Set<String> ZERO_PARAMS = Set.of("toString", "hashCode", "clone", "finalize", "getClass",
+            "notify", "notifyAll", "wait");
+
+    public boolean belongToJLO(InspectionProvider inspectionProvider) {
+        List<ParameterInfo> parameters = inspectionProvider.getMethodInspection(this).getParameters();
+        int numParameters = parameters.size();
+        if (numParameters == 0) {
+            return ZERO_PARAMS.contains(name);
+        }
+        if (numParameters == 1) {
+            return "equals".equals(name) || "wait".equals(name) && parameters.get(0).parameterizedType.isLong();
+        }
+        return numParameters == 2 && "wait".equals(name) && parameters.get(0).parameterizedType.isLong() &&
+                parameters.get(1).parameterizedType.isInt();
+    }
 }

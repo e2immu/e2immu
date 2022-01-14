@@ -635,7 +635,7 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
         @Override
         public boolean hasState(Expression expression) {
-            return evaluationContext.hasState(expression);
+            return false;
         }
 
         @Override

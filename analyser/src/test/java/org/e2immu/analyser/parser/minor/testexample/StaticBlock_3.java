@@ -12,50 +12,39 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.Variable;
 
-/*
-so while T is an unbound type parameter, the transparency promise is broken by the use
-of a cast in the incrementedT method
- */
-@E1Immutable
-public class Cast_1<T> {
+import java.util.HashMap;
+import java.util.Map;
 
-    static class Counter {
-        private int i = 0;
+// also look at the static blocks of sub-types (test @Variable instead of @Final)
+// test @Nullable instead of @NotNull
 
-        public int increment() {
-            return ++i;
+public class StaticBlock_3 {
+
+    @Variable
+    @Nullable
+    private static Map<String, String> map;
+
+    static {
+        map = new HashMap<>();
+        map.put("1", "2"); // should not raise a warning
+        System.out.println("enclosing type");
+    }
+
+    @Nullable
+    @NotModified
+    public static String get(String s) {
+        return map.get(s); // should raise a warning!
+    }
+
+    static class SubType {
+        static {
+            map = null;
         }
-    }
-
-    @Modified
-    private final T t;
-
-    public Cast_1(@Modified T input) {
-        t = input;
-    }
-
-    @NotModified
-    public T getT() {
-        return t;
-    }
-
-    @NotModified
-    public String getTAsString() {
-        return (String) t;
-    }
-
-    @Modified
-    public int incrementedT() {
-        return ((Counter) t).increment();
-    }
-
-    public Counter getTAsCounter() {
-        return (Counter) t;
     }
 }

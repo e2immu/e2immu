@@ -45,7 +45,6 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_BOOLEAN_XOR = 51;
 
     // variables, types
-    public static final int ORDER_PRIMITIVE = 60;
     public static final int ORDER_ARRAY = 61;
     public static final int ORDER_INSTANCE = 63;
     public static final int ORDER_INLINE_METHOD = 64;
@@ -53,10 +52,6 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_VARIABLE = 66;
     public static final int ORDER_TYPE = 68;
     public static final int ORDER_NO_VALUE = 69;
-    // we use the order of the conditional,but as a consequence, all internalOrders need to be able to deal
-    // with an inline conditional
-    //public static final int ORDER_CONDITIONAL = 70;
-    public static final int ORDER_SWITCH = 71;
 
     // boolean operations
     public static final int ORDER_INSTANCE_OF = 81;
@@ -67,6 +62,7 @@ public class ExpressionComparator implements Comparator<Expression> {
 
     // must be later than any other binary operator (unevaluated)
     public static final int ORDER_BINARY_OPERATOR = 87;
+    public static final int ORDER_UNARY_OPERATOR = 88;
 
     // irrelevant, normally
     public static final int ORDER_MVP = 90;

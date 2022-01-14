@@ -12,19 +12,35 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
-public class Var_5 {
+public class Var_3<X> {
 
-    public static String method(String s) {
-        try (var sw = new StringWriter()) {
-            return sw.append(s).toString();
-        } catch (IOException ioe) {
-            return "Error!";
+    public final List<X> xes;
+
+    public Var_3(Collection<X> xes) {
+        var set = new HashSet<X>(xes); // keep the X here
+        this.xes = new LinkedList<>(set);
+    }
+
+    public String method() {
+        var all = new StringBuilder();
+        for (var i : new int[]{1, 2, 3}) {
+            all.append(i);
         }
+        for (var s : new String[]{"abc", "def"}) {
+            all.append(s);
+        }
+        // List<E> implements Collection<E> implements Iterable<E>
+        for (var x : xes) {
+            all.append(x.toString());
+        }
+        return all.toString();
     }
 
 }

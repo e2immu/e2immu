@@ -24,17 +24,13 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImp
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.*;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
@@ -127,6 +123,8 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     public void check() {
         if (typeInfo.typePropertiesAreContracted()) return;
 
+        internalCheckImmutableIndependent();
+
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         // before we check, we copy the properties into annotations
@@ -150,6 +148,13 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
             CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
         }
+    }
+
+    private void internalCheckImmutableIndependent() {
+        DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
+        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
+        assert MultiLevel.independentConsistentWithImmutable(independent, immutable)
+                : "Have type %s, independent %s, immutable %s".formatted(typeInfo.fullyQualifiedName, independent, immutable);
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

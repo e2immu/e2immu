@@ -354,32 +354,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         linksBetweenParameters(builder, evaluationContext);
 
-        // before we return, increment the time, irrespective of NO_VALUE
+        // increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
-            boolean increment;
-            switch (methodAnalysis.analysisMode()) {
-                case COMPUTED -> {
-                    StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-                    if (lastStatement == null) {
-                        increment = false;
-                    } else if (lastStatement.flowData().initialTimeNotYetSet()) {
-                        SimpleSet initialTime = new SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
-                        return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
-                    } else {
-                        if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
-                            increment = false;
-                            // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda so we don't see this
-                        } else {
-                            increment = lastStatement.flowData().getTimeAfterSubBlocks() > 0;
-                        }
-                    }
-                }
-                // TODO aggregated needs its specific code
-                case CONTRACTED, AGGREGATED -> increment = !methodInfo.methodResolution.isSet() ||
-                        methodInfo.methodResolution.get().allowsInterrupts();
-                default -> throw new IllegalStateException("Unexpected value: " + methodAnalysis.analysisMode());
-            }
-            if (increment) builder.incrementStatementTime();
+            EvaluationResult delayedMethod = incrementStatementTime(methodAnalysis, evaluationContext, builder, modified);
+            if (delayedMethod != null) return delayedMethod;
         }
 
         boolean delayedFinalizer = checkFinalizer(evaluationContext, builder, methodAnalysis, objectValue);
@@ -420,6 +398,37 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
+    }
+
+    private EvaluationResult incrementStatementTime(MethodAnalysis methodAnalysis,
+                                                    EvaluationContext evaluationContext,
+                                                    EvaluationResult.Builder builder,
+                                                    DV modified) {
+        boolean increment;
+        switch (methodAnalysis.analysisMode()) {
+            case COMPUTED -> {
+                StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+                if (lastStatement == null) {
+                    increment = false;
+                } else if (lastStatement.flowData().initialTimeNotYetSet()) {
+                    SimpleSet initialTime = new SimpleSet(methodAnalysis.location(), CauseOfDelay.Cause.INITIAL_TIME);
+                    return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(initialTime));
+                } else {
+                    if (lastStatement.flowData().timeAfterSubBlocksNotYetSet()) {
+                        increment = false;
+                        // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda so we don't see this
+                    } else {
+                        increment = lastStatement.flowData().getTimeAfterSubBlocks() > 0;
+                    }
+                }
+            }
+            // TODO aggregated needs its specific code
+            case CONTRACTED, AGGREGATED -> increment = !methodInfo.methodResolution.isSet() ||
+                    methodInfo.methodResolution.get().allowsInterrupts();
+            default -> throw new IllegalStateException("Unexpected value: " + methodAnalysis.analysisMode());
+        }
+        if (increment) builder.incrementStatementTime();
+        return null;
     }
 
     /*

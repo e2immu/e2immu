@@ -80,9 +80,10 @@ public class ExplicitTypes {
         Consumer<Element> visitor = element -> {
 
             /* a.method() -> the type of "a" cannot be replaced by unbound type parameter,
+             * unless we're talking the methods from java.lang.Object
              */
             MethodCall mc;
-            if ((mc = element.asInstanceOf(MethodCall.class)) != null) {
+            if ((mc = element.asInstanceOf(MethodCall.class)) != null && !mc.methodInfo.belongToJLO(inspectionProvider)) {
                 add(mc.object.returnType(), UsedAs.METHOD);
                 addTypesFromParameters(mc.methodInfo, mc.parameterExpressions, UsedAs.METHOD);
             }

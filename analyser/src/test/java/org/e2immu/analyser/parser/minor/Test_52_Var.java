@@ -12,13 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -56,7 +58,16 @@ public class Test_52_Var extends CommonTestRunner {
     // for (var x : xes) { ... } direct child
     @Test
     public void test_2() throws IOException {
-        testClass("Var_2", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("s".equals(d.variableName())) {
+                    assertTrue(d.statementId().startsWith("2"), "Present in " + d.statementId());
+                }
+            }
+        };
+        // xes potential null pointer warning
+        testClass("Var_2", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -102,8 +113,7 @@ public class Test_52_Var extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
         };
-        // no annotated API, so we have no idea if repeater is @NotNull or not -> repeater(3) may return null
-        testClass("Var_4", 0, 1, new DebugConfiguration.Builder()
+        testClass("Var_4", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -112,27 +122,25 @@ public class Test_52_Var extends CommonTestRunner {
     // try
     @Test
     public void test_5() throws IOException {
-        // expect one potential null ptr (result of sw.append())
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("sw".equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("new StringWriter()", d.currentValue().toString());
+                    assertEquals("instance type StringWriter", d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
                             .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
                     assertTrue(d.variableInfoContainer().hasMerge());
-                    assertEquals("new StringWriter()", d.currentValue().toString());
+                    assertEquals("instance type StringWriter", d.currentValue().toString());
                 } else {
                     fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)
                 }
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("sw.toString()", d.currentValue().toString());
+                    assertEquals("(instance type StringWriter).toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
                     assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
-                    assertEquals("sw.toString()", d.currentValue().toString());
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     assertEquals("\"Error!\"", d.currentValue().toString());

@@ -12,35 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import org.e2immu.annotation.NotNull;
+import org.junit.jupiter.api.Test;
 
-public class Var_3<X> {
+import java.util.function.Function;
 
-    public final List<X> xes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    public Var_3(Collection<X> xes) {
-        var set = new HashSet<X>(xes); // keep the X here
-        this.xes = new LinkedList<>(set);
+public class Var_4 {
+
+    public static Function<String, String> repeater(int i) {
+        return (@NotNull var x) -> x.repeat(i);
     }
 
-    public String method() {
-        var all = new StringBuilder();
-        for (var i : new int[]{1, 2, 3}) {
-            all.append(i);
-        }
-        for (var s : new String[]{"abc", "def"}) {
-            all.append(s);
-        }
-        // List<E> implements Collection<E> implements Iterable<E>
-        for (var x : xes) {
-            all.append(x.toString());
-        }
-        return all.toString();
+    @Test
+    public void test() {
+        String applied = repeater(3).apply("y");
+        assertEquals("yyy", applied);
     }
-
 }

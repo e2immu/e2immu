@@ -12,33 +12,21 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
+public class Assert_0 {
 
-// also look at the static blocks of sub-types; test @Modified instead of @NotModified
-
-public class StaticBlock_4 {
-
-    @Final
     @NotNull
-    @Modified
-    private static Map<String, String> map;
+    private final Object object;
 
-    static {
-        map = new HashMap<>();
-        map.put("1", "2"); // should not raise a warning
-        System.out.println("enclosing type");
+    public Assert_0(@NotNull Object object) {
+        this.object = object;
+        assert object != null;
     }
 
-    static class SubType {
-        static {
-            map.put("3", "4");
-        }
+    public Object getObject() {
+        return object;
     }
 }

@@ -12,30 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.parser.CommonTestRunner;
+import org.junit.jupiter.api.Test;
 
-/*
-Example of a cast which messes with the immutability rules:
- */
-@E2Container
-public class Cast_2<T> {
+import java.io.IOException;
 
-    private final T t;
+public class Test_59_Assert extends CommonTestRunner {
 
-    public Cast_2(T input) {
-        t = input;
+    public Test_59_Assert() {
+        super(false);
     }
 
-    @NotModified
-    public T getT() {
-        return t;
-    }
-
-    @NotModified
-    public String getTAsString() {
-        return t.toString();
+    // translation of precondition to parameter, and then to the field, fails
+    @Test
+    public void test_0() throws IOException {
+        testClass("Assert_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 }

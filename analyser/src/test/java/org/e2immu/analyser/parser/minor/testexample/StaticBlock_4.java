@@ -12,14 +12,33 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-public class Var_0 {
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
-    public static String method(double d) {
-        var integer = 3;
-        var string = "3.14 is pi";
-        return integer + string + d;
+import java.util.HashMap;
+import java.util.Map;
+
+// also look at the static blocks of sub-types; test @Modified instead of @NotModified
+
+public class StaticBlock_4 {
+
+    @Final
+    @NotNull
+    @Modified
+    private static Map<String, String> map;
+
+    static {
+        map = new HashMap<>();
+        map.put("1", "2"); // should not raise a warning
+        System.out.println("enclosing type");
     }
 
+    static class SubType {
+        static {
+            map.put("3", "4");
+        }
+    }
 }

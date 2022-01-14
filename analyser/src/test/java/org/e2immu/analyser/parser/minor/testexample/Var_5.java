@@ -12,21 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.NotNull;
+import java.io.IOException;
+import java.io.StringWriter;
 
-public class Assert_0 {
+public class Var_5 {
 
-    @NotNull
-    private final Object object;
-
-    public Assert_0(@NotNull Object object) {
-        this.object = object;
-        assert object != null;
+    public static String method(String s) {
+        try (var sw = new StringWriter()) {
+            return sw.append(s).toString();
+        } catch (IOException ioe) {
+            return "Error!";
+        }
     }
 
-    public Object getObject() {
-        return object;
-    }
 }

@@ -12,37 +12,32 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
+/*
+Example of a cast which messes with the immutability rules: because
+of the cast, T is not transparent; it is not explicitly @E2Immutable itself,
+and it is exposed via the getter -> cannot be @E2Immutable.
+ */
+@E1Container
+public class Cast_0<T> {
 
-// also look at constructors (test @Variable instead of @Final)
-// test @Nullable instead of @NotNull
+    private final T t;
 
-public class StaticBlock_2 {
-
-    @Variable
-    @Nullable
-    private static Map<String, String> map;
-
-    static {
-        map = new HashMap<>();
-        map.put("1", "2"); // should not raise a warning
-        System.out.println("enclosing type");
+    public Cast_0(T input) {
+        t = input;
     }
 
-    @Nullable
     @NotModified
-    public static String get(String s) {
-        return map.get(s); // should raise a warning!
+    public T getT() {
+        return t;
     }
 
-    public StaticBlock_2() {
-        map = null;
+    @NotModified
+    public String getTAsString() {
+        return (String) t;
     }
 }

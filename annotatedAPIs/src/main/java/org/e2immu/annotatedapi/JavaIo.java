@@ -131,4 +131,20 @@ public class JavaIo {
         @Modified
         void write(@Independent char[] cbuf, int off, int len);
     }
+
+    @Independent
+    @Container
+    interface StringWriter$ {
+        @Modified
+        void append(char c);
+
+        @Modified
+        void append(CharSequence csq);
+
+        @Modified
+        void write(@Independent char[] cbuf);
+
+        @Modified
+        void write(@Independent char[] cbuf, int off, int len);
+    }
 }

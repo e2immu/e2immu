@@ -12,24 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+public class Var_0 {
 
-import java.io.IOException;
-
-public class Test_59_Assert extends CommonTestRunner {
-
-    public Test_59_Assert() {
-        super(false);
+    public static String method(double d) {
+        var integer = 3;
+        var string = "3.14 is pi";
+        return integer + string + d;
     }
 
-    // translation of precondition to parameter, and then to the field, fails
-    @Test
-    public void test_0() throws IOException {
-        testClass("Assert_0", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
 }

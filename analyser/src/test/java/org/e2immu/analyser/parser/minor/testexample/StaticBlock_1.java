@@ -12,24 +12,34 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Nullable;
 
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+// simplest example of initialisation
 
-public class Var_4 {
+public class StaticBlock_1 {
 
-    public static Function<String, String> repeater(int i) {
-        return (@NotNull var x) -> x.repeat(i);
+    @Final // implicitly, one assignment
+    @NotNull
+    private static Map<String, String> map;
+
+    static {
+        map = new HashMap<>();
+        map.put("1", "2"); // should not raise a warning
+        System.out.println("enclosing type");
     }
 
-    @Test
-    public void test() {
-        String applied = repeater(3).apply("y");
-        assertEquals("yyy", applied);
+    @Nullable
+    @NotModified
+    public static String get(String s) {
+        return map.get(s); // should not raise a warning!
     }
+
 }

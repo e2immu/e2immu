@@ -13,10 +13,11 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
@@ -84,14 +85,26 @@ public class Test_36_Cast extends CommonTestRunner {
                 }
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                assertEquals("t/*(String)*/", d.currentValue().toString());
-                assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
-                        pw.castType().equals(d.evaluationContext().getPrimitives().stringParameterizedType()));
+                String expected = d.iteration() == 0
+                        ? "<vp:t:cnn:this.t@Method_getTAsString_0;identity:this.t@Method_getTAsString_0;not_null:this.t@Method_getTAsString_0>"
+                        : "t/*(String)*/";
+                assertEquals(expected, d.currentValue().toString());
+                if (d.iteration() > 0) {
+                    assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
+                            pw.castType().equals(d.evaluationContext().getPrimitives().stringParameterizedType()));
+                }
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                assertEquals("t/*(Counter)*/", d.currentValue().toString());
-                assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
-                        "Counter".equals(Objects.requireNonNull(pw.castType().typeInfo).simpleName));
+                String expected = switch (d.iteration()) {
+                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0;container@Class_Counter;identity:this.t@Method_getTAsCounter_0;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0>";
+                    case 1 -> "<vp:t:initial@Method_increment>";
+                    default -> "t/*(Counter)*/";
+                };
+                assertEquals(expected, d.currentValue().toString());
+                if (d.iteration() > 1) {
+                    assertTrue(d.currentValue() instanceof PropertyWrapper pw &&
+                            "Counter".equals(Objects.requireNonNull(pw.castType().typeInfo).simpleName));
+                }
                 assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
@@ -112,22 +125,23 @@ public class Test_36_Cast extends CommonTestRunner {
         };
 
         testClass("Cast_1", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 
     @Test
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_2".equals(d.typeInfo().simpleName)) {
-                assertEquals("T", d.typeAnalysis().getTransparentTypes().toString());
+                assertEquals("Type param T", d.typeAnalysis().getTransparentTypes().toString());
             }
         };
         testClass("Cast_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
     }
 }
