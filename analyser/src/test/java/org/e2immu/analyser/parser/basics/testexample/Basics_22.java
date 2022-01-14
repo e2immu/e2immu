@@ -20,7 +20,7 @@ import java.io.IOException;
 // catches a linking problem in main of 3: return value linked to variable that doesn't exist anymore
 public class Basics_22 {
 
-    public byte[] loadBytes(String path) {
+    public static byte[] loadBytes(String path) {
         String[] prefix = path.split("/");
         for (String url : prefix) {
             try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {

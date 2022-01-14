@@ -56,7 +56,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
 
                     // try statement
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? "<m:toByteArray>" : "byteArrayOutputStream.toByteArray()";
+                        String expect = d.iteration() <= 1 ? "<m:toByteArray>" : "(instance type ByteArrayOutputStream).toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() <= 1 ? "byteArrayOutputStream:-1,return loadBytes:0"
                                 : "return loadBytes:0";
@@ -77,7 +77,8 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                 }
             }
         };
-        testClass("Basics_22", 0, 0, new DebugConfiguration.Builder()
+        // expect one potential null pointer warning
+        testClass("Basics_22", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

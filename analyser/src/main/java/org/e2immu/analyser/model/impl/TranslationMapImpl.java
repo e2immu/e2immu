@@ -181,5 +181,9 @@ public class TranslationMapImpl implements TranslationMap {
         public boolean translateMethod(MethodInfo methodInfo) {
             return methods.containsKey(methodInfo);
         }
+
+        public boolean isEmpty() {
+            return statements.isEmpty() && expressions.isEmpty() && variables.isEmpty() && methods.isEmpty() && types.isEmpty();
+        }
     }
 }

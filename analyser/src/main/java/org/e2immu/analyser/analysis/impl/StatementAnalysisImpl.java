@@ -625,8 +625,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         }
-        // don't continue local copies of loop variables beyond the loop
-        return !copyFrom.index().equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
+        // don't continue loop and resource variables beyond the loop
+        return !copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable());
     }
 
 

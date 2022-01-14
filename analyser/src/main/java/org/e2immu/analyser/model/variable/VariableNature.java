@@ -30,7 +30,7 @@ public interface VariableNature {
         return false;
     }
 
-    default String getStatementIndexOfThisLoopOrLoopCopyVariable() {
+    default String getStatementIndexOfBlockVariable() {
         return null;
     }
 
@@ -62,6 +62,11 @@ public interface VariableNature {
 
         public NormalLocalVariable(String statementIndex) {
             parentBlockIndex = computeParentBlockIndex(statementIndex);
+        }
+
+        @Override
+        public String getStatementIndexOfBlockVariable() {
+            return parentBlockIndex;
         }
 
         @Override
@@ -137,7 +142,7 @@ public interface VariableNature {
         }
 
         @Override
-        public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
+        public String getStatementIndexOfBlockVariable() {
             return statementIndex;
         }
     }
@@ -154,7 +159,7 @@ public interface VariableNature {
                                       String statementIndex) implements VariableNature {
 
         @Override
-        public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
+        public String getStatementIndexOfBlockVariable() {
             return statementIndex;
         }
 
@@ -180,6 +185,11 @@ public interface VariableNature {
         @Override
         public boolean acceptForSubBlockMerging(String index) {
             return VariableNature.inSubBlockOf(statementIndex, index);
+        }
+
+        @Override
+        public String getStatementIndexOfBlockVariable() {
+            return statementIndex;
         }
     }
 }

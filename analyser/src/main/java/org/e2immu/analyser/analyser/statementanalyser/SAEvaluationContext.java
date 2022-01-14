@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -300,7 +299,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
         }
-        if(delays.isDelayed()) {
+        if (delays.isDelayed()) {
             return delays; // see Enum_8; otherwise we compute NNE of a delayed field <f:...>
         }
         DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
@@ -500,15 +499,13 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      */
     @Override
     public Expression replaceLocalVariables(Expression mergeValue) {
-        if (statementAnalysis.statement() instanceof LoopStatement) {
-            TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
-            statementAnalysis.rawVariableStream()
-                    .map(Map.Entry::getValue)
-                    .filter(this::isReplaceVariable)
-                    .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
-            return mergeValue.translate(translationMap.build());
-        }
-        return mergeValue;
+        TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
+        statementAnalysis.rawVariableStream()
+                .map(Map.Entry::getValue)
+                .filter(this::isReplaceVariable)
+                .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
+        if (translationMap.isEmpty()) return mergeValue;
+        return mergeValue.translate(translationMap.build());
     }
 
     private void addToTranslationMapBuilder(VariableInfoContainer vic,
@@ -528,8 +525,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                 VariableExpression ve = new VariableExpression(variable);
                 translationMap.put(veSuffix, ve);
             }
-        }
-        if (vic.variableNature() instanceof VariableNature.LoopVariable) {
+        } else {
             Properties valueProperties;
             if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
                 valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
@@ -553,7 +549,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     private boolean isReplaceVariable(VariableInfoContainer vic) {
-        return statementIndex().equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
+        return statementIndex().equals(vic.variableNature().getStatementIndexOfBlockVariable());
     }
 
     /*
