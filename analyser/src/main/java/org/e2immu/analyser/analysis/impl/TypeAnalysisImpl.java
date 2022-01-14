@@ -345,6 +345,10 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             doIndependent(e2ImmuAnnotationExpressions, independent, MultiLevel.NOT_INVOLVED_DV, immutable);
         }
 
+        // this implementation is a bit of a hack -- explicit types are not set directly for shallowly
+        // analysed types. When extending from a shallow type, e.g., when extending from RuntimeException,
+        // you'll need its explicit types. They may reach further than what we've investigated, so
+        // those get filtered out. See e.g. Enum_0, which extends implicitly from java.lang.Enum
         @Override
         public Set<ParameterizedType> getExplicitTypes(InspectionProvider inspectionProvider) {
             if (!explicitTypes.isSet() && getTypeInfo().shallowAnalysis()) {

@@ -20,4 +20,8 @@ public enum Enum_0 {
     public boolean isThree() {
         return this == THREE;
     }
+
+    public static String isOrdinalPresent(Enum_0 e) {
+        return e.name() + "=" + e.ordinal();
+    }
 }

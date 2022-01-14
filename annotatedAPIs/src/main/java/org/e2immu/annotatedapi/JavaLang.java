@@ -64,6 +64,11 @@ class JavaLang {
         String toString();
     }
 
+    @ERContainer
+    interface Enum$ {
+
+    }
+
     @E2Container
     interface StackTraceElement$ {
     }

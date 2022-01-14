@@ -102,8 +102,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (!typeInfo.isInterface()) {
             builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, TRANSPARENT, this::computeApprovedPreconditionsE1)
                     .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2)
-                    .add(ANALYSE_INDEPENDENT, iteration -> analyseIndependent())
                     .add(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE, iteration -> analyseEffectivelyEventuallyE2Immutable())
+                    .add(ANALYSE_INDEPENDENT, iteration -> analyseIndependent())
                     .add(ANALYSE_CONTAINER, iteration -> analyseContainer())
                     .add(ANALYSE_UTILITY_CLASS, iteration -> analyseUtilityClass())
                     .add(ANALYSE_SINGLETON, iteration -> analyseSingleton())
@@ -692,6 +692,15 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         DV typeIndependent = typeAnalysis.getProperty(Property.INDEPENDENT);
         if (typeIndependent.isDone()) return DONE;
 
+        DV typeImmutable = typeAnalysis.getProperty(Property.IMMUTABLE);
+        if (typeImmutable.ge(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV)) {
+            int immutableLevel = MultiLevel.level(typeImmutable);
+            DV independent = MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+            log(INDEPENDENCE, "Type @Independent: have high immutability value, from which independence follows: {}",
+                    independent);
+            typeAnalysis.setProperty(Property.INDEPENDENT, independent);
+            return DONE;
+        }
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.INDEPENDENT);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
@@ -726,7 +735,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             valueFromMethodReturnValue = MultiLevel.DEPENDENT_DV;
         } else {
             valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
-                    .filter(ma -> !ma.getMethodInfo().isPrivate() && ma.getMethodInfo().hasReturnValue())
+                    .filter(ma -> !ma.getMethodInfo().isPrivate()
+                            && ma.getMethodInfo().hasReturnValue()
+                            && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType()))
                     .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodReturnValue.isDelayed()) {
@@ -1042,7 +1053,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
                         returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
                     }
-                    boolean returnTypePartOfMyself = fieldIsOfOwnOrInnerClassType(returnType);
+                    boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType);
                     if (returnTypeImmutable.isDelayed() && !returnTypePartOfMyself) {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.getMethodInfo().distinguishingName());
                         typeAnalysis.setProperty(Property.IMMUTABLE, returnTypeImmutable);
@@ -1119,12 +1130,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return type.typeInfo;
     }
 
-    private boolean fieldIsOfOwnOrInnerClassType(ParameterizedType type) {
+    private boolean isOfOwnOrInnerClassType(ParameterizedType type) {
         return type.typeInfo != null && type.typeInfo.isEnclosedIn(typeInfo);
     }
 
     private boolean fieldIsOfOwnOrInnerClassType(FieldInfo fieldInfo) {
-        if (fieldIsOfOwnOrInnerClassType(fieldInfo.type)) {
+        if (isOfOwnOrInnerClassType(fieldInfo.type)) {
             return true;
         }
         // the field can be assigned to an anonymous type, which has a static functional interface type

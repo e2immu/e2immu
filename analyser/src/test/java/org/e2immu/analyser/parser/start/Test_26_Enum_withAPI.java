@@ -20,7 +20,10 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.start.testexample.Enum_0;
@@ -49,7 +52,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 0) {
+            if ("valueOf".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 2) {
                 assertFalse(d.evaluationResult().causesOfDelay().isDelayed());
             }
         };
@@ -107,28 +110,22 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertEquals("(instance type String).equals(name)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()", d.methodAnalysis().getSingleReturnValue().toString());
-                }
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                String expect = d.iteration() <= 2 ? "<m:valueOf>" : "Arrays.stream({ONE,TWO,THREE}).filter((instance type String).equals(name)).findFirst().orElseThrow()";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                mustSeeIteration(d, 3);
+
             }
             if ("values".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() <= 2 ? "<m:values>" : "{ONE,TWO,THREE}";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("THREE==this", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() <= 2 ? "<m:isThree>" : "THREE==this";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                mustSeeIteration(d, 3);
             }
         };
 

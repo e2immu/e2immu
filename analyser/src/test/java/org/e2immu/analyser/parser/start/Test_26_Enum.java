@@ -44,7 +44,17 @@ public class Test_26_Enum extends CommonTestRunner {
 
     /*
     synthetically generated:
-    one field per enum constant, methods "name", "valueOf", "values"
+    one field per enum constant, methods "name", "valueOf", "values", in EnumMethods
+
+    why does it take 3 iterations?
+
+    0. fields are still unknown; Type @ERImmutable; type not @Container because modification on parameters
+       in "isOrdinalPresent" (parameter of self) not yet known (CM has not travelled to parameter yet)
+    1. fields @ERImmutable (no @Container yet, fields before type); type @Container;
+    2. fields @Container, so from now on the fields can get a proper value
+    3. analysis with values for the fields
+
+    So without the isOrdinalPresent, this would have taken 3 iterations instead of 4.
      */
     @Test
     public void test0() throws IOException {
@@ -52,19 +62,33 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "{<f:ONE>,<f:TWO>,<f:THREE>}" : "{ONE,TWO,THREE}";
+                    String expectValue = switch (d.iteration()) {
+                        case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
+                        case 1 -> "{<vp:Enum_0:container@Field_ONE;immutable@Enum_Enum_0>,<vp:Enum_0:container@Field_TWO;immutable@Enum_Enum_0>,<vp:Enum_0:container@Field_THREE;immutable@Enum_Enum_0>}";
+                        case 2 -> "{<vp:Enum_0:container@Field_ONE>,<vp:Enum_0:container@Field_TWO>,<vp:Enum_0:container@Field_THREE>}";
+                        default -> "{ONE,TWO,THREE}";
+                    };
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("name".equals(d.methodInfo().name)) {
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("valueOf".equals(d.methodInfo().name)) {
+                // contracted, all 3 through @NotNull @NotModified:
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() == 0 ? "<m:values>" : "{ONE,TWO,THREE}";
+                String expect = d.iteration() <= 2 ? "<m:values>" : "{ONE,TWO,THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 
@@ -73,12 +97,15 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
                 assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
             }
         };
 
@@ -95,13 +122,13 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L }*/==this";
+                    String expectValue = d.iteration() <= 1 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L }*/==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$0<=2";
+                    String expectValue = d.iteration() <= 1 ? "<delayed array length>>i" : "i$0<=2";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -131,13 +158,13 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
+                        String expected = d.iteration() <= 1 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
                                 : "instance type Enum_1/*{L }*/==this?1+i$0:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0
-                                ? "<delayed array length>><replace:int>?<merge:int>:<return value>"
+                        String expected = d.iteration() <= 1
+                                ? "<loopIsNotEmptyCondition>&&this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
                                 : "instance type int<=2?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }

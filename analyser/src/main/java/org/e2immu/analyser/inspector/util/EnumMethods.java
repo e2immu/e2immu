@@ -34,6 +34,26 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.BY_HAND;
 
+/**
+ * Every enum type inherits from java.lang.Enum.
+ * <p>
+ * java.lang.Enum publicly provides
+ * <ul>
+ *     <li>String name()</li>
+ *     <li>int ordinal()</li>
+ *     <li>a static valueOf(Class, String) method</li>
+ * </ul>
+ * Every enum class augments this with
+ * <ul>
+ *     <li>E[] values()</li>
+ *     <li>E valueOf(String)</li>
+ * </ul>
+ * <p>
+ * Here, we add name(), values(), and valueOf(String) to the enum type.
+ * At the same time we annotate name() and values(); and have the analyser work out valueOf() itself.
+ * <p>
+ * The code of valueOf() is inserted when the required classes (Optional, Stream, etc.) are available.
+ */
 public class EnumMethods {
 
     public static void create(ExpressionContext expressionContext,
@@ -61,7 +81,7 @@ public class EnumMethods {
         typeContext.typeMap.registerMethodInspection(nameBuilder);
         builder.addMethod(nameBuilder.getMethodInfo());
 
-        // values()
+        // values() returns E[]
 
         var arrayInitializer = new ArrayInitializer(typeContext,
                 enumFields.stream().map(fieldInfo -> (Expression)
@@ -82,7 +102,7 @@ public class EnumMethods {
         typeContext.typeMap.registerMethodInspection(valuesBuilder);
         builder.addMethod(valuesBuilder.getMethodInfo());
 
-        // valueOf()
+        // valueOf() returns E
 
         var valueOfBuilder = new MethodInspectionImpl.Builder(enumType, "valueOf")
                 .setSynthetic(true)
@@ -92,7 +112,7 @@ public class EnumMethods {
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = valueOfBuilder.newParameterInspectionBuilder(Identifier.generate(),
-                primitives.stringParameterizedType(), "name", 0)
+                        primitives.stringParameterizedType(), "name", 0)
                 .addAnnotation(eRContainer)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
@@ -125,7 +145,7 @@ public class EnumMethods {
     private static Block returnValueOf(ExpressionContext expressionContext,
                                        TypeInfo enumType,
                                        MethodInspection.Builder valuesMethod,
-                                       MethodInspection.Builder nameMethod,
+                                       MethodInspection nameMethod,
                                        ParameterInfo nameParameter,
                                        AnnotationExpression notModifiedContract) {
         var typeContext = expressionContext.typeContext();
@@ -181,11 +201,11 @@ public class EnumMethods {
     }
 
     private static MethodInspection.Builder predicate(ParameterizedType functionalInterfaceType,
-                                                          ExpressionContext expressionContext,
-                                                          TypeInfo enumType,
-                                                          AnnotationExpression notModifiedContract,
-                                                          MethodInspection.Builder nameMethod,
-                                                          ParameterInfo nameParameter) {
+                                                      ExpressionContext expressionContext,
+                                                      TypeInfo enumType,
+                                                      AnnotationExpression notModifiedContract,
+                                                      MethodInspection nameMethod,
+                                                      ParameterInfo nameParameter) {
         var typeContext = expressionContext.typeContext();
         var primitives = typeContext.getPrimitives();
         var enumPt = enumType.asParameterizedType(typeContext);
@@ -224,7 +244,7 @@ public class EnumMethods {
 
     // v.name().equals(name)
     private static Block returnEquals(TypeContext typeContext,
-                                      MethodInspection.Builder nameMethod,
+                                      MethodInspection nameMethod,
                                       ParameterInfo nameParameter,
                                       ParameterInfo v) {
 
