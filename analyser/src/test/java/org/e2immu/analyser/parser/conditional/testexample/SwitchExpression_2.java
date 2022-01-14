@@ -12,29 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotNull;
 
-import java.io.IOException;
+public class SwitchExpression_2 {
 
-public class Test_55_NewSwitchStatement extends CommonTestRunner {
-    public Test_55_NewSwitchStatement() {
-        super(false);
-    }
-
-    @Test
-    public void test_0() throws IOException {
-        testClass("NewSwitchStatement_0", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    @Test
-    public void test_1() throws IOException {
-        testClass("NewSwitchStatement_1", 0, 0, new DebugConfiguration.Builder()
-                .build());
+    // should raise a warning that the condition is always false, plus that b is never used
+    // as a consequence, default always returns "c" so we have @NotNull
+    @NotNull
+    @Constant(absent = true)
+    public static String method(char c, String b) {
+        return switch (c) {
+            case 'a' -> "a";
+            case 'b' -> throw new RuntimeException();
+            default -> c == 'a' || c == 'b' ? b: "c";
+        };
     }
 
 }
+

@@ -12,27 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.conditional.testexample;
 
+import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
-public class SwitchStatement_6 {
+public class SwitchStatement_1 {
 
-    @NotNull
-    public static String method(char c) {
-        String res;
-        char d = 'a';
-        switch (d) { // Error Trivial case
+    @NotNull(absent = true)
+    @Constant(absent = true)
+    public static String method(char c, String b) {
+        switch (c) {
             case 'a':
-                res = "a";
-                break;
+                return "a";
             case 'b':
-                res = "b";
-                break;
+                return "b";
             default:
-                res = "c";
+                return b;
         }
-        return res;
     }
+
 }
 

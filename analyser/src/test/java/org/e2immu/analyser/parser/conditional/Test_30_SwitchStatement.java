@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.conditional;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -52,11 +52,13 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
-                // this point comes before we check the value against the condition manager
-                assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
-                        .evaluationContext().getConditionManager().condition().toString());
-                assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.2".equals(d.statementId())) {
+                    // this point comes before we check the value against the condition manager
+                    assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
+                            .evaluationContext().getConditionManager().condition().toString());
+                    assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
+                }
             }
         };
 

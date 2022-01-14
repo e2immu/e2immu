@@ -429,6 +429,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 else if (conditionForSubStatement.isDelayed())
                     statementsExecution = conditionForSubStatement.causesOfDelay();
                 else statementsExecution = FlowData.CONDITIONALLY;
+            } else if (statement() instanceof SwitchStatementNewStyle newStyle) {
+                SwitchEntry switchEntry = newStyle.switchEntries.get(count);
+                conditionForSubStatement = switchEntry.structure.expression();
+                conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
             } else if (statementsExecution.equals(FlowData.ALWAYS)) {
                 conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
                 conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
@@ -438,10 +442,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             } else if (statement() instanceof TryStatement) { // catch
                 conditionForSubStatement = Instance.forUnspecifiedCatchCondition(index(), statementAnalysis.primitives());
                 conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
-            } else if (statement() instanceof SwitchStatementNewStyle newStyle) {
-                SwitchEntry switchEntry = newStyle.switchEntries.get(count);
-                conditionForSubStatement = switchEntry.structure.expression();
-                conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
+
             } else throw new UnsupportedOperationException();
 
             DV execution = statementAnalysis.flowData().execution(statementsExecution);

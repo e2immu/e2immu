@@ -12,22 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.conditional.testexample;
 
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
-public class SwitchStatement_4 {
+public class SwitchStatement_7 {
+
+    enum Choices { ONE, TWO, THREE, FOUR }
 
     @NotNull
     @Constant(absent = true)
-    public static String method(char c) {
+    public static String method(@NotNull Choices c) {
         String res;
-        switch (c) {
-            case 'a':
+        switch (c) { // forces the @NotNull on c
+            case ONE:
                 res = "a";
                 break;
-            case 'b':
+            case TWO:
                 res = "b";
                 break;
             default:
@@ -35,6 +37,5 @@ public class SwitchStatement_4 {
         }
         return res;
     }
-
 }
 

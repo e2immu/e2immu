@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
 
@@ -108,10 +109,13 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
                 Statement statement = switchEntry.structure.statements().get(0);
                 Expression expression = statement instanceof YieldStatement yieldStatement ? yieldStatement.expression
                         : statement instanceof ExpressionAsStatement eas ? eas.expression : null;
-                if (expression == null) throw new UnsupportedOperationException("??");
-                entryResult = expression.evaluate(localContext, forwardEvaluationInfo);
-                builder.composeIgnoreExpression(entryResult);
-                newYieldExpressions.add(entryResult.getExpression());
+                if (expression != null) {
+                    entryResult = expression.evaluate(localContext, forwardEvaluationInfo);
+                    builder.composeIgnoreExpression(entryResult);
+                    newYieldExpressions.add(entryResult.getExpression());
+                } else {
+                    assert statement instanceof ThrowStatement; // there is no expression to evaluate for a return value
+                }
             } else {
                 List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry);
                 newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
