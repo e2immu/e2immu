@@ -69,7 +69,7 @@ public class Test_38_FirstThen extends CommonTestRunner {
         };
 
         testClass("FirstThen_0", 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

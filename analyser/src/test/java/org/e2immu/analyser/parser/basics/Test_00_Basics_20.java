@@ -213,7 +213,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(createFieldAnalyserVisitor(expectNotNull))
                 .addAfterMethodAnalyserVisitor(createMethodAnalyserVisitor(expectNotNull))
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(expectNotNull)
                 .build());

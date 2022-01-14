@@ -355,7 +355,7 @@ public class Test_00_Basics_6 extends CommonTestRunner {
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
         TypeInfo b6 = typeContext.getFullyQualified(Basics_6.class);
         MethodInfo test5 = b6.findUniqueMethod("test5", 0);

@@ -387,7 +387,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor)
-                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

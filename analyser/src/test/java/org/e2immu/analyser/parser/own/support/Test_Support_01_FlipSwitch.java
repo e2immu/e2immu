@@ -20,8 +20,6 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -77,7 +75,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(FlipSwitch.class), 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }

@@ -192,7 +192,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
         };
 
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

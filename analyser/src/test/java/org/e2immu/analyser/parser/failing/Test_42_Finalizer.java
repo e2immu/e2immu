@@ -59,7 +59,7 @@ public class Test_42_Finalizer extends CommonTestRunner {
         };
 
         testClass("Finalizer_0", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

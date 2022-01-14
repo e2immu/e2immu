@@ -59,7 +59,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
         };
 
         testClass("E2InContext_0", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

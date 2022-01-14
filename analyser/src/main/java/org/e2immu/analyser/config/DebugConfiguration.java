@@ -66,7 +66,7 @@ public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
         }
 
         @Fluent
-        public Builder addAfterTypePropertyComputationsVisitor(TypeAnalyserVisitor typeAnalyserVisitor) {
+        public Builder addAfterTypeAnalyserVisitor(TypeAnalyserVisitor typeAnalyserVisitor) {
             this.afterTypePropertyComputations.add(typeAnalyserVisitor);
             return this;
         }
