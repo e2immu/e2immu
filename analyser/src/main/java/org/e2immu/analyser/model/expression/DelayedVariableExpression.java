@@ -85,6 +85,10 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return new DelayedVariableExpression(msg, msg, variable, causesOfDelay);
     }
 
+    public static Expression forDelayedValueProperties(Variable variable, CausesOfDelay causesOfDelay) {
+        String msg = "<vp:" + variable.simpleName() + ":" + causesOfDelay + ">";
+        return new DelayedVariableExpression(msg, msg, variable, causesOfDelay);
+    }
 
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet

@@ -64,8 +64,8 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
-                        case 1 -> "{<vp:Enum_0:container@Field_ONE;immutable@Enum_Enum_0>,<vp:Enum_0:container@Field_TWO;immutable@Enum_Enum_0>,<vp:Enum_0:container@Field_THREE;immutable@Enum_Enum_0>}";
-                        case 2 -> "{<vp:Enum_0:container@Field_ONE>,<vp:Enum_0:container@Field_TWO>,<vp:Enum_0:container@Field_THREE>}";
+                        case 1 -> "{<vp:ONE:container@Field_ONE;immutable@Enum_Enum_0>,<vp:TWO:container@Field_TWO;immutable@Enum_Enum_0>,<vp:THREE:container@Field_THREE;immutable@Enum_Enum_0>}";
+                        case 2 -> "{<vp:ONE:container@Field_ONE>,<vp:TWO:container@Field_TWO>,<vp:THREE:container@Field_THREE>}";
                         default -> "{ONE,TWO,THREE}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -134,6 +134,12 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("best".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
+                    assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+                }
+            }
+
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("Enum_1.values()[i]".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);

@@ -649,7 +649,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
                         DV value = parameterAnalysis.getProperty(property);
-                        vic.setProperty(property, value, INITIAL);
+                        vic.setProperty(property, value, false, INITIAL);
                     }
                 });
     }
@@ -697,7 +697,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis()) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
-                initialValue = fieldAnalysis.getValueForStatementAnalyser();
+                initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
             }
             Properties valueMap = evaluationContext.getValueProperties(initialValue);
             valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
@@ -1251,7 +1251,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
 
         // the value and its properties are taken from the field analyser
-        Expression value = fieldAnalysis.getValueForStatementAnalyser();
+        Expression value = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
         Properties valueProps = evaluationContext.getValueProperties(value);
         Properties combined = properties.combine(valueProps);
 

@@ -189,7 +189,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 sharedState.evaluationContext(),
                                 variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, false);
-                        merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
+                        merged.forEach((k, v) -> vic.setProperty(k, v, EVALUATION));
                     }
                 }
             }

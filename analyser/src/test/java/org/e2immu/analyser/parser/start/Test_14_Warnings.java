@@ -309,7 +309,7 @@ public class Test_14_Warnings extends CommonTestRunner {
             if ("Warnings_4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
                     String expected = d.iteration() == 0
-                            ? "<vp:java.util.Set<java.lang.String>:initial@Class_Warnings_4>" : "Set.copyOf(input)";
+                            ? "<vp:Set<String>:initial@Class_Warnings_4>" : "Set.copyOf(input)";
                     assertEquals(expected, d.currentValue().toString());
                     assertEquals("Type java.util.Set<java.lang.String>", d.currentValue().returnType().toString());
                     // because immutableOfHiddenContent = @ERContainer

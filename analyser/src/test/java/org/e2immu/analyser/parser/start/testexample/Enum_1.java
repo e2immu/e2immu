@@ -24,7 +24,6 @@ public enum Enum_1 {
         this.cnt = cnt;
     }
 
-    //@NotModified when A API, @Modified otherwise
     public int best(Enum_1 other) {
         return Math.max(cnt, other.cnt);
     }

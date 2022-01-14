@@ -197,7 +197,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
                     "strings4".equals(fieldReference.fieldInfo.name)) {
                 String expected = d.iteration() == 0
-                        ? "<vp:java.util.Set<java.lang.String>:initial@Class_E2Immutable_3>" : "Set.copyOf(input4)";
+                        ? "<vp:Set<String>:initial@Class_E2Immutable_3>" : "Set.copyOf(input4)";
                 assertEquals(expected, d.currentValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 // Set<String>, E2 -> ER
@@ -494,9 +494,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Expression v = d.evaluationResult().value();
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
-                String expectLinked1 = d.iteration() == 0 ? "?" : "this.map";
-                //      assertEquals(expectLinked1, d.evaluationResult().evaluationContext().linked1Variables(v).toString());
-                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>", v.returnType().toString());
+                assertEquals("Type java.util.stream.Stream<java.util.Map.Entry<java.lang.String,T>>",
+                        v.returnType().toString());
             }
         };
 

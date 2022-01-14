@@ -291,7 +291,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     private static String conditionIn0(int iteration) {
         return switch (iteration) {
             case 0 -> "null!=<f:integer>";
-            case 1 -> "null!=<vp:java.lang.Integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>";
+            case 1 -> "null!=<vp:integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>";
             default -> "null!=integer$0";
         };
     }
@@ -299,7 +299,7 @@ public class Test_04_Precondition extends CommonTestRunner {
     private static String notConditionIn0(int iteration) {
         return switch (iteration) {
             case 0 -> "null==<f:integer>&&ii>=0";
-            case 1 -> "null==<vp:java.lang.Integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>&&ii>=0";
+            case 1 -> "null==<vp:integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>&&ii>=0";
             default -> "null==integer&&ii>=0";
         };
     }
