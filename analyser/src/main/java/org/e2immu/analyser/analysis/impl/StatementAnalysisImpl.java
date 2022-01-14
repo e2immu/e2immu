@@ -649,14 +649,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (Property property : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
                         DV value = parameterAnalysis.getProperty(property);
-                        vic.setProperty(property, value, false, INITIAL);
+                        // we have given a value in the first iteration for e.g. @Container
+                        // we'll not get back to that (will happen in EVAL rather than here)
+                        // hence the 'true' to ensure that we don't cause exceptions
+                        vic.setProperty(property, value, true, INITIAL);
                     }
                 });
     }
 
     /*
     variables that are not marked for assignment, get no update of their @Immutable property
-    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
+    In the meantime, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
 
      */
     private void updateValuePropertiesOfParameter(AnalyserContext analyserContext,

@@ -133,10 +133,20 @@ public interface VariableInfoContainer {
     }
 
     default void setProperty(Property property, DV value, Level level) {
-        setProperty(property, value, true, level);
+        setProperty(property, value, false, level);
     }
 
-    void setProperty(Property property, DV value, boolean failWhenTryingToWriteALowerValue, Level level);
+    /**
+     * set the property at the correct level
+     *
+     * @param property the property
+     * @param value its value
+     * @param doNotFailWhenTryingToWriteALowerValue do not complain when the new value is worse (delay vs non-delay,
+     *                                              lower) than the current value. Used in Enum_1 for the CONTAINER property
+     *                                              which starts off FALSE on the parameter, and ends up TRUE in EVAL later
+     * @param level the level to write 
+     */
+    void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Level level);
 
     /*
     copy from one statement to the next.

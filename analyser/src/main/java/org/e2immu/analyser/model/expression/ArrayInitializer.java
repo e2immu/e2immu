@@ -74,7 +74,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return commonType;
+        return new ParameterizedType(commonType.typeInfo, 1);
     }
 
     @Override

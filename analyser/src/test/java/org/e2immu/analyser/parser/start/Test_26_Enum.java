@@ -122,13 +122,15 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 1 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1/*{L }*/==this";
+                    String expectValue = d.iteration() <= 2
+                            ? "this==<v:<m:values>[<v:i>]>"
+                            : "instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 1 ? "<delayed array length>>i" : "i$0<=2";
+                    String expectValue = d.iteration() <= 2 ? "<delayed array length>>i" : "i<=2";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
-                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 2, d.evaluationResult().causesOfDelay().isDelayed());
                 }
             }
         };
@@ -136,7 +138,7 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
-                    assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
                 }
             }
 
@@ -164,14 +166,14 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type Enum_1/*{L }*/==this?1+i$0:<return value>";
+                        String expected = d.iteration() <= 2 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
+                                : "instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this?i:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1
+                        String expected = d.iteration() <= 2
                                 ? "<loopIsNotEmptyCondition>&&this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type int<=2?instance type int:<return value>";
+                                : "instance type int<=2&&instance type int>=0&&instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -194,7 +196,8 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
-                // FIXME implement @StaticSideEffect (current system is not stable (switches TRUE/FALSE)
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

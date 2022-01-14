@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -238,11 +237,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void setProperty(Property property,
                             DV value,
-                            boolean failWhenTryingToWriteALowerValue,
+                            boolean doNotFailWhenTryingToWriteALowerValue,
                             Level level) {
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);
+        if (doNotFailWhenTryingToWriteALowerValue) {
+            DV current = variableInfo.getProperty(property, null);
+            if (current != null && !current.isDelayed() && (value.isDelayed() || value.lt(current))) {
+                return;
+            }
+        }
         variableInfo.setProperty(property, value);
     }
 

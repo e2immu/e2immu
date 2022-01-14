@@ -156,7 +156,9 @@ public class ParameterizedType {
     }
 
     public ParameterizedType copyWithOneFewerArrays() {
-        if (arrays == 0) throw new UnsupportedOperationException();
+        if (arrays == 0) {
+            throw new UnsupportedOperationException();
+        }
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
     }
 
