@@ -24,7 +24,8 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import java.util.List;
 import java.util.Objects;
 
-public record Merge(EvaluationContext evaluationContext, VariableInfoContainer vic) {
+public record Merge(EvaluationContext evaluationContext,
+                    VariableInfoContainer vic) {
 
     public enum Action {
         MERGE, REMOVE, IGNORE

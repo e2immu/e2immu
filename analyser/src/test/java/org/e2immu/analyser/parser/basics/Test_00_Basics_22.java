@@ -18,13 +18,14 @@ package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class Test_00_Basics_22 extends CommonTestRunner {
@@ -37,26 +38,38 @@ public class Test_00_Basics_22 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("loadBytes".equals(d.methodInfo().name)) {
+                if ("byteArrayOutputStream".equals(d.variableName())) {
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource tryResource) {
+                        assertEquals("1.0.0", tryResource.statementIndex());
+                        assertFalse(tryResource.acceptForSubBlockMerging("1"));
+                    } else fail();
+                }
                 if (d.variable() instanceof ReturnVariable) {
                     // return statement
                     if ("1.0.0.0.1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:toByteArray>" : "";
+                        String expect = d.iteration() <= 1 ? "<m:toByteArray>" : "byteArrayOutputStream.toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = "byteArrayOutputStream:-1,return loadBytes:0";
+                        String expectLv = d.iteration() <= 1 ? "byteArrayOutputStream:-1,return loadBytes:0"
+                                : "return loadBytes:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // try statement
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:toByteArray>" : "";
+                        String expect = d.iteration() <= 1 ? "<m:toByteArray>" : "byteArrayOutputStream.toByteArray()";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = "byteArrayOutputStream:-1,return loadBytes:0";
+                        String expectLv = d.iteration() <= 1 ? "byteArrayOutputStream:-1,return loadBytes:0"
+                                : "return loadBytes:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
 
                     // for-loop: here, byteArrayOutputStream does not exist!
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:prefix>.length>0?<m:toByteArray>:<return value>" : "";
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<v:prefix>.length>0?<m:toByteArray>:<return value>";
+                            case 1 -> "prefix.length>0?<m:toByteArray>:<return value>";
+                            default -> "prefix.length>0?(instance type ByteArrayOutputStream).toByteArray():<return value>";
+                        };
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = "return loadBytes:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());

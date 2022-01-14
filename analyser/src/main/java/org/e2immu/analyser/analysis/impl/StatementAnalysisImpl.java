@@ -804,31 +804,38 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return candidateVariablesForNullPtrWarning.stream();
     }
 
-
-    private record MergeAction(VariableInfoContainer vic, Merge.Action action) {
+    private record PrepareMerge(List<VariableInfoContainer> toMerge,
+                                List<VariableInfoContainer> toIgnore) {
+        public PrepareMerge() {
+            this(new LinkedList<>(), new LinkedList<>());
+        }
     }
 
-    private List<MergeAction> mergeActions(List<ConditionAndLastStatement> lastStatements) {
-        List<MergeAction> list = new ArrayList<>();
-        mergeAction(list, variables.stream().map(Map.Entry::getValue), vn -> vn.acceptVariableForMerging(index));
+    private PrepareMerge mergeActions(List<ConditionAndLastStatement> lastStatements) {
+        PrepareMerge pm = new PrepareMerge();
+        // some variables will be picked up in the sub-blocks, others in the current block, others in both
+        // we want to see them only once, though
+        Set<Variable> seen = new HashSet<>();
+        mergeAction(pm, seen, variables.stream().map(Map.Entry::getValue), vn -> vn.acceptVariableForMerging(index));
         Stream<VariableInfoContainer> stream = lastStatements.stream()
                 .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue));
-        mergeAction(list, stream, vn -> vn.acceptForSubBlockMerging(index));
-        return list;
+        mergeAction(pm, seen, stream, vn -> vn.acceptForSubBlockMerging(index));
+        return pm;
     }
 
-    private void mergeAction(List<MergeAction> list,
+    private void mergeAction(PrepareMerge prepareMerge,
+                             Set<Variable> seen,
                              Stream<VariableInfoContainer> stream,
                              Predicate<VariableNature> predicate) {
         stream.forEach(vic -> {
-            Merge.Action action;
-            if (predicate.test(vic.variableNature())) {
-                action = Merge.Action.MERGE;
-            } else {
-                action = Merge.Action.IGNORE;
+            Variable variable = vic.current().variable();
+            if (seen.add(variable)) {
+                if (predicate.test(vic.variableNature())) {
+                    prepareMerge.toMerge.add(vic);
+                } else {
+                    prepareMerge.toIgnore.add(vic);
+                }
             }
-            // FIXME and remove?? See Basics_22, Enum_1?
-            list.add(new MergeAction(vic, action));
         });
     }
 
@@ -857,82 +864,74 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        // some variables will be picked up in the sub-blocks, others in the current block, others in both
-        // we want to see them only once, though
-        Set<String> merged = new HashSet<>();
-
         // we copy to a list, because we may be adding variables (ConditionalInitialization copies)
-        List<MergeAction> mergeActions = mergeActions(lastStatements);
+        PrepareMerge prepareMerge = mergeActions(lastStatements);
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
-        for (MergeAction mergeAction : mergeActions) {
-            VariableInfoContainer vic = mergeAction.vic;
+        for (VariableInfoContainer vic : prepareMerge.toMerge) {
             VariableInfo current = vic.current();
             Variable variable = current.variable();
             String fqn = variable.fullyQualifiedName();
-            if (!merged.add(fqn)) continue;
 
-            switch (mergeAction.action) {
-                case MERGE -> {
-                    // the variable stream comes from multiple blocks; we ensure that merging takes place once only
-                    VariableInfoContainer destination;
-                    if (!variables.isSet(fqn)) {
-                        VariableNature nature = vic.variableNature();
-                        destination = createVariable(evaluationContext, variable, statementTime, nature);
-                    } else {
-                        destination = vic;
+            // the variable stream comes from multiple blocks; we ensure that merging takes place once only
+            VariableInfoContainer destination;
+            if (!variables.isSet(fqn)) {
+                VariableNature nature = vic.variableNature();
+                destination = createVariable(evaluationContext, variable, statementTime, nature);
+            } else {
+                destination = vic;
+            }
+            boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
+
+            Expression overwriteValue = overwrite(variable);
+            List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
+                    fqn, inSwitchStatementOldStyle);
+            if (toMerge.size() > 0) {
+                try {
+                    Merge merge = new Merge(evaluationContext, destination);
+                    merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
+                            atLeastOneBlockExecuted, toMerge, groupPropertyValues);
+
+                    LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
+                            .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+                    linkedVariablesMap.put(variable, linkedVariables);
+
+                    if (atLeastOneBlockExecuted) variablesWhereMergeOverwrites.add(variable);
+
+                    if (atLeastOneBlockExecuted &&
+                            checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
+                        ensure(Message.newMessage(new LocationImpl(methodAnalysis.getMethodInfo(), index,
+                                        statement.getIdentifier()),
+                                Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
                     }
-                    boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
-
-                    Expression overwriteValue = overwrite(variable);
-                    List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
-                            fqn, inSwitchStatementOldStyle);
-                    if (toMerge.size() > 0) {
-                        try {
-                            Merge merge = new Merge(evaluationContext, destination);
-                            merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
-                                    atLeastOneBlockExecuted, toMerge, groupPropertyValues);
-
-                            LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
-                                    .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-                            linkedVariablesMap.put(variable, linkedVariables);
-
-                            if (atLeastOneBlockExecuted) variablesWhereMergeOverwrites.add(variable);
-
-                            if (atLeastOneBlockExecuted &&
-                                    checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
-                                ensure(Message.newMessage(new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier()),
-                                        Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
-                            }
-                        } catch (Throwable throwable) {
-                            LOGGER.warn("Caught exception while merging variable {} in {}, {}", fqn,
-                                    methodAnalysis.getMethodInfo().fullyQualifiedName, index);
-                            throw throwable;
-                        }
-                    } else if (destination.hasMerge()) {
-                        assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
-                        // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                        destination.copyFromEvalIntoMerge(groupPropertyValues);
-                        linkedVariablesMap.put(variable, destination.best(MERGE).getLinkedVariables());
-                    } else {
-                        for (Property property : GroupPropertyValues.PROPERTIES) {
-                            groupPropertyValues.set(property, variable, current.getProperty(property));
-                        }
-                        // FIXME also add to linkedVariablesMap?
-                    }
+                } catch (Throwable throwable) {
+                    LOGGER.warn("Caught exception while merging variable {} in {}, {}", fqn,
+                            methodAnalysis.getMethodInfo().fullyQualifiedName, index);
+                    throw throwable;
                 }
-                case IGNORE, REMOVE -> {
-                    for (Property property : GroupPropertyValues.PROPERTIES) {
-                        groupPropertyValues.set(property, variable, current.getProperty(property));
-                    }
+            } else if (destination.hasMerge()) {
+                assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
+                // in previous iterations there was data for us, but now there isn't; copy from I/E into M
+                destination.copyFromEvalIntoMerge(groupPropertyValues);
+                linkedVariablesMap.put(variable, destination.best(MERGE).getLinkedVariables());
+            } else {
+                for (Property property : GroupPropertyValues.PROPERTIES) {
+                    groupPropertyValues.set(property, variable, current.getProperty(property));
                 }
+                // FIXME also add to linkedVariablesMap?
             }
 
             // CNN_FOR_PARENT overwrite; see Basics_14, from throws statement back to condition
             contextNotNullForParent(lastStatements, groupPropertyValues, fqn);
         }
 
+        for (VariableInfoContainer vic : prepareMerge.toIgnore) {
+            VariableInfo current = vic.current();
+            for (Property property : GroupPropertyValues.PROPERTIES) {
+                groupPropertyValues.set(property, current.variable(), current.getProperty(property));
+            }
+        }
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites);
     }
@@ -985,7 +984,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         });
     }
 
-    private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext, GroupPropertyValues groupPropertyValues, Map<Variable, LinkedVariables> linkedVariablesMap, Set<Variable> variablesWhereMergeOverwrites) {
+    private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext,
+                                                     GroupPropertyValues groupPropertyValues,
+                                                     Map<Variable, LinkedVariables> linkedVariablesMap,
+                                                     Set<Variable> variablesWhereMergeOverwrites) {
         // then, per cluster of variables
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);

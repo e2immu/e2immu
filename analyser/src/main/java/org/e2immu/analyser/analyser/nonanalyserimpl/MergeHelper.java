@@ -121,7 +121,9 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             mergeValue = new MergeHelper(evaluationContext, previous)
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
+        // replaceLocalVariables is based on a translation
         Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue);
+        // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
         vi.setValue(mergedValue);
         if (!mergedValue.isDelayed()) {

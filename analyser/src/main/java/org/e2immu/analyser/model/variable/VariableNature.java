@@ -44,7 +44,9 @@ public interface VariableNature {
 
     NormalLocalVariable METHOD_WIDE = new NormalLocalVariable();
 
-    default VariableExpression.Suffix suffix() { return VariableExpression.NO_SUFFIX; }
+    default VariableExpression.Suffix suffix() {
+        return VariableExpression.NO_SUFFIX;
+    }
 
     /**
      * situation 1: normal variable (default value, rather than null)
@@ -64,7 +66,7 @@ public interface VariableNature {
 
         @Override
         public boolean acceptForSubBlockMerging(String index) {
-            return parentBlockIndex.isEmpty() || !index.equals(parentBlockIndex);
+            return parentBlockIndex.isEmpty() || index.startsWith(parentBlockIndex + ".");
         }
     }
 
@@ -76,6 +78,10 @@ public interface VariableNature {
         int dot2 = statementIndex.substring(0, dot).lastIndexOf('.');
         return statementIndex.substring(0, dot2);
 
+    }
+
+    private static boolean inSubBlockOf(String parentBlockIndex, String index) {
+        return index.startsWith(parentBlockIndex + ".");
     }
 
     /*
@@ -103,7 +109,7 @@ public interface VariableNature {
 
         @Override
         public boolean acceptForSubBlockMerging(String index) {
-            return !index.equals(parentBlockIndex);
+            return VariableNature.inSubBlockOf(parentBlockIndex, index);
         }
     }
 
@@ -122,7 +128,7 @@ public interface VariableNature {
 
         @Override
         public boolean acceptForSubBlockMerging(String index) {
-            return !index.equals(statementIndex);
+            return VariableNature.inSubBlockOf(statementIndex, index);
         }
 
         @Override
@@ -169,6 +175,11 @@ public interface VariableNature {
         @Override
         public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
             return !index.startsWith(statementIndex + ".0.");
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return VariableNature.inSubBlockOf(statementIndex, index);
         }
     }
 }
