@@ -879,9 +879,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
                         VariableNature nature = vic.variableNature();
-                        // created in merge: see Enum_1, a dependent variable created inside the loop
-                        // TODO do we need this? only for very special cases!
-                        // VariableNature newNature = nature instanceof VariableNature.NormalLocalVariable ? VariableNature.CREATED_IN_MERGE : nature;
                         destination = createVariable(evaluationContext, variable, statementTime, nature);
                     } else {
                         destination = vic;
@@ -891,18 +888,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     Expression overwriteValue = overwrite(variable);
                     List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
                             fqn, inSwitchStatementOldStyle);
-                    boolean ignoreCurrent = ignoreCurrent(atLeastOneBlockExecuted, destination, toMerge);
                     if (toMerge.size() > 0) {
                         try {
                             Merge merge = new Merge(evaluationContext, destination);
                             merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
-                                    ignoreCurrent, toMerge, groupPropertyValues);
+                                    atLeastOneBlockExecuted, toMerge, groupPropertyValues);
 
                             LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                             linkedVariablesMap.put(variable, linkedVariables);
 
-                            if (ignoreCurrent) variablesWhereMergeOverwrites.add(variable);
+                            if (atLeastOneBlockExecuted) variablesWhereMergeOverwrites.add(variable);
 
                             if (atLeastOneBlockExecuted &&
                                     checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
@@ -958,28 +954,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             overwriteValue = null;
         }
         return overwriteValue;
-    }
-
-    /**
-     * atLeastOneBlockExecuted: e.g.: if(..) { .. } else { ... }
-     * !atLeastOneBlockExecuted: e.g.: if(...) { ... }. We're not guaranteed to execute the block
-     * if the variable is assigned in both, then the current value (eval of "if") can be ignored
-     * otherwise, we merge current and the one block
-     *
-     * Enum_1 shows FIXME
-     *
-     * @param atLeastOneBlockExecuted information from the statement analyser
-     * @param destination             the VIC to write into
-     * @param toMerge                 the list of blocks from the statement analyser
-     * @return a rare deviation from atLeastOneBlockExecuted
-     */
-    private boolean ignoreCurrent(boolean atLeastOneBlockExecuted,
-                                  VariableInfoContainer destination,
-                                  List<ConditionAndVariableInfo> toMerge) {
-        if (toMerge.size() == 1 && destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
-            return true;
-        }
-        return atLeastOneBlockExecuted;
     }
 
     private List<ConditionAndVariableInfo> filterSubBlocks(EvaluationContext evaluationContext, List<ConditionAndLastStatement> lastStatements, Variable variable, String fqn, boolean inSwitchStatementOldStyle) {

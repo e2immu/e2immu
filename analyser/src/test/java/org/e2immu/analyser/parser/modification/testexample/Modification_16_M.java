@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
@@ -50,11 +51,12 @@ public class Modification_16_M {
         @NotModified
         List<ErrorMessage> getErrors();
 
-        // parameter ErrorMessage @Dependent implicitly
-        @Modified
-        void addError(@NotModified ErrorMessage errorMessage);
+        @Modified // parameter: @NotModified implicitly, because @Container on ErrorRegistry
+        void addError(ErrorMessage errorMessage);
     }
 
+    // not @E1Container, because one method
+    @E1Immutable
     static class FaultyImplementation implements ErrorRegistry {
 
         private final List<ErrorMessage> messages = new ArrayList<>();

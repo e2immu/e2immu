@@ -42,10 +42,6 @@ public interface VariableNature {
         return true;
     }
 
-    default boolean ignoreCurrent(String index) {
-        return false;
-    }
-
     NormalLocalVariable METHOD_WIDE = new NormalLocalVariable();
 
     default VariableExpression.Suffix suffix() { return VariableExpression.NO_SUFFIX; }
@@ -81,13 +77,6 @@ public interface VariableNature {
         return statementIndex.substring(0, dot2);
 
     }
-
-    /*
-    situation 2: A dependent variable was created inside a block, without a clear reference to a single variable;
-    now it still needs to exist after that block (see Enum_1 as example)
-    this copy is created during the merge phase at the end of the block.
-    */
-    NormalLocalVariable CREATED_IN_MERGE = new NormalLocalVariable();
 
     /*
     situation 3: a local pattern variable, often a local copy

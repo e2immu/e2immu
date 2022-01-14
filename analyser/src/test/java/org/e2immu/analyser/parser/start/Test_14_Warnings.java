@@ -471,8 +471,8 @@ public class Test_14_Warnings extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
-        // one on the type
-        testClass("Warnings_6", 1, 0, new DebugConfiguration.Builder()
+        // none on the type, none on the methods
+        testClass("Warnings_6", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -508,8 +508,8 @@ public class Test_14_Warnings extends CommonTestRunner {
             }
         };
 
-        // one on the method, one on the type
-        testClass("Warnings_7", 2, 0, new DebugConfiguration.Builder()
+        // one on the method
+        testClass("Warnings_7", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

@@ -144,7 +144,7 @@ public interface VariableInfoContainer {
      * @param doNotFailWhenTryingToWriteALowerValue do not complain when the new value is worse (delay vs non-delay,
      *                                              lower) than the current value. Used in Enum_1 for the CONTAINER property
      *                                              which starts off FALSE on the parameter, and ends up TRUE in EVAL later
-     * @param level the level to write 
+     * @param level the level to write
      */
     void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Level level);
 

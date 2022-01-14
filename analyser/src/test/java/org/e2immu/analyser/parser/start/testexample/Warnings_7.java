@@ -21,8 +21,7 @@ import org.e2immu.annotation.Modified;
 import java.util.Set;
 
 /**
- * A type cannot have a lower container or immutable value than any of the interfaces it implements.
- * This has to follow after computation, and will only be enforced during the 'check' phase.
+ * Variant on Warnings_6. This time, we cause an error on the method
  */
 public class Warnings_7 {
 
@@ -31,7 +30,7 @@ public class Warnings_7 {
         void addToSet(Set<Integer> setInInterface);
     }
 
-    @E2Immutable(recursive = true) // still, will cause an error because we had expected @ERContainer
+    @E2Immutable(recursive = true)
     static class IsNotAContainer implements MustBeContainer {
 
         public final int i;

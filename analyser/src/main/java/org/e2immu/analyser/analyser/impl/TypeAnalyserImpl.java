@@ -149,29 +149,8 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             CheckImmutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true);
             CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
             CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
-
-            checkWorseThanSpecifiedInInterfacesImplemented();
         }
     }
-
-
-    private static final Set<Property> CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED = Set.of(Property.IMMUTABLE,
-            Property.INDEPENDENT, Property.CONTAINER);
-
-    private void checkWorseThanSpecifiedInInterfacesImplemented() {
-        for (Property property : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
-            DV valueFromOverrides = typeAnalysis.maxValueFromInterfacesImplemented(analyserContext, property);
-            DV value = typeAnalysis.getProperty(property);
-            if (valueFromOverrides.isDone() && value.isDone()) {
-                boolean complain = value.lt(valueFromOverrides);
-                if (complain) {
-                    messages.add(Message.newMessage(typeInfo.newLocation(),
-                            Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, property.name));
-                }
-            }
-        }
-    }
-
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {

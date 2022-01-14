@@ -18,17 +18,19 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Modified;
 
+import java.util.List;
 import java.util.Set;
 
 /**
- * A type cannot have a lower container or immutable value than any of the interfaces it implements.
- * This has to follow after computation, and will only be enforced during the 'check' phase.
+ * A type can have a lower container or immutable value than any of the interfaces it implements,
+ * as long as this value follows without conflict on the methods defined.
  */
 public class Warnings_6 {
 
     @Container
     interface MustBeContainer {
 
+        void print(List<String> strings);
     }
 
     @E2Immutable(recursive = true) // still, will cause an error because we had expected @ERContainer
@@ -36,10 +38,17 @@ public class Warnings_6 {
 
         public final int i;
 
+        // existing method follows the @Container rules
+        @Override
+        public void print(List<String> strings) {
+            System.out.println(i + strings.size());
+        }
+
         IsNotAContainer(int i) {
             this.i = i;
         }
 
+        // new method (not in MustBeContainer) does not follow the rules
         public void addToSet(@Modified Set<Integer> set) {
             set.add(i);
         }

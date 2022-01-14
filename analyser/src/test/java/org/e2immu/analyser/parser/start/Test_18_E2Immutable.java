@@ -408,7 +408,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
-                    String expectValue = d.iteration() <= 2 ? "<f:sub>" : "instance type Sub";
+                    String expectValue = d.iteration() <= 2 ? "<f:sub>" : "instance type Sub/*new Sub()*/";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     assertEquals("this.sub:0", d.variableInfo().getLinkedVariables().toString());

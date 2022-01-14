@@ -174,8 +174,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test16() throws IOException {
-        // one on the type, one error on the method
-        testClass("Modification_16_M", 2, 0, new DebugConfiguration.Builder()
+        // one error on the method
+        testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

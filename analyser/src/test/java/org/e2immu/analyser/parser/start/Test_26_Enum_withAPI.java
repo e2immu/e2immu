@@ -168,8 +168,11 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
-                    String expectValue = d.iteration() == 0 ? "1==<m:getCnt>" : "true";
+                    String expectValue = switch (d.iteration()) {
+                        case 0, 1, 2 -> "1==<m:getCnt>";
+                        case 3 -> "1==<f:cnt>";
+                        default -> "true";
+                    };
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }
@@ -178,11 +181,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getCnt".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("cnt", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+                String expect = d.iteration() == 0 ? "<m:getCnt>" : "cnt";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 

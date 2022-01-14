@@ -16,9 +16,10 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
 
 public interface FieldAnalysis extends Analysis {
@@ -107,7 +108,11 @@ public interface FieldAnalysis extends Analysis {
             priority.put(Property.INDEPENDENT, independent);
             return DelayedVariableExpression.forDelayedValueProperties(fieldReference, delay);
         }
-        return Instance.forField(getFieldInfo(), value.returnType(), notNull, immutable, container, independent);
+        Instance instance = Instance.forField(getFieldInfo(), value.returnType(), notNull, immutable, container, independent);
+        if (value instanceof ConstructorCall) {
+            return PropertyWrapper.addState(instance, value);
+        }
+        return instance;
     }
 
     boolean isDeclaredFunctionalInterface();
