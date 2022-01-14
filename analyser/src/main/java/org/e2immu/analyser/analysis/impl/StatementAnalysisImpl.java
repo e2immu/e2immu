@@ -919,7 +919,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 for (Property property : GroupPropertyValues.PROPERTIES) {
                     groupPropertyValues.set(property, variable, current.getProperty(property));
                 }
-                // FIXME also add to linkedVariablesMap?
             }
 
             // CNN_FOR_PARENT overwrite; see Basics_14, from throws statement back to condition
@@ -992,10 +991,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                (vic, v) -> !linkedVariablesMap.containsKey(v) || isLoopVariableWillDisappearInNextStatement(vic),
+                (vic, v) -> !linkedVariablesMap.containsKey(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        computeLinkedVariables.writeLinkedVariables();
+        computeLinkedVariables.writeLinkedVariables(this::isLoopVariableWillDisappearInNextStatement);
 
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
@@ -1034,6 +1033,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (vic == null) return true;
         if (vic.variableNature() instanceof VariableNature.LoopVariable lv) {
             return index.equals(lv.statementIndex());
+        }
+        if(vic.variableNature() instanceof VariableNature.Pattern pattern) {
+            return index.equals(pattern.parentBlockIndex());
         }
         return false;
     }

@@ -12,8 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -111,7 +112,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals("in instanceof Integer&&in instanceof Number&&null!=in?\"Integer: \"+in:\"Number: \"+in", d.currentValue().toString());
                     }
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         assertEquals("in instanceof Number&&null!=in?in instanceof Integer?\"Integer: \"+in:\"Number: \"+in:<return value>", d.currentValue().toString());
                     }
                 }
@@ -126,7 +127,50 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         // because of no annotated APIs, Set.addAll is non-modifying, so we get a warning that we ignore the result
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("list".equals(d.variableName())) {
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
+                        assertEquals("1", pattern.getStatementIndexOfBlockVariable());
+                    } else fail();
+                    assertTrue(d.statementId().startsWith("1"));
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<p:collection>" : "collection";
+                        assertEquals(expected, d.currentValue().toString());
+                        String expectLv = d.iteration() == 0 ? "collection:0,list:0,return add:-1"
+                                : "collection:0,list:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<p:collection>" : "collection";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<instanceOf:List<String>>&&<m:isEmpty>?\"Empty\":<m:get>"
+                                : "collection.isEmpty()&&collection instanceof List<String>&&null!=collection?\"Empty\":collection.get(0)";
+                        assertEquals(expected, d.currentValue().toString());
+                        String expectLv = d.iteration() == 0 ? "collection:-1,list:-1,return add:0" : "return add:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<instanceOf:List<String>>?<m:isEmpty>?\"Empty\":<m:get>:<return value>"
+                                : "collection instanceof List<String>&&null!=collection?collection.isEmpty()?\"Empty\":collection.get(0):<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+
+                        String expectLv = d.iteration() == 0 ? "collection:-1,return add:0" : "return add:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

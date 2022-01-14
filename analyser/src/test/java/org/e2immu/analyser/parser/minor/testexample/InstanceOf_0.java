@@ -12,17 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-public class InstanceOf_4 {
+public class InstanceOf_0 {
 
-    /*
-    when it occurs in a negation it goes beyond the if statement
-     */
     public static String method(Object in) {
-        if (!(in instanceof Number number)) {
-            return "Not a number";
+        if (in instanceof Number number) {
+            return "Number: " + number;
         }
-        return "Number: " + number;
+        return ""+in;
     }
 }

@@ -25,10 +25,7 @@ import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.statement.LocalClassDeclaration;
-import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.model.statement.SynchronizedStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
@@ -144,22 +141,23 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             Structure structure = statement.getStructure();
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
+            if(!(statement instanceof SwitchStatementNewStyle)) {
+                if (structure.haveStatements()) {
+                    String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
 
-            if (structure.haveStatements()) {
-                String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
-
-                StatementAnalyserImpl subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
-                        statementAnalyser.statementAnalysis, structure.getStatements(),
-                        indexWithBlock, true, newInSyncBlock);
-                blocks.add(Optional.of(subStatementAnalyser));
-                analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
-            } else {
-                if (structure.isEmptyBlock()) {
-                    blocks.add(Optional.empty());
+                    StatementAnalyserImpl subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
+                            statementAnalyser.statementAnalysis, structure.getStatements(),
+                            indexWithBlock, true, newInSyncBlock);
+                    blocks.add(Optional.of(subStatementAnalyser));
+                    analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
+                } else {
+                    if (structure.isEmptyBlock()) {
+                        blocks.add(Optional.empty());
+                    }
+                    analysisBlocks.add(Optional.empty());
                 }
-                analysisBlocks.add(Optional.empty());
-            }
-            blockIndex++;
+                blockIndex++;
+            } // else: this one only has sub-blocks
             for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
                     String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);

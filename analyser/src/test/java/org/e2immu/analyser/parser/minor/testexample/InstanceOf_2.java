@@ -12,16 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-public class InstanceOf_7 {
+/*
+most interesting aspect of this test is that the return value should not propagate 'number' and 'integer'
+into statement 1.
 
-    public static String method(Object in, Number n2) {
+ */
+public class InstanceOf_2 {
+
+    public static String method(Object in) {
         if (in instanceof Number number) {
-            number = n2; // is a normal variable, can change, and can become null!
-            if(number == null) throw new UnsupportedOperationException();
+            if (number instanceof Integer integer) {
+                return "Integer: " + integer;
+            }
+            return "Number: " + number;
         }
         return "" + in;
     }
-
 }

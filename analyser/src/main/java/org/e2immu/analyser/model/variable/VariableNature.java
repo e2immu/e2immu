@@ -116,6 +116,11 @@ public interface VariableNature {
         public boolean acceptForSubBlockMerging(String index) {
             return VariableNature.inSubBlockOf(parentBlockIndex, index);
         }
+
+        @Override
+        public String getStatementIndexOfBlockVariable() {
+            return parentBlockIndex;
+        }
     }
 
     /*

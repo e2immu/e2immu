@@ -555,7 +555,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             for (Variable variable : currentLinkedVariables.variables().keySet()) {
                 if (!variable.equals(assignmentTarget)) {
                     LinkedVariables linkedVariables = evaluationContext.linkedVariables(variable);
-                    assert linkedVariables != null : "We're linking to an unknown variable??";
+                    assert linkedVariables != null : "We're linking to an unknown variable: "
+                            + variable.fullyQualifiedName() + "; current linked values is " + currentLinkedVariables;
                     if (linkedVariables.contains(assignmentTarget)) {
                         removeFromLinkedVariables(variable, assignmentTarget);
                     }

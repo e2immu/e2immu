@@ -12,20 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-public class InstanceOf_5 {
+import org.e2immu.annotation.NotNull;
 
-    /*
-    when it occurs in a negation it goes beyond the if statement
-     */
-    public static String method(Object in) {
-        String x;
-        if (!(in instanceof Number number)) {
-            x = "Not a number";
+public class InstanceOf_1 {
+
+    @NotNull
+    private final Number number;
+
+    public InstanceOf_1(Object in) {
+        if (in instanceof Number number) {
+            this.number = number;
         } else {
-            x = "Number: " + number;
+            this.number = 3.14;
         }
-        return x; // number NOT present!
+    }
+
+    public Number getNumber() {
+        return number;
     }
 }

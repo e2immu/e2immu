@@ -12,24 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.NotNull;
+// see also InstanceOf_8
+public class InstanceOf_6 {
 
-public class InstanceOf_1 {
-
-    @NotNull
-    private final Number number;
-
-    public InstanceOf_1(Object in) {
-        if (in instanceof Number number) {
-            this.number = number;
-        } else {
-            this.number = 3.14;
+    public static String method(Object in) {
+        if (in instanceof Number && in == null) { // must raise error
+            throw new UnsupportedOperationException();
         }
-    }
-
-    public Number getNumber() {
-        return number;
+        return ""+in;
     }
 }

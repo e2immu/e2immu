@@ -236,8 +236,12 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public void analyse() {
-        if(!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
-        int analyseCount =  callCounterForDebugging.incrementAndGet();
+        if (typeAnalysers.size() > 10) {
+            LOGGER.warn("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(), methodAnalysers.size(), fieldAnalysers.size());
+        }
+
+        if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_0)) return;
+        int analyseCount = callCounterForDebugging.incrementAndGet();
         int iteration = 0;
         AnalysisStatus analysisStatus;
 
@@ -248,7 +252,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             analysisStatus = analyse(iteration, null);
             iteration++;
 
-            if(!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
+            if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
                 log(ANALYSER, "\n******\nStopping after iteration 0 according to program\n******");
                 return;
             }

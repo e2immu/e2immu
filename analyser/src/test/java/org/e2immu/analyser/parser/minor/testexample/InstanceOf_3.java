@@ -12,22 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /*
-most interesting aspect of this test is that the return value should not propagate 'number' and 'integer'
-into statement 1.
-
+Test that list is @NotNull1 rather than the obvious @NotNull
  */
-public class InstanceOf_2 {
+public class InstanceOf_3 {
 
-    public static String method(Object in) {
-        if (in instanceof Number number) {
-            if (number instanceof Integer integer) {
-                return "Integer: " + integer;
-            }
-            return "Number: " + number;
+    private final Set<String> base = new HashSet<>();
+
+    public String add(Collection<String> collection) {
+        base.addAll(collection);
+        if (collection instanceof List<String> list) {
+            return list.isEmpty() ? "Empty" : list.get(0);
         }
-        return "" + in;
+        return null;
+    }
+
+    public Stream<String> getBase() {
+        return base.stream();
     }
 }
