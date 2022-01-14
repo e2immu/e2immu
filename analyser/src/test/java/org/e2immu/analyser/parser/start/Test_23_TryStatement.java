@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -35,15 +35,15 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Test_29_TryStatement extends CommonTestRunner {
+public class Test_23_TryStatement extends CommonTestRunner {
 
-    public Test_29_TryStatement() {
+    public Test_23_TryStatement() {
         super(false);
     }
 
     @Test
     public void test_0() throws IOException {
-        final String TYPE = "org.e2immu.analyser.parser.failing.testexample.TryStatement_0";
+        final String TYPE = "org.e2immu.analyser.parser.start.testexample.TryStatement_0";
         final String METHOD_FQN = TYPE + ".method(java.lang.String)";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

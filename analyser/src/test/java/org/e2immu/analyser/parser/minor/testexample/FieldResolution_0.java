@@ -12,32 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import com.github.javaparser.ParseProblemException;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+public class FieldResolution_0 {
 
-import java.io.IOException;
+    static class C1 {
+        public final String s1;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-public class Test_49_Record extends CommonTestRunner {
-
-    public Test_49_Record() {
-        super(false);
+        public C1(String in1, C2 c2) {
+            s1 = in1 + c2.prefix2;
+        }
     }
 
-    @Test
-    public void test_0() throws IOException {
-            testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
-                    .build());
-    }
+    static class C2 {
+        public final String prefix2;
 
-    @Test
-    public void test_1() throws IOException {
-        testClass("Record_1", 0, 0, new DebugConfiguration.Builder()
-                .build());
+        public C2(String in2) {
+            prefix2 = in2;
+        }
+
+        public String withC1(C1 c1) {
+            return c1.s1 + prefix2;
+        }
     }
 }

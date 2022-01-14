@@ -12,27 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.ERContainer;
 
-public class TryStatement_0 {
+@ERContainer
+public record Record_1(String string, int integer) {
 
-    /*
-    This test has no knowledge of an @NotNull on the parameter of parseInt!
-     */
-
-    @NotNull
-    @Constant(absent = true)
-    public static String method(String s) {
-        try {
-            return "Hi" + Integer.parseInt(s);
-        } catch (NullPointerException npe) {
-            return "Null";
-        } catch (NumberFormatException nfe) {
-            return "Not a number";
-        }
+    public Record_1 {
+        assert string != null;
+        if (integer < 0) throw new UnsupportedOperationException();
     }
 
+    public Record_1(int i) {
+        this("String " + i, i);
+        if (i > 10) throw new UnsupportedOperationException();
+    }
 }

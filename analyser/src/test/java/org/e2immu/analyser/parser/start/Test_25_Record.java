@@ -12,28 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.parser.CommonTestRunner;
+import org.junit.jupiter.api.Test;
 
-public class TryStatement_2 {
+import java.io.IOException;
 
-    @NotNull
-    @Constant("Hi")
-    public static String method(String s) {
-        String res;
-        try {
-            res = "Hi";
-        } catch (NullPointerException npe) {
-            // ERROR 1: assignment is not used
-            res = "Null";
-            throw npe;
-        } catch (NumberFormatException nfe) {
-            res = "Not a number";
-            throw nfe;
-        }
-        return res;
+public class Test_25_Record extends CommonTestRunner {
+
+    public Test_25_Record() {
+        super(false);
     }
 
+    @Test
+    public void test_0() throws IOException {
+            testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
+                    .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("Record_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -12,22 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.ERContainer;
 
-public class TryStatement_7 {
-
-    @Constant(absent = true)
-    @NotNull
-    public static String method(String s) {
-        String res;
-        try {
-            res = "Hi" + Integer.parseInt(s);
-        } catch (NullPointerException | NumberFormatException npe) {
-            throw new UnsupportedOperationException();
-        }
-        return res;
-    }
+@ERContainer
+public record Record_0(String string, int integer) {
 }

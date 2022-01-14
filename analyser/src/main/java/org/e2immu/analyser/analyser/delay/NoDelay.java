@@ -39,6 +39,8 @@ public record NoDelay(int value, String label) implements DV {
 
     @Override
     public DV min(DV other) {
+        if (this == MIN_INT_DV) return other;
+        if (other == MIN_INT_DV) return this;
         if (other.value() > value) return this;
         // if other is a delay, its value is less than ours!
         return other;

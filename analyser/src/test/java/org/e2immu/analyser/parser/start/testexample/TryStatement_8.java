@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,24 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotNull;
 
-import java.io.IOException;
+public class TryStatement_8 {
 
-public class Test_25_FieldResolution extends CommonTestRunner {
-
-    public Test_25_FieldResolution() {
-        super(false);
+    @Constant(absent = true)
+    @NotNull
+    public static String method(String s) {
+        try {
+            return "Hi" + Integer.parseInt(s);
+        } catch (NullPointerException | NumberFormatException npe) {
+            throw new UnsupportedOperationException();
+        }
     }
-
-    @Test
-    public void test0() throws IOException {
-        testClass("FieldResolution_0", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
 }

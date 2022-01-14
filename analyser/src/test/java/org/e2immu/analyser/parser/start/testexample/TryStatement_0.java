@@ -14,25 +14,25 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-public class FieldResolution_0 {
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotNull;
 
-    static class C1 {
-        public final String s1;
+public class TryStatement_0 {
 
-        public C1(String in1, C2 c2) {
-            s1 = in1 + c2.prefix2;
+    /*
+    This test has no knowledge of an @NotNull on the parameter of parseInt!
+     */
+
+    @NotNull
+    @Constant(absent = true)
+    public static String method(String s) {
+        try {
+            return "Hi" + Integer.parseInt(s);
+        } catch (NullPointerException npe) {
+            return "Null";
+        } catch (NumberFormatException nfe) {
+            return "Not a number";
         }
     }
 
-    static class C2 {
-        public final String prefix2;
-
-        public C2(String in2) {
-            prefix2 = in2;
-        }
-
-        public String withC1(C1 c1) {
-            return c1.s1 + prefix2;
-        }
-    }
 }
