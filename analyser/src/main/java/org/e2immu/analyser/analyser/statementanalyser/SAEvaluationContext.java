@@ -229,7 +229,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // read what's in the property map (all values should be there) at initial or current level
             Properties properties = getVariableProperties(variable, toCompute, duringEvaluation);
             DV nne = properties.getOrDefaultNull(NOT_NULL_EXPRESSION);
-            DV updated = nneForVariable(duringEvaluation, variable, nne);
+            DV updated = nneForVariable(duringEvaluation, variable, nne, value.causesOfDelay());
             properties.overwrite(NOT_NULL_EXPRESSION, updated);
             return properties;
         }
@@ -258,7 +258,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             // read what's in the property map (all values should be there) at initial or current level
             DV inMap = getVariableProperty(variable, property, duringEvaluation);
             if (property == NOT_NULL_EXPRESSION) {
-                return nneForVariable(duringEvaluation, variable, inMap);
+                return nneForVariable(duringEvaluation, variable, inMap, value.causesOfDelay());
             }
             return inMap;
         }
@@ -296,9 +296,12 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return directNN;
     }
 
-    private DV nneForVariable(boolean duringEvaluation, Variable variable, DV inMap) {
+    private DV nneForVariable(boolean duringEvaluation, Variable variable, DV inMap, CausesOfDelay delays) {
         if (variable.parameterizedType().isPrimitiveExcludingVoid()) {
             return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        }
+        if(delays.isDelayed()) {
+            return delays; // see Enum_8; otherwise we compute NNE of a delayed field <f:...>
         }
         DV cnn = getVariableProperty(variable, CONTEXT_NOT_NULL, duringEvaluation);
         DV cnnInMap = cnn.max(inMap);

@@ -238,7 +238,11 @@ public class Test_26_Enum extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:array[i]>" : "instance type Enum_3";
+                    String expectValue = switch (d.iteration()) {
+                        case 0, 1, 2, 3 -> "<v:array[i]>";
+                        case 4 -> "<array length>>instance type int?instance type Enum_3:<not yet assigned>";
+                        default -> "instance type Enum_3";
+                    };
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -315,7 +319,7 @@ public class Test_26_Enum extends CommonTestRunner {
         // expect an "always true" warning on the assert
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
@@ -403,15 +407,76 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test8() throws IOException {
-        // private field not read outside constructors
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getMessage".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("0", d.statementId());
+                    String expected = d.iteration() <= 2 ? "<f:msg>" : "\"S\"";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("START".equals(d.fieldInfo().name)) {
+                assertEquals("new Position(\"S\")", d.fieldAnalysis().getValue().toString());
+            }
+            if ("END".equals(d.fieldInfo().name)) {
+                assertEquals("new Position(\"E\")", d.fieldAnalysis().getValue().toString());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Position".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
         testClass("Enum_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
+    }
+
+
+    /**
+     * Compared to test8, we need many more iterations, simply because we add a simple method?
+     * Why? Type Position only IMMUTABLE in 3, CONTAINER in 4; the fields trail by one iteration,
+     * the methods' statements again by one iteration. Only in iteration 6 can we do something meaningful.
+     */
+    @Test
+    public void test9() throws IOException {
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("START".equals(d.fieldInfo().name)) {
+                assertEquals("new Position(\"S\")", d.fieldAnalysis().getValue().toString());
+                assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
+                assertDv(d, 4, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 5, DV.TRUE_DV, Property.CONTAINER);
+            }
+
+            if ("END".equals(d.fieldInfo().name)) {
+                assertEquals("new Position(\"E\")", d.fieldAnalysis().getValue().toString());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Position".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 4, DV.TRUE_DV, Property.CONTAINER);
+            }
+        };
+        testClass("Enum_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     @Test
-    public void test9() throws IOException {
+    public void test10() throws IOException {
         // container, nothing immutable about it!
-        testClass("Enum_9", 0, 0, new DebugConfiguration.Builder()
+        testClass("Enum_10", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

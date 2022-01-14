@@ -14,26 +14,39 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.annotation.Constant;
 
-public class Enum_9 {
-    public enum Position {
-        START("S"), MID(""), END("E");
+import org.e2immu.annotation.Container;
+import org.junit.jupiter.api.Test;
 
-        private final String msg;
+import static org.e2immu.analyser.parser.start.testexample.Enum_10.Writable.ONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-        Position(String msg) {
-            this.msg = msg;
+public class Enum_10 {
+
+    @Container
+    enum Writable {
+
+        ONE(1), TWO(2), THREE(3);
+
+        private int cnt;
+
+        Writable(int cnt) {
+            this.cnt = cnt;
+        }
+
+        public int getCnt() {
+            return cnt;
+        }
+
+        public void setCnt(int cnt) {
+            this.cnt = cnt;
         }
     }
 
-    @Constant("S")
-    public static String getMessage() {
-        return Position.START.msg;
-    }
-
-    @Constant(absent = true)
-    public static String getPositionMessage(int i) {
-        return i==0 ? Position.START.msg: Position.END.msg;
+    @Test
+    public void test() {
+        assertEquals(1, ONE.cnt);
+        ONE.setCnt(3);
+        assertEquals(3, ONE.cnt);
     }
 }

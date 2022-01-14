@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.Constant;
+
 public class Enum_8 {
     public enum Position {
         START("S"), MID(""), END("E");
@@ -25,7 +27,8 @@ public class Enum_8 {
         }
     }
 
-    public static String getPositionMessage(int i) {
-        return i==0 ? Position.START.msg: Position.END.msg;
+    @Constant("S")
+    public static String getMessage() {
+        return Position.START.msg;
     }
 }
