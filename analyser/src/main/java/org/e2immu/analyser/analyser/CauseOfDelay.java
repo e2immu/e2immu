@@ -59,6 +59,7 @@ public interface CauseOfDelay {
         NEXT_C_IMM("next_c_imm", ""),
         NOT_INVOLVED("not_involved", "Internal"),
         NOT_NULL_PARAMETER("nnp", ""),
+        PARTIAL_IMM("partial_imm", "partial immutable: immutable without taking parent/enclosing into account"),
         PROP_MOD("prop_mod", ""),
         REMAP_PARAMETER("remap_param", "Remapping a parameter for the companion analyser is not yet possible"),
         REPLACEMENT("replacement", "Reiterate, because of statement replacement"),

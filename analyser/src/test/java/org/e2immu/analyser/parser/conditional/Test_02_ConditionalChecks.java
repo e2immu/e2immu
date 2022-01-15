@@ -333,7 +333,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:o:container@Class_ConditionalChecks_4;immutable@Class_ConditionalChecks_4;independent@Class_ConditionalChecks_4>";
-                            case 1 -> "<vp:o:assign_to_field@Parameter_i;assign_to_field@Parameter_o;initial@Field_i>";
+                            case 1 -> "<vp:o:assign_to_field@Parameter_i;initial@Field_i>";
                             default -> "o/*(ConditionalChecks_4)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());

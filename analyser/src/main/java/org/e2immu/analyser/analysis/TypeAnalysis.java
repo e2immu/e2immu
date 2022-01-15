@@ -102,7 +102,8 @@ public interface TypeAnalysis extends Analysis {
         boolean doNotDelay = getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis();
 
         switch (property) {
-            case IMMUTABLE, CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
+            case IMMUTABLE, PARTIAL_IMMUTABLE,
+                    CONTAINER, EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER, INDEPENDENT -> {
                 // ensure that we do not throw an exception
             }
             default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
@@ -146,7 +147,7 @@ public interface TypeAnalysis extends Analysis {
     default DV isPartOfHiddenContent(ParameterizedType type) {
         CausesOfDelay status = hiddenContentTypeStatus();
         if (status.isDone()) {
-            return DV.fromBoolDv( getTransparentTypes().contains(type));
+            return DV.fromBoolDv(getTransparentTypes().contains(type));
         }
         return status;
     }

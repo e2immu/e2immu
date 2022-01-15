@@ -413,7 +413,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE2Delays = causes;
         }
 
-        private static final Set<Property> ACCEPTED = Set.of(Property.IMMUTABLE, Property.CONTAINER,
+        private static final Set<Property> ACCEPTED = Set.of(Property.IMMUTABLE, Property.PARTIAL_IMMUTABLE,
+                Property.CONTAINER,
                 Property.INDEPENDENT, Property.EXTENSION_CLASS, Property.UTILITY_CLASS, Property.SINGLETON);
 
         @Override

@@ -613,6 +613,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     /*
     method modelled to that of analyseNotNull.
+
+    there is no need to wait for the field to be of transparent type or not... this delays everything with
+    one iteration, but even if it is, it will not be used in any situation where it can cause a warning,
+    because if that were the case, it would not be transparent!
      */
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
         if (fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE).isDone()) return DONE;

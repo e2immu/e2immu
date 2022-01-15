@@ -82,6 +82,11 @@ public enum Property {
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE_DV,
             MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.NOT_INVOLVED_DV, CauseOfDelay.Cause.EXT_IMM),
 
+    // internal, used for enclosing-nested or type-subtype interactions (e.g., in the enclosing we have a field whose
+    // type is an anonymous (non-static) subtype)
+    PARTIAL_IMMUTABLE("partial @Immutable",
+            MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV,
+            CauseOfDelay.Cause.PARTIAL_IMM),
     // internal, temporary
     PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable",
             MultiLevel.MUTABLE_DV, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, MultiLevel.MUTABLE_DV, null),

@@ -21,7 +21,9 @@ import java.util.Map;
 
 /*
 Test to catch a @Container going from 0 to 1 error in intelliJ highlighter
+The "put" method modifies its first parameter!
  */
+@E2Immutable(recursive = true)
 public class Container_7 {
 
     private static final String XYZ = "xyz";
@@ -30,7 +32,7 @@ public class Container_7 {
     private static final int nineEightSeven = 987;
 
     // NOTE! this one is not a container, because it is not static
-    @E2Immutable
+    @E2Immutable(recursive = true)
     public class Complex {
         final int i, j;
 
@@ -42,7 +44,7 @@ public class Container_7 {
 
     final Map<String, Integer> MAP = Map.copyOf(new HashMap<>());
 
-    static <K, V> Map<K, V> put(Map<K, V> map, K k, V v) {
+    static <K, V> Map<K, V> put(@Modified Map<K, V> map, K k, V v) {
         map.put(k, v);
         return map;
     }
