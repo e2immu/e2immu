@@ -237,7 +237,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type java.lang.Integer, Type param T",
+                assertEquals("Type param T",
                         d.typeAnalysis().getTransparentTypes().toString());
 //                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }

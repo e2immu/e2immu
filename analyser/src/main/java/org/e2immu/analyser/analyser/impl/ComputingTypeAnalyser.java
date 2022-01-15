@@ -401,7 +401,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         allExplicitTypes.addAll(superTypesOfExplicitTypes);
 
         allTypes.removeAll(allExplicitTypes);
-        allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
+        allTypes.removeIf(pt -> pt.isPrimitiveExcludingVoid() || pt.isBoxedExcludingVoid()
+                || pt.typeInfo == typeInfo || pt.isUnboundWildcard());
 
         typeAnalysis.setExplicitTypes(new SetOfTypes(allExplicitTypes));
         typeAnalysis.setTransparentTypes(new SetOfTypes(allTypes));
@@ -935,15 +936,13 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             // this follows automatically if they are primitive or E2+Immutable themselves
             // because of down-casts on non-primitives, e.g. from transparent type to explicit, we cannot rely on the static type
             DV fieldImmutable = fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
-            MultiLevel.Effective fieldE2Immutable;
-            if (fieldIsOfOwnOrInnerClassType(fieldInfo)) {
-                fieldE2Immutable = MultiLevel.Effective.EFFECTIVE; // FIXME as a consequence, anonymous types/lambda's etc can be non-private
-            } else {
-                fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
-
-                // field is of the type of the class being analysed... it will not make the difference.
-                if (fieldImmutable.isDelayed()) {
-
+            MultiLevel.Effective fieldE2Immutable = MultiLevel.effectiveAtLevel(fieldImmutable, MultiLevel.Level.IMMUTABLE_2);
+            if (fieldImmutable.isDelayed()) {
+                if (fieldIsOfOwnOrInnerClassType(fieldInfo)) {
+                    // non-static nested types (inner types such as lambda's, anonymous)
+                    fieldE2Immutable = MultiLevel.Effective.EFFECTIVE;
+                    // FIXME as a consequence, anonymous types/lambda's etc can be non-private
+                } else {
                     // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
                     // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
                     ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();

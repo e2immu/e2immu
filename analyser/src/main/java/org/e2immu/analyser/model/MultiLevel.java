@@ -302,7 +302,9 @@ public class MultiLevel {
         int levelIndependent = MultiLevel.level(independent);
         int levelImmutable = MultiLevel.level(immutable);
         if (levelImmutable == 0) return true; // @E1, mutable; independent can be anything
-        return levelImmutable == levelIndependent;
+        if (levelImmutable == MAX_LEVEL) return levelIndependent == MAX_LEVEL;
+        Effective effectiveIndependent = MultiLevel.effective(independent);
+        return (levelImmutable == levelIndependent + 1) && effectiveIndependent == EFFECTIVE;
     }
 
 }

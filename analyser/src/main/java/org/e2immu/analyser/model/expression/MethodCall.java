@@ -839,11 +839,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         if (MultiLevel.isAtLeastEventuallyE2Immutable(formal)) {
             // the independence of the result, and the immutable level of the hidden content, will determine the result
-            DV methodIndependent = methodAnalysis.getProperty(Property.IMMUTABLE);
+            DV methodIndependent = methodAnalysis.getProperty(Property.INDEPENDENT);
             if (methodIndependent.isDelayed()) return methodIndependent;
 
             assert MultiLevel.independentConsistentWithImmutable(methodIndependent, formal) :
-                    "formal independent value inconsistent with formal immutable value for method " + methodInfo.fullyQualifiedName;
+                    "formal independent value inconsistent with formal immutable value for method "
+                            + methodInfo.fullyQualifiedName + ": independent " + methodIndependent + ", immutable " + formal;
 
             // we know the method is formally @Independent1+ < @Independent;
             // looking at the immutable level of linked1 variables looks "through" the recursion that this method provides
