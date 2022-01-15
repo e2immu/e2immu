@@ -123,8 +123,6 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     public void check() {
         if (typeInfo.typePropertiesAreContracted()) return;
 
-        internalCheckImmutableIndependent();
-
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         // before we check, we copy the properties into annotations
@@ -132,6 +130,8 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {
+            internalCheckImmutableIndependent(); // do not run when program is partial, some data may not be available
+
             check(typeInfo, UtilityClass.class, e2.utilityClass);
             check(typeInfo, ExtensionClass.class, e2.extensionClass);
             check(typeInfo, Container.class, e2.container);
