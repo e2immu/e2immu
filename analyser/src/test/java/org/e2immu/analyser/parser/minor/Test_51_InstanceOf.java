@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -169,8 +170,25 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
             }
         };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                // FALSE because no AnnotatedAPI, addAll is not modifying!
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+            if ("getBase".equals(d.methodInfo().name)) {
+                // Stream is mutable; is it linked?
+                assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                String expect = d.iteration() == 0 ? "<m:getBase>" : "base.stream()";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+
+                assertDv(d, 1, MultiLevel.INDEPENDENT_1_DV, Property.INDEPENDENT);
+            }
+        };
         testClass("InstanceOf_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-// bit of an overview to see where we can put static blocks
+// This class is an overview to see where we can put static blocks
+// Each subtype has its own static blocks, named as methods $staticBlock$n, n 0 onwards.
+// In this example, only the main type StaticBlock_0 has 2 static blocks.
 
 @E1Container // not @E2, because it has a modified (static) field
 public class StaticBlock_0 {

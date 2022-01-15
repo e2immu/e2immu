@@ -43,8 +43,11 @@ public class ParameterizedTypeFactory {
         int arrays = 0;
         if (type.isArrayType()) {
             ArrayType arrayType = (ArrayType) type;
-            baseType = arrayType.getComponentType();
             arrays = arrayType.getArrayLevel();
+            baseType = arrayType.getComponentType();
+            while (baseType.isArrayType()) {
+                baseType = baseType.asArrayType().getComponentType();
+            }
         }
         if (varargs) arrays++; // if we have a varargs type Object..., we store a parameterized type Object[]
         if (baseType.isPrimitiveType()) {
@@ -138,7 +141,7 @@ public class ParameterizedTypeFactory {
                 ParameterizedType res = findFieldOrSubType(typeContext, arrays, name, parameters, implementedInterface, false);
                 if (res != null) return res;
             }
-            if(complain) {
+            if (complain) {
                 throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
             }
             return null;
