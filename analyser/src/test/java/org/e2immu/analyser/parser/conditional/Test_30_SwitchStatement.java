@@ -53,6 +53,16 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("'a'==c", d.evaluationResult()
+                            .evaluationContext().getConditionManager().condition().toString());
+                    assertEquals("\"a\"", d.evaluationResult().value().toString());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    assertEquals("'b'==c", d.evaluationResult()
+                            .evaluationContext().getConditionManager().condition().toString());
+                    assertEquals("\"b\"", d.evaluationResult().value().toString());
+                }
                 if ("0.0.2".equals(d.statementId())) {
                     // this point comes before we check the value against the condition manager
                     assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
@@ -120,7 +130,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
                     assertNotNull(d.haveError(Message.Label.TRIVIAL_CASES_IN_SWITCH));
-                    assertEquals("{no interrupt=ALWAYS}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
+                    assertEquals("{no interrupt=ALWAYS:2}", d.statementAnalysis().flowData().getInterruptsFlow().toString());
                 }
             }
         };
@@ -145,11 +155,15 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("values".equals(d.methodInfo().name) && "Choices".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}" : "{ONE,TWO,THREE,FOUR}";
+                    String expectValue = switch (d.iteration()) {
+                        case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}";
+                        case 1 -> "{<vp:ONE:container@Field_ONE;immutable@Enum_Choices>,<vp:TWO:container@Field_TWO;immutable@Enum_Choices>,<vp:THREE:container@Field_THREE;immutable@Enum_Choices>,<vp:FOUR:container@Field_FOUR;immutable@Enum_Choices>}";
+                        default -> "{ONE,TWO,THREE,FOUR}";
+                    };
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(d.iteration() > 0, d.variableInfo().valueIsSet());
-                    assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                    if (d.iteration() > 0) {
+                    assertEquals(d.iteration() > 1, d.variableInfo().valueIsSet());
+                    assertDv(d, 2, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    if (d.iteration() > 1) {
                         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, d.currentValue()
                                 .getProperty(d.evaluationContext(), Property.NOT_NULL_EXPRESSION, true));
                     }

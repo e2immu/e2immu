@@ -229,7 +229,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     statementAnalyser = (StatementAnalyserImpl) statementAnalyser.followReplacements();
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
-                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(evaluationContext, previousStatement, switchCondition, statementAnalysis);
+                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(evaluationContext, previousStatement, switchCondition,
+                        statementAnalyser.statementAnalysis);
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(evaluationContext, switchCondition, forwardAnalysisInfo.switchSelectorIsDelayed()));
 
