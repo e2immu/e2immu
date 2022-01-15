@@ -104,8 +104,19 @@ public class MethodTypeParameterMap {
         return new ParameterizedType(methodInfo.typeInfo, parameters);
     }
 
+    /**
+     * Example: methodInfo = R apply(T t); typeInfo = Function&lt;T, R&gt;; types: one value: the concrete type for
+     * parameter #0 in apply; inferredReturnType: the concrete type for R, the return type.
+     *
+     * @param inspectionProvider to access inspection
+     * @param methodInfo         the SAM (e.g. accept, test, apply)
+     * @param types              as provided by ParseMethodReference, or ParseLambdaExpr. They represent the concrete
+     *                           types of the SAM
+     * @param inferredReturnType the return type of the real method
+     * @return a list of type parameters for the functional type
+     */
 
-    // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
+
     private static List<ParameterizedType> typeParametersComputed(
             InspectionProvider inspectionProvider,
             MethodInfo methodInfo,
@@ -114,6 +125,9 @@ public class MethodTypeParameterMap {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         if (typeInspection.typeParameters().isEmpty()) return List.of();
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        // Function<T, R> -> loop over T and R, and see where they appear in the apply method.
+        // If they appear as a parameter, then take the type from "types" which agrees with that parameter
+        // If it appears as the return type, then return "inferredReturnType"
         return typeInspection.typeParameters().stream()
                 .map(typeParameter -> {
                     int cnt = 0;
@@ -139,12 +153,14 @@ public class MethodTypeParameterMap {
         if (methodInfo.equals(otherMethodInfo)) return true;
         if (methodInspection.getParameters().size() != other.methodInspection.getParameters().size())
             return false;
+        /*
         int i = 0;
         for (ParameterInfo pi : methodInspection.getParameters()) {
             ParameterInfo piOther = other.methodInspection.getParameters().get(i);
             i++;
         }
         // TODO
+         */
         return methodInspection.getReturnType().isVoidOrJavaLangVoid() ==
                 other.methodInspection.getReturnType().isVoidOrJavaLangVoid();
     }

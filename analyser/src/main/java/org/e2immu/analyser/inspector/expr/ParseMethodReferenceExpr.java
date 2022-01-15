@@ -124,15 +124,25 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("I've killed all the candidates myself??");
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method();
-        List<ParameterizedType> types = new ArrayList<>();
-        types.add(parameterizedType);
-        method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext,
-                types, method.getConcreteReturnType(typeContext.getPrimitives()));
+        List<ParameterizedType> types = inputTypes(parameterizedType, method);
+        ParameterizedType concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types, concreteReturnType);
         log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting,
                 method.methodInspection.getDistinguishingName());
         return new MethodReference(Identifier.from(methodReferenceExpr),
                 scope, method.methodInspection.getMethodInfo(), functionalType);
+    }
+
+    /**
+     * In this method we provide the types that the "inferFunctionalType" method will use to determine
+     * the functional type. We must provide a concrete type for each of the real method's parameters.
+     *
+     */
+    private static List<ParameterizedType> inputTypes(ParameterizedType parameterizedType, MethodTypeParameterMap method) {
+        List<ParameterizedType> types = new ArrayList<>();
+        method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
+        if(types.isEmpty()) types.add(parameterizedType);
+        return types;
     }
 
     private static ParameterizedType typeOfMethodCandidate(InspectionProvider inspectionProvider,

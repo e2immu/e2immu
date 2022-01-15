@@ -16,12 +16,14 @@ package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_11_MethodReferences extends CommonTestRunner {
     public Test_11_MethodReferences() {
@@ -81,7 +84,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
                 DV immutable = d.evaluationResult().evaluationContext()
                         .getProperty(d.evaluationResult().value(), Property.IMMUTABLE, true, true);
-                if(d.iteration()>0) {
+                if (d.iteration() > 0) {
                     assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, immutable);
                 } else {
                     assertEquals("initial:this.map@Method_stream_0", immutable.toString());
@@ -93,7 +96,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
-                assertDv(d.p(0), 1,MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("stream".equals(d.methodInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, Property.IMMUTABLE);
@@ -108,7 +111,13 @@ public class Test_11_MethodReferences extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("MethodReferences_4".equals(d.typeInfo().simpleName)) {
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+            }
+        };
         testClass("MethodReferences_4", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

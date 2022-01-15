@@ -67,16 +67,16 @@ public class ExplicitTypes {
         FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
         FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
         if (fieldInitialiser != null && fieldInitialiser.initialiser() != null) {
-            explicitTypes(fieldInitialiser.initialiser());
+            explicitTypes(fieldInitialiser.initialiser(), null);
         }
     }
 
     private void explicitTypes(MethodInfo methodInfo) {
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        explicitTypes(methodInspection.getMethodBody());
+        explicitTypes(methodInspection.getMethodBody(), methodInspection);
     }
 
-    private void explicitTypes(Element start) {
+    private void explicitTypes(Element start, MethodInspection currentMethod) {
         Consumer<Element> visitor = element -> {
 
             /* a.method() -> the type of "a" cannot be replaced by unbound type parameter,
@@ -105,14 +105,17 @@ public class ExplicitTypes {
 
             if (element instanceof ReturnStatement returnStatement) {
                 boolean ok;
-                if (returnStatement.expression instanceof MethodCall methodCall) {
-                    ok = methodCall.returnType().typeInfo != null;
+                if (returnStatement.expression instanceof MethodCall || returnStatement.expression instanceof MethodReference
+                        || returnStatement.expression instanceof Lambda) {
+                    ok = returnStatement.expression.returnType().typeInfo != null;
                 } else {
                     ok = false;
                 }
                 if (ok) {
                     ParameterizedType returnType = returnStatement.expression.returnType();
                     add(returnType, UsedAs.EXPLICIT_RETURN_TYPE);
+                    ParameterizedType methodReturnType = currentMethod.getReturnType();
+                    add(methodReturnType, UsedAs.EXPLICIT_RETURN_TYPE);
                 }
             }
 
@@ -184,7 +187,7 @@ public class ExplicitTypes {
                 add(formal, usedAs);
             }
             ParameterizedType concrete = expression.returnType();
-            if(concrete.isPrimitiveExcludingVoid() && !formal.isPrimitiveExcludingVoid()) {
+            if (concrete.isPrimitiveExcludingVoid() && !formal.isPrimitiveExcludingVoid()) {
                 // formal could be an unbound type parameter, so int is boxed into Integer
                 ParameterizedType boxed = inspectionProvider.getPrimitives().boxed(concrete.typeInfo).asSimpleParameterizedType();
                 add(boxed, usedAs);

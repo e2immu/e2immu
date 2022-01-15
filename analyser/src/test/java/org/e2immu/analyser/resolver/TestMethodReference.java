@@ -15,23 +15,56 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.MethodReference_0;
-
 import org.e2immu.analyser.resolver.testexample.MethodReference_1;
+import org.e2immu.analyser.resolver.testexample.MethodReference_2;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class TestMethodReference extends CommonTest {
 
+
     @Test
     public void test_0() throws IOException {
-         inspectAndResolve(MethodReference_0.class);
+        inspectAndResolve(MethodReference_0.class);
     }
+
     @Test
     public void test_1() throws IOException {
         inspectAndResolve(MethodReference_1.class);
     }
 
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodReference_2.class);
+        TypeInfo typeInfo = typeMap.get(MethodReference_2.class);
+
+
+        testMethod("getFunction3", typeMap, typeInfo, S_FUNCTION);
+        testMethod("getFunction", typeMap, typeInfo, O_FUNCTION);
+        testMethod("getFunction2", typeMap, typeInfo, S_FUNCTION);
+    }
+
+    private static final String S_FUNCTION = "Type java.util.function.Function<java.lang.String,java.lang.Integer>";
+    private static final String O_FUNCTION = "Type java.util.function.Function<java.lang.Object,java.lang.Integer>";
+
+    private void testMethod(String methodName, TypeMap typeMap, TypeInfo typeInfo, String result) {
+        MethodInfo getFunction = typeInfo.findUniqueMethod(methodName, 0);
+        Block block = typeMap.getMethodInspection(getFunction).getMethodBody();
+        Expression expression = ((ReturnStatement) block.structure.getStatements().get(0)).expression;
+        assertTrue(expression instanceof MethodReference);
+        assertEquals(result, expression.returnType().toString());
+    }
 }
