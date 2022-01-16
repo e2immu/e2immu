@@ -165,6 +165,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
         return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
     }
 
+    public static Expression forTooComplex(ParameterizedType parameterizedType, CausesOfDelay causes) {
+        String msg = brackets("too complex");
+        return new DelayedExpression(msg, parameterizedType, LinkedVariables.delayedEmpty(causes), causes);
+        // result is an int, so no linked variables
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

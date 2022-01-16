@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -22,6 +23,7 @@ import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -33,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
@@ -345,12 +348,40 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
                 InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
                         analyserContext, localConditionManager.state(), structure.expression(), currentReturnValue);
-                toEvaluate = inlineConditional.optimise(evaluationContext);
+                Expression instance = giveUpWhenTooComplex(evaluationContext, inlineConditional);
+                if (instance == null) {
+                    toEvaluate = inlineConditional.optimise(evaluationContext);
+                } else {
+                    toEvaluate = instance;
+                }
             }
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
         return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
+    }
+
+    private Expression giveUpWhenTooComplex(EvaluationContext evaluationContext, Expression toEvaluate) {
+        AtomicInteger counter = new AtomicInteger();
+        toEvaluate.visit(e -> {
+            if (e instanceof InlineConditional || e instanceof And || e instanceof Or) {
+                counter.incrementAndGet();
+            }
+        });
+        if (counter.get() > 10) {
+            LOGGER.warn("About to analyse complexity {}", counter);
+            List<Expression> solid = toEvaluate.collectSolidValues();
+            MultiValue multiValue = new MultiValue(Identifier.generate(), evaluationContext.getAnalyserContext(),
+                    new MultiExpression(solid.toArray(new Expression[0])), methodInfo().returnType());
+            Properties valueProperties = evaluationContext.getValueProperties(multiValue);
+            CausesOfDelay causesOfDelay = valueProperties.delays();
+            if (causesOfDelay.isDelayed()) {
+                return DelayedExpression.forTooComplex(methodInfo().returnType(), causesOfDelay);
+            }
+            return Instance.forTooComplex(Identifier.generate(), methodInfo().returnType(), valueProperties);
+        }
+        log(ANALYSER, "Evaluating {}", toEvaluate);
+        return null;
     }
 
     /*

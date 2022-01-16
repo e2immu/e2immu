@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * a ? b : c
@@ -269,5 +270,10 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (removeTrue) return ifFalse;
         if (removeFalse) return ifTrue;
         return this;
+    }
+
+    @Override
+    public List<Expression> collectSolidValues() {
+        return Stream.concat(ifTrue.collectSolidValues().stream(), ifFalse.collectSolidValues().stream()).toList();
     }
 }

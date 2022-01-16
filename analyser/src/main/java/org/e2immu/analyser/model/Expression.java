@@ -191,4 +191,8 @@ public interface Expression extends Element, Comparable<Expression> {
         return subElements().stream().anyMatch(e ->
                 e instanceof Expression expression && expression.containsErasedExpressions());
     }
+
+    default List<Expression> collectSolidValues() {
+        return List.of(this);
+    }
 }

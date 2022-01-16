@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -132,5 +133,10 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     public String msg() {
         return msg;
+    }
+
+    @Override
+    public List<Expression> collectSolidValues() {
+        return List.of();
     }
 }

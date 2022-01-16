@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  */
 public final class Instance extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
-    private final Diamond diamond;
     private final Properties valueProperties;
 
     public static Properties primitiveValueProperties() {
@@ -49,21 +48,21 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
-        return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(), Diamond.NO,
+        return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
                 primitiveValueProperties());
     }
 
     public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
                                                 Properties valueProperties) {
         return new Instance(Identifier.generate(),
-                fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO,
+                fieldInfo.owner.asParameterizedType(inspectionProvider),
                 valueProperties);
     }
 
     // IMPROVE should this not be delayed?
     public static Instance forInlinedMethod(Identifier identifier,
                                             ParameterizedType parameterizedType) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL,
+        return new Instance(identifier, parameterizedType,
                 Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                         Property.INDEPENDENT, MultiLevel.DEPENDENT_DV,
@@ -74,26 +73,24 @@ public final class Instance extends BaseExpression implements Expression {
     public static Expression forMethodResult(Identifier identifier,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
+        return new Instance(identifier, parameterizedType, valueProperties);
     }
 
     public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
         return new Instance(Identifier.catchCondition(index),
-                primitives.booleanParameterizedType(), Diamond.NO,
+                primitives.booleanParameterizedType(),
                 primitiveValueProperties());
     }
 
     public static Instance forTesting(ParameterizedType parameterizedType) {
-        return new Instance(Identifier.generate(), parameterizedType, Diamond.SHOW_ALL,
+        return new Instance(Identifier.generate(), parameterizedType,
                 primitiveValueProperties());
     }
 
     // never null, never more interesting.
     public static Instance forCatchOrThis(String index, Variable variable, AnalysisProvider analysisProvider) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new Instance(VariableIdentifier.variable(variable, index),
-                parameterizedType, diamond,
+        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType,
                 Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
                         Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
@@ -118,9 +115,8 @@ public final class Instance extends BaseExpression implements Expression {
 
     public static Instance forLoopVariable(String index, Variable variable, Properties valueProperties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new Instance(VariableIdentifier.variable(variable, index),
-                parameterizedType, diamond, valueProperties);
+                parameterizedType, valueProperties);
     }
 
     /*
@@ -128,13 +124,13 @@ public final class Instance extends BaseExpression implements Expression {
      */
     public static Instance initialValueOfParameter(ParameterInfo parameterInfo, Properties valueProperties) {
         return new Instance(VariableIdentifier.variable(parameterInfo), parameterInfo.parameterizedType,
-                Diamond.SHOW_ALL, valueProperties);
+                valueProperties);
     }
 
     // null-status derived from variable in evaluation context
     public static Instance genericMergeResult(String index, Variable variable, Properties valueProperties) {
         return new Instance(VariableIdentifier.variable(variable, index), variable.parameterizedType(),
-                Diamond.SHOW_ALL, valueProperties);
+                valueProperties);
     }
 
     public static Expression genericArrayAccess(Identifier identifier,
@@ -153,7 +149,7 @@ public final class Instance extends BaseExpression implements Expression {
             return DelayedExpression.forArrayAccessValue(variable.parameterizedType(),
                     LinkedVariables.sameValue(variableStream, delays), delays);
         }
-        return new Instance(identifier, variable.parameterizedType(), Diamond.SHOW_ALL, properties);
+        return new Instance(identifier, variable.parameterizedType(), properties);
     }
 
     /*
@@ -164,23 +160,26 @@ public final class Instance extends BaseExpression implements Expression {
     public static Instance forGetInstance(Identifier identifier,
                                           ParameterizedType parameterizedType,
                                           Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
+        return new Instance(identifier, parameterizedType, valueProperties);
     }
 
     public static Instance forVariableInLoopDefinedOutside(Identifier identifier,
                                                            ParameterizedType parameterizedType,
                                                            Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, Diamond.SHOW_ALL, valueProperties);
+        return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    public static Instance forTooComplex(Identifier identifier,
+                                         ParameterizedType parameterizedType,
+                                         Properties valueProperties) {
+        return new Instance(identifier, parameterizedType, valueProperties);
+    }
 
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,
-                    Diamond diamond,
                     Properties valueProperties) {
         super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
         this.valueProperties = valueProperties;
         assert internalChecks();
     }
@@ -188,7 +187,7 @@ public final class Instance extends BaseExpression implements Expression {
     public static Instance forField(FieldInfo fieldInfo,
                                     ParameterizedType type,
                                     DV notNull, DV immutable, DV container, DV independent) {
-        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, Diamond.NO, Properties.of(Map.of(
+        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, Properties.of(Map.of(
                 Property.NOT_NULL_EXPRESSION, notNull,
                 Property.IMMUTABLE, immutable,
                 Property.CONTAINER, container,
@@ -222,8 +221,7 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Instance(identifier,
-                translationMap.translateType(parameterizedType), diamond, valueProperties);
+        return new Instance(identifier, translationMap.translateType(parameterizedType), valueProperties);
     }
 
     @Override
@@ -324,20 +322,12 @@ public final class Instance extends BaseExpression implements Expression {
         return identifier;
     }
 
-    public DV getValueProperty(Property property) {
-        return valueProperties.get(property);
-    }
-
     public Identifier identifier() {
         return identifier;
     }
 
     public ParameterizedType parameterizedType() {
         return parameterizedType;
-    }
-
-    public Diamond diamond() {
-        return diamond;
     }
 
     public Properties valueProperties() {

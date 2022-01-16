@@ -150,6 +150,9 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
 
     @Override
     public String toString() {
+        if (causes.size() > 10) {
+            return "[" + causes.size() + " delays]";
+        }
         return causes.stream().map(CauseOfDelay::toString)
                 .sorted()
                 .collect(Collectors.joining(";"));
