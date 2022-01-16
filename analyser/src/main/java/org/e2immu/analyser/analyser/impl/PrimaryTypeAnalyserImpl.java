@@ -69,7 +69,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Primitives primitives;
     private final AnalyserContext parent;
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
-
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
 
     record SharedState(int iteration, EvaluationContext closure) {
@@ -80,7 +79,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                                    Configuration configuration,
                                    Primitives primitives,
                                    Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
-                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                                   boolean subAnalyser) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -177,7 +177,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         analysers.forEach(Analyser::initialize);
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
-        builder.setLimitCausesOfDelay(true);
+        builder.setLimitCausesOfDelay(!subAnalyser);
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);

@@ -497,7 +497,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions());
+                                analyserContext.getE2ImmuAnnotationExpressions(),
+                                true);
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;
                     }).toList();

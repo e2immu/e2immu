@@ -242,7 +242,7 @@ public class Parser {
     private void analyseSortedTypeCycle(List<SortedType> sortedTypes, AnalyserContext analyserContext) {
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
-                getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
+                getTypeContext().typeMap.getE2ImmuAnnotationExpressions(), false);
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {

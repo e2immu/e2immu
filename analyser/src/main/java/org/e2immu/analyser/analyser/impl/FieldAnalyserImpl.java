@@ -312,7 +312,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions());
+                                analyserContext.getE2ImmuAnnotationExpressions(),
+                                true);
                         primaryTypeAnalyser.initialize();
                         anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
                         recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);
