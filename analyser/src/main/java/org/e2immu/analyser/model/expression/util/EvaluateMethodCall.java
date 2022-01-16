@@ -88,7 +88,7 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
-            // FIXME needs expanding: there can be other scopes of the InlineMethod
+            // IMPROVE scopeOfObjectValue may need expanding: there can be other scopes of the InlineMethod? Lambda_8?
             Expression scopeOfObjectValue = new VariableExpression(evaluationContext.currentThis());
             Map<Expression, Expression> translationMap = inlineValue.translationMap(evaluationContext,
                     parameters, scopeOfObjectValue, evaluationContext.getCurrentType(), identifier);

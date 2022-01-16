@@ -228,7 +228,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
-            parameterExpressions.forEach(predicate::test);
+            parameterExpressions.forEach(p -> p.visit(predicate));
         }
     }
 

@@ -195,4 +195,37 @@ public class Test_57_Lambda extends CommonTestRunner {
         testClass("Lambda_7", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_8() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    String expect = d.iteration() == 0 ? "<m:get>" : "inner.i";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
+                assertEquals("inner.i*inner.i$1", srv.toString());
+            }
+        };
+
+        testClass("Lambda_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    // no A API -> 4 potential null pointer warnings
+    @Test
+    public void test_9() throws IOException {
+        testClass("Lambda_9", 0, 4, new DebugConfiguration.Builder()
+                .build());
+    }
 }
