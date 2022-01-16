@@ -32,6 +32,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be null, in which case this is a reference to a static field
     public final Expression scope;
     public final boolean isStatic;
+    public final String fullyQualifiedName;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
         this(inspectionProvider, fieldInfo,
@@ -48,10 +49,21 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
         this.isStatic = fieldInfo.isStatic(inspectionProvider);
+        this.fullyQualifiedName = computeFqn();
 
         assert isStatic || scope != null : "Must have a scope if the field is not static";
         assert !(isStatic && scope instanceof VariableExpression)
                 : "Have variable expression scope on static field " + fullyQualifiedName();
+    }
+
+    private String computeFqn() {
+        if (isStatic || scopeIsThis()) {
+            return fieldInfo.fullyQualifiedName();
+        }
+        if (scope instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+            return fieldInfo.fullyQualifiedName() + "#" + cc.anonymousClass().fullyQualifiedName();
+        }
+        return fieldInfo.fullyQualifiedName() + "#" + scope.output(Qualification.FULLY_QUALIFIED_NAME);
     }
 
     // should only be used by translate
@@ -60,6 +72,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.fieldInfo = fieldReference.fieldInfo;
         this.isStatic = fieldReference.isStatic;
         this.scope = newScope;
+        this.fullyQualifiedName = computeFqn();
     }
 
     // called from VariableExpression.translate, where no inspection provider is present
@@ -68,6 +81,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.fieldInfo = fieldInfo;
         this.scope = scope;
         this.isStatic = isStatic;
+        this.fullyQualifiedName = computeFqn();
     }
 
     @Override
@@ -118,13 +132,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public String fullyQualifiedName() {
-        if (isStatic || scopeIsThis()) {
-            return fieldInfo.fullyQualifiedName();
-        }
-        if (scope instanceof ConstructorCall cc && cc.anonymousClass() != null) {
-            return fieldInfo.fullyQualifiedName() + "#" + cc.anonymousClass().fullyQualifiedName();
-        }
-        return fieldInfo.fullyQualifiedName() + "#" + scope.output(Qualification.FULLY_QUALIFIED_NAME);
+        return fullyQualifiedName;
     }
 
     @Override
@@ -172,10 +180,5 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     public boolean scopeIsThis() {
         return scope instanceof VariableExpression ve && ve.variable() instanceof This;
-    }
-
-    public boolean scopeOwnerIs(TypeInfo typeInfo) {
-        return scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar
-                && thisVar.typeInfo == typeInfo;
     }
 }

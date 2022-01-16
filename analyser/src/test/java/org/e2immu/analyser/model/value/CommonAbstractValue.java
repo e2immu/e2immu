@@ -37,6 +37,7 @@ import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 
+import java.util.Arrays;
 import java.util.Set;
 
 public abstract class CommonAbstractValue {
@@ -64,7 +65,7 @@ public abstract class CommonAbstractValue {
     protected static VariableExpression j;
 
     protected static Variable vs;
-    protected static VariableExpression s;
+    protected static VariableExpression s, s1, s2, s3, s4, s5, s6;
 
     protected static Variable vp;
     protected static VariableExpression p;
@@ -104,6 +105,12 @@ public abstract class CommonAbstractValue {
 
         vs = createVariable("s"); // nullable
         s = new VariableExpression(vs);
+        s1 = new VariableExpression(createVariable("s1"));
+        s2 = new VariableExpression(createVariable("s2"));
+        s3 = new VariableExpression(createVariable("s3"));
+        s4 = new VariableExpression(createVariable("s4"));
+        s5 = new VariableExpression(createVariable("s5"));
+        s6 = new VariableExpression(createVariable("s6"));
 
         vp = createParameter(); // nullable
         p = new VariableExpression(vp);
@@ -154,8 +161,16 @@ public abstract class CommonAbstractValue {
         return And.and(minimalEvaluationContext, values);
     }
 
+    protected static Expression newAnd(Expression... values) {
+        return new And(PRIMITIVES, Arrays.stream(values).toList());
+    }
+
     protected static Expression newOrAppend(Expression... values) {
         return Or.or(minimalEvaluationContext, values);
+    }
+
+    protected static Expression newOr(Expression... values) {
+        return new Or(Identifier.CONSTANT, PRIMITIVES, Arrays.stream(values).toList());
     }
 
     protected static Expression negate(Expression value) {
@@ -164,6 +179,15 @@ public abstract class CommonAbstractValue {
 
     protected static Expression newInt(int i) {
         return new IntConstant(PRIMITIVES, i);
+    }
+
+    protected static InlineConditional newInline(Expression c, Expression l, Expression r) {
+        return new InlineConditional(Identifier.CONSTANT, minimalEvaluationContext.getAnalyserContext(),
+                c, l, r);
+    }
+
+    protected static Expression newEquals(Expression l, Expression r) {
+        return new Equals(Identifier.CONSTANT, PRIMITIVES, l, r);
     }
 
     static ParameterInfo createParameter() {

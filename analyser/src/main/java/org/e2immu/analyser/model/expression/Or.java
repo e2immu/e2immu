@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
+import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 public final class Or extends BaseExpression implements Expression {
@@ -138,7 +139,9 @@ public final class Or extends BaseExpression implements Expression {
             Expression[] components = firstAnd.getExpressions().stream()
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
-            log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+            if (isLogEnabled(EXPRESSION)) {
+                log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+            }
             return And.and(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
