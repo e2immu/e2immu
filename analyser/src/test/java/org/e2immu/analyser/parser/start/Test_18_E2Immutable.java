@@ -154,9 +154,9 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         };
 
         testClass("E2Immutable_1", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-               // .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

@@ -281,8 +281,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         }
 
         DV directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
-        // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
-
         if (directNN.equals(MultiLevel.NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate(),
                     this, value, NullConstant.NULL_CONSTANT, false);
@@ -358,15 +356,25 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         VariableInfoContainer vic = statementAnalysis.getVariable(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (variable instanceof FieldReference fr && situationForVariableFieldReference(fr)) {
-                // is it a variable field, or a final field? if we don't know, return an empty VI
-                // in constructors, and sync blocks, this does not hold
+            if (variable instanceof FieldReference fr) {
                 FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
-                DV effectivelyFinal = fieldAnalysis.getProperty(FINAL);
-                if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValueYet(fieldAnalysis)) {
-                    VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
-                    if (breakDelay != null) return breakDelay;
-                    return new VariableInfoImpl(getLocation(), variable);
+                if (situationForVariableFieldReference(fr)) {
+                    // is it a variable field, or a final field? if we don't know, return an empty VI
+                    // in constructors, and sync blocks, this does not hold
+                    DV effectivelyFinal = fieldAnalysis.getProperty(FINAL);
+                    if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValueYet(fieldAnalysis)) {
+                        VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
+                        if (breakDelay != null) return breakDelay;
+                        return new VariableInfoImpl(getLocation(), variable);
+                    }
+                } else {
+                    // we still could have a delay to be broken (See e.g. E2Immutable_1)
+                    // the condition of vi.getValue().isDelayed is for Final_0
+                    // IMPROVE conditions feel shaky, but do work for now
+                    if (vi.getValue().isDelayed() && noValueYet(fieldAnalysis)) {
+                        VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
+                        if (breakDelay != null) return breakDelay;
+                    }
                 }
             }
             if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
@@ -405,11 +413,6 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      */
     private boolean noValueYet(FieldAnalysis fieldAnalysis) {
         return fieldAnalysis.getValue().isDelayed();
-    }
-
-    // IMPROVE add sync blocks etc. any other moments where statement time does not matter to variable fields
-    private boolean notInConstruction() {
-        return methodInfo().methodResolution.get().partOfConstruction() != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     private boolean isNotMine(Variable variable) {
@@ -654,9 +657,11 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     private boolean situationForVariableFieldReference(FieldReference fieldReference) {
-        if(statementAnalysis.inSyncBlock()) return false;
+        if (statementAnalysis.inSyncBlock()) return false;
+        boolean notInConstruction = methodInfo().methodResolution.get().partOfConstruction()
+                != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         // true outside construction; inside construction, does not hold for this.i but does hold for other.i
-        return notInConstruction() || !fieldReference.scopeIsThis();
+        return notInConstruction || !fieldReference.scopeIsThis();
     }
 
     /**
