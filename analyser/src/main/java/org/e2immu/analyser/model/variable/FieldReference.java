@@ -54,6 +54,14 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 : "Have variable expression scope on static field " + fullyQualifiedName();
     }
 
+    // should only be used by translate
+    public FieldReference(FieldReference fieldReference, Expression newScope) {
+        super(fieldReference.parameterizedType);
+        this.fieldInfo = fieldReference.fieldInfo;
+        this.isStatic = fieldReference.isStatic;
+        this.scope = newScope;
+    }
+
     // called from VariableExpression.translate, where no inspection provider is present
     public FieldReference(FieldInfo fieldInfo, Expression scope, ParameterizedType parameterizedType, boolean isStatic) {
         super(parameterizedType);

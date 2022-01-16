@@ -16,12 +16,15 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
+
+import java.util.Map;
 
 public class StringConcat extends BinaryOperator {
 
@@ -86,4 +89,12 @@ public class StringConcat extends BinaryOperator {
         if (removeRhs) return lhs;
         return new StringConcat(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
     }
+
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
+        return builder.setExpression(stringConcat(identifier, evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
+    }
+
 }

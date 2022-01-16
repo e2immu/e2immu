@@ -167,8 +167,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         if (!fieldInspection.isSet()) return Optional.empty();
         String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromField = (getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))).findFirst();
+        Optional<AnnotationExpression> fromField = getInspection().getAnnotations().stream()
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN)).findFirst();
         if (fromField.isPresent()) return fromField;
         if (annotation.equals(NotNull.class)) return owner.hasInspectedAnnotation(annotation);
         // TODO check "where" on @NotNull

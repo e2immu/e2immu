@@ -176,7 +176,35 @@ public class DelayedVariableExpression extends BaseExpression implements Express
     @Override
     public Expression translate(TranslationMap translationMap) {
         Expression replace = translationMap.directExpression(this);
-        return replace != null && replace != this ? replace : this;
+        if (replace != null && replace != this) return replace;
+        if (variable instanceof FieldReference fr && fr.scope != null) {
+            Expression replaceScope = fr.scope.translate(translationMap);
+            if (replaceScope != null && replaceScope != fr.scope) {
+                FieldReference newRef = new FieldReference(fr, replaceScope);
+                return new DelayedVariableExpression(msg, debug, newRef, causesOfDelay);
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        Expression translated = translation.get(this);
+        Expression result;
+        if (translated != null) {
+            result = translated;
+        } else if (variable instanceof FieldReference fr && fr.scope != null) {
+            Expression replaceScope = translation.get(fr.scope);
+            if (replaceScope != null && replaceScope != fr.scope) {
+                FieldReference newRef = new FieldReference(fr, replaceScope);
+                result = new DelayedVariableExpression(msg, debug, newRef, causesOfDelay);
+            } else {
+                result = this;
+            }
+        } else {
+            result = this;
+        }
+        return new EvaluationResult.Builder().setExpression(result).build();
     }
 
     @Override

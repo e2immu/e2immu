@@ -28,6 +28,8 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @E2Container
 public class EnclosedExpression extends BaseExpression implements Expression {
@@ -114,5 +116,15 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return inner.erasureTypes(typeContext);
+    }
+
+    @Override
+    public void visit(Consumer<Element> consumer) {
+        inner.visit(consumer);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        inner.visit(predicate);
     }
 }

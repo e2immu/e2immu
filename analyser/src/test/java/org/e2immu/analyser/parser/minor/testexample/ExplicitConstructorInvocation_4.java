@@ -12,32 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Nullable;
+public class ExplicitConstructorInvocation_4 {
 
-public class ExplicitConstructorInvocation_3 {
+    private static int generator = 0;
+    public final int index;
+    public final int max;
 
-    @Constant(absent = true)
-    @Final
-    private String s;
-
-    public ExplicitConstructorInvocation_3() {
-        this("abc");
+    public ExplicitConstructorInvocation_4() {
+        this(1);
     }
 
-    private ExplicitConstructorInvocation_3(String sp) {
-        s = sp;
-    }
-
-    @Nullable
-    public String getS() {
-        return s;
-    }
-
-    public static ExplicitConstructorInvocation_3 factory(String x) {
-        return new ExplicitConstructorInvocation_3(x);
+    public ExplicitConstructorInvocation_4( int max) {
+        this.index = generator++;
+        this.max = max;
     }
 }

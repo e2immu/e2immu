@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -73,6 +73,22 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         };
         testClass("ExplicitConstructorInvocation_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    // discovered: no reEvaluate in DelayedVariableExpression
+    @Test
+    public void test_5() throws IOException {
+        // 3 errors: private fields not read outside constructors
+        testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // discovered: no reEvaluate in StringConcat
+    @Test
+    public void test_6() throws IOException {
+        // 4 errors: private fields not read outside constructors
+        testClass("ExplicitConstructorInvocation_6", 4, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }
