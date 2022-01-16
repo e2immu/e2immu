@@ -114,14 +114,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         assertEquals("nullable instance type E2Immutable_1/*@Identity*/",
                                 d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<p:parent2Param>" :
                                 "nullable instance type E2Immutable_1/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.MUTABLE_DV, IMMUTABLE);
-                        assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                     }
                 }
             }
@@ -131,7 +131,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("parent2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);
                 assertEquals("[null,parent2Param]", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
+                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertDv(d, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
             if ("level2".equals(d.fieldInfo().name)) {
@@ -148,7 +148,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+                assertEquals("", d.typeAnalysis().getTransparentTypes().toString());
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
 

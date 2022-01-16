@@ -338,26 +338,37 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 }
 
                 if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
-                    DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
-                    if (immutable.isDelayed()) {
-                        delays = delays.merge(immutable.causesOfDelay());
-                    } else {
-                        int levelImmutable = MultiLevel.level(immutable);
-                        DV typeIndependent;
-                        if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
-                            if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
-                                typeIndependent = DEPENDENT_DV;
-                            } else {
-                                typeIndependent = INDEPENDENT_1_DV;
-                            }
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
+                    if(typeAnalysis.hiddenContentTypeStatus().isDone()) {
+                        SetOfTypes transparent = typeAnalysis.getTransparentTypes();
+                        if (transparent.contains(parameterInfo.parameterizedType)) {
+                            parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
+                            log(ANALYSER, "Set parameter to @Independent1: {} because transparent and linked/assigned to field {}",
+                                    parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                            changed = true;
                         } else {
-                            typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
+                            DV immutable = analyserContext.defaultImmutable(parameterInfo.parameterizedType, false);
+                            if (immutable.isDelayed()) {
+                                delays = delays.merge(immutable.causesOfDelay());
+                            } else {
+                                int levelImmutable = MultiLevel.level(immutable);
+                                DV typeIndependent;
+                                if (levelImmutable <= MultiLevel.Level.IMMUTABLE_1.level) {
+                                    if (assignedOrLinked.le(LinkedVariables.DEPENDENT_DV)) {
+                                        typeIndependent = DEPENDENT_DV;
+                                    } else {
+                                        typeIndependent = INDEPENDENT_1_DV;
+                                    }
+                                } else {
+                                    typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
+                                }
+                                parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
+                                log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
+                                        parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                                changed = true;
+                            }
                         }
-                        parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
-                        log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
-                                parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                        changed = true;
-                    }
+                    } else delays = delays.merge(typeAnalysis.hiddenContentTypeStatus());
                 }
             }
         }

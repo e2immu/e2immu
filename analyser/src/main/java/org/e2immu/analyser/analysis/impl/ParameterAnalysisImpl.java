@@ -45,6 +45,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
+    public ParameterInfo getParameterInfo() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Location location() {
         return parameterInfo.newLocation();
     }

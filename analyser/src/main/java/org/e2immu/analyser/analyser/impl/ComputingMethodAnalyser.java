@@ -435,7 +435,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue() {
-        assert !methodAnalysis.singleReturnValue.isSet();
+        assert !methodAnalysis.singleReturnValue.isFinal();
 
         // some immediate short-cuts.
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
@@ -461,7 +461,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV
             if (noReturnStatementReachable()) {
-                methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
+                methodAnalysis.singleReturnValue.setFinal(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
                 methodAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
@@ -473,6 +473,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
                     value.debugOutput());
             if (variableInfo.isDelayed()) {
+                methodAnalysis.singleReturnValue.setVariable(delayedSrv(variableInfo.getValue().causesOfDelay()));
                 return variableInfo.getValue().causesOfDelay();
             }
             throw new UnsupportedOperationException("? no delays, and initial return expression even though return statements are reachable");
@@ -485,6 +486,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
+                methodAnalysis.singleReturnValue.setVariable(delayedSrv(modified.causesOfDelay()));
                 return modified.causesOfDelay();
             }
             if (modified.valueIsFalse()) {
@@ -494,10 +496,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                  whether the result is something sensible or not.
                  */
                 if (value.isDelayed()) {
+                    methodAnalysis.singleReturnValue.setVariable(delayedSrv(value.causesOfDelay()));
                     return value.causesOfDelay();
                 }
                 value = createInlinedMethod(value);
                 if (value.isDelayed()) {
+                    methodAnalysis.singleReturnValue.setVariable(delayedSrv(value.causesOfDelay()));
                     return value.causesOfDelay(); // FINAL
                 }
             }
@@ -515,6 +519,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
+                methodAnalysis.singleReturnValue.setVariable(delayedSrv(externalNotNull.causesOfDelay()));
                 return externalNotNull.causesOfDelay();
             }
         } else {
@@ -533,6 +538,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             if (constantField.isDelayed()) {
                 log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
+                methodAnalysis.singleReturnValue.setVariable(delayedSrv(constantField.causesOfDelay()));
                 return constantField.causesOfDelay();
             }
             valueIsConstantField = constantField.valueIsTrue();
@@ -540,7 +546,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
         boolean isConstant = value.isConstant() || valueIsConstantField;
 
-        methodAnalysis.singleReturnValue.set(value);
+        methodAnalysis.singleReturnValue.setFinal(value);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (isConstant) {
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
@@ -590,10 +596,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             return formalImmutable;
         }
 
-        if (!methodAnalysis.singleReturnValue.isSet()) {
-
+        if (!methodAnalysis.singleReturnValue.isFinal()) {
             log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
-            return methodInfo.delay(CauseOfDelay.Cause.VALUE);
+            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
         }
         Expression expression = methodAnalysis.singleReturnValue.get();
         if (expression.isConstant()) {

@@ -332,7 +332,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
         builder.companionAnalyses.freeze();
         VariableExpression ve = new VariableExpression(parameterInfo);
-        builder.singleReturnValue.set(new InlinedMethod(Identifier.generate(), methodInfo, ve, Set.of(ve),
+        builder.singleReturnValue.setFinal(new InlinedMethod(Identifier.generate(), methodInfo, ve, Set.of(ve),
                 false));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
@@ -364,7 +364,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
 
         builder.companionAnalyses.freeze();
-        builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType(), "isKnown return value"));
+        builder.singleReturnValue.setFinal(new UnknownExpression(primitives.booleanParameterizedType(), "isKnown return value"));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

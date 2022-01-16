@@ -182,7 +182,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final VariableFirstThen<CausesOfDelay, Optional<Precondition>> preconditionForEventual;
         private final EventuallyFinal<Eventual> eventual = new EventuallyFinal<>();
 
-        public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
+        public final EventuallyFinal<Expression> singleReturnValue = new EventuallyFinal<>();
 
         // ************** PRECONDITION
 
@@ -247,7 +247,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (!methodInfo.hasReturnValue()) {
                 UnknownExpression u = new UnknownExpression(primitives.voidParameterizedType(),
                         UnknownExpression.NO_RETURN_VALUE);
-                singleReturnValue.set(u);
+                singleReturnValue.setFinal(u);
+            } else {
+                // same as in MethodAnalyserImpl, which we don't have access to here
+                DelayedExpression de = DelayedExpression.forMethod(methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
+                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
+                singleReturnValue.setVariable(de);
             }
         }
 
@@ -286,12 +291,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Expression getSingleReturnValue() {
-            Expression srv = singleReturnValue.getOrDefaultNull();
-            if (srv == null) {
-                return DelayedExpression.forMethod(methodInfo, returnType, LinkedVariables.EMPTY,
-                        methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE));
-            }
-            return srv;
+            return singleReturnValue.get();
         }
 
         @Override

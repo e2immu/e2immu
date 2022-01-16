@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
@@ -874,6 +875,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             ALT_IMMUTABLE = Property.PARTIAL_IMMUTABLE;
             ALT_DONE = AnalysisStatus.of(fromParentOrEnclosing);
             fromParentOrEnclosing = Property.IMMUTABLE.bestDv;
+            parentEffective = MultiLevel.Effective.EFFECTIVE;
         } else {
             if (fromParentOrEnclosing.equals(MultiLevel.MUTABLE_DV)) {
                 log(IMMUTABLE_LOG, "{} is not an E1Immutable, E2Immutable class, because parent or enclosing is Mutable",
@@ -936,9 +938,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return approvedDelays;
         }
 
-        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
-
-        boolean haveToEnforcePrivateAndIndependenceRules = false;
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
             FieldInfo fieldInfo = fieldAnalyser.getFieldInfo();
@@ -1006,7 +1005,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             } else if (!isPrimitive) {
                 boolean fieldRequiresRules = fieldAnalysis.isTransparentType().valueIsFalse()
                         && fieldE2Immutable != MultiLevel.Effective.EFFECTIVE;
-                haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
                 DV modified = fieldAnalysis.getProperty(Property.MODIFIED_OUTSIDE_METHOD);
 
@@ -1042,109 +1040,93 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 } else {
                     log(IMMUTABLE_LOG, "Ignoring private modifier check of {}, self-referencing", fieldFQN);
                 }
-/*
-                // we need to know the immutability level of the hidden content of the field
-                Set<ParameterizedType> hiddenContent = typeAnalysis.hiddenContentLinkedTo(fieldInfo);
-                DV minHiddenContentImmutable = hiddenContent.stream()
-                        .map(pt -> analyserContext.defaultImmutable(pt, true))
-                        .reduce(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, DV::min);
-                int immutableLevel = MultiLevel.oneLevelMoreFrom(minHiddenContentImmutable);
-                minLevel = Math.min(minLevel, immutableLevel);
-                */
+            }
+        }
+        int minLevel = MultiLevel.Level.IMMUTABLE_R.level; // can only go down!
+
+
+        for (MethodAnalyser constructor : myConstructors) {
+            for (ParameterAnalysis parameterAnalysis : constructor.getParameterAnalyses()) {
+                DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                if (independent.isDelayed()) {
+                    if(parameterAnalysis.getParameterInfo().parameterizedType.typeInfo == typeInfo) {
+                        continue;
+                    }
+                    log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
+                            constructor.getMethodInfo().distinguishingName());
+                    typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
+                    return independent.causesOfDelay(); //not decided
+                }
+                if (independent.equals(MultiLevel.DEPENDENT_DV)) {
+                    log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is @Dependent",
+                            typeInfo.fullyQualifiedName, constructor.getMethodInfo().name);
+                    typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
+                    return ALT_DONE;
+                }
+                int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
+                minLevel = Math.min(minLevel, independentLevel);
             }
         }
 
-        if (haveToEnforcePrivateAndIndependenceRules) {
+        for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+            if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
+            DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
+            // in the eventual case, we only need to look at the non-modifying methods
+            // calling a modifying method will result in an error
+            if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
+                DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(Property.IMMUTABLE);
 
-            for (MethodAnalyser constructor : myConstructors) {
-                for (ParameterAnalysis parameterAnalysis : constructor.getParameterAnalyses()) {
-                    DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                ParameterizedType returnType;
+                Expression srv = methodAnalyser.getMethodAnalysis().getSingleReturnValue();
+                if (srv.isDone()) {
+                    // concrete
+                    returnType = srv.returnType();
+                } else {
+                    // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
+                    returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
+                }
+                boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType);
+                if(returnTypePartOfMyself) continue;
+                if (returnTypeImmutable.isDelayed()) {
+                    if(srv.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_IMMUTABLE_DELAY)) {
+                        log(DELAYED, "Breaking @Immutable delay self reference", methodAnalyser.getMethodInfo().distinguishingName());
+                        continue;
+                    }
+                    log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.getMethodInfo().distinguishingName());
+                    CausesOfDelay marker = methodAnalyser.getMethodInfo().delay(CauseOfDelay.Cause.BREAK_IMMUTABLE_DELAY);
+                    CausesOfDelay marked = returnTypeImmutable.causesOfDelay().merge(marker);
+                    typeAnalysis.setProperty(ALT_IMMUTABLE, marked);
+                    typeAnalysis.setProperty(Property.IMMUTABLE, marked);
+                    return returnTypeImmutable.causesOfDelay();
+                }
+                MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
+                if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
+                    // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
+                    DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
                     if (independent.isDelayed()) {
-                        log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
-                                constructor.getMethodInfo().distinguishingName());
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
-                        return independent.causesOfDelay(); //not decided
+                        if (returnType.typeInfo == typeInfo) {
+                            log(IMMUTABLE_LOG, "Cannot decide if method {} is independent, but given that its return type is a self reference, don't care",
+                                    methodAnalyser.getMethodInfo().fullyQualifiedName);
+                        } else {
+                            log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                                    typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
+                            typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
+                            return independent.causesOfDelay(); //not decided
+                        }
                     }
                     if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-                        log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because constructor is @Dependent",
-                                typeInfo.fullyQualifiedName, constructor.getMethodInfo().name);
+                        log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
+                                typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
                         typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
                         return ALT_DONE;
                     }
                     int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
                     minLevel = Math.min(minLevel, independentLevel);
-                }
-            }
-
-            for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-                if (methodAnalyser.getMethodInfo().isVoid()) continue; // we're looking at return types
-                DV modified = methodAnalyser.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD);
-                // in the eventual case, we only need to look at the non-modifying methods
-                // calling a modifying method will result in an error
-                if (modified.valueIsFalse() || !typeAnalysis.isEventual()) {
-                    DV returnTypeImmutable = methodAnalyser.getMethodAnalysis().getProperty(ALT_IMMUTABLE);
-
-                    ParameterizedType returnType;
-                    Expression srv = methodAnalyser.getMethodAnalysis().getSingleReturnValue();
-                    if (srv != null) {
-                        // concrete
-                        returnType = srv.returnType();
-                    } else {
-                        // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
-                        returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
-                    }
-                    boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType);
-                    if (returnTypeImmutable.isDelayed() && !returnTypePartOfMyself) {
-                        log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.getMethodInfo().distinguishingName());
-                        typeAnalysis.setProperty(ALT_IMMUTABLE, returnTypeImmutable);
-                        return returnTypeImmutable.causesOfDelay();
-                    }
-                    MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
-                    if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
-                        // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
-                        DV independent = methodAnalyser.getMethodAnalysis().getProperty(Property.INDEPENDENT);
-                        if (independent.isDelayed()) {
-                            if (returnType.typeInfo == typeInfo) {
-                                log(IMMUTABLE_LOG, "Cannot decide if method {} is independent, but given that its return type is a self reference, don't care",
-                                        methodAnalyser.getMethodInfo().fullyQualifiedName);
-                            } else {
-                                log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                                        typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                                typeAnalysis.setProperty(ALT_IMMUTABLE, independent);
-                                return independent.causesOfDelay(); //not decided
-                            }
-                        }
-                        if (independent.equals(MultiLevel.DEPENDENT_DV)) {
-                            log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                                    typeInfo.fullyQualifiedName, methodAnalyser.getMethodInfo().name);
-                            typeAnalysis.setProperty(ALT_IMMUTABLE, whenEXFails);
-                            return ALT_DONE;
-                        }
-                        int independentLevel = MultiLevel.oneLevelMoreFrom(independent);
-                        minLevel = Math.min(minLevel, independentLevel);
-                    }
+                } else {
+                    minLevel = Math.min(minLevel, MultiLevel.level(returnTypeImmutable));
                 }
             }
         }
-
-        /*
-        // IMPROVE I don't think this bit of code is necessary. provide a test
-        if (checkThatTheOnlyModifyingMethodsHaveBeenMarked) {
-            for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-                int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-                if (modified == Level.TRUE) {
-                    MethodAnalysis.Eventual e = methodAnalyser.methodAnalysis.getEventual();
-                    log(DELAYED, "Need confirmation that method {} is @Mark or @Only(before)", methodAnalyser.methodInfo.fullyQualifiedName);
-                    if (e == MethodAnalysis.DELAYED_EVENTUAL) return DELAYS;
-                    if (e.notMarkOrBefore()) {
-                        log(IMMUTABLE_LOG, "{} is not an E2Immutable class, because method {} modifies after the precondition",
-                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                        typeAnalysis.setProperty(VariableALT_IMMUTABLE, whenEXFails);
-                        return ALT_DONE;
-                    }
-                }
-            }
-        }*/
 
         MultiLevel.Effective effective = eventual ? MultiLevel.Effective.EVENTUAL : MultiLevel.Effective.EFFECTIVE;
         DV finalValue = fromParentOrEnclosing.min(MultiLevel.composeImmutable(effective, minLevel));

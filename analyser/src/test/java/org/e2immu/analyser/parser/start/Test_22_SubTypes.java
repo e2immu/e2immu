@@ -173,7 +173,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
         };
         testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

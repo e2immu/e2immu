@@ -22,6 +22,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
@@ -232,5 +233,10 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         log(DELAYED, "Field to parameter for {}: {}", methodInfo.fullyQualifiedName, delay);
         return delay;
+    }
+
+    protected Expression delayedSrv(CausesOfDelay causesOfDelay) {
+        return DelayedExpression.forMethod(methodInfo, methodInfo.returnType(), LinkedVariables.EMPTY,
+                methodInfo.delay(CauseOfDelay.Cause.SINGLE_RETURN_VALUE).merge(causesOfDelay));
     }
 }

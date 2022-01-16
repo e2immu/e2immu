@@ -106,20 +106,9 @@ public interface ParameterAnalysis extends Analysis {
         return getPropertyFromMapDelayWhenAbsent(property);
     }
 
-
-    default DV getPropertyVerifyContracted(Property property) {
-        DV v = getProperty(property);
-        // special code to catch contracted values
-        if (property == NOT_NULL_EXPRESSION) {
-            return v.max(getProperty(NOT_NULL_PARAMETER));
-        }
-        if (property == MODIFIED_OUTSIDE_METHOD) {
-            return v.max(getProperty(MODIFIED_VARIABLE));
-        }
-        return v;
-    }
-
     default boolean assignedToFieldIsFrozen() {
         return false;
     }
+
+    ParameterInfo getParameterInfo();
 }
