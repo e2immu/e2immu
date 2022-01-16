@@ -12,24 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
-public class Lambda_7 {
+import java.util.function.Supplier;
 
-    record Coordinate(int x, int y) {}
+public class Lambda_2 {
 
-    public final int i;
+    private int i;
 
-    public Lambda_7(int i) {
+    public int getI() {
+        return i;
+    }
+
+    public void setI(int i) {
         this.i = i;
     }
 
-    public int direct(int a, int b) {
-        return (a + b) * (a - i);
+    public int method() {
+        Supplier<Integer> f = () -> i;
+        int j = f.get();
+        return i * j;
     }
-
-    public int applyDirect(Coordinate c) {
-        return direct(c.x, c.y);
-    }
-
 }

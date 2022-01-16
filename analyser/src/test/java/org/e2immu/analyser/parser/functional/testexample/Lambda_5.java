@@ -12,32 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
-import java.util.function.Supplier;
+import java.util.function.BinaryOperator;
 
-public class Lambda_4 {
+// both methods should result in an InlinedMethod
+public class Lambda_5 {
 
-    record X(int k) {
+    public static int direct(int a, int b) {
+        return (a + b) * (a - b);
     }
 
-    private int i;
-
-    public int getI() {
-        return i;
-    }
-
-    public void setI(int i) {
-        this.i = i;
-    }
-
-    public int method(X x) {
-        if(x.k < 3) return 3;
-        Supplier<Integer> f = () -> {
-            int l = new X(x.k).k;
-            return l;
-        };
-        int j = f.get();
-        return i * j;
+    public static BinaryOperator<Integer> method() {
+        return (a, b) -> (a + b) * (a - b);
     }
 }

@@ -12,32 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
-import java.util.function.BinaryOperator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-// can still be inlined
-public class Lambda_6 {
+public class Lambda_1 {
 
-    public final int i;
-
-    public Lambda_6(int i) {
-        this.i = i;
+    public static <K, V> boolean add(Map<K, List<V>> map, K k, V v) {
+        List<V> list = map.computeIfAbsent(k, l -> new LinkedList<>());
+        return list.add(v);
     }
 
-    public int direct(int a, int b) {
-        return (a + b) * (a - i);
-    }
-
-    public int applyDirect() {
-        return direct(i, i);
-    }
-
-    public BinaryOperator<Integer> method() {
-        return (a, b) -> (a + b) * (a - i);
-    }
-
-    public int applyMethod() {
-        return method().apply(i, i);
-    }
 }

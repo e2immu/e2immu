@@ -18,10 +18,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -677,8 +674,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 } else {
                     valueProperties = evaluationContext.getValueProperties(fieldReference.scope);
                 }
-                Expression newScope = Instance.genericFieldAccess(evaluationContext.getAnalyserContext(),
-                        fieldReference.fieldInfo, valueProperties);
+                CausesOfDelay causesOfDelay = valueProperties.delays();
+                Expression newScope;
+                if (causesOfDelay.isDelayed()) {
+                    newScope = DelayedVariableExpression.forDelayedValueProperties(variable, causesOfDelay);
+                } else {
+                    newScope = Instance.genericFieldAccess(evaluationContext.getAnalyserContext(),
+                            fieldReference.fieldInfo, valueProperties);
+                }
                 return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
             }
             return null;

@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -51,16 +51,25 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    String expect = d.iteration() == 0 ? "<m:get>" : "i";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
                 assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("j*i$1", srv.toString());
+                assertEquals("i*i$1", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
@@ -73,7 +82,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        String expectLv = d.iteration() == 0 ? "j:0" : "j:0,x.k:1";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("f".equals(d.variableName())) {
@@ -82,7 +92,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
                             if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
-                                assertEquals(2, inlinedMethod.variables(true).size()); // x, x.k
+                                assertEquals(1, inlinedMethod.variables(true).size()); // x, x.k
                                 assertFalse(inlinedMethod.containsVariableFields());
                             } else fail("Class " + d.currentValue().getClass());
                         }
@@ -96,7 +106,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 assertEquals("x.k>=3?x.k*i$1:3", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -121,7 +131,8 @@ public class Test_57_Lambda extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
                         assertEquals(expect, d.currentValue().toString());
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        String expectLv = d.iteration() == 0 ? "j:0" : "j:0,x.k:1";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

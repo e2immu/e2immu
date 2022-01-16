@@ -80,7 +80,7 @@ public class EvaluateMethodCall {
         }
 
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
-          executing an inlined method
+          executing an inlined method, see Lambda_2
 
           we also have to take care to take the concrete method, and not the formal functional interface
          */
@@ -88,8 +88,10 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
+            // FIXME needs expanding: there can be other scopes of the InlineMethod
+            Expression scopeOfObjectValue = new VariableExpression(evaluationContext.currentThis());
             Map<Expression, Expression> translationMap = inlineValue.translationMap(evaluationContext,
-                    parameters, objectValue, evaluationContext.getCurrentType(), identifier);
+                    parameters, scopeOfObjectValue, evaluationContext.getCurrentType(), identifier);
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 

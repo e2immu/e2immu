@@ -12,11 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
 import java.util.function.Supplier;
 
-public class Lambda_2 {
+public class Lambda_3 {
+
+    record X(int k) {
+    }
 
     private int i;
 
@@ -28,8 +31,9 @@ public class Lambda_2 {
         this.i = i;
     }
 
-    public int method() {
-        Supplier<Integer> f = () -> i;
+    public int method(X x) {
+        if(x.k < 3) return 3;
+        Supplier<Integer> f = () -> new X(x.k).k;
         int j = f.get();
         return i * j;
     }

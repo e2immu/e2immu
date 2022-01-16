@@ -12,18 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.functional.testexample;
 
-import java.util.function.BinaryOperator;
+public class Lambda_7 {
 
-// both methods should result in an InlinedMethod
-public class Lambda_5 {
+    record Coordinate(int x, int y) {}
 
-    public static int direct(int a, int b) {
-        return (a + b) * (a - b);
+    public final int i;
+
+    public Lambda_7(int i) {
+        this.i = i;
     }
 
-    public static BinaryOperator<Integer> method() {
-        return (a, b) -> (a + b) * (a - b);
+    public int direct(int a, int b) {
+        return (a + b) * (a - i);
     }
+
+    public int applyDirect(Coordinate c) {
+        return direct(c.x, c.y);
+    }
+
 }
