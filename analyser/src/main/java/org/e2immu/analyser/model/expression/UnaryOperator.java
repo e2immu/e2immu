@@ -33,10 +33,11 @@ public class UnaryOperator extends BaseExpression implements Expression {
     public final Expression expression;
     public final Precedence precedence;
     public final MethodInfo operator;
+    public static final int COMPLEXITY = 2;
 
     public UnaryOperator(Identifier identifier,
                          @NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {
-        super(identifier);
+        super(identifier, COMPLEXITY + expression.getComplexity());
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);

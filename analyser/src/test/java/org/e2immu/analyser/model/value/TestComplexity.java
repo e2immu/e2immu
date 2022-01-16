@@ -33,22 +33,6 @@ public class TestComplexity extends CommonAbstractValue {
     <m:forwardTypeParameterMap>:<return value>:<m:combineMaps>:null==<m:mapInTermsOfParametersOfSubType>
     ?<f:typeInfo>==<f:typeInfo>?<m:forwardTypeParameterMap>:<return value>:<m:combineMaps>
 
-    (<m:interfacesImplemented>.isEmpty()||null==<m:mapInTermsOfParametersOfSubType>)&&(<m:interfacesImplemented>.isEmpty()
-    ||<f:typeInfo>!=<f:typeInfo>)?null:<m:interfacesImplemented>.isEmpty()
-    &&(!<m:interfacesImplemented>.isEmpty()||!<m:interfacesImplemented>.isEmpty())
-    &&(!<m:interfacesImplemented>.isEmpty()||null!=<m:mapInTermsOfParametersOfSubType>)
-    &&(!<m:interfacesImplemented>.isEmpty()||<f:typeInfo>==<f:typeInfo>)
-    &&(null!=<m:mapInTermsOfParametersOfSubType>||<f:typeInfo>==<f:typeInfo>)?null==<m:parentClass>?<return value>
-    :<m:interfacesImplemented>.isEmpty()&&null!=<m:parentClass>&&null==<m:mapInTermsOfParametersOfSubType>
-    &&(!<m:interfacesImplemented>.isEmpty()||!<m:interfacesImplemented>.isEmpty())&&(!<m:interfacesImplemented>
-    .isEmpty()||null!=<m:mapInTermsOfParametersOfSubType>)&&(!<m:interfacesImplemented>.isEmpty()
-    ||<f:typeInfo>==<f:typeInfo>)&&(null!=<m:mapInTermsOfParametersOfSubType>||<f:typeInfo>==<f:typeInfo>)
-    ?<f:typeInfo>==<f:typeInfo>?<m:forwardTypeParameterMap>:<return value>:<m:combineMaps>:!<m:interfacesImplemented>
-    .isEmpty()&&null==<m:mapInTermsOfParametersOfSubType>&&(!<m:interfacesImplemented>.isEmpty()
-    ||!<m:interfacesImplemented>.isEmpty())&&(!<m:interfacesImplemented>.isEmpty()||null!=<m:mapInTermsOfParametersOfSubType>)
-    &&(!<m:interfacesImplemented>.isEmpty()||<f:typeInfo>==<f:typeInfo>)&&(null!=<m:mapInTermsOfParametersOfSubType>
-    ||<f:typeInfo>==<f:typeInfo>)?<f:typeInfo>==<f:typeInfo>?<m:forwardTypeParameterMap>:<return value>:<m:combineMaps>
-
     a = <m:interfacesImplemented>.isEmpty()   BOOLEAN    a
     b = <m:mapInTermsOfParametersOfSubType>   obj        s
     c = <f:typeInfo>_1                        var        s1
@@ -72,6 +56,8 @@ public class TestComplexity extends CommonAbstractValue {
         Expression condition1 = newAnd(newOr(a, newEquals(NullConstant.NULL_CONSTANT, s)),
                 newOr(a, negate(newEquals(s1, s2))));
         assertEquals("(a||null==s)&&(a||s1!=s2)", condition1.toString());
+        // 21 = (1+4+1+2+1)+3+(9)
+        assertEquals(21, condition1.getComplexity());
 
         Expression cEqdGThenF = newInline(newEquals(s1, s2), s5, s4);
         assertEquals("s1==s2?s5:s4", cEqdGThenF.toString());
@@ -89,6 +75,7 @@ public class TestComplexity extends CommonAbstractValue {
         InlineConditional overall = newInline(condition1, NullConstant.NULL_CONSTANT, expression1);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:a?null==s3?s4:null==s?s1==s2?s5:s4:s6:null==s?s1==s2?s5:s4:s6",
                 overall.toString());
+        assertEquals(115, overall.getComplexity());
 
         Expression better = overall.optimise(minimalEvaluationContext);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:!a&&null==s&&s1==s2?s5:s6", better.toString());
@@ -96,8 +83,5 @@ public class TestComplexity extends CommonAbstractValue {
         Assignment assignment = new Assignment(PRIMITIVES, s1, overall);
         EvaluationResult res = assignment.evaluate(minimalEvaluationContext, ForwardEvaluationInfo.DEFAULT);
         assertEquals("(a||null==s)&&(a||s1!=s2)?null:!a&&null==s&&s1==s2?s5:s6", res.value().toString());
-
-        Expression negation = negate(overall);
-        assertEquals("", negation.toString());
     }
 }

@@ -39,7 +39,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
 
     public PropertyWrapper(Expression expression, Expression state, Map<Property, DV> properties, LinkedVariables linkedVariables, ParameterizedType castType) {
-        super(expression.getIdentifier());
+        super(expression.getIdentifier(), expression.getComplexity());
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
         this.expression = expression;
         this.state = state;

@@ -29,19 +29,22 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class And extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final List<Expression> expressions;
+    public static final int COMPLEXITY = 3;
+    public static final int LIMIT_ON_COMPLEXITY = 100;
 
     public And(Primitives primitives, List<Expression> expressions) {
         this(Identifier.generate(), primitives, expressions);
     }
 
     private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {
-        super(identifier);
+        super(identifier, COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum());
         this.primitives = Objects.requireNonNull(primitives);
         this.expressions = Objects.requireNonNull(expressions);
     }
@@ -62,6 +65,7 @@ public class And extends BaseExpression implements Expression {
     private Expression append(EvaluationContext evaluationContext, Expression... values) {
 
         // STEP 1: check that all values return boolean!
+        int complexity = 0;
         for (Expression v : values) {
             if (v.isUnknown()) {
                 throw new UnsupportedOperationException("Unknown value " + v + " in And");
@@ -72,6 +76,7 @@ public class And extends BaseExpression implements Expression {
             if (v.returnType().isNotBooleanOrBoxedBoolean()) {
                 throw new UnsupportedOperationException("Non-boolean return type for " + v + " in And: " + v.returnType());
             }
+            complexity += v.getComplexity();
         }
 
         // STEP 2: trivial reductions
@@ -86,7 +91,12 @@ public class And extends BaseExpression implements Expression {
 
         // STEP 4: loop
 
-        boolean changes = true;
+        boolean changes = complexity < LIMIT_ON_COMPLEXITY;
+        if (!changes) {
+            log(ANALYSER, "Not analysing AND operation, complexity {}", complexity);
+        }
+        assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
+
         while (changes) {
             changes = false;
 

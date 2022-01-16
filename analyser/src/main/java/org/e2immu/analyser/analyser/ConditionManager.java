@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
@@ -46,6 +47,8 @@ public record ConditionManager(Expression condition,
                                Precondition precondition,
                                CausesOfDelay preconditionIsDelayed,
                                ConditionManager parent) {
+
+    public static final int LIMIT_ON_COMPLEXITY = 200;
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
@@ -166,10 +169,17 @@ public record ConditionManager(Expression condition,
 
     public Expression absoluteState(EvaluationContext evaluationContext) {
         Expression[] expressions;
+        int complexity;
         if (parent == null) {
             expressions = new Expression[]{state};
+            complexity = state.getComplexity();
         } else {
-            expressions = new Expression[]{condition, state, parent.absoluteState(evaluationContext)};
+            Expression parentAbsolute = parent.absoluteState(evaluationContext);
+            expressions = new Expression[]{condition, state, parentAbsolute};
+            complexity = condition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
+        }
+        if (complexity > LIMIT_ON_COMPLEXITY) {
+            return Instance.forTooComplex(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType());
         }
         return And.and(evaluationContext, expressions);
     }
@@ -196,6 +206,8 @@ public record ConditionManager(Expression condition,
     }
 
     public Expression evaluate(EvaluationContext evaluationContext, Expression value, boolean negate) {
+        assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
+
         Expression absoluteState = absoluteState(evaluationContext);
         if (absoluteState.isUnknown() || value.isUnknown()) throw new UnsupportedOperationException();
         /*
@@ -213,6 +225,10 @@ public record ConditionManager(Expression condition,
             combinedWithPrecondition = And.and(evaluationContext, negated, precondition.expression());
         }
 
+        boolean tooComplex = combinedWithPrecondition.getComplexity() + value.getComplexity() > And.LIMIT_ON_COMPLEXITY;
+        if (tooComplex) {
+            return Instance.forTooComplex(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType());
+        }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
         Expression resultWithPrecondition = And.and(evaluationContext, combinedWithPrecondition, value);
@@ -228,6 +244,11 @@ public record ConditionManager(Expression condition,
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isUnknown() || e2.isUnknown()) throw new UnsupportedOperationException();
+        int complexity = e1.getComplexity() + e2.getComplexity();
+        if (complexity > LIMIT_ON_COMPLEXITY) {
+            return Instance.forTooComplex(Identifier.generate(),
+                    evaluationContext.getPrimitives().booleanParameterizedType());
+        }
         return And.and(evaluationContext, e1, e2);
     }
 

@@ -34,6 +34,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.log;
+
 /**
  * a ? b : c
  */
@@ -42,13 +45,14 @@ public class InlineConditional extends BaseExpression implements Expression {
     public final Expression ifTrue;
     public final Expression ifFalse;
     public final InspectionProvider inspectionProvider;
+    public static final int COMPLEXITY = 10;
 
     public InlineConditional(Identifier identifier,
                              InspectionProvider inspectionProvider,
                              Expression condition,
                              Expression ifTrue,
                              Expression ifFalse) {
-        super(identifier);
+        super(identifier, COMPLEXITY + condition.getComplexity() + ifFalse.getComplexity() + ifTrue.getComplexity());
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
@@ -173,27 +177,37 @@ public class InlineConditional extends BaseExpression implements Expression {
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
         // with the boolean case.
-        EvaluationContext copyForThen = resultIsBoolean ? evaluationContext :
-                evaluationContext.child(conditionResult.value());
+        Expression condition = conditionResult.value();
+
+        Expression conditionAfterState = evaluationContext.getConditionManager().evaluate(evaluationContext, condition);
+
+        boolean tooComplex = conditionAfterState.getComplexity() *
+                Math.max(ifTrue.getComplexity(), ifFalse.getComplexity()) >= 1000;
+
+        EvaluationContext copyForThen = resultIsBoolean || tooComplex ? evaluationContext :
+                evaluationContext.child(condition);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
         EvaluationContext copyForElse = resultIsBoolean ? evaluationContext :
-                evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value()));
+                evaluationContext.child(Negation.negate(evaluationContext, condition));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
-        Expression c = conditionResult.value();
         Expression t = ifTrueResult.value();
         Expression f = ifFalseResult.value();
 
-        if (c.isUnknown() || t.isUnknown() || f.isUnknown()) {
+        if (condition.isUnknown() || t.isUnknown() || f.isUnknown()) {
             throw new UnsupportedOperationException();
         }
 
-        // TODO ObjectFlow
-        EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
-                c, t, f);
+        if(tooComplex) {
+            log(ANALYSER, "Reduced complexity in inline conditional");
+            InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition,t, f);
+            return builder.setExpression(inlineConditional).build();
+        }
+        EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+                conditionAfterState, t, f);
         return builder.compose(cv).build();
     }
 

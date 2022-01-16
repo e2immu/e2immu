@@ -37,7 +37,7 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     private final Expression inner;
 
     public EnclosedExpression(Identifier identifier, Expression inner) {
-        super(identifier);
+        super(identifier, inner.getComplexity());
         this.inner = inner;
     }
 

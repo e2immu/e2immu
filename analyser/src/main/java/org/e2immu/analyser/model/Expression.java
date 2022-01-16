@@ -31,6 +31,9 @@ import java.util.function.Predicate;
 
 @E2Container
 public interface Expression extends Element, Comparable<Expression> {
+    int HARD_LIMIT_ON_COMPLEXITY = 1000;
+
+    int getComplexity();
 
     @NotModified
     ParameterizedType returnType();

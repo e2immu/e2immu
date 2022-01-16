@@ -63,7 +63,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     public BinaryOperator(Identifier identifier,
                           Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
-        super(identifier);
+        super(identifier, operator.getComplexity() + lhs.getComplexity() + rhs.getComplexity());
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;

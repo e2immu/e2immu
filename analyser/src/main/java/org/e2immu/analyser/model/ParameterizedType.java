@@ -835,6 +835,11 @@ public class ParameterizedType {
         return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
     }
 
+    public boolean isBooleanOrBoxedBoolean() {
+        if (arrays != 0) return false;
+        return typeInfo != null && (typeInfo.isBoolean() || typeInfo.isBoxedBoolean());
+    }
+
     public boolean isNotBooleanOrBoxedBoolean() {
         if (typeInfo == null) return true; // for parameterized types
         return !typeInfo.isBoolean()

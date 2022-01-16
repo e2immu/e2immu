@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
@@ -229,7 +228,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         if (sharedState.previous() == null) return result; // first statement of block, no need to change
         ReturnVariable returnVariable = new ReturnVariable(methodInfo());
         VariableInfo vi = sharedState.previous().findOrThrow(returnVariable);
-        if (!vi.getValue().isReturnValue()) {
+        if (!vi.getValue().isReturnValue() && !vi.getValue().isDelayed()) {
             // remove all return_value parts
             Expression newValue = vi.getValue().removeAllReturnValueParts();
             EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext()).compose(result);
@@ -364,14 +363,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     }
 
     private Expression giveUpWhenTooComplex(EvaluationContext evaluationContext, Expression toEvaluate) {
-        AtomicInteger counter = new AtomicInteger();
-        toEvaluate.visit(e -> {
-            if (e instanceof InlineConditional || e instanceof And || e instanceof Or) {
-                counter.incrementAndGet();
-            }
-        });
-        if (counter.get() > 10) {
-            LOGGER.warn("About to analyse complexity {}", counter);
+        if (toEvaluate.getComplexity() > 100) {
+            LOGGER.warn("About to analyse complexity {}", toEvaluate.getComplexity());
             List<Expression> solid = toEvaluate.collectSolidValues();
             MultiValue multiValue = new MultiValue(Identifier.generate(), evaluationContext.getAnalyserContext(),
                     new MultiExpression(solid.toArray(new Expression[0])), methodInfo().returnType());

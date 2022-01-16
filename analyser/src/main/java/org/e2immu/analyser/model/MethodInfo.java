@@ -360,4 +360,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return numParameters == 2 && "wait".equals(name) && parameters.get(0).parameterizedType.isLong() &&
                 parameters.get(1).parameterizedType.isInt();
     }
+
+    public int getComplexity() {
+        return 1; // FIXME
+    }
 }

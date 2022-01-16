@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -35,10 +36,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public final class Or extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final List<Expression> expressions;
-
+    public static final int COMPLEXITY = 4;
+    public static final int LIMIT_ON_COMPLEXITY = 100;
 
     public Or(Identifier identifier, Primitives primitives, List<Expression> expressions) {
-        super(identifier);
+        super(identifier, COMPLEXITY + expressions.stream().mapToInt(Expression::getComplexity).sum());
         Objects.requireNonNull(primitives);
         Objects.requireNonNull(expressions);
         this.primitives = primitives;
@@ -83,7 +85,14 @@ public final class Or extends BaseExpression implements Expression {
         // STEP 3: loop
 
         And firstAnd = null;
-        boolean changes = true;
+
+        int complexity = values.stream().mapToInt(Expression::getComplexity).sum();
+        boolean changes = complexity < LIMIT_ON_COMPLEXITY;
+        if (!changes) {
+            log(ANALYSER, "Not analysing OR operation, complexity {}", complexity);
+        }
+        assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
+
         while (changes) {
             changes = false;
 
@@ -142,7 +151,10 @@ public final class Or extends BaseExpression implements Expression {
             if (isLogEnabled(EXPRESSION)) {
                 log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
             }
-            return And.and(evaluationContext, components);
+            int complexityComponents = Arrays.stream(components).mapToInt(Expression::getComplexity).sum();
+            if (complexityComponents < LIMIT_ON_COMPLEXITY) {
+                return And.and(evaluationContext, components);
+            }
         }
         if (finalValues.size() == 1) return finalValues.get(0);
 

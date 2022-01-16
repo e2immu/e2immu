@@ -175,6 +175,11 @@ public final class Instance extends BaseExpression implements Expression {
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 
+    public static Instance forTooComplex(Identifier identifier,
+                                         ParameterizedType parameterizedType) {
+        return new Instance(identifier, parameterizedType, primitiveValueProperties());
+    }
+
     public Instance(Identifier identifier,
                     ParameterizedType parameterizedType,
                     Properties valueProperties) {
@@ -242,6 +247,9 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
+        if(!(v instanceof Instance)) {
+            return 1; // we're at the back; Instance is used as "too complex" in boolean expressions
+        }
         return parameterizedType.detailedString()
                 .compareTo(((Instance) v).parameterizedType.detailedString());
     }
