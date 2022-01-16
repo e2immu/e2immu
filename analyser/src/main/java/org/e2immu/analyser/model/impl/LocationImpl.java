@@ -24,6 +24,8 @@ public class LocationImpl implements Location {
     public final WithInspectionAndAnalysis info;
     public final String statementIndexInMethod;
     public final Identifier identifier;
+    // cached, speed-up because every CauseOfDelay has a location, and merging of causes of delay is big business
+    private final int hashCode;
 
     public LocationImpl(WithInspectionAndAnalysis info) {
         this(info, null, info.getIdentifier());
@@ -37,6 +39,7 @@ public class LocationImpl implements Location {
         this.info = Objects.requireNonNull(info);
         this.statementIndexInMethod = statementIndexInMethod;
         this.identifier = Objects.requireNonNull(identifier);
+        hashCode = Objects.hash(info, statementIndexInMethod);
     }
 
     @Override
@@ -54,13 +57,13 @@ public class LocationImpl implements Location {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LocationImpl location = (LocationImpl) o;
-        if(this == NOT_YET_SET || o == NOT_YET_SET) return false;
+        if (this == NOT_YET_SET || o == NOT_YET_SET) return false;
         return info.equals(location.info) && Objects.equals(statementIndexInMethod, location.statementIndexInMethod);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(info, statementIndexInMethod);
+        return hashCode;
     }
 
     @Override
@@ -101,7 +104,7 @@ public class LocationImpl implements Location {
     best toString method to show in a delay; as brief as possible
      */
     public String toDelayString() {
-        if(info == null) return "not_yet_set";
+        if (info == null) return "not_yet_set";
         return info.niceClassName() + "_" + info.name() + (statementIndexInMethod == null ? "" : "_" + statementIndexInMethod);
     }
 }

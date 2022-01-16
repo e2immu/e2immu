@@ -278,4 +278,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -54,4 +54,14 @@ public record NotDelayed(int pos, String name) implements AnalysisStatus {
         assert other.isDelayed();
         return other;
     }
+
+    @Override
+    public AnalysisStatus combineAndLimit(AnalysisStatus other) {
+        return combine(other);
+    }
+
+    @Override
+    public int numberOfDelays() {
+        return 0;
+    }
 }

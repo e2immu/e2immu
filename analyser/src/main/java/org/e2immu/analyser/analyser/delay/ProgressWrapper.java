@@ -54,4 +54,17 @@ public record ProgressWrapper(CausesOfDelay causesOfDelay) implements AnalysisSt
         assert other.isDelayed();
         return new ProgressWrapper(causesOfDelay.merge(other.causesOfDelay()));
     }
+
+    @Override
+    public AnalysisStatus combineAndLimit(AnalysisStatus other) {
+        if (other instanceof NotDelayed) return this;
+        assert other.isDelayed();
+        if (numberOfDelays() > LIMIT) return this;
+        return new ProgressWrapper(causesOfDelay.merge(other.causesOfDelay()));
+    }
+
+    @Override
+    public int numberOfDelays() {
+        return causesOfDelay.numberOfDelays();
+    }
 }

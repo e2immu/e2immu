@@ -165,4 +165,23 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
         assert isDelayed();
         return merge(other.causesOfDelay()).addProgress(other.isProgress());
     }
+
+    @Override
+    public AnalysisStatus combineAndLimit(AnalysisStatus other) {
+        if (other instanceof NotDelayed) return this;
+        assert other.isDelayed();
+        assert isDelayed();
+        CausesOfDelay merge;
+        if (other.numberOfDelays() > LIMIT || numberOfDelays() > LIMIT) {
+            merge = this;
+        } else {
+            merge = merge(other.causesOfDelay());
+        }
+        return merge.addProgress(other.isProgress());
+    }
+
+    @Override
+    public int numberOfDelays() {
+        return causes.size();
+    }
 }

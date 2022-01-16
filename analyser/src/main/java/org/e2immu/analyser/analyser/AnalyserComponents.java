@@ -30,11 +30,13 @@ public class AnalyserComponents<T, S> {
 
     private final LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
+    private final boolean limitCausesOfDelay;
 
-    private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
+    private AnalyserComponents(boolean limitCausesOfDelay, LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, AnalysisStatus.NOT_YET_EXECUTED);
+        this.limitCausesOfDelay = limitCausesOfDelay;
     }
 
     public AnalysisStatus getStatus(String t) {
@@ -44,9 +46,14 @@ public class AnalyserComponents<T, S> {
     public static class Builder<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
         private final AnalyserProgram analyserProgram;
+        private boolean limitCausesOfDelay;
 
         public Builder(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
+        }
+
+        public void setLimitCausesOfDelay(boolean limitCausesOfDelay) {
+            this.limitCausesOfDelay = limitCausesOfDelay;
         }
 
         public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
@@ -61,7 +68,7 @@ public class AnalyserComponents<T, S> {
         }
 
         public AnalyserComponents<T, S> build() {
-            return new AnalyserComponents<>(suppliers);
+            return new AnalyserComponents<>(limitCausesOfDelay, suppliers);
         }
     }
 
@@ -97,7 +104,7 @@ public class AnalyserComponents<T, S> {
                 state[i] = afterExec;
                 if (afterExec != RUN_AGAIN) {
                     assert afterExec.isDelayed() || afterExec == DONE;
-                    combined = combined.combine(afterExec);
+                    combined = limitCausesOfDelay ? combined.combineAndLimit(afterExec) : combined.combine(afterExec);
                 }
             }
             i++;

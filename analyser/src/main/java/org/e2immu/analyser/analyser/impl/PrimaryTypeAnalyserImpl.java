@@ -177,6 +177,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         analysers.forEach(Analyser::initialize);
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
+        builder.setLimitCausesOfDelay(true);
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);

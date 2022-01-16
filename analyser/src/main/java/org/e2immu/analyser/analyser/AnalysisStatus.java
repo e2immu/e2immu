@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.NotDelayed;
 import java.util.function.Function;
 
 public interface AnalysisStatus {
+    int LIMIT = 10;
 
     static AnalysisStatus of(CausesOfDelay merge) {
         return merge.isDelayed() ? merge : DONE;
@@ -41,6 +42,10 @@ public interface AnalysisStatus {
     AnalysisStatus addProgress(boolean progress);
 
     AnalysisStatus combine(AnalysisStatus other);
+
+    AnalysisStatus combineAndLimit(AnalysisStatus other);
+
+    int numberOfDelays();
 
     // delayed = 1; progress = 0
     AnalysisStatus DONE = new NotDelayed(2, "DONE"); // done this one
