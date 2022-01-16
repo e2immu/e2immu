@@ -160,6 +160,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
                 if (!assignments.isBooleanConstant()) {
+                    log(ANALYSER, "Assignment expressions: {}", assignments);
                     result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
                     ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result, localAnalysers.get());
                     statusPost = assignmentResult.status().merge(analysisStatus.causesOfDelay());
@@ -285,6 +286,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             for (Expression parameterExpression : storedValues) {
                 ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
                 translation.put(new VariableExpression(parameterInfo), parameterExpression);
+                translation.put(DelayedVariableExpression.forVariableReEvaluation(parameterInfo), parameterExpression);
                 i++;
             }
         }

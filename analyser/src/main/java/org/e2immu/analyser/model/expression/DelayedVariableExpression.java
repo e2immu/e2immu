@@ -90,6 +90,11 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return new DelayedVariableExpression(msg, msg, variable, causesOfDelay);
     }
 
+    public static Expression forVariableReEvaluation(ParameterInfo parameterInfo) {
+        String msg = "<re-eval:" + parameterInfo.simpleName() + ">";
+        return new DelayedVariableExpression(msg, msg, parameterInfo, CausesOfDelay.EMPTY);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.
@@ -109,9 +114,10 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return variable;
     }
 
+    // important: do not add msg to the hash!
     @Override
     public int hashCode() {
-        return Objects.hash(msg, variable.parameterizedType());
+        return Objects.hash(variable.parameterizedType());
     }
 
     @Override

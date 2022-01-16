@@ -102,4 +102,9 @@ public class CommaExpression extends BaseExpression implements Expression {
     public List<Expression> expressions() {
         return expressions;
     }
+
+    @Override
+    public String toString() {
+        return expressions.toString();
+    }
 }
