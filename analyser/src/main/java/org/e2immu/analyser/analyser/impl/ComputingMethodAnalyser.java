@@ -94,10 +94,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         if (block.isEmpty()) {
             firstStatementAnalyser = null;
         } else {
+            boolean inSyncBlock = methodInfo.isSynchronized()
+                    || methodInfo.isConstructor
+                    || methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
+                    || methodInfo.methodInspection.get().isStaticBlock();
             firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
-                    this, null, block.structure.statements(), "", true,
-                    methodInfo.isSynchronized() || methodInfo.isConstructor ||
-                            methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION);
+                    this, null, block.structure.statements(), "", true, inSyncBlock);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
 

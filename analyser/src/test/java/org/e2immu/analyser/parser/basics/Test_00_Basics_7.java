@@ -42,12 +42,11 @@ public class Test_00_Basics_7 extends CommonTestRunner {
         super(true);
     }
 
-    // more on statement time
+    // more on statement time. Inside the synchronization blocks, variable fields act as local variables:
+    // their value cannot change from the outside
     @Test
     public void test7() throws IOException {
         final String I = "org.e2immu.analyser.parser.basics.testexample.Basics_7.i";
-        final String I0 = "i$0";
-        final String I1 = "i$1";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.parser.basics.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
@@ -143,26 +142,25 @@ public class Test_00_Basics_7 extends CommonTestRunner {
             if ("increment".equals(d.methodInfo().name)) {
                 if (I.equals(d.variableName())) {
                     if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                        assertEquals(I0 + "+q", d.currentValue().toString());
+                        assertEquals("i+q", d.currentValue().toString());
                     }
                 }
             }
             if ("increment3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
-                    String expected = d.iteration() == 0 ? "-1==<f:i>-<f:i>" : "true";
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("true", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("true", d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_DELAYED : I1;
+                        String expect = d.iteration() == 0 ? I_DELAYED : "i";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv =  "j:0,this.i:0" ;
+                        String expectLv = "j:0,this.i:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                     // at 1.0.1, i gets incremented, j should not be linked to this.i anymore
@@ -199,7 +197,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
+                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("1.0.2-E", d.variableInfo().getReadId());
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
@@ -211,7 +209,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
+                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("this.i:0", d.variableInfo().getLinkedVariables().toString());
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(EXTERNAL_NOT_NULL));
@@ -250,12 +248,11 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "-1==<f:i>-<f:i>" : "true";
-                assertEquals(expected, d.methodAnalysis().getLastStatement()
+                assertEquals("true", d.methodAnalysis().getLastStatement()
                         .getVariable(INC3_RETURN_VAR).current().getValue().toString());
-                if (d.iteration() > 0) {
-                    assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+
+                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+
             }
         };
 

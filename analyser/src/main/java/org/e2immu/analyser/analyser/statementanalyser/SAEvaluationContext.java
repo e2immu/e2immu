@@ -654,6 +654,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     }
 
     private boolean situationForVariableFieldReference(FieldReference fieldReference) {
+        if(statementAnalysis.inSyncBlock()) return false;
         // true outside construction; inside construction, does not hold for this.i but does hold for other.i
         return notInConstruction() || !fieldReference.scopeIsThis();
     }

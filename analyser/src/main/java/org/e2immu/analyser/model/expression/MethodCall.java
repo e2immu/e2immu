@@ -565,21 +565,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue.cannotHaveState()) return null; // ditto
 
         Expression state;
+        BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (evaluationContext.hasState(objectValue)) {
             state = evaluationContext.state(objectValue);
             if (state.isDelayed()) return null; // DELAY
         } else {
-            state = new BooleanConstant(evaluationContext.getPrimitives(), true);
+            state = TRUE;
         }
 
         AtomicReference<Expression> newState = new AtomicReference<>(state);
-        methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
-                .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
-                .sorted()
-                .forEach(companionMethodName -> companionMethod(evaluationContext, methodInfo, methodAnalysis,
-                        parameterValues, newState, companionMethodName));
-        if (containsEmptyExpression(newState.get())) {
-            newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
+        Set<CompanionMethodName> companionMethodNames = methodInfo.methodInspection.get().getCompanionMethods().keySet();
+        if(companionMethodNames.isEmpty()) {
+            // modifying method, without instructions on how to change the state... we simply clear it!
+            newState.set(TRUE);
+        } else {
+            companionMethodNames.stream()
+                    .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
+                    .sorted()
+                    .forEach(companionMethodName -> companionMethod(evaluationContext, methodInfo, methodAnalysis,
+                            parameterValues, newState, companionMethodName));
+
+            if (containsEmptyExpression(newState.get())) {
+                newState.set(TRUE);
+            }
         }
         Expression newInstance;
 

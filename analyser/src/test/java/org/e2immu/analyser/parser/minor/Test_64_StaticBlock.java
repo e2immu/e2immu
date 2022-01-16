@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -34,56 +35,58 @@ public class Test_64_StaticBlock extends CommonTestRunner {
     Static blocks are executed sequentially; their code follows.
     Fields act as local variables (or at least, time does not increase when in a sync block,
     so that the values they have remain stable.)
-
-    FIXME implement as "inSyncBlock" true in statement analysers
      */
     public Test_64_StaticBlock() {
         super(true);
     }
 
+    // a little too complicated for initial debugging, use test 1
     @Test
     public void test_0() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("$staticBlock$0".equals(d.methodInfo().name) && "StaticBlock_0".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
-                    if ("0".equals(d.statementId())) {
-                        assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
-                                d.currentValue().toString());
-                    }
-                    if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() <= 10 ? "<f:map>" : ""; // FIXME
-                        assertEquals(expect, d.currentValue().toString());
-                    }
-                }
-            }
-        };
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("$staticBlock$0".equals(d.methodInfo().name) && "StaticBlock_0".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.statementAnalysis().inSyncBlock());
-            }
-        };
-
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("map".equals(d.fieldInfo().name)) {
-                String expect = d.iteration() <= 10 ? "<f:map>" : ""; // FIXME
-                assertEquals(expect, d.fieldAnalysis().getValue().toString());
-                // waiting for statement 1 in the first static block, for a value
-                assertEquals("initial:map@Method_$staticBlock$0_1",
-                        d.fieldAnalysis().getValue().causesOfDelay().toString());
-            }
-        };
-
         testClass("StaticBlock_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
     // basics
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("$staticBlock$0".equals(d.methodInfo().name)) {
+                assertEquals("StaticBlock_1", d.methodInfo().typeInfo.simpleName);
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                                d.currentValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expect = "instance type HashMap<String,String>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("$staticBlock$0".equals(d.methodInfo().name)) {
+                assertEquals("StaticBlock_1", d.methodInfo().typeInfo.simpleName);
+
+                // we're in a sync block, statement time does not increase: variable fields do not lose their value
+                assertTrue(d.statementAnalysis().inSyncBlock());
+                assertEquals(0, d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL));
+                assertEquals(0, d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map".equals(d.fieldInfo().name)) {
+                String expect = "instance type HashMap<String,String>";
+                assertEquals(expect, d.fieldAnalysis().getValue().toString());
+            }
+        };
         testClass("StaticBlock_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

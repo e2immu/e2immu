@@ -1099,6 +1099,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     typeAnalysis.setProperty(Property.IMMUTABLE, marked);
                     return returnTypeImmutable.causesOfDelay();
                 }
+                // FIXME while it works at the moment, the code is a bit of a mess (indep checks only for identical types, check on srv and returnTypeImmutable, ...)
                 MultiLevel.Effective returnTypeE2Immutable = MultiLevel.effectiveAtLevel(returnTypeImmutable, MultiLevel.Level.IMMUTABLE_2);
                 if (returnTypeE2Immutable.lt(MultiLevel.Effective.EVENTUAL)) {
                     // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types

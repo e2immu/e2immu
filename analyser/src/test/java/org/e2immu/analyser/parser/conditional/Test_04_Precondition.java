@@ -146,6 +146,8 @@ public class Test_04_Precondition extends CommonTestRunner {
 
     // integer
     // Example of breaking a state delay in SAApply, maybeValueNeedsState
+    // note that most of the code is inside a synchronization block, where statement time stands still:
+    // variable fields act as local variables
     @Test
     public void test3() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.conditional.testexample.Precondition_3";
@@ -227,14 +229,17 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setInteger".equals(d.methodInfo().name)) {
                 FieldInfo integer = d.methodInfo().typeInfo.getFieldByName("integer", true);
                 if ("0.0.0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().inSyncBlock());
                     assertEquals("true", d.state().toString());
                     assertEquals("ii>=0", d.statementAnalysis().methodLevelData()
                             .combinedPrecondition.get().expression().toString());
                 }
                 if ("0.0.0.0.0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().inSyncBlock());
                     assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().inSyncBlock());
                     String expect = conditionIn0(d.iteration());
                     assertEquals(expect, d.condition().toString());
                 }
@@ -292,7 +297,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         return switch (iteration) {
             case 0 -> "null!=<f:integer>";
             case 1 -> "null!=<vp:integer:initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2>";
-            default -> "null!=integer$0";
+            default -> "null!=integer";
         };
     }
 
