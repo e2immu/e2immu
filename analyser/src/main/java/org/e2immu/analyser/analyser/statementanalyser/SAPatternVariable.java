@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.Cast;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.IfElseStatement;
@@ -47,7 +48,7 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
         List<FindInstanceOfPatterns.InstanceOfPositive> instanceOfList = FindInstanceOfPatterns.find(expression);
         boolean haveElse = statementAnalysis.statement() instanceof IfElseStatement ifElse && !ifElse.elseBlock.isEmpty();
         StatementAnalysis firstSubBlock = !(statementAnalysis.statement() instanceof IfElseStatement) ? null :
-              statementAnalysis. navigationData().blocks.get().get(0).orElse(null);
+                statementAnalysis.navigationData().blocks.get().get(0).orElse(null);
         // create local variables
         String index = statementAnalysis.index();
         instanceOfList.stream()
@@ -65,11 +66,14 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
                 });
 
         // add assignments
+        // the reason we assign to Cast(expression) rather than just expression is shown in InstanceOf_9: in the case
+        // of a cast from Object to String, we move from an object not guaranteed to be @Container (Object) to one
+        // that is. When merging back, the "object" value of "string" still needs to have the @Container property
         return instanceOfList.stream()
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(evaluationContext.getPrimitives(),
-                        new VariableExpression(iop.instanceOf().patternVariable()), //  PropertyWrapper.propertyWrapper(
-                        iop.instanceOf().expression())) //, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))
+                        new VariableExpression(iop.instanceOf().patternVariable()),
+                        new Cast(iop.instanceOf().expression(), iop.instanceOf().parameterizedType())))
                 .toList();
     }
 

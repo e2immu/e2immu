@@ -411,4 +411,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public boolean canMerge() {
         return merge != null;
     }
+
+    // mainly for debugging
+    public Level getLevelForPrevious() {
+        return levelForPrevious;
+    }
 }

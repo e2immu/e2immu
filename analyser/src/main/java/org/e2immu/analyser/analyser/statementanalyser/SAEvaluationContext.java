@@ -533,7 +533,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (bestValue instanceof NullConstant || bestValue instanceof UnknownExpression || bestValue.isDelayed()) {
                 valueProperties = analyserContext.defaultValueProperties(variable.parameterizedType());
             } else {
-                valueProperties = getValueProperties(eval.getValue());
+                valueProperties = getValueProperties(bestValue);
             }
 
             CausesOfDelay delays = valueProperties.delays();

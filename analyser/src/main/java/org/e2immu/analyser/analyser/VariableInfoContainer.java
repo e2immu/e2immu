@@ -159,4 +159,10 @@ public interface VariableInfoContainer {
                           AssignmentIds assignmentIds,
                           String readId,
                           Set<Integer> readAtStatementTimes);
+
+    /**
+     * Mostly for debugging
+     * @return if you access previous, do you get to EVAL or MERGE?
+     */
+    Level getLevelForPrevious();
 }

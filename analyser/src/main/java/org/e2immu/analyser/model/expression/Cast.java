@@ -110,6 +110,14 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        if (property == Property.IMMUTABLE || property == Property.CONTAINER || property == Property.INDEPENDENT) {
+            return evaluationContext.getAnalyserContext().getProperty(parameterizedType, property);
+        }
+        return evaluationContext.getProperty(expression, property, duringEvaluation, false);
+    }
+
+    @Override
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay();
     }

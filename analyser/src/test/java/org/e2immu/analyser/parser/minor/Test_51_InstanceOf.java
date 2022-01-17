@@ -16,8 +16,11 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -45,7 +48,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expect = "in instanceof Number&&null!=in?\"Number: \"+in:<return value>";
+                        String expect = "in instanceof Number&&null!=in?\"Number: \"+in/*(Number)*/:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -71,11 +74,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
-                    assertEquals("in instanceof Number&&null!=in?in:3.14", d.currentValue().toString());
+                    assertEquals("in instanceof Number&&null!=in?in/*(Number)*/:3.14", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
-                    assertEquals("in", d.currentValue().toString());
+                    assertEquals("in/*(Number)*/", d.currentValue().toString());
                 }
             }
         };
@@ -91,30 +94,30 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("in", d.currentValue().toString());
+                        assertEquals("in/*(Number)*/", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("in", d.currentValue().toString());
+                        assertEquals("in/*(Number)*/", d.currentValue().toString());
                     }
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
-                    assertEquals("in", d.currentValue().toString());
+                    assertEquals("number/*(Integer)*/", d.currentValue().toString());
                     assertNotEquals("0.1.1", d.statementId());
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("\"Integer: \"+in", d.currentValue().toString());
+                        assertEquals("\"Integer: \"+number/*(Integer)*/", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("in instanceof Integer?\"Integer: \"+in:<return value>", d.currentValue().toString());
+                        assertEquals("in/*(Number)*/ instanceof Integer&&null!=number?\"Integer: \"+number/*(Integer)*/:<return value>", d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("in instanceof Integer&&in instanceof Number&&null!=in?\"Integer: \"+in:\"Number: \"+in", d.currentValue().toString());
+                        assertEquals("!(in instanceof Integer)&&in instanceof Number&&null!=in?\"Number: \"+in/*(Number)*/:\"Integer: \"+in/*(Number)*/", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("in instanceof Number&&null!=in?in instanceof Integer?\"Integer: \"+in:\"Number: \"+in:<return value>", d.currentValue().toString());
+                        assertEquals("in instanceof Number&&null!=in?!(in instanceof Integer)?\"Number: \"+in/*(Number)*/:\"Integer: \"+in/*(Number)*/:<return value>", d.currentValue().toString());
                     }
                 }
             }
@@ -136,15 +139,19 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     } else fail();
                     assertTrue(d.statementId().startsWith("1"));
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:collection>" : "collection";
+                        String expected = d.iteration() == 0
+                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>"
+                                : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0 ? "collection:0,list:0,return add:-1"
-                                : "collection:0,list:0";
+                        String expectLv = d.iteration() == 0 ? "collection:-1,list:0,return add:-1"
+                                : "collection:1,list:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<p:collection>" : "collection";
+                        String expected = d.iteration() == 0
+                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>"
+                                : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
@@ -153,7 +160,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<instanceOf:List<String>>&&<m:isEmpty>?\"Empty\":<m:get>"
-                                : "collection.isEmpty()&&collection instanceof List<String>&&null!=collection?\"Empty\":collection.get(0)";
+                                : "collection/*(List<String>)*/.isEmpty()&&collection instanceof List<String>&&null!=collection?\"Empty\":collection/*(List<String>)*/.get(0)";
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "collection:-1,list:-1,return add:0" : "return add:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -161,7 +168,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<instanceOf:List<String>>?<m:isEmpty>?\"Empty\":<m:get>:<return value>"
-                                : "collection instanceof List<String>&&null!=collection?collection.isEmpty()?\"Empty\":collection.get(0):<return value>";
+                                : "collection instanceof List<String>&&null!=collection?collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0):<return value>";
                         assertEquals(expected, d.currentValue().toString());
 
                         String expectLv = d.iteration() == 0 ? "collection:-1,return add:0" : "return add:0";
@@ -202,7 +209,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
 
                 if ("1".equals(d.statementId()) && "number".equals(d.variableName())) {
-                    assertEquals("in", d.currentValue().toString());
+                    assertEquals("in/*(Number)*/", d.currentValue().toString());
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
                         assertFalse(pattern.isPositive());
                         assertEquals("", pattern.parentBlockIndex());
@@ -233,7 +240,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
                 }
                 if ("1.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
-                    assertEquals("in", d.currentValue().toString());
+                    assertEquals("in/*(Number)*/", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertFalse(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern,
@@ -282,7 +289,102 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("create".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "object".equals(p.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertTrue(d.variableInfoContainer().isPrevious());
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
+                        assertEquals("nullable instance type Object/*@Identity*/", prev.getValue().toString());
+
+                        String expect = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object/*@Identity*/";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("Type java.lang.Object", p.parameterizedType.toString());
+                    }
+                }
+                if ("string".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertTrue(d.variableInfoContainer().isPrevious());
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
+                        assertEquals("object/*(String)*/", prev.getValue().toString());
+
+                        String expect = d.iteration() == 0 ? "<v:string>" : "object/*(String)*/";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
+                    }
+                }
+                if ("bool".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertTrue(d.variableInfoContainer().isPrevious());
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
+                        String expected = d.iteration() == 0
+                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>"
+                                : "object/*(Boolean)*/";
+                        assertEquals(expected, prev.getValue().toString());
+
+                        String expect = d.iteration() == 0
+                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>"
+                                : "object/*(Boolean)*/";
+                        assertEquals(expect, d.currentValue().toString());
+                        // FIXME
+                        // assertEquals("Type java.lang.Object", d.currentValue().returnType().toString());
+                    }
+                }
+                if ("integer".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
+                        assertTrue(d.variableInfoContainer().isPrevious());
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
+                        String expected = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
+                        assertEquals(expected, prev.getValue().toString());
+
+                        String expect = d.iteration() == 0 ? "<s:Integer>" : "object/*(Integer)*/";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("Type java.lang.Integer", d.currentValue().returnType().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("create".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("object instanceof String&&null!=object", d.condition().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    assertEquals("!(object instanceof String)||null==object", d.state().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<instanceOf:Boolean>" : "object instanceof Boolean"; //FIXME &&null!=object"
+                    assertEquals(expected, d.condition().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    String expected = d.iteration() == 0
+                            ? "!<instanceOf:Boolean>&&(!(object instanceof String)||null==object)"
+                            : "!(object instanceof Boolean)&&(!(object instanceof String)||null==object)";
+                    assertEquals(expected, d.state().toString());
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<instanceOf:Integer>" : "object instanceof Integer"; //FIXME&&null!=object";
+                    assertEquals(expected, d.condition().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    assertEquals("true", d.condition().toString());
+                    String expected = d.iteration() == 0
+                            ? "!<instanceOf:Boolean>&&!<instanceOf:Integer>&&(!(object instanceof String)||null==object)"
+                            : "!(object instanceof Boolean)&&!(object instanceof Integer)&&(!(object instanceof String)||null==object)";
+                    assertEquals(expected, d.state().toString());
+                }
+            }
+        };
+
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
