@@ -285,6 +285,22 @@ public class And extends BaseExpression implements Expression {
             }
         }
 
+        Action actionEqEq = analyseEqEq(evaluationContext, newConcat, prev, value);
+        if (actionEqEq != null) return actionEqEq;
+
+        Action actionGeNotEqual = analyseGeNotEq(evaluationContext, newConcat, prev, value);
+        if (actionGeNotEqual != null) return actionGeNotEqual;
+
+        Action actionGeGe = analyseGeGe(evaluationContext, newConcat, prev, value);
+        if (actionGeGe != null) return actionGeGe;
+
+        Action actionInstanceOf = analyseInstanceOf(evaluationContext, prev, value);
+        if (actionInstanceOf != null) return actionInstanceOf;
+
+        return Action.ADD;
+    }
+
+    private Action analyseEqEq(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         if (prev instanceof Equals ev1) {
             if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a
@@ -334,7 +350,10 @@ public class And extends BaseExpression implements Expression {
             }
             return Action.ADD;
         }
+        return null;
+    }
 
+    private Action analyseGeNotEq(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         //  GE and NOT EQ
         if (value instanceof GreaterThanZero ge && prev instanceof Negation prevNeg &&
                 prevNeg.expression instanceof Equals equalsValue) {
@@ -355,7 +374,10 @@ public class And extends BaseExpression implements Expression {
                 }
             }
         }
+        return null;
+    }
 
+    private Action analyseGeGe(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         // GE and GE
         if (value instanceof GreaterThanZero ge2 && prev instanceof GreaterThanZero ge1) {
             GreaterThanZero.XB xb1 = ge1.extract(evaluationContext);
@@ -417,8 +439,53 @@ public class And extends BaseExpression implements Expression {
                 return Action.FALSE;
             }
         }
+        return null;
+    }
 
-        return Action.ADD;
+    private Action analyseInstanceOf(EvaluationContext evaluationContext, Expression prev, Expression value) {
+        // a instanceof A && a instanceof B
+        if (value instanceof InstanceOf i1 && prev instanceof InstanceOf i2 && i1.expression().equals(i2.expression())) {
+            if (i1.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i2.parameterizedType())) {
+                // i1 is the most generic, so skip
+                return Action.SKIP;
+            }
+            if (i2.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i1.parameterizedType())) {
+                // i2 is the most generic, so keep current
+                return Action.REPLACE;
+            }
+            return Action.FALSE;
+        }
+
+        // a instanceof A && !(a instanceof B)
+        if (value instanceof Negation n && n.expression instanceof InstanceOf negI1
+                && prev instanceof InstanceOf i2 && negI1.expression().equals(i2.expression())) {
+            if (negI1.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i2.parameterizedType())) {
+                // B is the most generic, so we have a contradiction
+                return Action.FALSE;
+            }
+            if (i2.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), negI1.parameterizedType())) {
+                // i1 is the most generic, i2 is more specific; we keep what we have
+                return Action.ADD;
+            }
+            // A unrelated to B, we drop the negation
+            return Action.SKIP;
+        }
+
+        // a instanceof A && !(a instanceof B)
+        if (value instanceof InstanceOf i1 && prev instanceof Negation n && n.expression instanceof InstanceOf negI2 &&
+                negI2.expression().equals(i1.expression())) {
+            if (negI2.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), i1.parameterizedType())) {
+                // B is the most generic, so we have a contradiction
+                return Action.FALSE;
+            }
+            if (i1.parameterizedType().isAssignableFrom(evaluationContext.getAnalyserContext(), negI2.parameterizedType())) {
+                // i1 is the most generic, i2 is more specific; we keep what we have
+                return Action.ADD;
+            }
+            // A unrelated to B, we drop the negation
+            return Action.SKIP;
+        }
+        return null;
     }
 
     private List<Expression> components(Expression value) {

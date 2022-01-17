@@ -63,9 +63,12 @@ public class CommaExpression extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        int count = 0;
         for (Expression expression : expressions) {
-            EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+            ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
+            EvaluationResult result = expression.evaluate(evaluationContext, fwd);
             builder.composeStore(result);
+            count++;
         }
         // as we compose, the value of the last result survives, earlier ones are discarded
         return builder.build();

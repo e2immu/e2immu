@@ -301,6 +301,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object/*@Identity*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.Object", p.parameterizedType.toString());
+
+                        String expectLv = d.iteration() == 0 ? "object:0,return create:-1,string:-1" : "object:0,string:1";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("string".equals(d.variableName())) {
@@ -313,6 +318,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:string>" : "object/*(String)*/";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals("Type java.lang.String", d.currentValue().returnType().toString());
+
+                        String expectLv = d.iteration() == 0 ? "object:1,return create:-1,string:0" : "object:1,string:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                 }
                 if ("bool".equals(d.variableName())) {
@@ -358,25 +368,25 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertEquals("!(object instanceof String)||null==object", d.state().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<instanceOf:Boolean>" : "object instanceof Boolean"; //FIXME &&null!=object"
+                    String expected = d.iteration() == 0 ? "<instanceOf:Boolean>" : "object instanceof Boolean&&null!=object";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     String expected = d.iteration() == 0
                             ? "!<instanceOf:Boolean>&&(!(object instanceof String)||null==object)"
-                            : "!(object instanceof Boolean)&&(!(object instanceof String)||null==object)";
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected, d.state().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<instanceOf:Integer>" : "object instanceof Integer"; //FIXME&&null!=object";
+                    String expected = d.iteration() == 0 ? "<instanceOf:Integer>" : "object instanceof Integer&&null!=object";
                     assertEquals(expected, d.condition().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     String expected = d.iteration() == 0
                             ? "!<instanceOf:Boolean>&&!<instanceOf:Integer>&&(!(object instanceof String)||null==object)"
-                            : "!(object instanceof Boolean)&&!(object instanceof Integer)&&(!(object instanceof String)||null==object)";
+                            : "(!(object instanceof Boolean)||null==object)&&(!(object instanceof Integer)||null==object)&&(!(object instanceof String)||null==object)";
                     assertEquals(expected, d.state().toString());
                 }
             }
