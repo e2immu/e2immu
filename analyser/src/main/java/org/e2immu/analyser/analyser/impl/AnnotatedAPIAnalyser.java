@@ -257,8 +257,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 Annotation.class, // every annotation derives from Annotation
                 Enum.class, // every enum type derives from Enum
                 String.class, // every toString method
-                Double.class,
-                Integer.class,
+                Double.class, Boolean.class, Character.class,
+                Integer.class, Short.class, Float.class,
+                Void.class, Byte.class,
                 Long.class}) {
             TypeInfo typeInfo = typeMap.get(clazz);
             TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);

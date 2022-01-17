@@ -86,7 +86,7 @@ public class Test_36_Cast extends CommonTestRunner {
             }
             if ("getTAsString".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = d.iteration() == 0
-                        ? "<vp:t:cnn:this.t@Method_getTAsString_0;identity:this.t@Method_getTAsString_0;not_null:this.t@Method_getTAsString_0>"
+                        ? "<vp:t:cnn:this.t@Method_getTAsString_0;identity:this.t@Method_getTAsString_0;not_null:this.t@Method_getTAsString_0>/*(String)*/"
                         : "t/*(String)*/";
                 assertEquals(expected, d.currentValue().toString());
                 if (d.iteration() > 0) {
@@ -96,8 +96,8 @@ public class Test_36_Cast extends CommonTestRunner {
             }
             if ("getTAsCounter".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expected = switch (d.iteration()) {
-                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0;container@Class_Counter;identity:this.t@Method_getTAsCounter_0;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0>";
-                    case 1 -> "<vp:t:initial@Method_increment>";
+                    case 0 -> "<vp:t:cnn:this.t@Method_getTAsCounter_0;container@Class_Counter;identity:this.t@Method_getTAsCounter_0;immutable@Class_Counter;independent@Class_Counter;not_null:this.t@Method_getTAsCounter_0>/*(Counter)*/";
+                    case 1 -> "<vp:t:initial@Method_increment>/*(Counter)*/";
                     default -> "t/*(Counter)*/";
                 };
                 assertEquals(expected, d.currentValue().toString());

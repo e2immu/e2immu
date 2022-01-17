@@ -413,4 +413,13 @@ public class TestDefaultAnnotations {
         ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
     }
+
+    // see: essential, hardcoded in AnnotationAPIAnalyser
+    @Test
+    public void testBoxedContainer() {
+        TypeInfo integer = typeContext.getFullyQualified(Integer.class);
+        assertEquals(DV.TRUE_DV, integer.typeAnalysis.get().getProperty(Property.CONTAINER));
+        TypeInfo boxedBool = typeContext.getFullyQualified(Boolean.class);
+        assertEquals(DV.TRUE_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
+    }
 }

@@ -48,6 +48,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         this.castType = castType;
     }
 
+    public Expression copy(Expression other) {
+        return new PropertyWrapper(other, state, properties, linkedVariables, castType);
+    }
+
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new PropertyWrapper(expression.translate(translationMap),

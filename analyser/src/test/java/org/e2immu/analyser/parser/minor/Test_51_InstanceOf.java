@@ -21,15 +21,13 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -140,7 +138,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertTrue(d.statementId().startsWith("1"));
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>"
+                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>/*(List<String>)*/"
                                 : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "collection:-1,list:0,return add:-1"
@@ -150,7 +148,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>"
+                                ? "<vp:collection:identity:collection@Method_add_0;not_null:collection@Method_add_0>/*(List<String>)*/"
                                 : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -331,16 +329,16 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
                         String expected = d.iteration() == 0
-                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>"
+                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>/*(Boolean)*/"
                                 : "object/*(Boolean)*/";
                         assertEquals(expected, prev.getValue().toString());
 
                         String expect = d.iteration() == 0
-                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>"
+                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>/*(Boolean)*/"
                                 : "object/*(Boolean)*/";
                         assertEquals(expect, d.currentValue().toString());
-                        // FIXME
-                        // assertEquals("Type java.lang.Object", d.currentValue().returnType().toString());
+
+                        assertEquals("Type java.lang.Boolean", d.currentValue().returnType().toString());
                     }
                 }
                 if ("integer".equals(d.variableName())) {
@@ -392,9 +390,17 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
 
+        TypeMapVisitor typeMapVisitor = typeMap ->  {
+            TypeInfo integer = typeMap.get(Integer.class);
+            assertEquals(DV.TRUE_DV, integer.typeAnalysis.get().getProperty(Property.CONTAINER));
+            TypeInfo boxedBool = typeMap.get(Boolean.class);
+            assertEquals(DV.TRUE_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
+        };
+
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 }
