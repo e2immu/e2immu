@@ -48,8 +48,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
-import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
+import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -1193,13 +1192,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(methodAnalysis.getMethodInfo().returnType());
         Properties properties = sharedContext(defaultNotNull);
-        properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
-        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
 
+        properties.put(NOT_NULL_EXPRESSION, defaultNotNull);
         properties.put(IDENTITY, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
         properties.put(IMMUTABLE, MUTABLE_DV);
+        properties.put(INDEPENDENT, INDEPENDENT.falseDv);
+
+        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
 
         UnknownExpression value = new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
