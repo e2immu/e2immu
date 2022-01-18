@@ -119,24 +119,33 @@ public class InlineConditional extends BaseExpression implements Expression {
         // there is little we can say with certainty until we know that the condition is not trivial, and
         // one of ifTrue, ifFalse is chosen. See Precondition_3
         if (condition.isDelayed()) return condition.causesOfDelay();
-        if (property == Property.NOT_NULL_EXPRESSION) {
-            if (returnType().isPrimitiveExcludingVoid()) {
-                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        return switch (property) {
+            case NOT_NULL_EXPRESSION -> {
+                if (returnType().isPrimitiveExcludingVoid()) {
+                    yield MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+                }
+                EvaluationContext child = evaluationContext.child(condition);
+                DV nneIfTrue = child.getProperty(ifTrue, Property.NOT_NULL_EXPRESSION, duringEvaluation, false);
+                if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
+                    yield nneIfTrue;
+                }
+                Expression notC = Negation.negate(evaluationContext, condition);
+                EvaluationContext notChild = evaluationContext.child(notC);
+                DV nneIfFalse = notChild.getProperty(ifFalse, Property.NOT_NULL_EXPRESSION, duringEvaluation, false);
+                yield nneIfFalse.min(nneIfTrue);
             }
-            EvaluationContext child = evaluationContext.child(condition);
-            DV nneIfTrue = child.getProperty(ifTrue, Property.NOT_NULL_EXPRESSION, true, false);
-            if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
-                return nneIfTrue;
+            case IDENTITY -> new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+            case IMMUTABLE, INDEPENDENT, CONTAINER -> {
+                if (ifTrue instanceof NullConstant) {
+                    yield evaluationContext.getProperty(ifFalse, property, duringEvaluation, false);
+                }
+                if (ifFalse instanceof NullConstant) {
+                    yield evaluationContext.getProperty(ifTrue, property, duringEvaluation,false);
+                }
+                yield new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
             }
-            Expression notC = Negation.negate(evaluationContext, condition);
-            EvaluationContext notChild = evaluationContext.child(notC);
-            DV nneIfFalse = notChild.getProperty(ifFalse, Property.NOT_NULL_EXPRESSION, true, false);
-            return nneIfFalse.min(nneIfTrue);
-        }
-        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
-            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
-        }
-        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+            default -> new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+        };
     }
 
     @Override
@@ -201,9 +210,9 @@ public class InlineConditional extends BaseExpression implements Expression {
             throw new UnsupportedOperationException();
         }
 
-        if(tooComplex) {
+        if (tooComplex) {
             log(ANALYSER, "Reduced complexity in inline conditional");
-            InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition,t, f);
+            InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition, t, f);
             return builder.setExpression(inlineConditional).build();
         }
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
