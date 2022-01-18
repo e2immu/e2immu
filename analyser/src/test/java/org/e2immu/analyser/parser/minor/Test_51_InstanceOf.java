@@ -429,6 +429,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = d.iteration() <= 1 ? "expression:0,ne.expression:0,x:0"
                                 : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(d.iteration() >= 2, d.variableInfo().getLinkedVariables().isDone());
+
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
@@ -492,6 +494,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTAINER);
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+
+                        String expectLv = d.iteration() <= 1 ? "expression:0,ne.expression:0,x:0"
+                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals(d.iteration() >= 2, d.variableInfo().getLinkedVariables().isDone());
+                        if(d.iteration()<2) {
+                            // FIXME this seems wrong: no value should mean no lv?
+                            assertEquals("", d.variableInfo().getLinkedVariables().causesOfDelay().toString());
+                        }
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
