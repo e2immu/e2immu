@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -119,33 +120,35 @@ public class InlineConditional extends BaseExpression implements Expression {
         // there is little we can say with certainty until we know that the condition is not trivial, and
         // one of ifTrue, ifFalse is chosen. See Precondition_3
         if (condition.isDelayed()) return condition.causesOfDelay();
-        return switch (property) {
-            case NOT_NULL_EXPRESSION -> {
-                if (returnType().isPrimitiveExcludingVoid()) {
-                    yield MultiLevel.EFFECTIVELY_NOT_NULL_DV;
-                }
-                EvaluationContext child = evaluationContext.child(condition);
-                DV nneIfTrue = child.getProperty(ifTrue, Property.NOT_NULL_EXPRESSION, duringEvaluation, false);
-                if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
-                    yield nneIfTrue;
-                }
-                Expression notC = Negation.negate(evaluationContext, condition);
-                EvaluationContext notChild = evaluationContext.child(notC);
-                DV nneIfFalse = notChild.getProperty(ifFalse, Property.NOT_NULL_EXPRESSION, duringEvaluation, false);
-                yield nneIfFalse.min(nneIfTrue);
+
+        // this code is not in a return switch(property) { ... } expression because JavaParser 3.24.1-SNAPSHOT crashes  while parsing
+        if (property == NOT_NULL_EXPRESSION) {
+            if (returnType().isPrimitiveExcludingVoid()) {
+                return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             }
-            case IDENTITY -> new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
-            case IMMUTABLE, INDEPENDENT, CONTAINER -> {
-                if (ifTrue instanceof NullConstant) {
-                    yield evaluationContext.getProperty(ifFalse, property, duringEvaluation, false);
-                }
-                if (ifFalse instanceof NullConstant) {
-                    yield evaluationContext.getProperty(ifTrue, property, duringEvaluation,false);
-                }
-                yield new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+            EvaluationContext child = evaluationContext.child(condition);
+            DV nneIfTrue = child.getProperty(ifTrue, NOT_NULL_EXPRESSION, duringEvaluation, false);
+            if (nneIfTrue.le(MultiLevel.NULLABLE_DV)) {
+                return nneIfTrue;
             }
-            default -> new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
-        };
+            Expression notC = Negation.negate(evaluationContext, condition);
+            EvaluationContext notChild = evaluationContext.child(notC);
+            DV nneIfFalse = notChild.getProperty(ifFalse, NOT_NULL_EXPRESSION, duringEvaluation, false);
+            return nneIfFalse.min(nneIfTrue);
+        }
+        if (property == IDENTITY) {
+            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+        }
+        if (property == IMMUTABLE || property == INDEPENDENT || property == CONTAINER) {
+            if (ifTrue instanceof NullConstant) {
+                return evaluationContext.getProperty(ifFalse, property, duringEvaluation, false);
+            }
+            if (ifFalse instanceof NullConstant) {
+                return evaluationContext.getProperty(ifTrue, property, duringEvaluation, false);
+            }
+            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
+        }
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, property, duringEvaluation);
     }
 
     @Override

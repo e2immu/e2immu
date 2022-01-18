@@ -12,29 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.resolver;
+package org.e2immu.analyser.resolver.testexample;
 
+public class SwitchExpression_1 {
 
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.SwitchExpression_0;
-import org.e2immu.analyser.resolver.testexample.Varargs_0;
-import org.junit.jupiter.api.Test;
+    enum Property {P1, P2, P3, P4, P5, P6}
 
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-
-public class TestSwitchExpression extends CommonTest {
-
-    @Test
-    public void test_0() throws IOException {
-          inspectAndResolve(SwitchExpression_0.class);
-    }
-
-    @Test
-    public void test_1() throws IOException {
-        inspectAndResolve(SwitchExpression_0.class);
+    public String method(Property p, int i) {
+        if (i < 0) return "negative";
+        return switch (p) {
+            case P1 -> {
+                System.out.println(i);
+                if (i > 10) {
+                    yield "y";
+                }
+                System.out.println("less than 10");
+                yield 10 + "?" + i;
+            }
+            case P2 -> {
+                System.out.println("less than 10");
+                yield 10 + "?" + i;
+            }
+            case P3 -> "hello";
+            default -> "x";
+        };
     }
 }

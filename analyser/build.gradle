@@ -50,7 +50,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.2.10' // EPL v1.0 and the LGPL 2.1
     implementation 'commons-io:commons-io:20030203.000550'            // Apache License 2.0
 
-    implementation 'com.github.javaparser:javaparser-core:3.22.2-SNAPSHOT'
+    implementation 'com.github.javaparser:javaparser-core:3.24.1-SNAPSHOT'
 
     // LGPL or Apache License 2.0
     implementation 'org.ow2.asm:asm:9.2'                  // 3-clause BSD permissive license

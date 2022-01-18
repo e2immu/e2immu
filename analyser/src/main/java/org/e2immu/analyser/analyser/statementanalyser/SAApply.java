@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.variable.*;
@@ -235,6 +236,17 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return applyStatusAndEnnStatus;
     }
 
+    private boolean variableUnknown(Variable variable) {
+        if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) return true;
+        IsVariableExpression ive;
+        if (variable instanceof FieldReference fr
+                && fr.scope != null
+                && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+            return variableUnknown(ive.variable());
+        }
+        return false;
+    }
+
     /**
      * Compute the context properties, linked variables, preconditions. Return delays.
      */
@@ -258,7 +270,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
-                (vic, v) -> !statementAnalysis.variableIsSet(v.fullyQualifiedName()),
+                (vic, v) -> variableUnknown(v),
                 reassigned,
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());

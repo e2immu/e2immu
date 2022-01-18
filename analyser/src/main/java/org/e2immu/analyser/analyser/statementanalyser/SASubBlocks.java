@@ -549,7 +549,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (previousConditions.isEmpty()) {
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
-        Expression[] negated = previousConditions.stream().map(c -> Negation.negate(evaluationContext, c))
+        Expression[] negated = previousConditions.stream()
+                .filter(Objects::nonNull)
+                .map(c -> Negation.negate(evaluationContext, c))
                 .toArray(Expression[]::new);
         return And.and(evaluationContext, negated);
     }

@@ -442,7 +442,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        fail("ne.expression should not exist here!");
                     }
                 }
                 if ("ne".equals(d.variableName())) {
@@ -470,15 +470,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<v:ne>";
-                            default -> "expression/*(Negation)*/";
-                        };
-                        assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() <= 1 ? "expression:-1,ne.expression:-1,x:-1"
-                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:1,ne.expression:1,x:1";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        fail(); // should not exist here!
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
@@ -560,4 +552,44 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
+
+
+    @Test
+    public void test_11() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        String expect = d.iteration() == 0
+                                ? "<instanceOf:Sum>&&null!=<m:numericPartOfLhs>?<new:XB>:<return value>" : "";
+                        assertEquals(expect, d.currentValue().toString());
+                        String expectLv = d.iteration() == 0
+                                ? "evaluationContext:-1,ne:-1,return method:0,this.expression:-1" : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if(d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
+                        && "ne".equals(fr.scope.toString())) {
+                    assertTrue(d.statementId().startsWith("3"), "In " + d.statementId());
+                }
+                if ("x".equals(d.variableName())) {
+                    if ("3".equals(d.statementId())) {
+                        String expect = d.iteration() == 0
+                                ? "<instanceOf:Negation>?<f:expression>:<f:expression>" : "";
+                        assertEquals(expect, d.currentValue().toString());
+                        String expectLv = d.iteration() == 0
+                                ? "evaluationContext:-1,ne.expression:0,ne1.expression:-1,this.expression:-1,x:0" : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if ("ne".equals(d.variableName())) {
+                    assertTrue(d.statementId().startsWith("3"), "In " + d.statementId());
+                }
+            }
+        };
+        testClass("InstanceOf_11", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }
