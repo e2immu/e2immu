@@ -423,16 +423,20 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                                           Expression firstCondition,
                                                           VariableInfo e2) {
         if (vi.variable() instanceof ReturnVariable) {
-            VariableInfo two;
 
-            if (firstCondition.isBoolValueTrue()) two = e1; // to bypass the error check on "safe"
-            else if (firstCondition.isBoolValueFalse()) two = e2;
-            else
-                throw new UnsupportedOperationException();// FIXME TEMP two = inlineConditional(firstCondition, e1, e2);
+            if (firstCondition.isBooleanConstant()) {
+                VariableInfo two = firstCondition.isBoolValueTrue() ? e1 : e2; // to bypass the error check on "safe"
+                if (stateOfParent.isBoolValueTrue()) return valueProperties(two);
+                if (stateOfParent.isBoolValueFalse())
+                    throw new UnsupportedOperationException(); // unreachable statement
+                return inlineConditional(stateOfParent, two, vi);
+            }
 
-            if (stateOfParent.isBoolValueTrue()) return valueProperties(two);
+            Merge.ExpressionAndProperties two = inlineConditional(firstCondition, e1, e2);
+            if (stateOfParent.isBoolValueTrue()) return two;
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
-            return inlineConditional(stateOfParent, two, vi);
+            VariableInfoImpl vii = new VariableInfoImpl(vi.variable(), two.expression(), two.valueProperties()); // exact variable not relevant
+            return inlineConditional(stateOfParent, vii, vi);
         }
 
         if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"

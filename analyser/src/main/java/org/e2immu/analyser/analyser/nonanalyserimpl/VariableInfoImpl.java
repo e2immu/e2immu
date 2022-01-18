@@ -14,33 +14,29 @@
 
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
@@ -75,6 +71,12 @@ public class VariableInfoImpl implements VariableInfo {
     public VariableInfoImpl(Location location, Variable variable, Expression value) {
         this(location, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
         assert location != Location.NOT_YET_SET;
+    }
+
+    // used as a temp in MergeHelper
+    public VariableInfoImpl( Variable variable, Expression value, Properties properties) {
+        this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
+        properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
 
     // used by merge code
@@ -152,7 +154,7 @@ public class VariableInfoImpl implements VariableInfo {
 
     @Override
     public Properties valueProperties() {
-        return Properties.of( EvaluationContext.VALUE_PROPERTIES.stream().collect(
+        return Properties.of(EvaluationContext.VALUE_PROPERTIES.stream().collect(
                 Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
     }
 
