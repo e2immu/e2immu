@@ -240,7 +240,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
             } else {
-                dv = value.getProperty(this, property, true);
+                dv = value.getProperty(this, property, duringEvaluation);
             }
             properties.put(property, dv);
         }

@@ -130,8 +130,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             variable.fullyQualifiedName());
                 }
                 // first do the properties that come with the value; later, we'll write the ones in changeData
+                // ignoreConditionInCM: true, exactly because the state has been added
                 Properties valueProperties = sharedState.evaluationContext()
-                        .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
+                        .getValueProperties(valueToWrite, true);
                 CausesOfDelay valuePropertiesIsDelayed = valueProperties.delays();
 
                 boolean valueToWriteIsDelayed = valueToWrite.isDelayed();

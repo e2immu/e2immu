@@ -71,7 +71,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      */
     public VariableInfoImpl mergeIntoNewObject(Expression stateOfDestination,
                                                Expression postProcessState,
-                                               Expression overwriteValue,
+                                               Merge.ExpressionAndProperties overwriteValue,
                                                boolean atLeastOneBlockExecuted,
                                                List<ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues) {
@@ -95,10 +95,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                 previous, mergeSources, new GroupPropertyValues());
     }
 
-    void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
-                                    VariableInfo previous,
-                                    List<ConditionAndVariableInfo> mergeSources) {
-        mergePropertiesIgnoreValue(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
+    void mergeNonValueProperties(boolean existingValuesWillBeOverwritten,
+                                 VariableInfo previous,
+                                 List<ConditionAndVariableInfo> mergeSources) {
+        mergeNonValueProperties(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
     }
 
 
@@ -107,14 +107,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      */
     public void mergeIntoMe(Expression stateOfDestination,
                             Expression postProcessState,
-                            Expression overwriteValue,
+                            Merge.ExpressionAndProperties overwriteValue,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != vi;
 
-        Expression mergeValue;
+        Merge.ExpressionAndProperties mergeValue;
         if (overwriteValue != null) {
             mergeValue = overwriteValue;
         } else {
@@ -122,18 +122,26 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
-        Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue);
+        Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue.expression());
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
-        if (!mergedValue.isDelayed()) {
-            setMergedValueProperties(mergedValue);
-        } else {
-            vi.setValue(mergedValue); // copy the delayed value
-        }
-        mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+
+        // TODO do post-process and replace local variables change the value properties?
+        vi.setValue(mergedValue); // copy the delayed value
+        mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
+        assert mergedValue.isDelayed() || allValuePropertiesSet();
+
+        // TODO maybe we should do these together with the value as well?
+        mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+
+
         if (evaluationContext.isMyself(vi.variable())) {
             vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
         }
+    }
+
+    private boolean allValuePropertiesSet() {
+        return EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> vi.getProperty(p).isDone());
     }
 
     private Expression postProcess(EvaluationContext evaluationContext,
@@ -146,20 +154,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             return reEval;
         }
         return beforePostProcess;
-    }
-
-
-    private void setMergedValueProperties(Expression mergedValue) {
-        Properties map = evaluationContext.getValueProperties(mergedValue, false);
-        map.stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
-        CausesOfDelay causes = map.delays();
-        Expression value;
-        if (causes.isDone()) {
-            value = mergedValue;
-        } else {
-            value = DelayedVariableExpression.forDelayedValueProperties(vi.variable(), causes);
-        }
-        vi.setValue(value);
     }
 
     private String mergedReadId(String previousId,
@@ -199,10 +193,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
      * Compute and set or update in this object, the properties resulting from merging previous and merge sources.
      * If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
-    void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
-                                    VariableInfo previous,
-                                    List<ConditionAndVariableInfo> mergeSources,
-                                    GroupPropertyValues groupPropertyValues) {
+    void mergeNonValueProperties(boolean existingValuesWillBeOverwritten,
+                                 VariableInfo previous,
+                                 List<ConditionAndVariableInfo> mergeSources,
+                                 GroupPropertyValues groupPropertyValues) {
         List<VariableInfo> list = mergeSources.stream()
                 .map(ConditionAndVariableInfo::variableInfo)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
@@ -230,22 +224,40 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         }
     }
 
+    private Merge.ExpressionAndProperties addValueProperties(Expression expression) {
+        return new Merge.ExpressionAndProperties(expression, evaluationContext.getValueProperties(expression));
+    }
+
+    private Merge.ExpressionAndProperties valueProperties() {
+        return valueProperties(vi, vi.getValue());
+    }
+
+    private Merge.ExpressionAndProperties valueProperties(VariableInfo vi) {
+        return new Merge.ExpressionAndProperties(vi.getValue(), vi.valueProperties());
+    }
+
+    private Merge.ExpressionAndProperties valueProperties(VariableInfo vi, Expression value) {
+        return new Merge.ExpressionAndProperties(value, vi.valueProperties());
+    }
+
     /**
      * Compute, but do not set, the merge value between this object (the "previous") and the merge sources.
      * If atLeastOneBlockExecuted is true, this object's value is ignored.
+     * <p>
+     * Because we choose which expressions to include, and which not, we must compute the value properties here.
      */
-    private Expression mergeValue(Expression stateOfDestination,
-                                  boolean atLeastOneBlockExecuted,
-                                  List<ConditionAndVariableInfo> mergeSources) {
+    private Merge.ExpressionAndProperties mergeValue(Expression stateOfDestination,
+                                                     boolean atLeastOneBlockExecuted,
+                                                     List<ConditionAndVariableInfo> mergeSources) {
         Expression currentValue = vi.getValue();
-        if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
+        if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return valueProperties();
 
         Variable variable = vi.variable();
         if (mergeSources.isEmpty()) {
             if (atLeastOneBlockExecuted) {
                 throw new UnsupportedOperationException("No merge sources for " + variable.fullyQualifiedName());
             }
-            return currentValue;
+            return valueProperties();
         }
 
         // here is the correct point to remove dead branches
@@ -254,20 +266,18 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav ->
                 currentValue.equals(cav.value()));
-        if (allValuesIdentical) return currentValue;
+        if (allValuesIdentical) return valueProperties();
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
                 .allMatch(cav -> specialEquals(evaluationContext.getVariableValue(variable, reduced.get(0).variableInfo()),
                         evaluationContext.getVariableValue(variable, cav.variableInfo())));
-        if (allReducedIdentical) return reduced.get(0).value();
-
-        MergeHelper mergeHelper = new MergeHelper(evaluationContext, vi);
+        if (allReducedIdentical) return valueProperties(reduced.get(0).variableInfo());
 
         if (reduced.size() == 1) {
             ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
-                return e.value();
+                return valueProperties(e.variableInfo());
             }
-            Expression result = mergeHelper.one(e.value(), stateOfDestination, e.condition());
+            Merge.ExpressionAndProperties result = one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
@@ -277,10 +287,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             ConditionAndVariableInfo e2 = reduced.get(1);
 
             if (e2.condition().equals(negated)) {
-                Expression result = mergeHelper.twoComplementary(e.value(), stateOfDestination, e.condition(), e2.value());
+                Merge.ExpressionAndProperties result = twoComplementary(e.variableInfo(),
+                        stateOfDestination, e.condition(), e2.variableInfo());
                 if (result != null) return result;
             } else if (e2.condition().isBoolValueTrue()) {
-                return e2.value();
+                return valueProperties(e2.variableInfo());
             }
         }
 
@@ -288,13 +299,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         // one thing we can already do: if the try statement ends with a 'finally', we return this value
         ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
-        if (eLast.condition().isBoolValueTrue()) return eLast.value();
+        if (eLast.condition().isBoolValueTrue()) return valueProperties(eLast.variableInfo());
 
         CausesOfDelay valuesDelayed = reduced.stream().map(cav -> cav.variableInfo().getValue().causesOfDelay())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (valuesDelayed.isDelayed()) {
             // all are delayed, they're not all identical delayed field references.
-            return mergeHelper.delayedConclusion(valuesDelayed);
+            return addValueProperties(delayedConclusion(valuesDelayed));
         }
 
         // no clue, but try to do something with @NotNull
@@ -305,7 +316,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         ParameterizedType pt = variable.parameterizedType();
         DV nne = worstNotNullIncludingCurrent == DV.MIN_INT_DV ? MultiLevel.NULLABLE_DV : worstNotNullIncludingCurrent;
         Properties valueProperties = evaluationContext.getAnalyserContext().defaultValueProperties(pt, nne);
-        return mergeHelper.noConclusion(valueProperties);
+        return addValueProperties(noConclusion(valueProperties));
     }
 
     /*
@@ -388,43 +399,69 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     } --> ret v
     */
 
-    public Expression one(Expression vi1value, Expression stateOfParent, Expression condition) {
+    public Merge.ExpressionAndProperties one(VariableInfo vi1, Expression stateOfParent, Expression condition) {
+        Expression vi1value = vi1.getValue();
         if (condition.isBoolValueTrue()) {
 
             // this if-statement replays the code in level 3 return statement:
             // it is identical to do if(x) return a; return b or if(x) return a; if(!x) return b;
             if (vi.variable() instanceof ReturnVariable) {
-                if (stateOfParent.isBoolValueTrue()) return vi1value;
+                if (stateOfParent.isBoolValueTrue()) return valueProperties(vi1);
                 if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType())) {
-                    return And.and(evaluationContext, stateOfParent, vi1value);
+                    return new Merge.ExpressionAndProperties(And.and(evaluationContext, stateOfParent, vi1value),
+                            EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
                 }
-                return inlineConditional(stateOfParent, vi1value, vi.getValue());
+                return inlineConditional(stateOfParent, vi1, vi);
             }
-            return vi1value; // so we by-pass the "safe" in inlineConditional
+            return valueProperties(vi1); // so we by-pass the "safe" in inlineConditional
         }
-        return inlineConditional(condition, vi1value, vi.getValue());
+        return inlineConditional(condition, vi1, vi);
     }
 
-    public Expression twoComplementary(Expression e1, Expression stateOfParent, Expression firstCondition, Expression e2) {
-        Expression two;
-
-        if (firstCondition.isBoolValueTrue())
-            two = e1; // to bypass the error check on "safe"
-        else if (firstCondition.isBoolValueFalse()) two = e2;
-        else
-            two = inlineConditional(firstCondition, e1, e2);
-
+    public Merge.ExpressionAndProperties twoComplementary(VariableInfo e1,
+                                                          Expression stateOfParent,
+                                                          Expression firstCondition,
+                                                          VariableInfo e2) {
         if (vi.variable() instanceof ReturnVariable) {
-            if (stateOfParent.isBoolValueTrue()) return two;
+            VariableInfo two;
+
+            if (firstCondition.isBoolValueTrue()) two = e1; // to bypass the error check on "safe"
+            else if (firstCondition.isBoolValueFalse()) two = e2;
+            else
+                throw new UnsupportedOperationException();// FIXME TEMP two = inlineConditional(firstCondition, e1, e2);
+
+            if (stateOfParent.isBoolValueTrue()) return valueProperties(two);
             if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
-            return inlineConditional(stateOfParent, two, vi.getValue());
+            return inlineConditional(stateOfParent, two, vi);
         }
-        return two;
+
+        if (firstCondition.isBoolValueTrue()) return valueProperties(e1); // to bypass the error check on "safe"
+        if (firstCondition.isBoolValueFalse()) return valueProperties(e2);
+        return inlineConditional(firstCondition, e1, e2);
     }
 
-    private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
-        return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
-                condition, ifTrue, ifFalse));
+    private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {
+
+        Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+                condition, ifTrue.getValue(), ifFalse.getValue()));
+        if (safe.equals(ifTrue.getValue())) {
+            return valueProperties(ifTrue);
+        }
+        if (safe.equals(ifFalse.getValue())) {
+            return valueProperties(ifFalse);
+        }
+        // check for <return value>, no need to compute properties
+        boolean compute1 = ifTrue.getValue().isComputeProperties();
+        boolean compute2 = ifFalse.getValue().isComputeProperties();
+        Properties properties;
+        if (compute1 && compute2) {
+            properties = ifTrue.valueProperties().merge(ifFalse.valueProperties());
+        } else if (compute1) {
+            properties = ifTrue.valueProperties();
+        } else {
+            properties = ifFalse.valueProperties();
+        }
+        return new Merge.ExpressionAndProperties(safe, properties);
     }
 
     private Expression safe(EvaluationResult result) {

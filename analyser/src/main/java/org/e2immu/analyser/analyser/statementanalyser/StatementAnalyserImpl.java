@@ -346,6 +346,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         StatementAnalyser statementAnalyser = followReplacements();
         StatementAnalyser previous = null;
         while (statementAnalyser != null && statementAnalyser.isDone()) {
+            log(ANALYSER, "Skip statement {}, done", statementAnalyser.index());
             previous = statementAnalyser;
             statementAnalyser = statementAnalyser.navigationDataNextGet().orElse(null);
             if (statementAnalyser != null) {

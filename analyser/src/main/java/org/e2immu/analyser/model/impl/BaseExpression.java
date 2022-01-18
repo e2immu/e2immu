@@ -100,11 +100,6 @@ public abstract class BaseExpression extends ElementImpl implements Expression {
     }
 
     @Override
-    public boolean isComputeProperties() {
-        return !(this instanceof UnknownExpression);
-    }
-
-    @Override
     public boolean isInitialReturnExpression() {
         return this instanceof UnknownExpression unknownExpression && unknownExpression.msg().equals(UnknownExpression.RETURN_VALUE);
     }

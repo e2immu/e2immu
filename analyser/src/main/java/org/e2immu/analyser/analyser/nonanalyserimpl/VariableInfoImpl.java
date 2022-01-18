@@ -151,6 +151,12 @@ public class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
+    public Properties valueProperties() {
+        return Properties.of( EvaluationContext.VALUE_PROPERTIES.stream().collect(
+                Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
+    }
+
+    @Override
     public DV getProperty(Property property, DV defaultValue) {
         if (defaultValue == null) return properties.getOrDefaultNull(property);
         return properties.getOrDefault(property, defaultValue);

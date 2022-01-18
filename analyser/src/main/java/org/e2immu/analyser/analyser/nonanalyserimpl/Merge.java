@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.GroupPropertyValues;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
@@ -31,9 +32,16 @@ public record Merge(EvaluationContext evaluationContext,
         MERGE, REMOVE, IGNORE
     }
 
+    public record ExpressionAndProperties(Expression expression, Properties valueProperties) {
+        public ExpressionAndProperties {
+            assert expression.isDelayed() ||
+                    EvaluationContext.VALUE_PROPERTIES.stream().allMatch(p -> valueProperties.get(p).isDone());
+        }
+    }
+
     public Expression merge(Expression stateOfDestination,
                             Expression postProcessState,
-                            Expression overwriteValue,
+                            ExpressionAndProperties overwriteValue,
                             boolean atLeastOneBlockExecuted,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues) {

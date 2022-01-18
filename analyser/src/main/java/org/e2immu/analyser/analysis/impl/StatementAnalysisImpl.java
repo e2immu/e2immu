@@ -887,7 +887,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
 
-            Expression overwriteValue = overwrite(variable);
+            Merge.ExpressionAndProperties overwriteValue = overwrite(evaluationContext, variable);
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, variable,
                     fqn, inSwitchStatementOldStyle);
             if (toMerge.size() > 0) {
@@ -942,19 +942,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * In some rare situations we do not want to merge, but to write a specific value.
      * This is the case when the exit value of a loop is known; see Range_3
      */
-    private Expression overwrite(Variable variable) {
-        Expression overwriteValue;
+    private Merge.ExpressionAndProperties overwrite(EvaluationContext evaluationContext, Variable variable) {
         if (statement instanceof LoopStatement) {
             Expression exit = rangeData.getRange().exitValue(primitives, variable);
-            if (stateData.noExitViaReturnOrBreak()) {
-                overwriteValue = exit;
-            } else {
-                overwriteValue = null;
+            if (exit != null && stateData.noExitViaReturnOrBreak()) {
+                Properties properties = evaluationContext.getValueProperties(exit);
+                return new Merge.ExpressionAndProperties(exit, properties);
             }
-        } else {
-            overwriteValue = null;
         }
-        return overwriteValue;
+        return null;
     }
 
     private List<ConditionAndVariableInfo> filterSubBlocks(EvaluationContext evaluationContext, List<ConditionAndLastStatement> lastStatements, Variable variable, String fqn, boolean inSwitchStatementOldStyle) {

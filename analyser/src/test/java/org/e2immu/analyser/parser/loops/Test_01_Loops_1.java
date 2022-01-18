@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.loops;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -60,15 +61,14 @@ public class Test_01_Loops_1 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if ("res2$2".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    if ("2.0.0".equals(d.statementId())) {
-                        assertEquals("nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
                     }
-                    if ("2.0.2".equals(d.statementId())) {
-                        assertEquals("-1-i$2+n>=1?\"abc\":nullable instance type String", d.currentValue().toString());
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
+                    if ("3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<s:String>" : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                 }
                 if ("res2".equals(d.variableName())) {
@@ -82,16 +82,18 @@ public class Test_01_Loops_1 extends CommonTestRunner {
                         if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
                             assertEquals("2", v.statementIndex());
                         } else fail();
+                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                     if ("2.0.2".equals(d.statementId())) {
                         // statement says: res="abc", but the value takes the state into account
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-2-i$2+n>=0&&1+i>=n?\"abc\":res2$2";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }

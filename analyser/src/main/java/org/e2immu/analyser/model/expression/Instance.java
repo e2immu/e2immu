@@ -39,17 +39,9 @@ public final class Instance extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
     private final Properties valueProperties;
 
-    public static Properties primitiveValueProperties() {
-        return Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
-                Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
-                Property.CONTAINER, DV.TRUE_DV,
-                Property.IDENTITY, DV.FALSE_DV));
-    }
-
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
         return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
-                primitiveValueProperties());
+                EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
@@ -79,12 +71,12 @@ public final class Instance extends BaseExpression implements Expression {
     public static Expression forUnspecifiedCatchCondition(String index, Primitives primitives) {
         return new Instance(Identifier.catchCondition(index),
                 primitives.booleanParameterizedType(),
-                primitiveValueProperties());
+                EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public static Instance forTesting(ParameterizedType parameterizedType) {
         return new Instance(Identifier.generate(), parameterizedType,
-                primitiveValueProperties());
+                EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     // never null, never more interesting.
@@ -177,7 +169,7 @@ public final class Instance extends BaseExpression implements Expression {
 
     public static Instance forTooComplex(Identifier identifier,
                                          ParameterizedType parameterizedType) {
-        return new Instance(identifier, parameterizedType, primitiveValueProperties());
+        return new Instance(identifier, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public Instance(Identifier identifier,

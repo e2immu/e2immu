@@ -98,6 +98,9 @@ public interface VariableInfo {
                 && StringUtil.inSameBlock(latest, index);
     }
 
+    // extract the value properties
+    Properties valueProperties();
+
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

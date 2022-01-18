@@ -253,7 +253,7 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            Properties valueProperties = Instance.primitiveValueProperties();
+            Properties valueProperties = EvaluationContext.PRIMITIVE_VALUE_PROPERTIES;
             return Instance.forGetInstance(identifier, primitives.stringParameterizedType(), valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);

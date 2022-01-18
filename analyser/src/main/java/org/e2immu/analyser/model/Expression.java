@@ -117,7 +117,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean equalsNotNull();
 
-    boolean isComputeProperties();
+    default boolean isComputeProperties() { return true; }
 
     boolean isBoolValueTrue();
 

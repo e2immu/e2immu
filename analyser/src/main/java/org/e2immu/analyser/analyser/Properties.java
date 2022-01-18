@@ -174,4 +174,10 @@ public class Properties {
             }
         }
     }
+
+    public Properties merge(Properties valueProperties) {
+        Map<Property, DV> merged = new HashMap<>(map);
+        valueProperties.stream().forEach(e -> merged.merge(e.getKey(), e.getValue(), DV::min));
+        return of(merged);
+    }
 }

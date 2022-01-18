@@ -139,4 +139,9 @@ public class UnknownExpression extends BaseExpression implements Expression {
     public List<Expression> collectSolidValues() {
         return List.of();
     }
+
+    @Override
+    public boolean isComputeProperties() {
+        return false;
+    }
 }

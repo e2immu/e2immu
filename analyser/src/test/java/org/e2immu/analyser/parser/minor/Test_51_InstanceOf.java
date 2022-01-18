@@ -325,18 +325,16 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     }
                 }
                 if ("bool".equals(d.variableName())) {
+                    String VP_DELAY = "<vp:object:identity:object@Method_create_0.0.0;not_null:object@Method_create_0.0.0>/*(Boolean)*/";
+
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals(VariableInfoContainer.Level.EVALUATION, d.variableInfoContainer().getLevelForPrevious());
                         assertTrue(d.variableInfoContainer().isPrevious());
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String expected = d.iteration() == 0
-                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>/*(Boolean)*/"
-                                : "object/*(Boolean)*/";
+                        String expected = d.iteration() == 0 ? VP_DELAY : "object/*(Boolean)*/";
                         assertEquals(expected, prev.getValue().toString());
 
-                        String expect = d.iteration() == 0
-                                ? "<vp:object:identity:object@Method_create_0;not_null:object@Method_create_0>/*(Boolean)*/"
-                                : "object/*(Boolean)*/";
+                        String expect = d.iteration() == 0 ? VP_DELAY : "object/*(Boolean)*/";
                         assertEquals(expect, d.currentValue().toString());
 
                         assertEquals("Type java.lang.Boolean", d.currentValue().returnType().toString());
@@ -407,12 +405,23 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
-        int BIG = 20;
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId())) {
+                    if (d.iteration() == 3) {
+                        assertEquals("", d.evaluationResult().causesOfDelay().toString());
+                    }
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "expression".equals(p.name)) {
                     if ("2.0.0".equals(d.statementId())) {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("nullable instance type Expression/*@Identity*/", d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
@@ -427,14 +436,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() <= 1 ? "expression:0,ne.expression:0,x:0"
-                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
+                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:1,ne.expression:0,x:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(d.iteration() >= 2, d.variableInfo().getLinkedVariables().isDone());
 
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("ne".equals(d.variableName())) {
@@ -473,6 +481,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
+                        && "expression/*(Negation)*/".equals(fr.scope.toString())) {
+                    assertTrue(d.iteration() >= 2);
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("nullable instance type Expression", d.currentValue().toString());
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
                 if ("x".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<f:expression>" : "expression/*(Negation)*/.expression";
@@ -488,31 +505,26 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "expression instanceof Negation&&null!=expression?<f:expression>:expression";
-                            case 2 -> "<vp:x:cnn:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;container:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;identity:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;immutable:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;independent:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;not_null:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2>";
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
-                        String expectLv = d.iteration() <= 1 ? "expression:0,ne.expression:0,x:0"
-                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
+                        String expectLv = switch (d.iteration()) {
+                            case 0, 1 -> "expression:0,ne.expression:0,x:0";
+                            default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
+                        };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertEquals(d.iteration() >= 2, d.variableInfo().getLinkedVariables().isDone());
-                        if(d.iteration()<2) {
-                            // FIXME this seems wrong: no value should mean no lv?
-                            assertEquals("", d.variableInfo().getLinkedVariables().causesOfDelay().toString());
-                        }
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "expression instanceof Negation&&null!=expression?<f:expression>:expression";
-                            case 2, 3, 4, 5, 6 -> "<vp:x:cnn:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;container:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;identity:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;immutable:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;independent:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2;not_null:expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression@Method_method_2>";
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTAINER);
-                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -522,8 +534,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -535,6 +547,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
