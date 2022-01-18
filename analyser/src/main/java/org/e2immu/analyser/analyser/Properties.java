@@ -44,6 +44,10 @@ public class Properties {
         return new Properties(Map.copyOf(map));
     }
 
+    public static Properties ofWritable(Map<Property, DV> map) {
+        return new Properties(new HashMap<>(map));
+    }
+
     public boolean isDone(Property property) {
         DV v = map.get(property);
         return v != null && v.isDone();

@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser.nonanalyserimpl;
 // assignment in if and else block
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
+import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
@@ -448,6 +450,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue.getValue(), ifFalse.getValue()));
+        if (condition.isDelayed()) {
+            CausesOfDelay delay = new SimpleSet(new VariableCause(vi.variable(), evaluationContext.getLocation(), CauseOfDelay.Cause.CONDITION));
+            Properties delayed = Properties.ofWritable(EvaluationContext.VALUE_PROPERTIES.stream().collect(Collectors.toUnmodifiableMap(p -> p, p -> delay)));
+            return new Merge.ExpressionAndProperties(safe, delayed);
+        }
         if (safe.equals(ifTrue.getValue())) {
             return valueProperties(ifTrue);
         }

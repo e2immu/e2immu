@@ -21,6 +21,8 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
+import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -200,14 +202,37 @@ public interface EvaluationContext {
             IDENTITY, DV.FALSE_DV));
 
     default Properties getValueProperties(Expression value) {
-        return getProperties(value, VALUE_PROPERTIES, true, false);
+        return getValueProperties(null, value, false);
+    }
+
+    default Properties getValueProperties(ParameterizedType formalType, Expression value) {
+        return getValueProperties(formalType, value, false);
     }
 
     // NOTE: when the value is a VariableExpression pointing to a variable field, variable in loop or anything that
     // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
     // should be able to do better/faster.
-    default Properties getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+    default Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
+        if (value instanceof NullConstant) {
+            assert formalType != null : "Use other call!";
+            return valuePropertiesOfFormalType(formalType);
+        }
+        if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
+            return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
+        }
         return getProperties(value, VALUE_PROPERTIES, true, ignoreConditionInConditionManager);
+    }
+
+    default Properties valuePropertiesOfFormalType(ParameterizedType formalType) {
+        AnalyserContext analyserContext = getAnalyserContext();
+        Properties properties = Properties.ofWritable(Map.of(
+                IMMUTABLE, analyserContext.defaultImmutable(formalType, false).maxIgnoreDelay(IMMUTABLE.falseDv),
+                INDEPENDENT, analyserContext.defaultIndependent(formalType).maxIgnoreDelay(INDEPENDENT.falseDv),
+                NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
+                CONTAINER, analyserContext.defaultContainer(formalType).maxIgnoreDelay(CONTAINER.falseDv),
+                IDENTITY, DV.FALSE_DV));
+        assert properties.stream().noneMatch(e -> e.getValue().isDelayed());
+        return properties;
     }
 
     /*

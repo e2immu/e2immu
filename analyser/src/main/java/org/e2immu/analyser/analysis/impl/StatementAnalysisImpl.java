@@ -705,7 +705,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
             }
-            Properties valueMap = evaluationContext.getValueProperties(initialValue);
+            Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
             valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
 
             // copy into initial
@@ -717,7 +717,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             initialValue = viInitial.getValue();
             assert initialValue.isDone();
             // add the value properties from the current value to combined (do not set to initial!!)
-            Properties valueMap = evaluationContext.getValueProperties(viInitial.getValue());
+            Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), viInitial.getValue());
             valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
         }
 

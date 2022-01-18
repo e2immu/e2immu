@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -85,6 +86,18 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
+        if (d.variable() instanceof ReturnVariable) {
+            if (d.currentValue() instanceof UnknownExpression ue) {
+                assertEquals(UnknownExpression.RETURN_VALUE, ue.msg());
+
+                for (Property property : EvaluationContext.VALUE_PROPERTIES) {
+                    DV dv = d.getProperty(property);
+                    assertTrue(dv == null || dv.isDone(),
+                            "Problem in it " + d.iteration() + ", " + d.statementId() + ", " + property + "=" + dv);
+                }
+            }
+        }
+
         if ("method2".equals(d.methodInfo().name)) {
             if ("b".equals(d.variableName()) && "0".equals(d.statementId())) {
                 assertEquals("null==param?\"x\":param", d.currentValue().toString());
@@ -102,7 +115,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertEquals("<p:param>", d.currentValue().toString());
                     assertEquals("initial:param@Method_method3_0", d.currentValue().causesOfDelay().toString());
-                    assertNull(d.getProperty(Property.IDENTITY));
+//                    assertNull(d.getProperty(Property.IDENTITY));
                 } else {
                     assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
                     assertEquals(DV.TRUE_DV, d.getProperty(Property.IDENTITY));

@@ -290,23 +290,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    /*
-    private void writeLinkedVariablesEnsureEvaluation(LinkedVariables linkedVariables) {
-        VariableInfo vi1 = getPreviousOrInitial();
-        VariableInfoImpl write;
-        if (!evaluation.isSet()) {
-            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getStatementTime(),
-                    vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
-            if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
-            vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
-                    .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
-            evaluation.set(write);
-        } else {
-            write = evaluation.get();
-        }
-        write.setLinkedVariables(linkedVariables);
-    }
-*/
     @Override
     public VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level) {
         if (level.equals(Level.EVALUATION) && !evaluation.isSet()) {
@@ -344,10 +327,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private VariableInfoImpl prepareForWritingContextProperties(Location location, VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(location, vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
-        if (vi1.valueIsSet()) write.setValue(vi1.getValue());
+        write.setValue(vi1.getValue());
         write.setLinkedVariables(vi1.getLinkedVariables());
         vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
-                .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
+                .forEach(e -> {
+                    assert !EvaluationContext.VALUE_PROPERTIES.contains(e.getKey())
+                            || vi1.getValue().isDelayed() || e.getValue().isDone();
+                    write.setProperty(e.getKey(), e.getValue());
+                });
         return write;
     }
 
@@ -370,8 +357,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             previous.propertyStream()
                     .filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
-                    .forEach(e ->
-                            setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
+                    .forEach(e -> {
+                        assert !EvaluationContext.VALUE_PROPERTIES.contains(e.getKey()) || previous.getValue().isDelayed() || e.getValue().isDone();
+                        setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION);
+                    });
 
             evaluation.setValue(previous.getValue());
             evaluation.setLinkedVariables(previous.getLinkedVariables());
@@ -399,6 +388,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     if (GroupPropertyValues.PROPERTIES.contains(vp)) {
                         groupPropertyValues.set(vp, v, value);
                     } else {
+                        assert !EvaluationContext.VALUE_PROPERTIES.contains(vp) || eval.getValue().isDelayed() || value.isDone();
                         mergeImpl.setProperty(vp, value);
                     }
                 });

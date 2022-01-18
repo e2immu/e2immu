@@ -24,6 +24,7 @@ public interface CauseOfDelay {
         ASSIGNED_TO_FIELD("assign_to_field", "The component 'analyseFieldAssignments' has not yet finished"),
         CANDIDATE_NULL_PTR("candidate_null_ptr", ""),
         CNN_PARENT("context_not_null_parent", "Context not null for parent"),
+        CONDITION("condition", "condition in inline merge"),
         CONSTANT("constant", ""),
         CONTAINER("container", "container property not yet determined"),
         CONTEXT_IMMUTABLE("c_imm", "context immutable"),

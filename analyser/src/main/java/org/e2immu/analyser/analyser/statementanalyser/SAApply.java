@@ -133,7 +133,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 // ignoreConditionInCM: true, exactly because the state has been added by maybeValueNeedsState,
                 // it should not be taken into account anymore (see e.g. Loops_1)
                 Properties valueProperties = sharedState.evaluationContext()
-                        .getValueProperties(valueToWrite, true);
+                        .getValueProperties(variable.parameterizedType(), valueToWrite, true);
                 CausesOfDelay valuePropertiesIsDelayed = valueProperties.delays();
 
                 boolean valueToWriteIsDelayed = valueToWrite.isDelayed();

@@ -532,8 +532,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public Properties getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
-            return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
+        public Properties getValueProperties(ParameterizedType parameterizedType, Expression value, boolean ignoreConditionInConditionManager) {
+            return evaluationContext.getValueProperties(parameterizedType, value, ignoreConditionInConditionManager);
         }
 
         // FIXME should this be delayed? we never want to end up with an InlinedMethod object
