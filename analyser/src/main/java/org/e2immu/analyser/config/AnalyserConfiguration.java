@@ -28,6 +28,7 @@ import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 @E2Container
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
+                                    boolean computeFieldAnalyserAcrossAllMethods,
                                     PatternMatcherProvider<StatementAnalyser> patternMatcherProvider,
                                     AnalyserProgram analyserProgram) {
 
@@ -46,6 +47,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         // see @NotNull in FieldAnalyser for an explanation
         private boolean computeContextPropertiesOverAllMethods;
+        private boolean computeFieldAnalyserAcrossAllMethods;
 
         private PatternMatcherProvider<StatementAnalyser> patternMatcherProvider;
 
@@ -66,6 +68,11 @@ public record AnalyserConfiguration(boolean skipTransformations,
             return this;
         }
 
+        public Builder setComputeFieldAnalyserAcrossAllMethods(boolean computeFieldAnalyserAcrossAllMethods) {
+            this.computeFieldAnalyserAcrossAllMethods = computeFieldAnalyserAcrossAllMethods;
+            return this;
+        }
+
         public Builder setAnalyserProgram(AnalyserProgram analyserProgram) {
             this.analyserProgram = analyserProgram;
             return this;
@@ -74,6 +81,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations,
                     computeContextPropertiesOverAllMethods,
+                    computeFieldAnalyserAcrossAllMethods,
                     patternMatcherProvider == null ?
                             (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider,
                     analyserProgram);
@@ -84,7 +92,8 @@ public record AnalyserConfiguration(boolean skipTransformations,
     public String toString() {
         return "AnalyserConfiguration:" +
                 "\n    skipTransformations=" + skipTransformations +
-                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods+
-                "\n    analyserProgram="+analyserProgram;
+                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
+                "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
+                "\n    analyserProgram=" + analyserProgram;
     }
 }

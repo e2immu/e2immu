@@ -177,7 +177,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     if (variable instanceof This || !evaluationResult.causesOfDelay().isDelayed()) {
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
-                        // so we must integrate set properties
+                        // if the existing value is not delayed, the value properties must not be delayed either!
                         Map<Property, DV> merged = SAHelper.mergePreviousAndChange(
                                 sharedState.evaluationContext(),
                                 variable, vi1.getProperties(),

@@ -198,6 +198,20 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setComputeContextPropertiesOverAllMethods(true).build());
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(true)
+                        .setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
+    @Test
+    public void test11_3() throws IOException {
+        // the @NotNull1 computations require linking to be across the primary type!
+        // if that's disabled, there is no chance of detecting them
+        testClass("Modification_11", 3, 0,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder()
+                        .setComputeFieldAnalyserAcrossAllMethods(false)
+                        .setComputeContextPropertiesOverAllMethods(true)
+                        .build());
     }
 }

@@ -438,12 +438,23 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
         };
 
+        // whether we get an error for a field not read depends on the analyser configuration
+        // if we compute across the whole type, we don't raise the error
         testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build());
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
+
+    @Test
+    public void test_10_2() throws IOException {
+        testClass("E2Immutable_10", 1, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
+    }
+
 
     // variant on MethodReference_3, independent
     @Test

@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser.start;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
@@ -431,11 +432,18 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        testClass("Enum_8", 0, 0, new DebugConfiguration.Builder()
+        // private field not read outside constructors: in default field analyser mode
+        testClass("Enum_8", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
+    }
+
+    @Test
+    public void test8_2() throws IOException {
+        testClass("Enum_8", 0, 0, new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test
@@ -461,10 +469,18 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
             }
         };
-        testClass("Enum_9", 0, 0, new DebugConfiguration.Builder()
+        // private field not read outside constructors, in default field analyser mode, as in test8
+        testClass("Enum_9", 1, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
+    }
+
+
+    @Test
+    public void test9_2() throws IOException {
+        testClass("Enum_9", 0, 0, new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
     @Test

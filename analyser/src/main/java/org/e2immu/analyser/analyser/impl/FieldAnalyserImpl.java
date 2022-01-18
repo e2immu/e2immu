@@ -85,6 +85,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private final CheckConstant checkConstant;
     private final CheckLinks checkLinks;
     private final boolean haveInitialiser;
+    private final boolean acrossAllMethods;
 
     // set at initialisation time
     private List<MethodAnalyser> myMethodsAndConstructors;
@@ -103,6 +104,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
+
+        this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
 
         this.fieldInfo = fieldInfo;
         ignoreMyConstructors = w -> w instanceof MethodInfo methodInfo
@@ -216,12 +219,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(boolean alsoMyOwnConstructors) {
-        TypeInfo enclosedIn = fieldInfo.owner.topOfInterdependentClassHierarchy();
-        return allMethodsAndConstructors(enclosedIn, alsoMyOwnConstructors);
-    }
-
-    private Stream<MethodAnalyser> allMethodsAndConstructorsAcrossPrimaryType(boolean alsoMyOwnConstructors) {
-        return allMethodsAndConstructors(null, alsoMyOwnConstructors);
+        TypeInfo typeInfo = acrossAllMethods ? null
+                : fieldInfo.owner.topOfInterdependentClassHierarchy();
+        return allMethodsAndConstructors(typeInfo, alsoMyOwnConstructors);
     }
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(TypeInfo enclosedIn, boolean alsoMyOwnConstructors) {
@@ -491,7 +491,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
-        DV bestOverContext = allMethodsAndConstructorsAcrossPrimaryType(true)
+        DV bestOverContext = allMethodsAndConstructors(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
                         m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
@@ -552,10 +552,11 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus fieldErrors() {
         if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
-                boolean readInMethods = allMethodsAndConstructorsAcrossPrimaryType(false)
+                boolean readInMethods = allMethodsAndConstructors(false)
                         .anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
-                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.PRIVATE_FIELD_NOT_READ));
+                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.PRIVATE_FIELD_NOT_READ,
+                            fieldInfo.name));
                 }
                 return DONE;
             }
@@ -565,7 +566,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
                 if (!fieldInfo.owner.isPrivateNested()) {
-                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
+                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL,
+                            fieldInfo.name));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
             } else if (effectivelyFinal.isDelayed()) {
@@ -1175,7 +1177,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 */
         // we ONLY look at the linked variables of fields that have been assigned to
-        CausesOfDelay causesOfDelay = allMethodsAndConstructorsAcrossPrimaryType(true)
+        CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
                         .filter(VariableInfo::isAssigned)
                         .map(vi -> vi.getLinkedVariables().causesOfDelay()))

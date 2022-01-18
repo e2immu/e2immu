@@ -83,11 +83,18 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(previous);
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
-                NOT_YET_READ, Set.of(), outside.valueIsSet() ? null : outside.getValue());
+                NOT_YET_READ, Set.of(), outside.getValue());
         initial.newVariable(false);
         initial.setValue(outside.getValue());
-        if (!outside.getLinkedVariables().isDelayed()) initial.setLinkedVariables(outside.getLinkedVariables());
+        initial.setLinkedVariables(outside.getLinkedVariables());
 
+        outside.propertyStream().forEach(e -> {
+            Property property = e.getKey();
+            DV current = initial.getProperty(property, null);
+            if (current == null || current.isDelayed()) {
+                initial.setProperty(property, e.getValue());
+            }
+        });
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
