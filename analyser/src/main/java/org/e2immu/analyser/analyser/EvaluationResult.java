@@ -552,9 +552,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             for (Variable variable : currentLinkedVariables.variables().keySet()) {
                 if (!variable.equals(assignmentTarget)) {
                     LinkedVariables linkedVariables = evaluationContext.linkedVariables(variable);
-                    assert linkedVariables != null : "We're linking to an unknown variable: "
-                            + variable.fullyQualifiedName() + "; current linked values is " + currentLinkedVariables;
-                    if (linkedVariables.contains(assignmentTarget)) {
+                    //  it is possible that the variable cannot be found; see InstanceOf_11
+                    // the problem is that ER looks at the previous situation, where linked variables
+                    // exist which will not exist in this statement
+                    if (linkedVariables != null && linkedVariables.contains(assignmentTarget)) {
                         removeFromLinkedVariables(variable, assignmentTarget);
                     }
                 }

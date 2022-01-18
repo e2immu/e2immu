@@ -526,7 +526,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
@@ -560,25 +560,31 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
+                        String expect = d.iteration() <= 1
                                 ? "<instanceOf:Sum>&&null!=<m:numericPartOfLhs>?<new:XB>:<return value>" : "";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0
-                                ? "evaluationContext:-1,ne:-1,return method:0,this.expression:-1" : "";
+                        String expectLv = switch (d.iteration()) {
+                            case 0 -> "evaluationContext:-1,ne:-1,return method:0,this.expression:-1";
+                            case 1 -> "ne:-1,return method:0,this.expression:-1";
+                            default -> "";
+                        };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if(d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
                         && "ne".equals(fr.scope.toString())) {
                     assertTrue(d.statementId().startsWith("3"), "In " + d.statementId());
                 }
                 if ("x".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
+                        String expect = d.iteration() <= 1
                                 ? "<instanceOf:Negation>?<f:expression>:<f:expression>" : "";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = d.iteration() == 0
-                                ? "evaluationContext:-1,ne.expression:0,ne1.expression:-1,this.expression:-1,x:0" : "";
+                        String expectLv = switch (d.iteration()) {
+                            case 0 -> "evaluationContext:-1,ne.expression:0,this.expression:-1,x:0";
+                            case 1 -> "ne.expression:0,this.expression:0,x:0";
+                            default -> "";
+                        };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

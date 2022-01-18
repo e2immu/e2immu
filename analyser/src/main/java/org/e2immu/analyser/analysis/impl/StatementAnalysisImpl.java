@@ -48,7 +48,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
-import static org.e2immu.analyser.model.MultiLevel.*;
+import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -488,7 +489,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         copyFrom.rawVariableStream()
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
-                .forEach(e -> copyVariableFromPreviousInIteration0(e,
+                .forEach(e -> copyVariableFromPreviousInIteration0(e, copyFrom,
                         previous == null, previous == null ? null : previous.index(), false));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData());
@@ -521,12 +522,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         EvaluationContext closure4Local = evaluationContext.getClosure();
         if (closure4Local != null) {
             closure4Local.localVariableStream().forEach(e ->
-                    copyVariableFromPreviousInIteration0(e,
+                    copyVariableFromPreviousInIteration0(e, closure4Local.getCurrentStatement().getStatementAnalysis(),
                             true, null, true));
         }
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
+                                                      StatementAnalysis copyFrom,
                                                       boolean previousIsParent,
                                                       String indexOfPrevious,
                                                       boolean markCopyOfEnclosingMethod) {
@@ -539,7 +541,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
                     vic, navigationData.hasSubBlocks());
-        } else if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) {
+        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, previousIsParent, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable, vic)) {
             // move a local variable, not defined in this loop, inside the loop
@@ -550,6 +552,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
         }
         putVariable(fqn, newVic);
+    }
+
+    private boolean doNotCopyToNextStatement(StatementAnalysis copyFrom,
+                                             VariableInfoContainer vic,
+                                             Variable variable,
+                                             boolean previousIsParent,
+                                             String indexOfPrevious) {
+        if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) return true;
+        IsVariableExpression ive;
+        if (variable instanceof FieldReference fr
+                && fr.scope != null
+                && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+            // recursively check!
+            VariableInfoContainer scopeVic = copyFrom.getVariable(ive.variable().fullyQualifiedName());
+            return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), previousIsParent, indexOfPrevious);
+        }
+        return false;
     }
 
     private boolean conditionsToMoveVariableInsideLoop(Variable variable,
@@ -597,10 +616,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
        Some fields only become visible in a later iteration (see e.g. Enum_3 test, field inside constant result
        of array initialiser) -- so we don't explicitly restrict to local variables
 
-       we also exclude local copies from places where they do not belong, e.g., if a loop variable (loop at 1)
-       is modified in 1.0.1.0.1, it creates a var$1$1_0_1_0_1-E; this variable has no reason of existence in
-       the other branch 1.0.1.1.0
-
        ConditionalInitialization only goes to the next statement, never inside a block
      */
     private void explicitlyPropagateVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
@@ -628,7 +643,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         }
         // don't continue loop and resource variables beyond the loop
-        return !copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable());
+        // FIXME: also don't copy fields on such variables!
+        if (copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable())) return false;
+        Variable variable = vic.current().variable();
+        IsVariableExpression ive;
+        if (variable instanceof FieldReference fr && fr.scope != null && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+            VariableInfoContainer scopeVic = copyFrom.getVariable(ive.variable().fullyQualifiedName());
+            return explicitlyPropagate(copyFrom, false, scopeVic);
+        }
+        return true;
     }
 
 
