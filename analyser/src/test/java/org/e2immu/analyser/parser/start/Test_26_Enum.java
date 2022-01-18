@@ -438,12 +438,6 @@ public class Test_26_Enum extends CommonTestRunner {
                 .build());
     }
 
-
-    /**
-     * Compared to test8, we need many more iterations, simply because we add a simple method?
-     * Why? Type Position only IMMUTABLE in 3, CONTAINER in 4; the fields trail by one iteration,
-     * the methods' statements again by one iteration. Only in iteration 6 can we do something meaningful.
-     */
     @Test
     public void test9() throws IOException {
 
@@ -451,9 +445,9 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals("new Position(\"S\")", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 4, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 5, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
+                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
             }
 
             if ("END".equals(d.fieldInfo().name)) {
@@ -462,9 +456,9 @@ public class Test_26_Enum extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 3, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, 4, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
             }
         };
         testClass("Enum_9", 0, 0, new DebugConfiguration.Builder()

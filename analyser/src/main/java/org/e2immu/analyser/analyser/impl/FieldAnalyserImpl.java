@@ -197,6 +197,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         this.myStaticBlocks = List.copyOf(myStaticBlocks);
     }
 
+    // FIXME should this also have an "enclosed in"?
     private Stream<MethodAnalyser> otherStaticBlocks() {
         TypeInfo primaryType = myTypeAnalyser.getPrimaryType();
         TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
@@ -215,8 +216,18 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(boolean alsoMyOwnConstructors) {
+        TypeInfo enclosedIn = fieldInfo.owner.topOfInterdependentClassHierarchy();
+        return allMethodsAndConstructors(enclosedIn, alsoMyOwnConstructors);
+    }
+
+    private Stream<MethodAnalyser> allMethodsAndConstructorsAcrossPrimaryType(boolean alsoMyOwnConstructors) {
+        return allMethodsAndConstructors(null, alsoMyOwnConstructors);
+    }
+
+    private Stream<MethodAnalyser> allMethodsAndConstructors(TypeInfo enclosedIn, boolean alsoMyOwnConstructors) {
         return analyserContext.methodAnalyserStream()
                 .filter(ma -> !ma.getMethodInspection().isStaticBlock())
+                .filter(ma -> enclosedIn == null || ma.getMethodInfo().typeInfo.isEnclosedIn(enclosedIn))
                 .filter(ma -> alsoMyOwnConstructors ||
                         !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
@@ -480,7 +491,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return DONE;
         }
 
-        DV bestOverContext = allMethodsAndConstructors(true)
+        DV bestOverContext = allMethodsAndConstructorsAcrossPrimaryType(true)
                 .filter(m -> computeContextPropertiesOverAllMethods ||
                         m.getMethodInfo().methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
@@ -541,7 +552,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus fieldErrors() {
         if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
-                boolean readInMethods = allMethodsAndConstructors(false).anyMatch(this::isReadInMethod);
+                boolean readInMethods = allMethodsAndConstructorsAcrossPrimaryType(false)
+                        .anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
                     messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.PRIVATE_FIELD_NOT_READ));
                 }
@@ -1163,7 +1175,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         }
 */
         // we ONLY look at the linked variables of fields that have been assigned to
-        CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
+        CausesOfDelay causesOfDelay = allMethodsAndConstructorsAcrossPrimaryType(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
                         .filter(VariableInfo::isAssigned)
                         .map(vi -> vi.getLinkedVariables().causesOfDelay()))

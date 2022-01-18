@@ -244,7 +244,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl variableInfo = getToWrite(level);
         if (doNotFailWhenTryingToWriteALowerValue) {
             DV current = variableInfo.getProperty(property, null);
-            if (current != null && !current.isDelayed() && (value.isDelayed() || value.lt(current))) {
+            if (current != null && !current.isDelayed()) {
                 return;
             }
         }

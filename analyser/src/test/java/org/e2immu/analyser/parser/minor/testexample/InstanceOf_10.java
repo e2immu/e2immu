@@ -12,23 +12,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.parser.minor.testexample;
 
-public enum TypeNature {
 
-    ANNOTATION,
-    CLASS,
-    ENUM,
-    INTERFACE,
-    PRIMITIVE,
-    RECORD;
+public class InstanceOf_10 {
 
-    public String toJava() {
-        if (this == ANNOTATION) return "@interface";
-        return name().toLowerCase();
+    private interface Expression {
+
     }
 
-    public boolean isFinal() {
-        return this != CLASS && this != INTERFACE;
+    private record Negation(Expression expression) implements Expression {
+    }
+
+    public static Expression method(Expression expression) {
+        Expression x;
+        boolean lessThan;
+        if (expression instanceof Negation ne) {
+            x = ne.expression;
+            lessThan = true;
+        } else {
+            x = expression;
+            lessThan = false;
+        }
+        return lessThan ? x: expression;
     }
 }

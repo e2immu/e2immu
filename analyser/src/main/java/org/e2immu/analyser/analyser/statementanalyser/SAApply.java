@@ -182,6 +182,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 sharedState.evaluationContext(),
                                 variable, vi1.getProperties(),
                                 changeData.properties(), groupPropertyValues, true);
+                        assert vi1.getValue().isDelayed()
+                                || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed());
                         vic.setValue(vi1.getValue(), vi1.getLinkedVariables(), merged, false);
                     } else {
                         // delayed situation; do not copy the value properties

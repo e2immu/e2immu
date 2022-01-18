@@ -125,9 +125,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue);
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
-        vi.setValue(mergedValue);
         if (!mergedValue.isDelayed()) {
             setMergedValueProperties(mergedValue);
+        } else {
+            vi.setValue(mergedValue); // copy the delayed value
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         if (evaluationContext.isMyself(vi.variable())) {
@@ -151,6 +152,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     private void setMergedValueProperties(Expression mergedValue) {
         Properties map = evaluationContext.getValueProperties(mergedValue, false);
         map.stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
+        CausesOfDelay causes = map.delays();
+        Expression value;
+        if (causes.isDone()) {
+            value = mergedValue;
+        } else {
+            value = DelayedVariableExpression.forDelayedValueProperties(vi.variable(), causes);
+        }
+        vi.setValue(value);
     }
 
     private String mergedReadId(String previousId,
