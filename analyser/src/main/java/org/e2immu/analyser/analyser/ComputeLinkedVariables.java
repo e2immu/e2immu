@@ -257,22 +257,20 @@ public class ComputeLinkedVariables {
      * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
      * It touches all variables rather than those in clusters only.
      */
-    public void writeLinkedVariables(Predicate<VariableInfoContainer> removeFromLinkedVariables) {
-        Set<Variable> toRemove = statementAnalysis.rawVariableStream().map(Map.Entry::getValue)
-                        .filter(removeFromLinkedVariables)
-                .map(vic -> vic.current().variable()).collect(Collectors.toUnmodifiableSet());
+    public void writeLinkedVariables(Set<Variable> touched, Set<Variable> toRemove) {
+        assert level == VariableInfoContainer.Level.MERGE;
         statementAnalysis.rawVariableStream()
                 .forEach(e -> {
                     VariableInfoContainer vic = e.getValue();
 
                     Variable variable = vic.current().variable();
-                    if (!ignore.test(vic, variable)) {
+                    if (touched.contains(variable)) {
                         Map<Variable, DV> map = weightedGraph.links(variable, true);
                         map.keySet().removeIf(toRemove::contains);
 
                         LinkedVariables linkedVariables = map.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(map);
 
-                        vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), level);
+                        vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(), VariableInfoContainer.Level.MERGE);
                         vic.setLinkedVariables(linkedVariables, level);
                     }
                 });

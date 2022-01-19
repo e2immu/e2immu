@@ -1047,13 +1047,21 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Set<Variable> toRemove,
                                                      Set<Variable> setCnnVariables) {
         // then, per cluster of variables
+        // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
+        // create looks at these+previous, minus those to be removed.
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
+        Set<Variable> touched = Stream.concat(linkedVariablesMap.keySet().stream(),
+                        linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream()))
+                .filter(v -> !toRemove.contains(v))
+                .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                (vic, v) -> !linkedVariablesMap.containsKey(v) || toRemove.contains(v),
+                (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        computeLinkedVariables.writeLinkedVariables(this::isLoopVariableWillDisappearInNextStatement);
+
+
+        computeLinkedVariables.writeLinkedVariables(touched, toRemove);
 
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
