@@ -1506,7 +1506,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         String definedInBlock = vic.variableNature().definedInBlock();
         if (definedInBlock != null) {
-            return definedInBlock.equals(parent.index());
+            return parent != null && definedInBlock.equals(parent.index());
         }
 
         if (parent == null) return true;

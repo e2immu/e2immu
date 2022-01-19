@@ -130,8 +130,7 @@ public class Test_52_Var extends CommonTestRunner {
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
                             .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
-                    assertTrue(d.variableInfoContainer().hasMerge());
-                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                    assertFalse(d.variableInfoContainer().hasMerge());
                 } else {
                     fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)
                 }
