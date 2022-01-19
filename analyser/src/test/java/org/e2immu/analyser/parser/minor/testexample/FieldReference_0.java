@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-public class FieldResolution_0 {
+public class FieldReference_0 {
 
     static class C1 {
         public final String s1;

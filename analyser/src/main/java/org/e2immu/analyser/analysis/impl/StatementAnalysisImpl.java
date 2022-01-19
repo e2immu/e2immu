@@ -560,13 +560,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                              boolean previousIsParent,
                                              String indexOfPrevious) {
         if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) return true;
+        // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr
                 && fr.scope != null
                 && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
-            // recursively check!
-            VariableInfoContainer scopeVic = copyFrom.getVariable(ive.variable().fullyQualifiedName());
-            return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), previousIsParent, indexOfPrevious);
+            String scopeFqn = ive.variable().fullyQualifiedName();
+            if (copyFrom.variableIsSet(scopeFqn)) {
+                VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
+                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), previousIsParent, indexOfPrevious);
+            }
+            return true;
         }
         return false;
     }
@@ -643,13 +647,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         }
         // don't continue loop and resource variables beyond the loop
-        // FIXME: also don't copy fields on such variables!
         if (copyFrom.index().equals(vic.variableNature().getStatementIndexOfBlockVariable())) return false;
         Variable variable = vic.current().variable();
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr && fr.scope != null && ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
-            VariableInfoContainer scopeVic = copyFrom.getVariable(ive.variable().fullyQualifiedName());
-            return explicitlyPropagate(copyFrom, false, scopeVic);
+            String scopeFqn = ive.variable().fullyQualifiedName();
+            if (copyFrom.variableIsSet(scopeFqn)) {
+                VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
+                return explicitlyPropagate(copyFrom, false, scopeVic);
+            }
+            return false; // don't propagate
         }
         return true;
     }
