@@ -450,4 +450,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public Level getLevelForPrevious() {
         return levelForPrevious;
     }
+
+    @Override
+    public String toString() {
+        String code = (isInitial() ? "I" : "P") + (hasEvaluation() ? "E" : "-") + (hasMerge() ? "M" : "-");
+        return current().variable().fullyQualifiedName() + " " + code;
+    }
 }

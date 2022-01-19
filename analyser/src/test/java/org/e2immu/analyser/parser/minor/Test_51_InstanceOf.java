@@ -430,6 +430,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
+                        assertFalse(d.variableInfoContainer().hasMerge());
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<f:expression>";
                             default -> "nullable instance type Expression";
@@ -458,16 +459,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
+                        assertFalse(d.variableInfoContainer().hasMerge());
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
                             case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() <= 1 ? "expression:-1,ne.expression:-1,x:-1"
-                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:1,ne.expression:1,x:1";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        // linking is not that relevant, given that it has no -M
                     }
                     if ("3".equals(d.statementId())) {
                         fail(); // should not exist here!
@@ -500,14 +499,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "expression:0,ne.expression:0,x:0";
+                            case 0, 1 -> "<not yet assigned:Negation>.expression:0,expression:0,x:0";
                             default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
@@ -526,7 +525,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("method".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };

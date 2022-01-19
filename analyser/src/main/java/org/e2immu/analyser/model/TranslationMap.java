@@ -46,4 +46,6 @@ public interface TranslationMap {
      LocalVariable translateLocalVariable(LocalVariable localVariable);
 
      boolean isEmpty();
+
+    boolean hasVariableTranslations();
 }

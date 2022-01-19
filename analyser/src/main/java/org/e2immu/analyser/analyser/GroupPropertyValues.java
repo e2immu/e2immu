@@ -14,12 +14,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class GroupPropertyValues {
 
@@ -54,6 +52,26 @@ public class GroupPropertyValues {
         Map<Variable, DV> vpMap = getMap(property);
         if (!vpMap.containsKey(variable)) {
             vpMap.put(variable, value);
+        }
+    }
+
+    public void translate(TranslationMap translationMap) {
+        for (Map<Variable, DV> dvMap : map.values()) {
+            Set<Variable> toRemove = null;
+            Map<Variable, DV> toAdd = null;
+            for (Map.Entry<Variable, DV> entry : dvMap.entrySet()) {
+                Variable translated = translationMap.translateVariable(entry.getKey());
+                if (!translated.equals(entry.getKey())) {
+                    if (!dvMap.containsKey(translated)) {
+                        if (toAdd == null) toAdd = new HashMap<>();
+                        toAdd.put(translated, entry.getValue());
+                    }
+                    if (toRemove == null) toRemove = new HashSet<>();
+                    toRemove.add(entry.getKey());
+                }
+            }
+            if (toRemove != null) dvMap.keySet().removeAll(toRemove);
+            if (toAdd != null) dvMap.putAll(toAdd);
         }
     }
 }

@@ -909,6 +909,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return pm;
     }
 
+    // FIXME the best value will come... after merging :-(
     private Expression bestValue(EvaluationContext evaluationContext, Variable variable) {
         Expression value = evaluationContext.currentValue(variable);
         if (value.isDelayed() && value instanceof DelayedVariableExpression) {
@@ -1050,7 +1051,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables);
+                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
     }
 
     /**
@@ -1094,7 +1095,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      Map<Variable, LinkedVariables> linkedVariablesMap,
                                                      Set<Variable> variablesWhereMergeOverwrites,
                                                      PrepareMerge prepareMerge,
-                                                     Set<Variable> setCnnVariables) {
+                                                     Set<Variable> setCnnVariables,
+                                                     TranslationMap translationMap) {
         // then, per cluster of variables
         // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
         // create looks at these+previous, minus those to be removed.
@@ -1119,6 +1121,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
         for (VariableInfoContainer vic : ignoredNotTouched) {
             vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+        }
+        if(translationMap.hasVariableTranslations()) {
+            groupPropertyValues.translate(translationMap);
         }
 
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,

@@ -69,6 +69,11 @@ public class TranslationMapImpl implements TranslationMap {
     }
 
     @Override
+    public boolean hasVariableTranslations() {
+        return !variables.isEmpty();
+    }
+
+    @Override
     public Expression translateExpression(Expression expression) {
         return Objects.requireNonNullElse(expressions.get(expression), expression).translate(this);
     }
