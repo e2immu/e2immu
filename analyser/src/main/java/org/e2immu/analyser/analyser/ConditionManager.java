@@ -281,7 +281,7 @@ public record ConditionManager(Expression condition,
      *
      * @return individual variables that appear in a top-level conjunction or disjunction as variable == null
      */
-    private static Set<Variable> findIndividualNull(Expression value,
+    public static Set<Variable> findIndividualNull(Expression value,
                                                     EvaluationContext evaluationContext,
                                                     Filter.FilterMode filterMode,
                                                     boolean requireEqualsNull) {

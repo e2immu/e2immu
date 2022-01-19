@@ -68,13 +68,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
                 .merge(statementAnalysis.stateData().conditionManagerForNextStatement.get().causesOfDelay());
         if (!escapeAlwaysExecuted.valueIsFalse()) {
-            Set<Variable> nullVariables = statementAnalysis.stateData().conditionManagerForNextStatement.get()
-                    .findIndividualNullInCondition(sharedState.evaluationContext(), true);
-            for (Variable nullVariable : nullVariables) {
-                log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-
-                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted.valueIsTrue());
-            }
             if (escapeAlwaysExecuted.valueIsTrue()) {
                 // escapeCondition should filter out all != null, == null clauses
                 Expression precondition = statementAnalysis.stateData().conditionManagerForNextStatement.get()
@@ -99,24 +92,6 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         }
         return DONE;
     }
-
-
-    private void ensureContextNotNullForParent(Variable nullVariable, CausesOfDelay delays, boolean notifyParent) {
-        // move from condition (x!=null) to property
-        VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-        if (!vic.hasEvaluation()) {
-            VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(location(), initial.getAssignmentIds(), initial.getReadId(),
-                    initial.getReadAtStatementTimes());
-            vic.setValue(initial.getValue(), initial.getLinkedVariables(),
-                    initial.getProperties(), false);
-        }
-        DV valueToSet = delays.isDone()
-                ? (notifyParent ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV)
-                : delays;
-        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, valueToSet, EVALUATION);
-    }
-
 
     /**
      * We recognize the following situations, looping over the local variables:

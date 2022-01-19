@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,52 +58,25 @@ and potentially already in the value as well. In the former, the state of 1 shou
 
  */
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
-
-    // TESTING ONLY!!
-    VariableInfoImpl mergeIntoNewObject(Expression stateOfDestination,
-                                        Expression postProcessState,
-                                        boolean atLeastOneBlockExecuted,
-                                        List<ConditionAndVariableInfo> mergeSources) {
-        return mergeIntoNewObject(stateOfDestination, postProcessState, null,
-                atLeastOneBlockExecuted, mergeSources, new GroupPropertyValues());
-    }
-
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
-
      */
     public VariableInfoImpl mergeIntoNewObject(Expression stateOfDestination,
                                                Expression postProcessState,
                                                Merge.ExpressionAndProperties overwriteValue,
                                                boolean atLeastOneBlockExecuted,
                                                List<ConditionAndVariableInfo> mergeSources,
-                                               GroupPropertyValues groupPropertyValues) {
+                                               GroupPropertyValues groupPropertyValues,
+                                               Set<Variable> toRemove) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
         new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
-                atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues);
+                atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, toRemove);
         return newObject;
     }
-
-    // test only!
-    void mergeIntoMe(Expression stateOfDestination,
-                     Expression postProcessState,
-                     boolean atLeastOneBlockExecuted,
-                     VariableInfoImpl previous,
-                     List<ConditionAndVariableInfo> mergeSources) {
-        mergeIntoMe(stateOfDestination, postProcessState, null, atLeastOneBlockExecuted,
-                previous, mergeSources, new GroupPropertyValues());
-    }
-
-    void mergeNonValueProperties(boolean existingValuesWillBeOverwritten,
-                                 VariableInfo previous,
-                                 List<ConditionAndVariableInfo> mergeSources) {
-        mergeNonValueProperties(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
-    }
-
 
     /**
      * We know that in each of the merge sources, the variable is either read or assigned to
@@ -113,7 +87,8 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<ConditionAndVariableInfo> mergeSources,
-                            GroupPropertyValues groupPropertyValues) {
+                            GroupPropertyValues groupPropertyValues,
+                            Set<Variable> toRemove) {
         assert atLeastOneBlockExecuted || previous != vi;
 
         Merge.ExpressionAndProperties mergeValue;
@@ -124,7 +99,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
-        Expression beforePostProcess = evaluationContext.replaceLocalVariables(mergeValue.expression());
+        Expression beforePostProcess = evaluationContext.removeVariablesFromValue(mergeValue.expression(), toRemove);
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
 

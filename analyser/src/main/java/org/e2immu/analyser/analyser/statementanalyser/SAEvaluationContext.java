@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
@@ -34,10 +35,7 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -491,6 +489,21 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
     @Override
     public int getFinalStatementTime() {
         return statementAnalysis.flowData().getTimeAfterSubBlocks();
+    }
+
+
+    // we replace the variable by their best value
+    // this best value should never have been merged, because we're removing variables only at the point where
+    // they go out of scope, which is always exactly one block (rather than multiple blocks -- even with "TRY"!)
+    @Override
+    public Expression removeVariablesFromValue(Expression value, Set<Variable> toRemove) {
+        TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
+        toRemove.stream()
+                .map(v -> statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()))
+                .filter(Objects::nonNull)
+                .forEach(vic -> addToTranslationMapBuilder(vic, translationMap));
+        if (translationMap.isEmpty()) return value;
+        return value.translate(translationMap.build());
     }
 
     /*

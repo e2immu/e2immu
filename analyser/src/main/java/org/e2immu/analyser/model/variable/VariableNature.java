@@ -26,20 +26,30 @@ public interface VariableNature {
         return METHOD_WIDE;
     }
 
+    // WHO? variables created in a block eval (TRY, INSTANCE-OF, LOOP)
+    // where: copy to next statement
     default boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
         return false;
     }
 
+    // WHO? all variables created in the block eval (TRY, INSTANCE-OF, LOOP), or inside the block (NORMAL)
+    // or VAR-IN-LOOP-DEF-OUTSIDE
+    // used to prevent propagation + currently in isReplaceVariable
     default String getStatementIndexOfBlockVariable() {
         return null;
     }
 
-    default boolean acceptForSubBlockMerging(String index) {
-        return true;
+    // WHO? block eval (TRY, INSTANCE-OF, LOOP), NORMAL in block, but not VAR-IN-LOOP-DEF-OUTSIDE
+    // used in merge action
+    default boolean removeInSubBlockMerge(String index) {
+        return false;
     }
 
-    default boolean acceptVariableForMerging(String index) {
-        return true;
+    // WHO? block eval (TRY, INSTANCE-OF, LOOP) -- NORMAL in block and VAR-IN-LOOP-DEF-OUTSIDE must
+    // have been accessed in the sub-block, by definition.
+    // used in merge action
+    default boolean removeInMerge(String index) {
+        return false;
     }
 
     NormalLocalVariable METHOD_WIDE = new NormalLocalVariable();
@@ -70,8 +80,8 @@ public interface VariableNature {
         }
 
         @Override
-        public boolean acceptForSubBlockMerging(String index) {
-            return parentBlockIndex.isEmpty() || index.startsWith(parentBlockIndex + ".");
+        public boolean removeInSubBlockMerge(String index) {
+            return index.equals(parentBlockIndex);
         }
     }
 
@@ -113,8 +123,13 @@ public interface VariableNature {
         }
 
         @Override
-        public boolean acceptForSubBlockMerging(String index) {
+        public boolean removeInSubBlockMerge(String index) {
             return VariableNature.inSubBlockOf(parentBlockIndex, index);
+        }
+
+        @Override
+        public boolean removeInMerge(String index) {
+            return index.equals(parentBlockIndex);
         }
 
         @Override
@@ -137,13 +152,13 @@ public interface VariableNature {
         }
 
         @Override
-        public boolean acceptForSubBlockMerging(String index) {
+        public boolean removeInSubBlockMerge(String index) {
             return VariableNature.inSubBlockOf(statementIndex, index);
         }
 
         @Override
-        public boolean acceptVariableForMerging(String index) {
-            return !index.equals(statementIndex);
+        public boolean removeInMerge(String index) {
+            return index.equals(statementIndex);
         }
 
         @Override
@@ -188,8 +203,13 @@ public interface VariableNature {
         }
 
         @Override
-        public boolean acceptForSubBlockMerging(String index) {
+        public boolean removeInSubBlockMerge(String index) {
             return VariableNature.inSubBlockOf(statementIndex, index);
+        }
+
+        @Override
+        public boolean removeInMerge(String index) {
+            return index.equals(statementIndex);
         }
 
         @Override

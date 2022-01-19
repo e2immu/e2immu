@@ -20,10 +20,12 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public record Merge(EvaluationContext evaluationContext,
                     VariableInfoContainer vic) {
@@ -44,7 +46,8 @@ public record Merge(EvaluationContext evaluationContext,
                             ExpressionAndProperties overwriteValue,
                             boolean atLeastOneBlockExecuted,
                             List<ConditionAndVariableInfo> mergeSources,
-                            GroupPropertyValues groupPropertyValues) {
+                            GroupPropertyValues groupPropertyValues,
+                            Set<Variable> toRemove) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         VariableInfoContainerImpl vici = (VariableInfoContainerImpl) vic;
@@ -58,13 +61,13 @@ public record Merge(EvaluationContext evaluationContext,
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing);
             VariableInfoImpl vii = mergeHelper.mergeIntoNewObject(stateOfDestination,
                     postProcess, overwriteValue, atLeastOneBlockExecuted,
-                    mergeSources, groupPropertyValues);
+                    mergeSources, groupPropertyValues, toRemove);
             vici.setMerge(vii);
         } else {
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
             mergeHelper.mergeIntoMe(stateOfDestination,
                     postProcess, overwriteValue, atLeastOneBlockExecuted, existing,
-                    mergeSources, groupPropertyValues);
+                    mergeSources, groupPropertyValues, toRemove);
         }
         return vici.getMerge().getValue();
     }

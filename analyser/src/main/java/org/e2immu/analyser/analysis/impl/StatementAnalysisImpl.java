@@ -836,36 +836,75 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return candidateVariablesForNullPtrWarning.stream();
     }
 
+    /**
+     * @param toMerge  variables which will go through the merge process, they will get a -M VariableInfo
+     * @param toIgnore variables to be ignored by the merge process, they will not get a -M VariableInfo
+     * @param toRemove references to these variables (in value, in scope of field ref) will be replaced by Instance objects
+     */
     private record PrepareMerge(List<VariableInfoContainer> toMerge,
-                                List<VariableInfoContainer> toIgnore) {
+                                List<VariableInfoContainer> toIgnore,
+                                Set<Variable> toRemove) {
         public PrepareMerge() {
-            this(new LinkedList<>(), new LinkedList<>());
+            this(new LinkedList<>(), new LinkedList<>(), new HashSet<>());
         }
     }
 
-    private PrepareMerge mergeActions(List<ConditionAndLastStatement> lastStatements) {
+    // as a general remark: This and ReturnVariable variables are always merged, never removed
+    private PrepareMerge mergeActions(List<ConditionAndLastStatement> lastStatements,
+                                      Set<Variable> mergeEvenIfNotInSubBlocks) {
         PrepareMerge pm = new PrepareMerge();
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
-        // we want to see them only once, though
+        // we want to deal with them only once, though.
         Set<Variable> seen = new HashSet<>();
-        mergeAction(pm, seen, variables.stream().map(Map.Entry::getValue), vn -> vn.acceptVariableForMerging(index));
-        Stream<VariableInfoContainer> stream = lastStatements.stream()
-                .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue));
-        mergeAction(pm, seen, stream, vn -> vn.acceptForSubBlockMerging(index));
+        Map<Variable, VariableInfoContainer> useVic = variables.stream()
+                .collect(Collectors.toUnmodifiableMap(e -> e.getValue().current().variable(), Map.Entry::getValue));
+
+        // first group: variables seen in any of the sub blocks.
+        // this includes those that do not exist at the top-level, i.e., they're local to the sub-blocks
+        // they should never bubble up
+        // variables in loop defined outside will be merged, and receive a special value in "replaceLocalVariables"
+        // field references with a scope which needs to be removed, should equally be removed
+        //
+        // if recognized: remove (into remove+ignore), otherwise merge
+        // we must add the VIC of the current statement, if it exists!
+        Stream<VariableInfoContainer> fromSubBlocks = lastStatements.stream()
+                .flatMap(st -> st.lastStatement().getStatementAnalysis().rawVariableStream().map(Map.Entry::getValue))
+                .filter(vic -> vic.hasBeenAccessedInThisBlock(index));
+        mergeAction(pm, seen, fromSubBlocks, vn -> vn.removeInSubBlockMerge(index), v -> true, useVic);
+
+        // second group: those that exist at the block level, and were not present in any of the sub-blocks
+        // (because of the "seen" map variables from the sub-blocks are ignored)
+        //
+        // should be removed and not merged: any variable created in this top level, such as
+        // loop variables of for-each, for with LVC, try resource, instance-of pattern
+        // variables in loop defined outside must have been accessed in the sub-block, by definition
+        //
+        // normal variables not accessed in the block, defined before the block, can be ignored
+        //
+        // if recognized: remove (into remove+ignore), otherwise ignore
+        Stream<VariableInfoContainer> atTopLevel = variables.stream().map(Map.Entry::getValue);
+        mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), mergeEvenIfNotInSubBlocks::contains, null);
+
         return pm;
     }
 
     private void mergeAction(PrepareMerge prepareMerge,
                              Set<Variable> seen,
                              Stream<VariableInfoContainer> stream,
-                             Predicate<VariableNature> predicate) {
+                             Predicate<VariableNature> remove,
+                             Predicate<Variable> mergeWhenNotRemove,
+                             Map<Variable, VariableInfoContainer> useVic) {
         stream.forEach(vic -> {
             Variable variable = vic.current().variable();
+            VariableInfoContainer vicToAdd = useVic == null ? vic : useVic.getOrDefault(variable, vic);
             if (seen.add(variable)) {
-                if (predicate.test(vic.variableNature())) {
-                    prepareMerge.toMerge.add(vic);
+                if (remove.test(vic.variableNature())) {
+                    prepareMerge.toIgnore.add(vicToAdd);
+                    prepareMerge.toRemove.add(variable);
+                } else if (mergeWhenNotRemove.test(variable)) {
+                    prepareMerge.toMerge.add(vicToAdd);
                 } else {
-                    prepareMerge.toIgnore.add(vic);
+                    prepareMerge.toIgnore.add(vicToAdd);
                 }
             }
         });
@@ -884,20 +923,22 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      * @param lastStatements          the last statement of each of the blocks
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param statementTime           the statement time of subBlocks
+     * @param setCnnVariables         variables that should receive CNN >= ENN because of escape in sub-block
      */
     public AnalysisStatus mergeVariablesFromSubBlocks(EvaluationContext evaluationContext,
                                                       Expression stateOfConditionManagerBeforeExecution,
                                                       Expression postProcessState,
                                                       List<ConditionAndLastStatement> lastStatements,
                                                       boolean atLeastOneBlockExecuted,
-                                                      int statementTime) {
+                                                      int statementTime,
+                                                      Set<Variable> setCnnVariables) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
         // we copy to a list, because we may be adding variables (ConditionalInitialization copies)
-        PrepareMerge prepareMerge = mergeActions(lastStatements);
+        PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables);
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
 
@@ -923,7 +964,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 try {
                     Merge merge = new Merge(evaluationContext, destination);
                     merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, overwriteValue,
-                            atLeastOneBlockExecuted, toMerge, groupPropertyValues);
+                            atLeastOneBlockExecuted, toMerge, groupPropertyValues, prepareMerge.toRemove);
 
                     LinkedVariables linkedVariables = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables())
                             .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
@@ -952,19 +993,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     groupPropertyValues.set(property, variable, current.getProperty(property));
                 }
             }
-
-            // CNN_FOR_PARENT overwrite; see Basics_14, from throws statement back to condition
-            contextNotNullForParent(lastStatements, groupPropertyValues, fqn);
         }
 
+        // these variables were not accessed in the block, or were removed
         for (VariableInfoContainer vic : prepareMerge.toIgnore) {
             VariableInfo current = vic.current();
-            for (Property property : GroupPropertyValues.PROPERTIES) {
-                groupPropertyValues.set(property, current.variable(), current.getProperty(property));
+            if (!prepareMerge.toRemove.contains(current.variable())) {
+                for (Property property : GroupPropertyValues.PROPERTIES) {
+                    groupPropertyValues.set(property, current.variable(), current.getProperty(property));
+                }
             }
         }
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites);
+                variablesWhereMergeOverwrites, prepareMerge.toRemove, setCnnVariables);
     }
 
     /**
@@ -999,27 +1040,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
     }
 
-    private void contextNotNullForParent(List<ConditionAndLastStatement> lastStatements, GroupPropertyValues groupPropertyValues, String fqn) {
-        lastStatements.stream().filter(cal -> cal.lastStatement().getStatementAnalysis().variableIsSet(fqn)).forEach(cal -> {
-            VariableInfoContainer calVic = cal.lastStatement().getStatementAnalysis().getVariable(fqn);
-            VariableInfo calVi = calVic.best(EVALUATION);
-            DV cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT, null);
-            if (cnn4Parent != null) {
-                // we copy, delayed or not!
-                groupPropertyValues.set(Property.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
-            }
-        });
-    }
-
     private AnalysisStatus linkingAndGroupProperties(EvaluationContext evaluationContext,
                                                      GroupPropertyValues groupPropertyValues,
                                                      Map<Variable, LinkedVariables> linkedVariablesMap,
-                                                     Set<Variable> variablesWhereMergeOverwrites) {
+                                                     Set<Variable> variablesWhereMergeOverwrites,
+                                                     Set<Variable> toRemove,
+                                                     Set<Variable> setCnnVariables) {
         // then, per cluster of variables
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                (vic, v) -> !linkedVariablesMap.containsKey(v),
+                (vic, v) -> !linkedVariablesMap.containsKey(v) || toRemove.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
         computeLinkedVariables.writeLinkedVariables(this::isLoopVariableWillDisappearInNextStatement);
@@ -1027,8 +1058,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
 
+
+        Map<Variable, DV> cnnMap = groupPropertyValues.getMap(CONTEXT_NOT_NULL);
+        for (Variable setCnn : setCnnVariables) {
+            cnnMap.merge(setCnn, MultiLevel.EFFECTIVELY_NOT_NULL_DV, DV::max);
+        }
         CausesOfDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
-                groupPropertyValues.getMap(CONTEXT_NOT_NULL));
+                cnnMap);
 
         CausesOfDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));

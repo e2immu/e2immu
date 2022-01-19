@@ -14,13 +14,11 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,6 +55,13 @@ public interface VariableInfoContainer {
 
     default boolean isReadInThisStatement() {
         return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
+    }
+
+    default boolean hasBeenAccessedInThisBlock(String blockIndex) {
+        VariableInfo current = current();
+        String subBlock = blockIndex + ".";
+        if (subBlock.compareTo(current.getReadId()) < 0) return true;
+        return subBlock.compareTo(current.getAssignmentIds().getLatestAssignment()) < 0;
     }
 
     void setLinkedVariables(LinkedVariables linkedVariables, Level level);
@@ -139,12 +144,12 @@ public interface VariableInfoContainer {
     /**
      * set the property at the correct level
      *
-     * @param property the property
-     * @param value its value
+     * @param property                              the property
+     * @param value                                 its value
      * @param doNotFailWhenTryingToWriteALowerValue do not complain when the new value is worse (delay vs non-delay,
      *                                              lower) than the current value. Used in Enum_1 for the CONTAINER property
      *                                              which starts off FALSE on the parameter, and ends up TRUE in EVAL later
-     * @param level the level to write
+     * @param level                                 the level to write
      */
     void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Level level);
 
@@ -162,6 +167,7 @@ public interface VariableInfoContainer {
 
     /**
      * Mostly for debugging
+     *
      * @return if you access previous, do you get to EVAL or MERGE?
      */
     Level getLevelForPrevious();

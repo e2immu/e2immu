@@ -269,6 +269,10 @@ public interface EvaluationContext {
         return expression;
     }
 
+    default Expression removeVariablesFromValue(Expression value, Set<Variable> toRemove) {
+        return value;
+    }
+
     default Expression acceptAndTranslatePrecondition(Expression rest) {
         return null;
     }

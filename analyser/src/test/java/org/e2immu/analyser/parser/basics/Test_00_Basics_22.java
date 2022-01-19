@@ -41,7 +41,7 @@ public class Test_00_Basics_22 extends CommonTestRunner {
                 if ("byteArrayOutputStream".equals(d.variableName())) {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource tryResource) {
                         assertEquals("1.0.0", tryResource.statementIndex());
-                        assertFalse(tryResource.acceptForSubBlockMerging("1"));
+                        assertFalse(tryResource.removeInSubBlockMerge("1"));
                     } else fail();
                 }
                 if (d.variable() instanceof ReturnVariable) {

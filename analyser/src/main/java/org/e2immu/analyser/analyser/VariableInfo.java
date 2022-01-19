@@ -115,7 +115,6 @@ public interface VariableInfo {
 
     List<MergeOp> MERGE = List.of(
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::maxIgnoreDelay, DV.MIN_INT_DV),
             new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
@@ -135,7 +134,6 @@ public interface VariableInfo {
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
 
-            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, DV::max, DV.MIN_INT_DV),
             new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(CONTEXT_NOT_NULL, DV::max, CONTEXT_NOT_NULL.falseDv),

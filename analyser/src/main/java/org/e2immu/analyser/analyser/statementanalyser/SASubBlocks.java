@@ -22,6 +22,7 @@ import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -111,6 +112,14 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
                 return lastStatement.flowData().interruptStatus().equals(FlowData.ALWAYS)
                         && !lastStatement.flowData().alwaysEscapesViaException();
+            }
+            return false;
+        }
+
+        public boolean escapesWithPrecondition() {
+            if (!execution.equals(FlowData.NEVER) && startOfBlock != null) {
+                StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
+                return lastStatement.flowData().alwaysEscapesViaException();
             }
             return false;
         }
@@ -213,11 +222,12 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
 
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
+            Set<Variable> setCnnVariables = addToContextNotNullAfterStatement(evaluationContext, executions);
 
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
                     sharedState.localConditionManager().state(), addToStateAfterStatement,
-                    lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
+                    lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape, setCnnVariables);
             analysisStatus = analysisStatus.combine(copyStatus);
 
             // compute the escape situation of the sub-blocks
@@ -236,7 +246,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             Expression postProcessState = new BooleanConstant(statementAnalysis.primitives(), true);
             AnalysisStatus copyStatus = ((StatementAnalysisImpl) statementAnalysis).mergeVariablesFromSubBlocks(evaluationContext,
-                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime);
+                    sharedState.localConditionManager().state(), postProcessState, List.of(), false, maxTime, Set.of());
             analysisStatus = analysisStatus.combine(copyStatus);
         }
 
@@ -297,6 +307,41 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
                 list.stream().allMatch(e -> (e.execution.equals(FlowData.CONDITIONALLY) || e.execution.isDelayed())
                         && e.startOfBlock != null);
+    }
+
+    private Set<Variable> addToContextNotNullAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+        if (statementAnalysis.statement() instanceof IfElseStatement) {
+            ExecutionOfBlock e0 = list.get(0);
+            if (list.size() == 1) {
+                if (e0.escapesWithPrecondition()) {
+                    return findNotNullVariablesIn(evaluationContext, list.get(0).condition);
+                }
+                return Set.of();
+            }
+            if (list.size() == 2) {
+                ExecutionOfBlock e1 = list.get(1);
+                boolean escape1 = e1.escapesAlwaysButNotWithPrecondition();
+                if (e0.escapesAlwaysButNotWithPrecondition()) {
+                    if (escape1) {
+                        // both if and else escape; no point!
+                        return Set.of();
+                    }
+                    // if escapes
+                    return findNotNullVariablesIn(evaluationContext, list.get(1).condition);
+                }
+                if (escape1) {
+                    // else escapes
+                    return findNotNullVariablesIn(evaluationContext, list.get(0).condition);
+                }
+                return Set.of();
+            }
+            throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
+        }
+        return Set.of();
+    }
+
+    private Set<Variable> findNotNullVariablesIn(EvaluationContext evaluationContext, Expression condition) {
+        return ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
     }
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {

@@ -67,7 +67,6 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
                         assertDv(d, MultiLevel.MUTABLE_DV, CONTEXT_IMMUTABLE);
-                        assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL_FOR_PARENT);
                     }
                 }
             }
@@ -88,7 +87,6 @@ public class Test_00_Basics_14 extends CommonTestRunner {
 
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL_FOR_PARENT);
                     } else {
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }

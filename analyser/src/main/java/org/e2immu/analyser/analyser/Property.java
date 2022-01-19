@@ -54,9 +54,6 @@ public enum Property {
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE_DV, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV,
             MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL),
 
-    CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE_DV,
-            MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL_DV, MultiLevel.NULLABLE_DV, CauseOfDelay.Cause.CONTEXT_NOT_NULL_FOR_PARENT),
-
     /*
     @E2Immutable, @E1Immutable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.
