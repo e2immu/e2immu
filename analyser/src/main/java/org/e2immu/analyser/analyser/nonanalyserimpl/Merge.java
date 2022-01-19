@@ -20,12 +20,11 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public record Merge(EvaluationContext evaluationContext,
                     VariableInfoContainer vic) {
@@ -41,17 +40,18 @@ public record Merge(EvaluationContext evaluationContext,
         }
     }
 
-    public Expression merge(Expression stateOfDestination,
-                            Expression postProcessState,
-                            ExpressionAndProperties overwriteValue,
-                            boolean atLeastOneBlockExecuted,
-                            List<ConditionAndVariableInfo> mergeSources,
-                            GroupPropertyValues groupPropertyValues,
-                            Set<Variable> toRemove) {
+    public void merge(Expression stateOfDestination,
+                      Expression postProcessState,
+                      ExpressionAndProperties overwriteValue,
+                      boolean atLeastOneBlockExecuted,
+                      List<ConditionAndVariableInfo> mergeSources,
+                      GroupPropertyValues groupPropertyValues,
+                      TranslationMap translationMap) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         VariableInfoContainerImpl vici = (VariableInfoContainerImpl) vic;
 
+        // note: in case of a rename operation, the vici/vic .prevInitial.variable is the renamed variable
         assert vici.canMerge() : "For variable " + vic.getPreviousOrInitial().variable().fullyQualifiedName();
 
         Expression postProcess = activate(postProcessState, evaluationContext);
@@ -61,15 +61,14 @@ public record Merge(EvaluationContext evaluationContext,
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, existing);
             VariableInfoImpl vii = mergeHelper.mergeIntoNewObject(stateOfDestination,
                     postProcess, overwriteValue, atLeastOneBlockExecuted,
-                    mergeSources, groupPropertyValues, toRemove);
+                    mergeSources, groupPropertyValues, translationMap);
             vici.setMerge(vii);
         } else {
             MergeHelper mergeHelper = new MergeHelper(evaluationContext, vici.getMerge());
             mergeHelper.mergeIntoMe(stateOfDestination,
                     postProcess, overwriteValue, atLeastOneBlockExecuted, existing,
-                    mergeSources, groupPropertyValues, toRemove);
+                    mergeSources, groupPropertyValues, translationMap);
         }
-        return vici.getMerge().getValue();
     }
 
     // post-processing the state is only done under certain limited conditions, currently ONLY to

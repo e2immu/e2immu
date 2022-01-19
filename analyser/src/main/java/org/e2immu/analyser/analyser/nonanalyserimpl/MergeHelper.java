@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -67,19 +68,22 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                                                boolean atLeastOneBlockExecuted,
                                                List<ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues,
-                                               Set<Variable> toRemove) {
+                                               TranslationMap translationMap) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
         String mergedReadId = mergedReadId(vi.getReadId(), mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(evaluationContext.getLocation(),
                 vi.variable(), mergedAssignmentIds, mergedReadId);
         new MergeHelper(evaluationContext, newObject).mergeIntoMe(stateOfDestination, postProcessState, overwriteValue,
-                atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, toRemove);
+                atLeastOneBlockExecuted, vi, mergeSources, groupPropertyValues, translationMap);
         return newObject;
     }
 
     /**
-     * We know that in each of the merge sources, the variable is either read or assigned to
+     * We know that in each of the merge sources, the variable is either read or assigned to.
+     * <p>
+     * In case of a rename operation, "me" is a new VII object; the mergeSources still have VI's
+     * that point to the old variable.
      */
     public void mergeIntoMe(Expression stateOfDestination,
                             Expression postProcessState,
@@ -88,7 +92,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                             VariableInfoImpl previous,
                             List<ConditionAndVariableInfo> mergeSources,
                             GroupPropertyValues groupPropertyValues,
-                            Set<Variable> toRemove) {
+                            TranslationMap translationMap) {
         assert atLeastOneBlockExecuted || previous != vi;
 
         Merge.ExpressionAndProperties mergeValue;
@@ -99,7 +103,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
                     .mergeValue(stateOfDestination, atLeastOneBlockExecuted, mergeSources);
         }
         // replaceLocalVariables is based on a translation
-        Expression beforePostProcess = evaluationContext.removeVariablesFromValue(mergeValue.expression(), toRemove);
+        Expression beforePostProcess;
+        if (!translationMap.isEmpty()) {
+            beforePostProcess = mergeValue.expression().translate(translationMap);
+        } else {
+            beforePostProcess = mergeValue.expression();
+        }
+
         // postProcess, if applied, uses evaluation in a child context
         Expression mergedValue = postProcess(evaluationContext, beforePostProcess, postProcessState);
 

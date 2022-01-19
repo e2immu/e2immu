@@ -48,21 +48,23 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 if ("cd".equals(d.variableName())) {
                     assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "properties".equals(fr.fieldInfo.name)
-                        && "cd".equals(fr.scope.toString())) {
-                    assertEquals("cd", fr.scope.toString());
-                    assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
-                    if ("0.0.1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:properties>" : "nullable instance type Map<String,Integer>";
+                if (d.variable() instanceof FieldReference fr && "properties".equals(fr.fieldInfo.name)) {
+                    if ("cd".equals(fr.scope.toString())) {
+                        assertEquals("cd", fr.scope.toString());
+                        assertTrue(d.statementId().startsWith("0.0"), "Seen in " + d.statementId());
+                        if ("0.0.1.0.1".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<f:properties>" : "nullable instance type Map<String,Integer>";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else if ("changeData.get(\"abc\")".equals(fr.scope.toString())) {
+                        // this copy is allowed to live on! it cannot exist in iteration 0
+                        assertTrue(d.iteration() > 0);
+                        String expected = "nullable instance type Map<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
+                    } else {
+                        assertEquals("<replace:ChangeData>", fr.scope.toString());
+                        // FIXME what to do with this lingering variable?
                     }
-                }
-                if (d.variable() instanceof FieldReference fr && "properties".equals(fr.fieldInfo.name)
-                        && "changeData.get(\"abc\")".equals(fr.scope.toString())) {
-                    // this copy is allowed to live on! it cannot exist in iteration 0
-                    assertTrue(d.iteration() > 0);
-                    String expected = "nullable instance type Map<String,Integer>";
-                    assertEquals(expected, d.currentValue().toString());
                 }
             }
         };
@@ -71,6 +73,4 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
-
-    // FIXME make variant where the scope is an "instance" instead of a nice value
 }
