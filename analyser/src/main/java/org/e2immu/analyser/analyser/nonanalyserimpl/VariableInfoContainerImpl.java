@@ -371,6 +371,39 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
+    // when a block changes to Execution.NEVER (see e.g. EvaluateToConstant)
+    @Override
+    public void copyAllFromPreviousOrEvalIntoMergeIfMergeExists() {
+        if(hasMerge()) {
+            VariableInfo best = best(Level.EVALUATION);
+            VariableInfoImpl mergeImpl = merge.get();
+            mergeImpl.setValue(best.getValue());
+            mergeImpl.setLinkedVariables(best.getLinkedVariables());
+            best.getProperties().forEach(mergeImpl::setProperty);
+        }
+    }
+
+    @Override
+    public void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues) {
+        assert hasMerge();
+        VariableInfo eval = best(Level.EVALUATION);
+        Variable v = eval.variable();
+        VariableInfoImpl mergeImpl = merge.get();
+        mergeImpl.setValue(eval.getValue());
+
+        eval.propertyStream()
+                .forEach(e -> {
+                    Property vp = e.getKey();
+                    DV value = e.getValue();
+                    if (GroupPropertyValues.PROPERTIES.contains(vp)) {
+                        groupPropertyValues.set(vp, v, value);
+                    } else {
+                        assert !EvaluationContext.VALUE_PROPERTIES.contains(vp) || eval.getValue().isDelayed() || value.isDone();
+                        mergeImpl.setProperty(vp, value);
+                    }
+                });
+    }
+
     @Override
     public void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues) {
         assert hasMerge();

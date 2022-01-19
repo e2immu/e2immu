@@ -995,17 +995,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             }
         }
 
-        // these variables were not accessed in the block, or were removed
-        for (VariableInfoContainer vic : prepareMerge.toIgnore) {
-            VariableInfo current = vic.current();
-            if (!prepareMerge.toRemove.contains(current.variable())) {
-                for (Property property : GroupPropertyValues.PROPERTIES) {
-                    groupPropertyValues.set(property, current.variable(), current.getProperty(property));
-                }
-            }
-        }
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
-                variablesWhereMergeOverwrites, prepareMerge.toRemove, setCnnVariables);
+                variablesWhereMergeOverwrites, prepareMerge, setCnnVariables);
     }
 
     /**
@@ -1044,7 +1035,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                      GroupPropertyValues groupPropertyValues,
                                                      Map<Variable, LinkedVariables> linkedVariablesMap,
                                                      Set<Variable> variablesWhereMergeOverwrites,
-                                                     Set<Variable> toRemove,
+                                                     PrepareMerge prepareMerge,
                                                      Set<Variable> setCnnVariables) {
         // then, per cluster of variables
         // which variables should we consider? linkedVariablesMap provides the linked variables from the sub-blocks
@@ -1053,19 +1044,27 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
         Set<Variable> touched = Stream.concat(linkedVariablesMap.keySet().stream(),
                         linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream()))
-                .filter(v -> !toRemove.contains(v))
+                .filter(v -> !prepareMerge.toRemove.contains(v))
                 .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
+        computeLinkedVariables.writeLinkedVariables(touched, prepareMerge.toRemove);
 
-
-        computeLinkedVariables.writeLinkedVariables(touched, toRemove);
+        HashSet<Variable> touchedNotMerged = new HashSet<>(touched);
+        touchedNotMerged.removeAll(linkedVariablesMap.keySet());
+        for (Variable variable : touchedNotMerged) {
+            variables.get(variable.fullyQualifiedName()).copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+        }
+        HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
+        ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
+        for(VariableInfoContainer vic: ignoredNotTouched) {
+            vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+        }
 
         CausesOfDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
-
 
         Map<Variable, DV> cnnMap = groupPropertyValues.getMap(CONTEXT_NOT_NULL);
         for (Variable setCnn : setCnnVariables) {

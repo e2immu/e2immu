@@ -160,6 +160,10 @@ public interface VariableInfoContainer {
      */
     void copy();
 
+    void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);
+
+    void copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
+
     void ensureEvaluation(Location location,
                           AssignmentIds assignmentIds,
                           String readId,
