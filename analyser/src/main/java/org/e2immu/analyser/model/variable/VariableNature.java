@@ -28,8 +28,14 @@ public interface VariableNature {
 
     // WHO? variables created in a block eval (TRY, INSTANCE-OF, LOOP)
     // where: copy to next statement
-    default boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+    default boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
         return false;
+    }
+
+    // WHO? all variables created in the block eval (TRY, INSTANCE-OF, LOOP)
+    // used for warning about unused variables
+    default String definedInBlock() {
+        return null;
     }
 
     // WHO? all variables created in the block eval (TRY, INSTANCE-OF, LOOP), or inside the block (NORMAL)
@@ -81,7 +87,7 @@ public interface VariableNature {
 
         @Override
         public boolean removeInSubBlockMerge(String index) {
-            return index.equals(parentBlockIndex);
+            return VariableNature.computeRemoveInSubBlockMerge(parentBlockIndex, index);
         }
     }
 
@@ -95,8 +101,13 @@ public interface VariableNature {
 
     }
 
-    private static boolean inSubBlockOf(String parentBlockIndex, String index) {
-        return index.startsWith(parentBlockIndex + ".");
+    /*
+    Variables that live in the whole method, like This or ReturnVariable, are never removed.
+    Variables defined in a block, e.g. 1.0.0, are removed in merges for 1.0.0, 1, 2.0, but not 1.0.0.0.1
+     */
+    private static boolean computeRemoveInSubBlockMerge(String definingBlock, String index) {
+        if (definingBlock.isEmpty()) return false;
+        return !index.startsWith(definingBlock + ".");
     }
 
     /*
@@ -118,13 +129,18 @@ public interface VariableNature {
         }
 
         @Override
-        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+        public String definedInBlock() {
+            return parentBlockIndex;
+        }
+
+        @Override
+        public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
             return !StringUtil.inScopeOf(scope, index);
         }
 
         @Override
         public boolean removeInSubBlockMerge(String index) {
-            return VariableNature.inSubBlockOf(parentBlockIndex, index);
+            return VariableNature.computeRemoveInSubBlockMerge(parentBlockIndex, index);
         }
 
         @Override
@@ -147,13 +163,13 @@ public interface VariableNature {
     record LoopVariable(String statementIndex) implements VariableNature {
 
         @Override
-        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+        public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
             return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex));
         }
 
         @Override
         public boolean removeInSubBlockMerge(String index) {
-            return VariableNature.inSubBlockOf(statementIndex, index);
+            return VariableNature.computeRemoveInSubBlockMerge(statementIndex, index);
         }
 
         @Override
@@ -163,6 +179,11 @@ public interface VariableNature {
 
         @Override
         public String getStatementIndexOfBlockVariable() {
+            return statementIndex;
+        }
+
+        @Override
+        public String definedInBlock() {
             return statementIndex;
         }
     }
@@ -198,13 +219,14 @@ public interface VariableNature {
      */
     record TryResource(String statementIndex) implements VariableNature {
         @Override
-        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            return !index.startsWith(statementIndex + ".0.");
+        public boolean doNotCopyToNextStatement(String indexOfPrevious, String index) {
+            return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex))
+                    || !index.startsWith(statementIndex + ".0.");
         }
 
         @Override
         public boolean removeInSubBlockMerge(String index) {
-            return VariableNature.inSubBlockOf(statementIndex, index);
+            return VariableNature.computeRemoveInSubBlockMerge(statementIndex, index);
         }
 
         @Override
@@ -214,6 +236,11 @@ public interface VariableNature {
 
         @Override
         public String getStatementIndexOfBlockVariable() {
+            return statementIndex;
+        }
+
+        @Override
+        public String definedInBlock() {
             return statementIndex;
         }
     }

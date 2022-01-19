@@ -559,7 +559,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                              Variable variable,
                                              boolean previousIsParent,
                                              String indexOfPrevious) {
-        if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) return true;
+        if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
         // but what if we have a field access on one such variable? check recursively!
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr
@@ -1059,7 +1059,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
-        for(VariableInfoContainer vic: ignoredNotTouched) {
+        for (VariableInfoContainer vic : ignoredNotTouched) {
             vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
         }
 
@@ -1504,10 +1504,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
 
-        if (vic.variableNature() instanceof VariableNature.LoopVariable loopVariable) {
-            // a loop variable is not merged back to its defining level, so it is local to this block
-            // exactly when the parent is the defining statement
-            return parent != null && loopVariable.statementIndex().equals(parent.index());
+        String definedInBlock = vic.variableNature().definedInBlock();
+        if (definedInBlock != null) {
+            return definedInBlock.equals(parent.index());
         }
 
         if (parent == null) return true;
