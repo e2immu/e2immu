@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
@@ -63,5 +64,10 @@ public record MultiExpression(Expression... expressions) {
 
     public boolean isEmpty() {
         return expressions.length == 0;
+    }
+
+    public MultiExpression translate(TranslationMap translationMap) {
+        return new MultiExpression(Arrays.stream(expressions)
+                .map(e -> e.translate(translationMap)).toArray(Expression[]::new));
     }
 }

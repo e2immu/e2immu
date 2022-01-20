@@ -28,6 +28,8 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements Expression, IsVariableExpression {
@@ -89,15 +91,12 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return new DelayedVariableExpression(msg, msg, variable, causesOfDelay);
     }
 
-    public static Expression forVariableReEvaluation(ParameterInfo parameterInfo) {
-        String msg = "<re-eval:" + parameterInfo.simpleName() + ">";
-        return new DelayedVariableExpression(msg, msg, parameterInfo, CausesOfDelay.EMPTY);
-    }
-
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.
     Basics7 shows a case where the local condition manager goes from true to false depending on this equality.
+
+    requires special translate and re-evaluate!
      */
 
     @Override
@@ -169,29 +168,25 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         return causesOfDelay;
     }
 
+    // special treatment because of == equality.
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression replace = translationMap.directExpression(this);
-        if (replace != null && replace != this) return replace;
-        if (variable instanceof FieldReference fr && fr.scope != null) {
-            Expression replaceScope = fr.scope.translate(translationMap);
-            if (replaceScope != null && replaceScope != fr.scope) {
-                FieldReference newRef = new FieldReference(fr, replaceScope);
-                return new DelayedVariableExpression(msg, debug, newRef, causesOfDelay);
-            }
-        }
-        return this;
+        return Objects.requireNonNullElse(translationMap.translateDelayedVariableNullIfNotTranslated(variable), this);
     }
 
+    // special treatment because of == equality
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        Expression translated = translation.get(this);
+        Optional<Map.Entry<Expression, Expression>> found = translation.entrySet().stream()
+                .filter(e -> e.getKey() instanceof VariableExpression ve && ve.variable().equals(variable))
+                .findFirst();
         Expression result;
-        if (translated != null) {
-            result = translated;
+        if (found.isPresent()) {
+            result = found.get().getValue();
         } else if (variable instanceof FieldReference fr && fr.scope != null) {
-            Expression replaceScope = translation.get(fr.scope);
-            if (replaceScope != null && replaceScope != fr.scope) {
+            EvaluationResult reEval = fr.scope.reEvaluate(evaluationContext, translation); // recurse
+            Expression replaceScope = reEval.getExpression();
+            if (!replaceScope.equals(fr.scope)) {
                 FieldReference newRef = new FieldReference(fr, replaceScope);
                 result = new DelayedVariableExpression(msg, debug, newRef, causesOfDelay);
             } else {

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -43,14 +44,17 @@ public class TranslationMapImpl implements TranslationMap {
     public final Map<? extends Statement, List<Statement>> statements;
     public final Map<ParameterizedType, ParameterizedType> types;
     public final Map<LocalVariable, LocalVariable> localVariables;
+    public final Map<? extends Variable, ? extends Expression> delayedVariables;
 
     public TranslationMapImpl(Map<? extends Statement, List<Statement>> statements,
                               Map<? extends Expression, ? extends Expression> expressions,
+                              Map<? extends Variable, ? extends Expression> delayedVariables,
                               Map<? extends Variable, ? extends Variable> variables,
                               Map<MethodInfo, MethodInfo> methods,
                               Map<ParameterizedType, ParameterizedType> types) {
         this.variables = variables;
         this.expressions = expressions;
+        this.delayedVariables = delayedVariables;
         this.statements = statements;
         this.methods = methods;
         this.types = types;
@@ -92,6 +96,11 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public Variable translateVariable(Variable variable) {
         return Objects.requireNonNullElse(variables.get(variable), variable);
+    }
+
+    @Override
+    public Expression translateDelayedVariableNullIfNotTranslated(Variable variable) {
+        return delayedVariables.get(variable);
     }
 
     @Override
@@ -146,12 +155,13 @@ public class TranslationMapImpl implements TranslationMap {
     public static class Builder {
         private final Map<Variable, Variable> variables = new HashMap<>();
         private final Map<Expression, Expression> expressions = new HashMap<>();
+        private final Map<Variable, Expression> delayedVariables = new HashMap<>();
         private final Map<MethodInfo, MethodInfo> methods = new HashMap<>();
         private final Map<Statement, List<Statement>> statements = new HashMap<>();
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
 
         public TranslationMapImpl build() {
-            return new TranslationMapImpl(statements, expressions, variables, methods, types);
+            return new TranslationMapImpl(statements, expressions, delayedVariables, variables, methods, types);
         }
 
         public Builder put(Statement template, Statement actual) {
@@ -170,7 +180,11 @@ public class TranslationMapImpl implements TranslationMap {
         }
 
         public Builder put(Expression template, Expression actual) {
-            expressions.put(template, actual);
+            if (template instanceof DelayedVariableExpression dve) {
+                delayedVariables.put(dve.variable, actual);
+            } else {
+                expressions.put(template, actual);
+            }
             return this;
         }
 

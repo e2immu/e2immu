@@ -32,6 +32,12 @@ public class ExplicitConstructorInvocation_6 {
     public ExplicitConstructorInvocation_6(String packageName, String simpleName) {
         this(generate(), packageName, simpleName);
     }
+    // internally, this(...) is replaced by (assignments taken from real constructor)
+    // this.identifier = generate();
+    // this.packageName = packageName;
+    // this.simpleName = simpleName;
+    // this.fullyQualifiedName = "".equals(packageName) ? simpleName: packageName+"."+simpleName
+    // in each of these 4 expressions, the parameter of the real constructor needs replaced by that of the one with the this(...)
 
     public ExplicitConstructorInvocation_6(int identifier, String packageName, String simpleName) {
         assert packageName != null && !packageName.isBlank();

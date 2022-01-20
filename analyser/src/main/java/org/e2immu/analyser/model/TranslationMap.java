@@ -27,25 +27,28 @@ import java.util.List;
  */
 public interface TranslationMap {
 
-     Expression translateExpression(Expression expression);
+    Expression translateExpression(Expression expression);
 
-     Expression directExpression(Expression expression);
+    Expression directExpression(Expression expression);
 
-     MethodInfo translateMethod(MethodInfo methodInfo);
+    MethodInfo translateMethod(MethodInfo methodInfo);
 
-     Variable translateVariable(Variable variable);
+    Variable translateVariable(Variable variable);
 
-     List<Statement> translateStatement(Statement statement) ;
+    List<Statement> translateStatement(Statement statement);
 
-     Block translateBlock(Block block) ;
+    Block translateBlock(Block block);
 
-     ParameterizedType translateType(ParameterizedType parameterizedType) ;
+    ParameterizedType translateType(ParameterizedType parameterizedType);
 
-     TypeInfo translateTypeWithBody(TypeInfo typeInfo);
+    TypeInfo translateTypeWithBody(TypeInfo typeInfo);
 
-     LocalVariable translateLocalVariable(LocalVariable localVariable);
+    LocalVariable translateLocalVariable(LocalVariable localVariable);
 
-     boolean isEmpty();
+    boolean isEmpty();
 
     boolean hasVariableTranslations();
+
+    // because equality of delayed variables is based on ==
+    Expression translateDelayedVariableNullIfNotTranslated(Variable variable);
 }

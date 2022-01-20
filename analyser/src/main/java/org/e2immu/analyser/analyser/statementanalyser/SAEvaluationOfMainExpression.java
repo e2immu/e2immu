@@ -285,7 +285,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             for (Expression parameterExpression : storedValues) {
                 ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
                 translation.put(new VariableExpression(parameterInfo), parameterExpression);
-                translation.put(DelayedVariableExpression.forVariableReEvaluation(parameterInfo), parameterExpression);
                 i++;
             }
         }
