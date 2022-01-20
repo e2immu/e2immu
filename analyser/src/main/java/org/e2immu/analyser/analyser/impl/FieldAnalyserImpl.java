@@ -291,6 +291,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 } else {
                     initializer = fieldInitialiser.initialiser();
                 }
+                // FIXME this should be analysed as a method call with a single return statement if it contains
+                // expressions that are too complex to handle in ECI
+
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = initializer.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
@@ -308,6 +311,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return DONE;
     }
 
+    /*
+    The anonymous type comes in two flavours: either the initialiser is a Lambda, method reference, directly assigned,
+    or the initialiser is an expression which internally contains type creations such as lambda's.
+    This expression is converted into an anonymous supplier, which will be analysed here. The field's value is then
+    obtained by calling "get" on this anonymous type.
+     */
     private AnalysisStatus runAnonymousTypeAnalyser(SharedState sharedState) {
         if (!anonymousTypeAnalyser.isFinal()) {
 
@@ -363,6 +372,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return lambda.definesType();
         }
         if (initialiser instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+            return cc.anonymousClass();
+        }
+        if (initialiser instanceof MethodCall mc && mc.object instanceof ConstructorCall cc && cc.anonymousClass() != null) {
             return cc.anonymousClass();
         }
         return null;

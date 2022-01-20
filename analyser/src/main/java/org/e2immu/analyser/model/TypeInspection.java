@@ -142,7 +142,7 @@ public interface TypeInspection extends Inspection {
         return fields().stream()
                 .filter(fieldInfo -> fieldInfo.fieldInspection.get().fieldInitialiserIsSet())
                 .map(fieldInfo -> fieldInfo.fieldInspection.get().getFieldInitialiser())
-                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.artificial()))
+                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.synthetic()))
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 

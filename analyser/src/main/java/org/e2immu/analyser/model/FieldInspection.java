@@ -35,7 +35,7 @@ public interface FieldInspection extends Inspection {
     }
 
     record FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod,
-                            boolean artificial) {
+                            boolean synthetic) {
         public FieldInitialiser {
             Objects.requireNonNull(initialiser);
         }

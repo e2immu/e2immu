@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /*
-Tests the isKnown() artificial method so that the count in size() goes from 1 to 2
+Tests the isKnown() synthetic method so that the count in size() goes from 1 to 2
  */
 public class BasicCompanionMethods_5 {
 

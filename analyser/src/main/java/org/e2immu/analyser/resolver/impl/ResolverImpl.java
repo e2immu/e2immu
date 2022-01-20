@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.util.ConvertExpressionWithTypeCreations.convertExpressionIntoSupplier;
 import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -167,7 +168,7 @@ public class ResolverImpl implements Resolver {
                             typeInfo,
                             typesInCycle.size(),
                             typesInCycle.stream()
-                                    .map(t -> t.fullyQualifiedName+"  depends on "+summary(t, typeGraph))
+                                    .map(t -> t.fullyQualifiedName + "  depends on " + summary(t, typeGraph))
                                     .sorted()
                                     .collect(Collectors.joining("\n")));
                 }
@@ -188,7 +189,7 @@ public class ResolverImpl implements Resolver {
 
     private static String summary(TypeInfo typeInfo, DependencyGraph<TypeInfo> typeGraph) {
         List<TypeInfo> dependencies = typeGraph.getDependsOn(typeInfo);
-        return dependencies.size()+": "+dependencies.stream().limit(2)
+        return dependencies.size() + ": " + dependencies.stream().limit(2)
                 .map(t -> t.simpleName).collect(Collectors.joining(", "));
     }
 
@@ -396,13 +397,13 @@ public class ResolverImpl implements Resolver {
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, forwardReturnTypeInfo);
 
             MethodInfo sam;
-            boolean artificial;
+            boolean synthetic;
             if (fieldInfo.type.isFunctionalInterface(subContext.typeContext())) {
                 List<ConstructorCall> constructorCalls = parsedExpression.collect(ConstructorCall.class);
-                artificial = constructorCalls.stream().filter(no -> no.parameterizedType()
+                synthetic = constructorCalls.stream().filter(no -> no.parameterizedType()
                         .isFunctionalInterface(inspectionProvider)).count() != 1L;
 
-                if (!artificial) {
+                if (!synthetic) {
                     ConstructorCall newObject = constructorCalls.stream()
                             .filter(no -> no.parameterizedType().isFunctionalInterface(inspectionProvider))
                             .findFirst().orElseThrow();
@@ -420,7 +421,9 @@ public class ResolverImpl implements Resolver {
                     } else if (parsedExpression instanceof MethodReference) {
                         sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
-                        doType(sam.typeInfo, subContext, methodFieldSubTypeGraph);
+                        Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
+                                .getE2ImmuAnnotationExpressions(), false);
+                        child.resolve(Map.of(sam.typeInfo, subContext));
                     } else if ((ve = parsedExpression.asInstanceOf(VariableExpression.class)) != null) {
                         if (ve.variable() instanceof FieldReference) {
                             sam = null; // we can't know, there'll be an indirection
@@ -429,15 +432,35 @@ public class ResolverImpl implements Resolver {
                                     ve.variable().fullyQualifiedName());
                         }
                     } else {
-                        throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
+                        // this is not really a sam, we've just got some sort of object creation, which happens to go
+                        // to a functional interface (See Lambda_10). This expression needs full parsing, because it may
+                        // contain lambda's itself.
+                        sam = null;
+                        synthetic = false;
                     }
                 }
             } else {
                 sam = null;
-                artificial = false;
+                synthetic = false;
             }
-            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
-            Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
+            org.e2immu.analyser.model.Expression peOrMethodCall;
+            if (sam == null && hasTypesDefined(parsedExpression)) {
+                // check if there are types created inside the expression
+                sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
+                        parsedExpression, expressionContext, Identifier.from(expression));
+                Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
+                child.resolve(Map.of(sam.typeInfo, subContext));
+
+                synthetic = true;
+                org.e2immu.analyser.model.Expression object = ConstructorCall.withAnonymousClass(fieldInfo.type,
+                        sam.typeInfo, Diamond.NO);
+                peOrMethodCall = new MethodCall(parsedExpression.getIdentifier(), false, object,
+                        sam, sam.returnType(), List.of());
+            } else {
+                peOrMethodCall = parsedExpression;
+            }
+            fieldInitialiser = new FieldInspection.FieldInitialiser(peOrMethodCall, sam, synthetic);
+            Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : peOrMethodCall;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);
@@ -447,6 +470,16 @@ public class ResolverImpl implements Resolver {
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
         fieldInspectionBuilder.setFieldInitializer(fieldInitialiser);
+    }
+
+    private boolean hasTypesDefined(org.e2immu.analyser.model.Expression parsedExpression) {
+        AtomicBoolean foundType = new AtomicBoolean();
+        parsedExpression.visit(e -> {
+            if (e.definesType() != null) {
+                foundType.set(true);
+            }
+        });
+        return foundType.get();
     }
 
     private void doMethodsAndConstructors(TypeInspection typeInspection,

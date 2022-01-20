@@ -669,7 +669,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
                 Properties valueProperties;
-                if (scopeContainsUnavailableVariables(fieldReference.scope)) {
+                if (fieldReference.scope == null || scopeContainsUnavailableVariables(fieldReference.scope)) {
                     valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                             Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                             Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
