@@ -28,7 +28,6 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @E2Container
 public class DelayedVariableExpression extends BaseExpression implements Expression, IsVariableExpression {
@@ -103,22 +102,13 @@ public class DelayedVariableExpression extends BaseExpression implements Express
 
     @Override
     public boolean equals(Object o) {
-       // if (variable instanceof FieldReference) {
-            return this == o;
-      //  }
-      //  return o instanceof DelayedVariableExpression dve && dve.variable.equals(variable);
+        return this == o;
     }
 
     @Override
     public Variable variable() {
         return variable;
     }
-
-    // important: do not add msg to the hash!
-    //@Override
-    //public int hashCode() {
-    //    return Objects.hash(variable.parameterizedType());
-    //}
 
     @Override
     public boolean isNumeric() {

@@ -32,6 +32,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
+import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.Property.INDEPENDENT;
+import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -288,6 +291,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 eval.setValue(pi.getValue());
             }
         }
+    }
+
+    @Override
+    public void ensureValuePropertiesInInitial(DV defaultNotNull) {
+        assert !hasMerge();
+        assert !hasEvaluation();
+        assert isInitial();
+        VariableInfoImpl initial = getToWrite(Level.INITIAL);
+        // even NOT_YET_ASSIGNED needs value properties (See TryStatement_2)
+        initial.ensureProperty(NOT_NULL_EXPRESSION, defaultNotNull);
+        initial.ensureProperty(IDENTITY, IDENTITY.falseDv);
+        initial.ensureProperty(CONTAINER, CONTAINER.falseDv);
+        initial.ensureProperty(IMMUTABLE, MUTABLE_DV);
+        initial.ensureProperty(INDEPENDENT, INDEPENDENT.falseDv);
     }
 
     @Override

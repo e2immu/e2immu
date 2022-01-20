@@ -74,7 +74,7 @@ public class VariableInfoImpl implements VariableInfo {
     }
 
     // used as a temp in MergeHelper
-    public VariableInfoImpl( Variable variable, Expression value, Properties properties) {
+    public VariableInfoImpl(Variable variable, Expression value, Properties properties) {
         this(Location.NOT_YET_SET, variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, Set.of(), value);
         properties.stream().forEach(e -> setProperty(e.getKey(), e.getValue()));
     }
@@ -249,5 +249,12 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
         setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+    }
+
+    public void ensureProperty(Property property, DV dv) {
+        DV inMap = properties.getOrDefaultNull(property);
+        if (inMap == null || inMap.isDelayed()) {
+            properties.put(property, dv);
+        }
     }
 }

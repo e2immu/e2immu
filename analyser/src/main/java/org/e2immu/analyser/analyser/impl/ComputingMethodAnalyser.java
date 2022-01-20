@@ -463,7 +463,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV
             if (noReturnStatementReachable()) {
-                methodAnalysis.singleReturnValue.setFinal(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
+                UnknownExpression ue = UnknownExpression.forNoReturnValue(methodInfo.identifier, methodInfo.returnType());
+                methodAnalysis.singleReturnValue.setFinal(ue);
                 methodAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);

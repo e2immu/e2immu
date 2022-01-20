@@ -245,8 +245,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             preconditionForEventual = new VariableFirstThen<>(initialDelay(methodInfo));
             eventual.setVariable(MethodAnalysis.delayedEventual(initialDelay(methodInfo)));
             if (!methodInfo.hasReturnValue()) {
-                UnknownExpression u = new UnknownExpression(primitives.voidParameterizedType(),
-                        UnknownExpression.NO_RETURN_VALUE);
+                UnknownExpression u = UnknownExpression.forNoReturnValue(methodInfo.identifier,
+                        primitives.voidParameterizedType());
                 singleReturnValue.setFinal(u);
             } else {
                 // same as in MethodAnalyserImpl, which we don't have access to here

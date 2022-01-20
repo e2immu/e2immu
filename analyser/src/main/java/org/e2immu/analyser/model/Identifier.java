@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
+import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.List;
 import java.util.Objects;
@@ -76,6 +77,9 @@ public interface Identifier extends Comparable<Identifier> {
         return new ListOfIdentifiers(identifiers);
     }
 
+    static Identifier forVariableOutOfScope(Variable toRemove, String index) {
+        return new VariableOutOfScopeIdentifier(toRemove.fullyQualifiedName(), index);
+    }
 
     record PositionalIdentifier(short line, short pos, short endLine, short endPos) implements Identifier {
         @Override
@@ -176,6 +180,18 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public int identifierOrder() {
             return 6;
+        }
+    }
+
+    record VariableOutOfScopeIdentifier(String fqn, String index) implements Identifier {
+        @Override
+        public int compareTo(Identifier o) {
+            return identifierOrder() - o.identifierOrder();
+        }
+
+        @Override
+        public int identifierOrder() {
+            return 7;
         }
     }
 }

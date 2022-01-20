@@ -1024,7 +1024,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         assert fieldAnalysis.getValue().isDelayed();
 
         if (!fieldAnalysis.getProperty(Property.FINAL).valueIsTrue()) {
-            fieldAnalysis.setValue(new UnknownExpression(fieldInfo.type, UnknownExpression.VARIABLE));
+            fieldAnalysis.setValue(UnknownExpression.forVariableValue(fieldInfo.getIdentifier(), fieldInfo.type));
             return DONE;
         }
         CausesOfDelay valuesStatus = fieldAnalysis.valuesStatus();

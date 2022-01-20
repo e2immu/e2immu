@@ -856,16 +856,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // we go over the list of variables to merge, and try to find if we need to rename them because
         // some scope has to be removed
         // this method relies on bestValueForToRemove
+        // at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
+        // we remove the non-renamed
         private void computeRenames() {
-            for (VariableInfoContainer vic : toMerge) {
+            toMerge.removeIf(vic -> {
                 Variable variable = vic.current().variable();
                 Variable renamed = renameVariable(variable);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
                     translationMap.put(new VariableExpression(variable), new VariableExpression(renamed));
                     translationMap.put(variable, renamed);
+                    Optional<VariableInfoContainer> orig = toMerge.stream()
+                            .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
+                    if(orig.isPresent()) toIgnore.add(vic);
+                    return orig.isPresent();
                 }
-            }
+                return false;
+            });
         }
 
         private Variable renameVariable(Variable variable) {
@@ -975,10 +982,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
         TranslationMap initialMap = prepareMerge.translationMap.build();
         for (Variable toRemove : prepareMerge.toRemove) {
-            // create a destination which will not be stored
+            // create a destination which will not be stored, with value properties in case
+            // the initial value actually becomes the result
             VariableInfoContainer destination = createVariable(evaluationContext, toRemove, statementTime,
                     VariableNature.METHOD_WIDE, false);
-
+            ensureValueProperties(destination, toRemove);
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
                     inSwitchStatementOldStyle);
@@ -997,7 +1005,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
             // and finally, copy the result into prepareMerge
             VariableInfo best = destination.current();
-            Expression bestValue = best.getValue();
+            Expression bestValue;
+            if (best.getValue().isDelayed()) {
+                Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
+                bestValue = new DelayedVariableOutOfScope(identifier,
+                        toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
+            } else {
+                bestValue = best.getValue();
+            }
             prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
             prepareMerge.translationMap.put(new VariableExpression(toRemove), bestValue);
         }
@@ -1069,6 +1084,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
+    }
+
+    private void ensureValueProperties(VariableInfoContainer destination, Variable variable) {
+        destination.ensureValuePropertiesInInitial(AnalysisProvider.defaultNotNull(variable.parameterizedType()));
     }
 
     /**
@@ -1262,7 +1281,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                                 Variable variable,
                                                 int statementTime,
-                                                VariableNature variableInLoop,
+                                                VariableNature variableNature,
                                                 boolean store) {
         String fqn = variable.fullyQualifiedName();
         if (store && variables.isSet(fqn)) {
@@ -1271,7 +1290,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable,
-                variableInLoop, navigationData.hasSubBlocks());
+                variableNature, navigationData.hasSubBlocks());
         if (store) putVariable(variable.fullyQualifiedName(), vic);
 
         // linked variables travel from the parameters via the statements to the fields
@@ -1289,7 +1308,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         } else if (variable instanceof LocalVariableReference || variable instanceof DependentVariable) {
             // nothing spectacular; everything handled at the place of creation
-            if (variableInLoop instanceof VariableNature.LoopVariable) {
+            if (variableNature instanceof VariableNature.LoopVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
                 initializeLocalOrDependentVariable(vic, variable);
@@ -1328,8 +1347,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-        vic.setValue(new UnknownExpression(variable.parameterizedType(), UnknownExpression.NOT_YET_ASSIGNED),
-                LinkedVariables.EMPTY, map, true);
+        Identifier identifier = Identifier.generate(); // FIXME
+        UnknownExpression ue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
+        vic.setValue(ue, LinkedVariables.EMPTY, map, true);
     }
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
@@ -1345,7 +1365,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
 
-        UnknownExpression value = new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE);
+        UnknownExpression value = UnknownExpression.forReturnVariable(methodAnalysis.getMethodInfo().identifier,
+                returnVariable.returnType);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
     }
 

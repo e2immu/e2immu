@@ -424,26 +424,36 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("nullable instance type Expression/*@Identity*/", d.currentValue().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
-                        && "ne".equals(fr.scope.toString())) {
-                    if ("2.0.0".equals(d.statementId())) {
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
+                    if ("ne".equals(fr.scope.toString())) {
+                        if ("2.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                        if ("2".equals(d.statementId())) {
+                            fail("Not created here, and cannot merge into here");
+                        }
+                        if ("3".equals(d.statementId())) {
+                            fail("ne.expression should not exist here!");
+                        }
                     }
-                    if ("2".equals(d.statementId())) {
-                        assertFalse(d.variableInfoContainer().hasMerge());
-                        String expected = switch (d.iteration()) {
-                            case 0, 1 -> "<f:expression>";
-                            default -> "nullable instance type Expression";
-                        };
-                        assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() <= 1 ? "expression:0,ne.expression:0,x:0"
-                                : "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    if ("<out of scope:ne:2>".equals(fr.scope.toString())) {
+                        if ("2".equals(d.statementId())) {
+                            String expected = switch (d.iteration()) {
+                                case 0, 1 -> "<f:expression>";
+                                default -> "nullable instance type Expression";
+                            };
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
                     }
-                    if ("3".equals(d.statementId())) {
-                        fail("ne.expression should not exist here!");
+                    if ("expression/*(Negation)*/".equals(fr.scope.toString())) {
+                        assertTrue(d.iteration() >= 2);
+                        if ("2".equals(d.statementId())) {
+                            assertEquals("nullable instance type Expression", d.currentValue().toString());
+                            assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
                     }
                 }
                 if ("ne".equals(d.variableName())) {
@@ -472,15 +482,6 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         fail(); // should not exist here!
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
-                        && "expression/*(Negation)*/".equals(fr.scope.toString())) {
-                    assertTrue(d.iteration() >= 2);
-                    if ("2".equals(d.statementId())) {
-                        assertEquals("nullable instance type Expression", d.currentValue().toString());
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    }
-                }
                 if ("x".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<f:expression>" : "expression/*(Negation)*/.expression";
@@ -500,8 +501,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
-                            case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
+                            case 0, 1 -> "<out of scope:ne:2>.expression:0,expression:0,x:0";
                             default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -549,7 +549,49 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_10_2() throws IOException {
-        testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder().build(),
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)) {
+                    if ("ne".equals(fr.scope.toString())) {
+                        if ("2.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    }
+                }
+                if ("ne".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
+                            case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(Negation)*/";
+                            default -> "expression/*(Negation)*/";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expression".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Expression".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 0, DV.FALSE_DV, Property.CONTAINER);
+            }
+            if ("Negation".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+            }
+        };
+        testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 
@@ -564,8 +606,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 ? "<instanceOf:Sum>&&null!=<m:numericPartOfLhs>?<new:XB>:<return value>" : "";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "evaluationContext:-1,ne:-1,return method:0,this.expression:-1";
-                            case 1 -> "ne:-1,return method:0,this.expression:-1";
+                            case 0 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:-1,evaluationContext:-1,return method:0,this.expression:-1,x:-1";
+                            case 1 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:-1,return method:0,this.expression:-1,x:-1";
                             default -> "";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -581,7 +623,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 ? "<instanceOf:Negation>?<f:expression>:<f:expression>" : "";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0 -> "evaluationContext:-1,ne.expression:0,this.expression:-1,x:0";
+                            case 0 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:0,evaluationContext:-1,return method:-1,this.expression:-1,x:0";
                             case 1 -> "ne.expression:0,this.expression:0,x:0";
                             default -> "";
                         };

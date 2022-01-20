@@ -61,16 +61,13 @@ public class Test_25_FieldReference extends CommonTestRunner {
                         assertTrue(d.iteration() > 0);
                         String expected = "nullable instance type Map<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
+                    } else if ("<out of scope:cd:0>".equals(fr.scope.toString())) {
+                        String expected = d.iteration() == 0 ? "<f:properties>" : "nullable instance type Map<String,Integer>";
+                        assertEquals(expected, d.currentValue().toString());
                     } else {
-                        if (d.iteration() == 0) {
-                            assertEquals("useEnnInsteadOfCnn?<m:get>:<not yet assigned>", fr.scope.toString());
-                        } else {
-                            // there are two!
-                            String e1 = "useEnnInsteadOfCnn?changeData.get(\"abc\"):<not yet assigned>";
-                            String e2 = "useEnnInsteadOfCnn?<m:get>:<not yet assigned>";
-                            String scope = fr.scope.toString();
-                            assertTrue(e1.equals(scope) || e2.equals(scope), "Got: " + scope);
-                        }
+                        assertTrue(d.iteration() > 0);
+                        String expected = "useEnnInsteadOfCnn?changeData.get(\"abc\"):<not yet assigned>";
+                        assertEquals(expected, fr.scope.toString());
                     }
                 }
             }

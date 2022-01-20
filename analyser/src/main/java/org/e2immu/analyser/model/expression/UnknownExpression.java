@@ -30,17 +30,43 @@ import java.util.Objects;
 public class UnknownExpression extends BaseExpression implements Expression {
 
     public static final String RETURN_VALUE = "return value";
-    public static final String VARIABLE = "variable value";
+    public static final String VARIABLE_VALUE = "variable value";
     public static final String NOT_YET_ASSIGNED = "not yet assigned";
     public static final String NO_RETURN_VALUE = "no return value";
+    public static final String ARRAY_LENGTH = "array length";
 
     private final ParameterizedType parameterizedType;
     private final String msg;
 
-    public UnknownExpression(ParameterizedType parameterizedType, String msg) {
-        super(Identifier.generate());
+    private UnknownExpression(Identifier identifier, ParameterizedType parameterizedType, String msg) {
+        super(identifier);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.msg = Objects.requireNonNull(msg);
+    }
+
+    public static UnknownExpression forReturnVariable(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, RETURN_VALUE);
+    }
+
+    public static UnknownExpression forNotYetAssigned(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, NOT_YET_ASSIGNED);
+    }
+
+    public static UnknownExpression forArrayLength(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, ARRAY_LENGTH);
+    }
+
+    public static UnknownExpression forNoReturnValue(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, NO_RETURN_VALUE);
+    }
+
+    public static Expression forVariableValue(Identifier identifier, ParameterizedType parameterizedType) {
+        return new UnknownExpression(identifier, parameterizedType, VARIABLE_VALUE);
+    }
+
+    public static Expression forHardcodedMethodReturnValue(Identifier identifier, ParameterizedType parameterizedType,
+                                                           String customMessage) {
+        return new UnknownExpression(identifier, parameterizedType, customMessage);
     }
 
     @Override
@@ -48,12 +74,12 @@ public class UnknownExpression extends BaseExpression implements Expression {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UnknownExpression that = (UnknownExpression) o;
-        return msg.equals(that.msg);
+        return msg.equals(that.msg) && identifier.equals(that.identifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(msg);
+        return Objects.hash(msg, identifier);
     }
 
     @Override

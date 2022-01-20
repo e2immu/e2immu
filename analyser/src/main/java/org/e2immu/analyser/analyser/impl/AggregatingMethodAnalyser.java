@@ -126,7 +126,8 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                 value = singleValue;
             } else {
                 // TODO implement other cases, such as parameter values
-                value = new UnknownExpression(methodInfo.returnType(), "interface method");
+                value = UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
+                        methodInfo.returnType(), "interface method");
             }
             methodAnalysis.singleReturnValue.setFinal(value);
             log(ANALYSER, "Set single value of {} to aggregate {}", methodInfo.fullyQualifiedName, singleValue);
