@@ -21,6 +21,10 @@ public class FieldReference_2 {
 
     private X xx;
 
+    public void setXx(X xx) {
+        this.xx = xx;
+    }
+
     public X method(int j) {
         int k = new X(xx.i).i;
         return new X(k);
