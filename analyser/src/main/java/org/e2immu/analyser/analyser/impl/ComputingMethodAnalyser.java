@@ -884,20 +884,35 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
     public void logAnalysisStatuses() {
         AnalysisStatus statusOfStatementAnalyser = analyserComponents.getStatus(ComputingMethodAnalyser.STATEMENT_ANALYSER);
         if (statusOfStatementAnalyser.isDelayed()) {
-            StatementAnalyser lastStatement = firstStatementAnalyser.lastStatement();
-            AnalyserComponents<String, StatementAnalyserSharedState> analyserComponentsOfStatement = lastStatement.getAnalyserComponents();
-            LOGGER.warn("Analyser components of last statement {} of {}:\n{}", lastStatement.index(),
+            StatementAnalyser statement = findFirstStatementWithDelays(firstStatementAnalyser);
+            AnalyserComponents<String, StatementAnalyserSharedState> analyserComponentsOfStatement = statement.getAnalyserComponents();
+            LOGGER.warn("Analyser components of first statement with delays {} of {}:\n{}", statement.index(),
                     methodInfo.fullyQualifiedName(),
                     analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyserImpl.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData.isDelayed()) {
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
-                        lastStatement.getStatementAnalysis().methodLevelData().analyserComponents;
-                LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
+                        statement.getStatementAnalysis().methodLevelData().analyserComponents;
+                LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", statement.index(),
                         methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());
             }
         }
+    }
+
+    private StatementAnalyser findFirstStatementWithDelays(StatementAnalyser firstStatementAnalyser) {
+        StatementAnalyser sa = firstStatementAnalyser;
+        while (sa != null) {
+            AnalyserComponents<String, StatementAnalyserSharedState> components = sa.getAnalyserComponents();
+            if (components.getStatusesAsMap().values().stream().anyMatch(AnalysisStatus::isDelayed)) {
+                return sa;
+            }
+            if (!sa.navigationData().next.isSet()) return sa;
+            Optional<StatementAnalyser> opt = sa.navigationData().next.get();
+            if (opt.orElse(null) == null) return sa;
+            sa = opt.get();
+        }
+        return sa;
     }
 
     // occurs as often in a flatMap as not, so a stream version is useful

@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -23,8 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_25_FieldReference extends CommonTestRunner {
 
@@ -74,6 +74,54 @@ public class Test_25_FieldReference extends CommonTestRunner {
         };
         // potential null pointer exceptions
         testClass("FieldReference_1", 0, 3, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("null".equals(fr.scope.toString())) {
+                        assertTrue(fr.scope instanceof NullConstant);
+                        fail("?"); // FIXME
+                    } else if ("xx".equals(fr.scope.toString())) {
+
+                    } else if ("new X(xx.i)".equals(fr.scope.toString())) {
+
+                    } else {
+                        fail();
+                    }
+                }
+            }
+        };
+        testClass("FieldReference_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    switch (fr.scope.toString()) {
+                        case "this.handle(x,b)" -> {
+                        }
+                        case "x" -> {
+                        }
+                        case "x$2" -> {
+                        }
+                        case "b?new X(new HashSet<>()):x" -> {
+                        }
+                        default -> fail("Have " + fr.scope);
+                    }
+                }
+            }
+        };
+        testClass("FieldReference_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
