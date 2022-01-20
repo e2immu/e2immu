@@ -33,7 +33,6 @@ import java.util.Set;
 
 import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.Property.INDEPENDENT;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
@@ -249,6 +248,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             DV value,
                             boolean doNotFailWhenTryingToWriteALowerValue,
                             Level level) {
+        // we do not write in some other VIC's merge or evaluation:
+        if(level == Level.INITIAL && !isInitial()) return;
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);

@@ -45,7 +45,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             int numParameters = d.methodInfo().methodInspection.get().getParameters().size();
             if ("CyclicReferences_0".equals(d.methodInfo().name) && numParameters == 1) {
                 if (d.variable() instanceof FieldReference fr && "field2".equals(fr.fieldInfo.name)) {
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         assertEquals("\"cde\"", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -92,10 +92,14 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("CyclicReferences_2.methodA(paramB)", d.currentValue().toString());
+                        String expected = d.iteration() <= 1
+                                ? "<vp:boolean:container@Method_methodA;not_null@Method_methodA>"
+                                : "CyclicReferences_2.methodA(paramB)";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("!\"a\".equals(paramB)&&\"b\".equals(paramB)", d.currentValue().toString());
+                        String expected = "!\"a\".equals(paramB)&&\"b\".equals(paramB)";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -106,7 +110,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 1 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -130,14 +134,32 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         };
 
         testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_3() throws IOException {
-        testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder().build());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("methodC".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "paramC".equals(p.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 2 ? "<p:paramC>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("\"b\".equals(paramC)?<p:paramC>:nullable instance type String/*@Identity*/",
+                                d.currentValue().toString());
+                        assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
+                        assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                    }
+                }
+            }
+        };
+        testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 
     @Test
