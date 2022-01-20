@@ -868,7 +868,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     translationMap.put(variable, renamed);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
                             .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
-                    if(orig.isPresent()) toIgnore.add(vic);
+                    if (orig.isPresent()) toIgnore.add(vic);
                     return orig.isPresent();
                 }
                 return false;
@@ -980,41 +980,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables);
         // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
-        TranslationMap initialMap = prepareMerge.translationMap.build();
         for (Variable toRemove : prepareMerge.toRemove) {
-            // create a destination which will not be stored, with value properties in case
-            // the initial value actually becomes the result
-            VariableInfoContainer destination = createVariable(evaluationContext, toRemove, statementTime,
-                    VariableNature.METHOD_WIDE, false);
-            ensureValueProperties(destination, toRemove);
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
                     inSwitchStatementOldStyle);
-            if (toMerge.size() > 0) {
-                try {
-                    Merge merge = new Merge(evaluationContext, destination);
-                    // the main merge operation
-                    merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, null,
-                            atLeastOneBlockExecuted, toMerge, groupPropertyValues, initialMap);
-                } catch (Throwable throwable) {
-                    LOGGER.warn("Caught exception while merging toRemove variable {} in {}, {}", toRemove,
-                            methodAnalysis.getMethodInfo().fullyQualifiedName, index);
-                    throw throwable;
-                }
-            }
+            if(!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
 
-            // and finally, copy the result into prepareMerge
-            VariableInfo best = destination.current();
-            Expression bestValue;
-            if (best.getValue().isDelayed()) {
-                Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
-                bestValue = new DelayedVariableOutOfScope(identifier,
-                        toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
-            } else {
-                bestValue = best.getValue();
-            }
-            prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
-            prepareMerge.translationMap.put(new VariableExpression(toRemove), bestValue);
+                // and finally, copy the result into prepareMerge
+                VariableInfo best = toMerge.get(0).variableInfo();
+                Expression bestValue;
+                if (best.getValue().isDelayed()) {
+                    Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
+                    bestValue = new DelayedVariableOutOfScope(identifier,
+                            toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
+                } else {
+                    bestValue = best.getValue();
+                }
+                prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
+                prepareMerge.translationMap.put(new VariableExpression(toRemove), bestValue);
+            } // else: See e.g. Loops_3: block not executed
         }
         prepareMerge.computeRenames();
 

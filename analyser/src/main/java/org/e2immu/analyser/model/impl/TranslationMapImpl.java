@@ -76,7 +76,6 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public Expression translateExpression(Expression expression) {
         Expression translated = Objects.requireNonNullElse(expressions.get(expression), expression);
-        if(translated == expression) return expression;
         return translated.translate(this);
     }
 
