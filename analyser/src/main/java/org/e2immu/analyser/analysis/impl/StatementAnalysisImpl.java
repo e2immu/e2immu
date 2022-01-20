@@ -479,7 +479,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // at the beginning of a block
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-                createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
+                createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE, true);
             }
             if (parent == null) {
                 createParametersThisAndVariablesFromClosure(evaluationContext, currentMethod);
@@ -506,7 +506,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 for (ParameterInfo parameterInfo : closure.getCurrentMethod().getMethodInspection().getParameters()) {
                     VariableNature variableNature = inClosure
                             ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.METHOD_WIDE;
-                    createVariable(closure, parameterInfo, 0, variableNature);
+                    createVariable(closure, parameterInfo, 0, variableNature, true);
                 }
             }
             closure = closure.getClosure();
@@ -515,7 +515,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // for now, other variations on this are not explicitly present at the moment IMPROVE?
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
+            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE, true);
         }
 
         // we'll copy local variables from outside this method
@@ -845,17 +845,47 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private record PrepareMerge(List<VariableInfoContainer> toMerge,
                                 List<VariableInfoContainer> toIgnore,
                                 Set<Variable> toRemove,
+                                Map<Variable, Expression> bestValueForToRemove,
                                 Map<Variable, Variable> renames,
                                 TranslationMapImpl.Builder translationMap) {
         public PrepareMerge() {
-            this(new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new HashMap<>(),
+            this(new LinkedList<>(), new LinkedList<>(), new HashSet<>(), new HashMap<>(), new HashMap<>(),
                     new TranslationMapImpl.Builder());
+        }
+
+        // we go over the list of variables to merge, and try to find if we need to rename them because
+        // some scope has to be removed
+        // this method relies on bestValueForToRemove
+        private void computeRenames() {
+            for (VariableInfoContainer vic : toMerge) {
+                Variable variable = vic.current().variable();
+                Variable renamed = renameVariable(variable);
+                if (renamed != variable) {
+                    renames.put(variable, renamed);
+                    translationMap.put(new VariableExpression(variable), new VariableExpression(renamed));
+                    translationMap.put(variable, renamed);
+                }
+            }
+        }
+
+        private Variable renameVariable(Variable variable) {
+            IsVariableExpression ive;
+            if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis() &&
+                    ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
+                if (toRemove.contains(ive.variable())) {
+                    Expression newValue = bestValueForToRemove.get(ive.variable());
+                    return new FieldReference(fr, newValue);
+                }
+                Variable renamed = renameVariable(ive.variable());
+                if (renamed == ive.variable()) return fr; // keep the same
+                return new FieldReference(fr, new VariableExpression(renamed));
+            }
+            return variable;
         }
     }
 
     // as a general remark: This and ReturnVariable variables are always merged, never removed
-    private PrepareMerge mergeActions(EvaluationContext evaluationContext,
-                                      List<ConditionAndLastStatement> lastStatements,
+    private PrepareMerge mergeActions(List<ConditionAndLastStatement> lastStatements,
                                       Set<Variable> mergeEvenIfNotInSubBlocks) {
         PrepareMerge pm = new PrepareMerge();
         // some variables will be picked up in the sub-blocks, others in the current block, others in both
@@ -889,51 +919,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // if recognized: remove (into remove+ignore), otherwise ignore
         Stream<VariableInfoContainer> atTopLevel = variables.stream().map(Map.Entry::getValue);
         mergeAction(pm, seen, atTopLevel, vn -> vn.removeInMerge(index), mergeEvenIfNotInSubBlocks::contains, null);
-
-        // finally, we go over the list of variables to merge, and try to find if we need to rename them because
-        // some scope has to be removed
-        for (VariableInfoContainer vic : pm.toMerge) {
-            Variable variable = vic.current().variable();
-            Variable renamed = renameVariable(evaluationContext, variable, pm.toRemove);
-            if (renamed != variable) {
-                pm.renames.put(variable, renamed);
-                pm.translationMap.put(new VariableExpression(variable), new VariableExpression(renamed));
-                pm.translationMap.put(variable, renamed);
-            }
-        }
-        for (Variable variable : pm.toRemove) {
-            Expression bestValue = bestValue(evaluationContext, variable);
-            pm.translationMap.put(new VariableExpression(variable), bestValue);
-            // FIXME if variable occurs with a given Suffix, we need to add this as well!!
-        }
         return pm;
     }
-
-    // FIXME the best value will come... after merging :-(
-    private Expression bestValue(EvaluationContext evaluationContext, Variable variable) {
-        Expression value = evaluationContext.currentValue(variable);
-        if (value.isDelayed() && value instanceof DelayedVariableExpression) {
-            return DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                    LinkedVariables.delayedEmpty(value.causesOfDelay()), value.causesOfDelay());
-        }
-        return value;
-    }
-
-    private Variable renameVariable(EvaluationContext evaluationContext, Variable variable, Set<Variable> toRemove) {
-        IsVariableExpression ive;
-        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis() &&
-                ((ive = fr.scope.asInstanceOf(IsVariableExpression.class)) != null)) {
-            if (toRemove.contains(ive.variable())) {
-                Expression newValue = bestValue(evaluationContext, ive.variable());
-                return new FieldReference(fr, newValue);
-            }
-            Variable renamed = renameVariable(evaluationContext, ive.variable(), toRemove);
-            if (renamed == ive.variable()) return fr; // keep the same
-            return new FieldReference(fr, new VariableExpression(renamed));
-        }
-        return variable;
-    }
-
 
     private void mergeAction(PrepareMerge prepareMerge,
                              Set<Variable> seen,
@@ -984,8 +971,38 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
-        // we copy to a list, because we may be adding variables (ConditionalInitialization copies)
-        PrepareMerge prepareMerge = mergeActions(evaluationContext, lastStatements, setCnnVariables);
+        PrepareMerge prepareMerge = mergeActions(lastStatements, setCnnVariables);
+        // 2 more steps: fill in PrepareMerge.bestValueForToRemove, then compute renames
+        TranslationMap initialMap = prepareMerge.translationMap.build();
+        for (Variable toRemove : prepareMerge.toRemove) {
+            // create a destination which will not be stored
+            VariableInfoContainer destination = createVariable(evaluationContext, toRemove, statementTime,
+                    VariableNature.METHOD_WIDE, false);
+
+            boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
+            List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
+                    inSwitchStatementOldStyle);
+            if (toMerge.size() > 0) {
+                try {
+                    Merge merge = new Merge(evaluationContext, destination);
+                    // the main merge operation
+                    merge.merge(stateOfConditionManagerBeforeExecution, postProcessState, null,
+                            atLeastOneBlockExecuted, toMerge, groupPropertyValues, initialMap);
+                } catch (Throwable throwable) {
+                    LOGGER.warn("Caught exception while merging toRemove variable {} in {}, {}", toRemove,
+                            methodAnalysis.getMethodInfo().fullyQualifiedName, index);
+                    throw throwable;
+                }
+            }
+
+            // and finally, copy the result into prepareMerge
+            VariableInfo best = destination.current();
+            Expression bestValue = best.getValue();
+            prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
+            prepareMerge.translationMap.put(new VariableExpression(toRemove), bestValue);
+        }
+        prepareMerge.computeRenames();
+
         TranslationMap translationMap = prepareMerge.translationMap.build();
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
@@ -999,7 +1016,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             VariableInfoContainer destination;
             if (!variables.isSet(renamed.fullyQualifiedName())) {
-                destination = createVariable(evaluationContext, renamed, statementTime, vic.variableNature());
+                destination = createVariable(evaluationContext, renamed, statementTime, vic.variableNature(), true);
             } else {
                 destination = vic;
             }
@@ -1122,7 +1139,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         for (VariableInfoContainer vic : ignoredNotTouched) {
             vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
         }
-        if(translationMap.hasVariableTranslations()) {
+        if (translationMap.hasVariableTranslations()) {
             groupPropertyValues.translate(translationMap);
         }
 
@@ -1245,16 +1262,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                                 Variable variable,
                                                 int statementTime,
-                                                VariableNature variableInLoop) {
+                                                VariableNature variableInLoop,
+                                                boolean store) {
         String fqn = variable.fullyQualifiedName();
-        if (variables.isSet(fqn)) {
+        if (store && variables.isSet(fqn)) {
             throw new UnsupportedOperationException("Already exists: " +
                     fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
 
         VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(), variable,
                 variableInLoop, navigationData.hasSubBlocks());
-        putVariable(variable.fullyQualifiedName(), vic);
+        if (store) putVariable(variable.fullyQualifiedName(), vic);
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
@@ -1819,7 +1837,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
             assert variable.variableNature() instanceof VariableNature.NormalLocalVariable :
                     "Encountering variable " + variable.fullyQualifiedName() + " of nature " + variable.variableNature();
             vic = createVariable(evaluationContext, variable, flowData().getInitialTime(),
-                    VariableNature.normal(variable, index()));
+                    VariableNature.normal(variable, index()), true);
         } else {
             vic = getVariable(variable.fullyQualifiedName());
 

@@ -62,8 +62,15 @@ public class Test_25_FieldReference extends CommonTestRunner {
                         String expected = "nullable instance type Map<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
                     } else {
-                        assertEquals("<replace:ChangeData>", fr.scope.toString());
-                        // FIXME what to do with this lingering variable?
+                        if (d.iteration() == 0) {
+                            assertEquals("useEnnInsteadOfCnn?<m:get>:<not yet assigned>", fr.scope.toString());
+                        } else {
+                            // there are two!
+                            String e1 = "useEnnInsteadOfCnn?changeData.get(\"abc\"):<not yet assigned>";
+                            String e2 = "useEnnInsteadOfCnn?<m:get>:<not yet assigned>";
+                            String scope = fr.scope.toString();
+                            assertTrue(e1.equals(scope) || e2.equals(scope), "Got: " + scope);
+                        }
                     }
                 }
             }

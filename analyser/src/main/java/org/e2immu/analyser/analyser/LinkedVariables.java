@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
@@ -215,7 +214,7 @@ public class LinkedVariables {
     public LinkedVariables translate(TranslationMap translationMap) {
         if (isEmpty()) return this;
         var translatedVariables = variables.entrySet().stream()
-                .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue));
+                .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue, DV::min));
         return new LinkedVariables(translatedVariables);
     }
 

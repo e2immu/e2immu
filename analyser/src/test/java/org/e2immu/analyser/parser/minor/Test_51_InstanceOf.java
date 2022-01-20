@@ -500,8 +500,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = switch (d.iteration()) {
-                            case 0, 1 -> "<not yet assigned:Negation>.expression:0,expression:0,x:0";
-                            default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,ne.expression:0,x:0";
+                            case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
+                            case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:0,expression:0,x:0";
+                            default -> "expression/*(org.e2immu.analyser.parser.minor.testexample.InstanceOf_10.Negation)*/.expression:1,expression:0,x:0";
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 

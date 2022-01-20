@@ -103,10 +103,10 @@ public class DelayedVariableExpression extends BaseExpression implements Express
 
     @Override
     public boolean equals(Object o) {
-        if (variable instanceof FieldReference) {
+       // if (variable instanceof FieldReference) {
             return this == o;
-        }
-        return o instanceof DelayedVariableExpression dve && dve.variable.equals(variable);
+      //  }
+      //  return o instanceof DelayedVariableExpression dve && dve.variable.equals(variable);
     }
 
     @Override
@@ -115,10 +115,10 @@ public class DelayedVariableExpression extends BaseExpression implements Express
     }
 
     // important: do not add msg to the hash!
-    @Override
-    public int hashCode() {
-        return Objects.hash(variable.parameterizedType());
-    }
+    //@Override
+    //public int hashCode() {
+    //    return Objects.hash(variable.parameterizedType());
+    //}
 
     @Override
     public boolean isNumeric() {
