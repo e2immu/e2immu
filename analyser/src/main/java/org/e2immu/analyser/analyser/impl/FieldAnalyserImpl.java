@@ -325,11 +325,10 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
             if (fieldInspection.fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null) {
+                if (fieldInitialiser.anonymousTypeCreated() != null) {
                     // the resolver has caught all variants into the SAM
 
-                    TypeInfo typeInfo = fieldInitialiser.implementationOfSingleAbstractMethod().typeInfo;
-                    SortedType sortedType = typeInfo.typeResolution.get().sortedType();
+                    SortedType sortedType = fieldInitialiser.anonymousTypeCreated().typeResolution.get().sortedType();
                     PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
                             List.of(sortedType),
                             analyserContext.getConfiguration(),

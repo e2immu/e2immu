@@ -34,14 +34,15 @@ public interface FieldInspection extends Inspection {
         return getModifiers().contains(FieldModifier.STATIC);
     }
 
-    record FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod,
-                            boolean synthetic,
+    record FieldInitialiser(Expression initialiser,
+                            TypeInfo anonymousTypeCreated,
+                            MethodInfo implementationOfSingleAbstractMethod,
                             boolean callGetOnSam) {
         public FieldInitialiser {
             Objects.requireNonNull(initialiser);
         }
         public FieldInitialiser(Expression initialiser) {
-            this(initialiser, null, false, false);
+            this(initialiser, null, null, false);
         }
     }
 

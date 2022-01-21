@@ -396,67 +396,47 @@ public class ResolverImpl implements Resolver {
 
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, forwardReturnTypeInfo);
 
+            TypeInfo anonymousType;
             MethodInfo sam;
-            boolean synthetic;
-            if (fieldInfo.type.isFunctionalInterface(subContext.typeContext())) {
-                List<ConstructorCall> constructorCalls = parsedExpression.collect(ConstructorCall.class);
-                synthetic = constructorCalls.stream().filter(no -> no.parameterizedType()
-                        .isFunctionalInterface(inspectionProvider)).count() != 1L;
-
-                if (!synthetic) {
-                    ConstructorCall newObject = constructorCalls.stream()
-                            .filter(no -> no.parameterizedType().isFunctionalInterface(inspectionProvider))
-                            .findFirst().orElseThrow();
-                    TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
-                    sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
-                } else {
-                    // implicit anonymous type
-                    // no point in creating something that we cannot (yet) deal with...
-                    VariableExpression ve;
-                    if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
-                        sam = null;
-                    } else if (parsedExpression instanceof Lambda lambda) {
-                        assert lambda.implementation.typeInfo != null; // to keep IntelliJ happy
-                        sam = lambda.implementation.typeInfo.findOverriddenSingleAbstractMethod(inspectionProvider);
-                    } else if (parsedExpression instanceof MethodReference) {
-                        sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
-                                (MethodReference) parsedExpression, expressionContext);
-                        Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
-                                .getE2ImmuAnnotationExpressions(), false);
-                        child.resolve(Map.of(sam.typeInfo, subContext));
-                    } else if ((ve = parsedExpression.asInstanceOf(VariableExpression.class)) != null) {
-                        if (ve.variable() instanceof FieldReference) {
-                            sam = null; // we can't know, there'll be an indirection
-                        } else {
-                            throw new UnsupportedOperationException("Can only deal with fields at the moment: " +
-                                    ve.variable().fullyQualifiedName());
-                        }
+            boolean callGetOnSam;
+            if (parsedExpression instanceof Lambda lambda) {
+                anonymousType = lambda.implementation.typeInfo;
+                assert anonymousType != null;
+                sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
+                assert sam != null;
+                callGetOnSam = false;
+            } else if (parsedExpression instanceof MethodReference) {
+                sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
+                        (MethodReference) parsedExpression, expressionContext);
+                anonymousType = sam.typeInfo;
+                Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap()
+                        .getE2ImmuAnnotationExpressions(), false);
+                child.resolve(Map.of(sam.typeInfo, subContext));
+                callGetOnSam = false;
+            } else if (hasTypesDefined(parsedExpression)) {
+                if (parsedExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+                    anonymousType = cc.anonymousClass();
+                    if (fieldInfo.type.isFunctionalInterface(inspectionProvider)) {
+                        sam = anonymousType.findOverriddenSingleAbstractMethod(inspectionProvider);
                     } else {
-                        // this is not really a sam, we've just got some sort of object creation, which happens to go
-                        // to a functional interface (See Lambda_10). This expression needs full parsing, because it may
-                        // contain lambda's itself.
                         sam = null;
-                        synthetic = false;
                     }
+                    callGetOnSam = false;
+                } else {
+                    // check if there are types created inside the expression
+                    sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
+                            parsedExpression, expressionContext, Identifier.from(expression));
+                    anonymousType = sam.typeInfo;
+                    Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
+                    child.resolve(Map.of(sam.typeInfo, subContext));
+                    callGetOnSam = true;
                 }
             } else {
+                anonymousType = null;
                 sam = null;
-                synthetic = false;
-            }
-            boolean callGetOnSam;
-
-            if (sam == null && hasTypesDefined(parsedExpression)) {
-                // check if there are types created inside the expression
-                sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
-                        parsedExpression, expressionContext, Identifier.from(expression));
-                Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
-                child.resolve(Map.of(sam.typeInfo, subContext));
-                synthetic = true;
-                callGetOnSam = true;
-            } else {
                 callGetOnSam = false;
             }
-            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, synthetic, callGetOnSam);
+            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, anonymousType, sam, callGetOnSam);
             Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);

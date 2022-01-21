@@ -138,11 +138,13 @@ public interface TypeInspection extends Inspection {
         return ListUtil.concatImmutable(methods(), constructors());
     }
 
-    default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
+    default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoSynthetic) {
         return fields().stream()
                 .filter(fieldInfo -> fieldInfo.fieldInspection.get().fieldInitialiserIsSet())
                 .map(fieldInfo -> fieldInfo.fieldInspection.get().getFieldInitialiser())
-                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.synthetic()))
+                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null
+                        && (alsoSynthetic ||
+                        !initialiser.implementationOfSingleAbstractMethod().methodInspection.get().isSynthetic()))
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
