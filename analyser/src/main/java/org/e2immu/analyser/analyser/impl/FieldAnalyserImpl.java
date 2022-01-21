@@ -378,6 +378,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return DONE;
     }
 
+    /*
+    Unbound parameter type -> container (a bit by definition, there's no methods to call)
+    Interfaces -> contracted (by hand), but a concrete implementation may be given (if not contracted, it can be better, otherwise error)
+    Final type -> contracted, no other concrete implementation can exist
+    Formal type delayed -> wait
+     */
     private AnalysisStatus analyseContainer() {
         if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER).isDone()) return DONE;
 
@@ -387,9 +393,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
             return DONE;
         }
-
-        DV formal = containerOfType(formalType);
-        if (formal != null) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
+        DV formal = typeAnalysis.getProperty(Property.CONTAINER);
+        if (formal.isDelayed() || formalType.isFinal(analyserContext) || formalType.isInterface() && formal.valueIsTrue()) {
             if (formal.isDelayed()) {
                 log(DELAYED, "Delaying @Container of field {}, waiting for @Container of formal type", fqn);
             } else {
@@ -404,30 +410,30 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.CONTAINER, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus();
         }
-        DV overall = DV.TRUE_DV;
+        DV minimum = fieldAnalysis.getValues().isEmpty() ? formal : DV.TRUE_DV;
         for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
             if (!(proxy.getValue() instanceof NullConstant)) {
                 Expression value = proxy.getValue();
                 TypeInfo concreteTypeInfo = value.bestConcreteTypeInfo();
-                if (concreteTypeInfo != null && formalType != concreteTypeInfo) {
-                    DV container = containerOfType(concreteTypeInfo);
+                if (concreteTypeInfo != null) {
+                    DV container = containerOfConcreteType(concreteTypeInfo);
                     if (container != null) {
-                        overall = overall.min(container);
+                        minimum = minimum.min(container);
                     }
                 } // either done already, or unbound parameter type, which is fine
             } // else: the null constant can be anything
         }
-        if (overall.isDelayed()) {
+        if (minimum.isDelayed()) {
             log(DELAYED, "Delaying @Container of field {}, waiting for @Container of values", fqn);
         } else {
-            log(MODIFICATION, "Set @Container of field {} to {}", fqn, overall);
+            log(MODIFICATION, "Set @Container of field {} to {}", fqn, minimum);
         }
-        fieldAnalysis.setProperty(Property.CONTAINER, fieldAnalysis.valuesStatus());
-        return AnalysisStatus.of(overall);
+        fieldAnalysis.setProperty(Property.CONTAINER, minimum);
+        return AnalysisStatus.of(minimum);
     }
 
-
-    private DV containerOfType(TypeInfo formalType) {
+    // this differs slightly from what is used for the formal type: interface is always returned
+    private DV containerOfConcreteType(TypeInfo formalType) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
         if (typeContainer.isDelayed() || formalType.isFinal(analyserContext) || formalType.isInterface()) {

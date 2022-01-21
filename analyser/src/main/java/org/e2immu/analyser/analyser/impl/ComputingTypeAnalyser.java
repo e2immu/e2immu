@@ -642,7 +642,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (modified.isDelayed() && methodAnalyser.hasCode()) {
                         log(DELAYED, "Delaying container, modification of parameter {} undecided",
                                 parameterInfo.fullyQualifiedName());
-                        typeAnalysis.setProperty(Property.CONTAINER, modified);
+                        CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
+                        typeAnalysis.setProperty(Property.CONTAINER, modified.causesOfDelay().merge(marker));
+
                         return modified.causesOfDelay(); // cannot yet decide
                     }
                     if (modified.valueIsTrue()) {

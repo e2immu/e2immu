@@ -78,9 +78,9 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         String expectValue = "new C1(s2)";
                         String expectedDelay = switch (d.iteration()) {
                             case 0 -> "container@Class_C1;immutable@Class_C1;independent@Class_C1";
-                            case 1 -> "cm:this.set@Method_size_0;cm@Parameter_setC;initial:this.set@Method_size_0;link:this.set@Method_size_0;mom@Parameter_setC";
-                            case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0;mom@Parameter_setC";
-                            default -> "mom@Parameter_setC";
+                            case 1 -> "cm:this.set@Method_size_0;cm@Parameter_setC;container@Class_C1;initial:this.set@Method_size_0;link:this.set@Method_size_0;mom@Parameter_setC";
+                            case 2 -> "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;container@Class_C1;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0;mom@Parameter_setC";
+                            default -> "container@Class_C1;mom@Parameter_setC";
                         };
                         assertCurrentValue(d, LIMIT, expectedDelay, expectValue);
 
@@ -159,8 +159,8 @@ public class Test_16_Modification_19 extends CommonTestRunner {
                         : "cm:c.set@Method_example1_2;cm:localD.set@Method_example1_2;cm:this.set@Method_size_0;initial:this.set@Method_size_0;link:c@Method_example1_2;link:this.s2@Method_example1_2;link:this.set@Method_size_0";
                 assertDv(d, expectedDelay, 2, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
 
-                String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;mom@Parameter_setC"
-                        : "mom@Parameter_setC";
+                String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;container@Class_C1;mom@Parameter_setC"
+                        : "container@Class_C1;mom@Parameter_setC";
                 assertDv(d, expectContainerDelay, 3, DV.FALSE_DV, Property.CONTAINER);
             }
         };

@@ -96,19 +96,21 @@ public class OutputMethodInfo {
     }
 
     private static Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
-        Set<String> localNamesFromBody = inspection.getMethodBody().variables(true).stream()
-                .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
-                .map(Variable::simpleName).collect(Collectors.toSet());
-        Set<String> parameterNames = inspection.getParameters().stream()
-                .map(ParameterInfo::simpleName).collect(Collectors.toSet());
-        Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
+        if (qualification instanceof QualificationImpl qi) {
+            Set<String> localNamesFromBody = inspection.getMethodBody().variables(true).stream()
+                    .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
+                    .map(Variable::simpleName).collect(Collectors.toSet());
+            Set<String> parameterNames = inspection.getParameters().stream()
+                    .map(ParameterInfo::simpleName).collect(Collectors.toSet());
+            Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
 
-        List<FieldInfo> visibleFields = inspection.getMethodInfo().typeInfo.visibleFields(InspectionProvider.DEFAULT);
-        QualificationImpl res = new QualificationImpl(qualification);
-        visibleFields.stream().filter(fieldInfo -> !localNames.contains(fieldInfo.name)).forEach(res::addField);
+            List<FieldInfo> visibleFields = inspection.getMethodInfo().typeInfo.visibleFields(InspectionProvider.DEFAULT);
+            QualificationImpl res = new QualificationImpl(qi);
+            visibleFields.stream().filter(fieldInfo -> !localNames.contains(fieldInfo.name)).forEach(res::addField);
 
-
-        return res;
+            return res;
+        }
+        return qualification;
     }
 
     private static Stream<OutputBuilder> outputCompanions(MethodInspection methodInspection,

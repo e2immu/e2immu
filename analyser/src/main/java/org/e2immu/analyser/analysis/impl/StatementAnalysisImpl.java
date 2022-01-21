@@ -1358,6 +1358,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // context properties
         Properties properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
+        // FIXME Instance.forCatchOrThis will compute value properties
         // value properties
         properties.put(IDENTITY, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);

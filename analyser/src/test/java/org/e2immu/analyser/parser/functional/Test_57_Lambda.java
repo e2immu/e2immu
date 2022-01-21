@@ -18,14 +18,18 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.stream.Collector;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,7 +42,26 @@ public class Test_57_Lambda extends CommonTestRunner {
     // System.out potential null pointer
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("collector".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("collector".equals(d.methodInfo().name)) {
+                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+            }
+        };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo collector = typeMap.get(Collector.class);
+            assertEquals(DV.FALSE_DV, collector.typeAnalysis.get().getProperty(Property.CONTAINER));
+        };
         testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
