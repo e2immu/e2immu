@@ -364,4 +364,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public int getComplexity() {
         return 1; // FIXME
     }
+
+    /*
+    rather than isPrivate, we need to see if the method is visible outside the primary type.
+
+     */
+    public boolean isAccessibleOutsidePrimaryType() {
+        MethodInspection inspection = methodInspection.get();
+        if(inspection.isPrivate()) return false;
+        // we could still be in a private type
+        return !typeInfo.isPrivateOrEnclosingIsPrivate();
+    }
 }

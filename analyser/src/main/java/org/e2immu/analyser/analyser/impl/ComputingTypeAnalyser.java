@@ -633,25 +633,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.CONTAINER);
         if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
 
-        CausesOfDelay fieldsReady = myFieldAnalysers.stream()
-                .map(fa -> fa.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()
-                        ? CausesOfDelay.EMPTY : fa.getFieldAnalysis().getValue().causesOfDelay())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (fieldsReady.isDelayed()) {
-            log(DELAYED, "Delaying container, need effectively final value to be known for final fields");
-            typeAnalysis.setProperty(Property.CONTAINER, fieldsReady);
-            return fieldsReady;
-        }
-        CausesOfDelay allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream()
-                .map(MethodAnalyser::fromFieldToParametersStatus)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (allReady.isDelayed()) {
-            log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
-            typeAnalysis.setProperty(Property.CONTAINER, allReady);
-            return allReady;
-        }
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
-            if (!methodAnalyser.getMethodInfo().isPrivate()) {
+            if (methodAnalyser.getMethodInfo().isAccessibleOutsidePrimaryType()) {
                 for (ParameterInfo parameterInfo : methodAnalyser.getMethodInspection().getParameters()) {
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     DV modified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);

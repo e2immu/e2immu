@@ -460,7 +460,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
-                            case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(Negation)*/";
+                            case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -472,7 +472,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasMerge());
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:expression:container@Record_Negation;immutable@Record_Negation;independent@Record_Negation>/*(Negation)*/";
-                            case 1 -> "<vp:expression:assign_to_field@Parameter_expression;initial@Field_expression>/*(Negation)*/";
+                            case 1 -> "<vp:expression:initial@Field_expression>/*(Negation)*/";
                             default -> "expression/*(Negation)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -535,7 +535,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d, 0, DV.FALSE_DV, Property.CONTAINER);
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, DV.TRUE_DV, Property.CONTAINER);
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()

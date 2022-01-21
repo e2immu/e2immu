@@ -63,6 +63,8 @@ public class ConvertMethodReference {
         TypeInspection.Builder builder = typeContext.typeMap.add(typeInfo, InspectionState.BY_HAND);
 
         builder.setTypeNature(TypeNature.CLASS);
+        builder.addTypeModifier(TypeModifier.PRIVATE);
+        builder.setSynthetic(true);
         builder.addInterfaceImplemented(functionalInterfaceType);
         builder.noParent(typeContext.getPrimitives());
 
@@ -72,6 +74,7 @@ public class ConvertMethodReference {
 
         Block block = methodContent(methodBuilder, methodReference, expressionContext);
         methodBuilder.setInspectedBlock(block);
+        methodBuilder.setSynthetic(true);
         MethodInfo methodInfo = methodBuilder.getMethodInfo();
 
         builder.addMethod(methodInfo);

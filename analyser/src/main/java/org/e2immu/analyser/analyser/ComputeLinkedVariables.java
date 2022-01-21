@@ -57,7 +57,6 @@ public class ComputeLinkedVariables {
     private final List<List<Variable>> clustersDependent;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
-    private final BiPredicate<VariableInfoContainer, Variable> ignore;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    VariableInfoContainer.Level level,
@@ -69,7 +68,6 @@ public class ComputeLinkedVariables {
         this.clustersStaticallyAssigned = clustersStaticallyAssigned;
         this.clustersDependent = clustersDependent;
         this.delaysInClustering = delaysInClustering;
-        this.ignore = ignore;
         this.level = level;
         this.statementAnalysis = statementAnalysis;
         this.weightedGraph = weightedGraph;

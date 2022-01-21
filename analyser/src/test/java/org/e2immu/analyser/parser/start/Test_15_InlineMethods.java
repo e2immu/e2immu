@@ -150,7 +150,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     String expected = d.iteration() == 0
                             ? "container@Class_VariableField;immutable@Class_VariableField;independent@Class_VariableField;svr@Method_expand"
-                            : "assign_to_field@Parameter_i;assign_to_field@Parameter_j;assign_to_field@Parameter_k;initial@Method_setI;svr@Method_expand";
+                            : "initial@Method_setI;svr@Method_expand";
                     assertEquals(expected,
                             d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

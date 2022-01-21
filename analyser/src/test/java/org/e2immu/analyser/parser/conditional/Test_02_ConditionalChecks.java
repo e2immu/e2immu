@@ -333,7 +333,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vp:o:container@Class_ConditionalChecks_4;immutable@Class_ConditionalChecks_4;independent@Class_ConditionalChecks_4>/*(ConditionalChecks_4)*/";
-                            case 1 -> "<vp:o:assign_to_field@Parameter_i;initial@Field_i>/*(ConditionalChecks_4)*/";
+                            case 1 -> "<vp:o:cm@Parameter_o;initial@Field_i>/*(ConditionalChecks_4)*/";
                             default -> "o/*(ConditionalChecks_4)*/";
                         };
                         assertEquals(expected, d.currentValue().toString());
@@ -413,20 +413,19 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("o/*(ConditionalChecks_4)*/", d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expectValueString = d.iteration() == 0
-                            ? "null!=o&&<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#o/*(org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4)*/>==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
-                            : RETURN_VALUE;
+                    String expectValueString = switch (d.iteration()) {
+                        case 0 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i>==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>";
+                        case 1 -> "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==<field:org.e2immu.analyser.parser.conditional.testexample.ConditionalChecks_4.i#conditionalChecks>";
+                        default -> RETURN_VALUE;
+                    };
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
-                    assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().causesOfDelay().isDelayed());
 
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
                         assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));
                         assertTrue(d.haveMarkRead(I));
-                        //assertTrue(d.haveMarkRead(I + "#o"));
                     }
-                    assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
-                    assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, CONTEXT_NOT_NULL));
                 }
             }
         };
@@ -442,7 +441,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
