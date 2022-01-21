@@ -15,6 +15,8 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 
+import org.e2immu.annotation.Nullable;
+
 public class InstanceOf_10 {
 
     private interface Expression {
@@ -24,7 +26,8 @@ public class InstanceOf_10 {
     private record Negation(Expression expression) implements Expression {
     }
 
-    public static Expression method(Expression expression) {
+    @Nullable
+    public static Expression method(@Nullable Expression expression) {
         Expression x;
         boolean lessThan;
         if (expression instanceof Negation ne) {

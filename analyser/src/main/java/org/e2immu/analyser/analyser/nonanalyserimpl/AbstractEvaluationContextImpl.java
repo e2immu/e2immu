@@ -24,8 +24,11 @@ import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
@@ -85,15 +88,22 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
      */
 
     protected boolean notNullAccordingToConditionManager(Variable variable, Function<FieldReference, VariableInfo> findField) {
+        LinkedVariables linkedVariables = linkedVariables(variable);
+        Set<Variable> assignedVariables = linkedVariables == null ? Set.of(variable)
+                // always include myself!
+                : Stream.concat(Stream.of(variable), linkedVariables.variablesAssigned())
+                .collect(Collectors.toUnmodifiableSet());
+
         Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
-        if (notNullVariablesInState.contains(variable)) return true;
+        if (!Collections.disjoint(notNullVariablesInState, assignedVariables)) return true;
+
         Set<Variable> notNullVariablesInCondition = conditionManager
                 .findIndividualNullInCondition(this, false);
-        if (notNullVariablesInCondition.contains(variable)) return true;
+        if (!Collections.disjoint(notNullVariablesInCondition, assignedVariables)) return true;
         if (variable instanceof FieldReference fr) {
             Set<Variable> notNullVariablesInPrecondition = conditionManager
                     .findIndividualNullInPrecondition(this, false);
-            return notNullVariablesInPrecondition.contains(fr);
+            return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables);
         }
         return false;
     }

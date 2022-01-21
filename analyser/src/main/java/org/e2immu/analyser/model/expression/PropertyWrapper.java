@@ -85,9 +85,19 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     private EvaluationResult reEvaluated(EvaluationContext evaluationContext, EvaluationResult reValue) {
         Expression newValue = reValue.value();
-        Map<Property, DV> reduced = reduce(evaluationContext, newValue, properties);
-        Expression result = reduced.isEmpty() ? newValue : PropertyWrapper.propertyWrapper(newValue, reduced);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
+
+        // most importantly: we don't want any double wrappers with exactly the same info!
+        if (newValue instanceof PropertyWrapper pw && Objects.equals(pw.castType, castType) &&
+                Objects.equals(pw.state, state) && Objects.equals(pw.properties, properties) &&
+                Objects.equals(pw.linkedVariables, linkedVariables)) {
+            return builder.setExpression(pw).build();
+        }
+
+        Map<Property, DV> reduced = reduce(evaluationContext, newValue, properties);
+        boolean dropWrapper = reduced.isEmpty() && state == null && linkedVariables == null && castType == null;
+        Expression result = dropWrapper ? newValue : new PropertyWrapper(newValue, state, reduced, linkedVariables, castType);
+
         return builder.setExpression(result).build();
     }
 
@@ -277,8 +287,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay()
-                .merge(state == null ? CausesOfDelay.EMPTY: state.causesOfDelay())
-                .merge(linkedVariables == null ? CausesOfDelay.EMPTY: linkedVariables.causesOfDelay());
+                .merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay())
+                .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay());
     }
 
     public Expression expression() {

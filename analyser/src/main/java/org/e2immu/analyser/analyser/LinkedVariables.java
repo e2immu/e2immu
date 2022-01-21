@@ -199,6 +199,12 @@ public class LinkedVariables {
                 .map(Map.Entry::getKey);
     }
 
+    public Stream<Variable> variablesAssigned() {
+        return variables.entrySet().stream()
+                .filter(e -> isAssigned(e.getValue()))
+                .map(Map.Entry::getKey);
+    }
+
     public Stream<Variable> variablesWithLevel(int level) {
         return variables.entrySet().stream()
                 .filter(e -> e.getValue().value() == level)

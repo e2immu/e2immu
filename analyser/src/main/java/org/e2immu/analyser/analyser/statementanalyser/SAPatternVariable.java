@@ -20,8 +20,8 @@ import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.Cast;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.List;
+import java.util.Map;
 
 record SAPatternVariable(StatementAnalysis statementAnalysis) {
 
@@ -66,14 +67,18 @@ record SAPatternVariable(StatementAnalysis statementAnalysis) {
                 });
 
         // add assignments
-        // the reason we assign to Cast(expression) rather than just expression is shown in InstanceOf_9: in the case
+        // the reason we add the property wrapper to the expression is shown in InstanceOf_9: in the case
         // of a cast from Object to String, we move from an object not guaranteed to be @Container (Object) to one
         // that is. When merging back, the "object" value of "string" still needs to have the @Container property
+
+        // the reason we don't add a Cast(...) is that a Cast does not implement IsVariableExpression,
+        // which, among others, is needed in Assignment to catch the linked variables to others.
         return instanceOfList.stream()
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(evaluationContext.getPrimitives(),
                         new VariableExpression(iop.instanceOf().patternVariable()),
-                        new Cast(iop.instanceOf().expression(), iop.instanceOf().parameterizedType())))
+                        PropertyWrapper.propertyWrapper(iop.instanceOf().expression(), Map.of(),
+                                iop.instanceOf().parameterizedType())))
                 .toList();
     }
 
