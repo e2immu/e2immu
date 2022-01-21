@@ -443,29 +443,26 @@ public class ResolverImpl implements Resolver {
                 sam = null;
                 synthetic = false;
             }
-            org.e2immu.analyser.model.Expression peOrMethodCall;
+            boolean callGetOnSam;
+
             if (sam == null && hasTypesDefined(parsedExpression)) {
                 // check if there are types created inside the expression
                 sam = convertExpressionIntoSupplier(fieldInfo.type, fieldInspectionBuilder.isStatic(), fieldInfo.owner,
                         parsedExpression, expressionContext, Identifier.from(expression));
                 Resolver child = child(expressionContext.typeContext(), expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions(), false);
                 child.resolve(Map.of(sam.typeInfo, subContext));
-
                 synthetic = true;
-                org.e2immu.analyser.model.Expression object = ConstructorCall.withAnonymousClass(fieldInfo.type,
-                        sam.typeInfo, Diamond.NO);
-                peOrMethodCall = new MethodCall(parsedExpression.getIdentifier(), false, object,
-                        sam, sam.returnType(), List.of());
+                callGetOnSam = true;
             } else {
-                peOrMethodCall = parsedExpression;
+                callGetOnSam = false;
             }
-            fieldInitialiser = new FieldInspection.FieldInitialiser(peOrMethodCall, sam, synthetic);
-            Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : peOrMethodCall;
+            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, synthetic, callGetOnSam);
+            Element toVisit = sam != null ? inspectionProvider.getMethodInspection(sam).getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);
         } else {
-            fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null, false);
+            fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION);
             dependencies = List.of();
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);

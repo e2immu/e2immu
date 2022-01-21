@@ -35,9 +35,13 @@ public interface FieldInspection extends Inspection {
     }
 
     record FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod,
-                            boolean synthetic) {
+                            boolean synthetic,
+                            boolean callGetOnSam) {
         public FieldInitialiser {
             Objects.requireNonNull(initialiser);
+        }
+        public FieldInitialiser(Expression initialiser) {
+            this(initialiser, null, false, false);
         }
     }
 

@@ -109,12 +109,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
 
     private void checkWorseThanParent() {
         for (Property property : CHECK_WORSE_THAN_PARENT) {
-            DV valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
-                    .stream()
-                    .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
-                    .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
-                            pi, property))
-                    .reduce(DV.MIN_INT_DV, DV::max);
+            DV valueFromOverrides = computeValueFromOverrides(property);
             DV value = parameterAnalysis.getProperty(property);
             if (valueFromOverrides.isDone() && value.isDone()) {
                 boolean complain = property == Property.MODIFIED_VARIABLE
@@ -132,6 +127,15 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
                 }
             }
         }
+    }
+
+    protected DV computeValueFromOverrides(Property property) {
+        return analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
+                .stream()
+                .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
+                .map(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
+                        pi, property))
+                .reduce(DV.MIN_INT_DV, DV::max);
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {

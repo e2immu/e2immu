@@ -233,9 +233,7 @@ public class Test_57_Lambda extends CommonTestRunner {
     @Test
     public void test_10() throws IOException {
         // ignoring result of put(...) because not A API, method is non-modifying
-        //
-
-        testClass("Lambda_10", 0, 0, new DebugConfiguration.Builder()
+        testClass("Lambda_10", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

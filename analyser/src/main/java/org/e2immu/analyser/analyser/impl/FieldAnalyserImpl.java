@@ -283,20 +283,23 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     private AnalysisStatus evaluateInitializer(SharedState sharedState) {
         if (fieldInspection.fieldInitialiserIsSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
-            if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
-                Expression initializer;
-                if (fieldInitialiser.initialiser() instanceof MethodReference) {
-                    initializer = ConstructorCall.instanceFromSam(fieldInitialiser.implementationOfSingleAbstractMethod(),
-                            fieldInfo.type);
+            Expression expression = fieldInitialiser.initialiser();
+            if (expression != EmptyExpression.EMPTY_EXPRESSION) {
+                Expression toEvaluate;
+                MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
+                if (expression instanceof MethodReference) {
+                    toEvaluate = ConstructorCall.instanceFromSam(sam, fieldInfo.type);
+                } else if (fieldInitialiser.callGetOnSam()) {
+                    Expression object = ConstructorCall.withAnonymousClass(fieldInfo.type, sam.typeInfo, Diamond.NO);
+                    toEvaluate = new MethodCall(expression.getIdentifier(), false, object, sam,
+                            sam.returnType(), List.of());
                 } else {
-                    initializer = fieldInitialiser.initialiser();
+                    toEvaluate = expression;
                 }
-                // FIXME this should be analysed as a method call with a single return statement if it contains
-                // expressions that are too complex to handle in ECI
 
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
-                EvaluationResult evaluationResult = initializer.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                EvaluationResult evaluationResult = toEvaluate.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
                 log(FINAL, "Set initialiser of field {} to {}", fqn, evaluationResult.value());
@@ -322,22 +325,21 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
             if (fieldInspection.fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
-                if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
+                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null) {
+                    // the resolver has caught all variants into the SAM
 
-                    TypeInfo typeInfo = typeFromInitialiser(fieldInitialiser.initialiser());
-                    if (typeInfo != null) {
-                        SortedType sortedType = typeInfo.typeResolution.get().sortedType();
-                        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
-                                List.of(sortedType),
-                                analyserContext.getConfiguration(),
-                                analyserContext.getPrimitives(),
-                                Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions(),
-                                true);
-                        primaryTypeAnalyser.initialize();
-                        anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
-                        recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);
-                    }
+                    TypeInfo typeInfo = fieldInitialiser.implementationOfSingleAbstractMethod().typeInfo;
+                    SortedType sortedType = typeInfo.typeResolution.get().sortedType();
+                    PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext,
+                            List.of(sortedType),
+                            analyserContext.getConfiguration(),
+                            analyserContext.getPrimitives(),
+                            Either.left(analyserContext.getPatternMatcher()),
+                            analyserContext.getE2ImmuAnnotationExpressions(),
+                            true);
+                    primaryTypeAnalyser.initialize();
+                    anonymousTypeAnalyser.setFinal(primaryTypeAnalyser);
+                    recursivelyAddPrimaryTypeAnalyserToAnalyserContext(primaryTypeAnalyser);
                 }
             }
             if (!anonymousTypeAnalyser.isFinal()) anonymousTypeAnalyser.setFinal(null);
@@ -365,21 +367,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             context = context.getParent();
         }
     }
-
-
-    private TypeInfo typeFromInitialiser(Expression initialiser) {
-        if (initialiser instanceof Lambda lambda) {
-            return lambda.definesType();
-        }
-        if (initialiser instanceof ConstructorCall cc && cc.anonymousClass() != null) {
-            return cc.anonymousClass();
-        }
-        if (initialiser instanceof MethodCall mc && mc.object instanceof ConstructorCall cc && cc.anonymousClass() != null) {
-            return cc.anonymousClass();
-        }
-        return null;
-    }
-
 
     private AnalysisStatus computeTransparentType() {
         assert fieldAnalysis.isTransparentType().isDelayed();

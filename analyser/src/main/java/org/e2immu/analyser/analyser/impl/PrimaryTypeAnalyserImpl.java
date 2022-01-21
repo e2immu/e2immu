@@ -206,7 +206,10 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public Stream<Message> getMessageStream() {
-        return Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream));
+        Stream<Message> fromAnalysers = analysers.stream()
+                .filter(analyser -> !analyser.getMember().getInspection().isSynthetic())
+                .flatMap(Analyser::getMessageStream);
+        return Stream.concat(messages.getMessageStream(), fromAnalysers);
     }
 
     @Override

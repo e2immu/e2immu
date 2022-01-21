@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 /*
-In each type, the method list and the this list get filled.
+In each type, the method list and the "this" list get filled.
 In each method, the fields list gets filled.
 The typesNotImported are computed once per primary type.
 For this reason, a hierarchical implementations seems most efficient.
@@ -97,7 +97,7 @@ public class QualificationImpl implements Qualification {
 
     public void addMethodUnlessOverride(MethodInfo methodInfo) {
         boolean newMethod = unqualifiedMethods.stream().noneMatch(mi ->
-                mi.methodResolution.get("Method resolution of "+mi.fullyQualifiedName).overrides().contains(methodInfo));
+                mi.methodResolution.get("Method resolution of " + mi.fullyQualifiedName).overrides().contains(methodInfo));
         if (newMethod) {
             unqualifiedMethods.add(methodInfo);
         }
@@ -114,7 +114,7 @@ public class QualificationImpl implements Qualification {
         assert typesNotImported != null; // to keep IntelliJ happy
         assert simpleTypeNames != null;
         // IMPROVE also code for subtypes!
-        if(simpleTypeNames.contains(typeInfo.simpleName)) {
+        if (simpleTypeNames.contains(typeInfo.simpleName)) {
             typesNotImported.put(typeInfo, TypeName.Required.FQN);
             return false;
         } else {

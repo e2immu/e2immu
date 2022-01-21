@@ -28,14 +28,14 @@ public class OutputTypeInfo {
     public static OutputBuilder output(TypeInfo typeInfo, Qualification qualification, boolean doTypeDeclaration) {
         String typeNature;
         Set<String> imports;
-        QualificationImpl insideType;
+        Qualification insideType;
         if (typeInfo.isPrimaryType() && typeInfo.hasBeenInspected()) {
             ResultOfImportComputation res = imports(typeInfo.packageName(), typeInfo.typeInspection.get());
             imports = res.imports;
             insideType = res.qualification;
         } else {
             imports = Set.of();
-            insideType = typeInfo.hasBeenInspected() ? new QualificationImpl(qualification) : new QualificationImpl();
+            insideType = typeInfo.hasBeenInspected() && qualification instanceof QualificationImpl ? new QualificationImpl(qualification) : qualification;
         }
         assert insideType != null;
 
@@ -65,8 +65,10 @@ public class OutputTypeInfo {
             interfaces = typeInspection.interfacesImplemented();
 
             // add the methods that we can call without having to qualify (method() instead of super.method())
-            addMethodsToQualification(typeInfo, insideType);
-            addThisToQualification(typeInfo, insideType);
+            if (insideType instanceof QualificationImpl qi) {
+                addMethodsToQualification(typeInfo, qi);
+                addThisToQualification(typeInfo, qi);
+            }
         } else {
             typeNature = "class"; // we really have no idea what it is
             typeModifiers = new String[]{"abstract"};

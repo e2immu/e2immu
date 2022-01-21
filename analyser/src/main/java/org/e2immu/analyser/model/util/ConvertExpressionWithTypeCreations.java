@@ -43,6 +43,7 @@ public class ConvertExpressionWithTypeCreations {
         TypeInfo typeInfo = new TypeInfo(enclosingType, index);
         TypeInspection.Builder builder = typeContext.typeMap.add(typeInfo, InspectionState.BY_HAND);
 
+        builder.setSynthetic(true);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addTypeModifier(TypeModifier.PRIVATE);
         builder.addInterfaceImplemented(supplierType);
@@ -52,6 +53,7 @@ public class ConvertExpressionWithTypeCreations {
         MethodInspection.Builder methodBuilder = new MethodInspectionImpl.Builder(typeInfo, "get");
         methodBuilder.setReturnType(supplierReturnType);
         methodBuilder.setStatic(fieldIsStatic);
+        methodBuilder.setSynthetic(true);
         methodBuilder.readyToComputeFQN(typeContext);
         typeContext.typeMap.registerMethodInspection(methodBuilder);
 

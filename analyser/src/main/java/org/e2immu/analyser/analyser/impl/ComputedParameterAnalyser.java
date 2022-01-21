@@ -562,6 +562,17 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         VariableInfo vi = lastStatementAnalysis == null ? null :
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
         if (vi == null || !vi.isRead()) {
+            boolean takeValueFromOverride;
+            if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
+                    && !parameterInfo.owner.isCompanionMethod()) {
+                messages.add(Message.newMessage(parameterInfo.owner.newLocation(),
+                        Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
+                takeValueFromOverride = false;
+            } else {
+                // so that there are no complaints
+                takeValueFromOverride = true;
+            }
+
             // unused variable
             if (!parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
                 parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
@@ -581,19 +592,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             // @Independent
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {
-                parameterAnalysis.setProperty(INDEPENDENT, NOT_INVOLVED_DV);
+                DV independent ;
+                if(takeValueFromOverride) {
+                    independent = computeValueFromOverrides(INDEPENDENT);
+                } else {
+                    independent = NOT_INVOLVED_DV;
+                }
+                parameterAnalysis.setProperty(INDEPENDENT, independent);
             }
 
             if (!parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
-
-            if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
-                    && !parameterInfo.owner.isCompanionMethod()) {
-                messages.add(Message.newMessage(parameterInfo.owner.newLocation(),
-                        Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
-            }
 
             parameterAnalysis.resolveFieldDelays();
             return DONE_ALL; // no point visiting any of the other analysers

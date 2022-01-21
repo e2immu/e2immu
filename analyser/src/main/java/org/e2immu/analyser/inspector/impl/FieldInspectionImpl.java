@@ -116,8 +116,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         public FieldInspectionImpl build() {
             return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
-                            inspectedInitialiserExpression == null ? null : new FieldInspection.FieldInitialiser
-                                    (inspectedInitialiserExpression, null, false),
+                            inspectedInitialiserExpression == null ? null
+                                    : new FieldInspection.FieldInitialiser(inspectedInitialiserExpression),
                     getAnnotations(), getAccess(), isSynthetic());
         }
 
