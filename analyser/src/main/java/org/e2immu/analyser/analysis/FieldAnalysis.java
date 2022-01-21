@@ -65,6 +65,7 @@ public interface FieldAnalysis extends Analysis {
                 return typeImmutable.maxIgnoreDelay(fieldImmutable);
 
             case CONSTANT:
+            case EXTERNAL_CONTAINER:
             case CONTAINER:
             case EXTERNAL_IMMUTABLE:
             case PARTIAL_EXTERNAL_IMMUTABLE:
@@ -94,7 +95,7 @@ public interface FieldAnalysis extends Analysis {
 
         DV notNull = getProperty(Property.EXTERNAL_NOT_NULL);
         DV immutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-        DV container = getProperty(Property.CONTAINER);
+        DV container = getProperty(Property.EXTERNAL_CONTAINER);
         DV independent = getProperty(Property.INDEPENDENT);
 
         CausesOfDelay delay = notNull.causesOfDelay().merge(immutable.causesOfDelay())

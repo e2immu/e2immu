@@ -57,6 +57,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
     public static final String COMPUTE_MODIFIED_CYCLES = "computeModifiedCycles";
     public static final String COMPUTE_RETURN_VALUE = "computeReturnValue";
     public static final String COMPUTE_IMMUTABLE = "computeImmutable";
+    public static final String COMPUTE_CONTAINER = "computeContainer";
     public static final String DETECT_MISSING_STATIC_MODIFIER = "detectMissingStaticModifier";
     public static final String EVENTUAL_PREP_WORK = "eventualPrepWork";
     public static final String ANNOTATE_EVENTUAL = "annotateEventual";
@@ -136,6 +137,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
+                .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE: computeContainer())
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
                 .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
@@ -432,8 +434,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         return null;
     }
 
-    private final static Set<Property> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(CONTAINER);
-
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue() {
@@ -574,13 +574,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     ve2.variable() instanceof ParameterInfo pi && pi.getMethod() == methodInfo && pi.index == 0;
             methodAnalysis.setProperty(IDENTITY, DV.fromBoolDv(isIdentity));
         }
-        // this is pretty dangerous for IDENTITY / will work for CONTAINER
-        for (Property property : READ_FROM_RETURN_VALUE_PROPERTIES) {
-            DV v = variableInfo.getProperty(property, property.falseDv);
-            methodAnalysis.setProperty(property, v);
-            log(NOT_NULL, "Set {} of {} to value {}", property, methodInfo.fullyQualifiedName, v);
-        }
-
         return DONE;
     }
 
@@ -591,6 +584,31 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         methodAnalysis.setProperty(IMMUTABLE, immutable);
         log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
+    }
+
+    private AnalysisStatus computeContainer() {
+        if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
+        DV container = computeContainerValue();
+        if (container.isDelayed()) return container.causesOfDelay();
+        methodAnalysis.setProperty(CONTAINER, container);
+        log(IMMUTABLE_LOG, "Set @Container to {} on {}", container, methodInfo.fullyQualifiedName);
+        return DONE;
+    }
+
+    private DV computeContainerValue() {
+        if (!methodAnalysis.singleReturnValue.isFinal()) {
+            log(DELAYED, "Delaying @Container on {} until return value is set", methodInfo.fullyQualifiedName);
+            return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
+        }
+        Expression expression = methodAnalysis.singleReturnValue.get();
+        if (expression.isConstant()) {
+            return DV.TRUE_DV;
+        }
+        VariableInfo variableInfo = getReturnAsVariable();
+
+        DV dynamic = variableInfo.getProperty(CONTAINER);
+        DV dynamicExt = variableInfo.getProperty(EXTERNAL_CONTAINER);
+        return dynamic.max(dynamicExt);
     }
 
     private DV computeImmutableValue() {
@@ -885,6 +903,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         AnalysisStatus statusOfStatementAnalyser = analyserComponents.getStatus(ComputingMethodAnalyser.STATEMENT_ANALYSER);
         if (statusOfStatementAnalyser.isDelayed()) {
             StatementAnalyser statement = findFirstStatementWithDelays(firstStatementAnalyser);
+            assert statement != null;
             AnalyserComponents<String, StatementAnalyserSharedState> analyserComponentsOfStatement = statement.getAnalyserComponents();
             LOGGER.warn("Analyser components of first statement with delays {} of {}:\n{}", statement.index(),
                     methodInfo.fullyQualifiedName(),
@@ -912,7 +931,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
             if (opt.orElse(null) == null) return sa;
             sa = opt.get();
         }
-        return sa;
+        return null;
     }
 
     // occurs as often in a flatMap as not, so a stream version is useful
@@ -979,6 +998,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         private Property external(Property property) {
             if (property == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
             if (property == IMMUTABLE) return EXTERNAL_IMMUTABLE;
+            if (property == CONTAINER) return EXTERNAL_CONTAINER;
             return property;
         }
 

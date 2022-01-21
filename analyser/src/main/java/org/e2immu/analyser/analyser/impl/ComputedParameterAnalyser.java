@@ -103,6 +103,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             parameterAnalysis.setProperty(INDEPENDENT, contractIndependent);
         }
 
+        DV contractContainer = parameterAnalysis.getProperty(CONTAINER);
+        if (contractContainer.isDone() && !parameterAnalysis.properties.isDone(CONTAINER)) {
+            parameterAnalysis.setProperty(CONTAINER, contractContainer);
+        }
+
         DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contractModified.isDone() && !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, contractModified);
@@ -206,7 +211,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     /*
-    Only contracted, but it does inherit.
+    Contracted + inherited.
+    Can travel from the assigned fields;
+
     Meaning: no argument to this parameter can be of a concrete type that modifies its parameters.
 
     Types that are final cannot be sub-classed, so we can simply look at the @Container property.
@@ -260,7 +267,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private static final Set<Property> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-            EXTERNAL_IMMUTABLE);
+            EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER);
 
     private static Set<Property> propertiesToCopy(DV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTIES;
@@ -391,7 +398,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
-                parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE);
+                parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
+                parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER);
 
         if (delays.isDelayed()) {
             parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
@@ -404,7 +412,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private static boolean isExternal(Property property) {
-        return property == EXTERNAL_NOT_NULL || property == EXTERNAL_IMMUTABLE;
+        return property == EXTERNAL_NOT_NULL || property == EXTERNAL_IMMUTABLE || property == EXTERNAL_CONTAINER;
     }
 
     private DV combineImmutable(DV formallyImmutable, DV contractImmutable, boolean contractedBefore) {
@@ -515,7 +523,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,
-            Property.CONTEXT_MODIFIED, CONTEXT_IMMUTABLE};
+            Property.CONTEXT_MODIFIED, CONTEXT_IMMUTABLE, CONTEXT_CONTAINER};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -603,6 +611,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             if (!parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
+            }
+            if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
+                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, DV.FALSE_DV);
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

@@ -304,10 +304,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return getMethodProperty(property);
         }
 
-        private DV formalProperty() {
-            return analysisProvider.getProperty(returnType, Property.IMMUTABLE);
-        }
-
         public void transferPropertiesToAnnotations(AnalyserContext analyserContext, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             DV modified = getProperty(Property.MODIFIED_METHOD);
 
@@ -329,10 +325,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             annotations.put(ae, true);
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            DV formallyImmutable = formalProperty();
+            DV formallyImmutable = analysisProvider.getProperty(returnType, Property.IMMUTABLE);
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
-            if (dynamicallyImmutable.gt(formallyImmutable)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
+            DV formallyContainer = analysisProvider.getProperty(returnType, Property.CONTAINER);
+            DV dynamicallyContainer = getProperty(Property.CONTAINER);
+            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
+                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }
 
             if (returnType.isVoidOrJavaLangVoid()) return;

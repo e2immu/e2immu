@@ -137,7 +137,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
             return switch (property) {
                 case EXTERNAL_IMMUTABLE, IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
                 case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
-                case CONSTANT, CONTAINER -> DV.TRUE_DV;
+                case CONSTANT, EXTERNAL_CONTAINER, CONTAINER -> DV.TRUE_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
             };
@@ -150,6 +150,9 @@ public class ArrayInitializer extends BaseExpression implements Expression {
         if (Property.EXTERNAL_IMMUTABLE == property || Property.IMMUTABLE == property) {
             // it is an array
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
+        }
+        if(Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
+            return DV.TRUE_DV;
         }
         // default is to refer to each of the components
         return multiExpression.getProperty(evaluationContext, property, duringEvaluation);

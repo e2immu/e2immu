@@ -12,25 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.minor.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-// pretty basic, TRUE all around
-// this one should not raise an error: the go method sees "set" first
-// as a field without EXT_CONT, then EXT_CONT comes in, but it is also TRUE
+import org.e2immu.annotation.ERContainer;
 
-import org.e2immu.annotation.Container;
+/*
+An anonymous subtype created in the constructor.
+ */
+@ERContainer
+public class SubTypes_10 {
 
-import java.util.Set;
-
-public class ExternalContainer_1 {
-
-    private final Set<String> set = Set.of("Hi!");
-
-    public void go() {
-        print(set);
+    interface External {
     }
 
-    private static void print(@Container Set<String> in) {
-        System.out.println(in);
+    private final External external;
+
+    public SubTypes_10() {
+        external = new External() {
+        };
+    }
+
+    public void go() {
+        System.out.println(external);
     }
 }

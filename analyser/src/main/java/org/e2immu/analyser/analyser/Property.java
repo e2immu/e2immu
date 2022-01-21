@@ -142,6 +142,9 @@ public enum Property {
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
     CONTAINER("@Container", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.CONTAINER),
+    EXTERNAL_CONTAINER("external @Container", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.EXT_CONTAINER),
+    CONTEXT_CONTAINER("context @Container", DV.FALSE_DV, DV.TRUE_DV, DV.FALSE_DV, CauseOfDelay.Cause.CONTEXT_CONTAINER),
+
     CONSTANT("@Constant", CauseOfDelay.Cause.CONSTANT),
     FLUENT("@Fluent", CauseOfDelay.Cause.FLUENT),
     IDENTITY("@Identity", CauseOfDelay.Cause.IDENTITY),

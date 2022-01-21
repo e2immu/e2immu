@@ -35,8 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.Property.CONTEXT_IMMUTABLE;
-import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
@@ -124,6 +123,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         if (evaluationContext.isMyself(vi.variable())) {
             vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
+            vi.setProperty(CONTEXT_CONTAINER, DV.FALSE_DV);
         }
     }
 

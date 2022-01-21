@@ -114,17 +114,20 @@ public interface VariableInfo {
                     i1.isDelayed() || i2.isDelayed() ? i1.min(i2) : DV.FALSE_DV;
 
     List<MergeOp> MERGE = List.of(
-
             new MergeOp(IN_NOT_NULL_CONTEXT, DV::max, IN_NOT_NULL_CONTEXT.falseDv),
 
             new MergeOp(NOT_NULL_EXPRESSION, DV::min, NOT_NULL_EXPRESSION.bestDv),
             new MergeOp(CONTEXT_NOT_NULL, DV::min, CONTEXT_NOT_NULL.falseDv),
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
+
             new MergeOp(IMMUTABLE, DV::min, IMMUTABLE.bestDv),
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
 
+            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
             new MergeOp(CONTAINER, DV::min, CONTAINER.bestDv),
+            new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
+
             new MergeOp(IDENTITY, DV::min, IDENTITY.bestDv),
 
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
@@ -140,6 +143,8 @@ public interface VariableInfo {
             new MergeOp(EXTERNAL_NOT_NULL, DV::min, EXTERNAL_NOT_NULL.bestDv),
             new MergeOp(EXTERNAL_IMMUTABLE, DV::min, EXTERNAL_IMMUTABLE.bestDv),
             new MergeOp(CONTEXT_IMMUTABLE, DV::max, CONTEXT_IMMUTABLE.falseDv),
+            new MergeOp(EXTERNAL_CONTAINER, DV::min, EXTERNAL_CONTAINER.bestDv),
+            new MergeOp(CONTEXT_CONTAINER, DV::max, CONTEXT_CONTAINER.falseDv),
 
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseDv),
             new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseDv)

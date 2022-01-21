@@ -120,8 +120,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, boolean betterThanFormal) {
-        DV container = getProperty(Property.CONTAINER);
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable,  DV container, boolean betterThanFormal) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysis) this).getTypeInfo().isInterface();

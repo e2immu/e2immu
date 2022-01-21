@@ -24,9 +24,11 @@ public class GroupPropertyValues {
     public static final Set<Property> PROPERTIES = Set.of(
             Property.CONTEXT_MODIFIED,
             Property.CONTEXT_NOT_NULL,
+            Property.CONTEXT_IMMUTABLE,
+            Property.CONTEXT_CONTAINER,
             Property.EXTERNAL_NOT_NULL,
             Property.EXTERNAL_IMMUTABLE,
-            Property.CONTEXT_IMMUTABLE);
+            Property.EXTERNAL_CONTAINER);
 
     private final Map<Property, Map<Variable, DV>> map = new HashMap<>();
 

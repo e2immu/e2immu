@@ -260,4 +260,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder().build());
+    }
 }

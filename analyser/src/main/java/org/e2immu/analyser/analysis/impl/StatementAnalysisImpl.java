@@ -667,7 +667,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, CONTAINER);
+            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, CONTAINER);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -771,7 +771,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
     }
 
-    private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE);
+    private static final Set<Property> FROM_FIELD_ANALYSER_TO_PROPERTIES = Set.of(EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
+            EXTERNAL_CONTAINER);
 
     @Override
     public void ensureMessages(Stream<Message> messageStream) {
@@ -984,7 +985,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
                     inSwitchStatementOldStyle);
-            if(!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
+            if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
 
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
@@ -1159,13 +1160,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay extImmStatus = computeLinkedVariables.write(EXTERNAL_IMMUTABLE,
                 groupPropertyValues.getMap(EXTERNAL_IMMUTABLE));
 
+        CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER,
+                groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+
         CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
         CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
 
-        return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus).merge(cImmStatus));
+        CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
+                groupPropertyValues.getMap(CONTEXT_CONTAINER));
+
+        return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
+                .merge(extContStatus).merge(cImmStatus).merge(cContStatus));
     }
 
 
@@ -1319,7 +1327,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 EXTERNAL_NOT_NULL, NOT_INVOLVED_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
                 EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV,
-                CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE)
+                EXTERNAL_CONTAINER, DV.FALSE_DV,
+                CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE),
+                CONTEXT_CONTAINER, valueProperties.get(CONTAINER)
         ));
         Properties allProperties = valueProperties.combine(properties);
         vic.setValue(instance, LinkedVariables.EMPTY, allProperties, true);
@@ -1331,6 +1341,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties map = sharedContext(defaultNotNull);
         map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
+        map.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
         Identifier identifier = Identifier.generate(); // FIXME
         UnknownExpression ue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
         vic.setValue(ue, LinkedVariables.EMPTY, map, true);
@@ -1348,7 +1359,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
         properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-
+        properties.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
         UnknownExpression value = UnknownExpression.forReturnVariable(methodAnalysis.getMethodInfo().identifier,
                 returnVariable.returnType);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
@@ -1369,6 +1380,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // external: not relevant
         properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
         properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
+        properties.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
 
         Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
         vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
@@ -1390,7 +1402,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         combined.put(EXTERNAL_NOT_NULL, extNotNull);
         DV extImm = fieldAnalysis.getProperty(EXTERNAL_IMMUTABLE);
         combined.put(EXTERNAL_IMMUTABLE, extImm);
-
+        DV extCont = fieldAnalysis.getProperty(EXTERNAL_CONTAINER);
+        combined.put(EXTERNAL_CONTAINER, extCont);
         vic.setValue(value, LinkedVariables.EMPTY, combined, true);
     }
 
@@ -1458,6 +1471,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         result.put(CONTEXT_NOT_NULL, contextNotNull);
         result.put(CONTEXT_IMMUTABLE, MUTABLE_DV);
         result.put(CONTEXT_MODIFIED, DV.FALSE_DV);
+        result.put(CONTEXT_CONTAINER, DV.FALSE_DV);
         return result;
     }
 
@@ -1857,7 +1871,10 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
 
         vic.ensureEvaluation(location, assignmentIds, readId, changeData.readAtStatementTime());
-        if (evaluationContext.isMyself(variable)) vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
+        if (evaluationContext.isMyself(variable)) {
+            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
+            vic.setProperty(CONTEXT_CONTAINER, DV.FALSE_DV, EVALUATION);
+        }
     }
 
 

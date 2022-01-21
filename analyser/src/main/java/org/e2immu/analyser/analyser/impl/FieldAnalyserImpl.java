@@ -51,6 +51,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.Property.CONTAINER;
+import static org.e2immu.analyser.analyser.Property.EXTERNAL_CONTAINER;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -385,12 +387,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     Formal type delayed -> wait
      */
     private AnalysisStatus analyseContainer() {
-        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.CONTAINER).isDone()) return DONE;
+        if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
 
         TypeInfo formalType = fieldInfo.type.bestTypeInfo();
         if (formalType == null) {
             // unbound parameter types are @Container locally: there's no modifying methods you can call on them
-            fieldAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, DV.TRUE_DV);
             return DONE;
         }
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
@@ -401,13 +403,13 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             } else {
                 log(MODIFICATION, "Set @Container of field {} to {}", fqn, formal);
             }
-            fieldAnalysis.setProperty(Property.CONTAINER, formal);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, formal);
             return AnalysisStatus.of(formal);
         }
 
         if (fieldAnalysis.valuesStatus().isDelayed()) {
             log(DELAYED, "Delaying @Container on field {}, waiting for values", fqn);
-            fieldAnalysis.setProperty(Property.CONTAINER, fieldAnalysis.valuesStatus());
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus();
         }
         DV minimum = fieldAnalysis.getValues().isEmpty() ? formal : DV.TRUE_DV;
@@ -428,14 +430,17 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         } else {
             log(MODIFICATION, "Set @Container of field {} to {}", fqn, minimum);
         }
-        fieldAnalysis.setProperty(Property.CONTAINER, minimum);
+
+        // FIXME: add CONTEXT_CONTAINER values from methods where the field is read
+
+        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, minimum);
         return AnalysisStatus.of(minimum);
     }
 
     // this differs slightly from what is used for the formal type: interface is always returned
     private DV containerOfConcreteType(TypeInfo formalType) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
-        DV typeContainer = typeAnalysis.getProperty(Property.CONTAINER);
+        DV typeContainer = typeAnalysis.getProperty(CONTAINER);
         if (typeContainer.isDelayed() || formalType.isFinal(analyserContext) || formalType.isInterface()) {
             // interfaces must get their @Container property contracted.
             // java.lang.String, enum classes which are containers... they cannot be subclassed
@@ -1468,6 +1473,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         private Property replaceForFieldAnalyser(Property property) {
             if (property == Property.NOT_NULL_EXPRESSION) return Property.EXTERNAL_NOT_NULL;
             if (property == Property.IMMUTABLE) return Property.EXTERNAL_IMMUTABLE;
+            if (property == Property.CONTAINER) return EXTERNAL_CONTAINER;
             return property;
         }
 

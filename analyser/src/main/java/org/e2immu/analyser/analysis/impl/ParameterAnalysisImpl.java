@@ -132,6 +132,16 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV) && independentType.lt(MultiLevel.INDEPENDENT_1_DV)) {
                 annotations.put(e2ImmuAnnotationExpressions.independent1, true);
             }
+
+            DV formallyImmutable = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.IMMUTABLE);
+            DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
+            DV formallyContainer = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.CONTAINER);
+            DV dynamicallyContainer = getProperty(Property.CONTAINER);
+            // FIXME We need to know if somehow the properties were contracted, so that no verification is necessary
+            // this is a general problem
+            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
+                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
+            }
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {

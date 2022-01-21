@@ -15,37 +15,82 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
-/*
-Whether implementations of External are @Container, or not, depends on
-whether ExternalContainer_0 is a @Container, or not.
+// example that shows the basics of what a @Container contracted restriction can do
+// readable in a sort of sequential way.
 
-In this example, it is, and there will be no error on the print() call in go.
-
-Inside methods, the field "external" starts off as @Container.
-It is the job of the EXTERNAL_CONTAINER property to travel from the field
-into the methods, to potentially raise an issue.
- */
-@ERContainer
 public class ExternalContainer_0 {
 
-
-    interface External {
+    interface Consumer<T> {
+        // allow for modifying accepts
+        @Modified
+        void accept(T t); // allow for modification of t
     }
 
-    private final External external;
+    @Container // no methods that modify their parameters
+    static class I {
+        int i;
 
-    public ExternalContainer_0() {
-        external = new External() {
-        };
+        public void setI(int i) {
+            this.i = i;
+        }
+
+        public int getI() {
+            return i;
+        }
+    }
+
+    @Container(absent = true) // one method that modifies its parameter!
+    record MyNonContainer(int value) implements Consumer<I> {
+
+        @Override
+        public void accept(@Modified I i) {
+            i.setI(value);
+        }
+    }
+
+    @Container
+    static class MyContainer implements Consumer<I> {
+        private int value;
+
+        @Override
+        public void accept(I i) {
+            value = i.getI();
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    @Container(absent = true)
+    private final Consumer<I> myNonContainer = new MyNonContainer(3);
+    @Container // computed from the assignment
+    private final Consumer<I> myContainer = new MyContainer();
+    @Container // computed
+    private final Consumer<I> myContainerLinkedToParameter;
+
+    // not contracted but computed: the @Container property, travels from @Container on the field
+    public ExternalContainer_0(@Container Consumer<I> consumer) {
+        this.myContainerLinkedToParameter = consumer;
     }
 
     public void go() {
-        print(external);
+        print(myContainerLinkedToParameter); // causes CONTEXT_CONTAINER to go up, which travels to the field, to the param
+        print(myContainer); // does not raise an error
+        print(myNonContainer); // raises an error
     }
 
-    private static void print(@Container External external) {
-        System.out.println(external);
+    // the cause of all complexity: we demand that all implementations be @Container
+    private void print(@Container(contract = true) Consumer<I> in) {
+        in.accept(i);
+        System.out.println(i.getI());
     }
+
+    // we can be guaranteed that the accept method in "print" does not modify i!
+    @NotModified
+    private final I i = new I();
+
 }

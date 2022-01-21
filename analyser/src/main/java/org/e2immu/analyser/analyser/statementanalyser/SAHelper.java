@@ -76,8 +76,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             DV change = changeData.getOrDefault(k, k.valueWhenAbsent());
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 DV value = switch (k) {
-                    case EXTERNAL_IMMUTABLE, CONTEXT_MODIFIED, EXTERNAL_NOT_NULL -> prev.max(change);
+                    case EXTERNAL_CONTAINER, EXTERNAL_IMMUTABLE, CONTEXT_MODIFIED, EXTERNAL_NOT_NULL -> prev.max(change);
                     case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
+                    case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? DV.FALSE_DV : prev.max(change);
                     case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
                     default -> throw new UnsupportedOperationException();
                 };
@@ -126,6 +127,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         // the field's value is taken anyway
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, MultiLevel.NOT_INVOLVED_DV);
         groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, MultiLevel.NOT_INVOLVED_DV);
+        groupPropertyValues.set(EXTERNAL_CONTAINER, variable, DV.FALSE_DV);
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);
@@ -133,6 +135,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? DV.FALSE_DV : cm);
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
+        DV cCont = res.remove(CONTEXT_CONTAINER);
+        groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? DV.FALSE_DV : cCont);
 
         return res;
     }

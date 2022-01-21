@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analysis.impl;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -254,16 +252,27 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             doNotNull(e2ImmuAnnotationExpressions, getProperty(Property.EXTERNAL_NOT_NULL));
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            DV typeImmutable = typeImmutable();
-            DV fieldImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
-            if (fieldImmutable.gt(typeImmutable)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, fieldImmutable, true);
+            DV formallyImmutable = typeImmutable();
+            DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
+            DV formallyContainer = typeContainer();
+            DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
+
+            assert dynamicallyContainer.ge(formallyContainer) : "Have to have at least the same container value";
+            assert dynamicallyImmutable.ge(formallyImmutable) : "Have to have at least the same immutability value";
+
+            if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
+                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }
         }
 
         private DV typeImmutable() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
+        }
+
+        private DV typeContainer() {
+            return fieldInfo.owner == bestType || bestType == null ? DV.FALSE_DV :
+                    analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
         }
 
         public boolean isDeclaredFunctionalInterface() {

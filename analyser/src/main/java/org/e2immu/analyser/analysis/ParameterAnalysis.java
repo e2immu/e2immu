@@ -56,7 +56,8 @@ public interface ParameterAnalysis extends Analysis {
         if (propertyFromType != DV.MIN_INT_DV) return propertyFromType;
 
         switch (property) {
-            case CONTAINER:
+            case EXTERNAL_CONTAINER:
+            case CONTEXT_CONTAINER:
             case INDEPENDENT:
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD:
@@ -80,6 +81,16 @@ public interface ParameterAnalysis extends Analysis {
                 DV cm = getPropertyFromMapDelayWhenAbsent(CONTEXT_MODIFIED);
                 DV mom = getPropertyFromMapDelayWhenAbsent(MODIFIED_OUTSIDE_METHOD);
                 return cm.max(mom);
+            }
+
+            case CONTAINER: {
+                DV container = getPropertyFromMapDelayWhenAbsent(CONTAINER);
+                if (container.isDone()) return container;
+                DV external = getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER);
+                if (external.equals(property.bestDv)) return external;
+                DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_CONTAINER);
+                if (context.equals(property.bestDv)) return context;
+                return external.max(context);
             }
 
             case IMMUTABLE: {

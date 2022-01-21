@@ -248,7 +248,9 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED_DV);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
+        setProperty(CONTEXT_CONTAINER, DV.FALSE_DV);
         setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED_DV);
+        setProperty(EXTERNAL_CONTAINER, DV.FALSE_DV);
     }
 
     public void ensureProperty(Property property, DV dv) {

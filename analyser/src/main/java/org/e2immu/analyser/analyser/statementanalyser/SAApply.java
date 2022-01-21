@@ -324,6 +324,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 groupPropertyValues.getMap(CONTEXT_MODIFIED));
         delay = delay.merge(cmStatus);
 
+        // 6
+        CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER, groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+
+        // 7
+        CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
+
         // odds and ends
 
         if (evaluationResult.causesOfDelay().isDone()) {
@@ -334,7 +340,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Precondition precondition = evaluationResult.precondition();
         delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager()));
-        CausesOfDelay merge = ennStatus.merge(extImmStatus).merge(cImmStatus).merge(anyEnn).merge(anyExtImm);
+        CausesOfDelay merge = ennStatus.merge(extImmStatus).merge(cImmStatus).merge(anyEnn)
+                .merge(anyExtImm).merge(extContStatus).merge(cContStatus);
         return new ApplyStatusAndEnnStatus(delay, merge);
     }
 
@@ -445,8 +452,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 new SimpleSet(new VariableCause(x, statementAnalysis.location(),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
+        addToMap(groupPropertyValues, EXTERNAL_CONTAINER, x -> analyserContext.defaultContainer(x.parameterizedType()), false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
+        addToMap(groupPropertyValues, CONTEXT_CONTAINER, x -> DV.FALSE_DV, true);
     }
 
     void addToMap(GroupPropertyValues groupPropertyValues,

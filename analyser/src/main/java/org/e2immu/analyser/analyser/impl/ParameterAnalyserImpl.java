@@ -95,6 +95,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             check(E2Immutable.class, e2.e2Immutable);
             check(E2Container.class, e2.e2Container);
 
+            check(Container.class, e2.container);
             checkWorseThanParent();
         }
     }
