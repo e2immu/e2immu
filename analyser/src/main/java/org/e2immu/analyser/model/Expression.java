@@ -198,4 +198,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default List<Expression> collectSolidValues() {
         return List.of(this);
     }
+
+    default TypeInfo bestConcreteTypeInfo() {
+        return returnType().bestTypeInfo();
+    }
 }

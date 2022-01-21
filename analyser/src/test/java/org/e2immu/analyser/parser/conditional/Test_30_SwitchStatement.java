@@ -157,7 +157,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}";
-                        case 1 -> "{<vp:ONE:container@Field_ONE;immutable@Enum_Choices>,<vp:TWO:container@Field_TWO;immutable@Enum_Choices>,<vp:THREE:container@Field_THREE;immutable@Enum_Choices>,<vp:FOUR:container@Field_FOUR;immutable@Enum_Choices>}";
+                        case 1 -> "{<vp:ONE:container@Enum_Choices;immutable@Enum_Choices>,<vp:TWO:container@Enum_Choices;immutable@Enum_Choices>,<vp:THREE:container@Enum_Choices;immutable@Enum_Choices>,<vp:FOUR:container@Enum_Choices;immutable@Enum_Choices>}";
                         default -> "{ONE,TWO,THREE,FOUR}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());

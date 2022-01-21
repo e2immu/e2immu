@@ -253,6 +253,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
+    public TypeInfo bestConcreteTypeInfo() {
+        return anonymousClass != null ? anonymousClass : parameterizedType().bestTypeInfo();
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null || anonymousClass != null) {

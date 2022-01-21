@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
@@ -631,7 +630,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (container.isDone()) return DONE;
 
         MaxValueStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(Property.CONTAINER);
-        if (MARKER != parentOrEnclosing.status) return parentOrEnclosing.status;
+        if (MARKER != parentOrEnclosing.status) {
+            return parentOrEnclosing.status;
+        }
 
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (methodAnalyser.getMethodInfo().isAccessibleOutsidePrimaryType()) {
@@ -776,6 +777,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (min.isDelayed()) {
             log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
                     property, typeInfo.fullyQualifiedName);
+            typeAnalysis.setProperty(property, min.causesOfDelay());
             return new MaxValueStatus(min, min.causesOfDelay());
         }
         if (min.equals(property.falseDv)) {
@@ -1032,7 +1034,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             for (ParameterAnalysis parameterAnalysis : constructor.getParameterAnalyses()) {
                 DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 if (independent.isDelayed()) {
-                    if(parameterAnalysis.getParameterInfo().parameterizedType.typeInfo == typeInfo) {
+                    if (parameterAnalysis.getParameterInfo().parameterizedType.typeInfo == typeInfo) {
                         continue;
                     }
                     log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
@@ -1069,9 +1071,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     returnType = analyserContext.getMethodInspection(methodAnalyser.getMethodInfo()).getReturnType();
                 }
                 boolean returnTypePartOfMyself = isOfOwnOrInnerClassType(returnType);
-                if(returnTypePartOfMyself) continue;
+                if (returnTypePartOfMyself) continue;
                 if (returnTypeImmutable.isDelayed()) {
-                    if(srv.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_IMMUTABLE_DELAY)) {
+                    if (srv.causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_IMMUTABLE_DELAY)) {
                         log(DELAYED, "Breaking @Immutable delay self reference", methodAnalyser.getMethodInfo().distinguishingName());
                         continue;
                     }

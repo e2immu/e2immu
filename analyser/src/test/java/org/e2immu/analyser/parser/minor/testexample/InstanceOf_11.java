@@ -14,7 +14,12 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+/*
+Part of own code (GreaterThanZero), first extracted because of instance pattern problems.
+Useful for infinite loop detection: the field "InstanceOf_11.expression" is
+dependent on the properties of InstanceOf_11 itself, because it is of an (anonymous) inner class.
 
+ */
 
 public class InstanceOf_11 {
 
@@ -33,7 +38,7 @@ public class InstanceOf_11 {
 
     private record Sum(Expression lhs, Expression rhs) implements Expression {
         public Double numericPartOfLhs() {
-            return lhs.equals(rhs)? 3.0: null;
+            return lhs.equals(rhs) ? 3.0 : null;
         }
 
         public Expression nonNumericPartOfLhs(EvaluationContext evaluationContext) {

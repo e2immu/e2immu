@@ -621,45 +621,97 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
+        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1
-                                ? "<instanceOf:Sum>&&null!=<m:numericPartOfLhs>?<new:XB>:<return value>" : "";
+                if("sum".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expect = d.iteration()==0 ? "<f:expression>/*(Sum)*/"
+                                :"<vp:expression:container@Class_InstanceOf_11;immutable@Class_InstanceOf_11>/*(Sum)*/";
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLv = switch (d.iteration()) {
-                            case 0 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:-1,evaluationContext:-1,return method:0,this.expression:-1,x:-1";
-                            case 1 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:-1,return method:0,this.expression:-1,x:-1";
-                            default -> "";
-                        };
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                if (d.variable() instanceof FieldReference fr && "expression".equals(fr.fieldInfo.name)
-                        && "ne".equals(fr.scope.toString())) {
-                    assertTrue(d.statementId().startsWith("3"), "In " + d.statementId());
-                }
-                if ("x".equals(d.variableName())) {
-                    if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1
-                                ? "<instanceOf:Negation>?<f:expression>:<f:expression>" : "";
-                        assertEquals(expect, d.currentValue().toString());
-                        String expectLv = switch (d.iteration()) {
-                            case 0 -> "<out of scope:ne1:0.0.1.0.4>.expression:-1,<out of scope:ne:3>.expression:0,evaluationContext:-1,return method:-1,this.expression:-1,x:0";
-                            case 1 -> "ne.expression:0,this.expression:0,x:0";
-                            default -> "";
-                        };
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                if (d.variable() instanceof ParameterInfo p && "evaluationContext".equals(p.name)) {
+                    if ("0.0.1.0.0".equals(d.statementId())) {
+                        // delays in clustering in iteration 2, otherwise we'd have CM
+                        assertDv(d, BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
-                if ("ne".equals(d.variableName())) {
-                    assertTrue(d.statementId().startsWith("3"), "In " + d.statementId());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expression".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+            if ("method".equals(d.methodInfo().name)) {
+                assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_METHOD);
+
+                // only reason for waiting would be nonNumericPartOfLhs, where it appears as argument
+                // but there are still delays in clustering in 0.0.1.0.0 in iteration 2
+                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), BIG, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("nonNumericPartOfLhs".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+            }
+            if ("numericPartOfLhs".equals(d.methodInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            switch (d.typeInfo().simpleName) {
+                case "$1" -> {
+
+                    // means: we have to wait until we know the property of the enclosing type
+                    String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
+                    assertDv(d, expect, BIG, DV.TRUE_DV, Property.CONTAINER);
+                }
+                case "Expression" -> {
+                    assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                }
+                case "EvaluationContext" -> {
+                    assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                }
+                case "InstanceOf_11" -> {
+                    assertDv(d, "cm@Parameter_evaluationContext", BIG, DV.TRUE_DV, Property.CONTAINER);
+                }
+                case "Negation" -> {
+                    assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                }
+                case "Sum" -> {
+                    assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                }
+                case "XB" -> {
+                    assertDv(d, "cm@Parameter_x;mom@Parameter_x", 1, DV.TRUE_DV, Property.CONTAINER);
+                }
+                default -> fail("? " + d.typeInfo().simpleName);
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("expression".equals(d.fieldInfo().name)) {
+                switch (d.fieldInfo().owner.simpleName) {
+                    case "InstanceOf_11" -> {
+                        assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
+                        String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext";
+                        assertDv(d, expect, BIG, DV.TRUE_DV, Property.CONTAINER);
+                        assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                    }
+                    case "Negation" -> {
+                        assertEquals("expression", d.fieldAnalysis().getValue().toString());
+                        assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                        assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                    }
+                    default -> fail("? " + d.fieldInfo().owner.simpleName);
                 }
             }
         };
         testClass("InstanceOf_11", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
