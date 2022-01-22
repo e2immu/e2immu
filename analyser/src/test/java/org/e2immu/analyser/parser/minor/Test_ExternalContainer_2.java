@@ -66,7 +66,7 @@ public class Test_ExternalContainer_2 extends CommonTestRunner {
                 assertDv(d, 3, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);

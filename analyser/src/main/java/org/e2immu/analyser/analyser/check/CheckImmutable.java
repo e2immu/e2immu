@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Messages;
@@ -38,6 +39,7 @@ public class CheckImmutable {
                              boolean level,
                              boolean recursive) {
         List<CheckLinks.AnnotationKV> kvs = new ArrayList<>(3);
+        Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
         if (after) {
             TypeAnalysis typeAnalysis = (TypeAnalysis) analysis;
@@ -46,22 +48,21 @@ public class CheckImmutable {
             kvs.add(new CheckLinks.AnnotationKV(extractInspected1, value1));
         }
 
-        if (level) {
-            Function<AnnotationExpression, String> extractInspected2 = ae -> {
-                Integer i = ae.extract("level", null);
-                return i == null ? null : Integer.toString(i);
-            };
-            String value2 = CheckIndependent.levelString(analysis, Property.IMMUTABLE);
-            kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
-        }
-
         if (recursive) {
             Function<AnnotationExpression, String> extractInspected3 = ae -> {
                 Boolean b = ae.extract("recursive", null);
                 return b != null && b ? "true" : null;
             };
-            String value3 = recursive(analysis);
+            String value3 = recursive(property, analysis);
             kvs.add(new CheckLinks.AnnotationKV(extractInspected3, value3));
+        }
+        if (level) {
+            Function<AnnotationExpression, String> extractInspected2 = ae -> {
+                Integer i = ae.extract("level", null);
+                return i == null ? null : Integer.toString(i);
+            };
+            String value2 = CheckIndependent.levelString(analysis, property);
+            kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
         }
 
         CheckLinks.checkAnnotationWithValue(messages,
@@ -74,8 +75,8 @@ public class CheckImmutable {
                 info.newLocation());
     }
 
-    private static String recursive(Analysis analysis) {
-        DV immutable = analysis.getProperty(Property.IMMUTABLE);
+    private static String recursive(Property property, Analysis analysis) {
+        DV immutable = analysis.getProperty(property);
         if (MultiLevel.level(immutable) == MultiLevel.MAX_LEVEL) return "true";
         return null;
     }
