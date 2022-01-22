@@ -27,6 +27,7 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -94,8 +95,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
 
-    public Expression removeConstructor(Properties valueProperties) {
+    public Expression removeConstructor(Properties valueProperties, Primitives primitives) {
         assert arrayInitializer == null;
+        CausesOfDelay causesOfDelay= valueProperties.delays();
+        if(causesOfDelay.isDelayed()) {
+            return DelayedExpression.forInstanceOf(primitives, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
+        }
         return new Instance(identifier, parameterizedType, valueProperties);
     }
 

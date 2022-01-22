@@ -27,9 +27,6 @@ public enum Property {
     IN_NOT_NULL_CONTEXT("in not-null context", CauseOfDelay.Cause.IN_NN_CONTEXT),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning", CauseOfDelay.Cause.CANDIDATE_NULL_PTR),
 
-    // in ForwardEvaluationInfo
-    PROPAGATE_MODIFICATION("propagate modification", CauseOfDelay.Cause.PROP_MOD),
-
     /*
     @NotNull, @Nullable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.

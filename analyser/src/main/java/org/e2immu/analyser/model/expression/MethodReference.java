@@ -91,7 +91,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
         ForwardEvaluationInfo scopeForward;
 
-        DV propagateMod = forwardEvaluationInfo.getProperty(Property.PROPAGATE_MODIFICATION);
+        DV propagateMod = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
         if (propagateMod.valueIsTrue()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);

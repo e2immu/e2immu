@@ -107,7 +107,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     annotationChecks.toImmutableMap(), getAssignedToField());
         }
 
-        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalyserContext analysisProvider,
+                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // no annotations can be added to primitives
             if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid()) return;
@@ -115,7 +116,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable
             DV modified = getProperty(Property.MODIFIED_VARIABLE);
-            if (!analysisProvider.canBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue()) {
+            DV ignoreModifications = getProperty(Property.IGNORE_MODIFICATIONS);
+            if (!analysisProvider.canBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue() &&
+                    !ignoreModifications.valueIsTrue()) {
                 AnnotationExpression ae = modified.valueIsFalse() ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);
@@ -137,8 +140,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV dynamicallyImmutable = getProperty(Property.IMMUTABLE);
             DV formallyContainer = analysisProvider.getProperty(parameterInfo.parameterizedType, Property.CONTAINER);
             DV dynamicallyContainer = getProperty(Property.CONTAINER);
-            // FIXME We need to know if somehow the properties were contracted, so that no verification is necessary
-            // this is a general problem
             if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }

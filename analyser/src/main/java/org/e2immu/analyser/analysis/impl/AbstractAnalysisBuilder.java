@@ -120,7 +120,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable,  DV container, boolean betterThanFormal) {
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, DV immutable, DV container, boolean betterThanFormal) {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysis) this).getTypeInfo().isInterface();
@@ -201,12 +201,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-            if (parameters != null && (parameters.contract()
-                    || acceptVerifyAsContracted && !parameters.absent()
-
-                    // exception: @Container on a parameter is always restrictive/contracted
-                    || analyserIdentification == Analyser.AnalyserIdentification.PARAMETER &&
-                    e2ImmuAnnotationExpressions.container.typeInfo() == annotationExpression.typeInfo())) {
+            if (parameters != null && (parameters.contract() || acceptVerifyAsContracted && !parameters.absent())) {
                 DV trueFalse = parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
                 DV falseTrue = !parameters.absent() ? DV.FALSE_DV : DV.TRUE_DV;
 

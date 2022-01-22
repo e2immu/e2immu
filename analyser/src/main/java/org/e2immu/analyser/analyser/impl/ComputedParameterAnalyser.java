@@ -73,7 +73,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .add(ANALYSE_FIRST_ITERATION, ITERATION_0, this::analyseFirstIteration)
                     .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
                     .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
-                    .add(ANALYSE_CONTAINER, ITERATION_0, this::analyseContainer)
                     .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
                     .build();
 
@@ -208,48 +207,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // finally, no other alternative
         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
         return DONE;
-    }
-
-    /*
-    Contracted + inherited.
-    Can travel from the assigned fields;
-
-    Meaning: no argument to this parameter can be of a concrete type that modifies its parameters.
-
-    Types that are final cannot be sub-classed, so we can simply look at the @Container property.
-
-    Say a parameter is of abstract type (i.e., an interface) and you present it with an argument which
-    is not a container, i.e., an implementation of the abstract type that has methods which modify their
-    parameters. This will make e2immu throw errors.
-     */
-    private AnalysisStatus analyseContainer(SharedState sharedState) {
-        DV inMap = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER);
-        if (inMap.isDelayed()) {
-            TypeInfo typeInfo = parameterInfo.parameterizedType.typeInfo;
-            if (typeInfo != null && typeInfo.isFinal(analyserContext)) {
-                DV formal = analyserContext.defaultContainer(parameterInfo.parameterizedType);
-                parameterAnalysis.setProperty(CONTAINER, formal);
-                if (formal.isDone()) {
-                    return DONE;
-                }
-                return formal.causesOfDelay();
-            }
-            DV override = bestOfParameterOverridesForContainer(parameterInfo);
-            assert override.isDone();
-            parameterAnalysis.setProperty(CONTAINER, override);
-        }
-        return DONE;
-    }
-
-    // can easily be parameterized to other variable properties
-    private DV bestOfParameterOverridesForContainer(ParameterInfo parameterInfo) {
-        return parameterInfo.owner.methodResolution.get().overrides().stream()
-                .filter(mi -> mi.analysisAccessible(InspectionProvider.DEFAULT))
-                .map(mi -> {
-                    ParameterInfo p = mi.methodInspection.get().getParameters().get(parameterInfo.index);
-                    ParameterAnalysis pa = analyserContext.getParameterAnalysis(p);
-                    return pa.getPropertyFromMapNeverDelay(Property.CONTAINER);
-                }).reduce(DV.FALSE_DV, DV::max);
     }
 
     /**

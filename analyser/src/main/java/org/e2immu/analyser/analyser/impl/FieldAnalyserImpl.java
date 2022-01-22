@@ -1082,7 +1082,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             Property.CONTAINER, proxy.getProperty(Property.CONTAINER),
                             Property.IDENTITY, proxy.getProperty(Property.IDENTITY)
                     ));
-                    effectivelyFinalValue = constructorCall.removeConstructor(valueProperties);
+                    effectivelyFinalValue = constructorCall.removeConstructor(valueProperties, fieldAnalysis.primitives);
                 } else {
                     effectivelyFinalValue = constructorCall;
                 }

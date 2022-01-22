@@ -15,34 +15,33 @@
 package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
+
+import java.util.function.Consumer;
 
 // example that shows the basics of what a @Container contracted restriction can do
 // readable in a sort of sequential way.
 
 public class ExternalContainer_0 {
 
-    interface Consumer<T> {
-        // allow for modifying accepts
-        @Modified
-        void accept(T t); // allow for modification of t
-    }
-
     @Container // no methods that modify their parameters
     static class I {
         int i;
 
+        @Modified
         public void setI(int i) {
             this.i = i;
         }
 
+        @NotModified
         public int getI() {
             return i;
         }
     }
 
-    @Container(absent = true) // one method that modifies its parameter!
+    @E2Immutable(recursive = true) // one method that modifies its parameter!
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override
@@ -56,6 +55,7 @@ public class ExternalContainer_0 {
         private int value;
 
         @Override
+        @Modified
         public void accept(I i) {
             value = i.getI();
         }
@@ -85,12 +85,14 @@ public class ExternalContainer_0 {
 
     // the cause of all complexity: we demand that all implementations be @Container
     private void print(@Container(contract = true) Consumer<I> in) {
-        in.accept(i);
-        System.out.println(i.getI());
+        in.accept(iField);
+        System.out.println(iField.getI());
     }
 
     // we can be guaranteed that the accept method in "print" does not modify i!
+    // the @Container property is absent because the formal type is the same as the concrete one
+    @Container(absent = true)
     @NotModified
-    private final I i = new I();
+    private final I iField = new I();
 
 }

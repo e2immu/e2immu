@@ -104,7 +104,7 @@ public class EvaluateParameters {
 
             // propagating modifications? a functional interface-type parameter, with @Independent1
             if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
-                doPropagateModification(recursiveOrPartOfCallCycle, parameterInfo, independent, map);
+                doContextContainer(recursiveOrPartOfCallCycle, parameterInfo, independent, map);
             }
 
             doContextModified(methodInfo, recursiveOrPartOfCallCycle, parameterInfo, map);
@@ -128,21 +128,21 @@ public class EvaluateParameters {
         return contextNotNull;
     }
 
-    private static void doPropagateModification(boolean recursiveOrPartOfCallCycle,
-                                                ParameterInfo parameterInfo,
-                                                DV independent,
-                                                Map<Property, DV> map) {
+    private static void doContextContainer(boolean recursiveOrPartOfCallCycle,
+                                           ParameterInfo parameterInfo,
+                                           DV independent,
+                                           Map<Property, DV> map) {
         if (independent.isDelayed()) {
             DV pm;
             if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
-                // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
+                // we explicitly allow for a delay on CM, it triggers CONTEXT_CONTAINER; locally, it is non-modifying
                 pm = DV.FALSE_DV;
             } else {
-                pm = parameterInfo.delay(CauseOfDelay.Cause.PROP_MOD);
+                pm = parameterInfo.delay(CauseOfDelay.Cause.CONTEXT_CONTAINER);
             }
-            map.put(Property.PROPAGATE_MODIFICATION, pm);
+            map.put(Property.CONTEXT_CONTAINER, pm);
         } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-            map.put(Property.PROPAGATE_MODIFICATION, DV.TRUE_DV);
+            map.put(Property.CONTEXT_CONTAINER, DV.TRUE_DV);
         }
     }
 
