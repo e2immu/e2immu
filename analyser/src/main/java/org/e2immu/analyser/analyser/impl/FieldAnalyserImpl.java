@@ -412,19 +412,31 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus();
         }
-        DV minimum = fieldAnalysis.getValues().isEmpty() ? formal : DV.TRUE_DV;
+        DV minimum = DV.MIN_INT_DV;
+        DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
         for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
             if (!(proxy.getValue() instanceof NullConstant)) {
                 Expression value = proxy.getValue();
-                TypeInfo concreteTypeInfo = value.bestConcreteTypeInfo();
-                if (concreteTypeInfo != null) {
-                    DV container = containerOfConcreteType(concreteTypeInfo);
-                    if (container != null) {
-                        minimum = minimum.min(container);
+                DV safeDv = safeContainer(value);
+                if (safeDv != null) {
+                    safeMinimum = safeDv.min(safeMinimum);
+                } else {
+                    TypeInfo concreteTypeInfo = value.bestConcreteTypeInfo();
+                    if (concreteTypeInfo != null) {
+                        DV container = containerOfConcreteType(concreteTypeInfo);
+                        if (container != null) {
+                            minimum = minimum.min(container);
+                        }
                     }
-                } // either done already, or unbound parameter type, which is fine
-            } // else: the null constant can be anything
+                }
+            }
         }
+        if (safeMinimum.valueIsFalse() || safeMinimum.valueIsTrue() && minimum == DV.MIN_INT_DV) {
+            log(MODIFICATION, "Set @Container on {} to safe minimum over values {}", fqn, safeMinimum);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
+            return DONE;
+        }
+        // there is at least one assignment value which is not safe
         DV finalContainer;
         if (minimum.isDelayed()) {
             finalContainer = minimum;
@@ -448,7 +460,25 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return AnalysisStatus.of(finalContainer);
     }
 
-    // this differs slightly from what is used for the formal type: interface is always returned
+    private DV safeContainer(Expression value) {
+        // for non-final classes, safe is always null
+        DV safe = analyserContext.safeContainer(value.returnType());
+        if (safe != null) return safe;
+        // but if value is a normal constructor call or an instance with a constructor state
+        // we can trust that its value is safe
+        if (value instanceof ConstructorCall cc && cc.anonymousClass() == null
+                && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
+            // we're creating an object, so we don't need the
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(value.returnType().bestTypeInfo());
+            if (typeAnalysis != null) {
+                DV container = typeAnalysis.getProperty(CONTAINER);
+                if (!container.isDelayed()) return container;
+            }
+        }
+        return null;
+    }
+
+
     private DV containerOfConcreteType(TypeInfo formalType) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV typeContainer = typeAnalysis.getProperty(CONTAINER);

@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class Test_ExternalContainer_0 extends CommonTestRunner {
     public Test_ExternalContainer_0() {
         super(true);
@@ -38,7 +40,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-//                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
                     }
                     if ("1".equals(d.statementId())) {
@@ -49,6 +51,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             if ("go".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
+                        assertDv(d, 3, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
@@ -62,7 +65,8 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("go".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED);
+                    assertEquals(d.iteration() >= 3,
+                            null != d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED));
                 }
             }
         };
@@ -91,7 +95,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("myNonContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
                 assertDv(d, 4, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
@@ -102,7 +106,7 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible
                 assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
-                //FIXME       assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -116,6 +120,8 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
             }
         };
+
+        // modification not allowed (breach of @Container contract on parameter)
         testClass("ExternalContainer_0", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

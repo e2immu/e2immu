@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
@@ -67,7 +64,7 @@ public class ExternalContainer_0 {
         }
     }
 
-    @Container // wrong, but an error has been raised!
+    @E2Immutable(recursive = true)
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
     @Container // computed from the assignment
     private final Consumer<I> myContainer = new MyContainer();

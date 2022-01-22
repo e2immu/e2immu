@@ -48,9 +48,13 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
+        DV scopeIsContainer = scopeObject == null || recursiveOrPartOfCallCycle ? DV.FALSE_DV
+                : evaluationContext.getProperty(scopeObject, Property.CONTAINER, true, true);
+
         for (Expression parameterExpression : parameterExpressions) {
             minCnnOverParameters = oneParameterReturnCnn(evaluationContext, forwardEvaluationInfo,
-                    methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression);
+                    methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
+                    scopeIsContainer);
             i++;
         }
 
@@ -74,7 +78,8 @@ public class EvaluateParameters {
                                             List<Expression> parameterValues,
                                             int position,
                                             EvaluationResult.Builder builder,
-                                            Expression parameterExpression) {
+                                            Expression parameterExpression,
+                                            DV scopeIsContainer) {
         Expression parameterValue;
         EvaluationResult parameterResult;
         DV contextNotNull;
@@ -103,7 +108,7 @@ public class EvaluateParameters {
             }
 
             doContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
-            doContextModified(methodInfo, recursiveOrPartOfCallCycle, map);
+            doContextModified(methodInfo, recursiveOrPartOfCallCycle, map, scopeIsContainer);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
             if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
@@ -140,9 +145,12 @@ public class EvaluateParameters {
 
     private static void doContextModified(MethodInfo methodInfo,
                                           boolean recursiveOrPartOfCallCycle,
-                                          Map<Property, DV> map) {
-        if (recursiveOrPartOfCallCycle) {
+                                          Map<Property, DV> map,
+                                          DV scopeIsContainer) {
+        if (recursiveOrPartOfCallCycle || scopeIsContainer.valueIsTrue()) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
+        } else if (scopeIsContainer.isDelayed()) {
+            map.merge(Property.CONTEXT_MODIFIED, scopeIsContainer, DV::max);
         } else {
             DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);
             if (contextModified == null) {

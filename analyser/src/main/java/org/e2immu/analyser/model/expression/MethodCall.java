@@ -250,7 +250,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         boolean alwaysModifying;
         boolean partOfCallCycle;
-        boolean abstractMethod;
+
         boolean recursiveCall;
 
         if (evaluationContext.getCurrentMethod() != null) {
@@ -264,8 +264,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
 
-            abstractMethod = methodInfo.isAbstract();
-
             if (circularCallOutsidePrimaryType) {
                 builder.addCircularCall();
             }
@@ -273,7 +271,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             recursiveCall = evaluationContext.getCurrentMethod().getMethodInfo() == this.methodInfo; // recursive call
         } else {
             alwaysModifying = false;
-            abstractMethod = false;
             partOfCallCycle = false;
             recursiveCall = false;
         }
@@ -326,21 +323,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
-        // revisit abstract method, check if object value pointed to a concrete, modifying method
-        // FIXME should we not do this by default, abstract or not?
-        if (abstractMethod && objectValue instanceof IsVariableExpression ve) {
-            MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(ve.variable(), methodInfo);
-            if (pointsToConcreteMethod != null) {
-                MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
-                DV modifyingConcreteMethod = concreteMethodAnalysis.getProperty(Property.MODIFIED_METHOD);
-                builder.markContextModified(ve.variable(), modifyingConcreteMethod);
-            }
-            // TODO else propagate modification?
-        }
-
         // precondition
         EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
-
 
         LinkedVariables linkedVariables = objectValue.linkedVariables(evaluationContext);
         if (object instanceof IsVariableExpression ive) {
@@ -575,7 +559,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         AtomicReference<Expression> newState = new AtomicReference<>(state);
         Set<CompanionMethodName> companionMethodNames = methodInfo.methodInspection.get().getCompanionMethods().keySet();
-        if(companionMethodNames.isEmpty()) {
+        if (companionMethodNames.isEmpty()) {
             // modifying method, without instructions on how to change the state... we simply clear it!
             newState.set(TRUE);
         } else {
