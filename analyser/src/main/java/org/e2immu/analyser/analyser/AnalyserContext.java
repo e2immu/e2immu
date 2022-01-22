@@ -172,7 +172,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         }
         DV dv = typeAnalysis.getProperty(Property.CONTAINER);
         if (dv.isDelayed()) {
-            return null;
+            return dv;
         }
         if (bestType.isFinal(this) || bestType.isInterface() && dv.valueIsTrue()) {
             return dv;

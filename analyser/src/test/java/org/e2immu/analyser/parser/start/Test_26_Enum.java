@@ -455,7 +455,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
 
             if ("END".equals(d.fieldInfo().name)) {

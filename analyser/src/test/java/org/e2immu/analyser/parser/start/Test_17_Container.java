@@ -403,11 +403,11 @@ public class Test_17_Container extends CommonTestRunner {
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<p:coll5>" : "nullable instance type Collection<String>/*@Identity*/";
+                    String expected = d.iteration() <= 1 ? "<p:coll5>" : "nullable instance type Collection<String>/*@Identity*/";
                     assertEquals(expected, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? "coll5:0,this:-1" : "coll5:0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
             int n = d.methodInfo().methodInspection.get().getParameters().size();
@@ -434,10 +434,10 @@ public class Test_17_Container extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (CONTAINER_5.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
-                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("addAll5".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
         };
 

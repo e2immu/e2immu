@@ -37,7 +37,7 @@ public class TestGenerateAnnotationsImmutable {
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, DV.FALSE_DV, false));
         assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK_DV, DV.TRUE_DV, false));
-        
+
         try {
             assertEquals(Map.of(BeforeMark.class, TRUE),
                     generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK_DV, DV.FALSE_DV, true));
@@ -130,7 +130,7 @@ public class TestGenerateAnnotationsImmutable {
     @Test
     public void testOnlyContainer() {
         assertTrue(generate(MUTABLE_DV, DV.FALSE_DV, false).isEmpty());
-        assertTrue(generate(MUTABLE_DV, DV.TRUE_DV, false).isEmpty());
+        assertEquals(Map.of(Container.class, TRUE), generate(MUTABLE_DV, DV.TRUE_DV, true));
         assertEquals(Map.of(MutableModifiesArguments.class, TRUE), generate(MUTABLE_DV, DV.FALSE_DV, true));
     }
 }

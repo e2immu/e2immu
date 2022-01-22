@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -25,9 +25,9 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class Test_27_DynamicTypeAnnotation extends CommonTestRunner {
+public class Test_27_ExternalImmutable extends CommonTestRunner {
 
-    public Test_27_DynamicTypeAnnotation() {
+    public Test_27_ExternalImmutable() {
         super(true);
     }
 
@@ -45,7 +45,7 @@ public class Test_27_DynamicTypeAnnotation extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("DynamicTypeAnnotation_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("ExternalImmutable_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

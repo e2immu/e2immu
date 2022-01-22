@@ -72,8 +72,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
-        boolean noMinInt = causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT);
-        assert noMinInt : "Causes of delay: " + causesOfDelay;
+        assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
+                : "Causes of delay: " + causesOfDelay;
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);

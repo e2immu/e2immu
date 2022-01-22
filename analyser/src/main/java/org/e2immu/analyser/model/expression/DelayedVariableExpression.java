@@ -46,6 +46,8 @@ public class DelayedVariableExpression extends BaseExpression implements Express
         this.msg = msg;
         this.debug = debug;
         this.causesOfDelay = causesOfDelay;
+        assert causesOfDelay.causesStream().noneMatch(cause -> cause.cause() == CauseOfDelay.Cause.MIN_INT)
+                : "Causes of delay: " + causesOfDelay;
         this.variable = variable;
     }
 

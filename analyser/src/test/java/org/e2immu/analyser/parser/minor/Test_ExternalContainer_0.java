@@ -35,7 +35,6 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        int BIG = 20;
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {

@@ -40,17 +40,6 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
     @Test
     public void test9() throws IOException {
-
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("add".equals(d.methodInfo().name)) {
-                if("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
-                } else {
-                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
-                }
-            }
-        };
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("theSet".equals(d.variableName())) {
@@ -117,7 +106,6 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)

@@ -46,7 +46,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
 
             if ("add6".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "values6".equals(p.name)) {
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
 
                 } else if (d.variable() instanceof ParameterInfo p && "example6".equals(p.name)) {

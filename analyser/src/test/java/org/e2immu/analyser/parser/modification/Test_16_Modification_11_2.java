@@ -143,7 +143,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {

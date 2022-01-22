@@ -20,6 +20,8 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -381,18 +383,24 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     /*
+    SAFE, no need to look at best of method, no way best of method can influence this:
     Unbound parameter type -> container (a bit by definition, there's no methods to call)
-    Interfaces -> contracted (by hand), but a concrete implementation may be given (if not contracted, it can be better, otherwise error)
-    Final type -> contracted, no other concrete implementation can exist
-    Formal type delayed -> wait
+    Interfaces with @Contracted==TRUE
+    Final type -> @Contracted, T or F
+    Constructor call non-final class -> T or F
+    Value with @Container TRUE in the value property
 
-    Values from CONTEXT_CONTAINER taken from the methods
+    Best of methods = values from CONTEXT_CONTAINER taken from the methods
+    Interfaces with @Contracted==FALSE
+    non-final classes, with @Contracted==FALSE
+
+    leaves: non-final class, @Contracted==FALSE. For now, simply return FALSE.
      */
     private AnalysisStatus analyseContainer() {
         if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
 
         DV safe = analyserContext.safeContainer(fieldInfo.type);
-        if (safe != null) {
+        if (safe != null && safe.isDone()) {
             log(MODIFICATION, "Set @Container on {} to safe value {}", fqn, safe);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safe);
             return DONE;
@@ -412,56 +420,48 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus();
         }
-        DV minimum = DV.MIN_INT_DV;
         DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
+        boolean otherValues = false;
         for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
-            if (!(proxy.getValue() instanceof NullConstant)) {
-                Expression value = proxy.getValue();
-                DV safeDv = safeContainer(value);
-                if (safeDv != null) {
-                    safeMinimum = safeDv.min(safeMinimum);
-                } else {
-                    TypeInfo concreteTypeInfo = value.bestConcreteTypeInfo();
-                    if (concreteTypeInfo != null) {
-                        DV container = containerOfConcreteType(concreteTypeInfo);
-                        if (container != null) {
-                            minimum = minimum.min(container);
-                        }
-                    }
-                }
+            DV safeDv = safeContainer(formal, proxy);
+            if (safeDv != null) {
+                safeMinimum = safeDv.min(safeMinimum);
+            } else {
+                otherValues = true;
             }
         }
-        if (safeMinimum.valueIsFalse() || safeMinimum.valueIsTrue() && minimum == DV.MIN_INT_DV) {
-            log(MODIFICATION, "Set @Container on {} to safe minimum over values {}", fqn, safeMinimum);
+        if (safeMinimum.isDelayed() && safeMinimum != DV.MIN_INT_DV) {
+            log(DELAYED, "Delaying @Container on field {}, waiting for container on values", fqn);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
+            return AnalysisStatus.of(safeMinimum);
+        }
+        if (safeMinimum.valueIsFalse() || safeMinimum.valueIsTrue() && !otherValues) {
+            log(MODIFICATION, "Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
             return DONE;
         }
+
         // there is at least one assignment value which is not safe
-        DV finalContainer;
-        if (minimum.isDelayed()) {
-            finalContainer = minimum;
-            log(DELAYED, "Delaying @Container of field {}, waiting for @Container of values", fqn);
-        } else {
-            DV bestOverContext = myMethodsAndConstructors.stream()
-                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                    .filter(VariableInfo::isRead)
-                    .map(vi -> vi.getProperty(Property.CONTEXT_CONTAINER))
-                    .reduce(DV.FALSE_DV, DV::max);
-            if (bestOverContext.isDelayed()) {
-                log(DELAYED, "Delay @Container on {}, waiting for context container", fqn);
-            }
-            finalContainer = bestOverContext.max(minimum);
+        DV bestOverContext = myMethodsAndConstructors.stream()
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                .filter(VariableInfo::isRead)
+                .map(vi -> vi.getProperty(Property.CONTEXT_CONTAINER))
+                .reduce(DV.FALSE_DV, DV::max);
+        if (bestOverContext.isDelayed()) {
+            log(DELAYED, "Delay @Container on {}, waiting for context container", fqn);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
+            return AnalysisStatus.of(bestOverContext);
         }
 
-        if (finalContainer.isDone()) {
-            log(MODIFICATION, "Set @Container of field {} to {}", fqn, finalContainer);
-        }
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, finalContainer);
-        return AnalysisStatus.of(finalContainer);
+        log(MODIFICATION, "@Container on field {}: value of best over context: {}", fqn, bestOverContext);
+        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
+        return AnalysisStatus.of(bestOverContext);
     }
 
-    private DV safeContainer(Expression value) {
+    private DV safeContainer(DV formal, ValueAndPropertyProxy proxy) {
         // for non-final classes, safe is always null
+        Expression value = proxy.getValue();
+        if (value instanceof NullConstant) return null;
         DV safe = analyserContext.safeContainer(value.returnType());
         if (safe != null) return safe;
         // but if value is a normal constructor call or an instance with a constructor state
@@ -469,11 +469,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         if (value instanceof ConstructorCall cc && cc.anonymousClass() == null
                 && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
             // we're creating an object, so we don't need the
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(value.returnType().bestTypeInfo());
-            if (typeAnalysis != null) {
-                DV container = typeAnalysis.getProperty(CONTAINER);
-                if (!container.isDelayed()) return container;
-            }
+            return analyserContext.defaultContainer(cc.returnType());
+        }
+        DV container = proxy.getProperty(CONTAINER);
+        if (container.valueIsTrue()) return DV.TRUE_DV;
+        if (container.isDelayed()) return container;
+
+        ParameterizedType type = proxy.getValue().returnType();
+        if (type.bestTypeInfo().typeInspection.get().typeNature() == TypeNature.CLASS) {
+            return analyserContext.defaultContainer(type);
         }
         return null;
     }
@@ -881,7 +885,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
     private ValueAndPropertyProxy breakDelayProxy(ValueAndPropertyProxy.Origin origin) {
         Expression value = new DelayedExpression("break initialization delay",
-                fieldInfo.type, LinkedVariables.EMPTY, CausesOfDelay.EMPTY);
+                fieldInfo.type, LinkedVariables.EMPTY, fieldInfo.delay(CauseOfDelay.Cause.BREAK_INIT_DELAY));
         return new ValueAndPropertyProxy() {
             @Override
             public Origin getOrigin() {
@@ -895,7 +899,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
             @Override
             public DV getProperty(Property property) {
-                throw new UnsupportedOperationException("Filter on validValueProperties!");
+                return fieldInfo.delay(CauseOfDelay.Cause.BREAK_INIT_DELAY);
             }
 
             @Override

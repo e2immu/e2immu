@@ -134,7 +134,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "collection".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("list".equals(d.variableName())) {
@@ -155,7 +155,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expected = d.iteration() == 0
                                 ? "<p:collection>/*(List<String>)*/" : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -542,7 +542,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("expression".equals(d.fieldInfo().name)) {
                 assertEquals("Negation", d.fieldInfo().owner.simpleName);
-                assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -669,7 +669,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("numericPartOfLhs".equals(d.methodInfo().name)) {
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -680,24 +680,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
                     assertDv(d, expect, BIG, DV.TRUE_DV, Property.CONTAINER);
                 }
-                case "Expression" -> {
-                    assertDv(d, DV.FALSE_DV, Property.CONTAINER);
-                }
-                case "EvaluationContext" -> {
-                    assertDv(d, DV.FALSE_DV, Property.CONTAINER);
-                }
-                case "InstanceOf_11" -> {
-                    assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", BIG, DV.TRUE_DV, Property.CONTAINER);
-                }
-                case "Negation" -> {
-                    assertDv(d, DV.TRUE_DV, Property.CONTAINER);
-                }
-                case "Sum" -> {
-                    assertDv(d, DV.TRUE_DV, Property.CONTAINER);
-                }
-                case "XB" -> {
-                    assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, DV.TRUE_DV, Property.CONTAINER);
-                }
+                case "Expression" -> assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                case "EvaluationContext" -> assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", BIG, DV.TRUE_DV, Property.CONTAINER);
+                case "Negation" -> assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                case "Sum" -> assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                case "XB" -> assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, DV.TRUE_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };
@@ -708,12 +696,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
                                 : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
-                        assertDv(d, expect, BIG, DV.TRUE_DV, Property.CONTAINER);
+                        assertDv(d, expect, BIG, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     default -> fail("? " + d.fieldInfo().owner.simpleName);

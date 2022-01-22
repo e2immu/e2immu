@@ -12,16 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
 import org.e2immu.annotation.ERContainer;
 
 import java.util.Set;
 
-public class DynamicTypeAnnotation_0 {
+public class ExternalImmutable_0 {
 
     //boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
-    public DynamicTypeAnnotation_0() {}
+    public ExternalImmutable_0() {}
     
     @ERContainer
     private final Set<String> set1 = Set.of("a", "b");
