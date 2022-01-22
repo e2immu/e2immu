@@ -28,6 +28,7 @@ public class ExternalNotNull_0 {
     @NotNull // upperCaseP has an effect
     private final String p;
 
+    // produces warning: initialization conflict: @NotNull on q2, and null in the first constructor
     @Variable
     @Nullable
     private String q;

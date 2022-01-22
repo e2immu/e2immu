@@ -32,6 +32,7 @@ public class ExternalNotNull_1 {
     @NotNull // upperCaseP has an effect
     private final String p;
 
+    // error on field initialization: null, and q2, not null
     @Variable
     @Nullable
     private String q;

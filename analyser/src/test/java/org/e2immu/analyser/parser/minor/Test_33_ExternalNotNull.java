@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -47,6 +48,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     // because NNE > 0, there cannot be a warning!
+                }
+            }
+            if ("upperCaseP".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:p>" : "instance type String";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                 }
             }
         };
@@ -87,21 +95,19 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 2) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(1), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                assertDv(d.p(2), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(1), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(2), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 assertDv(d.p(3), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
-            // not involved, because q is @Variable
             if ("setQ".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
             }
-            // not involved, because r is not assigned, @Variable
             if ("setR".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
+                assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -131,11 +137,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals("r1:1,r2:1,rs:1", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
-        testClass("ExternalNotNull_0", 0, 4, new DebugConfiguration.Builder()
+        testClass("ExternalNotNull_0", 0, 5, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(true)// for NN to travel from method to constructor
                 .build());
     }
 
@@ -153,12 +161,8 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("p".equals(d.fieldInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-
-                if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().getValue());
-                } else {
-                    assertEquals("[p1,p2]", d.fieldAnalysis().getValue().toString());
-                }
+                String expect = d.iteration() == 0 ? "<f:p>" : "[p1,p2]";
+                assertEquals(expect, d.fieldAnalysis().getValue().toString());
             }
         };
 
@@ -203,12 +207,14 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             }
         };
 
-        testClass("ExternalNotNull_1", 0, 3, new DebugConfiguration.Builder()
+        testClass("ExternalNotNull_1", 0, 4, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeContextPropertiesOverAllMethods(true)// for NN to travel from method to constructor
                 .build());
     }
 }

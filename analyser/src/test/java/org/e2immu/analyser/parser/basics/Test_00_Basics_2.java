@@ -232,7 +232,9 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
         };
 
-        testClass("Basics_2b", 0, 1, new DebugConfiguration.Builder()
+        // 2 warnings now:
+        // conflicting @NotNull, null in a POJO + potential null pointer exception on collection
+        testClass("Basics_2", 0, 2, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder()
                 .setComputeContextPropertiesOverAllMethods(true)

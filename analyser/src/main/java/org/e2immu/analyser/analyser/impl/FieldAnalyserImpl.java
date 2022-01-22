@@ -20,8 +20,6 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -423,7 +421,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         DV safeMinimum = DV.MIN_INT_DV; // so we know if a safe minimum was reached
         boolean otherValues = false;
         for (ValueAndPropertyProxy proxy : fieldAnalysis.getValues()) {
-            DV safeDv = safeContainer(formal, proxy);
+            DV safeDv = safeContainer(proxy);
             if (safeDv != null) {
                 safeMinimum = safeDv.min(safeMinimum);
             } else {
@@ -458,7 +456,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         return AnalysisStatus.of(bestOverContext);
     }
 
-    private DV safeContainer(DV formal, ValueAndPropertyProxy proxy) {
+    private DV safeContainer(ValueAndPropertyProxy proxy) {
         // for non-final classes, safe is always null
         Expression value = proxy.getValue();
         if (value instanceof NullConstant) return null;
@@ -478,19 +476,6 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         ParameterizedType type = proxy.getValue().returnType();
         if (type.bestTypeInfo().typeInspection.get().typeNature() == TypeNature.CLASS) {
             return analyserContext.defaultContainer(type);
-        }
-        return null;
-    }
-
-
-    private DV containerOfConcreteType(TypeInfo formalType) {
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
-        DV typeContainer = typeAnalysis.getProperty(CONTAINER);
-        if (typeContainer.isDelayed() || formalType.isFinal(analyserContext) || formalType.isInterface()) {
-            // interfaces must get their @Container property contracted.
-            // java.lang.String, enum classes which are containers... they cannot be subclassed
-            // other final types which are not containers (example??)
-            return typeContainer;
         }
         return null;
     }
@@ -556,12 +541,21 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, bestOverContext);
             return bestOverContext.causesOfDelay();
         }
-
+        // the null constant places a hard limit on things, as does e.g. a string constant "abc"
+        DV constantNotNull = constantNotNullOverValues();
         DV worstOverValues = computeWorstNotNullOverValues(computeContextPropertiesOverAllMethods, bestOverContext);
 
-        DV finalNotNullValue = worstOverValues.max(bestOverContext);
+        DV finalNotNullValue = worstOverValues.max(bestOverContext).min(constantNotNull);
         fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, finalNotNullValue);
         return AnalysisStatus.of(finalNotNullValue.causesOfDelay());
+    }
+
+    private DV constantNotNullOverValues() {
+        return fieldAnalysis.getValues().stream()
+                .filter(ValueAndPropertyProxy::validValueProperties)
+                .filter(proxy -> proxy.getValue() instanceof ConstantExpression)
+                .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
+                .reduce(DV.MAX_INT_DV, DV::min);
     }
 
     private DV computeWorstNotNullOverValues(boolean computeContextPropertiesOverAllMethods, DV bestOverContext) {
