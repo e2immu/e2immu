@@ -667,7 +667,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     Do not add IMMUTABLE to this set! (computed from external, formal, context)
      */
     public static final Set<Property> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER, CONTAINER);
+            = Set.of(IDENTITY, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, EXTERNAL_CONTAINER);
 
     /*
     assume that all parameters, also those from closures, are already present
@@ -1323,11 +1323,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         valueProperties.replaceDelaysByMinimalValue();
         Instance instance = Instance.forLoopVariable(index(), variable, valueProperties);
         Properties properties = Properties.of(Map.of(
+                EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent(),
+                EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent(),
+                EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent(),
                 CONTEXT_MODIFIED, DV.FALSE_DV,
-                EXTERNAL_NOT_NULL, NOT_INVOLVED_DV,
                 CONTEXT_NOT_NULL, valueProperties.get(NOT_NULL_EXPRESSION),
-                EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV,
-                EXTERNAL_CONTAINER, DV.FALSE_DV,
                 CONTEXT_IMMUTABLE, valueProperties.get(IMMUTABLE),
                 CONTEXT_CONTAINER, valueProperties.get(CONTAINER)
         ));
@@ -1338,13 +1338,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
-        Properties map = sharedContext(defaultNotNull);
-        map.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
-        map.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-        map.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
+        Properties properties = sharedContext(defaultNotNull);
+        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
+        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         Identifier identifier = Identifier.generate(); // FIXME
         UnknownExpression ue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
-        vic.setValue(ue, LinkedVariables.EMPTY, map, true);
+        vic.setValue(ue, LinkedVariables.EMPTY, properties, true);
     }
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {
@@ -1357,9 +1357,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(IMMUTABLE, MUTABLE_DV);
         properties.put(INDEPENDENT, INDEPENDENT.falseDv);
 
-        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
+        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
+        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         UnknownExpression value = UnknownExpression.forReturnVariable(methodAnalysis.getMethodInfo().identifier,
                 returnVariable.returnType);
         vic.setValue(value, LinkedVariables.EMPTY, properties, true);
@@ -1378,9 +1378,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
         // external: not relevant
-        properties.put(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_NOT_NULL, NOT_INVOLVED_DV);
-        properties.put(EXTERNAL_CONTAINER, DV.FALSE_DV);
+        properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
+        properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
 
         Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
         vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
@@ -1441,6 +1441,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_NOT_NULL, extNotNull);
         DV extImm = parameterAnalysis.getProperty(EXTERNAL_IMMUTABLE);
         properties.put(EXTERNAL_IMMUTABLE, extImm);
+        DV extCont = parameterAnalysis.getProperty(EXTERNAL_CONTAINER);
+        properties.put(EXTERNAL_CONTAINER, extCont);
         DV mom = parameterAnalysis.getProperty(MODIFIED_OUTSIDE_METHOD);
         properties.put(MODIFIED_OUTSIDE_METHOD, mom);
 

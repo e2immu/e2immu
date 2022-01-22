@@ -477,25 +477,42 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
+        /*
+        parameters and fields use EXT_CONTAINER to raise errors; they do not wait for a valid value property.
+
+         */
         public void variableOccursInContainerContext(Variable variable, Expression currentExpression, DV containerRequired) {
             assert evaluationContext != null;
 
             if (containerRequired.isDelayed()) {
-                setProperty(variable, Property.CONTAINER, containerRequired);
+                setProperty(variable, Property.CONTEXT_CONTAINER, containerRequired);
                 return;
             }
-            if (containerRequired.valueIsFalse()) return;
-            if (currentExpression.isDelayed()) return; // not yet
-            // if we already know that the variable is NOT @NotModified1, then we'll raise an error
-            DV container = getContainerFromInitial(currentExpression);
-            if (container.valueIsFalse()) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
-                messages.add(message);
-            } else if (container.isDelayed()) {
-                // we only need to mark this in case of doubt (if we already know, we should not mark)
-                // FIXME does this make sense?
-                setProperty(variable, Property.CONTAINER, DV.TRUE_DV);
+            if (containerRequired.valueIsFalse()) {
+                setProperty(variable, Property.CONTEXT_CONTAINER, DV.FALSE_DV);
+                return;
             }
+            if (variable instanceof FieldReference || variable instanceof ParameterInfo) {
+                // will come back later
+                DV external = getPropertyFromInitial(variable, Property.EXTERNAL_CONTAINER);
+                if (external.valueIsFalse()) {
+                    Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+                    messages.add(message);
+                }
+                setProperty(variable, Property.CONTEXT_CONTAINER, DV.TRUE_DV);
+                return;
+            }
+            DV container = getPropertyFromInitial(variable, Property.CONTAINER);
+            if (container.isDelayed()) {
+                setProperty(variable, Property.CONTEXT_CONTAINER, container);
+                return;
+            }
+            if (container.valueIsTrue()) {
+                return;
+            }
+            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+            messages.add(message);
+            setProperty(variable, Property.CONTEXT_CONTAINER, DV.FALSE_DV);
         }
 
         public Builder assignmentToSelfIgnored(Variable variable) {

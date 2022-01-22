@@ -111,12 +111,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (!parameterAnalysis.properties.isDone(CONTAINER)) {
             if (contractContainer.isDone()) {
                 parameterAnalysis.setProperty(CONTAINER, contractContainer);
+                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, contractContainer);
             } else {
                 // essentially here to satisfy the internal check that java.lang.String is always a @Container
                 // returns a non-null in some standard situations (array, unbound pt, final type)
                 DV dv = analyserContext.safeContainer(parameterInfo.parameterizedType);
                 if (dv != null) {
                     parameterAnalysis.setProperty(CONTAINER, dv);
+                    parameterAnalysis.setProperty(EXTERNAL_CONTAINER, dv);
                 }
             }
         }
@@ -357,7 +359,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             if (!parameterAnalysis.properties.isDone(property) && !propertiesDelayed.contains(property)) {
                 DV v;
                 if (isExternal(property) && notAssignedToField) {
-                    v = NOT_INVOLVED_DV;
+                    v = property.valueWhenAbsent();
                 } else {
                     v = property.falseDv;
                 }
@@ -582,10 +584,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
 
             if (!parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE)) {
-                parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED_DV);
+                parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
             }
             if (!parameterAnalysis.properties.isDone(EXTERNAL_CONTAINER)) {
-                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, DV.FALSE_DV);
+                parameterAnalysis.setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
             }
             parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE_DV);
 

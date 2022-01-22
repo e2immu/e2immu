@@ -94,7 +94,7 @@ public class EvaluateParameters {
                     map = new HashMap<>();
                     map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
                     map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
-                   // FIXME map.put(Property.CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
+                    map.put(Property.CONTEXT_CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
                     independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 }
             } catch (RuntimeException e) {
@@ -102,13 +102,8 @@ public class EvaluateParameters {
                 throw e;
             }
 
-            /* FIXME
-            // propagating modifications? a functional interface-type parameter, with @Independent1
-            if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
-                doContextContainer(recursiveOrPartOfCallCycle, parameterInfo, independent, map);
-            }*/
-
-            doContextModified(methodInfo, recursiveOrPartOfCallCycle, parameterInfo, map);
+            doContextContainer(methodInfo, recursiveOrPartOfCallCycle, map);
+            doContextModified(methodInfo, recursiveOrPartOfCallCycle, map);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
             if (contextNotNull.isDelayed() && recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV); // won't be me to rock the boat
@@ -129,27 +124,22 @@ public class EvaluateParameters {
         return contextNotNull;
     }
 
-    private static void doContextContainer(boolean recursiveOrPartOfCallCycle,
-                                           ParameterInfo parameterInfo,
-                                           DV independent,
+    private static void doContextContainer(MethodInfo methodInfo,
+                                           boolean recursiveOrPartOfCallCycle,
                                            Map<Property, DV> map) {
-        if (independent.isDelayed()) {
-            DV pm;
-            if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
-                // we explicitly allow for a delay on CM, it triggers CONTEXT_CONTAINER; locally, it is non-modifying
-                pm = DV.FALSE_DV;
-            } else {
-                pm = parameterInfo.delay(CauseOfDelay.Cause.CONTEXT_CONTAINER);
+        if (recursiveOrPartOfCallCycle) {
+            map.put(Property.CONTEXT_CONTAINER, DV.FALSE_DV);
+        } else {
+            DV contextContainer = map.getOrDefault(Property.CONTEXT_CONTAINER, null);
+            if (contextContainer == null) {
+                CausesOfDelay delay = methodInfo.delay(CauseOfDelay.Cause.CONTEXT_CONTAINER);
+                map.put(Property.CONTEXT_CONTAINER, delay);
             }
-            map.put(Property.CONTEXT_CONTAINER, pm);
-        } else if (independent.equals(MultiLevel.INDEPENDENT_1_DV)) {
-            map.put(Property.CONTEXT_CONTAINER, DV.TRUE_DV);
         }
     }
 
     private static void doContextModified(MethodInfo methodInfo,
                                           boolean recursiveOrPartOfCallCycle,
-                                          ParameterInfo parameterInfo,
                                           Map<Property, DV> map) {
         if (recursiveOrPartOfCallCycle) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);

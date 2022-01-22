@@ -166,13 +166,16 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             // unbound type parameter, null constant
             return DV.FALSE_DV;
         }
-        if (bestType.isFinal(this)) {
-            TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
-            if (typeAnalysis == null) {
-                return null;
-            }
-            DV dv = typeAnalysis.getProperty(Property.CONTAINER);
-            if (!dv.isDelayed()) return dv;
+        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) {
+            return null;
+        }
+        DV dv = typeAnalysis.getProperty(Property.CONTAINER);
+        if (dv.isDelayed()) {
+            return null;
+        }
+        if (bestType.isFinal(this) || bestType.isInterface() && dv.valueIsTrue()) {
+            return dv;
         }
         return null;
     }

@@ -42,7 +42,7 @@ public class GenerateAnnotationsImmutable {
                                                               boolean isType,
                                                               boolean isInterface,
                                                               String mark, boolean betterThanFormal) {
-        if(immutable.isDelayed()) return Map.of();
+        if (immutable.isDelayed()) return Map.of();
         boolean haveContainer = container.valueIsTrue();
         MultiLevel.Effective effective = MultiLevel.effective(immutable);
         int level = MultiLevel.level(immutable);
@@ -79,12 +79,10 @@ public class GenerateAnnotationsImmutable {
         }
 
         Map<Class<?>, Map<String, Object>> res = new HashMap<>();
-        if (isType) {
-            if (haveContainer) {
-                res.put(Container.class, TRUE);
-            } else if (!isInterface || container.valueIsFalse()) {
-                res.put(MutableModifiesArguments.class, TRUE);
-            }
+        if (haveContainer) {
+            res.put(Container.class, TRUE);
+        } else if (isType && (!isInterface || container.valueIsFalse())) {
+            res.put(MutableModifiesArguments.class, TRUE);
         }
         return res;
     }

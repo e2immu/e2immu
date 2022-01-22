@@ -18,10 +18,10 @@ package org.e2immu.analyser.parser.minor;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -34,15 +34,46 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         int BIG = 20;
-
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("print".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+//                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+            }
+            if ("go".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("go".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    d.haveError(Message.Label.MODIFICATION_NOT_ALLOWED);
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                //              assertDv(d.p(0), DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d.p(0), DV.TRUE_DV, Property.CONTAINER);
                 assertDv(d.p(0), DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
-//                assertDv(d.p(0), BIG, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d.p(0), 1, DV.TRUE_DV, Property.CONTAINER);
             }
             if ("setI".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -60,18 +91,18 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("myNonContainer".equals(d.fieldInfo().name)) {
-                //               assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-//                assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 4, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-//                assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("iField".equals(d.fieldInfo().name)) {
                 // value TRUE but annotation will not be visible
-//                assertDv(d, BIG, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                //FIXME       assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -86,6 +117,8 @@ public class Test_ExternalContainer_0 extends CommonTestRunner {
             }
         };
         testClass("ExternalContainer_0", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

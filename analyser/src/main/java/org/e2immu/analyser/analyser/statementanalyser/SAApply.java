@@ -317,6 +317,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // 4
         CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
+        delay = delay.merge(cImmStatus);
 
         // 5
         importContextModifiedValuesForThisFromSubTypes(analyserContext, localAnalysers, groupPropertyValues.getMap(CONTEXT_MODIFIED));
@@ -326,9 +327,20 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // 6
         CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER, groupPropertyValues.getMap(EXTERNAL_CONTAINER));
+        CausesOfDelay anyExtCont = statementAnalysis.variableStream()
+                .map(vi -> {
+                    CausesOfDelay causes = vi.getProperty(EXTERNAL_CONTAINER).causesOfDelay();
+                    if (causes.isDelayed()) {
+                        return causes.merge(new SimpleSet(new VariableCause(vi.variable(), getLocation(),
+                                CauseOfDelay.Cause.EXT_CONTAINER)));
+                    }
+                    return CausesOfDelay.EMPTY;
+                })
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         // 7
         CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
+        delay = delay.merge(cContStatus);
 
         // odds and ends
 
@@ -340,9 +352,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Precondition precondition = evaluationResult.precondition();
         delay = delay.merge(statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
                 sharedState.localConditionManager()));
-        CausesOfDelay merge = ennStatus.merge(extImmStatus).merge(cImmStatus).merge(anyEnn)
-                .merge(anyExtImm).merge(extContStatus).merge(cContStatus);
-        return new ApplyStatusAndEnnStatus(delay, merge);
+        CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
+                .merge(anyExtImm).merge(extContStatus).merge(anyExtCont);
+        return new ApplyStatusAndEnnStatus(delay, externalDelay);
     }
 
 
@@ -452,7 +464,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 new SimpleSet(new VariableCause(x, statementAnalysis.location(),
                         CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
         addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
-        addToMap(groupPropertyValues, EXTERNAL_CONTAINER, x -> analyserContext.defaultContainer(x.parameterizedType()), false);
+        addToMap(groupPropertyValues, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
         addToMap(groupPropertyValues, CONTEXT_CONTAINER, x -> DV.FALSE_DV, true);

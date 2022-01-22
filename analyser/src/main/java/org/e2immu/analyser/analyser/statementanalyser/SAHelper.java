@@ -125,9 +125,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
-        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, MultiLevel.NOT_INVOLVED_DV);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, MultiLevel.NOT_INVOLVED_DV);
-        groupPropertyValues.set(EXTERNAL_CONTAINER, variable, DV.FALSE_DV);
+        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, EXTERNAL_NOT_NULL.valueWhenAbsent());
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, EXTERNAL_IMMUTABLE.valueWhenAbsent());
+        groupPropertyValues.set(EXTERNAL_CONTAINER, variable, EXTERNAL_CONTAINER.valueWhenAbsent());
 
         DV cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? AnalysisProvider.defaultNotNull(variable.parameterizedType()) : cnn);

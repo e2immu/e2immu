@@ -67,7 +67,7 @@ public class ExternalContainer_0 {
         }
     }
 
-    @Container(absent = true)
+    @Container // wrong, but an error has been raised!
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
     @Container // computed from the assignment
     private final Consumer<I> myContainer = new MyContainer();

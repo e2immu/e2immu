@@ -35,26 +35,40 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        int BIG = 20;
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+            }
+            if ("go".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "myNonContainer".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "myContainerLinkedToParameter".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_CONTAINER);
                     }
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
-                //              assertDv(d.p(0), DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTAINER);
                 assertDv(d.p(0), DV.FALSE_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
-//                assertDv(d.p(0), BIG, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.CONTAINER);
             }
             if ("setI".equals(d.methodInfo().name)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
@@ -76,16 +90,16 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("myNonContainer".equals(d.fieldInfo().name)) {
-                //               assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 2, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-//                assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 3, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
-//                assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("iField".equals(d.fieldInfo().name)) {
-//                assertDv(d, BIG, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
                 assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
@@ -100,7 +114,7 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
                 assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
             }
         };
-        testClass("ExternalContainer_1", 1, 0, new DebugConfiguration.Builder()
+        testClass("ExternalContainer_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

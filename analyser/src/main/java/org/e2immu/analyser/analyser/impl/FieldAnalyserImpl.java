@@ -385,24 +385,24 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     Interfaces -> contracted (by hand), but a concrete implementation may be given (if not contracted, it can be better, otherwise error)
     Final type -> contracted, no other concrete implementation can exist
     Formal type delayed -> wait
+
+    Values from CONTEXT_CONTAINER taken from the methods
      */
     private AnalysisStatus analyseContainer() {
         if (fieldAnalysis.getPropertyFromMapDelayWhenAbsent(EXTERNAL_CONTAINER).isDone()) return DONE;
 
-        TypeInfo formalType = fieldInfo.type.bestTypeInfo();
-        if (formalType == null) {
-            // unbound parameter types are @Container locally: there's no modifying methods you can call on them
-            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, DV.TRUE_DV);
+        DV safe = analyserContext.safeContainer(fieldInfo.type);
+        if (safe != null) {
+            log(MODIFICATION, "Set @Container on {} to safe value {}", fqn, safe);
+            fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safe);
             return DONE;
         }
+        TypeInfo formalType = fieldInfo.type.bestTypeInfo();
+        assert formalType != null;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(formalType);
         DV formal = typeAnalysis.getProperty(Property.CONTAINER);
-        if (formal.isDelayed() || formalType.isFinal(analyserContext) || formalType.isInterface() && formal.valueIsTrue()) {
-            if (formal.isDelayed()) {
-                log(DELAYED, "Delaying @Container of field {}, waiting for @Container of formal type", fqn);
-            } else {
-                log(MODIFICATION, "Set @Container of field {} to {}", fqn, formal);
-            }
+        if (formal.isDelayed()) {
+            log(DELAYED, "Delaying @Container of field {}, waiting for @Container of formal type", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, formal);
             return AnalysisStatus.of(formal);
         }
@@ -425,16 +425,27 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 } // either done already, or unbound parameter type, which is fine
             } // else: the null constant can be anything
         }
+        DV finalContainer;
         if (minimum.isDelayed()) {
+            finalContainer = minimum;
             log(DELAYED, "Delaying @Container of field {}, waiting for @Container of values", fqn);
         } else {
-            log(MODIFICATION, "Set @Container of field {} to {}", fqn, minimum);
+            DV bestOverContext = myMethodsAndConstructors.stream()
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                    .filter(VariableInfo::isRead)
+                    .map(vi -> vi.getProperty(Property.CONTEXT_CONTAINER))
+                    .reduce(DV.FALSE_DV, DV::max);
+            if (bestOverContext.isDelayed()) {
+                log(DELAYED, "Delay @Container on {}, waiting for context container", fqn);
+            }
+            finalContainer = bestOverContext.max(minimum);
         }
 
-        // FIXME: add CONTEXT_CONTAINER values from methods where the field is read
-
-        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, minimum);
-        return AnalysisStatus.of(minimum);
+        if (finalContainer.isDone()) {
+            log(MODIFICATION, "Set @Container of field {} to {}", fqn, finalContainer);
+        }
+        fieldAnalysis.setProperty(EXTERNAL_CONTAINER, finalContainer);
+        return AnalysisStatus.of(finalContainer);
     }
 
     // this differs slightly from what is used for the formal type: interface is always returned
