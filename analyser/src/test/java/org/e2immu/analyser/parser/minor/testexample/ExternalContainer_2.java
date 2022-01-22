@@ -21,10 +21,9 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.function.Consumer;
 
-// example that shows the basics of what a @Container contracted restriction can do
-// readable in a sort of sequential way.
+// example of _0, but without the contracted @Container
 
-public class ExternalContainer_0 {
+public class ExternalContainer_2 {
 
     @Container // no methods that modify their parameters
     static class I {
@@ -69,26 +68,25 @@ public class ExternalContainer_0 {
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
     @Container // computed from the assignment
     private final Consumer<I> myContainer = new MyContainer();
-    @Container // computed
+    @Container(absent = true)
     private final Consumer<I> myContainerLinkedToParameter;
 
-    // not contracted but computed: the @Container property, travels from @Container on the field
-    public ExternalContainer_0(@Container Consumer<I> consumer) {
+    public ExternalContainer_2(@Container(absent = true) Consumer<I> consumer) {
         this.myContainerLinkedToParameter = consumer;
     }
 
-    @NotModified
+    @Modified
     public void go() {
-        if(myContainerLinkedToParameter != null) {
+        if (myContainerLinkedToParameter != null) {
             print(myContainerLinkedToParameter);// causes CONTEXT_CONTAINER to go up, which travels to the field, to the param
         }
-        print(myContainer); // does not raise an error
-        print(myNonContainer); // raises an error
+        print(myContainer);
+        print(myNonContainer);
     }
 
-    // the cause of all complexity: we demand that all implementations be @Container
-    @NotModified
-    private void print(@Container(contract = true) Consumer<I> in) {
+    // it is not because modifications on "in" are ignored, that the actual modification on iField is ignored!
+    @Modified
+    private void print(Consumer<I> in) {
         in.accept(iField);
         System.out.println(iField.getI());
     }
@@ -96,7 +94,7 @@ public class ExternalContainer_0 {
     // we can be guaranteed that the accept method in "print" does not modify i!
     // the @Container property is absent because the formal type is the same as the concrete one
     @Container(absent = true)
-    @NotModified
+    @Modified
     private final I iField = new I();
 
 }

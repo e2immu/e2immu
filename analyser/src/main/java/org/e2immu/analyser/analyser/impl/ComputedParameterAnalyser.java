@@ -17,13 +17,18 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analysis.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.slf4j.Logger;
@@ -124,9 +129,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         // implicit @IgnoreModifications rule for java.util.function
-        if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed() &&
-                parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)) {
-            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, DV.TRUE_DV);
+        if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
+            DV value = DV.fromBoolDv(parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext));
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, value);
         }
 
         if (parameterAnalysis.getProperty(MODIFIED_VARIABLE).isDelayed()) {
@@ -303,7 +308,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
                 if (!parameterAnalysis.properties.isDone(INDEPENDENT) && (LinkedVariables.isNotIndependent(assignedOrLinked))) {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
-                    if(typeAnalysis.hiddenContentTypeStatus().isDone()) {
+                    if (typeAnalysis.hiddenContentTypeStatus().isDone()) {
                         SetOfTypes transparent = typeAnalysis.getTransparentTypes();
                         if (transparent.contains(parameterInfo.parameterizedType)) {
                             parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
@@ -557,8 +562,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
             // @Independent
             if (!parameterAnalysis.properties.isDone(INDEPENDENT)) {
-                DV independent ;
-                if(takeValueFromOverride) {
+                DV independent;
+                if (takeValueFromOverride) {
                     independent = computeValueFromOverrides(INDEPENDENT);
                 } else {
                     independent = NOT_INVOLVED_DV;

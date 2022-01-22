@@ -94,7 +94,7 @@ public class EvaluateParameters {
                     map = new HashMap<>();
                     map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
                     map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
-                    map.put(Property.CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
+                   // FIXME map.put(Property.CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
                     independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 }
             } catch (RuntimeException e) {
@@ -102,10 +102,11 @@ public class EvaluateParameters {
                 throw e;
             }
 
+            /* FIXME
             // propagating modifications? a functional interface-type parameter, with @Independent1
             if (parameterInfo.parameterizedType.isFunctionalInterface(evaluationContext.getAnalyserContext())) {
                 doContextContainer(recursiveOrPartOfCallCycle, parameterInfo, independent, map);
-            }
+            }*/
 
             doContextModified(methodInfo, recursiveOrPartOfCallCycle, parameterInfo, map);
             contextNotNull = map.getOrDefault(Property.CONTEXT_NOT_NULL, null);
@@ -150,7 +151,7 @@ public class EvaluateParameters {
                                           boolean recursiveOrPartOfCallCycle,
                                           ParameterInfo parameterInfo,
                                           Map<Property, DV> map) {
-        if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
+        if (recursiveOrPartOfCallCycle) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else {
             DV contextModified = map.getOrDefault(Property.CONTEXT_MODIFIED, null);

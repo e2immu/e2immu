@@ -18,28 +18,40 @@ package org.e2immu.analyser.parser.minor;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_ExternalContainer extends CommonTestRunner {
-    public Test_ExternalContainer() {
+public class Test_ExternalContainer_1 extends CommonTestRunner {
+    public Test_ExternalContainer_1() {
         super(true);
     }
 
     @Test
-    public void test_0() throws IOException {
+    public void test_1() throws IOException {
         int BIG = 20;
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("print".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("print".equals(d.methodInfo().name)) {
                 //              assertDv(d.p(0), DV.TRUE_DV, Property.CONTAINER);
-                assertDv(d.p(0), DV.TRUE_DV, Property.IGNORE_MODIFICATIONS);
-                assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), DV.FALSE_DV, Property.IGNORE_MODIFICATIONS);
+                assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("ExternalContainer_0".equals(d.methodInfo().name)) {
 //                assertDv(d.p(0), BIG, DV.TRUE_DV, Property.CONTAINER);
@@ -57,6 +69,10 @@ public class Test_ExternalContainer extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "MyContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
+            if ("accept".equals(d.methodInfo().name) && "Consumer".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+            }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("myNonContainer".equals(d.fieldInfo().name)) {
@@ -69,9 +85,8 @@ public class Test_ExternalContainer extends CommonTestRunner {
 //                assertDv(d, BIG, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("iField".equals(d.fieldInfo().name)) {
-                // value TRUE but annotation will not be visible
 //                assertDv(d, BIG, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -79,21 +94,17 @@ public class Test_ExternalContainer extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.CONTAINER);
             }
             if ("MyContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 3, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
             }
             if ("MyNonContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
             }
         };
-        testClass("ExternalContainer_0", 1, 0, new DebugConfiguration.Builder()
+        testClass("ExternalContainer_1", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
-    }
-
-    @Test
-    public void test_1() throws IOException {
-        testClass("ExternalContainer_1", 0, 0, new DebugConfiguration.Builder().build());
     }
 }
