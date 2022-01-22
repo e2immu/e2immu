@@ -14,20 +14,27 @@
 
 package org.e2immu.analyser.parser.minor.testexample;
 
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/*
-Test that list is @NotNull1 rather than the obvious @NotNull
- */
+@E2Immutable // not a container, see "add"'s parameter
 public class InstanceOf_3 {
 
+    @NotModified
     private final Set<String> base = new HashSet<>();
 
-    public String add(Collection<String> collection) {
+    @Nullable
+    @NotModified
+    public String add(@Nullable @Modified Collection<String> collection) {
+        // because we execute without A API, addAll's parameter is @Nullable @Modified; the method itself is @NotModified
         base.addAll(collection);
         if (collection instanceof List<String> list) {
             return list.isEmpty() ? "Empty" : list.get(0);
@@ -35,6 +42,7 @@ public class InstanceOf_3 {
         return null;
     }
 
+    @NotModified
     public Stream<String> getBase() {
         return base.stream();
     }

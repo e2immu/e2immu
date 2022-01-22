@@ -256,10 +256,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             DV dynamicallyImmutable = getProperty(Property.EXTERNAL_IMMUTABLE);
             DV formallyContainer = typeContainer();
             DV dynamicallyContainer = getProperty(Property.EXTERNAL_CONTAINER);
-
-            assert dynamicallyContainer.ge(formallyContainer) : "Have to have at least the same container value";
-            assert dynamicallyImmutable.ge(formallyImmutable) : "Have to have at least the same immutability value";
-
             if (dynamicallyImmutable.gt(formallyImmutable) || dynamicallyContainer.gt(formallyContainer)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, dynamicallyContainer, true);
             }

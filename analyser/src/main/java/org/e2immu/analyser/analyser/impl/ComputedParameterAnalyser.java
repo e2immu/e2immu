@@ -108,9 +108,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         DV contractContainer = parameterAnalysis.getProperty(CONTAINER);
-        if (contractContainer.isDone() && !parameterAnalysis.properties.isDone(CONTAINER)) {
-            parameterAnalysis.setProperty(CONTAINER, contractContainer);
+        if (!parameterAnalysis.properties.isDone(CONTAINER)) {
+            if (contractContainer.isDone()) {
+                parameterAnalysis.setProperty(CONTAINER, contractContainer);
+            } else {
+                // essentially here to satisfy the internal check that java.lang.String is always a @Container
+                // returns a non-null in some standard situations (array, unbound pt, final type)
+                DV dv = analyserContext.safeContainer(parameterInfo.parameterizedType);
+                if (dv != null) {
+                    parameterAnalysis.setProperty(CONTAINER, dv);
+                }
+            }
         }
+
 
         DV contractModified = parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE);
         if (contractModified.isDone() && !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {

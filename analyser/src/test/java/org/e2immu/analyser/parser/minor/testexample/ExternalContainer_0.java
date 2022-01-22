@@ -21,8 +21,10 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.function.Consumer;
 
-// example that shows the basics of what a @Container contracted restriction can do
-// readable in a sort of sequential way.
+/*
+Example that shows the basics of what a @Container contracted restriction can do.
+Contrast to _1 and _2, where @IgnoreModifications is dropped and the @Container contract is dropped.
+ */
 
 public class ExternalContainer_0 {
 
@@ -79,7 +81,7 @@ public class ExternalContainer_0 {
 
     @NotModified
     public void go() {
-        if(myContainerLinkedToParameter != null) {
+        if (myContainerLinkedToParameter != null) {
             print(myContainerLinkedToParameter);// causes CONTEXT_CONTAINER to go up, which travels to the field, to the param
         }
         print(myContainer); // does not raise an error
@@ -87,6 +89,7 @@ public class ExternalContainer_0 {
     }
 
     // the cause of all complexity: we demand that all implementations be @Container
+    // as a consequence, accept will not modify iField because its parameter will be @NotModified
     @NotModified
     private void print(@Container(contract = true) Consumer<I> in) {
         in.accept(iField);

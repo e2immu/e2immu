@@ -156,4 +156,24 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default AnalyserProgram getAnalyserProgram() {
         return getConfiguration().analyserConfiguration().analyserProgram();
     }
+
+    default DV safeContainer(ParameterizedType parameterizedType) {
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (parameterizedType.arrays > 0) {
+            return DV.TRUE_DV;
+        }
+        if (bestType == null) {
+            // unbound type parameter, null constant
+            return DV.FALSE_DV;
+        }
+        if (bestType.isFinal(this)) {
+            TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
+            if (typeAnalysis == null) {
+                return null;
+            }
+            DV dv = typeAnalysis.getProperty(Property.CONTAINER);
+            if (!dv.isDelayed()) return dv;
+        }
+        return null;
+    }
 }

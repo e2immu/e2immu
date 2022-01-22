@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 
 public class ExternalContainer_2 {
 
-    @Container // no methods that modify their parameters
+    @Container
     static class I {
         private int i;
 
@@ -40,7 +40,7 @@ public class ExternalContainer_2 {
         }
     }
 
-    @E2Immutable(recursive = true) // one method that modifies its parameter!
+    @E2Immutable(recursive = true)
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override
@@ -66,7 +66,7 @@ public class ExternalContainer_2 {
 
     @Container(absent = true)
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
-    @Container // computed from the assignment
+    @Container
     private final Consumer<I> myContainer = new MyContainer();
     @Container(absent = true)
     private final Consumer<I> myContainerLinkedToParameter;
@@ -78,7 +78,7 @@ public class ExternalContainer_2 {
     @Modified
     public void go() {
         if (myContainerLinkedToParameter != null) {
-            print(myContainerLinkedToParameter);// causes CONTEXT_CONTAINER to go up, which travels to the field, to the param
+            print(myContainerLinkedToParameter);
         }
         print(myContainer);
         print(myNonContainer);
@@ -91,8 +91,6 @@ public class ExternalContainer_2 {
         System.out.println(iField.getI());
     }
 
-    // we can be guaranteed that the accept method in "print" does not modify i!
-    // the @Container property is absent because the formal type is the same as the concrete one
     @Container(absent = true)
     @Modified
     private final I iField = new I();

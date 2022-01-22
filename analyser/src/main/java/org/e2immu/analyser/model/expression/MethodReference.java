@@ -91,8 +91,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
         ForwardEvaluationInfo scopeForward;
 
-        DV propagateMod = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
-        if (propagateMod.valueIsTrue()) {
+        DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
+        if (contextContainer.valueIsFalse()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             DV contextModifiedDelay = DV.fromBoolDv(modified .isDelayed());

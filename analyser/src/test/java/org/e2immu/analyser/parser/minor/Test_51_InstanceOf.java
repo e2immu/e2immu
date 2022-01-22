@@ -132,6 +132,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         // because of no annotated APIs, Set.addAll is non-modifying, so we get a warning that we ignore the result
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "collection".equals(p.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
                 if ("list".equals(d.variableName())) {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
                         assertEquals("1", pattern.getStatementIndexOfBlockVariable());
@@ -144,13 +149,13 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "collection:0,list:0,return add:-1"
                                 : "collection:0,list:0";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<p:collection>/*(List<String>)*/" : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -635,7 +640,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<f:expression>/*(Sum)*/"
                                 : "<vp:expression:container@Class_InstanceOf_11;immutable@Class_InstanceOf_11>/*(Sum)*/";
-                   //     assertEquals(expect, d.currentValue().toString());
+                        //     assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "evaluationContext".equals(p.name)) {

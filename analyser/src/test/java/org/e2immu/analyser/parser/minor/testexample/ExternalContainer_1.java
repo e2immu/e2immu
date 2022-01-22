@@ -30,7 +30,7 @@ public class ExternalContainer_1 {
         void accept(T t); // implicitly @Modified, no @IgnoreModification
     }
 
-    @Container // no methods that modify their parameters
+    @Container
     static class I {
         private int i;
 
@@ -45,7 +45,7 @@ public class ExternalContainer_1 {
         }
     }
 
-    @E2Immutable(recursive = true) // one method that modifies its parameter!
+    @E2Immutable(recursive = true)
     record MyNonContainer(int value) implements Consumer<I> {
 
         @Override
@@ -71,7 +71,7 @@ public class ExternalContainer_1 {
 
     @Container(absent = true)
     private final Consumer<I> myNonContainer = new MyNonContainer(3);
-    @Container // computed from the assignment
+    @Container
     private final Consumer<I> myContainer = new MyContainer();
     @Container(absent = true)
     private final Consumer<I> myContainerLinkedToParameter;
