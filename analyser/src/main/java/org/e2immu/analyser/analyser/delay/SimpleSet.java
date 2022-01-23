@@ -167,12 +167,12 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
     }
 
     @Override
-    public AnalysisStatus combineAndLimit(AnalysisStatus other) {
+    public AnalysisStatus combine(AnalysisStatus other, boolean limit) {
         if (other instanceof NotDelayed) return this;
         assert other.isDelayed();
         assert isDelayed();
         CausesOfDelay merge;
-        if (other.numberOfDelays() > LIMIT || numberOfDelays() > LIMIT) {
+        if (limit && (other.numberOfDelays() > LIMIT || numberOfDelays() > LIMIT)) {
             merge = this;
         } else {
             merge = merge(other.causesOfDelay());

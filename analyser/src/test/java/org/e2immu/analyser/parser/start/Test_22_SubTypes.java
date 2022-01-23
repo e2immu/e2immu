@@ -131,7 +131,8 @@ public class Test_22_SubTypes extends CommonTestRunner {
         testClass("SubTypes_4", 3, 0, new DebugConfiguration.Builder().build());
     }
 
-    // contains some standard loop stuff
+    // contains some standard loop stuff, plus an interesting application of VariableAccessReport
+
     @Test
     public void test_5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

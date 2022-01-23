@@ -51,19 +51,19 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
         private final List<PrimaryTypeAnalyser> localAnalysers = new ArrayList<>();
 
         public void add(AnalyserResult other) {
-            add(other, true);
+            add(other, true, false);
         }
 
-        public void add(AnalyserResult other, boolean addLocalAnalysers) {
+        public void add(AnalyserResult other, boolean addLocalAnalysers, boolean limit) {
             this.variableAccessReport = variableAccessReport.combine(other.variableAccessReport);
             if (addLocalAnalysers) this.localAnalysers.addAll(other.localAnalysers);
-            combineAnalysisStatus(other.analysisStatus);
+            combineAnalysisStatus(other.analysisStatus, limit);
             this.messages.addAll(other.messages().getMessageStream());
         }
 
         public void addWithoutVariableAccess(AnalyserResult other) {
             this.localAnalysers.addAll(other.localAnalysers);
-            combineAnalysisStatus(other.analysisStatus);
+            combineAnalysisStatus(other.analysisStatus, false);
             this.messages.addAll(other.messages().getMessageStream());
         }
 
@@ -105,8 +105,8 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
             return new AnalyserResult(analysisStatus, messages, variableAccessReport, List.copyOf(localAnalysers));
         }
 
-        public Builder combineAnalysisStatus(AnalysisStatus other) {
-            analysisStatus = analysisStatus.combine(other);
+        public Builder combineAnalysisStatus(AnalysisStatus other, boolean limit) {
+            analysisStatus = analysisStatus.combine(other, limit);
             return this;
         }
 

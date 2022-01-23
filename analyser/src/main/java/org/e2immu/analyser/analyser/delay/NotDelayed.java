@@ -56,8 +56,10 @@ public record NotDelayed(int pos, String name) implements AnalysisStatus {
     }
 
     @Override
-    public AnalysisStatus combineAndLimit(AnalysisStatus other) {
-        return combine(other);
+    public AnalysisStatus combine(AnalysisStatus other, boolean limit) {
+        if (other instanceof NotDelayed) return pos < other.pos() ? this : other;
+        assert other.isDelayed();
+        return other;
     }
 
     @Override

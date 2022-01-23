@@ -104,7 +104,7 @@ public class AnalyserComponents<T, S> {
                 state[i] = afterExec;
                 if (afterExec != RUN_AGAIN) {
                     assert afterExec.isDelayed() || afterExec == DONE;
-                    combined = limitCausesOfDelay ? combined.combineAndLimit(afterExec) : combined.combine(afterExec);
+                    combined =  combined.combine(afterExec, limitCausesOfDelay);
                 }
             }
             i++;

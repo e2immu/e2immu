@@ -177,13 +177,13 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         analysers.forEach(Analyser::initialize);
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
-        builder.setLimitCausesOfDelay(!subAnalyser);
+        builder.setLimitCausesOfDelay(true);
 
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
                 AnalyserResult analyserResult = analyser.analyse(sharedState.iteration, sharedState.closure);
-                analyserResultBuilder.add(analyserResult);
+                analyserResultBuilder.add(analyserResult, true, true);
                 if (analyser instanceof MethodAnalyser methodAnalyser) {
                     methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
                 }

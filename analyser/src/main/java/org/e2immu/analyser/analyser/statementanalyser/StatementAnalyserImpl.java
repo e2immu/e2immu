@@ -448,7 +448,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
                             ? new ProgressWrapper(new SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
-                            : DONE)
+                            : DONE, false)
                     .build();
 
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,

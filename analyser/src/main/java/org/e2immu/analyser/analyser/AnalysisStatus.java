@@ -43,7 +43,7 @@ public interface AnalysisStatus {
 
     AnalysisStatus combine(AnalysisStatus other);
 
-    AnalysisStatus combineAndLimit(AnalysisStatus other);
+    AnalysisStatus combine(AnalysisStatus other, boolean limit);
 
     int numberOfDelays();
 

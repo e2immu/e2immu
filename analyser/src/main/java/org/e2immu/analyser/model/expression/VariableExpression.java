@@ -46,6 +46,10 @@ public final class VariableExpression extends BaseExpression implements Expressi
     }
 
     public static final Suffix NO_SUFFIX = new Suffix() {
+        @Override
+        public int hashCode() {
+            return 1;
+        }
     };
 
     public record VariableField(int statementTime, String assignmentId) implements Suffix {
@@ -111,7 +115,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
 
     @Override
     public int hashCode() {
-        return Objects.hash(variable, suffix);
+        return variable.hashCode() + 37 * suffix.hashCode();
     }
 
     @Override

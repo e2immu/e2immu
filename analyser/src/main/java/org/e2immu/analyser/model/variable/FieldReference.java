@@ -36,6 +36,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public final boolean isStatic;
     public final boolean isDefaultScope;
     public final String fullyQualifiedName;
+    private final int hashCode;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
         this(inspectionProvider, fieldInfo, null);
@@ -67,8 +68,13 @@ public class FieldReference extends VariableWithConcreteReturnType {
             }
         }
         this.fullyQualifiedName = computeFqn();
+        this.hashCode = hash(this.fieldInfo, this.scope);
     }
 
+    private static int hash(FieldInfo fieldInfo, Expression scope) {
+        return fieldInfo.hashCode() + 37 * scope.hashCode();
+
+    }
     private String computeFqn() {
         if (isStatic || scopeIsThis()) {
             return fieldInfo.fullyQualifiedName();
@@ -87,6 +93,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.isDefaultScope = fieldReference.isDefaultScope;
         this.scope = newScope;
         this.fullyQualifiedName = computeFqn();
+        this.hashCode = hash(fieldInfo, scope);
     }
 
     // called from VariableExpression.translate, where no inspection provider is present
@@ -98,6 +105,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         this.isStatic = isStatic;
         this.isDefaultScope = isDefaultScope;
         this.fullyQualifiedName = computeFqn();
+        this.hashCode = hash(fieldInfo, scope);
     }
 
     @Override
@@ -125,7 +133,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public int hashCode() {
-        return Objects.hash(fieldInfo, scope);
+        return hashCode;
     }
 
     @Override

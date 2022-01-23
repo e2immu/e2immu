@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -126,5 +123,10 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public void visit(Predicate<Expression> predicate) {
         inner.visit(predicate);
+    }
+
+    @Override
+    public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
+        return evaluationContext.getProperty(inner, property, duringEvaluation, false);
     }
 }

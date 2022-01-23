@@ -88,7 +88,7 @@ public class This implements Variable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(typeInfo);
+        return typeInfo.fullyQualifiedName.hashCode();
     }
 
     @Override

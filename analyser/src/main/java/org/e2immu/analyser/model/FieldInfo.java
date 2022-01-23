@@ -71,7 +71,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, owner);
+        return fullyQualifiedName.hashCode();
     }
 
     @Override

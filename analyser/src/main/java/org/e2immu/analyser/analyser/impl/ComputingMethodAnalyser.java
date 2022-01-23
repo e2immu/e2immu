@@ -133,7 +133,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
                             ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
                             sharedState.evaluationContext.getClosure());
-            analyserResultBuilder.add(result, false);
+            analyserResultBuilder.add(result, false, false);
             this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
             return result.analysisStatus();
         };

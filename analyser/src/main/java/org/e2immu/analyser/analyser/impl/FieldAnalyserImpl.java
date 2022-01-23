@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -321,6 +322,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 EvaluationResult evaluationResult = toEvaluate.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 fieldAnalysis.setInitialiserValue(initialiserValue);
+
+                makeVariableAccessReport(initialiserValue, sharedState.closure());
                 log(FINAL, "Set initialiser of field {} to {}", fqn, evaluationResult.value());
                 if (evaluationResult.causesOfDelay().isDelayed()) {
                     return evaluationResult.causesOfDelay();
@@ -331,6 +334,23 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
         Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
         fieldAnalysis.setInitialiserValue(nullValue);
         return DONE;
+    }
+
+    // code very similar to StatementAnalyserImpl.transferFromClosureToResult
+    // we try to record access to variables that are out of our PTA
+    private void makeVariableAccessReport(Expression value, EvaluationContext closure) {
+        if(closure == null) return;
+        VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
+        for (Variable variable : value.variables(true)) {
+            if (closure.isPresent(variable)) {
+                builder.addVariableRead(variable);
+            }
+            if (variable instanceof FieldReference fr && fr.fieldInfo.owner !=
+                    fieldInfo.owner && fr.fieldInfo.owner.primaryType().equals(primaryType)) {
+                builder.addVariableRead(fr);
+            }
+        }
+        analyserResultBuilder.addVariableAccessReport(builder.build());
     }
 
     /*
