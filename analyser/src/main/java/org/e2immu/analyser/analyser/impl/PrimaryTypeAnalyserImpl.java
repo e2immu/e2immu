@@ -184,7 +184,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
                 AnalyserResult analyserResult = analyser.analyse(sharedState.iteration, sharedState.closure);
                 analyserResultBuilder.add(analyserResult);
-                localPrimaryTypeAnalysers.addAll(analyserResult.localAnalysers());
+                if (analyser instanceof MethodAnalyser methodAnalyser) {
+                    methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
+                }
                 return analyserResult.analysisStatus();
             };
 
