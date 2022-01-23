@@ -95,4 +95,22 @@ public class Test_25_FieldReference extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+    @Test
+    public void test3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("p0".equals(d.variableName())) {
+                    assertTrue(d.statementId().startsWith("2.0.0."), "Got: " + d.statementId());
+                    if ("2.0.0.1.0".equals(d.statementId())) {
+                        String expectLv = "p0:0";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+        };
+        testClass("FieldReference_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }

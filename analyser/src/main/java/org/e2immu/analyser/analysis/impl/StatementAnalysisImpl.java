@@ -1136,7 +1136,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         touchedNotMerged.removeAll(linkedVariablesMap.keySet());
         for (Variable variable : touchedNotMerged) {
             VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
-            if (vic != null) vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+            assert vic != null;
+            vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));

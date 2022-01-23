@@ -182,12 +182,6 @@ public class LinkedVariables {
         return variables.containsKey(variable);
     }
 
-    public LinkedVariables removeDelays() {
-        return new LinkedVariables(variables.entrySet().stream()
-                .filter(e -> e.getValue().value() >= 0)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-    }
-
     public LinkedVariables minimum(DV minimum) {
         return new LinkedVariables(variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> minimum.max(e.getValue()))));
@@ -202,12 +196,6 @@ public class LinkedVariables {
     public Stream<Variable> variablesAssigned() {
         return variables.entrySet().stream()
                 .filter(e -> isAssigned(e.getValue()))
-                .map(Map.Entry::getKey);
-    }
-
-    public Stream<Variable> variablesWithLevel(int level) {
-        return variables.entrySet().stream()
-                .filter(e -> e.getValue().value() == level)
                 .map(Map.Entry::getKey);
     }
 

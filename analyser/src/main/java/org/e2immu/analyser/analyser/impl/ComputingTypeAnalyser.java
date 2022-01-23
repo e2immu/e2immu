@@ -633,6 +633,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             return parentOrEnclosing.status;
         }
 
+        CausesOfDelay allCauses = CausesOfDelay.EMPTY;
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (methodAnalyser.getMethodInfo().isAccessibleOutsidePrimaryType()) {
                 for (ParameterInfo parameterInfo : methodAnalyser.getMethodInspection().getParameters()) {
@@ -641,10 +642,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     if (modified.isDelayed() && methodAnalyser.hasCode()) {
                         log(DELAYED, "Delaying container, modification of parameter {} undecided",
                                 parameterInfo.fullyQualifiedName());
-                        CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
-                        typeAnalysis.setProperty(Property.CONTAINER, modified.causesOfDelay().merge(marker));
-
-                        return modified.causesOfDelay(); // cannot yet decide
+                        allCauses = allCauses.merge(modified.causesOfDelay());
                     }
                     if (modified.valueIsTrue()) {
                         log(TYPE_ANALYSER, "{} is not a @Container: the content of {} is modified in {}",
@@ -656,6 +654,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                 }
             }
+        }
+        if(allCauses.isDelayed()) {
+            CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
+            typeAnalysis.setProperty(Property.CONTAINER, allCauses.causesOfDelay().merge(marker));
+            return AnalysisStatus.of(allCauses);
         }
         typeAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
         log(TYPE_ANALYSER, "Mark {} as @Container", typeInfo.fullyQualifiedName);

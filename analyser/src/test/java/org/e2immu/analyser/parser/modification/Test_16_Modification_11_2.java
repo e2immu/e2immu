@@ -94,6 +94,8 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo s && "string".equals(s.name)) {
                     String expectLv = "string:0";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    //container:this.set@Method_add_0
+                    assertDv(d, 2, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }
             }
 
@@ -118,6 +120,15 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                    String causesOfDelay = switch (d.iteration()) {
+                        case 0 -> "initial:c.set@Method_example1_2;initial:localD.set@Method_example1_2";
+                        case 1 -> "cnn@Parameter_c;cnn@Parameter_d";
+                        // when all goes well:
+                        case 2 -> "initial@Method_add";
+                        // otherwise: cm@Parameter_string;container@Class_C1;initial@Method_add
+                        default -> "";
+                    };
+                    assertEquals(causesOfDelay, d.currentValue().causesOfDelay().toString());
                     String expectValue = d.iteration() <= 2 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -188,6 +199,9 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
+            }
+            if ("C1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, DV.FALSE_DV, CONTAINER);
             }
         };
 
