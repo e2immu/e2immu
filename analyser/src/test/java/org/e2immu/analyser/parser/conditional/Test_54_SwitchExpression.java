@@ -42,4 +42,10 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
         testClass("SwitchExpression_2", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("SwitchExpression_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

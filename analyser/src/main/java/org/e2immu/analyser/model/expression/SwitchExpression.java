@@ -101,7 +101,11 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         }
         List<Expression> newYieldExpressions = new ArrayList<>(yieldExpressions.expressions().length);
         for (SwitchEntry switchEntry : switchEntries) {
-            if (switchEntry.structure.statements().size() == 1) {
+            if (switchEntry.structure.statements() == null) {
+                // block
+                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry);
+                newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
+            } else if (switchEntry.structure.statements().size() == 1) {
                 // single expression
                 Expression condition = convertDefaultToNegationOfAllOthers(evaluationContext, switchEntry.structure.expression());
                 EvaluationContext localContext = evaluationContext.child(condition);
@@ -117,8 +121,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
                     assert statement instanceof ThrowStatement; // there is no expression to evaluate for a return value
                 }
             } else {
-                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry);
-                newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
+              throw new UnsupportedOperationException();
             }
         }
         builder.compose(selectorResult);

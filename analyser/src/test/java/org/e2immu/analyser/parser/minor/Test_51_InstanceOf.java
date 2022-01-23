@@ -173,8 +173,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                                 : "collection instanceof List<String>&&null!=collection?collection/*(List<String>)*/.isEmpty()?\"Empty\":collection/*(List<String>)*/.get(0):<return value>";
                         assertEquals(expected, d.currentValue().toString());
 
-                        String expectLv = d.iteration() == 0 ? "collection:-1,return add:0" : "return add:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("return add:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

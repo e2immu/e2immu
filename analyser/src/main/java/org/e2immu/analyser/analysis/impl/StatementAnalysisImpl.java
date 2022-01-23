@@ -1122,25 +1122,39 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // create looks at these+previous, minus those to be removed.
         Function<Variable, LinkedVariables> linkedVariablesFromBlocks =
                 v -> linkedVariablesMap.getOrDefault(v, LinkedVariables.EMPTY);
-        Set<Variable> touched = Stream.concat(linkedVariablesMap.keySet().stream(),
-                        linkedVariablesMap.values().stream().flatMap(lv -> lv.variables().keySet().stream()))
+        Set<Variable> touchedWithoutDelayed = Stream.concat(linkedVariablesMap.keySet().stream(),
+                        linkedVariablesMap.values().stream()
+                                .flatMap(lv -> lv.variables().entrySet().stream()
+                                        .filter(e -> e.getValue().isDone())
+                                        .map(Map.Entry::getKey)))
+                .filter(v -> !prepareMerge.toRemove.contains(v))
+                .collect(Collectors.toUnmodifiableSet());
+
+        // we compute two different versions: one where all delays in linking are present, and one without
+        // the first one is needed to copy context properties as much as possible.
+        // the second one is needed to remove as many out of scope variables as possible
+        // See e.g. InstanceOf_3; crash on analysing own code in ComputingTypeAnalyser/p0
+        Set<Variable> touchedWithDelayed = Stream.concat(linkedVariablesMap.keySet().stream(),
+                        linkedVariablesMap.values().stream()
+                                .flatMap(lv -> lv.variables().keySet().stream()))
                 .filter(v -> !prepareMerge.toRemove.contains(v))
                 .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
-                (vic, v) -> !touched.contains(v),
+                (vic, v) -> !touchedWithoutDelayed.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
-        computeLinkedVariables.writeLinkedVariables(touched, prepareMerge.toRemove);
+        computeLinkedVariables.writeLinkedVariables(touchedWithDelayed, prepareMerge.toRemove);
 
-        HashSet<Variable> touchedNotMerged = new HashSet<>(touched);
-        touchedNotMerged.removeAll(linkedVariablesMap.keySet());
-        for (Variable variable : touchedNotMerged) {
-            VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
-            assert vic != null;
-            vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+        for (Variable variable : touchedWithDelayed) {
+            if (!linkedVariablesMap.containsKey(variable)) {
+                VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null) {
+                    vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+                }
+            }
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
-        ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));
+        ignoredNotTouched.removeIf(vic -> touchedWithDelayed.contains(vic.current().variable()));
         for (VariableInfoContainer vic : ignoredNotTouched) {
             vic.copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
         }
