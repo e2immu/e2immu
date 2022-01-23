@@ -61,7 +61,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if ("ExplicitConstructorInvocation_4".equals(d.methodInfo().name)
                     && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
                 if (d.variable() instanceof FieldReference fr && "index".equals(fr.fieldInfo.name)) {
-                    String expected = d.iteration() == 0 ? "<f:generator>" : "generator";
+                    String expected = d.iteration() == 0 ? "<f:generator>" : "ExplicitConstructorInvocation_4.generator";
                     if ("0".equals(d.statementId())) {
                         assertEquals(expected, d.currentValue().toString());
                     }

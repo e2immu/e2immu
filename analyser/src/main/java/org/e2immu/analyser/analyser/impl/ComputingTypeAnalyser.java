@@ -617,8 +617,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             if (isMark.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(isMark.causesOfDelay());
             } else {
-                FieldReference adjustedFieldReference = analyserContext.adjustThis(e.getKey());
-                fieldToConditions.add(new FieldToCondition(adjustedFieldReference, e.getValue(),
+                fieldToConditions.add(new FieldToCondition(e.getKey(), e.getValue(),
                         Negation.negate(evaluationContext, e.getValue()), isMark.valueIsTrue()));
             }
         }

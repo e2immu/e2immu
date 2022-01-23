@@ -68,7 +68,7 @@ public class Test_26_Enum extends CommonTestRunner {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
                         case 1 -> "{<vp:ONE:container@Field_ONE;immutable@Enum_Enum_0>,<vp:TWO:container@Field_TWO;immutable@Enum_Enum_0>,<vp:THREE:container@Field_THREE;immutable@Enum_Enum_0>}";
                         case 2 -> "{<vp:ONE:container@Field_ONE>,<vp:TWO:container@Field_TWO>,<vp:THREE:container@Field_THREE>}";
-                        default -> "{ONE,TWO,THREE}";
+                        default -> "{Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -86,7 +86,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() <= 2 ? "<m:values>" : "{ONE,TWO,THREE}";
+                String expect = d.iteration() <= 2 ? "<m:values>" : "{Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -126,7 +126,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2
                             ? "this==<v:<m:values>[<v:i>]>"
-                            : "instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this";
+                            : "instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -169,13 +169,13 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this?i:<return value>";
+                                : "instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this?i:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2
                                 ? "<loopIsNotEmptyCondition>&&this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
-                                : "instance type int<=2&&instance type int>=0&&instance type Enum_1/*{L {ONE,TWO,THREE}[i]:assigned:1}*/==this?instance type int:<return value>";
+                                : "instance type int<=2&&instance type int>=0&&instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -230,7 +230,7 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"posInList".equals(d.methodInfo().name)) return;
             if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                String expectValue = d.iteration() <= 3 ? "<m:values>" : "{ONE,TWO,THREE}";
+                String expectValue = d.iteration() <= 3 ? "<m:values>" : "{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("array[i]".equals(d.variableName())) {
@@ -291,7 +291,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 4, DV.TRUE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 3 ? "<m:values>" : "{ONE,TWO,THREE}";
+                String expected = d.iteration() <= 3 ? "<m:values>" : "{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 3) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {

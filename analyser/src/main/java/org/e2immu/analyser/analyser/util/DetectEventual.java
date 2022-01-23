@@ -250,9 +250,8 @@ public record DetectEventual(MethodInfo methodInfo,
         boolean allBefore = true;
         Set<FieldInfo> fields = new HashSet<>();
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
-            FieldReference adjustedFieldReference = analyserContext.adjustThis(e.getKey());
-            if (typeAnalysis.approvedPreconditionsStatus(e2, adjustedFieldReference).isDone()) {
-                Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, adjustedFieldReference);
+            if (typeAnalysis.approvedPreconditionsStatus(e2, e.getKey()).isDone()) {
+                Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, e.getKey());
                 FieldInfo field = typeAnalysis.translateToVisibleField(e.getKey());
                 if (field != null) {
                     Expression value = e.getValue();

@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.model.MultiLevel.NOT_INVOLVED_DV;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -1136,7 +1135,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         HashSet<Variable> touchedNotMerged = new HashSet<>(touched);
         touchedNotMerged.removeAll(linkedVariablesMap.keySet());
         for (Variable variable : touchedNotMerged) {
-            variables.get(variable.fullyQualifiedName()).copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
+            VariableInfoContainer vic = variables.getOrDefaultNull(variable.fullyQualifiedName());
+            if (vic != null) vic.copyNonContextFromPreviousOrEvalToMerge(groupPropertyValues);
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(prepareMerge.toIgnore);
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable()));

@@ -150,13 +150,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
 
-    default FieldReference adjustThis(FieldReference fieldReference) {
-        if (fieldReference.scopeIsNonOwnerThis()) {
-            return new FieldReference(this, fieldReference.fieldInfo);
-        }
-        return fieldReference;
-    }
-
     /**
      * Important that we can override this (even if we run in a non-ALL mode for the source,
      * we want to run the AnnotatedAPI analyser in ALL mode).

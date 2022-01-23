@@ -129,7 +129,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
             if (!translatedScope.equals(fieldReference.scope)) {
                 ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
                 return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
-                        translatedType, fieldReference.isStatic), suffix);
+                        translatedType, fieldReference.isStatic, fieldReference.isDefaultScope), suffix);
             }
         }
         return this;

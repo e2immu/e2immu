@@ -31,7 +31,7 @@ public enum Enum_4 {
         return cnt;
     }
 
-    @Constant("THREE")
+    @Constant("Enum_4.THREE")
     public static Enum_4 highest() {
         assert 1 == ONE.getCnt(); // warning: always true
         assert 2 == TWO.cnt;      // warning: always true

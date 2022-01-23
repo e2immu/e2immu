@@ -16,6 +16,8 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -29,15 +31,14 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
     // can be a Resolved field again, but ends with This
-    // can be null, in which case this is a reference to a static field
+    // cannot be null
     public final Expression scope;
     public final boolean isStatic;
+    public final boolean isDefaultScope;
     public final String fullyQualifiedName;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
-        this(inspectionProvider, fieldInfo,
-                fieldInfo.isStatic(inspectionProvider) ? null :
-                        new VariableExpression(new This(inspectionProvider, fieldInfo.owner)));
+        this(inspectionProvider, fieldInfo, null);
     }
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo, Expression scope) {
@@ -47,13 +48,25 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 fieldInfo.type.inferConcreteFieldTypeFromConcreteScope(inspectionProvider,
                         fieldInfo.owner.asParameterizedType(inspectionProvider), scope.returnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
-        this.scope = scope;
         this.isStatic = fieldInfo.isStatic(inspectionProvider);
+        if (this.isStatic) {
+            this.scope = new TypeExpression(fieldInfo.owner.asSimpleParameterizedType(), Diamond.NO);
+            isDefaultScope = true;
+        } else if (scope == null) {
+            this.scope = new VariableExpression(new This(inspectionProvider, fieldInfo.owner));
+            isDefaultScope = true;
+        } else {
+            IsVariableExpression ive;
+            if (((ive = scope.asInstanceOf(IsVariableExpression.class)) != null) && ive.variable() instanceof This thisVar) {
+                this.scope = thisVar.typeInfo == fieldInfo.owner ? scope
+                        : new VariableExpression(new This(inspectionProvider, fieldInfo.owner));
+                isDefaultScope = true;
+            } else {
+                this.scope = scope;
+                isDefaultScope = false;
+            }
+        }
         this.fullyQualifiedName = computeFqn();
-
-        assert isStatic || scope != null : "Must have a scope if the field is not static";
-        assert !(isStatic && scope instanceof VariableExpression)
-                : "Have variable expression scope on static field " + fullyQualifiedName();
     }
 
     private String computeFqn() {
@@ -71,16 +84,19 @@ public class FieldReference extends VariableWithConcreteReturnType {
         super(fieldReference.parameterizedType);
         this.fieldInfo = fieldReference.fieldInfo;
         this.isStatic = fieldReference.isStatic;
+        this.isDefaultScope = fieldReference.isDefaultScope;
         this.scope = newScope;
         this.fullyQualifiedName = computeFqn();
     }
 
     // called from VariableExpression.translate, where no inspection provider is present
-    public FieldReference(FieldInfo fieldInfo, Expression scope, ParameterizedType parameterizedType, boolean isStatic) {
+    public FieldReference(FieldInfo fieldInfo, Expression scope, ParameterizedType parameterizedType, boolean isStatic,
+                          boolean isDefaultScope) {
         super(parameterizedType);
         this.fieldInfo = fieldInfo;
         this.scope = scope;
         this.isStatic = isStatic;
+        this.isDefaultScope = isDefaultScope;
         this.fullyQualifiedName = computeFqn();
     }
 
@@ -101,17 +117,15 @@ public class FieldReference extends VariableWithConcreteReturnType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FieldReference that = (FieldReference) o;
-        return (fieldInfo.equals(that.fieldInfo) &&
-                (Objects.equals(scope, that.scope) || scopeIsThis() && that.scopeIsThis()));
+        // we do not use FQN for equality, because then we should also use fully qualified names
+        // in the #part, which makes them even more unreadable. There are potential clashes when translating
+        // see e.g. ExplicitConstructorInvocation_6.
+        return fieldInfo.equals(that.fieldInfo) && scope.equals(that.scope);
     }
 
     @Override
     public int hashCode() {
-        // important: scope cannot be part of the hashCode when it is of type This (See test PropagateModification_7)
-        if (!scopeIsThis()) {
-            return Objects.hash(fieldInfo, scope);
-        }
-        return fieldInfo.hashCode();
+        return Objects.hash(fieldInfo, scope);
     }
 
     @Override
@@ -173,12 +187,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         return parameterizedType().typesReferenced(explicit);
     }
 
-    public boolean scopeIsNonOwnerThis() {
-        return scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar
-                && thisVar.typeInfo != fieldInfo.owner;
-    }
-
     public boolean scopeIsThis() {
-        return scope instanceof VariableExpression ve && ve.variable() instanceof This;
+        return !isStatic && isDefaultScope;
     }
 }

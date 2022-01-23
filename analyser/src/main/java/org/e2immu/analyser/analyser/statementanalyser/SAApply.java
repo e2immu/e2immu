@@ -257,7 +257,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues) {
         // the second one is across clusters of variables
-        addToMap(groupPropertyValues, analyserContext);
+        groupPropertyValues.addToMap(statementAnalysis, analyserContext);
 
         Function<Variable, LinkedVariables> linkedVariablesFromChangeData = v -> {
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(v);
@@ -458,50 +458,5 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return value;
     }
 
-    void addToMap(GroupPropertyValues groupPropertyValues, AnalyserContext analyserContext) {
-        addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> AnalysisProvider.defaultNotNull(x.parameterizedType()), true);
-        addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x ->
-                new SimpleSet(new VariableCause(x, statementAnalysis.location(),
-                        CauseOfDelay.Cause.EXTERNAL_NOT_NULL)), false);
-        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> analyserContext.defaultImmutable(x.parameterizedType(), false), false);
-        addToMap(groupPropertyValues, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
-        addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
-        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
-        addToMap(groupPropertyValues, CONTEXT_CONTAINER, x -> DV.FALSE_DV, true);
-    }
-
-    void addToMap(GroupPropertyValues groupPropertyValues,
-                  Property property,
-                  Function<Variable, DV> falseValue,
-                  boolean complainDelay0) {
-        Map<Variable, DV> map = groupPropertyValues.getMap(property);
-        statementAnalysis.rawVariableStream().forEach(e -> {
-            VariableInfoContainer vic = e.getValue();
-            VariableInfo vi1 = vic.getPreviousOrInitial();
-            if (!map.containsKey(vi1.variable())) { // variables that don't occur in contextNotNull
-                DV prev = vi1.getProperty(property);
-                if (prev.isDone()) {
-                    if (vic.hasEvaluation()) {
-                        VariableInfo vi = vic.best(EVALUATION);
-                        DV eval = vi.getProperty(property);
-                        if (eval.isDelayed()) {
-                            map.put(vi.variable(), prev.maxIgnoreDelay(falseValue.apply(vi.variable())));
-                        } else {
-                            map.put(vi.variable(), eval);
-                        }
-                    } else {
-                        map.put(vi1.variable(), prev);
-                    }
-                } else {
-                    map.put(vi1.variable(), prev);
-                    if (complainDelay0 && "0".equals(statementAnalysis.index())) {
-                        throw new UnsupportedOperationException(
-                                "Impossible, all variables start with non-delay: " + vi1.variable().fullyQualifiedName()
-                                        + ", prop " + property);
-                    }
-                }
-            }
-        });
-    }
 
 }

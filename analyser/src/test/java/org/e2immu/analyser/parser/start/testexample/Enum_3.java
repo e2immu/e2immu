@@ -33,7 +33,7 @@ public enum Enum_3 {
         return cnt > other.cnt ? cnt : other.cnt;
     }
 
-    @Constant("THREE")
+    @Constant("Enum_3.THREE")
     public static Enum_3 highest() {
         return THREE;
     }

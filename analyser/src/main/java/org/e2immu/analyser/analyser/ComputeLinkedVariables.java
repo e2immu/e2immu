@@ -203,17 +203,11 @@ public class ComputeLinkedVariables {
                                         Map<Variable, DV> propertyValues) {
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         for (List<Variable> cluster : clusters) {
-            DV summary;
-            try {
-                summary = cluster.stream()
-                        // IMPORTANT: property has to be present, or we get a null pointer!
-                        .map(v -> Objects.requireNonNull(propertyValues.get(v), "No value for " + v + ", property " + property))
-                        // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
-                        .reduce(DV.FALSE_DV, DV::max);
-            } catch (RuntimeException e) {
-                LOGGER.error("Problem computing summary of cluster {} for property {}", cluster, property);
-                throw e;
-            }
+            assert cluster.stream().allMatch(propertyValues::containsKey);
+            DV summary = cluster.stream()
+                    .map(propertyValues::get)
+                    // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
+                    .reduce(DV.FALSE_DV, DV::max);
             if (summary.isDelayed()) {
                 causes = causes.merge(summary.causesOfDelay());
             }
