@@ -143,6 +143,13 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     @Override
+    public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+        TypeAnalyser typeAnalyser = this.typeAnalysers.getOrDefaultNull(typeInfo);
+        if (typeAnalyser != null) return typeAnalyser.getTypeAnalysis();
+        return parent.getTypeAnalysisNullWhenAbsent(typeInfo);
+    }
+
+    @Override
     public Stream<FieldAnalyser> fieldAnalyserStream() {
         return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.stream().map(Map.Entry::getValue));
     }

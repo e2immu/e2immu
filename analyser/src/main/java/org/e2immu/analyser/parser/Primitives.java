@@ -33,6 +33,8 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     ParameterizedType booleanParameterizedType();
 
+    ParameterizedType boxedBooleanParameterizedType();
+
     ParameterizedType longParameterizedType();
 
     ParameterizedType doubleParameterizedType();

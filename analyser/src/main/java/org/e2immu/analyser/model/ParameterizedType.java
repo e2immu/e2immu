@@ -829,7 +829,6 @@ public class ParameterizedType {
         return this;
     }
 
-
     public boolean isBoolean() {
         if (arrays != 0) return false;
         return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
@@ -841,22 +840,21 @@ public class ParameterizedType {
     }
 
     public boolean isNotBooleanOrBoxedBoolean() {
-        if (typeInfo == null) return true; // for parameterized types
-        return !typeInfo.isBoolean()
-                && !typeInfo.isBoxedBoolean();
+        if (typeInfo == null || arrays != 0) return true; // for parameterized types
+        return !typeInfo.isBoolean() && !typeInfo.isBoxedBoolean();
     }
 
     public boolean isVoid() {
-        return typeInfo != null && typeInfo.isVoid();
+        return arrays == 0 && typeInfo != null && typeInfo.isVoid();
     }
 
     public boolean isVoidOrJavaLangVoid() {
-        return typeInfo != null && (typeInfo.isJavaLangVoid() ||
+        return arrays == 0 && typeInfo != null && (typeInfo.isJavaLangVoid() ||
                 typeInfo.isVoid());
     }
 
     public boolean isJavaLangString() {
-        return typeInfo != null && typeInfo.isJavaLangString();
+        return arrays == 0 && typeInfo != null && typeInfo.isJavaLangString();
     }
 
     public boolean isJavaLangObject() {
@@ -884,10 +882,10 @@ public class ParameterizedType {
     }
 
     public boolean isLong() {
-        return typeInfo != null && typeInfo.isLong();
+        return arrays == 0 && typeInfo != null && typeInfo.isLong();
     }
 
     public boolean isInt() {
-        return typeInfo != null && typeInfo.isInt();
+        return arrays == 0 && typeInfo != null && typeInfo.isInt();
     }
 }

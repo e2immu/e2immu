@@ -440,7 +440,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeAnalyses.get(typeInfo);
         if (typeAnalysis != null) return typeAnalysis;
-        return typeInfo.typeAnalysis.isSet() ? typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName) : null;
+        return typeInfo.typeAnalysis.getOrDefaultNull();
     }
 
     private void iterativeMethodAnalysis(Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions) {

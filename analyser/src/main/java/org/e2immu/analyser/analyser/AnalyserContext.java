@@ -118,6 +118,16 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return typeAnalyser.getTypeAnalysis();
     }
 
+    default TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+        TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
+        if (typeAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getTypeAnalysisNullWhenAbsent(typeInfo);
+            return typeInfo.typeAnalysis.getOrDefaultNull();
+        }
+        return typeAnalyser.getTypeAnalysis();
+    }
+
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
         if (methodAnalyser == null) {

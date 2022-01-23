@@ -67,15 +67,11 @@ public class And extends BaseExpression implements Expression {
         // STEP 1: check that all values return boolean!
         int complexity = 0;
         for (Expression v : values) {
-            if (v.isUnknown()) {
-                throw new UnsupportedOperationException("Unknown value " + v + " in And");
-            }
-            if (v.returnType() == null) {
-                throw new UnsupportedOperationException("Null return type for " + v + " in And");
-            }
-            if (v.returnType().isNotBooleanOrBoxedBoolean()) {
-                throw new UnsupportedOperationException("Non-boolean return type for " + v + " in And: " + v.returnType());
-            }
+            assert !v.isUnknown() : "Unknown value " + v + " in And";
+            assert v.returnType() != null : "Null return type for " + v + " in And";
+            assert v.returnType().isBooleanOrBoxedBoolean() || v.returnType().isUnboundTypeParameter()
+                    : "Non-boolean return type for " + v + " in And: " + v.returnType();
+
             complexity += v.getComplexity();
         }
 

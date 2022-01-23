@@ -30,9 +30,7 @@ public interface AnalysisProvider {
 
     ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo);
 
-    default TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
-        return getTypeAnalysis(typeInfo);
-    }
+    TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo);
 
     TypeAnalysis getTypeAnalysis(TypeInfo typeInfo);
 
@@ -53,6 +51,11 @@ public interface AnalysisProvider {
         @Override
         public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
             return typeInfo.typeAnalysis.get("Type analysis of " + typeInfo.fullyQualifiedName);
+        }
+
+        @Override
+        public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+            return typeInfo.typeAnalysis.getOrDefaultNull();
         }
 
         @Override
@@ -78,6 +81,11 @@ public interface AnalysisProvider {
         }
 
         @Override
+        public TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo) {
+            return typeInfo.typeAnalysis.getOrDefaultNull();
+        }
+
+        @Override
         public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
             return typeInfo.typeAnalysis.getOrDefaultNull();
         }
@@ -91,11 +99,11 @@ public interface AnalysisProvider {
     default DV getProperty(ParameterizedType parameterizedType, Property property) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType != null) {
-            return getTypeAnalysis(bestType).getProperty(property);
+            TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
+            return typeAnalysis == null ? property.falseDv : typeAnalysis.getProperty(property);
         }
         return property.falseDv;
     }
-
 
     default DV isTransparentOrAtLeastEventuallyE2Immutable(ParameterizedType parameterizedType, TypeInfo typeBeingAnalysed) {
         if (parameterizedType.arrays > 0) return DV.FALSE_DV;
@@ -128,7 +136,9 @@ public interface AnalysisProvider {
     default DV canBeModifiedInThisClass(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (bestType == null) return DV.FALSE_DV;
-        DV immutable = getTypeAnalysis(bestType).getProperty(Property.IMMUTABLE);
+        TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
+        if (typeAnalysis == null) return DV.FALSE_DV;
+        DV immutable = typeAnalysis.getProperty(Property.IMMUTABLE);
         if (immutable.isDelayed()) return immutable;
         boolean canBeModified = MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         return DV.fromBoolDv(canBeModified);

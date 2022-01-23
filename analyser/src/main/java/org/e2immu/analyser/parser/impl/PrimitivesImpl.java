@@ -55,6 +55,7 @@ public class PrimitivesImpl implements Primitives {
     public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asSimpleParameterizedType();
 
     public final TypeInfo boxedBooleanTypeInfo = new TypeInfo(JAVA_LANG, "Boolean");
+    public final ParameterizedType boxedBooleanParameterizedType = boxedBooleanTypeInfo.asSimpleParameterizedType();
 
     public final TypeInfo longTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "long");
     public final ParameterizedType longParameterizedType = longTypeInfo.asSimpleParameterizedType();
@@ -100,6 +101,11 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public ParameterizedType booleanParameterizedType() {
         return booleanParameterizedType;
+    }
+
+    @Override
+    public ParameterizedType boxedBooleanParameterizedType() {
+        return boxedBooleanParameterizedType;
     }
 
     @Override

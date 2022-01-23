@@ -168,7 +168,7 @@ public class ResolverImpl implements Resolver {
                                         rawTypesInCycle.stream().filter(t -> !inCycle.contains(t)))
                                 .collect(Collectors.toUnmodifiableSet());
                         if (isLogEnabled(RESOLVER)) {
-                            if (typesInCycle.isEmpty()) {
+                            if (typesInCycle.size() == 1) {
                                 log(RESOLVER, "Type {} connects to previous cycles", typeInfo);
                             } else {
                                 log(RESOLVER, "Type {} is part of cycle of size {}, not yet visited {}:\n------\n{}\n------",
