@@ -133,7 +133,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
                             ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
                             sharedState.evaluationContext.getClosure());
-            analyserResultBuilder.add(result);
+            analyserResultBuilder.add(result, false);
             this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
             return result.analysisStatus();
         };
@@ -901,9 +901,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public Stream<Message> getMessageStream() {
-        Stream<Message> statementStream = firstStatementAnalyser == null ? Stream.of() :
-                firstStatementAnalyser.lastStatement().getStatementAnalysis().messageStream();
-        return Stream.concat(super.getMessageStream(), Stream.concat(statementStream,
+        Stream<Message> localAnalyserStream = locallyCreatedPrimaryTypeAnalysers.stream()
+                .flatMap(Analyser::getMessageStream);
+        return Stream.concat(super.getMessageStream(), Stream.concat(localAnalyserStream,
                 getParameterAnalysers().stream().flatMap(ParameterAnalyser::getMessageStream)));
     }
 

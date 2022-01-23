@@ -429,16 +429,16 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         forwardAnalysisInfo.switchSelectorIsDelayed());
             }
 
-            AnalyserResult.Builder builder = new AnalyserResult.Builder();
-            EvaluationContext evaluationContext = new SAEvaluationContext(
+           EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
                     iteration, localConditionManager, closure);
-            StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext, builder, previous, forwardAnalysisInfo, localConditionManager);
+            StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
+                    analyserResultBuilder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
             AnalyserResult result = analyserResultBuilder
                     .addTypeAnalysers(localAnalysers.getOrDefault(List.of())) // unreachable statement...
-                    .addMessages(getMessageStream())
+                    .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
                             ? new ProgressWrapper(new SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
@@ -518,14 +518,17 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         ((StatementAnalyserImpl) sa).analyserContext.addAll(analyserContext)));
             }
         }
-
+        if(localAnalysers.get().isEmpty()) {
+            return AnalyserResult.EMPTY;
+        }
         AnalyserResult.Builder builder = new AnalyserResult.Builder();
+        builder.setAnalysisStatus(NOT_YET_EXECUTED);
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
-            AnalyserResult analyserResult = analyser.analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
+            AnalyserResult analyserResult = analyser
+                    .analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
             builder.add(analyserResult);
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
-            statementAnalysis.ensureMessages(analyser.getMessageStream());
         }
         return builder.build();
     }
@@ -596,6 +599,6 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     @Override
     public Stream<Message> getMessageStream() {
-        return statementAnalysis.messageStream();
+        return analyserResultBuilder.getMessageStream();
     }
 }

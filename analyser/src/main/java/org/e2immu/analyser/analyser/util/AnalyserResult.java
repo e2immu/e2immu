@@ -24,13 +24,16 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public record AnalyserResult(AnalysisStatus analysisStatus,
+                             Messages messages,
                              VariableAccessReport variableAccessReport,
                              List<PrimaryTypeAnalyser> localAnalysers) {
 
-    public static final AnalyserResult EMPTY = new AnalyserResult(AnalysisStatus.DONE, VariableAccessReport.EMPTY, List.of());
+    public static final AnalyserResult EMPTY = new AnalyserResult(AnalysisStatus.DONE,
+            Messages.EMPTY, VariableAccessReport.EMPTY, List.of());
 
     public AnalyserResult combine(AnalyserResult other) {
         return new AnalyserResult(analysisStatus.combine(other.analysisStatus),
+                messages.combine(other.messages),
                 variableAccessReport.combine(other.variableAccessReport),
                 combineLocalAnalysers(other.localAnalysers));
     }
@@ -48,9 +51,14 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
         private final List<PrimaryTypeAnalyser> localAnalysers = new ArrayList<>();
 
         public void add(AnalyserResult other) {
+            add(other, true);
+        }
+
+        public void add(AnalyserResult other, boolean addLocalAnalysers) {
             this.variableAccessReport = variableAccessReport.combine(other.variableAccessReport);
-            this.localAnalysers.addAll(other.localAnalysers);
+            if (addLocalAnalysers) this.localAnalysers.addAll(other.localAnalysers);
             combineAnalysisStatus(other.analysisStatus);
+            this.messages.addAll(other.messages().getMessageStream());
         }
 
         public Builder setAnalysisStatus(AnalysisStatus analysisStatus) {
@@ -88,11 +96,7 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
         public AnalyserResult build() {
             assert analysisStatus != null;
             assert variableAccessReport != null;
-            return new AnalyserResult(analysisStatus, variableAccessReport, List.copyOf(localAnalysers));
-        }
-
-        public List<PrimaryTypeAnalyser> getLocalAnalysers() {
-            return localAnalysers;
+            return new AnalyserResult(analysisStatus, messages, variableAccessReport, List.copyOf(localAnalysers));
         }
 
         public Builder combineAnalysisStatus(AnalysisStatus other) {

@@ -166,7 +166,6 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),
                                     forward, evaluationContext.getClosure());
                     sharedState.builder().add(result);
-                    sharedState.builder().addMessages(executionOfBlock.startOfBlock.getMessageStream());
                     analysisStatus = analysisStatus.combine(result.analysisStatus());
                     blocksExecuted++;
                 } else {
