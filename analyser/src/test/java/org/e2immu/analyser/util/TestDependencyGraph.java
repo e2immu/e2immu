@@ -37,7 +37,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of());
         graph.addNode('b', List.of());
         graph.addNode('c', List.of('a', 'b'));
-        List<Character> sorted = graph.sorted(NO_CYCLES, null);
+        List<Character> sorted = graph.sorted(NO_CYCLES, null, null);
         assertEquals("[a, b, c]", sorted.toString());
 
         assertEquals("[a]", graph.dependencies('a').toString());
@@ -52,7 +52,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of());
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of('a'));
-        List<Character> sorted = graph.sorted(NO_CYCLES, null);
+        List<Character> sorted = graph.sorted(NO_CYCLES, null, null);
         assertEquals("[a, c, b]", sorted.toString());
 
         assertEquals("[a]", graph.dependencies('a').toString());
@@ -67,7 +67,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of('c'));
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of());
-        List<Character> sorted = graph.sorted(NO_CYCLES, null);
+        List<Character> sorted = graph.sorted(NO_CYCLES, null, null);
         assertEquals("[c, a, b]", sorted.toString());
 
         assertEquals("[a, c]", graph.dependencies('a').toString());
@@ -86,7 +86,7 @@ public class TestDependencyGraph {
         graph.addNode('c', List.of('a'));
         List<Character> sorted = graph.sorted(c -> {
             if ('b' == c) throw new UnsupportedOperationException();
-        }, null);
+        }, null, null);
         assertEquals("[a, c, b]", sorted.toString());
 
         Set<Character> elements = new TreeSet<>();
@@ -108,7 +108,7 @@ public class TestDependencyGraph {
         graph.addNode('c', List.of('a', 'b'));
         graph.addNode('d', List.of('a', 'b', 'c'));
         AtomicInteger countCycles = new AtomicInteger();
-        List<Character> sorted = graph.sorted(c -> countCycles.incrementAndGet(), null);
+        List<Character> sorted = graph.sorted(c -> countCycles.incrementAndGet(), null, null);
         assertEquals("[a, b, c, d]", sorted.toString());
         assertEquals(1, countCycles.get());
 
@@ -157,7 +157,7 @@ public class TestDependencyGraph {
         List<Character> sorted = graph.sorted(c -> {
             System.out.println("Breaking a cycle with " + c);
             countCycles.incrementAndGet();
-        }, null);
+        }, null, null);
         assertEquals('e', (int) sorted.get(0));
         assertEquals(1, countCycles.get());
     }
@@ -174,7 +174,7 @@ public class TestDependencyGraph {
         List<Character> sorted = graph.sorted(c -> {
             System.out.println("Breaking a cycle with " + c);
             countCycles.incrementAndGet();
-        }, null);
+        }, null, null);
         assertEquals("[a]", sorted.toString());
         assertEquals("[a, b]", graph.dependencies('a').toString());
         assertEquals(1, countCycles.get());

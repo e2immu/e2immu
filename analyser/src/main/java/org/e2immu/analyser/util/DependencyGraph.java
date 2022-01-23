@@ -193,8 +193,7 @@ public class DependencyGraph<T> extends Freezable {
 
     @Independent
     public List<T> sorted() {
-        return sorted(t -> {
-        }, null);
+        return sorted(null, null, null);
     }
 
     Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
@@ -208,7 +207,9 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @Independent
-    public List<T> sorted(Consumer<T> reportPartOfCycle, Comparator<T> backupComparator) {
+    public List<T> sorted(Consumer<T> reportPartOfCycle,
+                          Consumer<T> reportIndependent,
+                          Comparator<T> backupComparator) {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<T> result = new ArrayList<>(nodeMap.size());
@@ -219,6 +220,7 @@ public class DependencyGraph<T> extends Freezable {
                 if (dependencies == null || dependencies.isEmpty() || done.containsAll(dependencies)) {
                     keys.add(entry.getKey());
                     done.add(entry.getKey());
+                    if (reportIndependent != null) reportIndependent.accept(entry.getKey());
                 }
             }
             if (keys.isEmpty()) {
@@ -229,7 +231,7 @@ public class DependencyGraph<T> extends Freezable {
                 toDo.remove(key);
                 done.add(key);
                 result.add(key);
-                reportPartOfCycle.accept(key);
+                if (reportPartOfCycle != null) reportPartOfCycle.accept(key);
             } else {
                 keys.forEach(toDo.keySet()::remove);
                 result.addAll(keys);

@@ -20,10 +20,7 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.parser.TypeMap;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -32,8 +29,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
 public class TestInspectAndResolveAnalyserCode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestInspectAndResolveAnalyserCode.class);
-
     @Test
     public void inspect() throws IOException {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
@@ -63,10 +58,6 @@ public class TestInspectAndResolveAnalyserCode {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        Parser.RunResult runResult = parser.run();
-        parser.getMessages().forEach(m -> LOGGER.info("Message: {}", m));
-
-        TypeMap typeMap = runResult.typeMap();
-
+        parser.run();
     }
 }

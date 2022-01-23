@@ -157,53 +157,47 @@ public class ResolverImpl implements Resolver {
 
     private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph,
                                                            Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
-        List<Set<TypeInfo>> cycles = new LinkedList<>();
+        Set<TypeInfo> inCycle = new HashSet<>();
 
-        List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
-            // typeInfo is part of a cycle, dependencies are:
-            Set<TypeInfo> typesInCycle = typeGraph.removeAsManyAsPossible(typeGraph.dependencies(typeInfo));
-            if (!largeOverlap(cycles, typesInCycle)) {
-                if (isLogEnabled(RESOLVER)) {
-                    log(RESOLVER, "Type {} is part of cycle of size {}:\n------\n{}\n------",
-                            typeInfo,
-                            typesInCycle.size(),
-                            typesInCycle.stream()
-                                    .map(t -> t.fullyQualifiedName + "  depends on " + summary(t, typeGraph))
-                                    .sorted()
-                                    .collect(Collectors.joining("\n")));
-                }
-                for (TypeInfo other : typesInCycle) {
-                    TypeResolution.Builder otherBuilder = resolutionBuilders.get(other);
-                    otherBuilder.addCircularDependencies(typesInCycle);
-                }
-                messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
-                        typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
-                cycles.add(typesInCycle);
-            } else {
-                log(RESOLVER, "Type {} attaches to previously identified cycle", typeInfo);
-            }
-        }, Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
-        log(RESOLVER, "Sorted types: {}", sorted);
-        return sorted;
+        log(RESOLVER, "\n\n******* start sorting *********\n");
+        return typeGraph.sorted(typeInfo -> {
+                    if (inCycle.add(typeInfo)) {
+                        Set<TypeInfo> dependencies = typeGraph.dependencies(typeInfo);
+                        Set<TypeInfo> rawTypesInCycle = typeGraph.removeAsManyAsPossible(dependencies);
+                        Set<TypeInfo> typesInCycle = Stream.concat(Stream.of(typeInfo),
+                                        rawTypesInCycle.stream().filter(t -> !inCycle.contains(t)))
+                                .collect(Collectors.toUnmodifiableSet());
+                        if (isLogEnabled(RESOLVER)) {
+                            if (typesInCycle.isEmpty()) {
+                                log(RESOLVER, "Type {} connects to previous cycles", typeInfo);
+                            } else {
+                                log(RESOLVER, "Type {} is part of cycle of size {}, not yet visited {}:\n------\n{}\n------",
+                                        typeInfo,
+                                        rawTypesInCycle.size(),
+                                        typesInCycle.size(),
+                                        typesInCycle.stream()
+                                                .map(t -> t.fullyQualifiedName + "  depends on " + summary(t, typeGraph))
+                                                .sorted()
+                                                .collect(Collectors.joining("\n")));
+                            }
+                        }
+                        for (TypeInfo other : typesInCycle) {
+                            TypeResolution.Builder otherBuilder = resolutionBuilders.get(other);
+                            otherBuilder.addCircularDependencies(typesInCycle);
+                            inCycle.add(other);
+                        }
+                        messages.add(Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
+                                typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
+                    }
+                },
+                typeInfo -> log(RESOLVER, "Adding {}", typeInfo.fullyQualifiedName),
+                Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
     }
 
     private static String summary(TypeInfo typeInfo, DependencyGraph<TypeInfo> typeGraph) {
         List<TypeInfo> dependencies = typeGraph.getDependsOn(typeInfo);
         return dependencies.size() + ": " + dependencies.stream().limit(2)
                 .map(t -> t.simpleName).collect(Collectors.joining(", "));
-    }
-
-    private static boolean largeOverlap(List<Set<TypeInfo>> cycles, Set<TypeInfo> typesInCycle) {
-        return cycles.stream().anyMatch(cycle -> cycle.equals(typesInCycle) || largeOverlap(cycle, typesInCycle));
-    }
-
-    private static boolean largeOverlap(Set<TypeInfo> cycle, Set<TypeInfo> cycle2) {
-        if (cycle.size() > 5) {
-            Set<TypeInfo> set = new HashSet<>(cycle);
-            set.retainAll(cycle2);
-            return set.size() >= 0.666 * cycle.size();
-        }
-        return false;
     }
 
     private List<SortedType> computeTypeResolution(
@@ -273,8 +267,7 @@ public class ResolverImpl implements Resolver {
         typeDependencies.retainAll(stayWithin);
 
         typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
-        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(x -> {
-                },
+        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(null, null,
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName)));
 
         if (isLogEnabled(RESOLVER)) {
