@@ -19,7 +19,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.NotModified;
 
@@ -30,12 +30,11 @@ public class CheckFinalNotModified {
     /*
     creation of the @Final(after = ) annotations is in AbstractAnalysisBuilder
      */
-    public static void check(Messages messages,
-                             FieldInfo fieldInfo,
-                             Class<?> annotation,
-                             AnnotationExpression annotationExpression,
-                             FieldAnalysis fieldAnalysis,
-                             TypeAnalysis typeAnalysis) {
+    public static Message check(FieldInfo fieldInfo,
+                                Class<?> annotation,
+                                AnnotationExpression annotationExpression,
+                                FieldAnalysis fieldAnalysis,
+                                TypeAnalysis typeAnalysis) {
 
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
         boolean isModifiedOrVariable;
@@ -47,8 +46,7 @@ public class CheckFinalNotModified {
 
         String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;
 
-        CheckLinks.checkAnnotationWithValue(messages,
-                fieldAnalysis,
+        return CheckLinks.checkAnnotationWithValue(fieldAnalysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),

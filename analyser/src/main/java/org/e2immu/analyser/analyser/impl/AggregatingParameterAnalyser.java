@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.AnalyserComponents;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.FieldAnalyser;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.model.ParameterInfo;
 
 import java.util.stream.Stream;
@@ -39,8 +40,8 @@ public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration) {
-        return AnalysisStatus.DONE;
+    public AnalyserResult analyse(int iteration) {
+        return AnalyserResult.EMPTY;
     }
 
 }

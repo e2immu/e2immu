@@ -159,29 +159,28 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
 
                     check(E1Immutable.class, e2.e1Immutable);
                     check(E1Container.class, e2.e1Container);
-                    CheckImmutable.check(messages, methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true);
-                    CheckImmutable.check(messages, methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false);
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Immutable.class, e2.e2Immutable, methodAnalysis, false, true, true));
+                    analyserResultBuilder.add(CheckImmutable.check(methodInfo, E2Container.class, e2.e2Container, methodAnalysis, false, true, false));
                     check(BeforeMark.class, e2.beforeMark);
                     check(ERContainer.class, e2.eRContainer);
 
-                    checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
+                    analyserResultBuilder.add(checkConstant.checkConstantForMethods(methodInfo, methodAnalysis));
 
                     check(Nullable.class, e2.nullable);
 
                     check(Dependent.class, e2.dependent);
                     check(Independent.class, e2.independent);
-                    CheckIndependent.checkLevel(messages, methodInfo, Independent1.class, e2.independent1, methodAnalysis);
+                    analyserResultBuilder.add(CheckIndependent.checkLevel(methodInfo, Independent1.class, e2.independent1, methodAnalysis));
                 }
 
                 check(NotModified.class, e2.notModified);
                 check(Modified.class, e2.modified);
             }
 
-            CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
-
-            CheckEventual.checkOnly(messages, methodInfo, methodAnalysis);
-            CheckEventual.checkMark(messages, methodInfo, methodAnalysis);
-            CheckEventual.checkTestMark(messages, methodInfo, methodAnalysis);
+            analyserResultBuilder.add(CheckPrecondition.checkPrecondition(methodInfo, methodAnalysis, companionAnalyses));
+            analyserResultBuilder.add(CheckEventual.checkOnly(methodInfo, methodAnalysis));
+            analyserResultBuilder.add(CheckEventual.checkMark(methodInfo, methodAnalysis));
+            analyserResultBuilder.add(CheckEventual.checkTestMark(methodInfo, methodAnalysis));
 
             checkWorseThanOverriddenMethod();
         }
@@ -201,7 +200,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
                 boolean complain = property == Property.MODIFIED_METHOD ?
                         value.gt(valueFromOverrides) : value.lt(valueFromOverrides);
                 if (complain) {
-                    messages.add(Message.newMessage(methodInfo.newLocation(),
+                    analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, property.name));
                 }
             }
@@ -209,12 +208,10 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(methodInfo.newLocation(),
-                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
-            messages.add(error);
-        });
+        methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+                analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
+                        mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
     }
 
     @Override

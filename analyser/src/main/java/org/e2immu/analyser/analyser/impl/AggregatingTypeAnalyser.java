@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnalyserProgram;
@@ -76,8 +77,10 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+        analyserResultBuilder.setAnalysisStatus(analysisStatus);
+
         List<TypeAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterTypePropertyComputations();
         if (!visitors.isEmpty()) {
@@ -91,7 +94,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                         analyserContext));
             }
         }
-        return analysisStatus;
+        return analyserResultBuilder.build();
     }
 
     @Override

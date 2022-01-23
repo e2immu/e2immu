@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -56,14 +57,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
-            messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
+            analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     annotations, e2));
             if (explicitlyEmpty) {
                 builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
@@ -72,7 +73,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         });
 
         List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
-        messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
+        analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, annotations, e2));
 
         // IMPROVE reading preconditions from AnnotatedAPIs...
@@ -115,7 +116,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
             }
         }
-        return AnalysisStatus.DONE;
+        return AnalyserResult.EMPTY;
     }
 
     private void computeParameterProperties(ParameterAnalysisImpl.Builder builder) {
@@ -227,7 +228,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         ParameterizedType returnType = methodInspection.getReturnType();
         DV immutable = analyserContext.defaultImmutable(returnType, true);
         if (immutable.containsCauseOfDelay(CauseOfDelay.Cause.TYPE_ANALYSIS)) {
-            messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
+            analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(), Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE,
                     returnType.typeInfo == null ? "Return type of " + methodInfo.fullyQualifiedName :
                             returnType.typeInfo.fullyQualifiedName));
             return MultiLevel.MUTABLE_DV;
@@ -258,12 +259,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
             builder.setProperty(Property.MODIFIED_VARIABLE, value);
         } else if (override.valueIsFalse() && inMap.valueIsTrue()) {
-            messages.add(Message.newMessage(builder.getParameterInfo().newLocation(),
+            analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                     Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                     "Override was non-modifying, while this parameter is modifying"));
         } else if (typeContainer.valueIsTrue() && inMap.valueIsTrue()) {
             if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
-                messages.add(Message.newMessage(builder.getParameterInfo().newLocation(),
+                analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                         Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));
             }
         }
@@ -309,7 +310,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 .map(ma -> ma.getProperty(Property.INDEPENDENT))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (overloads != DV.MAX_INT_DV && finalValue.lt(overloads)) {
-            messages.add(Message.newMessage(methodInfo.newLocation(),
+            analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                     Message.Label.METHOD_HAS_LOWER_VALUE_FOR_INDEPENDENT,
                     finalValue.label() + " instead of " + overloads.label()));
         }
@@ -355,7 +356,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             if (typeAnalysis != null) {
                 return typeAnalysis.getProperty(Property.INDEPENDENT);
             }
-            messages.add(Message.newMessage(methodInfo.newLocation(),
+            analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                     Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE, bestType.fullyQualifiedName));
             return MultiLevel.DEPENDENT_DV;
         }
@@ -399,10 +400,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public void check() {
         // everything contracted, nothing to check
-    }
-
-    public Stream<Message> getMessageStream() {
-        return messages.getMessageStream();
     }
 
     @Override

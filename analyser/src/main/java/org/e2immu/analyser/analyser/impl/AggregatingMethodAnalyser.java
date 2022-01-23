@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -95,8 +96,9 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+        analyserResultBuilder.setAnalysisStatus(analysisStatus);
         List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterMethodAnalyserVisitors();
         if (!visitors.isEmpty()) {
@@ -104,10 +106,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
                         null, methodInfo, methodAnalysis,
                         parameterAnalyses, analyserComponents.getStatusesAsMap(),
-                        this::getMessageStream));
+                        analyserResultBuilder::getMessageStream));
             }
         }
-        return analysisStatus;
+        return analyserResultBuilder.build();
     }
 
     private AnalysisStatus aggregateMethodValue() {
@@ -174,10 +176,5 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         return analyserComponents;
-    }
-
-    @Override
-    public void makeImmutable() {
-        // nothing
     }
 }

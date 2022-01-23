@@ -27,11 +27,9 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.*;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -61,7 +59,6 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
     public final TypeAnalysisImpl.Builder typeAnalysis;
-    protected final Messages messages = new Messages();
 
     public TypeAnalyserImpl(@NotModified TypeInfo typeInfo,
                             TypeInfo primaryType,
@@ -115,11 +112,6 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
     }
 
     @Override
-    public Stream<Message> getMessageStream() {
-        return messages.getMessageStream();
-    }
-
-    @Override
     public void check() {
         if (typeInfo.typePropertiesAreContracted()) return;
 
@@ -139,14 +131,14 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
             check(typeInfo, Independent.class, e2.independent);
             check(typeInfo, Dependent.class, e2.dependent);
-            CheckIndependent.checkLevel(messages, typeInfo, Independent1.class, e2.independent1, typeAnalysis);
+            analyserResultBuilder.add(CheckIndependent.checkLevel(typeInfo, Independent1.class, e2.independent1, typeAnalysis));
 
             check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
-            CheckImmutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false);
-            CheckImmutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false);
-            CheckImmutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true);
-            CheckImmutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false);
-            CheckImmutable.check(messages, typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false);
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis, true, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E1Container.class, e2.e1Container, typeAnalysis, true, false, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis, true, true, true));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, E2Container.class, e2.e2Container, typeAnalysis, true, true, false));
+            analyserResultBuilder.add(CheckImmutable.check(typeInfo, ERContainer.class, e2.eRContainer, typeAnalysis, true, false, false));
         }
     }
 
@@ -162,7 +154,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             Message error = Message.newMessage(typeInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
-            messages.add(error);
+            analyserResultBuilder.add(error);
         });
     }
 

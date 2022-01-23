@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 
@@ -24,7 +25,7 @@ public interface ParameterAnalyser extends Analyser {
 
     void initialize(Stream<FieldAnalyser> fieldAnalyserStream);
 
-    AnalysisStatus analyse(int iteration);
+    AnalyserResult analyse(int iteration);
 
     ParameterInfo getParameterInfo();
 }

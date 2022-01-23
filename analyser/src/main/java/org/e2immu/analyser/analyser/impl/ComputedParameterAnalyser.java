@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -55,7 +56,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_FIRST_ITERATION = "PA:analyseFirstIteration";
     public static final String ANALYSE_FIELD_ASSIGNMENTS = "PA:analyseFieldAssignments";
     public static final String ANALYSE_CONTEXT = "PA:analyseContext";
-    public static final String ANALYSE_CONTAINER = "PA:analyseContainer";
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
@@ -231,9 +231,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
      * Does not apply to variable fields.
      */
     @Override
-    public AnalysisStatus analyse(int iteration) {
+    public AnalyserResult analyse(int iteration) {
         try {
-            return analyserComponents.run(new SharedState(iteration));
+            AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration));
+            analyserResultBuilder.setAnalysisStatus(analysisStatus);
+            return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in parameter analyser, {}", parameterInfo.newLocation());
             throw rte;
@@ -398,13 +400,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (contractedBefore) {
             if (contractEffective == EFFECTIVE) {
                 if (formalEffective != EVENTUAL || contractLevel != formalLevel) {
-                    messages.add(Message.newMessage(parameterAnalysis.location,
+                    analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                             Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE));
                     return formallyImmutable;
                 }
                 return MultiLevel.composeImmutable(EVENTUAL_BEFORE, contractLevel);
             }
-            messages.add(Message.newMessage(parameterAnalysis.location,
+            analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                     Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
             return formallyImmutable;
         }
@@ -416,7 +418,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (contractEffective == EFFECTIVE) {
             if (formalEffective != EVENTUAL && formalEffective != EFFECTIVE ||
                     contractLevel != formalLevel) {
-                messages.add(Message.newMessage(parameterAnalysis.location,
+                analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                         Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
                 return formallyImmutable;
             }
@@ -547,7 +549,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             boolean takeValueFromOverride;
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {
-                messages.add(Message.newMessage(parameterInfo.owner.newLocation(),
+                analyserResultBuilder.add(Message.newMessage(parameterInfo.owner.newLocation(),
                         Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
                 takeValueFromOverride = false;
             } else {
@@ -595,10 +597,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             return DONE_ALL; // no point visiting any of the other analysers
         }
         return DONE;
-    }
-
-    public Stream<Message> getMessageStream() {
-        return messages.getMessageStream();
     }
 
     @Override

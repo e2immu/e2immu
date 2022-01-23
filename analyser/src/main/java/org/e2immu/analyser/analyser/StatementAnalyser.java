@@ -16,11 +16,13 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.HasNavigationData;
+import org.e2immu.analyser.parser.Message;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
-public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>, HoldsAnalysers {
+public interface StatementAnalyser extends HasNavigationData<StatementAnalyser> {
     AnalyserComponents<String, StatementAnalyserSharedState> getAnalyserComponents();
 
     // identical code in statement analysis
@@ -44,4 +46,8 @@ public interface StatementAnalyser extends HasNavigationData<StatementAnalyser>,
     NavigationData<StatementAnalyser> navigationData();
 
     StatementAnalyser lastStatementOfSwitchOldStyle(String key);
+
+    void makeImmutable();
+
+    Stream<Message> getMessageStream();
 }

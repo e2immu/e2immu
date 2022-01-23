@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.statementanalyser.StatementAnalyserImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
@@ -48,7 +49,7 @@ import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class ComputingMethodAnalyser extends MethodAnalyserImpl implements HoldsAnalysers {
+public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingMethodAnalyser.class);
 
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
@@ -117,15 +118,22 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
         }
 
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+            AnalysisStatus.AnalysisResultSupplier<SharedState> parameterAnalyserAction = (sharedState) -> {
+                AnalyserResult result = parameterAnalyser.analyse(sharedState.evaluationContext.getIteration());
+                analyserResultBuilder.add(result);
+                return result.analysisStatus();
+            };
+
             builder.add("Parameter " + parameterAnalyser.getParameterInfo().name, AnalyserProgram.Step.INITIALISE,
-                    sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
+                    parameterAnalyserAction);
         }
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
-            StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
-                    ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
-                    sharedState.evaluationContext.getClosure());
-            this.messages.addAll(result.messages());
+            AnalyserResult result = firstStatementAnalyser
+                    .analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
+                            ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
+                            sharedState.evaluationContext.getClosure());
+            analyserResultBuilder.add(result);
             this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
             return result.analysisStatus();
         };
@@ -137,7 +145,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                 .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
-                .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE: computeContainer())
+                .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer())
                 .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                 .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
                 .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
@@ -176,7 +184,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
     // called from primary type analyser
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
@@ -184,6 +192,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterMethodAnalyserVisitors();
@@ -192,10 +201,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
                             evaluationContext, methodInfo, methodAnalysis,
                             parameterAnalyses, analyserComponents.getStatusesAsMap(),
-                            this::getMessageStream));
+                            analyserResultBuilder::getMessageStream));
                 }
             }
-            return analysisStatus;
+            return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
@@ -219,7 +228,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
                     !methodInfo.methodInspection.get().isDefault()) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly()) {
-                    messages.add(Message.newMessage(methodInfo.newLocation(), Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
+                    analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
+                            Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
                     return DONE;
                 }
             }
@@ -891,7 +901,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl implements Holds
 
     @Override
     public Stream<Message> getMessageStream() {
-        return Stream.concat(super.getMessageStream(), getParameterAnalysers().stream().flatMap(ParameterAnalyser::getMessageStream));
+        Stream<Message> statementStream = firstStatementAnalyser == null ? Stream.of() :
+                firstStatementAnalyser.lastStatement().getStatementAnalysis().messageStream();
+        return Stream.concat(super.getMessageStream(), Stream.concat(statementStream,
+                getParameterAnalysers().stream().flatMap(ParameterAnalyser::getMessageStream)));
     }
 
     public MethodLevelData methodLevelData() {

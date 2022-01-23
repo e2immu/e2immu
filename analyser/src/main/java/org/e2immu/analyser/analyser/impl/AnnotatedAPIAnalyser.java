@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -483,7 +484,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
-                    AnalysisStatus analysisStatus = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
+                    AnalyserResult analyserResult = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
+                    AnalysisStatus analysisStatus = analyserResult.analysisStatus();
                     if (analysisStatus != AnalysisStatus.DONE) {
                         log(DELAYED, "{} in analysis of {}, computing method analyser", analysisStatus,
                                 methodInfo.fullyQualifiedName());

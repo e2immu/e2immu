@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Linked;
 import org.e2immu.annotation.Linked1;
 
@@ -45,7 +44,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         return new AnnotationExpressionImpl(typeInfo, expressions);
     }
 
-    public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+    public Message checkLinksForFields(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
@@ -55,7 +54,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 
-        checkAnnotationWithValue(messages,
+        return checkAnnotationWithValue(
                 fieldAnalysis,
                 Linked.class.getName(),
                 "@Linked",
@@ -67,7 +66,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     }
 
 
-    public void checkLink1sForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+    public Message checkLink1sForFields(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
@@ -77,27 +76,26 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 
-        checkAnnotationWithValue(messages,
+        return checkAnnotationWithValue(
                 fieldAnalysis,
                 Linked1.class.getName(),
                 "@Linked1",
                 e2.linked1.typeInfo(),
                 extractInspected,
-                computedString.isEmpty() ? null: computedString,
+                computedString.isEmpty() ? null : computedString,
                 fieldInfo.fieldInspection.get().getAnnotations(),
                 fieldInfo.newLocation());
     }
 
-    public static void checkAnnotationWithValue(Messages messages,
-                                                Analysis analysis,
-                                                String annotationFqn,
-                                                String annotationSimpleName,
-                                                TypeInfo annotationTypeInfo,
-                                                Function<AnnotationExpression, String> extractInspected,
-                                                String computedValue,
-                                                List<AnnotationExpression> annotations,
-                                                Location where) {
-        checkAnnotationWithValue(messages, analysis, annotationFqn, annotationSimpleName, annotationTypeInfo,
+    public static Message checkAnnotationWithValue(Analysis analysis,
+                                                   String annotationFqn,
+                                                   String annotationSimpleName,
+                                                   TypeInfo annotationTypeInfo,
+                                                   Function<AnnotationExpression, String> extractInspected,
+                                                   String computedValue,
+                                                   List<AnnotationExpression> annotations,
+                                                   Location where) {
+        return checkAnnotationWithValue(analysis, annotationFqn, annotationSimpleName, annotationTypeInfo,
                 List.of(new AnnotationKV(extractInspected, computedValue)), annotations, where);
     }
 
@@ -106,14 +104,13 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
     }
 
     // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
-    public static void checkAnnotationWithValue(Messages messages,
-                                                Analysis analysis,
-                                                String annotationFqn,
-                                                String annotationSimpleName,
-                                                TypeInfo annotationTypeInfo,
-                                                List<AnnotationKV> annotationKVs,
-                                                List<AnnotationExpression> annotations,
-                                                Location where) {
+    public static Message checkAnnotationWithValue(Analysis analysis,
+                                                   String annotationFqn,
+                                                   String annotationSimpleName,
+                                                   TypeInfo annotationTypeInfo,
+                                                   List<AnnotationKV> annotationKVs,
+                                                   List<AnnotationExpression> annotations,
+                                                   Location where) {
         Map.Entry<AnnotationExpression, Boolean> inAnalysis = analysis.findAnnotation(annotationFqn);
 
         Optional<AnnotationExpression> optAnnotationInInspection = annotations.stream()
@@ -123,7 +120,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 analysis.putAnnotationCheck(inAnalysis.getKey(), inAnalysis.getValue() == Boolean.TRUE ?
                         Analysis.AnnotationCheck.COMPUTED : Analysis.AnnotationCheck.ABSENT);
             }
-            return;
+            return null;
         }
         AnnotationExpression annotation = optAnnotationInInspection.get();
         boolean verifyAbsent = annotation.e2ImmuAnnotationParameters().isVerifyAbsent();
@@ -132,9 +129,9 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             boolean haveComputedValue = annotationKVs.stream().anyMatch(kv -> kv.computedValue != null && !kv.computedValue.isBlank());
 
             if (haveComputedValue || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
-                messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
                 assert inAnalysis != null;
                 analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
+                return Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName);
             } else if (inAnalysis != null) {
                 analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.OK_ABSENT);
                 assert inAnalysis.getValue() != Boolean.TRUE;
@@ -143,26 +140,25 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 analysis.putAnnotationCheck(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                         Analysis.AnnotationCheck.OK_ABSENT);
             }
-            return;
+            return null;
         }
         if (inAnalysis == null) {
-            messages.add(Message.newMessage(where, Message.Label.ANNOTATION_ABSENT, annotationSimpleName));
             analysis.putAnnotationCheck(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                     Analysis.AnnotationCheck.MISSING);
-            return;
+            return Message.newMessage(where, Message.Label.ANNOTATION_ABSENT, annotationSimpleName);
         }
 
         for (AnnotationKV kv : annotationKVs) {
             String requiredValue = kv.extractInspected.apply(optAnnotationInInspection.get());
             if ((kv.computedValue == null) != (requiredValue == null) ||
                     kv.computedValue != null && !kv.computedValue.equals(requiredValue)) {
-                messages.add(Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
-                        "Annotation " + annotationSimpleName + ", required " +
-                                requiredValue + ", found " + kv.computedValue));
                 analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);
-                return;
+                return Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
+                        "Annotation " + annotationSimpleName + ", required " +
+                                requiredValue + ", found " + kv.computedValue);
             }
         }
         analysis.putAnnotationCheck(inAnalysis.getKey(), Analysis.AnnotationCheck.OK);
+        return null;
     }
 }

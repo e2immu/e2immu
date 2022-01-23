@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
@@ -143,7 +144,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     }
 
     public void visitStatementVisitors(String statementId,
-                                       StatementAnalyserResult result,
+                                       AnalyserResult result,
                                        StatementAnalyserSharedState sharedState,
                                        DebugConfiguration debugConfiguration, AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents) {
         MethodInfo methodInfo = statementAnalysis.methodAnalysis().getMethodInfo();

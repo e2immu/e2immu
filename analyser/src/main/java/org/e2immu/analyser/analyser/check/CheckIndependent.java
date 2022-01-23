@@ -20,32 +20,29 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Message;
 
 import java.util.function.Function;
 
 public class CheckIndependent {
 
-    public static void checkLevel(Messages messages,
-                                  WithInspectionAndAnalysis info,
-                                  Class<?> annotation,
-                                  AnnotationExpression annotationExpression,
-                                  Analysis analysis) {
-        checkLevel(messages, Property.INDEPENDENT, info, annotation,
+    public static Message checkLevel(WithInspectionAndAnalysis info,
+                                     Class<?> annotation,
+                                     AnnotationExpression annotationExpression,
+                                     Analysis analysis) {
+        return checkLevel(Property.INDEPENDENT, info, annotation,
                 annotationExpression, analysis);
     }
 
-    static void checkLevel(Messages messages,
-                           Property property,
-                           WithInspectionAndAnalysis info,
-                           Class<?> annotation,
-                           AnnotationExpression annotationExpression,
-                           Analysis analysis) {
+    static Message checkLevel(Property property,
+                              WithInspectionAndAnalysis info,
+                              Class<?> annotation,
+                              AnnotationExpression annotationExpression,
+                              Analysis analysis) {
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("level", null);
         String levelString = levelString(analysis, property);
 
-        CheckLinks.checkAnnotationWithValue(messages,
-                analysis,
+        return CheckLinks.checkAnnotationWithValue(analysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),

@@ -18,7 +18,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.TypeInfo;
 
-public interface FieldAnalyser extends Analyser, HoldsAnalysers {
+public interface FieldAnalyser extends Analyser {
 
     FieldAnalysis getFieldAnalysis();
 

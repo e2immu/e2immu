@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -69,7 +70,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         return analyse(iteration);
     }
 
@@ -122,7 +123,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
                     } else {
                         msg = property.name + ", parameter " + parameterInfo.name;
                     }
-                    messages.add(Message.newMessage(parameterAnalysis.location,
+                    analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                             Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                             msg));
                 }
@@ -144,7 +145,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
             Message error = Message.newMessage(parameterInfo.newLocation(),
                     mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
                             : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
-            messages.add(error);
+            analyserResultBuilder.add(error);
         });
     }
 

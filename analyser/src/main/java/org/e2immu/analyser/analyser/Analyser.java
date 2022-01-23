@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
@@ -44,15 +45,13 @@ public interface Analyser {
     closure is null when called from primary type analyser, is not null when a type/method/... is being
     analysed from the statement analyser
      */
-    AnalysisStatus analyse(int iteration, EvaluationContext closure);
+    AnalyserResult analyse(int iteration, EvaluationContext closure);
 
     void write();
 
     void check();
 
     // other methods
-
-    Stream<Message> getMessageStream();
 
     WithInspectionAndAnalysis getMember();
 
@@ -63,4 +62,8 @@ public interface Analyser {
     AnalyserComponents<String, ?> getAnalyserComponents();
 
     void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers);
+
+    void makeImmutable();
+
+    Stream<Message> getMessageStream();
 }

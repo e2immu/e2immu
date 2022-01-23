@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
@@ -24,7 +25,6 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
@@ -65,7 +65,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
-    private final Messages messages = new Messages();
+    private final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder();
     private final Primitives primitives;
     private final AnalyserContext parent;
     private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
@@ -178,14 +178,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>(PROGRAM_ALL);
         builder.setLimitCausesOfDelay(!subAnalyser);
+
         for (Analyser analyser : analysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
-                AnalysisStatus status = analyser.analyse(sharedState.iteration, sharedState.closure);
-                if (analyser instanceof ComputingMethodAnalyser methodAnalyser) {
-                    methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
-                }
-                return status;
+                AnalyserResult analyserResult = analyser.analyse(sharedState.iteration, sharedState.closure);
+                analyserResultBuilder.add(analyserResult);
+                localPrimaryTypeAnalysers.addAll(analyserResult.localAnalysers());
+                return analyserResult.analysisStatus();
             };
 
             builder.add(analyser, supplier);
@@ -206,10 +206,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
 
     @Override
     public Stream<Message> getMessageStream() {
-        Stream<Message> fromAnalysers = analysers.stream()
+        return analysers.stream()
                 .filter(analyser -> !analyser.getMember().getInspection().isSynthetic())
                 .flatMap(Analyser::getMessageStream);
-        return Stream.concat(messages.getMessageStream(), fromAnalysers);
     }
 
     @Override
@@ -246,13 +245,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******",
                     iteration, name);
 
-            analysisStatus = analyse(iteration, null);
+            AnalyserResult analyserResult = analyse(iteration, null);
             iteration++;
 
             if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
                 log(ANALYSER, "\n******\nStopping after iteration 0 according to program\n******");
                 return;
             }
+            analysisStatus = analyserResult.analysisStatus();
             if (analysisStatus == AnalysisStatus.DONE) break;
         } while (analysisStatus.isProgress());
         if (analysisStatus.isDelayed()) {
@@ -287,9 +287,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         patternMatcher.startNewIteration();
-        return analyserComponents.run(new SharedState(iteration, closure));
+        AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(iteration, closure));
+        analyserResultBuilder.setAnalysisStatus(analysisStatus);
+        return analyserResultBuilder.build();
     }
 
     @Override
@@ -301,7 +303,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public void makeImmutable() {
         analysers.forEach(analyser -> {
             analyser.getMember().setAnalysis(analyser.getAnalysis().build());
-            if (analyser instanceof HoldsAnalysers holdsAnalysers) holdsAnalysers.makeImmutable();
+            analyser.makeImmutable();
         });
     }
 

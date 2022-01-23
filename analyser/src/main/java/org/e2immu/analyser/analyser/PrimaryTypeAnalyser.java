@@ -18,10 +18,11 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.function.Consumer;
 
-public interface PrimaryTypeAnalyser extends AnalyserContext, Analyser, HoldsAnalysers {
-    void analyse();
+public interface PrimaryTypeAnalyser extends AnalyserContext, Analyser {
 
     boolean containsPrimaryType(TypeInfo typeInfo);
 
     void loopOverAnalysers(Consumer<Analyser> consumer);
+
+    void analyse();
 }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -121,8 +122,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
         AnalyserProgram analyserProgram = nonExpandableAnalyserContext.getAnalyserProgram();
+
+        AnalysisStatus.AnalysisResultSupplier<SharedState> anonymousTypeAnalyser = (sharedState) -> {
+            AnalyserResult analyserResult = runAnonymousTypeAnalyser(sharedState);
+            analyserResultBuilder.add(analyserResult);
+            return analyserResult.analysisStatus();
+        };
+
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>(analyserProgram)
-                .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, this::runAnonymousTypeAnalyser)
+                .add(ANONYMOUS_TYPE_ANALYSER, INITIALISE, anonymousTypeAnalyser)
                 .add(COMPUTE_TRANSPARENT_TYPE, TRANSPARENT, sharedState -> computeTransparentType())
                 .add(EVALUATE_INITIALISER, FIELD_FINAL, this::evaluateInitializer)
                 .add(ANALYSE_FINAL, FIELD_FINAL, this::analyseFinal)
@@ -183,12 +191,19 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     @Override
+    public Stream<Message> getMessageStream() {
+        PrimaryTypeAnalyser analyser = anonymousTypeAnalyser.get();
+        return Stream.concat(super.getMessageStream(), analyser == null ? Stream.of() : analyser.getMessageStream());
+    }
+
+    @Override
     public void initialize() {
         List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
         List<MethodAnalyser> myStaticBlocks = new LinkedList<>();
 
-        messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
-                fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
+        analyserResultBuilder.addMessages(fieldAnalysis
+                .fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
+                        fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
             if (analyser.getMethodInspection().isStaticBlock()) {
@@ -237,13 +252,14 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing field {}", fqn);
 
         // analyser visitors
         try {
             SharedState sharedState = new SharedState(iteration, closure);
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            analyserResultBuilder.setAnalysisStatus(analysisStatus);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
                     .debugConfiguration().afterFieldAnalyserVisitors();
@@ -255,7 +271,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             fieldInfo, fieldAnalysis, this::getMessageStream, analyserComponents.getStatusesAsMap()));
                 }
             }
-            return analysisStatus;
+            return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", fqn);
             throw rte;
@@ -322,7 +338,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
     This expression is converted into an anonymous supplier, which will be analysed here. The field's value is then
     obtained by calling "get" on this anonymous type.
      */
-    private AnalysisStatus runAnonymousTypeAnalyser(SharedState sharedState) {
+    private AnalyserResult runAnonymousTypeAnalyser(SharedState sharedState) {
         if (!anonymousTypeAnalyser.isFinal()) {
 
             if (fieldInspection.fieldInitialiserIsSet()) {
@@ -346,17 +362,15 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (!anonymousTypeAnalyser.isFinal()) anonymousTypeAnalyser.setFinal(null);
         }
 
-        AnalysisStatus analysisStatus = DONE;
         PrimaryTypeAnalyser analyser = anonymousTypeAnalyser.get();
         if (analyser != null) {
             log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
-            AnalysisStatus lambdaStatus = analyser.analyse(sharedState.iteration(), sharedState.closure());
+            AnalyserResult lambdaResult = analyser.analyse(sharedState.iteration(), sharedState.closure());
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
-            analysisStatus = analysisStatus.combine(lambdaStatus);
-            messages.addAll(analyser.getMessageStream());
+            analyserResultBuilder.add(lambdaResult);
         }
 
-        return analysisStatus;
+        return analyserResultBuilder.build();
     }
 
     private void recursivelyAddPrimaryTypeAnalyserToAnalyserContext(PrimaryTypeAnalyser analyser) {
@@ -587,9 +601,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (worstOverValues.lt(bestOverContext)) {
                 // see Basics_2b; we need the setter to run before the add-method can be called
                 // see Modified_11_2 for a different example which needs the filtering on CONSTRUCTION
-                Message message = Message.newMessage(fieldAnalysis.location(),
-                        Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT);
-                messages.add(message);
+                analyserResultBuilder.add(Message.newMessage(fieldAnalysis.location(),
+                        Message.Label.FIELD_INITIALIZATION_NOT_NULL_CONFLICT));
             }
         } else {
             worstOverValues = worstOverValuesUnfiltered;
@@ -603,8 +616,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 boolean readInMethods = allMethodsAndConstructors(false)
                         .anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
-                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.PRIVATE_FIELD_NOT_READ,
-                            fieldInfo.name));
+                    analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                            Message.Label.PRIVATE_FIELD_NOT_READ, fieldInfo.name));
                 }
                 return DONE;
             }
@@ -614,8 +627,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
                 if (!fieldInfo.owner.isPrivateNested()) {
-                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL,
-                            fieldInfo.name));
+                    analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                            Message.Label.NON_PRIVATE_FIELD_NOT_FINAL, fieldInfo.name));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
             } else if (effectivelyFinal.isDelayed()) {
@@ -1011,8 +1024,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             }
         }
         if (delays.isDone() && haveInitialiser && cannotGoTogetherWithInitialiser) {
-            Message message = Message.newMessage(fieldInfo.newLocation(), Message.Label.UNNECESSARY_FIELD_INITIALIZER);
-            messages.add(message);
+            analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                    Message.Label.UNNECESSARY_FIELD_INITIALIZER));
         }
         if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
@@ -1293,7 +1306,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (bestType != null) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
                 if (typeAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
-                    messages.add(Message.newMessage(fieldInfo.newLocation(), Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
+                    analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                            Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
                 }
             }
         }
@@ -1385,8 +1399,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(FIELD_FINAL)) {
-            CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
-                    myTypeAnalyser.getTypeAnalysis());
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis,
+                    myTypeAnalyser.getTypeAnalysis()));
             check(org.e2immu.annotation.Variable.class, e2.variableField);
         }
         if (analyserProgram.accepts(ALL)) {
@@ -1395,40 +1409,33 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             check(NotNull.class, e2.notNull);
             check(NotNull1.class, e2.notNull1);
 
-            CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
-                    myTypeAnalyser.getTypeAnalysis());
+            analyserResultBuilder.add(CheckFinalNotModified.check(fieldInfo, NotModified.class, e2.notModified, fieldAnalysis,
+                    myTypeAnalyser.getTypeAnalysis()));
 
             // dynamic type annotations
             check(Container.class, e2.container);
 
             check(E1Immutable.class, e2.e1Immutable);
             check(E1Container.class, e2.e1Container);
-            CheckImmutable.check(messages, fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true);
-            CheckImmutable.check(messages, fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false);
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Immutable.class, e2.e2Immutable, fieldAnalysis, false, true, true));
+            analyserResultBuilder.add(CheckImmutable.check(fieldInfo, E2Container.class, e2.e2Container, fieldAnalysis, false, true, false));
             check(ERContainer.class, e2.eRContainer);
 
             check(Modified.class, e2.modified);
             check(Nullable.class, e2.nullable);
 
-            checkLinks.checkLinksForFields(messages, fieldInfo, fieldAnalysis);
-            checkLinks.checkLink1sForFields(messages, fieldInfo, fieldAnalysis);
+            analyserResultBuilder.add(checkLinks.checkLinksForFields(fieldInfo, fieldAnalysis));
+            analyserResultBuilder.add(checkLinks.checkLink1sForFields(fieldInfo, fieldAnalysis));
 
-            checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
+            analyserResultBuilder.add(checkConstant.checkConstantForFields(fieldInfo, fieldAnalysis));
         }
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(fieldInfo.newLocation(),
-                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
-                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
-            messages.add(error);
-        });
-    }
-
-    @Override
-    public Stream<Message> getMessageStream() {
-        return messages.getMessageStream();
+        fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent ->
+                analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
+                        mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                                : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName())));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

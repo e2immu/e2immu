@@ -117,7 +117,7 @@ public class Parser {
             typeMap = input.globalTypeContext().typeMap.build();
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
-           AnalyserContext shallowContext = runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
+            AnalyserContext shallowContext = runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
             runPrimaryTypeAnalyser(typeMap, shallowContext, resolvedSourceTypes);
         }
 

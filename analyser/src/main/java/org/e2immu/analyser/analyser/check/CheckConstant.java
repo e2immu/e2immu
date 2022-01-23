@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Constant;
@@ -34,37 +34,35 @@ import java.util.function.Function;
 
 public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e2) {
 
-    public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+    public Message checkConstantForFields(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Expression singleReturnValue = fieldAnalysis.getValue() != null ?
                 fieldAnalysis.getValue() : EmptyExpression.EMPTY_EXPRESSION;
-        checkConstant(messages, fieldAnalysis,
+        return checkConstant(fieldAnalysis,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),
                 fieldInfo.newLocation());
     }
 
-    public void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public Message checkConstantForMethods(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         Expression singleReturnValue = methodAnalysis.getSingleReturnValue();
-        checkConstant(messages,  methodAnalysis,
+        return checkConstant(methodAnalysis,
                 singleReturnValue,
                 methodInfo.methodInspection.get().getAnnotations(),
                 methodInfo.newLocation());
     }
 
-    private void checkConstant(Messages messages,
-                               Analysis analysis,
-                               Expression singleReturnValue,
-                               List<AnnotationExpression> annotations,
-                               Location where) {
-        boolean isConstant = analysis.getPropertyFromMapDelayWhenAbsent(Property.CONSTANT) .valueIsTrue();
+    private Message checkConstant(Analysis analysis,
+                                  Expression singleReturnValue,
+                                  List<AnnotationExpression> annotations,
+                                  Location where) {
+        boolean isConstant = analysis.getPropertyFromMapDelayWhenAbsent(Property.CONSTANT).valueIsTrue();
         String computedValue = isConstant ? singleReturnValue.minimalOutput() : null;
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String value = ae.extract("value", "");
             return singleReturnValue instanceof StringConstant ? StringUtil.quote(value) : value;
         };
 
-        CheckLinks.checkAnnotationWithValue(messages,
-                analysis,
+        return CheckLinks.checkAnnotationWithValue(analysis,
                 Constant.class.getName(),
                 "@Constant",
                 e2.constant.typeInfo(),

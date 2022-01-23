@@ -14,10 +14,11 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 
 public record StatementAnalyserSharedState(EvaluationContext evaluationContext,
-                                           StatementAnalyserResult.Builder builder,
+                                           AnalyserResult.Builder builder,
                                            StatementAnalysis previous,
                                            ForwardAnalysisInfo forwardAnalysisInfo,
                                            ConditionManager localConditionManager) {

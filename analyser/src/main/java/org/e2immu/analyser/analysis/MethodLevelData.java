@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -92,7 +93,7 @@ public class MethodLevelData {
          */
     }
 
-    public record SharedState(StatementAnalyserResult.Builder builder,
+    public record SharedState(AnalyserResult.Builder builder,
                               EvaluationContext evaluationContext,
                               StatementAnalysis statementAnalysis,
                               String logLocation,
@@ -117,7 +118,7 @@ public class MethodLevelData {
         EvaluationContext evaluationContext = sharedState.evaluationContext();
         String logLocation = statementAnalysis.location().toString();
         try {
-            StatementAnalyserResult.Builder builder = sharedState.builder();
+            AnalyserResult.Builder builder = sharedState.builder();
             SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,
                     logLocation, previous, previousIndex, stateData);
             return analyserComponents.run(localSharedState);

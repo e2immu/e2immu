@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
 import java.util.ArrayList;
@@ -30,14 +31,13 @@ import java.util.function.Function;
 
 public class CheckImmutable {
 
-    public static void check(Messages messages,
-                             WithInspectionAndAnalysis info,
-                             Class<?> annotation,
-                             AnnotationExpression annotationExpression,
-                             Analysis analysis,
-                             boolean after,
-                             boolean level,
-                             boolean recursive) {
+    public static Message check(WithInspectionAndAnalysis info,
+                                Class<?> annotation,
+                                AnnotationExpression annotationExpression,
+                                Analysis analysis,
+                                boolean after,
+                                boolean level,
+                                boolean recursive) {
         List<CheckLinks.AnnotationKV> kvs = new ArrayList<>(3);
         Property property = info instanceof FieldInfo ? Property.EXTERNAL_IMMUTABLE : Property.IMMUTABLE;
 
@@ -65,7 +65,7 @@ public class CheckImmutable {
             kvs.add(new CheckLinks.AnnotationKV(extractInspected2, value2));
         }
 
-        CheckLinks.checkAnnotationWithValue(messages,
+        return CheckLinks.checkAnnotationWithValue(
                 analysis,
                 annotation.getName(),
                 "@" + annotation.getSimpleName(),

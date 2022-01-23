@@ -23,8 +23,18 @@ import java.util.stream.Stream;
 @Container
 public class Messages {
 
+    public static final Messages EMPTY = new Messages(Set.of());
+
     @NotNull1
-    private final Set<Message> messages = new HashSet<>();
+    private final Set<Message> messages;
+
+    public Messages() {
+        this.messages = new HashSet<>();
+    }
+
+    private Messages(Set<Message> set) {
+        this.messages = set;
+    }
 
     @Modified
     public void addAll(@NotNull1 @NotModified Messages messages) {
@@ -48,5 +58,13 @@ public class Messages {
 
     public int size() {
         return messages.size();
+    }
+
+    public Messages combine(Messages other) {
+        if (this.messages.isEmpty()) return other;
+        if (other.messages.isEmpty()) return this;
+        Messages m = new Messages();
+        m.messages.addAll(other.messages);
+        return new Messages(Set.copyOf(messages));
     }
 }

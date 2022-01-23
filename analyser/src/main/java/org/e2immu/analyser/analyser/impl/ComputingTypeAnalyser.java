@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.NotDelayed;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.analysis.*;
@@ -117,7 +118,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         analyserComponents = builder.build();
 
-        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.TYPE,
+        analyserResultBuilder.addMessages(typeAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.TYPE,
                 typeInfo.isInterface(),
                 typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));
@@ -179,11 +180,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public AnalyserResult analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing type {}, call #{}", typeInfo.fullyQualifiedName,
                 callCounterForDebugging.incrementAndGet());
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+            analyserResultBuilder.setAnalysisStatus(analysisStatus);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration()
                     .debugConfiguration().afterTypePropertyComputations()) {
                 typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration,
@@ -195,7 +197,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         analyserContext));
             }
 
-            return analysisStatus;
+            return analyserResultBuilder.build();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in type analyser: {}", typeInfo.fullyQualifiedName);
             throw rte;
@@ -461,8 +463,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                             !tempApproved.containsKey(fieldToCondition.fieldReference) ?
                                     tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                     if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                        messages.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
-                                Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
+                        analyserResultBuilder.add(Message.newMessage
+                                (fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                                        Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                     }
                 }
             }
@@ -577,7 +580,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 !tempApproved.containsKey(fieldToCondition.fieldReference) ?
                                         tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                         if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                            messages.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
+                            analyserResultBuilder.add(Message.newMessage(fieldToCondition.fieldReference.fieldInfo.newLocation(),
                                     Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
                         }
                     }
@@ -655,7 +658,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         }
-        if(allCauses.isDelayed()) {
+        if (allCauses.isDelayed()) {
             CausesOfDelay marker = typeInfo.delay(CauseOfDelay.Cause.CONTAINER);
             typeAnalysis.setProperty(Property.CONTAINER, allCauses.causesOfDelay().merge(marker));
             return AnalysisStatus.of(allCauses);

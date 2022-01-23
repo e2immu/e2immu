@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.statementanalyser;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
@@ -161,10 +162,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 null, null, CausesOfDelay.EMPTY);
                     }
-                    StatementAnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
+                    AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)
                             .analyseAllStatementsInBlock(evaluationContext.getIteration(),
                                     forward, evaluationContext.getClosure());
                     sharedState.builder().add(result);
+                    sharedState.builder().addMessages(executionOfBlock.startOfBlock.getMessageStream());
                     analysisStatus = analysisStatus.combine(result.analysisStatus());
                     blocksExecuted++;
                 } else {

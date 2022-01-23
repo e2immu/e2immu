@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.delay.ProgressWrapper;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
@@ -74,7 +75,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     // shared state over the different analysers
     //private ConditionManager localConditionManager;
-    private AnalysisStatus analysisStatus;
+    private final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder()
+            .setAnalysisStatus(NOT_YET_EXECUTED);
     private AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents;
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
@@ -141,7 +143,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             Structure structure = statement.getStructure();
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
-            if(!(statement instanceof SwitchStatementNewStyle)) {
+            if (!(statement instanceof SwitchStatementNewStyle)) {
                 if (structure.haveStatements()) {
                     String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
 
@@ -202,15 +204,15 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    public StatementAnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo, EvaluationContext closure) {
+    public AnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo, EvaluationContext closure) {
         try {
             // skip all the statements that are already in the DONE state...
             PreviousAndFirst previousAndFirst = goToFirstStatementToAnalyse();
-            StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
+            AnalyserResult.Builder builder = new AnalyserResult.Builder();
 
             if (previousAndFirst.first == null) {
                 // nothing left to analyse
-                return builder.setAnalysisStatus(DONE).build();
+                return builder.build();
             }
 
             StatementAnalyser previousStatement = previousAndFirst.previous;
@@ -234,7 +236,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
                         .withCondition(evaluationContext, switchCondition, forwardAnalysisInfo.switchSelectorIsDelayed()));
 
-                StatementAnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
+                AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
                         wasReplacement, previousStatementAnalysis, statementInfo);
                 builder.add(result);
                 previousStatement = statementAnalyser;
@@ -339,7 +341,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
     @Override
     public boolean isDone() {
-        return analysisStatus == DONE;
+        return analyserResultBuilder.getAnalysisStatus() == DONE;
     }
 
     private PreviousAndFirst goToFirstStatementToAnalyse() {
@@ -378,22 +380,25 @@ public class StatementAnalyserImpl implements StatementAnalyser {
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    private StatementAnalyserResult analyseSingleStatement(int iteration,
-                                                           EvaluationContext closure,
-                                                           boolean wasReplacement,
-                                                           StatementAnalysis previous,
-                                                           ForwardAnalysisInfo forwardAnalysisInfo) {
+    private AnalyserResult analyseSingleStatement(int iteration,
+                                                  EvaluationContext closure,
+                                                  boolean wasReplacement,
+                                                  StatementAnalysis previous,
+                                                  ForwardAnalysisInfo forwardAnalysisInfo) {
         try {
-            if (analysisStatus == null) {
-                //assert localConditionManager == null : "expected null localConditionManager";
-                assert analyserComponents == null : "expected null analyser components";
+            if (analyserComponents == null) {
+                AnalysisStatus.AnalysisResultSupplier<StatementAnalyserSharedState> typesInStatement = sharedState -> {
+                    AnalyserResult analyserResult = analyseTypesInStatement(sharedState);
+                    analyserResultBuilder.add(analyserResult);
+                    return analyserResult.analysisStatus();
+                };
 
                 // no program restrictions at the moment
                 AnalyserProgram analyserProgram = AnalyserProgram.PROGRAM_ALL;
                 analyserComponents = new AnalyserComponents.Builder<String, StatementAnalyserSharedState>(analyserProgram)
                         .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
                         .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
-                        .add(ANALYSE_TYPES_IN_STATEMENT, this::analyseTypesInStatement)
+                        .add(ANALYSE_TYPES_IN_STATEMENT, typesInStatement)
                         .add(EVALUATION_OF_MAIN_EXPRESSION, saEvaluation::evaluationOfMainExpression)
                         .add(SUB_BLOCKS, saSubBlocks::subBlocks)
                         .add(SET_BLOCK_EXECUTION, sharedState -> statementAnalysis.flowData()
@@ -424,28 +429,27 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         forwardAnalysisInfo.switchSelectorIsDelayed());
             }
 
-            StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
+            AnalyserResult.Builder builder = new AnalyserResult.Builder();
             EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
                     iteration, localConditionManager, closure);
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext, builder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
-            StatementAnalyserResult result = sharedState.builder()
+            AnalyserResult result = analyserResultBuilder
                     .addTypeAnalysers(localAnalysers.getOrDefault(List.of())) // unreachable statement...
-                    .addMessages(statementAnalysis.messageStream())
+                    .addMessages(getMessageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement
                             ? new ProgressWrapper(new SimpleSet(getLocation(), CauseOfDelay.Cause.REPLACEMENT))
                             : DONE)
                     .build();
-            analysisStatus = result.analysisStatus();
 
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
                     analyserContext.getConfiguration().debugConfiguration(), analyserComponents);
 
             log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index(),
-                    myMethodAnalyser.getMethodInfo().name, analysisStatus);
+                    myMethodAnalyser.getMethodInfo().name, result.analysisStatus());
             return result;
         } catch (Throwable rte) {
             LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.getMethodInfo().fullyQualifiedName());
@@ -483,7 +487,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     }
 
 
-    private AnalysisStatus analyseTypesInStatement(StatementAnalyserSharedState sharedState) {
+    private AnalyserResult analyseTypesInStatement(StatementAnalyserSharedState sharedState) {
         if (!localAnalysers.isSet()) {
             List<TypeInfo> typeDefinedInStatement = statementAnalysis.statement().getStructure().findTypeDefinedInStatement();
             Stream<TypeInfo> locallyDefinedTypes = Stream.concat(typeDefinedInStatement.stream(),
@@ -515,17 +519,15 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             }
         }
 
-        AnalysisStatus analysisStatus = DONE;
+        AnalyserResult.Builder builder = new AnalyserResult.Builder();
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
-            AnalysisStatus lambdaStatus = analyser.analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
+            AnalyserResult analyserResult = analyser.analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
+            builder.add(analyserResult);
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
-            analysisStatus = analysisStatus.combine(lambdaStatus);
             statementAnalysis.ensureMessages(analyser.getMessageStream());
         }
-
-
-        return analysisStatus;
+        return builder.build();
     }
 
     private void recursivelyAddPrimaryTypeAnalysersToAnalyserContext(List<PrimaryTypeAnalyser> analysers) {
@@ -592,4 +594,8 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return statementAnalysis;
     }
 
+    @Override
+    public Stream<Message> getMessageStream() {
+        return statementAnalysis.messageStream();
+    }
 }

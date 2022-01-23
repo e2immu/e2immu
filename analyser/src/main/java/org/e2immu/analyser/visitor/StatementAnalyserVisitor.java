@@ -15,6 +15,7 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
@@ -25,7 +26,7 @@ import java.util.Map;
 
 public interface StatementAnalyserVisitor {
 
-    record Data(StatementAnalyserResult result,
+    record Data(AnalyserResult result,
                 int iteration,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,

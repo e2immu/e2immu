@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.Analyser;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
+import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
@@ -33,12 +34,7 @@ abstract class AbstractAnalyser implements Analyser {
         this.name = name;
     }
 
-    protected final Messages messages = new Messages();
-
-    @Override
-    public Stream<Message> getMessageStream() {
-        return messages.getMessageStream();
-    }
+    protected final AnalyserResult.Builder analyserResultBuilder = new AnalyserResult.Builder();
 
     @Override
     public String getName() {
@@ -54,5 +50,15 @@ abstract class AbstractAnalyser implements Analyser {
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
         // no-op
+    }
+
+    @Override
+    public Stream<Message> getMessageStream() {
+        return analyserResultBuilder.getMessageStream();
+    }
+
+    @Override
+    public void makeImmutable() {
+        // default do nothing
     }
 }
