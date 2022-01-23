@@ -100,7 +100,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                         localAnalysers.get().stream()
                                 .filter(pta -> pta.containsPrimaryType(localClassDeclaration.typeInfo))
                                 .findFirst().orElseThrow();
-                builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
                 return apply.apply(sharedState, builder.build(), localAnalysers.get()).combinedStatus();
             } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 // empty parameters: this(); or super();

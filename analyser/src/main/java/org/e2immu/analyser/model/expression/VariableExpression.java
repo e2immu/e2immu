@@ -261,7 +261,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
         }
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
-        builder.variableOccursInContainerContext(variable, adjustedScope, contextContainer);
+        builder.variableOccursInContainerContext(variable, contextContainer);
 
         DV contextImmutable = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         DV nextImmutable = forwardEvaluationInfo.getProperty(Property.NEXT_CONTEXT_IMMUTABLE);

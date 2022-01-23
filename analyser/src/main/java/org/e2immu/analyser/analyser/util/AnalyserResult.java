@@ -61,6 +61,12 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
             this.messages.addAll(other.messages().getMessageStream());
         }
 
+        public void addWithoutVariableAccess(AnalyserResult other) {
+            this.localAnalysers.addAll(other.localAnalysers);
+            combineAnalysisStatus(other.analysisStatus);
+            this.messages.addAll(other.messages().getMessageStream());
+        }
+
         public Builder setAnalysisStatus(AnalysisStatus analysisStatus) {
             this.analysisStatus = analysisStatus;
             return this;
@@ -106,6 +112,10 @@ public record AnalyserResult(AnalysisStatus analysisStatus,
 
         public Stream<Message> getMessageStream() {
             return messages.getMessageStream();
+        }
+
+        public void addVariableAccessReport(VariableAccessReport variableAccessReport) {
+            this.variableAccessReport = this.variableAccessReport.combine(variableAccessReport);
         }
     }
 }

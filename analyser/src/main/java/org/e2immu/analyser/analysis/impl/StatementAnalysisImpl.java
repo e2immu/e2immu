@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.nonanalyserimpl.Merge;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -77,6 +78,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final RangeData rangeData;
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
+
+    private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
 
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
@@ -1920,5 +1923,20 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
             sa = sa.parent();
         }
         assert loopIndex != null;
+    }
+
+    @Override
+    public void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport) {
+        for (Variable v : variableAccessReport.variablesRead()) {
+            VariableInfoContainer vic = getVariableOrDefaultNull(v.fullyQualifiedName());
+            if (vic != null && !variablesReadBySubAnalysers.contains(v)) {
+                variablesReadBySubAnalysers.add(v);
+            }
+        }
+    }
+
+    @Override
+    public List<Variable> variablesReadBySubAnalysers() {
+        return this.variablesReadBySubAnalysers.stream().toList();
     }
 }

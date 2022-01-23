@@ -69,9 +69,12 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     Finally, general modifications are carried out
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                  EvaluationResult evaluationResult,
+                                  EvaluationResult evaluationResultIn,
                                   List<PrimaryTypeAnalyser> localAnalysers) {
-        CausesOfDelay delay = evaluationResult.causesOfDelay();
+        CausesOfDelay delay = evaluationResultIn.causesOfDelay();
+        EvaluationResult evaluationResult = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
+                sharedState.evaluationContext());
+
         AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
 
         if (evaluationResult.addCircularCall()) {
@@ -85,6 +88,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // but first, we need to ensure that all variables exist, independent of the later ordering
 
         // make a copy because we might add a variable when linking the local loop copy
+
+        // here we set read+assigned
         evaluationResult.changeData().forEach((v, cd) -> statementAnalysis
                 .ensureVariables(sharedState.evaluationContext(), v, cd, evaluationResult.statementTime()));
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variableEntryStream(EVALUATION)
@@ -236,6 +241,21 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return applyStatusAndEnnStatus;
     }
 
+    private EvaluationResult variablesReadAndAssignedInSubAnalysers(EvaluationResult evaluationResultIn,
+                                                                    EvaluationContext evaluationContext) {
+        List<Variable> readBySubAnalysers = statementAnalysis.variablesReadBySubAnalysers();
+        if (!readBySubAnalysers.isEmpty()) {
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            builder.compose(evaluationResultIn);
+            for (Variable variable : readBySubAnalysers) {
+                // FIXME this is naive!
+                builder.markRead(variable);
+            }
+            return builder.build();
+        }
+        return evaluationResultIn;
+    }
+
     private boolean variableUnknown(Variable variable) {
         if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) return true;
         IsVariableExpression ive;
@@ -358,6 +378,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     }
 
 
+    // FIXME move to new system
     private void importContextModifiedValuesForThisFromSubTypes(AnalyserContext analyserContext,
                                                                 List<PrimaryTypeAnalyser> localAnalysers,
                                                                 Map<Variable, DV> map) {

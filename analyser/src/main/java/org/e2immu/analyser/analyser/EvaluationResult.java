@@ -14,13 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.FieldAnalysis;
-import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -32,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT_MODIFICATION;
@@ -309,25 +304,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                             || evaluationContext.notNullAccordingToConditionManager(value))) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
-
-            //DV notNullValue = evaluationContext.getProperty(value, Property.NOT_NULL_EXPRESSION, true, false);
-            //  if (notNullValue < notNullRequired) { // also do delayed values
-            // so intrinsically we can have null.
-            // if context not null is already high enough, don't complain
             DV contextNotNull = getPropertyFromInitial(variable, Property.CONTEXT_NOT_NULL);
             if (contextNotNull.equals(MultiLevel.NULLABLE_DV)) {
                 setProperty(variable, Property.IN_NOT_NULL_CONTEXT, DV.TRUE_DV); // so we can raise an error
             }
             setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
-            //  }
-
-        }
-
-        private DV getContainerFromInitial(Expression expression) {
-            if (expression instanceof VariableExpression variableExpression) {
-                return getPropertyFromInitial(variableExpression.variable(), Property.CONTAINER);
-            }
-            return evaluationContext.getProperty(expression, Property.CONTAINER, true, false);
         }
 
         /*
@@ -343,10 +324,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public Builder markRead(Variable variable) {
-            return markRead(variable, true);
-        }
-
-        private Builder markRead(Variable variable, boolean recurse) {
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
@@ -363,8 +340,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // we do this because this. is often implicit (all other scopes will be marked read explicitly!)
             // when explicit, there may be two MarkRead modifications, which will eventually be merged
-            if (recurse && variable instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
-                markRead(ve.variable(), true);
+            if (variable instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
+                markRead(ve.variable());
             }
             return this;
         }
@@ -481,7 +458,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         parameters and fields use EXT_CONTAINER to raise errors; they do not wait for a valid value property.
 
          */
-        public void variableOccursInContainerContext(Variable variable, Expression currentExpression, DV containerRequired) {
+        public void variableOccursInContainerContext(Variable variable, DV containerRequired) {
             assert evaluationContext != null;
 
             if (containerRequired.isDelayed()) {
@@ -671,84 +648,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public int getStatementTime() {
             return statementTime;
-        }
-
-        private Variable acceptForMarkingRemoveScopeOfFields(Variable variable, TypeInfo subType) {
-            assert evaluationContext != null;
-            if (evaluationContext.isPresent(variable)) return variable;
-            if (variable instanceof FieldReference fieldReference &&
-                    fieldReference.fieldInfo.owner != subType &&
-                    fieldReference.fieldInfo.owner.primaryType() == subType.primaryType()) {
-                // remove the scope, replace by "this" when our this has access to them; replace by "instance type ..."
-                // when the type is static
-                if (evaluationContext.getCurrentType().hasAccessToFieldsOf(evaluationContext.getAnalyserContext(),
-                        fieldReference.fieldInfo.owner)) {
-                    return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
-                }
-                Properties valueProperties;
-                if (scopeContainsUnavailableVariables(fieldReference.scope)) {
-                    valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                            Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
-                            Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
-                            Property.CONTAINER, DV.TRUE_DV,
-                            Property.IDENTITY, DV.FALSE_DV));
-                } else {
-                    valueProperties = evaluationContext.getValueProperties(fieldReference.scope);
-                }
-                CausesOfDelay causesOfDelay = valueProperties.delays();
-                if (causesOfDelay.isDelayed()) {
-                    // really more hassle than result (causes new variables to be created, with delayed scopes)
-                    return null;
-                }
-                Expression newScope = Instance.genericFieldAccess(evaluationContext.getAnalyserContext(),
-                        fieldReference.fieldInfo, valueProperties);
-                return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-            }
-            return null;
-        }
-
-        private boolean scopeContainsUnavailableVariables(Expression scope) {
-            AtomicBoolean res = new AtomicBoolean();
-            scope.visit(e -> {
-                if (e instanceof VariableExpression ve && !evaluationContext.isPresent(ve.variable())) {
-                    res.set(true);
-                }
-            });
-            return res.get();
-        }
-
-        // a variable is read/written/assigned inside a sub-method (fields can be assigned to!, local variables cannot)
-        public void markVariablesFromSubMethod(MethodAnalysis methodAnalysis) {
-            StatementAnalysis statementAnalysis = methodAnalysis.getLastStatement();
-            if (statementAnalysis == null) return; // nothing we can do here
-            statementAnalysis.variableStream()
-                    .forEach(variableInfo -> {
-                        Variable variable = acceptForMarkingRemoveScopeOfFields(variableInfo.variable(),
-                                methodAnalysis.getMethodInfo().typeInfo);
-                        if (variable != null) {
-                            if (variableInfo.isRead()) {
-                                markRead(variable, false);
-                            }
-                            if (variableInfo.isAssigned()) {
-                                assignment(variable, variableInfo.getValue(), variableInfo.getLinkedVariables());
-                            }
-                        }
-                    });
-        }
-
-        public void markVariablesFromPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
-            pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.getMethodAnalysis()));
-            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitializers(fa.getFieldAnalysis(), fa.getPrimaryType()));
-        }
-
-        private void markVariablesFromSubFieldInitializers(FieldAnalysis fieldAnalysis, TypeInfo subType) {
-            assert evaluationContext != null;
-            Expression initialValue = fieldAnalysis.getInitializerValue();
-            if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;
-            initialValue.variables(true).forEach(variable -> {
-                Variable v = acceptForMarkingRemoveScopeOfFields(variable, subType);
-                if (v != null) markRead(v);
-            });
         }
 
         public void addDelayOnPrecondition(CausesOfDelay causes) {

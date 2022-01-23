@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,5 +36,23 @@ public record VariableAccessReport(Set<Variable> variablesRead, Set<FieldReferen
 
     private boolean isEmpty() {
         return variablesRead.isEmpty() && fieldsAssigned.isEmpty();
+    }
+
+    public static class Builder {
+        private final Set<Variable> variablesRead = new HashSet<>();
+        private final Set<FieldReference> fieldsAssigned = new HashSet<>();
+
+        public void addVariableRead(Variable v) {
+            variablesRead.add(v);
+        }
+
+        public void addFieldAssigned(FieldReference fieldReference) {
+            fieldsAssigned.add(fieldReference);
+        }
+
+        public VariableAccessReport build() {
+            if (variablesRead.isEmpty() && fieldsAssigned.isEmpty()) return EMPTY;
+            return new VariableAccessReport(Set.copyOf(variablesRead), Set.copyOf(fieldsAssigned));
+        }
     }
 }

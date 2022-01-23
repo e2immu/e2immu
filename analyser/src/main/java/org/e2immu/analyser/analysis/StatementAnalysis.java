@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -144,6 +145,8 @@ public interface StatementAnalysis extends Analysis,
 
     Stream<Variable> candidateVariablesForNullPtrWarningStream();
 
+    void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport);
+    List<Variable> variablesReadBySubAnalysers();
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }

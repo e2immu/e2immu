@@ -209,7 +209,6 @@ public class Lambda extends BaseExpression implements Expression {
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             result = withLocalAnalyser(parameterizedType, methodAnalysis);
-            builder.markVariablesFromSubMethod(methodAnalysis);
         }
 
         builder.setExpression(result);

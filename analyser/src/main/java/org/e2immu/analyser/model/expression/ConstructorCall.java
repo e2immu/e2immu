@@ -363,12 +363,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             res.k.incrementStatementTime();
         }
 
-        if (anonymousClass != null) {
-            evaluationContext.getLocalPrimaryTypeAnalysers().stream()
-                    .filter(pta -> pta.containsPrimaryType(anonymousClass))
-                    .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
-        }
-
         DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
             res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);

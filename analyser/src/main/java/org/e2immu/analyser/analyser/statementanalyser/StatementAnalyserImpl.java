@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.impl.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
@@ -27,6 +28,7 @@ import org.e2immu.analyser.config.AnalyserProgram;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
@@ -67,6 +69,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
     public static final String CHECK_UNUSED_LOOP_VARIABLES = "checkUnusedLoopVariables";
     public static final String INITIALISE_OR_UPDATE_VARIABLES = "initialiseOrUpdateVariables";
     public static final String CHECK_UNREACHABLE_STATEMENT = "checkUnreachableStatement";
+    public static final String TRANSFER_FROM_CLOSURE_TO_RESULT = "transferFromClosureToResult";
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
@@ -389,7 +392,9 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             if (analyserComponents == null) {
                 AnalysisStatus.AnalysisResultSupplier<StatementAnalyserSharedState> typesInStatement = sharedState -> {
                     AnalyserResult analyserResult = analyseTypesInStatement(sharedState);
-                    analyserResultBuilder.add(analyserResult);
+                    // we don't copy directly; we'll filter later on in transferFromClosureToResult
+                    analyserResultBuilder.addWithoutVariableAccess(analyserResult);
+                    statementAnalysis.setVariableAccessReportOfSubAnalysers(analyserResult.variableAccessReport());
                     return analyserResult.analysisStatus();
                 };
 
@@ -416,6 +421,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         .add(CHECK_UNUSED_LOCAL_VARIABLES, sharedState -> saCheck.checkUnusedLocalVariables(navigationData))
                         .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> saCheck.checkUnusedLoopVariables(navigationData))
                         .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> saCheck.checkUselessAssignments(navigationData))
+                        .add(TRANSFER_FROM_CLOSURE_TO_RESULT, this::transferFromClosureToResult)
                         .build();
             }
 
@@ -429,7 +435,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         forwardAnalysisInfo.switchSelectorIsDelayed());
             }
 
-           EvaluationContext evaluationContext = new SAEvaluationContext(
+            EvaluationContext evaluationContext = new SAEvaluationContext(
                     statementAnalysis, myMethodAnalyser, this, analyserContext, localAnalysers,
                     iteration, localConditionManager, closure);
             StatementAnalyserSharedState sharedState = new StatementAnalyserSharedState(evaluationContext,
@@ -518,7 +524,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         ((StatementAnalyserImpl) sa).analyserContext.addAll(analyserContext)));
             }
         }
-        if(localAnalysers.get().isEmpty()) {
+        if (localAnalysers.get().isEmpty()) {
             return AnalyserResult.EMPTY;
         }
         AnalyserResult.Builder builder = new AnalyserResult.Builder();
@@ -573,6 +579,43 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             return DONE_ALL; // means: don't run any of the other steps!!
         }
         return analysisStatus;
+    }
+
+    /*
+    variables that were in the closure (coming from a statement outside this local primary type analyser)
+    and were read or assigned, get marked in the result
+
+    we only do this once, because READ/ASSIGNED is handled in the first iteration, invariably!
+     */
+    private AnalysisStatus transferFromClosureToResult(StatementAnalyserSharedState statementAnalyserSharedState) {
+        EvaluationContext closure = statementAnalyserSharedState.evaluationContext().getClosure();
+        TypeInfo currentType = statementAnalyserSharedState.evaluationContext().getCurrentType();
+
+        VariableAccessReport.Builder builder = new VariableAccessReport.Builder();
+        if (closure != null) {
+            statementAnalysis.variableStream().forEach(vi -> {
+                // naive approach
+                if (vi.isReadAt(index()) && closure.isPresent(vi.variable())) {
+                    builder.addVariableRead(vi.variable());
+                }
+                if (vi.variable() instanceof FieldReference fr
+                        && fr.fieldInfo.owner != currentType
+                        && fr.fieldInfo.owner.primaryType().equals(currentType.primaryType())) {
+                    // mark, irrespective of whether it is present there or not (given that we are not the owner)
+                    // readId will be 0-E, index 0
+                    if (vi.isReadAt(index())) {
+                        builder.addVariableRead(vi.variable());
+                    }
+                    if (vi.getAssignmentIds().getLatestAssignmentIndex().equals(index())) {
+                        builder.addFieldAssigned(fr);
+                    }
+                }
+
+            });
+            VariableAccessReport variableAccessReport = builder.build();
+            analyserResultBuilder.addVariableAccessReport(variableAccessReport);
+        }
+        return DONE;
     }
 
     @Override

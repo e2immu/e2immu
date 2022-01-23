@@ -80,6 +80,9 @@ public interface VariableInfo {
 
     String getReadId();
 
+    default boolean isReadAt(String index) {
+        return isRead() && StringUtil.stripLevel(getReadId()).equals(index);
+    }
 
     default boolean isRead() {
         return !getReadId().equals(NOT_YET_READ);

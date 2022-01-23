@@ -262,7 +262,15 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
-        testClass("Lambda_11", 0, 0, new DebugConfiguration.Builder()
+        // potential null pointer, System.out
+        testClass("Lambda_11", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_12() throws IOException {
+        // doesn't get any simpler: there should not be an unused local variable warning!
+        testClass("Lambda_12", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }
