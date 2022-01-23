@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.NOT_YET_EXECUTED;
 import static org.e2immu.analyser.analyser.Property.CONTAINER;
 import static org.e2immu.analyser.analyser.Property.EXTERNAL_CONTAINER;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.*;
@@ -364,13 +365,16 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
         PrimaryTypeAnalyser analyser = anonymousTypeAnalyser.get();
         if (analyser != null) {
+            AnalyserResult.Builder builder = new AnalyserResult.Builder();
+            builder.setAnalysisStatus(NOT_YET_EXECUTED);
             log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
             AnalyserResult lambdaResult = analyser.analyse(sharedState.iteration(), sharedState.closure());
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
-            analyserResultBuilder.add(lambdaResult);
+            builder.add(lambdaResult);
+            return builder.build();
         }
 
-        return analyserResultBuilder.build();
+        return AnalyserResult.EMPTY;
     }
 
     private void recursivelyAddPrimaryTypeAnalyserToAnalyserContext(PrimaryTypeAnalyser analyser) {
