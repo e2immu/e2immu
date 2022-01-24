@@ -473,10 +473,12 @@ public class TypeMapImpl implements TypeMap {
             }
             builder.addTypeModifier(TypeModifier.PUBLIC);
             builder.addAnnotation(primitives.functionalInterfaceAnnotationExpression);
-
-            MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, isVoid ? "accept" : "apply");
-            m.setReturnType(isVoid ? primitives.voidParameterizedType :
-                    new ParameterizedType(tps.get(numberOfParameters), 0, NONE));
+            ParameterizedType returnType = isVoid ? primitives.voidParameterizedType :
+                    new ParameterizedType(tps.get(numberOfParameters), 0, NONE);
+            String methodName = methodNameOfFunctionalInterface(isVoid, numberOfParameters,
+                    returnType.isBooleanOrBoxedBoolean());
+            MethodInspection.Builder m = new MethodInspectionImpl.Builder(typeInfo, methodName);
+            m.setReturnType(returnType);
             for (int i = 0; i < numberOfParameters; i++) {
                 m.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
                         new ParameterizedType(tps.get(i), 0, NONE), "p" + i, i));
@@ -488,6 +490,13 @@ public class TypeMapImpl implements TypeMap {
             builder.addMethod(mi.getMethodInfo()).setFunctionalInterface(true);
             typeInfo.typeInspection.set(builder.build());
             return typeInfo;
+        }
+
+        private String methodNameOfFunctionalInterface(boolean isVoid, int numberOfParameters, boolean isPredicate) {
+            if (isVoid) return "accept";
+            if (numberOfParameters == 0) return "get";
+            if (isPredicate) return "test";
+            return "apply";
         }
     }
 }

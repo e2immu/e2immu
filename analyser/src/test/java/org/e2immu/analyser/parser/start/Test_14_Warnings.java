@@ -403,7 +403,8 @@ public class Test_14_Warnings extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                VariableInfoContainer vic = d.statementAnalysis().getVariable(T);
+                VariableInfoContainer vic = d.statementAnalysis().getVariableOrDefaultNull(T);
+                assertNotNull(vic, "t should have been in the variable access report");
                 assertTrue(vic.current().isRead());
             }
             if ("apply".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -558,7 +559,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                         assertEquals("<return value>", d.currentValue().toString());
                     }
                 }
-                if("e".equals(d.variableName())) {
+                if ("e".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
                         assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));

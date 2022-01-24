@@ -15,10 +15,14 @@
 package org.e2immu.analyser.parser.conditional;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_54_SwitchExpression extends CommonTestRunner {
     public Test_54_SwitchExpression() {
@@ -45,7 +49,17 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "b".equals(p.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfo().isRead());
+                    }
+                }
+            }
+        };
         testClass("SwitchExpression_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

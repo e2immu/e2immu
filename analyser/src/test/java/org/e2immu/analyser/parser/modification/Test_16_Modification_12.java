@@ -74,7 +74,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                     assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
                     assertEquals("ParentClass", thisVar.typeInfo.simpleName);
                     assertEquals(PARENT_CLASS_THIS, d.variableName());
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
@@ -115,7 +115,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
                     assertEquals(DV.TRUE_DV, d.getThisAsVariable().getProperty(Property.CONTEXT_MODIFIED));
                 }
                 assertTrue(d.getThisAsVariable().isRead());
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
@@ -138,7 +138,7 @@ public class Test_16_Modification_12 extends CommonTestRunner {
             }
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
-                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.PARTIAL_IMMUTABLE);
                 assertDv(d, 4, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {

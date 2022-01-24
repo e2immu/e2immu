@@ -77,7 +77,7 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name) && "MyNonContainer".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertDv(d.p(0), 1, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 2, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name) && "MyContainer".equals(d.methodInfo().typeInfo.simpleName)) {
@@ -90,10 +90,10 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("myNonContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 2, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 3, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainer".equals(d.fieldInfo().name)) {
-                assertDv(d, 3, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 4, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
             }
             if ("myContainerLinkedToParameter".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
@@ -108,10 +108,10 @@ public class Test_ExternalContainer_1 extends CommonTestRunner {
                 assertDv(d, DV.TRUE_DV, Property.CONTAINER);
             }
             if ("MyContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 3, DV.TRUE_DV, Property.CONTAINER);
             }
             if ("MyNonContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, 2, DV.FALSE_DV, Property.CONTAINER);
             }
         };
         testClass("ExternalContainer_1", 0, 0, new DebugConfiguration.Builder()
