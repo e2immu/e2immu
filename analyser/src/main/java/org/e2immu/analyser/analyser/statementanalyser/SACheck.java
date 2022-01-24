@@ -214,6 +214,13 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 return identity.causesOfDelay();
             }
             if (identity.valueIsTrue()) return DONE;
+            DV fluent = methodAnalysis.getProperty(FLUENT);
+            if(fluent.isDelayed()) {
+                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Fluent of {}",
+                        index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
+                return fluent.causesOfDelay();
+            }
+            if(fluent.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
             if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",

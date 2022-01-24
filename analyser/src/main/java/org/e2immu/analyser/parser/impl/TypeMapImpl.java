@@ -365,8 +365,10 @@ public class TypeMapImpl implements TypeMap {
         }
 
         @Override
-        public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
-            return new MethodInspectionImpl.Builder(typeInfo, methodName);
+        public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier,
+                                                                   TypeInfo typeInfo,
+                                                                   String methodName) {
+            return new MethodInspectionImpl.Builder(identifier, typeInfo, methodName);
         }
 
         @Override

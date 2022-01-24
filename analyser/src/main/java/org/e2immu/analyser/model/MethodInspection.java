@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Finalizer;
+import org.e2immu.annotation.Fluent;
 
 import java.util.List;
 import java.util.Map;
@@ -124,24 +125,31 @@ public interface MethodInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, MethodInspection {
 
+        @Fluent
         Builder addParameter(ParameterInspection.Builder pib);
 
         void readyToComputeFQN(InspectionProvider inspectionProvider);
 
+        @Fluent
         Builder addExceptionType(ParameterizedType pt);
 
+        @Fluent
         Builder addModifier(MethodModifier from);
 
+        @Fluent
         Builder addTypeParameter(TypeParameter tp);
 
         List<ParameterInspection.Builder> getParameterBuilders();
 
         void makeParametersImmutable();
 
+        @Fluent
         Builder addCompanionMethods(Map<CompanionMethodName, MethodInspection.Builder> companionMethods);
 
+        @Fluent
         Builder setReturnType(ParameterizedType pt);
 
+        @Fluent
         Builder setBlock(BlockStmt blockStmt);
 
         MethodInspection build(InspectionProvider inspectionProvider);
@@ -156,8 +164,10 @@ public interface MethodInspection extends Inspection {
 
         void copyFrom(MethodInspection parent);
 
+        @Fluent
         Builder setInspectedBlock(Block body);
 
+        @Fluent
         Builder setStatic(boolean b);
 
         ParameterInspection.Builder newParameterInspectionBuilder(Identifier generate, int i);

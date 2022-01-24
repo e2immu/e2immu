@@ -92,7 +92,10 @@ public interface TypeAnalysis extends Analysis {
         return new SetOfTypes(transparentTypes.types().stream()
                 .map(pt -> {
                     if (pt.typeParameter != null) {
-                        return concreteType.parameters.get(pt.typeParameter.getIndex());
+                        int index = pt.typeParameter.getIndex();
+                        if (index < concreteType.parameters.size()) {
+                            return concreteType.parameters.get(index);
+                        }
                     }
                     return pt;
                 }).collect(Collectors.toUnmodifiableSet()));

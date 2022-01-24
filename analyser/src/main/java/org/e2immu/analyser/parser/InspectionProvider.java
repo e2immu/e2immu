@@ -72,7 +72,7 @@ public interface InspectionProvider {
 
     Primitives getPrimitives();
 
-    default MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
+    default MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
         throw new UnsupportedOperationException("Not implemented in "+getClass());
     }
 }

@@ -48,7 +48,8 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
                                        Expression value,
                                        String aspect) {
         MethodInspection mainInspection = mainMethod.methodInspection.get();
-        MethodInspection.Builder builder = inspectionProvider.newMethodInspectionBuilder(mainMethod.typeInfo, companionMethodName.composeMethodName());
+        MethodInspection.Builder builder = inspectionProvider.newMethodInspectionBuilder(Identifier.generate(),
+                mainMethod.typeInfo, companionMethodName.composeMethodName());
         builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType());
 
         if (aspect != null) {

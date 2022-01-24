@@ -166,9 +166,11 @@ public class MethodTypeParameterMap {
     }
 
     // used in TypeInfo.convertMethodReferenceIntoLambda
-    public MethodInspection.Builder buildCopy(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    public MethodInspection.Builder buildCopy(Identifier identifier,
+                                              InspectionProvider inspectionProvider,
+                                              TypeInfo typeInfo) {
         String methodName = methodInspection.getMethodInfo().name;
-        MethodInspection.Builder copy = inspectionProvider.newMethodInspectionBuilder(typeInfo, methodName);
+        MethodInspection.Builder copy = inspectionProvider.newMethodInspectionBuilder(identifier, typeInfo, methodName);
         copy.addModifier(MethodModifier.PUBLIC);
 
         for (ParameterInfo p : methodInspection.getParameters()) {

@@ -69,7 +69,7 @@ public class ConvertMethodReference {
         builder.noParent(typeContext.getPrimitives());
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
-        MethodInspection.Builder methodBuilder = method.buildCopy(typeContext, typeInfo);
+        MethodInspection.Builder methodBuilder = method.buildCopy(methodReference.identifier, typeContext, typeInfo);
         typeContext.typeMap.registerMethodInspection(methodBuilder);
 
         Block block = methodContent(methodBuilder, methodReference, expressionContext);

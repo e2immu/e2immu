@@ -67,6 +67,7 @@ public class ParseLambdaExpr {
 
         MethodInspection.Builder applyMethodInspectionBuilder =
                 createAnonymousTypeAndApplyMethod(
+                        Identifier.from(lambdaExpr),
                         expressionContext.typeContext(),
                         singleAbstractMethod.methodInspection.getMethodInfo().name,
                         expressionContext.enclosingType(),
@@ -182,18 +183,20 @@ public class ParseLambdaExpr {
     }
 
 
-    static MethodInspection.Builder createAnonymousTypeAndApplyMethod
-            (InspectionProvider inspectionProvider, String name,
-             TypeInfo enclosingType, int nextId) {
+    static MethodInspection.Builder createAnonymousTypeAndApplyMethod(Identifier identifier,
+                                                                      InspectionProvider inspectionProvider,
+                                                                      String name,
+                                                                      TypeInfo enclosingType,
+                                                                      int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
-        return inspectionProvider.newMethodInspectionBuilder(typeInfo, name);
+        return inspectionProvider.newMethodInspectionBuilder(identifier, typeInfo, name);
     }
 
     static void continueCreationOfAnonymousType(TypeMap.Builder typeMapBuilder,
-                                                        MethodInspection.Builder builder,
-                                                        ParameterizedType functionalInterfaceType,
-                                                        Block block,
-                                                        ParameterizedType returnType) {
+                                                MethodInspection.Builder builder,
+                                                ParameterizedType functionalInterfaceType,
+                                                Block block,
+                                                ParameterizedType returnType) {
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);
         MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.methodInspection.getMethodInfo());
         ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder,

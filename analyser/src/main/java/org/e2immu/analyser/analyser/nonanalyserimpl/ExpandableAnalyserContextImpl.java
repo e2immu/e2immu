@@ -162,8 +162,8 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     @Override
-    public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
-        return parent.newMethodInspectionBuilder(typeInfo, methodName);
+    public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
+        return parent.newMethodInspectionBuilder(identifier, typeInfo, methodName);
     }
 
     public void addPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {

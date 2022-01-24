@@ -20,6 +20,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.Fluent;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -296,26 +297,37 @@ public interface TypeInspection extends Inspection {
 
         void setInspectionState(InspectionState startingBytecode);
 
+        @Fluent
         Builder setParentClass(ParameterizedType objectParameterizedType);
 
+        @Fluent
         Builder setTypeNature(TypeNature anInterface);
 
+        @Fluent
         Builder addTypeParameter(TypeParameter typeParameter);
 
+        @Fluent
         Builder addTypeModifier(TypeModifier aPublic);
 
+        @Fluent
         Builder addMethod(MethodInfo methodInfo);
 
+        @Fluent
         Builder setFunctionalInterface(boolean b);
 
+        @Fluent
         Builder addInterfaceImplemented(ParameterizedType functionalInterfaceType);
 
+        @Fluent
         Builder noParent(Primitives primitives);
 
+        @Fluent
         Builder addField(FieldInfo fieldInfo);
 
+        @Fluent
         Builder addSubType(TypeInfo containerTypeInfo);
 
+        @Fluent
         Builder addConstructor(MethodInfo methodInfo);
     }
 }

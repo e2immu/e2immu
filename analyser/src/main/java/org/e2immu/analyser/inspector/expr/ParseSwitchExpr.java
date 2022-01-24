@@ -110,7 +110,7 @@ public class ParseSwitchExpr {
         // and returns the eventual value
         // it overrides Function<T, R>.apply(T t) returning R
         MethodInspection.Builder applyMethodInspectionBuilder =
-                ParseLambdaExpr.createAnonymousTypeAndApplyMethod(
+                ParseLambdaExpr.createAnonymousTypeAndApplyMethod(Identifier.from(switchExpr),
                         inspectionProvider,
                         "apply",
                         expressionContext.enclosingType(),

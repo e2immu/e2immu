@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,19 +74,31 @@ public class TestAnalyseCode {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         Parser.RunResult runResult = parser.run();
-        parser.getMessages().forEach(this::catalog);
 
-        notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));
+        Catalog catalog = makeCatalog(parser.getMessages());
+
+        for (Map.Entry<Message.Label, Set<Message>> e : catalog.byLabel.entrySet()) {
+            LOGGER.warn("---- have {} of {} ----", e.getValue().size(), e.getKey());
+            e.getValue().stream().map(Message::detailedMessage).sorted().forEach(m -> LOGGER.warn(m.toString()));
+        }
+        LOGGER.warn("----");
+        catalog.notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));
     }
 
-    Set<String> notAvailable = new HashSet<>();
+    record Catalog(Set<String> notAvailable, Map<Message.Label, Set<Message>> byLabel) {
+    }
 
-    private void catalog(Message message) {
-        if (message.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE) {
-            notAvailable.add(message.extra());
-            assertFalse(message.extra().startsWith("org.e2immu"));
-        } else {
-            LOGGER.warn("message: {}", message);
-        }
+    private Catalog makeCatalog(Stream<Message> messages) {
+        Catalog catalog = new Catalog(new HashSet<>(), new HashMap<>());
+        messages.forEach(message -> {
+            if (message.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE) {
+                catalog.notAvailable.add(message.extra());
+                assertFalse(message.extra().startsWith("org.e2immu"));
+            } else {
+                Set<Message> set = catalog.byLabel.computeIfAbsent(message.message(), m -> new HashSet<>());
+                set.add(message);
+            }
+        });
+        return catalog;
     }
 }

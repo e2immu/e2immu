@@ -69,8 +69,8 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     @Override
-    public MethodInspection.Builder newMethodInspectionBuilder(TypeInfo typeInfo, String methodName) {
-        return typeMap.newMethodInspectionBuilder(typeInfo, methodName);
+    public MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
+        return typeMap.newMethodInspectionBuilder(identifier, typeInfo, methodName);
     }
 
     /*
