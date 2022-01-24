@@ -186,6 +186,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 eval_Switch(sharedState, value, switchStatement);
             } else if (statementAnalysis.statement() instanceof ReturnStatement) {
                 stateForLoop = addLoopReturnStatesToState(sharedState);
+            } else if (statement() instanceof ThrowStatement) {
+                value = noReturnValue();
+                // but, see also code above that changes the return variable's value; See SwitchExpression_4
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
@@ -198,6 +201,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
             throw rte;
         }
+    }
+
+    private Expression noReturnValue() {
+        return UnknownExpression.forNoReturnValue(statement().getIdentifier(), methodInfo().returnType());
     }
 
     private CausesOfDelay addLoopReturnStatesToState(StatementAnalyserSharedState sharedState) {

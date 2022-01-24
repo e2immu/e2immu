@@ -379,10 +379,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public StatementAnalysis getLastStatement() {
+        public StatementAnalysis getLastStatement(boolean excludeThrows) {
             // we're not "caching" it during analysis; it may change (?) over iterations
             StatementAnalysis first = firstStatement.getOrDefaultNull();
-            return first == null ? null : first.lastStatement();
+            return first == null ? null : first.lastStatement(excludeThrows);
         }
 
         @Override

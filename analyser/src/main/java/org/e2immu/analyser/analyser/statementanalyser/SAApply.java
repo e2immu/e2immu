@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Logger;
@@ -364,7 +365,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // odds and ends
 
         if (evaluationResult.causesOfDelay().isDone()) {
-            evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
+            evaluationResult.messages().getMessageStream()
+                    .filter(this::acceptMessage)
+                    .forEach(statementAnalysis::ensure);
         }
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
@@ -374,6 +377,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont);
         return new ApplyStatusAndEnnStatus(delay, externalDelay);
+    }
+
+    // filter out inline conditional on throws statements, when the state becomes "false"
+    // see e.g. SwitchExpression_4, at the throws statement at the end of the method
+    private boolean acceptMessage(Message m) {
+        return m.message() != Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT
+                || !(statement() instanceof ThrowStatement);
     }
 
     boolean conditionsForOverwritingPreviousAssignment(

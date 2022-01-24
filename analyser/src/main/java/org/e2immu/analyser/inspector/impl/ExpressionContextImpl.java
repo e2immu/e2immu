@@ -118,11 +118,13 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
     }
 
     @Override
-    public ExpressionContext newSwitchExpressionContext(ForwardReturnTypeInfo typeOfEnclosingSwitchExpression) {
+    public ExpressionContext newSwitchExpressionContext(TypeInfo subType,
+                                                        VariableContext variableContext,
+                                                        ForwardReturnTypeInfo typeOfEnclosingSwitchExpression) {
         log(EXPRESSION_CONTEXT, "Creating a new switch expression context");
-        return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType,
-                enclosingMethod,
-                enclosingField, typeOfEnclosingSwitchExpression,
+        return new ExpressionContextImpl(resolver, enclosingType, subType,
+                null,
+                null, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, variableContext,
                 anonymousTypeCounters);
     }

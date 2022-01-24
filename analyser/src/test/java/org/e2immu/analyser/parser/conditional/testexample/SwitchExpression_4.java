@@ -12,32 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.parser.conditional.testexample;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.NavigationData;
-import org.e2immu.analyser.analysis.StatementAnalysis;
+public class SwitchExpression_4 {
 
-import java.util.List;
-import java.util.function.BiFunction;
+    enum Choice {
+        ONE, TWO, THREE
+    }
 
-public interface HasNavigationData<T extends HasNavigationData<T>> {
-    NavigationData<T> getNavigationData();
+    public static String method(Choice c, boolean b) {
+        return switch (c) {
+            case ONE -> "a";
+            //case TWO -> {       crashes JavaParser 3.24.1
+            //    yield b+"";
+            //}
+            case TWO -> "b";
+            case THREE -> {
+                System.out.println("?");
+                if (b) {
+                    yield "It's " + c;
+                } else {
+                    yield "or " + c;
+                }
+            }
+        };
+    }
 
-    T followReplacements();
-
-    T lastStatement();
-    T lastStatement(boolean excludeThrows);
-
-    String index();
-
-    Statement statement();
-
-    StatementAnalysis parent();
-
-    void wireNext(T newStatement);
-
-    void wireDirectly(T newStatement);
-
-    BiFunction<List<Statement>, String, T> generator(EvaluationContext evaluationContext);
 }
+

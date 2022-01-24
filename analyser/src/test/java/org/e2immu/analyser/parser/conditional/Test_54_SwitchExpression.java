@@ -58,8 +58,15 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
                 }
             }
         };
-        testClass("SwitchExpression_3", 0, 0, new DebugConfiguration.Builder()
+        // one potential null ptr
+        testClass("SwitchExpression_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("SwitchExpression_4", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

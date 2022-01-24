@@ -45,7 +45,10 @@ public interface ExpressionContext {
 
     ExpressionContext newVariableContextForEachLoop(@NotNull VariableContext newVariableContext);
 
-    ExpressionContext newSwitchExpressionContext(ForwardReturnTypeInfo typeOfEnclosingSwitchExpression);
+    // like the lambda, but then with additional type info
+    ExpressionContext newSwitchExpressionContext(TypeInfo subType,
+                                                 VariableContext variableContext,
+                                                 ForwardReturnTypeInfo typeOfEnclosingSwitchExpression);
 
     ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext);
 

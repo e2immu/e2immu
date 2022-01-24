@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.inspector.expr.ParseSwitchExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
@@ -31,27 +30,31 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/*
+Our switch expressions do not have blocks! Blocks with yield get translated into if-statements in
+a lambda, see ParseSwitchExpr.
+ */
 public class SwitchExpression extends BaseExpression implements Expression, HasSwitchLabels {
 
     private final Expression selector;
     private final List<SwitchEntry> switchEntries;
     private final ParameterizedType returnType;
-    private final MultiExpression yieldExpressions;
+    private final MultiExpression expressions;
 
     public SwitchExpression(Identifier identifier,
                             Expression selector,
                             List<SwitchEntry> switchEntries,
                             ParameterizedType returnType,
-                            MultiExpression yieldExpressions) {
+                            MultiExpression expressions) {
         super(identifier);
         switchEntries.forEach(e -> {
             Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);
         });
-        this.selector = selector;
+        this.selector = Objects.requireNonNull(selector);
         this.switchEntries = switchEntries;
-        this.returnType = returnType;
-        this.yieldExpressions = yieldExpressions;
+        this.returnType = Objects.requireNonNull(returnType);
+        this.expressions = Objects.requireNonNull(expressions);
     }
 
     @Override
@@ -96,16 +99,13 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         EvaluationResult selectorResult = selector.evaluate(evaluationContext, forwardEvaluationInfo);
 
         Expression selectorValue = selectorResult.value();
-        if (selectorValue.isConstant()) {
-            // do some short-cuts
-        }
-        List<Expression> newYieldExpressions = new ArrayList<>(yieldExpressions.expressions().length);
+        List<Expression> newYieldExpressions = new ArrayList<>(expressions.expressions().length);
         for (SwitchEntry switchEntry : switchEntries) {
             if (switchEntry.structure.statements() == null) {
                 // block
-                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry);
-                newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
-            } else if (switchEntry.structure.statements().size() == 1) {
+                throw new UnsupportedOperationException();
+            }
+            if (switchEntry.structure.statements().size() == 1) {
                 // single expression
                 Expression condition = convertDefaultToNegationOfAllOthers(evaluationContext, switchEntry.structure.expression());
                 EvaluationContext localContext = evaluationContext.child(condition);
@@ -121,7 +121,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
                     assert statement instanceof ThrowStatement; // there is no expression to evaluate for a return value
                 }
             } else {
-              throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException();
             }
         }
         builder.compose(selectorResult);
@@ -141,7 +141,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     public Expression translate(TranslationMap translationMap) {
         List<SwitchEntry> translatedSwitchEntries = switchEntries.stream()
                 .map(se -> (SwitchEntry) se.translate(translationMap)).toList();
-        MultiExpression translatedYieldExpressions = yieldExpressions.translate(translationMap);
+        MultiExpression translatedYieldExpressions = expressions.translate(translationMap);
         return new SwitchExpression(identifier, selector.translate(translationMap), translatedSwitchEntries, returnType,
                 translatedYieldExpressions);
     }
@@ -161,7 +161,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
         if (returnType.isPrimitiveExcludingVoid()) {
             return UnknownExpression.primitiveGetProperty(property);
         }
-        return yieldExpressions.getProperty(evaluationContext, property, duringEvaluation);
+        return expressions.getProperty(evaluationContext, property, duringEvaluation);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
     @Override
     public CausesOfDelay causesOfDelay() {
         return selector.causesOfDelay()
-                .merge(Arrays.stream(yieldExpressions.expressions())
+                .merge(Arrays.stream(expressions.expressions())
                         .map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
     }
 }

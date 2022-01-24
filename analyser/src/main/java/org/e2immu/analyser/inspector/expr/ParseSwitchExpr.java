@@ -15,20 +15,23 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.SwitchExpr;
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
+import com.github.javaparser.ast.stmt.ThrowStmt;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.SwitchExpression;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.model.statement.SwitchEntry;
-import org.e2immu.analyser.model.statement.YieldStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseSwitchExpr {
 
@@ -36,40 +39,48 @@ public class ParseSwitchExpr {
                                    SwitchExpr switchExpr,
                                    ForwardReturnTypeInfo forwardReturnTypeInfo) {
         Expression selector = expressionContext.parseExpressionStartVoid(switchExpr.getSelector());
-        ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(forwardReturnTypeInfo);
+
+        boolean allEntriesAreExpressions = switchExpr.getEntries().stream()
+                .allMatch(entry -> entry.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.EXPRESSION
+                        || entry.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.THROWS_STATEMENT);
+
+        // decide between keeping a switch expression, where each of the cases is an expression,
+        // and transforming the switch expression in a lambda/implementation of Function<>
+        // where each case block is an if statement, with the yield replaced by return.
+
+        if (allEntriesAreExpressions) {
+            ExpressionContext newExpressionContext = expressionContext.newVariableContext("switch-expression");
+            addEnumVariables(newExpressionContext, selector);
+            List<SwitchEntry> entries = switchExpr.getEntries()
+                    .stream()
+                    .map(entry -> newExpressionContext.switchEntry(selector, entry))
+                    .collect(Collectors.toList());
+            MultiExpression yieldExpressions = new MultiExpression(extractExpressionsFromEntries(entries));
+            ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext());
+            return new SwitchExpression(Identifier.from(switchExpr),
+                    selector, entries, parameterizedType, yieldExpressions);
+        }
+        return createLambda(expressionContext, selector, switchExpr, forwardReturnTypeInfo.type());
+    }
+
+    private static void addEnumVariables(ExpressionContext expressionContext, Expression selector) {
         TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
         if (enumType != null) {
             TypeInspection enumInspection = expressionContext.typeContext().getTypeInspection(enumType);
             enumInspection.fields()
-                    .forEach(fieldInfo -> newExpressionContext.variableContext().add(
+                    .forEach(fieldInfo -> expressionContext.variableContext().add(
                             new FieldReference(expressionContext.typeContext(), fieldInfo)));
         }
-        // decide between keeping a switch expression, where each of the cases is an expression,
-        // and transforming the switch expression in a lambda/implementation of Function<>
-        // where each case block is an if statement, with the yield replaced by return.
-        
-        List<SwitchEntry> entries = switchExpr.getEntries()
-                .stream()
-                .map(entry -> newExpressionContext.switchEntry(selector, entry))
-                .collect(Collectors.toList());
-        // we'll need to deduce the return type from the entries.
-        // if the entry is a StatementEntry, it must be either a throws, or an expression as statement
-        // in the latter case, we can grab a value.
-        // if the entry is a BlockEntry, we must look at the yield statement
-        MultiExpression yieldExpressions = new MultiExpression(extractYieldsFromEntries(entries));
-        ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext());
-        return new SwitchExpression(Identifier.from(switchExpr),
-                selector, entries, parameterizedType, yieldExpressions);
     }
 
-    private static Expression[] extractYieldsFromEntries(List<SwitchEntry> entries) {
-        return entries.stream().flatMap(e -> extractYields(e).stream()).toArray(Expression[]::new);
+    private static Expression[] extractExpressionsFromEntries(List<SwitchEntry> entries) {
+        return entries.stream().flatMap(e -> extractExpressionFromEntry(e).stream()).toArray(Expression[]::new);
     }
 
-    public static List<Expression> extractYields(SwitchEntry e) {
+    public static List<Expression> extractExpressionFromEntry(SwitchEntry e) {
         Structure structure = e.structure;
-        while(structure.statements() == null && structure.block() != null) {
-           structure = structure.block().structure;
+        while (structure.statements() == null && structure.block() != null) {
+            structure = structure.block().structure;
         }
         List<Statement> statements = structure.statements();
         if (statements.size() == 1) {
@@ -77,14 +88,142 @@ public class ParseSwitchExpr {
             if (statement instanceof ExpressionAsStatement eas) {
                 return List.of(eas.expression);
             }
-            // in all other cases, the yield statement is required
+            if (statement instanceof ThrowStatement throwStatement) {
+                // IMPROVE we'll need to mark this somehow, so that the value
+                // doesn't become one of the return values in case we'd analyse that
+                return List.of(throwStatement.expression);
+            }
         }
-        return statements.stream().flatMap(statement -> extractYields(statement).stream()).toList();
+        throw new UnsupportedOperationException();
     }
 
-    private static List<Expression> extractYields(Statement statement) {
-        List<Expression> yields = new ArrayList<>();
-        statement.visit(e -> yields.add(e.expression), YieldStatement.class);
-        return yields;
+    private static Expression createLambda(ExpressionContext expressionContext,
+                                           Expression selector,
+                                           SwitchExpr switchExpr,
+                                           ParameterizedType returnTypeIn) {
+        VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext());
+        InspectionProvider inspectionProvider = expressionContext.typeContext();
+        ParameterizedType returnType = returnTypeIn.ensureBoxed(inspectionProvider.getPrimitives());
+        ParameterizedType selectorType = selector.returnType().ensureBoxed(inspectionProvider.getPrimitives());
+
+        // we start by making an apply method, which takes in the selector,
+        // and returns the eventual value
+        // it overrides Function<T, R>.apply(T t) returning R
+        MethodInspection.Builder applyMethodInspectionBuilder =
+                ParseLambdaExpr.createAnonymousTypeAndApplyMethod(
+                        inspectionProvider,
+                        "apply",
+                        expressionContext.enclosingType(),
+                        expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
+
+        ParameterInspection.Builder parameterBuilder = applyMethodInspectionBuilder
+                .newParameterInspectionBuilder(Identifier.from(switchExpr),
+                        selectorType, "selector", 0);
+        // parameter analysis will be set later
+        applyMethodInspectionBuilder.addParameter(parameterBuilder);
+
+        applyMethodInspectionBuilder.readyToComputeFQN(inspectionProvider);
+        applyMethodInspectionBuilder.makeParametersImmutable();
+        applyMethodInspectionBuilder.getParameters().forEach(newVariableContext::add);
+
+        TypeInfo anonymousType = applyMethodInspectionBuilder.owner();
+
+
+        // add all formal -> concrete of the parameters of the SAM, without the return type
+        Map<NamedType, ParameterizedType> map = returnType.initialTypeParameterMap(inspectionProvider);
+        ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(returnType, false,
+                new TypeParameterMap(map));
+
+        ExpressionContext newExpressionContext = expressionContext.newSwitchExpressionContext(anonymousType,
+                newVariableContext, newForward);
+        addEnumVariables(newExpressionContext, selector);
+
+        Block methodBody = constructMethodBody(newExpressionContext, newForward, switchExpr, selector);
+
+        TypeInfo function = expressionContext.typeContext().typeMap.syntheticFunction(1, false);
+        ParameterizedType functionalType = new ParameterizedType(function, List.of(selectorType, returnType));
+
+        ParseLambdaExpr.continueCreationOfAnonymousType(expressionContext.typeContext().typeMap,
+                applyMethodInspectionBuilder, functionalType, methodBody, returnType);
+        TypeContext typeContext = expressionContext.typeContext();
+
+        expressionContext.resolver().resolve(typeContext,
+                typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
+                Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
+
+        log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
+                functionalType.detailedString(expressionContext.typeContext()), anonymousType.fullyQualifiedName);
+
+        List<Lambda.OutputVariant> outputVariants = List.of(Lambda.OutputVariant.EMPTY);
+        return new Lambda(Identifier.from(switchExpr), inspectionProvider,
+                functionalType, anonymousType.asParameterizedType(inspectionProvider), outputVariants);
+    }
+
+    private static Block constructMethodBody(ExpressionContext newExpressionContext,
+                                             ForwardReturnTypeInfo forwardReturnTypeInfo,
+                                             SwitchExpr switchExpr,
+                                             Expression selector) {
+        Block.BlockBuilder builder = new Block.BlockBuilder(Identifier.from(switchExpr));
+        InspectionProvider ip = newExpressionContext.typeContext();
+
+        boolean addedADefault = false;
+        for (com.github.javaparser.ast.stmt.SwitchEntry switchEntry : switchExpr.getEntries()) {
+            List<Expression> labels = switchEntry.getLabels().stream()
+                    .map(newExpressionContext::parseExpressionStartVoid)
+                    .collect(Collectors.toList());
+            boolean isDefault = labels.isEmpty();
+            addedADefault |= isDefault;
+            Expression or = SwitchEntry.generateConditionExpression(ip.getPrimitives(), labels, selector);
+            Statement statement;
+            com.github.javaparser.ast.stmt.SwitchEntry.Type type = switchEntry.getType();
+            if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.EXPRESSION ||
+                    type == com.github.javaparser.ast.stmt.SwitchEntry.Type.THROWS_STATEMENT) {
+                com.github.javaparser.ast.stmt.Statement st = switchEntry.getStatements().get(0);
+                Statement returnStatement;
+                if (st.isExpressionStmt()) {
+                    com.github.javaparser.ast.expr.Expression e = st.asExpressionStmt().getExpression();
+                    Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
+                    returnStatement = new ReturnStatement(Identifier.generate(), expression);
+                } else if (st.isThrowStmt()) {
+                    ThrowStmt throwStmt = st.asThrowStmt();
+                    com.github.javaparser.ast.expr.Expression e = throwStmt.getExpression();
+                    Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
+                    returnStatement = new ThrowStatement(Identifier.generate(), expression);
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+                if (isDefault) {
+                    statement = returnStatement;
+                } else {
+                    Block ifBlock = new Block.BlockBuilder(Identifier.from(switchEntry)).addStatement(returnStatement).build();
+                    statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock, Block.emptyBlock(Identifier.generate()));
+                }
+            } else if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.BLOCK) {
+                Block exec = newExpressionContext.parseBlockOrStatement(switchEntry.getStatements().get(0));
+                if (isDefault) statement = exec;
+                else {
+                    statement = new IfElseStatement(Identifier.from(switchEntry), or, exec, Block.emptyBlock(Identifier.generate()));
+                }
+            } else {
+                throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
+            }
+
+            builder.addStatement(statement);
+        }
+        if (!addedADefault) {
+            // no default, so no return statement. To have correct java, we'll add a throws statement
+            builder.addStatement(createThrowStatement(newExpressionContext, ip));
+        }
+        return builder.build();
+    }
+
+    private static ThrowStatement createThrowStatement(ExpressionContext newExpressionContext, InspectionProvider ip) {
+        TypeInfo runtimeException = newExpressionContext.typeContext().getFullyQualified(RuntimeException.class);
+        TypeInspection typeInspection = ip.getTypeInspection(runtimeException);
+        MethodInfo constructor = typeInspection.constructors().stream()
+                .filter(m -> ip.getMethodInspection(m).getParameters().isEmpty()).findFirst().orElseThrow();
+        return new ThrowStatement(Identifier.generate(),
+                ConstructorCall.objectCreation(Identifier.generate(), constructor,
+                        runtimeException.asParameterizedType(ip), Diamond.NO, List.of()));
     }
 }

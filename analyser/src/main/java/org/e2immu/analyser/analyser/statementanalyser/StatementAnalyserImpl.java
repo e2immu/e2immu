@@ -281,20 +281,29 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         return navigationData.next.get();
     }
 
-    // note that there is a clone of this in statementAnalysis
     @Override
     public StatementAnalyser lastStatement() {
+        return lastStatement(false);
+    }
+
+    @Override
+    public StatementAnalyser lastStatement(boolean excludeThrows) {
         if (statementAnalysis.flowData().isUnreachable() && statementAnalysis.parent() == null) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalyser afterReplacements = followReplacements();
         if (!afterReplacements.navigationDataNextIsSet()) return afterReplacements;
-        return afterReplacements.navigationDataNextGet().map(statementAnalyser -> {
-            if (statementAnalyser.getStatementAnalysis().flowData().isUnreachable()) {
+        if (afterReplacements.navigationDataNextGet().isPresent()) {
+            StatementAnalyser statementAnalyser = afterReplacements.navigationDataNextGet().get();
+            if (statementAnalyser.getStatementAnalysis().flowData().isUnreachable() ||
+                    excludeThrows && statementAnalyser.statement() instanceof ThrowStatement) {
                 return afterReplacements;
             }
-            return statementAnalyser.lastStatement();
-        }).orElse(afterReplacements);
+            // recursion
+            return statementAnalyser.lastStatement(excludeThrows);
+        } else {
+            return afterReplacements;
+        }
     }
 
     @Override

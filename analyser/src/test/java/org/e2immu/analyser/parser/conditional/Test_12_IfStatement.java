@@ -208,7 +208,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("\"\"+i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
@@ -218,24 +218,17 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .build());
     }
 
-    /* IMPROVE FOR LATER this test is for the next code push
+
     @Test
     public void test_8() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("pad".equals(d.methodInfo().name)) {
-                boolean unreachable = "1".equals(d.statementId()) || "1.0.0".equals(d.statementId()) || "1.1.0".equals(d.statementId());
-                assertEquals(unreachable, d.statementAnalysis().flowData.alwaysEscapesViaException(), d.statementId());
-            }
-        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("\"\"+i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("i<=9?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         testClass("IfStatement_8", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
-    }*/
+    }
 }

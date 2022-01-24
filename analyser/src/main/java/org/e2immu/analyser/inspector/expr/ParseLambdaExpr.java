@@ -182,14 +182,14 @@ public class ParseLambdaExpr {
     }
 
 
-    private static MethodInspection.Builder createAnonymousTypeAndApplyMethod
+    static MethodInspection.Builder createAnonymousTypeAndApplyMethod
             (InspectionProvider inspectionProvider, String name,
              TypeInfo enclosingType, int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
         return inspectionProvider.newMethodInspectionBuilder(typeInfo, name);
     }
 
-    private static void continueCreationOfAnonymousType(TypeMap.Builder typeMapBuilder,
+    static void continueCreationOfAnonymousType(TypeMap.Builder typeMapBuilder,
                                                         MethodInspection.Builder builder,
                                                         ParameterizedType functionalInterfaceType,
                                                         Block block,

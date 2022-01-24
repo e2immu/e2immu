@@ -281,16 +281,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public StatementAnalysis lastStatement() {
-        if (flowData.isUnreachable()) {
+        return lastStatement(false);
+    }
+
+    @Override
+    public StatementAnalysis lastStatement(boolean excludeThrows) {
+        if (flowData.isUnreachable() && parent == null) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalysis replaced = followReplacements();
-        return replaced.navigationData().next.get().map(statementAnalysis -> {
-            if (statementAnalysis.flowData().isUnreachable()) {
+        if (replaced.navigationData().next.get().isPresent()) {
+            StatementAnalysis statementAnalysis = replaced.navigationData().next.get().get();
+            if (statementAnalysis.flowData().isUnreachable() ||
+                    excludeThrows && statementAnalysis.statement() instanceof ThrowStatement) {
                 return replaced;
             }
-            return statementAnalysis.lastStatement();
-        }).orElse(replaced);
+            // recursion
+            return statementAnalysis.lastStatement(excludeThrows);
+        }
+        return replaced;
     }
 
     @Override

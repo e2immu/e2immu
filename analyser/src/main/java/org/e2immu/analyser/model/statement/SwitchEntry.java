@@ -71,7 +71,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
     }
 
-    private static Expression generateConditionExpression(
+    public static Expression generateConditionExpression(
             Primitives primitives,
             List<Expression> labels, Expression switchVariableAsExpression) {
         if (labels.isEmpty()) {

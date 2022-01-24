@@ -51,7 +51,11 @@ public interface MethodAnalysis extends Analysis {
      * @return null when the method is not defined (has no statements)
      */
     default StatementAnalysis getLastStatement() {
-        throw new UnsupportedOperationException(); // needs an implementation!
+        return getLastStatement(false);
+    }
+
+    default StatementAnalysis getLastStatement(boolean excludeThrows) {
+        throw new UnsupportedOperationException();
     }
 
     // the value here (size will be one)
