@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.impl.ComputingMethodAnalyser;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -340,9 +339,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         delay = delay.merge(cImmStatus);
 
         // 5
-        importContextModifiedValuesForThisFromSubTypes(analyserContext, localAnalysers, groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED));
+        CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
         delay = delay.merge(cmStatus);
 
         // 6
@@ -375,26 +372,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont);
         return new ApplyStatusAndEnnStatus(delay, externalDelay);
-    }
-
-
-    // FIXME move to new system
-    private void importContextModifiedValuesForThisFromSubTypes(AnalyserContext analyserContext,
-                                                                List<PrimaryTypeAnalyser> localAnalysers,
-                                                                Map<Variable, DV> map) {
-        DV bestInSub = localAnalysers.stream()
-                .flatMap(PrimaryTypeAnalyser::methodAnalyserStream)
-                .filter(ma -> ma instanceof ComputingMethodAnalyser)
-                .map(ma -> ((ComputingMethodAnalyser) ma).getThisAsVariable())
-                .filter(Objects::nonNull)
-                .map(variableInfo -> variableInfo.getProperty(CONTEXT_MODIFIED))
-                .reduce(DV.MIN_INT_DV, DV::max);
-        if (bestInSub != DV.MIN_INT_DV) {
-            Variable thisVar = new This(analyserContext, methodInfo().typeInfo);
-            DV myValue = map.getOrDefault(thisVar, null);
-            DV merged = myValue == null ? bestInSub : myValue.max(bestInSub);
-            map.put(thisVar, merged);
-        }
     }
 
     boolean conditionsForOverwritingPreviousAssignment(

@@ -737,22 +737,23 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
             }
-            Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
-            valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
-
-            // copy into initial
-
-            vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);
         } else {
             // only set properties copied from the field
             map.stream().forEach(e -> vic.setProperty(e.getKey(), e.getValue(), INITIAL));
             initialValue = viInitial.getValue();
             assert initialValue.isDone();
             // add the value properties from the current value to combined (do not set to initial!!)
-            Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), viInitial.getValue());
-            valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
         }
 
+        Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
+        valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
+        CausesOfDelay causesOfDelay = valueMap.delays();
+        if(causesOfDelay.isDelayed() && initialValue.isDone()) {
+            initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
+        }
+        if(!viInitial.valueIsSet()) {
+            vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);
+        }
         /* copy into evaluation, but only if there is no assignment and no reading
 
         reading can change the value (e.g. when a modifying method call occurs), but we have a dedicated

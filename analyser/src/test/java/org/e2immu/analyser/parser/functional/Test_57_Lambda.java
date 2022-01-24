@@ -273,4 +273,20 @@ public class Test_57_Lambda extends CommonTestRunner {
         testClass("Lambda_12", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_13() throws IOException {
+        // modification of "test" implementation goes against the @NotModified which is there by default
+        testClass("Lambda_13", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_14() throws IOException {
+        // modification of "test" implementation goes against the @NotModified which is there by default
+        // plus: assigning to field outside type
+        // the @Final vs @Variable and @Modified are handled by the VariableAccessReport
+        testClass("Lambda_14", 2, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
