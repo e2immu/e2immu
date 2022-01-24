@@ -16,10 +16,12 @@ package org.e2immu.analyser.parser.functional;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -283,10 +285,39 @@ public class Test_57_Lambda extends CommonTestRunner {
 
     @Test
     public void test_14() throws IOException {
-        // modification of "test" implementation goes against the @NotModified which is there by default
-        // plus: assigning to field outside type
-        // the @Final vs @Variable and @Modified are handled by the VariableAccessReport
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("assigning".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "i".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("t.length()", d.currentValue().toString());
+
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ii".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+            }
+            if ("i".equals(d.fieldInfo().name)) {
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
+            }
+        };
+        // assigning to field outside type = not allowed
+        // property value worse than overridden method: Predicate is @NotModified without A API
         testClass("Lambda_14", 2, 0, new DebugConfiguration.Builder()
-                .build());
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_14_2() throws IOException {
+        // additional error: @Variable is not seen (we don't look outside the static type)
+        testClass("Lambda_14", 3, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(false).build());
     }
 }

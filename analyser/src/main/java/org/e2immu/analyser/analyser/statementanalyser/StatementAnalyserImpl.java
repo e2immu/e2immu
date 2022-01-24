@@ -607,7 +607,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         builder.addVariableRead(vi.variable());
                     }
                     if (vi.getAssignmentIds().getLatestAssignmentIndex().equals(index())) {
-                        builder.addFieldAssigned(fr);
+                        builder.addFieldAssigned(fr, vi);
                     }
                 }
 

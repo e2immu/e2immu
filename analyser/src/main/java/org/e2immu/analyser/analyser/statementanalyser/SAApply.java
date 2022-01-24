@@ -243,6 +243,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private EvaluationResult variablesReadAndAssignedInSubAnalysers(EvaluationResult evaluationResultIn,
                                                                     EvaluationContext evaluationContext) {
         List<Variable> readBySubAnalysers = statementAnalysis.variablesReadBySubAnalysers();
+
         if (!readBySubAnalysers.isEmpty()) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
             builder.compose(evaluationResultIn);
@@ -252,6 +253,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
             return builder.build();
         }
+
         return evaluationResultIn;
     }
 

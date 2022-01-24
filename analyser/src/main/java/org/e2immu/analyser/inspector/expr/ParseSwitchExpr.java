@@ -44,6 +44,10 @@ public class ParseSwitchExpr {
                     .forEach(fieldInfo -> newExpressionContext.variableContext().add(
                             new FieldReference(expressionContext.typeContext(), fieldInfo)));
         }
+        // decide between keeping a switch expression, where each of the cases is an expression,
+        // and transforming the switch expression in a lambda/implementation of Function<>
+        // where each case block is an if statement, with the yield replaced by return.
+        
         List<SwitchEntry> entries = switchExpr.getEntries()
                 .stream()
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))

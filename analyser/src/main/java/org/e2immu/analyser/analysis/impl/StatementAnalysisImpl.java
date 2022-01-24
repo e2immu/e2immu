@@ -37,6 +37,7 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +81,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
     private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
+    private final SetOnceMap<FieldReference, EventuallyFinal<Expression>> fieldsAssignedBySubAnalysers = new SetOnceMap<>();
 
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
@@ -544,7 +546,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
                     vic, navigationData.hasSubBlocks());
-        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, previousIsParent, indexOfPrevious)) {
+        } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable, vic)) {
             // move a local variable, not defined in this loop, inside the loop
@@ -560,7 +562,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     private boolean doNotCopyToNextStatement(StatementAnalysis copyFrom,
                                              VariableInfoContainer vic,
                                              Variable variable,
-                                             boolean previousIsParent,
                                              String indexOfPrevious) {
         if (vic.variableNature().doNotCopyToNextStatement(indexOfPrevious, index)) return true;
         // but what if we have a field access on one such variable? check recursively!
@@ -571,7 +572,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             String scopeFqn = ive.variable().fullyQualifiedName();
             if (copyFrom.variableIsSet(scopeFqn)) {
                 VariableInfoContainer scopeVic = copyFrom.getVariable(scopeFqn);
-                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), previousIsParent, indexOfPrevious);
+                return doNotCopyToNextStatement(copyFrom, scopeVic, ive.variable(), indexOfPrevious);
             }
             return true;
         }
@@ -748,10 +749,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Properties valueMap = evaluationContext.getValueProperties(viInitial.variable().parameterizedType(), initialValue);
         valueMap.stream().forEach(e -> map.merge(e.getKey(), e.getValue(), DV::max));
         CausesOfDelay causesOfDelay = valueMap.delays();
-        if(causesOfDelay.isDelayed() && initialValue.isDone()) {
+        if (causesOfDelay.isDelayed() && initialValue.isDone()) {
             initialValue = DelayedVariableExpression.forField(fieldReference, causesOfDelay);
         }
-        if(!viInitial.valueIsSet()) {
+        if (!viInitial.valueIsSet()) {
             vic.setValue(initialValue, LinkedVariables.EMPTY, map, true);
         }
         /* copy into evaluation, but only if there is no assignment and no reading
@@ -1072,10 +1073,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
-    }
-
-    private void ensureValueProperties(VariableInfoContainer destination, Variable variable) {
-        destination.ensureValuePropertiesInInitial(AnalysisProvider.defaultNotNull(variable.parameterizedType()));
     }
 
     /**
@@ -1929,8 +1926,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
     @Override
     public void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport) {
         for (Variable v : variableAccessReport.variablesRead()) {
-            VariableInfoContainer vic = getVariableOrDefaultNull(v.fullyQualifiedName());
-            if (vic != null && !variablesReadBySubAnalysers.contains(v)) {
+            if (!variablesReadBySubAnalysers.contains(v)) {
                 variablesReadBySubAnalysers.add(v);
             }
         }

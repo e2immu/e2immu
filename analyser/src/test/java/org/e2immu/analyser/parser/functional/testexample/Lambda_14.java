@@ -14,12 +14,13 @@
 
 package org.e2immu.analyser.parser.functional.testexample;
 
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Variable;
 
 import java.util.function.Predicate;
 
 // tests to see if the assignment in the Lambda progresses to the field
+// note: @Variable only when the field analyser is configured to consider the whole primary type.
 public class Lambda_14 {
 
     static class I {
@@ -31,17 +32,17 @@ public class Lambda_14 {
         }
     }
 
-    @Modified
-    private final I i = new I();
+    @NotModified // outside the scope of modification
+    private final I ii = new I();
 
     public Predicate<String> nonModifying() {
-        return t -> i.getI() < t.length();
+        return t -> ii.getI() < t.length();
     }
 
     public Predicate<String> assigning() {
         return t -> {
-            if (t.length() > 10) i.i = t.length();
-            return i.getI() < t.length();
+            if (t.length() > 10) ii.i = t.length();
+            return ii.getI() < t.length();
         };
     }
 }
