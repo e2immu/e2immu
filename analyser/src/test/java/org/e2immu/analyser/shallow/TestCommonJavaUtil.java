@@ -413,4 +413,30 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
     }
+
+
+    @Test
+    public void testOptionalEmpty() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Optional.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("empty", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+
+        // not a factory method, static... IMPROVE we had to add this by hand to the method in JavaUtil
+        assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+    }
+
+    @Test
+    public void testOptionalGet() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Optional.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("get", 0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+
+        // normal instance method returning unbound type parameter
+        assertEquals(MultiLevel.NOT_INVOLVED_DV, methodAnalysis.getProperty(Property.IMMUTABLE),
+                methodInfo.fullyQualifiedName);
+        assertEquals(MultiLevel.INDEPENDENT_1_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+    }
 }

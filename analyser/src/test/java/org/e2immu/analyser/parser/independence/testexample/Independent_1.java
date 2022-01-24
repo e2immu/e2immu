@@ -12,31 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.independence.failing;
+package org.e2immu.analyser.parser.independence.testexample;
 
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Modified;
 
-import org.e2immu.analyser.config.DebugConfiguration;
+import java.util.List;
 
-import org.e2immu.analyser.parser.CommonTestRunner;
-
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-
-public class Test_Warnings extends CommonTestRunner {
-
-    public Test_Warnings() {
-        super(true);
-    }
-
+public class Independent_1 {
 
     /*
-    Annotated @E2Container
+    StringBuilder is a modifiable @Container;
+    the builder in the for-each is content linked to the "builders" argument.
+    A modification on builder propagates to builders, which is contracted to be @E2Container,
+    which causes a warning/error.
      */
-    @Test
-    public void test13() throws IOException {
-        testClass("Warnings_13", 1, 0, new DebugConfiguration.Builder()
-                .build());
+    public static void modifyImmutableList(@E2Container(contract = true) List<StringBuilder> builders) {
+        for (StringBuilder builder : builders) {
+            builder.append("!");
+        }
     }
 }

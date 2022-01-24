@@ -17,18 +17,20 @@ package org.e2immu.analyser.program.own;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Input;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.parser.TypeMap;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TestAnalyseCode {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnalyseCode.class);
@@ -38,7 +40,7 @@ public class TestAnalyseCode {
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory(CommonTestRunner.JDK_16)
                 .addSources("src/main/java")
-            //    .addSources("src/test/java")
+                //    .addSources("src/test/java")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document
@@ -57,7 +59,9 @@ public class TestAnalyseCode {
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
         // want to see them as AnnotatedAPI
-        AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder().setDisabled(true).build();
+        AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
+                .addAnnotatedAPISourceDirs(CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS)
+                .build();
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(false)
                 .setInputConfiguration(inputConfiguration)
@@ -68,9 +72,19 @@ public class TestAnalyseCode {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         Parser.RunResult runResult = parser.run();
-        parser.getMessages().forEach(m -> LOGGER.info("Message: {}", m));
+        parser.getMessages().forEach(this::catalog);
 
-        TypeMap typeMap = runResult.typeMap();
+        notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));
+    }
 
+    Set<String> notAvailable = new HashSet<>();
+
+    private void catalog(Message message) {
+        if (message.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE) {
+            notAvailable.add(message.extra());
+            assertFalse(message.extra().startsWith("org.e2immu"));
+        } else {
+            LOGGER.warn("message: {}", message);
+        }
     }
 }
