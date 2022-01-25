@@ -86,11 +86,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public Identifier.PositionalIdentifier positionalIdentifier() {
-        return positionalIdentifier;
-    }
-
-    @Override
     public boolean isFunctionalInterface() {
         return functionalInterface;
     }
@@ -201,11 +196,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return this;
         }
 
-        @Override
-        public Identifier.PositionalIdentifier positionalIdentifier() {
-            return positionalIdentifier;
-        }
-
         public void setPositionalIdentifier(Identifier.PositionalIdentifier positionalIdentifier) {
             this.positionalIdentifier = positionalIdentifier;
         }
@@ -301,12 +291,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 throw new UnsupportedOperationException("Already have subtype " + typeInfo);
             }
             subTypes.add(typeInfo);
-            return this;
-        }
-
-        public Builder addPermitted(TypeInfo typeInfo) {
-            assert modifiers.contains(TypeModifier.SEALED);
-            permittedWhenSealed.add(typeInfo);
             return this;
         }
 

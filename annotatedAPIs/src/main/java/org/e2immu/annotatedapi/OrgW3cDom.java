@@ -12,15 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model.expression;
+package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
+import org.w3c.dom.Node;
 
-public interface Numeric extends Negatable {
-    @NotNull
-    Number getNumber();
+public class OrgW3cDom {
+    public static final String PACKAGE_NAME = "org.w3c.dom";
 
-    default double doubleValue() {
-        return getNumber().doubleValue();
+    interface Node$ {
+
+        @Modified
+        Node appendChild(Node newNode);
+
     }
 }

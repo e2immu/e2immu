@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -33,6 +34,7 @@ public interface ExpressionContext {
      * This type is here to prevent a cyclic dependency between Resolver and ExpressionContext
      */
     interface ResolverRecursion {
+        @Modified
         List<SortedType> resolve(InspectionProvider inspectionProvider,
                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                  boolean shallowResolver,

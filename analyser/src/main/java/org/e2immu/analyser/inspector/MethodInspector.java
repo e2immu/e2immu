@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.ast.body.*;
 import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.annotation.Modified;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public interface MethodInspector {
     /*
         Compact constructor for records
          */
+    @Modified
     boolean inspect(CompactConstructorDeclaration ccd,
                     ExpressionContext expressionContext,
                     Map<CompanionMethodName, MethodInspection.Builder> companionMethods,

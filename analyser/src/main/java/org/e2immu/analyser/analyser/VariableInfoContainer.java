@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -64,14 +65,18 @@ public interface VariableInfoContainer {
         return subBlock.compareTo(current.getAssignmentIds().getLatestAssignment()) < 0;
     }
 
+    @Modified
     void setLinkedVariables(LinkedVariables linkedVariables, Level level);
 
+    @Modified
     void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
     boolean isPrevious();
 
     boolean has(Level level);
 
+    @Modified
+    @NotNull
     VariableInfo ensureLevelForPropertiesLinkedVariables(Location location, Level level);
 
     void ensureValuePropertiesInInitial(DV defaultNotNull);
@@ -96,6 +101,7 @@ public interface VariableInfoContainer {
     /*
     explicit freezing (DONE at the end of statement analyser): forbid any future writing
      */
+    @Modified
     void freeze();
 
     /**
@@ -111,6 +117,7 @@ public interface VariableInfoContainer {
     /*
      * like current, but then with a limit
      */
+    @NotNull
     VariableInfo best(Level level);
 
     /**
@@ -126,6 +133,7 @@ public interface VariableInfoContainer {
     boolean isInitial();
 
     // writing operations
+    @Modified
     void setValue(Expression value,
                   LinkedVariables linkedVariables,
                   Map<Property, DV> propertiesToSet,
@@ -139,6 +147,7 @@ public interface VariableInfoContainer {
         setValue(value, linkedVariables, propertiesToSet.toImmutableMap(), initialOrEvaluation);
     }
 
+    @Modified
     default void setProperty(Property property, DV value, Level level) {
         setProperty(property, value, false, level);
     }
@@ -153,6 +162,7 @@ public interface VariableInfoContainer {
      *                                              which starts off FALSE on the parameter, and ends up TRUE in EVAL later
      * @param level                                 the level to write
      */
+    @Modified
     void setProperty(Property property, DV value, boolean doNotFailWhenTryingToWriteALowerValue, Level level);
 
     /*
@@ -160,12 +170,16 @@ public interface VariableInfoContainer {
     this method uses assignmentId and readId to determine which values can be copied, and which values will be set
     by the apply method in the statement analyser.
      */
+    @Modified
     void copy();
 
+    @Modified
     void copyNonContextFromPreviousOrEvalToMerge(GroupPropertyValues groupPropertyValues);
 
+    @Modified
     void copyAllFromPreviousOrEvalIntoMergeIfMergeExists();
 
+    @Modified
     void ensureEvaluation(Location location,
                           AssignmentIds assignmentIds,
                           String readId,

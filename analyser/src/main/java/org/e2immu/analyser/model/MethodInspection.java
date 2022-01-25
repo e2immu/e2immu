@@ -18,10 +18,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.annotation.Finalizer;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -148,6 +145,7 @@ public interface MethodInspection extends Inspection {
 
         List<ParameterInspection.Builder> getParameterBuilders();
 
+        @Modified
         void makeParametersImmutable();
 
         @Fluent
@@ -157,14 +155,20 @@ public interface MethodInspection extends Inspection {
         Builder setReturnType(ParameterizedType pt);
 
         @Fluent
+        @Modified
         Builder setBlock(BlockStmt blockStmt);
 
+        @Modified
+        @NotNull
         MethodInspection build(InspectionProvider inspectionProvider);
 
+        @Nullable
         MethodInfo methodInfo();
 
+        @NotNull
         TypeInfo owner();
 
+        @NotNull
         String name();
 
         boolean isConstructor();

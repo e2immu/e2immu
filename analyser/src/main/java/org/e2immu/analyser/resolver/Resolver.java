@@ -19,6 +19,9 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -27,13 +30,18 @@ import java.util.stream.Stream;
 public interface Resolver extends ExpressionContext.ResolverRecursion {
     Stream<Message> getMessageStream();
 
+    @NotNull
     Resolver child(InspectionProvider inspectionProvider,
                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                    boolean shallowResolver);
 
+    @Modified
+    @NotNull1
     List<SortedType> resolve(Map<TypeInfo, ExpressionContext> inspectedTypes);
 
 
+    @Modified
+    @NotNull1
     default List<SortedType> resolve(InspectionProvider inspectionProvider,
                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                      boolean shallowResolver,

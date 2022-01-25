@@ -12,15 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model.expression;
+package org.e2immu.annotatedapi;
 
-import org.e2immu.annotation.NotNull;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.type.Type;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
 
-public interface Numeric extends Negatable {
-    @NotNull
-    Number getNumber();
+public class ComGithubJavaparserAstNodeTypes {
 
-    default double doubleValue() {
-        return getNumber().doubleValue();
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.nodeTypes";
+
+    interface NodeWithType$<N extends Node, T extends Type> {
+
+        @Modified
+        @Fluent
+        N setType(T type);
+
+        @Modified
+        @Fluent
+        N setType(String typeString);
     }
 }

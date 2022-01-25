@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
@@ -29,8 +30,10 @@ public interface Inspection {
     boolean hasAnnotation(AnnotationExpression annotationExpression);
 
     interface InspectionBuilder<B> {
+        @Modified
         B setSynthetic(boolean b);
 
+        @Modified
         B addAnnotation(AnnotationExpression annotationExpression);
     }
 }

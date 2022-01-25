@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
 
@@ -37,12 +38,15 @@ public interface ValueAndPropertyProxy {
         METHOD
     }
 
+    @NotNull
     Origin getOrigin();
 
+    @NotNull
     Expression getValue();
 
     DV getProperty(Property property);
 
+    @NotNull
     LinkedVariables getLinkedVariables();
 
     // needed because a specific Proxy instance (created in FieldAnalyserImpl.breakDelayProxy)

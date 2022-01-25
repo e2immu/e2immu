@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TestAnalyseCode {
@@ -73,33 +74,51 @@ public class TestAnalyseCode {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        Parser.RunResult runResult = parser.run();
+        parser.run();
 
         Catalog catalog = makeCatalog(parser.getMessages());
-
+        int ignoreResultErrors = 0;
+        int potentialNullPointerErrors = 0;
         for (Map.Entry<Message.Label, Set<Message>> e : catalog.byLabel.entrySet()) {
             LOGGER.warn("---- have {} of {} ----", e.getValue().size(), e.getKey());
             e.getValue().stream().map(Object::toString).sorted().forEach(LOGGER::warn);
             if (e.getKey() == Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION) {
-                LOGGER.warn("++++ TOP ++++");
+                LOGGER.warn("++++ TOP potential np ++++");
                 catalog.resultOfMethodCall
                         .entrySet().stream()
                         .sorted((e1, e2) -> e2.getValue() - e1.getValue())
                         .limit(10)
                         .forEach(ee -> LOGGER.warn("{}: {}", ee.getKey(), ee.getValue()));
+                potentialNullPointerErrors += e.getValue().size();
+            }
+
+            // ignore results of method call: typically a method has not been marked @Modified
+            //
+            if (e.getKey() == Message.Label.IGNORING_RESULT_OF_METHOD_CALL) {
+                LOGGER.warn("++++ TOP ignore results ++++");
+                catalog.ignoreResults
+                        .entrySet().stream()
+                        .sorted((e1, e2) -> e2.getValue() - e1.getValue())
+                        .limit(10)
+                        .forEach(ee -> LOGGER.warn("{}: {}", ee.getKey(), ee.getValue()));
+                ignoreResultErrors += e.getValue().size();
             }
         }
         LOGGER.warn("----");
         catalog.notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));
+
+        assertEquals(0, potentialNullPointerErrors);
+        assertEquals(0, ignoreResultErrors);
     }
 
     record Catalog(Set<String> notAvailable,
                    Map<Message.Label, Set<Message>> byLabel,
-                   Map<String, Integer> resultOfMethodCall) {
+                   Map<String, Integer> resultOfMethodCall,
+                   Map<String, Integer> ignoreResults) {
     }
 
     private Catalog makeCatalog(Stream<Message> messages) {
-        Catalog catalog = new Catalog(new HashSet<>(), new HashMap<>(), new HashMap<>());
+        Catalog catalog = new Catalog(new HashSet<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
         messages.forEach(message -> {
             if (message.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE) {
                 catalog.notAvailable.add(message.extra());
@@ -109,6 +128,8 @@ public class TestAnalyseCode {
                 set.add(message);
                 if (message.message() == Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION) {
                     catalog.resultOfMethodCall.merge(message.extra(), 1, Integer::sum);
+                } else if (message.message() == Message.Label.IGNORING_RESULT_OF_METHOD_CALL) {
+                    catalog.ignoreResults.merge(message.extra(), 1, Integer::sum);
                 }
             }
         });

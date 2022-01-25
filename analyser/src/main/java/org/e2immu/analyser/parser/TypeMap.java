@@ -18,6 +18,8 @@ import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -37,40 +39,62 @@ public interface TypeMap extends InspectionProvider {
     E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 
     interface Builder extends TypeMap {
+        @Modified
         TypeInfo loadType(String fullyQualifiedName, boolean complain);
 
         MethodInspection getMethodInspectionDoNotTrigger(String distinguishingName);
 
+        @Modified
         void setByteCodeInspector(OnDemandInspection byteCodeInspector);
 
+        @Modified
         TypeInspection.Builder add(TypeInfo typeInfo, InspectionState triggerJavaParser);
 
+        @Modified
         void setInspectWithJavaParser(InspectWithJavaParser onDemandSourceInspection);
 
+        @Modified
         void makeParametersImmutable();
 
         TypeMap build();
 
+        @Modified
+        @NotNull
         TypeInfo getOrCreate(String packageName, String name, InspectionState triggerJavaParser);
 
+        @Modified
         void registerFieldInspection(FieldInfo fieldInfo, FieldInspection.Builder fieldBuilder);
 
+        @Modified
         void registerMethodInspection(MethodInspection.Builder builder);
 
+        @Modified
+        @NotNull
         TypeInspection.Builder ensureTypeAndInspection(TypeInfo subType, InspectionState inspectionState);
 
+        @NotNull
         InspectionState getInspectionState(TypeInfo inMap);
 
+        @Modified
+        @NotNull
         TypeInfo getOrCreateFromPath(String stripDotClass, InspectionState triggerBytecodeInspection);
 
+        @Modified
+        @NotNull
         TypeInspection.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState byHand);
 
+        @Modified
+        @NotNull
         TypeInfo syntheticFunction(int parameters, boolean isVoid);
 
+        @Modified
+        @NotNull
         TypeInspection.Builder getOrCreateFromPathReturnInspection(String name, InspectionState startingBytecode);
 
+        @NotNull
         Stream<Map.Entry<TypeInfo, TypeInspection.Builder>> streamTypes();
 
+        @NotNull
         TypeInspector newTypeInspector(TypeInfo typeInfo, boolean b, boolean b1);
     }
 }

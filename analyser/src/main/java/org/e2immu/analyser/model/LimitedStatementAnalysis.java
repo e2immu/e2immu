@@ -16,15 +16,18 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.annotation.NotNull;
 
 import java.util.stream.Stream;
 
 public interface LimitedStatementAnalysis {
 
+    @NotNull
     Statement statement();
 
     boolean haveLocalMessages();
 
+    @NotNull
     Stream<Message> localMessageStream();
 
     static LimitedStatementAnalysis startOfBlock(LimitedStatementAnalysis sa, int block) {

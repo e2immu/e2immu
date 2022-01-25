@@ -16,14 +16,17 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.annotation.Modified;
 
 import java.util.List;
 import java.util.Stack;
 
 public interface OnDemandInspection {
 
+    @Modified
     List<TypeInfo> inspectFromPath(String path); // org/junit/Assert
 
+    @Modified
     TypeInfo inspectFromPath(String name, Stack<TypeInfo> enclosingTypes, TypeContext typeContext);
 
     String fqnToPath(String fullyQualifiedName);

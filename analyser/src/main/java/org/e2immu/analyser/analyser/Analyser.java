@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -39,16 +41,21 @@ public interface Analyser {
 
     // four stages
 
+    @Modified
     void initialize();
 
     /*
     closure is null when called from primary type analyser, is not null when a type/method/... is being
     analysed from the statement analyser
      */
+    @Modified
+    @NotNull
     AnalyserResult analyse(int iteration, EvaluationContext closure);
 
+    @Modified
     void write();
 
+    @Modified
     void check();
 
     // other methods

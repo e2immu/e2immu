@@ -21,6 +21,8 @@ import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -106,16 +108,21 @@ public interface Analysis {
     DV getProperty(Property property);
 
     // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
+    @NotNull
     DV getPropertyFromMapDelayWhenAbsent(Property property);
 
     /**
      * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
      * Reverts to <code>variableProperty.valueWhenAbsent</code> when no value present in map.
      */
+    @NotNull
     DV getPropertyFromMapNeverDelay(Property property);
 
+    @NotNull
     Location location();
 
+    @NotNull
+    @Modified
     Messages fromAnnotationsIntoProperties(
             Analyser.AnalyserIdentification analyserIdentification,
             boolean acceptVerifyAsContracted,
@@ -169,6 +176,7 @@ public interface Analysis {
      *
      * @return true when the method is being analysed, irrespective of whether its companion methods are being analysed.
      */
+    @NotNull
     default AnalysisMode analysisMode() {
         return AnalysisMode.CONTRACTED;
     }

@@ -16,6 +16,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 import org.e2immu.support.Either;
 
 import java.util.List;
@@ -24,12 +26,15 @@ import java.util.Set;
 public interface TypeParameter extends NamedType {
 
     // the type the parameter belongs to
+    @NotNull
     Either<TypeInfo, MethodInfo> getOwner();
 
+    @NotNull
     String getName();
 
     int getIndex();
 
+    @NotNull1
     List<ParameterizedType> getTypeBounds();
 
     /**
@@ -39,6 +44,7 @@ public interface TypeParameter extends NamedType {
      *                              a set to avoid duplication inside the type bounds
      * @return output object
      */
+    @NotNull
     OutputBuilder output(InspectionProvider inspectionProvider,
                          Qualification qualification,
                          Set<TypeParameter> visitedTypeParameters);

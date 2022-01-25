@@ -91,7 +91,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                  boolean inSyncBlock) {
         super(primitives, index);
         this.index = super.simpleName;
-        this.statement = statement;
+        this.statement = Objects.requireNonNull(statement);
         this.parent = parent;
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);

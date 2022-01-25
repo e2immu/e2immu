@@ -30,6 +30,7 @@ public record NoDelay(int value, String label) implements DV {
 
     public NoDelay {
         assert value >= 0;
+        assert label != null;
     }
 
     @Override

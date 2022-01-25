@@ -16,6 +16,8 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
 
 public interface ParameterInspection extends Inspection {
 
@@ -23,12 +25,16 @@ public interface ParameterInspection extends Inspection {
 
     interface Builder extends InspectionBuilder<Builder>, Inspection {
 
+        @Modified
+        @Fluent
         Builder setVarArgs(boolean varargs);
 
         boolean isVarArgs();
 
         int getIndex();
 
+        @Modified
+        @Fluent
         Builder setIndex(int size);
 
         void copyAnnotations(Parameter parameter, ExpressionContext expressionContext);
@@ -37,8 +43,10 @@ public interface ParameterInspection extends Inspection {
 
         ParameterInfo build(MethodInfo methodInfo);
 
+        @Modified
         void setParameterizedType(ParameterizedType parameterizedType);
 
+        @Modified
         void setName(String name);
     }
 }

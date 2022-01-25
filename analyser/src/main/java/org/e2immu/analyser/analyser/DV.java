@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.util.WeightedGraph;
+import org.e2immu.annotation.NotNull;
 
 /*
 Delayable Value
@@ -38,12 +39,14 @@ public interface DV extends WeightedGraph.Weight {
 
     int value();
 
+    @NotNull
     CausesOfDelay causesOfDelay();
 
     boolean isDelayed();
 
     boolean isDone();
 
+    @NotNull
     DV min(DV other);
 
     /*
@@ -52,10 +55,13 @@ public interface DV extends WeightedGraph.Weight {
     reduce(MIN_INT_DV, DV::max) is the correct way to find the maximal value, taking
     delays into account, but having a value to check when there was nothing to reduce.
      */
+    @NotNull
     DV max(DV other);
 
+    @NotNull
     DV maxIgnoreDelay(DV other);
 
+    @NotNull
     DV replaceDelayBy(DV nonDelay);
 
     default boolean gt(DV other) {
@@ -86,6 +92,7 @@ public interface DV extends WeightedGraph.Weight {
         return causesOfDelay().causesStream().anyMatch(c -> c.cause() == cause);
     }
 
+    @NotNull
     String label();
 
 }

@@ -149,6 +149,9 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         boolean removeAll(@NotNull1 @Independent java.util.Collection<?> c);
 
+        @Modified
+        boolean removeIf(Predicate<? super E> filter);
+
         default boolean retainAll$Modification$Size(int i, int j, java.util.Collection<?> c) {
             return i <= c.size() && i <= j;
         }
@@ -308,6 +311,9 @@ public class JavaUtil extends AnnotatedAPI {
 
         @Modified
         boolean removeAll(@NotNull1 @Independent Collection<?> c);
+
+        @Modified
+        E set(int index, E element);
 
         @Independent1
         Iterator<E> spliterator();
@@ -498,6 +504,12 @@ public class JavaUtil extends AnnotatedAPI {
 
         Stack$(@NotNull1 @Independent1 Collection<? extends E> c) {
         }
+
+        @Modified
+        E pop() { return null; }
+
+        @Modified
+        E push(E item) { return null; }
     }
 
     @Container
@@ -666,6 +678,12 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         V put(@NotNull K key, @NotNull V value);
 
+        @Modified
+        V merge(@NotNull K key, @NotNull V value, BiFunction<? super V, ? super V, ? extends V> remap);
+
+        @Modified
+        V remove(Object key);
+
         @NotNull1
         Collection<V> values();
 
@@ -677,6 +695,9 @@ public class JavaUtil extends AnnotatedAPI {
 
             @NotNull
             V getValue();
+
+            @Modified
+            V setValue(V v);
         }
     }
 

@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public interface StatementAnalysis extends Analysis,
         HasNavigationData<StatementAnalysis>,
         LimitedStatementAnalysis {
 
+    @NotNull
     String fullyQualifiedName();
 
     List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks();
@@ -64,12 +66,15 @@ public interface StatementAnalysis extends Analysis,
 
     boolean noIncompatiblePrecondition();
 
+    @NotNull
     Stream<Message> messageStream();
 
     /*
         create a variable, potentially even assign an initial value and a linked variables set.
         everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
          */
+    @Modified
+    @NotNull
     VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                          Variable variable,
                                          int statementTime,

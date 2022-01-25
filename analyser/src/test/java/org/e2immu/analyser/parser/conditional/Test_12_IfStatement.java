@@ -231,4 +231,10 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
