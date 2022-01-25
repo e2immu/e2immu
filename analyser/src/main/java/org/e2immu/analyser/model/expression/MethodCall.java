@@ -369,7 +369,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && modifiedInstance != null) {
-                // FIXME I removed  && mv.value().isInstanceOf(Instance.class)
                 result = modifiedInstance;
             } else {
                 result = mv.value();

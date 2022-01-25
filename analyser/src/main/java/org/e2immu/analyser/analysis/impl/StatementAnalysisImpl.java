@@ -504,7 +504,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
                 .forEach(e -> copyVariableFromPreviousInIteration0(e, copyFrom,
-                        previous == null, previous == null ? null : previous.index(), false));
+                        previous == null, previous == null ? null : previous.index(),
+                        false, evaluationContext));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData());
     }
@@ -537,7 +538,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (closure4Local != null) {
             closure4Local.localVariableStream().forEach(e ->
                     copyVariableFromPreviousInIteration0(e, closure4Local.getCurrentStatement().getStatementAnalysis(),
-                            true, null, true));
+                            true, null, true, evaluationContext));
         }
     }
 
@@ -545,7 +546,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                       StatementAnalysis copyFrom,
                                                       boolean previousIsParent,
                                                       String indexOfPrevious,
-                                                      boolean markCopyOfEnclosingMethod) {
+                                                      boolean markCopyOfEnclosingMethod,
+                                                      EvaluationContext evaluationContext) {
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
@@ -553,8 +555,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         VariableInfoContainer newVic;
 
         if (markCopyOfEnclosingMethod) {
+            Expression newValue = vi.getValue().generify(evaluationContext);
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(location(),
-                    vic, navigationData.hasSubBlocks());
+                    vic, navigationData.hasSubBlocks(), newValue);
         } else if (doNotCopyToNextStatement(copyFrom, vic, variable, indexOfPrevious)) {
             return; // skip; note: order is important, this check has to come before the next one (e.g., Var_2)
         } else if (conditionsToMoveVariableInsideLoop(variable, vic)) {

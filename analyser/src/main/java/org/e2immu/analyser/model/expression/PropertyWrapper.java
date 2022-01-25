@@ -93,6 +93,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                 Objects.equals(pw.linkedVariables, linkedVariables)) {
             return builder.setExpression(pw).build();
         }
+        // IMPROVE it would really be good if we never had two PropertyWrappers in a row
 
         Map<Property, DV> reduced = reduce(evaluationContext, newValue, properties);
         boolean dropWrapper = reduced.isEmpty() && state == null && linkedVariables == null && castType == null;
@@ -132,6 +133,19 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public static Expression addState(Expression expression, Expression state, Map<Property, DV> properties) {
         assert state != null;
         return new PropertyWrapper(expression, state, properties, null, null);
+    }
+
+
+    @Override
+    public Expression generify(EvaluationContext evaluationContext) {
+        if (hasState()) {
+            Expression generified = expression.generify(evaluationContext);
+            if ((properties == null || properties.isEmpty()) && linkedVariables == null && castType == null) {
+                return generified;
+            }
+            return new PropertyWrapper(generified, null, properties, linkedVariables, castType);
+        }
+        return this;
     }
 
     @Override

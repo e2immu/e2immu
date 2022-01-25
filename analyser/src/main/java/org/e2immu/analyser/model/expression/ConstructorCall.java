@@ -258,8 +258,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public TypeInfo bestConcreteTypeInfo() {
-        return anonymousClass != null ? anonymousClass : parameterizedType().bestTypeInfo();
+    public Expression generify(EvaluationContext evaluationContext) {
+        if(anonymousClass == null && constructor != null) {
+            Properties valueProperties = evaluationContext.getValueProperties(this);
+            return removeConstructor(valueProperties, evaluationContext.getPrimitives());
+        }
+        return this;
     }
 
     @Override

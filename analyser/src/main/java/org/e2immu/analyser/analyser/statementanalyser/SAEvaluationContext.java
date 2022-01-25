@@ -324,13 +324,16 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return variableInfo.getLinkedVariables();
     }
 
-    /*
-        Important that the closure is used for local variables and parameters (we'd never find them otherwise).
-        However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
-        have their own local copy.
-         */
+    /**
+     * Important that the closure is used for local variables and parameters (we'd never find them otherwise).
+     *  However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
+     * have their own local copy.
+     *
+     * Equally important, if we have a local copy already, we must use it! See e.g. BasicCompanionMethods_11
+     */
     private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
-        if (closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
+        boolean haveVariable = statementAnalysis.variableIsSet(variable.fullyQualifiedName());
+        if (!haveVariable && closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
             return ((SAEvaluationContext) closure).findForReading(variable, isNotAssignmentTarget);
         }
         return initialValueForReading(variable, isNotAssignmentTarget);

@@ -140,11 +140,6 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public TypeInfo bestConcreteTypeInfo() {
-        return methodInfo.typeInfo;
-    }
-
-    @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (parameters.isEmpty()) {

@@ -498,4 +498,32 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+    // tests multiple things:
+    // 1. correct generification into the lambda
+    // 2. no application of add companion on instance without isKnown(true)
+    @Test
+    public void test11() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("set".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        // with state!
+                        assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/", d.currentValue().toString());
+                    }
+                }
+            }
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("set".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        // without state!
+                        assertEquals("instance type HashSet<String>", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("BasicCompanionMethods_11", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }

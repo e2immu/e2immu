@@ -117,7 +117,9 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean equalsNotNull();
 
-    default boolean isComputeProperties() { return true; }
+    default boolean isComputeProperties() {
+        return true;
+    }
 
     boolean isBoolValueTrue();
 
@@ -152,6 +154,7 @@ public interface Expression extends Element, Comparable<Expression> {
         throw new UnsupportedOperationException("Implement! " + getClass());
     }
 
+    // such as /*this.contains(s)&&AnnotatedAPI.isKnown(true)&&1==this.size()*/
     default boolean hasState() {
         return false;
     }
@@ -199,7 +202,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return List.of(this);
     }
 
-    default TypeInfo bestConcreteTypeInfo() {
-        return returnType().bestTypeInfo();
+    default Expression generify(EvaluationContext evaluationContext) {
+        return this;
     }
 }

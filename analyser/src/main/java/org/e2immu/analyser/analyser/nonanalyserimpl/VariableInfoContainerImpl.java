@@ -81,13 +81,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(
             Location location,
             VariableInfoContainer previous,
-            boolean statementHasSubBlocks) {
+            boolean statementHasSubBlocks,
+            Expression newValue) {
         Objects.requireNonNull(previous);
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(location, outside.variable(), NOT_YET_ASSIGNED,
-                NOT_YET_READ, Set.of(), outside.getValue());
+                NOT_YET_READ, Set.of(), newValue);
         initial.newVariable(false);
-        initial.setValue(outside.getValue());
+        initial.setValue(newValue);
         initial.setLinkedVariables(outside.getLinkedVariables());
 
         outside.propertyStream().forEach(e -> {
@@ -249,7 +250,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                             boolean doNotFailWhenTryingToWriteALowerValue,
                             Level level) {
         // we do not write in some other VIC's merge or evaluation:
-        if(level == Level.INITIAL && !isInitial()) return;
+        if (level == Level.INITIAL && !isInitial()) return;
         ensureNotFrozen();
         Objects.requireNonNull(property);
         VariableInfoImpl variableInfo = getToWrite(level);
