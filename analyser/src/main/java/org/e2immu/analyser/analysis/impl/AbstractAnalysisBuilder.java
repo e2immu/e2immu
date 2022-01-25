@@ -194,6 +194,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
         AnnotationExpression testMark = null;
+        boolean eventual = false;
 
         Property modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? Property.MODIFIED_VARIABLE
@@ -208,22 +209,27 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 TypeInfo t = annotationExpression.typeInfo();
                 if (e2ImmuAnnotationExpressions.e1Immutable.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_1.max(levelImmutable);
+                    eventual = isEventual(annotationExpression);
                 } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.ABSENT;
                     container = false;
                 } else if (e2ImmuAnnotationExpressions.e2Immutable.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
+                    eventual = isEventual(annotationExpression);
                 } else if (e2ImmuAnnotationExpressions.e2Container.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
+                    eventual = isEventual(annotationExpression);
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.e1Container.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_1.max(levelImmutable);
+                    eventual = isEventual(annotationExpression);
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.eRContainer.typeInfo() == t) {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_R;
                     levelIndependent = MultiLevel.Level.INDEPENDENT_R;
+                    eventual = isEventual(annotationExpression);
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.beforeMark.typeInfo() == t) {
                     if (parameters.contract()) setProperty(Property.IMMUTABLE_BEFORE_CONTRACTED, trueFalse);
@@ -294,7 +300,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (levelImmutable != MultiLevel.Level.ABSENT) {
-            DV value = MultiLevel.effectivelyImmutable(levelImmutable.level);
+            DV value = eventual ? MultiLevel.eventuallyImmutable(levelImmutable.level)
+                    : MultiLevel.effectivelyImmutable(levelImmutable.level);
             setProperty(Property.IMMUTABLE, value);
         }
         if (notNull != null) {
@@ -312,10 +319,10 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            if (markValue == null) {
+            if (onlyMark == null) {
                 LOGGER.warn("No mark value on {}", location());
             } else {
-                writeEventual(markValue, false, isAfter, null);
+                writeEventual(onlyMark, false, isAfter, null);
             }
         } else if (testMark != null) {
             String markValue = testMark.extract("value", "");
@@ -323,6 +330,10 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             writeEventual(markValue, false, null, before);
         }
         return messages;
+    }
+
+    private boolean isEventual(AnnotationExpression annotationExpression) {
+        return !annotationExpression.extract("after", "").isBlank();
     }
 
     protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {

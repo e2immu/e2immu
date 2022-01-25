@@ -582,6 +582,9 @@ public class JavaUtil extends AnnotatedAPI {
         @ERContainer
         <T> java.util.Optional<T> empty();
 
+        @NotModified
+        void ifPresent(Consumer<? super T> action);
+
         @NotNull
         <T> java.util.Optional<T> of(@NotNull T t);
 

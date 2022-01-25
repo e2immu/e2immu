@@ -12,26 +12,43 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.independence.testexample;
+package org.e2immu.annotatedapi.e2immu;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Only;
+import org.e2immu.support.SetOnce;
 
-import java.util.stream.Stream;
+public class OrgE2immuSupport {
 
-public class Independent_3 {
+    final static String PACKAGE_NAME = "org.e2immu.support";
 
-    @E2Container
-    interface Expression {
+    @E2Container(after = "isFinal")
+    interface EventuallyFinal$<T> {
 
-        String get(int key);
+        @Mark("isFinal")
+        void setFinal(T value);
+
+        @Only(before = "isFinal")
+        void setVariable(T value);
     }
 
-    interface HasSwitchLabels {
-        // will be @E3Container
-        Stream<Expression> labels();
-    }
+    @E2Container(after = "t")
+    interface SetOnce$<T> {
 
-    static void method(HasSwitchLabels hasSwitchLabels, int j) {
-        hasSwitchLabels.labels().forEach(e -> System.out.println(e.get(j)));
+        @Mark("t")
+        void set(T t);
+
+        @Only(after = "t")
+        @NotNull
+        T get();
+
+        @Only(after = "t")
+        @NotNull
+        T get(String message);
+
+        @Mark("t")
+        void copy(SetOnce<T> other);
     }
 }

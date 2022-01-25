@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
 import java.util.List;

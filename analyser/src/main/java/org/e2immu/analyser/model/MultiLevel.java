@@ -155,7 +155,7 @@ public class MultiLevel {
     }
 
     public static DV composeIndependent(Effective effective, int level) {
-        assert effective == EFFECTIVE;
+        assert effective == EFFECTIVE || effective == EVENTUAL;
         if (level == INDEPENDENT_1.level) return INDEPENDENT_1_DV;
         if (level == INDEPENDENT_2.level) return INDEPENDENT_2_DV;
         if (level == INDEPENDENT_R.level) return INDEPENDENT_DV;
@@ -206,6 +206,13 @@ public class MultiLevel {
         if (level == IMMUTABLE_2.level) return EFFECTIVELY_E2IMMUTABLE_DV;
         if (level == IMMUTABLE_R.level) return EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
         return new NoDelay(EFFECTIVE.value + level * FACTOR);
+    }
+
+    public static DV eventuallyImmutable(int level) {
+        if (level == IMMUTABLE_1.level) return EVENTUALLY_E1IMMUTABLE_DV;
+        if (level == IMMUTABLE_2.level) return EVENTUALLY_E2IMMUTABLE_DV;
+        if (level == IMMUTABLE_R.level) return EVENTUALLY_RECURSIVELY_IMMUTABLE_DV;
+        return new NoDelay(EVENTUAL.value + level * FACTOR);
     }
 
     public static DV beforeImmutableDv(int level) {

@@ -120,6 +120,7 @@ public class JavaUtilStream {
         Optional<T> findFirst();
 
         @NotNull
+        @NotModified
         void forEach(@Independent1 @NotNull Consumer<? super T> action);
     }
 
