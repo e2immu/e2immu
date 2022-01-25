@@ -796,6 +796,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return object.compareTo(mv.object);
     }
 
+    /*
+    If the method result is a type parameter, then the value parameters are better off with the concreteReturnType.
+    As Warnings_13.method3 shows, the concreteReturnType can be equal to the formal type (T), still be worse than the target type (Integer).
+    FIXME this needs solving at inspection level; we should have "Integer" as concreteReturnType for method3
+     */
+
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().getMethodInfo();
@@ -805,17 +811,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
         DV formal = methodAnalysis.getProperty(property);
-        // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
-        if (Property.IMMUTABLE == property) {
-            return dynamicImmutable(formal, methodAnalysis, evaluationContext);
-        }
-        if (Property.INDEPENDENT == property) {
-            DV immutable = getProperty(evaluationContext, Property.IMMUTABLE, duringEvaluation);
-            if (immutable.isDelayed()) return immutable;
-            int immutableLevel = MultiLevel.level(immutable);
-            if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
-                return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+        if (EvaluationContext.VALUE_PROPERTIES.contains(property)) {
+            DV fromConcrete = evaluationContext.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
+
+            // dynamic value? if the method has a type parameter as part of the result, we could be returning different values
+            if (Property.IMMUTABLE == property) {
+                return dynamicImmutable(formal, methodAnalysis, evaluationContext).max(formal);
             }
+            if (Property.INDEPENDENT == property) {
+                DV immutable = getProperty(evaluationContext, Property.IMMUTABLE, duringEvaluation);
+                if (immutable.isDelayed()) return immutable;
+                int immutableLevel = MultiLevel.level(immutable);
+                if (immutableLevel >= MultiLevel.Level.IMMUTABLE_2.level) {
+                    return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
+                }
+            }
+            return fromConcrete.max(formal);
         }
         return formal;
     }
