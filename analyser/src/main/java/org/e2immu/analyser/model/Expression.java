@@ -198,10 +198,6 @@ public interface Expression extends Element, Comparable<Expression> {
                 e instanceof Expression expression && expression.containsErasedExpressions());
     }
 
-    default List<Expression> collectSolidValues() {
-        return List.of(this);
-    }
-
     default Expression generify(EvaluationContext evaluationContext) {
         return this;
     }

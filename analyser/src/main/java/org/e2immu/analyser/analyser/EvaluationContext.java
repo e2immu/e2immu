@@ -47,6 +47,10 @@ import static org.e2immu.analyser.analyser.Property.*;
 public interface EvaluationContext {
     Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
+    default int limitOnComplexity() {
+        return 100; // can be overridden for testing
+    }
+
     default int getIteration() {
         return 0;
     }

@@ -297,9 +297,4 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (removeFalse) return ifTrue;
         return this;
     }
-
-    @Override
-    public List<Expression> collectSolidValues() {
-        return Stream.concat(ifTrue.collectSolidValues().stream(), ifFalse.collectSolidValues().stream()).toList();
-    }
 }

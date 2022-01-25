@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -28,6 +29,7 @@ import org.e2immu.analyser.util.ListUtil;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
@@ -37,7 +39,6 @@ public class And extends BaseExpression implements Expression {
     private final Primitives primitives;
     private final List<Expression> expressions;
     public static final int COMPLEXITY = 3;
-    public static final int LIMIT_ON_COMPLEXITY = 100;
 
     public And(Primitives primitives, List<Expression> expressions) {
         this(Identifier.generate(), primitives, expressions);
@@ -87,9 +88,10 @@ public class And extends BaseExpression implements Expression {
 
         // STEP 4: loop
 
-        boolean changes = complexity < LIMIT_ON_COMPLEXITY;
+        boolean changes = complexity < evaluationContext.limitOnComplexity();
         if (!changes) {
             log(ANALYSER, "Not analysing AND operation, complexity {}", complexity);
+            return reducedComplexity(evaluationContext, values);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 
@@ -157,6 +159,27 @@ public class And extends BaseExpression implements Expression {
         And res = new And(identifier, primitives, List.copyOf(concat));
         log(EXPRESSION, "Constructed {}", res);
         return res;
+    }
+
+    // make a MultiValue with one component per variable (so that they are marked "read")
+    // and one per assignment. Even though the And may be too complex, we should not ignore READ/ASSIGNED AT
+    // information
+    private Expression reducedComplexity(EvaluationContext evaluationContext, Expression[] values) {
+        ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();
+
+        // IMPROVE also add assignments
+        // catch all variable expressions
+        Set<IsVariableExpression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
+                .flatMap(e -> e.collect(IsVariableExpression.class).stream()).collect(Collectors.toUnmodifiableSet());
+        List<Expression> newExpressions = new LinkedList<>(variableExpressions);
+        CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        Expression instance = causesOfDelay.isDelayed()
+                ? DelayedExpression.forTooComplex(booleanType, causesOfDelay)
+                : Instance.forTooComplex(identifier, booleanType);
+        newExpressions.add(instance);
+        MultiExpression multiExpression = new MultiExpression(newExpressions.toArray(Expression[]::new));
+        return new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), multiExpression);
     }
 
     private Action analyse(EvaluationContext evaluationContext, int pos, ArrayList<Expression> newConcat,

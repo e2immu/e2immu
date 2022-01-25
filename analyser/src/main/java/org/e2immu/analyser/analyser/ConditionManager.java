@@ -224,11 +224,6 @@ public record ConditionManager(Expression condition,
         } else {
             combinedWithPrecondition = And.and(evaluationContext, negated, precondition.expression());
         }
-
-        boolean tooComplex = combinedWithPrecondition.getComplexity() + value.getComplexity() > And.LIMIT_ON_COMPLEXITY;
-        if (tooComplex) {
-            return Instance.forTooComplex(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType());
-        }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
         Expression resultWithPrecondition = And.and(evaluationContext, combinedWithPrecondition, value);
@@ -282,9 +277,9 @@ public record ConditionManager(Expression condition,
      * @return individual variables that appear in a top-level conjunction or disjunction as variable == null
      */
     public static Set<Variable> findIndividualNull(Expression value,
-                                                    EvaluationContext evaluationContext,
-                                                    Filter.FilterMode filterMode,
-                                                    boolean requireEqualsNull) {
+                                                   EvaluationContext evaluationContext,
+                                                   Filter.FilterMode filterMode,
+                                                   boolean requireEqualsNull) {
         if (value.isUnknown()) {
             return Set.of();
         }

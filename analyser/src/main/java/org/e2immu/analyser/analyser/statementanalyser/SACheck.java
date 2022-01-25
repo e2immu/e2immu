@@ -31,11 +31,9 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.LogTarget.PRECONDITION;
 import static org.e2immu.analyser.util.Logger.log;
@@ -190,8 +188,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                         StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().getStatementAnalysis();
                         if (statementAnalysis == null || !statementAnalysis.variableIsSet(loopVarFqn) ||
                                 !statementAnalysis.getVariable(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(location(),
-                                    Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
+                            this.statementAnalysis.ensure(Message.newMessage(location(), Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });
         }
@@ -215,12 +212,12 @@ public record SACheck(StatementAnalysis statementAnalysis) {
             }
             if (identity.valueIsTrue()) return DONE;
             DV fluent = methodAnalysis.getProperty(FLUENT);
-            if(fluent.isDelayed()) {
+            if (fluent.isDelayed()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Fluent of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return fluent.causesOfDelay();
             }
-            if(fluent.valueIsTrue()) return DONE;
+            if (fluent.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
             if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",

@@ -70,4 +70,8 @@ public record MultiExpression(Expression... expressions) {
         return new MultiExpression(Arrays.stream(expressions)
                 .map(e -> e.translate(translationMap)).toArray(Expression[]::new));
     }
+
+    public Expression lastExpression() {
+        return expressions[expressions.length - 1];
+    }
 }

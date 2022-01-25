@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FlowData;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -23,7 +22,6 @@ import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -94,12 +92,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 Expression state = sharedState.localConditionManager().stateUpTo(sharedState.evaluationContext(), correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state, state.isDelayed());
                 if (state.isDelayed()) return state.causesOfDelay();
-            } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
+            } else if (statement() instanceof LocalClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
-                PrimaryTypeAnalyser primaryTypeAnalyser =
-                        localAnalysers.get().stream()
-                                .filter(pta -> pta.containsPrimaryType(localClassDeclaration.typeInfo))
-                                .findFirst().orElseThrow();
                 return apply.apply(sharedState, builder.build(), localAnalysers.get()).combinedStatus();
             } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 // empty parameters: this(); or super();
@@ -354,34 +348,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
                 InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
                         analyserContext, localConditionManager.state(), structure.expression(), currentReturnValue);
-                Expression instance = giveUpWhenTooComplex(evaluationContext, inlineConditional);
-                if (instance == null) {
-                    toEvaluate = inlineConditional.optimise(evaluationContext);
-                } else {
-                    toEvaluate = instance;
-                }
+                toEvaluate = inlineConditional.optimise(evaluationContext);
             }
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);
         return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
-    }
-
-    private Expression giveUpWhenTooComplex(EvaluationContext evaluationContext, Expression toEvaluate) {
-        if (toEvaluate.getComplexity() > 100) {
-            LOGGER.warn("About to analyse complexity {}", toEvaluate.getComplexity());
-            List<Expression> solid = toEvaluate.collectSolidValues();
-            MultiValue multiValue = new MultiValue(Identifier.generate(), evaluationContext.getAnalyserContext(),
-                    new MultiExpression(solid.toArray(new Expression[0])), methodInfo().returnType());
-            Properties valueProperties = evaluationContext.getValueProperties(multiValue);
-            CausesOfDelay causesOfDelay = valueProperties.delays();
-            if (causesOfDelay.isDelayed()) {
-                return DelayedExpression.forTooComplex(methodInfo().returnType(), causesOfDelay);
-            }
-            return Instance.forTooComplex(Identifier.generate(), methodInfo().returnType(), valueProperties);
-        }
-        log(ANALYSER, "Evaluating {}", toEvaluate);
-        return null;
     }
 
     /*

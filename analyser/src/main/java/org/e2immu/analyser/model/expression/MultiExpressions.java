@@ -33,22 +33,20 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /*
-A final field can have been initialised with multiple different values; in some situations
-it pays to keep track of all of them.
+Multiple expressions to be evaluated, yet only the last one determines type, properties, etc.
+Used to reduce complexity.
  */
 @E2Container
-public class MultiValue extends BaseExpression implements Expression {
+public class MultiExpressions extends BaseExpression implements Expression {
 
     public final MultiExpression multiExpression;
-    private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
-    public MultiValue(Identifier identifier,
-                      InspectionProvider inspectionProvider,
-                      MultiExpression multiExpression,
-                      ParameterizedType formalCommonType) {
+    public MultiExpressions(Identifier identifier,
+                            InspectionProvider inspectionProvider,
+                            MultiExpression multiExpression) {
         super(identifier);
-        this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
+        assert multiExpression.expressions().length > 0;
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
     }
@@ -60,19 +58,19 @@ public class MultiValue extends BaseExpression implements Expression {
         MultiExpression reMulti = new MultiExpression(reValues);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new MultiValue(identifier, evaluationContext.getAnalyserContext(), reMulti, commonType))
+                .setExpression(new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), reMulti))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiValue(identifier, inspectionProvider, new MultiExpression(multiExpression.stream()
-                .map(translationMap::translateExpression).toArray(Expression[]::new)), translationMap.translateType(commonType));
+        return new MultiExpressions(identifier, inspectionProvider, new MultiExpression(multiExpression.stream()
+                .map(translationMap::translateExpression).toArray(Expression[]::new)));
     }
 
     @Override
     public ParameterizedType returnType() {
-        return commonType;
+        return multiExpression.lastExpression().returnType();
     }
 
     @Override
@@ -103,7 +101,7 @@ public class MultiValue extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext,
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        for(Expression expression: multiExpression.expressions()) {
+        for (Expression expression : multiExpression.expressions()) {
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(result);
         }
@@ -117,30 +115,31 @@ public class MultiValue extends BaseExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        return Arrays.compare(multiExpression.expressions(), ((MultiValue) v).multiExpression.expressions());
+        return Arrays.compare(multiExpression.expressions(), ((MultiExpressions) v).multiExpression.expressions());
     }
 
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
-        if (Property.NOT_NULL_EXPRESSION == property) {
-            DV notNull = multiExpression.getProperty(evaluationContext, property, duringEvaluation);
-            if (notNull.isDelayed()) return notNull;
-            return MultiLevel.composeOneLevelLessNotNull(notNull); // default = @NotNull level 0
-        }
-        // default is to refer to each of the components
-        return multiExpression.getProperty(evaluationContext, property, duringEvaluation);
+        Expression last = multiExpression.lastExpression();
+        return last.getProperty(evaluationContext, property, duringEvaluation);
     }
 
     @Override
     public List<Variable> variables(boolean descendIntoFieldReferences) {
-        return multiExpression.variables();
+        return Arrays.stream(multiExpression.expressions())
+                .flatMap(e -> e.variables(descendIntoFieldReferences).stream()).toList();
+    }
+
+    @Override
+    public CausesOfDelay causesOfDelay() {
+        return multiExpression.lastExpression().causesOfDelay();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        MultiValue that = (MultiValue) o;
+        MultiExpressions that = (MultiExpressions) o;
         return Arrays.equals(multiExpression.expressions(), that.multiExpression.expressions());
     }
 
