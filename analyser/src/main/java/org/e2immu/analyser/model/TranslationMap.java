@@ -16,6 +16,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 
@@ -27,22 +29,29 @@ import java.util.List;
  */
 public interface TranslationMap {
 
+    @NotNull
     Expression translateExpression(Expression expression);
 
     Expression directExpression(Expression expression);
 
+    @NotNull
     MethodInfo translateMethod(MethodInfo methodInfo);
 
+    @NotNull
     Variable translateVariable(Variable variable);
 
+    @NotNull1
     List<Statement> translateStatement(Statement statement);
 
+    @NotNull
     Block translateBlock(Block block);
 
+    @NotNull
     ParameterizedType translateType(ParameterizedType parameterizedType);
 
     TypeInfo translateTypeWithBody(TypeInfo typeInfo);
 
+    @NotNull
     LocalVariable translateLocalVariable(LocalVariable localVariable);
 
     boolean isEmpty();

@@ -19,6 +19,8 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Set;
@@ -26,21 +28,28 @@ import java.util.Set;
 
 public interface AnnotationExpression {
 
+    @NotNull
     TypeInfo typeInfo();
 
+    @NotNull1
     List<MemberValuePair> expressions();
 
+    @NotNull1
     Set<String> imports();
 
     <T> T extract(String fieldName, T defaultValue);
 
     int[] extractIntArray(String parameters);
 
+    @NotNull
     AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
 
+    @NotNull
     UpgradableBooleanMap<TypeInfo> typesReferenced();
 
+    @NotNull
     AnnotationParameters e2ImmuAnnotationParameters();
 
+    @NotNull
     OutputBuilder output(Qualification qualification);
 }

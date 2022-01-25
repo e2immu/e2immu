@@ -24,7 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -77,16 +80,26 @@ public class TestAnalyseCode {
         for (Map.Entry<Message.Label, Set<Message>> e : catalog.byLabel.entrySet()) {
             LOGGER.warn("---- have {} of {} ----", e.getValue().size(), e.getKey());
             e.getValue().stream().map(Object::toString).sorted().forEach(LOGGER::warn);
+            if (e.getKey() == Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION) {
+                LOGGER.warn("++++ TOP ++++");
+                catalog.resultOfMethodCall
+                        .entrySet().stream()
+                        .sorted((e1, e2) -> e2.getValue() - e1.getValue())
+                        .limit(10)
+                        .forEach(ee -> LOGGER.warn("{}: {}", ee.getKey(), ee.getValue()));
+            }
         }
         LOGGER.warn("----");
         catalog.notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));
     }
 
-    record Catalog(Set<String> notAvailable, Map<Message.Label, Set<Message>> byLabel) {
+    record Catalog(Set<String> notAvailable,
+                   Map<Message.Label, Set<Message>> byLabel,
+                   Map<String, Integer> resultOfMethodCall) {
     }
 
     private Catalog makeCatalog(Stream<Message> messages) {
-        Catalog catalog = new Catalog(new HashSet<>(), new HashMap<>());
+        Catalog catalog = new Catalog(new HashSet<>(), new HashMap<>(), new HashMap<>());
         messages.forEach(message -> {
             if (message.message() == Message.Label.TYPE_ANALYSIS_NOT_AVAILABLE) {
                 catalog.notAvailable.add(message.extra());
@@ -94,6 +107,9 @@ public class TestAnalyseCode {
             } else {
                 Set<Message> set = catalog.byLabel.computeIfAbsent(message.message(), m -> new HashSet<>());
                 set.add(message);
+                if (message.message() == Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION) {
+                    catalog.resultOfMethodCall.merge(message.extra(), 1, Integer::sum);
+                }
             }
         });
         return catalog;

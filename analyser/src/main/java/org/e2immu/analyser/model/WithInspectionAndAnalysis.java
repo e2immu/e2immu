@@ -23,24 +23,32 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.*;
 import java.util.stream.Stream;
 
 public interface WithInspectionAndAnalysis {
 
+    @NotNull
     Identifier getIdentifier();
 
+    @NotNull
     Inspection getInspection();
 
     boolean hasBeenInspected();
 
+    @NotNull
     String name();
 
+    @NotNull1
     Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation);
 
+    @NotNull
     UpgradableBooleanMap<TypeInfo> typesReferenced();
 
+    @NotNull
     TypeInfo primaryType();
 
     default Optional<Boolean> error(Analysis analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
@@ -75,6 +83,7 @@ public interface WithInspectionAndAnalysis {
         return Optional.empty(); // no error, annotation is not there
     }
 
+    @NotNull
     String fullyQualifiedName();
 
     void setAnalysis(Analysis analysis);
@@ -131,15 +140,19 @@ public interface WithInspectionAndAnalysis {
         return perAnnotation.stream();
     }
 
+    @NotNull
     TypeInfo getTypeInfo();
 
     default MethodInfo getMethod() {
         return null;
     }
 
+    @NotNull
     String niceClassName();
 
+    @NotNull
     Location newLocation();
 
+    @NotNull
     CausesOfDelay delay(CauseOfDelay.Cause cause);
 }

@@ -15,12 +15,15 @@
 package org.e2immu.analyser.model;
 
 
+import org.e2immu.annotation.NotNull1;
+
 import java.util.List;
 
 public interface Inspection {
 
     boolean isSynthetic();
 
+    @NotNull1
     List<AnnotationExpression> getAnnotations();
 
     boolean hasAnnotation(AnnotationExpression annotationExpression);

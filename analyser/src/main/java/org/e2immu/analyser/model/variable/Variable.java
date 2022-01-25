@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,14 +42,17 @@ public interface Variable extends OneVariable {
         return dependencies.stream().map(Variable::fullyQualifiedName).collect(Collectors.joining("; "));
     }
 
+    @NotNull
     ParameterizedType parameterizedType();
 
     /**
      * @return the most simple name that the variable can take. Used to determine which names have already been taken,
      * so that the analyser can introduce a new variable with a unique name.
      */
+    @NotNull
     String simpleName();
 
+    @NotNull
     String fullyQualifiedName();
 
     default String debug() { return simpleName(); }
@@ -63,6 +67,7 @@ public interface Variable extends OneVariable {
         return false;
     }
 
+    @NotNull
     OutputBuilder output(Qualification qualification);
 
     /*

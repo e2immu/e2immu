@@ -562,7 +562,9 @@ public class JavaUtil extends AnnotatedAPI {
 
     @E2Container
     interface Optional$<T> {
+        // @Independent because non-static factory method, conflict with @E2Container
         @NotNull
+        @ERContainer
         <T> java.util.Optional<T> empty();
 
         @NotNull

@@ -18,6 +18,9 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.Nullable;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -27,26 +30,33 @@ import java.util.stream.Stream;
 
 public interface TypeAnalysis extends Analysis {
 
+    @NotNull
     TypeInfo getTypeInfo();
 
+    @NotNull
     Map<FieldReference, Expression> getApprovedPreconditionsE1();
 
+    @NotNull
     Map<FieldReference, Expression> getApprovedPreconditionsE2();
 
     boolean containsApprovedPreconditionsE2(FieldReference fieldReference);
 
     boolean approvedPreconditionsE2IsEmpty();
 
+    @NotNull
     Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo);
 
     default Map<FieldReference, Expression> getApprovedPreconditions(boolean e2) {
         return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
     }
 
+    @NotNull
     CausesOfDelay approvedPreconditionsStatus(boolean e2, FieldReference fieldInfo);
 
+    @NotNull
     CausesOfDelay approvedPreconditionsStatus(boolean e2);
 
+    @NotNull1
     Set<FieldInfo> getEventuallyImmutableFields();
 
     FieldInfo translateToVisibleField(FieldReference fieldReference);
@@ -76,6 +86,7 @@ public interface TypeAnalysis extends Analysis {
      *
      * @return null when not yet set
      */
+    @Nullable
     SetOfTypes getTransparentTypes();
 
     /**
@@ -86,6 +97,7 @@ public interface TypeAnalysis extends Analysis {
      * @param concreteType the concrete type used to substitute
      * @return a set of concrete hidden content types
      */
+    @Nullable
     default SetOfTypes getTransparentTypes(ParameterizedType concreteType) {
         SetOfTypes transparentTypes = getTransparentTypes();
         if (transparentTypes == null) return null;

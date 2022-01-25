@@ -21,6 +21,8 @@ import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,29 +33,40 @@ import java.util.stream.Stream;
  */
 public interface TypeInspection extends Inspection {
     // the type that this inspection object belongs to
+    @NotNull
     TypeInfo typeInfo();
 
+    @NotNull
     TypeNature typeNature();
 
     ParameterizedType parentClass();
 
     //@Immutable(level = 2, after="TypeAnalyser.analyse()")
+    @NotNull1
     List<MethodInfo> constructors();
 
+    @NotNull1
     List<MethodInfo> methods();
 
+    @NotNull1
     List<FieldInfo> fields();
 
+    @NotNull1
     Set<TypeModifier> modifiers();
 
+    @NotNull1
     List<TypeInfo> subTypes();
 
+    @NotNull1
     List<TypeParameter> typeParameters();
 
+    @NotNull1
     List<ParameterizedType> interfacesImplemented();
 
+    @NotNull
     TypeModifier access();
 
+    @NotNull
     Inspector inspector();
 
     /**
@@ -62,6 +75,7 @@ public interface TypeInspection extends Inspection {
      * @return null if synthetic
      */
     Identifier.PositionalIdentifier positionalIdentifier();
+
     /**
      * Returns the types permitted to extend from this type.
      *
@@ -149,6 +163,7 @@ public interface TypeInspection extends Inspection {
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
+    @NotNull
     InspectionState getInspectionState();
 
     /**
@@ -244,7 +259,6 @@ public interface TypeInspection extends Inspection {
         return !permittedWhenSealed().isEmpty();
     }
 
-
     default Set<ParameterizedType> typesOfFieldsMethodsConstructors(InspectionProvider inspectionProvider) {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
@@ -288,7 +302,7 @@ public interface TypeInspection extends Inspection {
                 .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
         return Stream.concat(Stream.of(mine), subTypes);
     }
-    
+
     interface Builder extends InspectionBuilder<Builder>, TypeInspection {
 
         boolean finishedInspection();

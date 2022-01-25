@@ -20,6 +20,8 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Finalizer;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -27,29 +29,34 @@ import java.util.Set;
 
 public interface MethodInspection extends Inspection {
 
+    @NotNull
     String getFullyQualifiedName();
 
+    @NotNull
     String getDistinguishingName();
 
+    @NotNull
     MethodInfo getMethodInfo(); // backlink, container... will become contextclass+immutable eventually
 
+    @NotNull
     ParameterizedType getReturnType(); // ContextClass
 
+    @NotNull
     Block getMethodBody();
 
-    //@Immutable(level = 2, after="MethodAnalyzer.analyse()")
-    //@Immutable
+    @NotNull1
     List<ParameterInfo> getParameters();
 
-    //@Immutable
+    @NotNull1
     Set<MethodModifier> getModifiers();
 
-    //@Immutable
+    @NotNull1
     List<TypeParameter> getTypeParameters();
 
-    //@Immutable
+    @NotNull1
     List<ParameterizedType> getExceptionTypes();
 
+    @NotNull
     Map<CompanionMethodName, MethodInfo> getCompanionMethods();
 
     boolean isStatic();

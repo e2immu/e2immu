@@ -19,33 +19,43 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
 public interface MethodAnalyser extends Analyser {
+    @NotNull1
     Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers();
 
+    @NotNull1
     Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo);
 
+    @NotNull
     StatementAnalyser findStatementAnalyser(String index);
 
     void logAnalysisStatuses();
 
+    @NotNull1
     Collection<? extends ParameterAnalyser> getParameterAnalysers();
 
     boolean hasCode();
 
     CausesOfDelay fromFieldToParametersStatus();
 
+    @NotNull
     MethodAnalysis getMethodAnalysis();
 
+    @NotNull
     MethodInfo getMethodInfo();
 
     boolean isSAM();
 
+    @NotNull
     MethodInspection getMethodInspection();
 
+    @NotNull1
     List<ParameterAnalysis> getParameterAnalyses();
 }

@@ -49,18 +49,24 @@ public class JavaUtilStream {
 
     @UtilityClass
     @Container
-    interface Collectors$ {
+    static class Collectors$ {
         @NotNull1
-        Collector<CharSequence, ?, String> joining();
+        Collector<CharSequence, ?, String> joining() { return null; }
 
         @NotNull1
-        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter);
+        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) { return null; }
 
         @NotNull1
-        <T> Collector<T, ?, Set<T>> toSet();
+        <T> Collector<T, ?, Set<T>> toSet() { return null; };
 
         @NotNull1
-        <T> Collector<T, ?, List<T>> toList();
+        <T> Collector<T, ?, List<T>> toList() { return null; }
+
+        @NotNull1
+        static <T> Collector<T,?,List<T>> toUnmodifiableList() { return null; }
+
+        @NotNull1
+        static <T> Collector<T,?,Set<T>> toUnmodifiableSet() { return null; }
     }
 
     @E2Container
