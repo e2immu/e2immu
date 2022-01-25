@@ -464,34 +464,38 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             Expression conditionForSubStatement;
             CausesOfDelay conditionForSubStatementIsDelayed;
 
-            boolean isDefault = false;
+            boolean isDefault;
             DV statementsExecution = subStatements.statementExecution().apply(value, evaluationContext);
+            DV newExecution;
             if (statementsExecution.equals(FlowData.DEFAULT_EXECUTION)) {
                 isDefault = true;
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
                 conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
-                if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = FlowData.NEVER;
-                else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = FlowData.ALWAYS;
+                if (conditionForSubStatement.isBoolValueFalse()) newExecution = FlowData.NEVER;
+                else if (conditionForSubStatement.isBoolValueTrue()) newExecution = FlowData.ALWAYS;
                 else if (conditionForSubStatement.isDelayed())
-                    statementsExecution = conditionForSubStatement.causesOfDelay();
-                else statementsExecution = FlowData.CONDITIONALLY;
-            } else if (statement() instanceof SwitchStatementNewStyle newStyle) {
-                SwitchEntry switchEntry = newStyle.switchEntries.get(count);
-                conditionForSubStatement = switchEntry.structure.expression();
-                conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
-            } else if (statementsExecution.equals(FlowData.ALWAYS)) {
-                conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
-                conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
-            } else if (statementsExecution.equals(FlowData.NEVER)) {
-                conditionForSubStatement = null; // will not be executed anyway
-                conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
-            } else if (statement() instanceof TryStatement) { // catch
-                conditionForSubStatement = Instance.forUnspecifiedCatchCondition(index(), statementAnalysis.primitives());
-                conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
+                    newExecution = conditionForSubStatement.causesOfDelay();
+                else newExecution = FlowData.CONDITIONALLY;
+            } else {
+                if (statement() instanceof SwitchStatementNewStyle newStyle) {
+                    SwitchEntry switchEntry = newStyle.switchEntries.get(count);
+                    conditionForSubStatement = switchEntry.structure.expression();
+                    conditionForSubStatementIsDelayed = conditionForSubStatement.causesOfDelay();
+                } else if (statementsExecution.equals(FlowData.ALWAYS)) {
+                    conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives(), true);
+                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
+                } else if (statementsExecution.equals(FlowData.NEVER)) {
+                    conditionForSubStatement = null; // will not be executed anyway
+                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
+                } else if (statement() instanceof TryStatement) { // catch
+                    conditionForSubStatement = Instance.forUnspecifiedCatchCondition(index(), statementAnalysis.primitives());
+                    conditionForSubStatementIsDelayed = CausesOfDelay.EMPTY;
 
-            } else throw new UnsupportedOperationException();
-
-            DV execution = statementAnalysis.flowData().execution(statementsExecution);
+                } else throw new UnsupportedOperationException();
+                newExecution = statementsExecution;
+                isDefault = true;
+            }
+            DV execution = statementAnalysis.flowData().execution(newExecution);
 
             ConditionManager subCm = execution.equals(FlowData.NEVER) ? null :
                     sharedState.localConditionManager().newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives(),

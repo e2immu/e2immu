@@ -353,8 +353,8 @@ public record Formatter(FormattingOptions options) {
         while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE)) {
             String string;
 
-            Split splitAfterWriting = Split.NEVER;
-            ElementarySpace spaceAfterWriting = ElementarySpace.RELAXED_NONE;
+            Split splitAfterWriting;
+            ElementarySpace spaceAfterWriting;
             if (outputElement instanceof Symbol symbol) {
                 split = symbol.left().split;
                 lastOneWasSpace = combine(lastOneWasSpace, symbol.left().elementarySpace(options));
@@ -362,10 +362,14 @@ public record Formatter(FormattingOptions options) {
                 spaceAfterWriting = symbol.right().elementarySpace(options);
                 splitAfterWriting = symbol.right().split;
                 if (split == Split.NEVER) allowBreak = false;
-            } else if (outputElement instanceof Guide) {
-                string = "";
             } else {
-                string = outputElement.write(options);
+                spaceAfterWriting = ElementarySpace.RELAXED_NONE;
+                splitAfterWriting = Split.NEVER;
+                if (outputElement instanceof Guide) {
+                    string = "";
+                } else {
+                    string = outputElement.write(options);
+                }
             }
             // check for double spaces
             if (outputElement instanceof Space space) {

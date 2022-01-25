@@ -130,10 +130,16 @@ public final class Instance extends BaseExpression implements Expression {
                                                 Expression array,
                                                 Variable variable) {
         DV notNull = evaluationContext.getProperty(array, Property.NOT_NULL_EXPRESSION, true, false);
-        DV notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
+        ParameterizedType baseType = array.returnType().copyWithOneFewerArrays();
+        DV notNullOfElement;
+        if (baseType.isPrimitiveExcludingVoid()) {
+            notNullOfElement = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
+        } else {
+            notNullOfElement = MultiLevel.composeOneLevelLessNotNull(notNull);
+        }
 
         // we need to go the base type of the array
-        ParameterizedType baseType = array.returnType().copyWithOneFewerArrays();
+
         Properties properties = evaluationContext.getAnalyserContext().defaultValueProperties(baseType, notNullOfElement);
         CausesOfDelay delays = properties.delays();
         if (delays.isDelayed()) {
@@ -200,6 +206,7 @@ public final class Instance extends BaseExpression implements Expression {
                 .map(Map.Entry::getValue)
                 .noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
         assert !parameterizedType.isJavaLangString() || valueProperties.get(Property.CONTAINER).valueIsTrue();
+        assert !parameterizedType.isPrimitiveExcludingVoid() || valueProperties.get(Property.NOT_NULL_EXPRESSION).equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return true;
     }
 
@@ -239,7 +246,7 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(!(v instanceof Instance)) {
+        if (!(v instanceof Instance)) {
             return 1; // we're at the back; Instance is used as "too complex" in boolean expressions
         }
         return parameterizedType.detailedString()

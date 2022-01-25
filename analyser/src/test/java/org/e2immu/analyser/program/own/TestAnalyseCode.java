@@ -24,10 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,7 +76,7 @@ public class TestAnalyseCode {
 
         for (Map.Entry<Message.Label, Set<Message>> e : catalog.byLabel.entrySet()) {
             LOGGER.warn("---- have {} of {} ----", e.getValue().size(), e.getKey());
-            e.getValue().stream().map(Message::detailedMessage).sorted().forEach(m -> LOGGER.warn(m.toString()));
+            e.getValue().stream().map(Object::toString).sorted().forEach(LOGGER::warn);
         }
         LOGGER.warn("----");
         catalog.notAvailable.forEach(s -> LOGGER.warn("Not available: " + s));

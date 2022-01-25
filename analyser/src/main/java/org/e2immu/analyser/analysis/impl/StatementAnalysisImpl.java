@@ -1059,9 +1059,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     if (atLeastOneBlockExecuted &&
                             checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
                         assert variable == renamed : "Overwriting previous assignments doesn't go together with renames";
-                        ensure(Message.newMessage(new LocationImpl(methodAnalysis.getMethodInfo(), index,
-                                        statement.getIdentifier()),
-                                Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
+                        ensure(Message.newMessage(location, Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT,
+                                variable.simpleName()));
                     }
                 } catch (Throwable throwable) {
                     LOGGER.warn("Caught exception while merging variable {} (rename to {}} in {}, {}", variable, renamed,

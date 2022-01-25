@@ -303,4 +303,32 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("bs[0]".equals(d.variable().simpleName())) {
+                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_13.method(boolean[]):0:bs[0]", d.variable().fullyQualifiedName());
+                    if ("0.0.2.0.1".equals(d.statementId())) {
+                        // assertEquals("true", d.currentValue().toString());
+                    } else {
+                        assertEquals("instance type boolean", d.currentValue().toString(), "In statement " + d.statementId());
+                    }
+                }
+                if ("bs[1]".equals(d.variable().simpleName())) {
+                    //     assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
+                }
+                if ("bs[2]".equals(d.variable().simpleName())) {
+                    //    assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
+                }
+                if ("bs[3]".equals(d.variable().simpleName())) {
+                    //    assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
+                }
+            }
+        };
+        testClass("DependentVariables_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }
