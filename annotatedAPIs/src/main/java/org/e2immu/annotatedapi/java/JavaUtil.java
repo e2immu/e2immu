@@ -12,8 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.java;
 
+import org.e2immu.annotatedapi.AnnotatedAPI;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -121,6 +122,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
+        // @NotModified because the default for void methods in @Container is @Modified
+        @NotModified
         void forEach(@Independent1 @NotNull1 Consumer<? super E> action);
 
         default boolean remove$Modification$Size(int i, int j) {
@@ -344,11 +347,11 @@ public class JavaUtil extends AnnotatedAPI {
         // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
         // type context IMPROVE not really trivial to sort out
         default boolean add$Modification$Size(int i, int j, E e) {
-            return org.e2immu.annotatedapi.JavaUtil.setAddModificationHelper(i, j, contains(e));
+            return JavaUtil.setAddModificationHelper(i, j, contains(e));
         }
 
         default boolean add$Value$Size(int size, E e, boolean retVal) {
-            return org.e2immu.annotatedapi.JavaUtil.setAddValueHelper(size, contains(e), retVal);
+            return JavaUtil.setAddValueHelper(size, contains(e), retVal);
         }
 
         default boolean add$Remove(E e) {
@@ -376,7 +379,7 @@ public class JavaUtil extends AnnotatedAPI {
         void clear();
 
         default boolean contains$Value$Size(int i, Object o, boolean retVal) {
-            return org.e2immu.annotatedapi.JavaUtil.setContainsValueHelper(i, contains(o), retVal);
+            return JavaUtil.setContainsValueHelper(i, contains(o), retVal);
         }
 
         // @NotModified on method, @NotNull, @Independent on parameter inherited
@@ -426,11 +429,11 @@ public class JavaUtil extends AnnotatedAPI {
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
         default boolean remove$Modification$Size(int i, int j, Object o) {
-            return org.e2immu.annotatedapi.JavaUtil.setRemoveModificationHelper(i, j, contains(o));
+            return JavaUtil.setRemoveModificationHelper(i, j, contains(o));
         }
 
         default boolean remove$Value$Size(int i, Object o, boolean retVal) {
-            return org.e2immu.annotatedapi.JavaUtil.setContainsValueHelper(i, contains(o), retVal);
+            return JavaUtil.setContainsValueHelper(i, contains(o), retVal);
         }
 
         default boolean remove$Remove(Object object) {
@@ -669,6 +672,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         Set<K> keySet();
 
+        @NotModified
         void forEach(@NotNull @Independent1 BiConsumer<? super K, ? super V> action);
 
         V get(@NotNull Object key);

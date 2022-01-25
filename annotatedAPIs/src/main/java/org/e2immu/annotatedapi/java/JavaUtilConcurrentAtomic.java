@@ -12,23 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.ERContainer;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
 
-public class JavaLangReflect {
+public class JavaUtilConcurrentAtomic {
+    final static String PACKAGE_NAME = "java.util.concurrent.atomic";
 
-    final static String PACKAGE_NAME = "java.lang.reflect";
+    @Container
+    @Independent
+    interface AtomicInteger$ {
 
-    @ERContainer
-    interface GenericDeclaration$ {
-    }
+        @Modified
+        int getAndIncrement();
 
-    @ERContainer
-    interface AnnotatedElement$ {
-    }
-
-    @ERContainer
-    interface Type$ {
+        @Modified
+        int incrementAndGet();
     }
 }

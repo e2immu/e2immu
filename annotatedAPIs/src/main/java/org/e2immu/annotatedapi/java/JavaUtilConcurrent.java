@@ -12,18 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.*;
-import org.w3c.dom.Node;
+import org.e2immu.annotation.ERContainer;
 
-public class OrgW3cDom {
-    public static final String PACKAGE_NAME = "org.w3c.dom";
+public class JavaUtilConcurrent {
+    final static String PACKAGE_NAME = "java.util.concurrent";
 
-    interface Node$ {
-
-        @Modified
-        Node appendChild(Node newNode);
+    @ERContainer
+    interface TimeUnit$ {
 
     }
 }

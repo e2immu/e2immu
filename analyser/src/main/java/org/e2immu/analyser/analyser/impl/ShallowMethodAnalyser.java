@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+// field and types have been done already!
 public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
     private static final Set<String> EXCEPTIONS_TO_CONTAINER = Set.of("java.util.Collection.toArray(T[])");
@@ -84,6 +85,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (explicitlyEmpty) {
             DV modified = methodInfo.isConstructor ? DV.TRUE_DV : DV.FALSE_DV;
             methodAnalysis.setProperty(Property.MODIFIED_METHOD, modified);
+            methodAnalysis.setProperty(Property.FLUENT, DV.FALSE_DV);  // no return statement...
             methodAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             computeMethodPropertiesAfterParameters();
 
@@ -92,6 +94,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 computeParameterProperties(builder);
             });
         } else {
+            computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
             computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeModifiedMethod);
 
             parameterAnalyses.forEach(parameterAnalysis -> {
@@ -150,7 +153,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private void computeMethodPropertiesAfterParameters() {
         computeMethodPropertyIfNecessary(Property.IMMUTABLE, this::computeMethodImmutable);
         computeMethodPropertyIfNecessary(Property.NOT_NULL_EXPRESSION, this::computeMethodNotNull);
-        computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
         computeMethodPropertyIfNecessary(Property.IDENTITY, () -> bestOfOverridesOrWorstValue(Property.IDENTITY));
         computeMethodPropertyIfNecessary(Property.FINALIZER, () -> bestOfOverridesOrWorstValue(Property.FINALIZER));
         computeMethodPropertyIfNecessary(Property.CONSTANT, () -> bestOfOverridesOrWorstValue(Property.CONSTANT));
@@ -219,9 +221,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         return DV.FALSE_DV;
     }
 
+    // in a @Container type, @Fluent or void ==> @Modified, unless otherwise specified
     private DV computeModifiedMethod() {
         if (methodInfo.isConstructor) return DV.TRUE_DV;
-        return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD));
+        DV fluent = methodAnalysis.getProperty(Property.FLUENT);
+        DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.CONTAINER);
+        boolean voidMethod = methodInfo.noReturnValue();
+        DV addToModified = DV.fromBoolDv(typeContainer.valueIsTrue() && (fluent.valueIsTrue() || voidMethod));
+        return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD)).max(addToModified);
     }
 
     private DV computeMethodImmutable() {

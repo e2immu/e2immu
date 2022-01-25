@@ -12,22 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.javaparser;
 
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.type.Type;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
 
-import org.e2immu.annotation.ERContainer;
+public class ComGithubJavaparserAstNodeTypes {
 
-public class JavaLangInvoke {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.nodeTypes";
 
-    final static String PACKAGE_NAME = "java.lang.invoke";
+    interface NodeWithType$<N extends Node, T extends Type> {
 
-    @ERContainer
-    static class TypeDescriptor$ {
+        @Modified
+        @Fluent
+        N setType(T type);
 
-        @ERContainer
-        static class OfField {
-
-        }
-
+        @Modified
+        @Fluent
+        N setType(String typeString);
     }
 }

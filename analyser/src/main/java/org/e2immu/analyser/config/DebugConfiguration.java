@@ -22,7 +22,6 @@ import org.e2immu.annotation.Fluent;
 import java.util.ArrayList;
 import java.util.List;
 
-@E2Container
 public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
                                  List<TypeAnalyserVisitor> afterTypePropertyComputations,
                                  List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,

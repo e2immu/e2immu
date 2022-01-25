@@ -62,6 +62,7 @@ public class TestAnnotationXmlWriter {
                 .setAnnotationXml(true);
         AnnotatedAPIConfiguration.Builder annotatedAPI = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs("../annotatedAPIs/src/main/java")
+                .addReadAnnotatedAPIPackages("java.")
                 .setWriteMode(AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE);
         Configuration configuration = new Configuration.Builder()
                 .addDebugLogTargets(List.of(ANNOTATION_XML_READER, ANNOTATION_XML_WRITER)

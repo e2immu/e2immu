@@ -12,29 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.analyser.parser.independence.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
 
-import java.lang.constant.ConstantDesc;
-import java.lang.invoke.MethodHandles;
-import java.util.Optional;
+import java.util.stream.Stream;
 
-class JavaLangConstant {
-    final static String PACKAGE_NAME = "java.lang.constant";
+public class Independent_3 {
 
-    @ERContainer
-    interface ConstantDesc$ {
-        @NotNull
-        Object resolveConstantDesc(MethodHandles.Lookup lookup);
+    @E2Container
+    interface Expression {
+
+        String get(int key);
     }
 
-    @ERContainer
-    interface Constable$ {
-
-        // E2Container wrapping an ERContainer, result is ERContainer
-        @NotNull
-        Optional<? extends ConstantDesc> describeConstable();
+    interface HasSwitchLabels {
+        // will be @E3Container
+        Stream<Expression> labels();
     }
 }
-

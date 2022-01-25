@@ -12,30 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.annotatedapi.java;
 
+import org.e2immu.annotation.*;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull1;
+import java.lang.constant.ConstantDesc;
+import java.lang.invoke.MethodHandles;
+import java.util.Optional;
 
-import java.util.List;
+class JavaLangConstant {
+    final static String PACKAGE_NAME = "java.lang.constant";
 
-@Container
-public interface Inspection {
+    @ERContainer
+    interface ConstantDesc$ {
+        @NotNull
+        Object resolveConstantDesc(MethodHandles.Lookup lookup);
+    }
 
-    boolean isSynthetic();
+    @ERContainer
+    interface Constable$ {
 
-    @NotNull1
-    List<AnnotationExpression> getAnnotations();
-
-    boolean hasAnnotation(AnnotationExpression annotationExpression);
-
-    interface InspectionBuilder<B> {
-        @Modified
-        B setSynthetic(boolean b);
-
-        @Modified
-        B addAnnotation(AnnotationExpression annotationExpression);
+        // E2Container wrapping an ERContainer, result is ERContainer
+        @NotNull
+        Optional<? extends ConstantDesc> describeConstable();
     }
 }
+

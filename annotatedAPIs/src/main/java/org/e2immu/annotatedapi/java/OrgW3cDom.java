@@ -12,19 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.java;
 
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import ch.qos.logback.classic.Level;
+import org.e2immu.annotation.*;
+import org.w3c.dom.Node;
 
-public class ChQosLogbackClassic {
+public class OrgW3cDom {
+    public static final String PACKAGE_NAME = "org.w3c.dom";
 
-    final static String PACKAGE_NAME = "ch.qos.logback.classic";
-
-    interface Logger$ {
+    interface Node$ {
 
         @Modified
-        void setLevel(@NotModified Level level);
+        Node appendChild(Node newNode);
+
     }
 }

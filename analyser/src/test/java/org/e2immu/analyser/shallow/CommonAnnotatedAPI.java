@@ -53,9 +53,11 @@ public abstract class CommonAnnotatedAPI {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .setAlternativeJREDirectory("/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home")
                 .addClassPath("jmods/java.base.jmod")
+                .addClassPath("jmods/java.xml.jmod")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
         AnnotatedAPIConfiguration.Builder annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
         Configuration configuration = new Configuration.Builder()

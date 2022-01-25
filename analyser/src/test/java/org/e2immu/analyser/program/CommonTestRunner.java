@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
@@ -58,19 +58,19 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                                     DebugConfiguration debugConfiguration) throws IOException {
         AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
         builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
-
+        builder.addReadAnnotatedAPIPackages("org.e2immu.annotatedapi.java", "org.e2immu.annotatedapi.log" );
         return testClass(List.of(className), List.of(), errorsToExpect, warningsToExpect, debugConfiguration,
                 new AnalyserConfiguration.Builder().setAnalyserProgram(analyserProgram).build(),
                 builder.build());
     }
 
-    protected TypeContext testClass(List<String> classNames,
-                                    List<String> extraClassPath,
-                                    int errorsToExpect,
-                                    int warningsToExpect,
-                                    DebugConfiguration debugConfiguration,
-                                    AnalyserConfiguration analyserConfiguration,
-                                    AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
+    private TypeContext testClass(List<String> classNames,
+                                  List<String> extraClassPath,
+                                  int errorsToExpect,
+                                  int warningsToExpect,
+                                  DebugConfiguration debugConfiguration,
+                                  AnalyserConfiguration analyserConfiguration,
+                                  AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()

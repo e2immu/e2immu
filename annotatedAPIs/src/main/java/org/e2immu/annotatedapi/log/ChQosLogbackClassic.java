@@ -12,22 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.log;
 
-import com.github.javaparser.Range;
-import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
-import org.w3c.dom.Node;
+import org.e2immu.annotation.NotModified;
+import ch.qos.logback.classic.Level;
 
-public class ComGithubJavaparserAst {
+public class ChQosLogbackClassic {
 
-    public static final String PACKAGE_NAME = "com.github.javaparser.ast";
+    final static String PACKAGE_NAME = "ch.qos.logback.classic";
 
-    interface Node$ {
+    interface Logger$ {
 
         @Modified
-        @Fluent
-        Node setRange(Range range);
-
+        void setLevel(@NotModified Level level);
     }
 }

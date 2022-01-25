@@ -12,23 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.javaparser;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Independent;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 
-public class JavaUtilConcurrentAtomic {
-    final static String PACKAGE_NAME = "java.util.concurrent.atomic";
+public class ComGithubJavaparserAstExpr {
 
-    @Container
-    @Independent
-    interface AtomicInteger$ {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.expr";
 
-        @Modified
-        int getAndIncrement();
+    interface ObjectCreationExpr$ {
 
         @Modified
-        int incrementAndGet();
+        @Fluent
+        ObjectCreationExpr setArguments(final NodeList<Expression> arguments);
+
     }
 }

@@ -12,25 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.java;
 
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.type.Type;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.ERContainer;
 
-public class ComGithubJavaparserAstNodeTypes {
+public class JavaLangReflect {
 
-    public static final String PACKAGE_NAME = "com.github.javaparser.ast.nodeTypes";
+    final static String PACKAGE_NAME = "java.lang.reflect";
 
-    interface NodeWithType$<N extends Node, T extends Type> {
+    @ERContainer
+    interface GenericDeclaration$ {
+    }
 
-        @Modified
-        @Fluent
-        N setType(T type);
+    @ERContainer
+    interface AnnotatedElement$ {
+    }
 
-        @Modified
-        @Fluent
-        N setType(String typeString);
+    @ERContainer
+    interface Type$ {
     }
 }

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Container
 public interface MethodInspection extends Inspection {
 
     @NotNull
@@ -155,7 +156,6 @@ public interface MethodInspection extends Inspection {
         Builder setReturnType(ParameterizedType pt);
 
         @Fluent
-        @Modified
         Builder setBlock(BlockStmt blockStmt);
 
         @Modified

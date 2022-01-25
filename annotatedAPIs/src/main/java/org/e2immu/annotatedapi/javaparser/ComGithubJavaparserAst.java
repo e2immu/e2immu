@@ -12,15 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi;
+package org.e2immu.annotatedapi.javaparser;
 
-import org.e2immu.annotation.ERContainer;
+import com.github.javaparser.Range;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
+import org.w3c.dom.Node;
 
-public class JavaUtilConcurrent {
-    final static String PACKAGE_NAME = "java.util.concurrent";
+public class ComGithubJavaparserAst {
 
-    @ERContainer
-    interface TimeUnit$ {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast";
+
+    interface Node$ {
+
+        @Modified
+        @Fluent
+        Node setRange(Range range);
 
     }
 }

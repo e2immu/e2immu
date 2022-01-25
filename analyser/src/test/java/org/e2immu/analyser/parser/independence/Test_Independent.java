@@ -40,4 +40,10 @@ public class Test_Independent extends CommonTestRunner {
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+    
+    @Test
+    public void test_3() throws IOException {
+        testClass("Independent_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

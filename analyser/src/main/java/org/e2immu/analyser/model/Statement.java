@@ -21,7 +21,6 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Bundle;
 import org.e2immu.annotation.E2Container;
 
-@E2Container
 public interface Statement extends Element {
 
     Structure getStructure();

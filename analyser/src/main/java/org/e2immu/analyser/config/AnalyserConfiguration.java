@@ -25,7 +25,6 @@ import java.util.Objects;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
 
-@E2Container
 public record AnalyserConfiguration(boolean skipTransformations,
                                     boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
