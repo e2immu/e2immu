@@ -207,7 +207,7 @@ public class EvaluateMethodCall {
         if (modified.valueIsFalse()) {
             methodValue = new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
         } else if (modified.valueIsTrue()) {
-            DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
+            DV notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION).max(AnalysisProvider.defaultNotNull(concreteReturnType));
             Properties valueProperties = analyserContext.defaultValueProperties(concreteReturnType, notNull);
             CausesOfDelay delays = valueProperties.delays();
             if (delays.isDelayed()) {

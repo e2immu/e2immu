@@ -156,7 +156,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "<v:<f:xs>[index]>";
+                        case 0 -> "<v:xs[index]>";
                         // from iteration 1, we know xs, and we know index; at iteration 1, we do not know the dependent variable
                         case 1 -> "<array-access:X>/*{L xs:independent1:5,xs[index]:assigned:1}*/";
                         default -> "nullable instance type X/*{L xs:independent1:5,xs[index]:assigned:1}*/";
@@ -164,7 +164,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().minimalOutput());
 
                     String expectLv = switch (d.iteration()) {
-                        case 0 -> "<f:xs>[index]:-1,return getX:0";
+                        case 0 -> "return getX:0,xs[index]:-1";
                         case 1 -> "return getX:0,this.xs:-1,xs[index]:-1";
                         default -> "return getX:0,this.xs:5,xs[index]:1";
                     };
@@ -177,20 +177,23 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof DependentVariable dv) {
-                    if ("<f:xs>[index]".equals(dv.simpleName)) {
-                        assertEquals("<v:<f:xs>[index]>", d.currentValue().toString());
-                    } else {
-                        assertEquals("xs[index]", dv.simpleName);
-                        assertTrue(d.iteration() > 0);
-                        String expected = d.iteration() == 1 ? "<array-access:X>" : "nullable instance type X";
-                        assertEquals(expected, d.currentValue().toString());
-                        String expectLv = d.iteration() == 1 ? "return getX:-1,this.xs:-1,xs[index]:0"
-                                : "return getX:1,this.xs:5,xs[index]:0";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("xs[index]", dv.simpleName);
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "<v:xs[index]>";
+                        case 1 -> "<array-access:X>";
+                        default -> "nullable instance type X";
+                    };
+                    assertEquals(expected, d.currentValue().toString());
+                    // DVE has no linking info (so this.xs:-1) goes out in iteration 0
+                    String expectLv = switch (d.iteration()) {
+                        case 0 -> "return getX:-1,xs[index]:0";
+                        case 1 -> "return getX:-1,this.xs:-1,xs[index]:0";
+                        default -> "return getX:1,this.xs:5,xs[index]:0";
+                    };
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
-                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
-                    }
+                    assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
             }
             if ("XS".equals(d.methodInfo().name)) {
@@ -266,7 +269,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectLinked = switch (d.iteration()) {
-                        case 0 -> "<f:xs>[index]:-1,return getX:0";
+                        case 0 -> "return getX:0,xs[index]:-1";
                         case 1 -> "return getX:0,this.xs:-1,xs[index]:-1";
                         default -> "return getX:0,this.xs:1,xs[index]:1";
                     };
@@ -309,11 +312,22 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("bs[0]".equals(d.variable().simpleName())) {
-                    assertEquals("org.e2immu.analyser.parser.start.testexample.Warnings_13.method(boolean[]):0:bs[0]", d.variable().fullyQualifiedName());
-                    if ("0.0.2.0.1".equals(d.statementId())) {
-                        // assertEquals("true", d.currentValue().toString());
-                    } else {
+                    assertEquals("org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]",
+                            d.variable().fullyQualifiedName());
+                    if ("0.0.0".equals(d.statementId())) {
                         assertEquals("instance type boolean", d.currentValue().toString(), "In statement " + d.statementId());
+                    } else if ("0.0.1.0.1".equals(d.statementId()) || "0.0.1.0.0".equals(d.statementId()) || "0.0.1".equals(d.statementId())
+                            || "0.0.2.0.0".equals(d.statementId()) || "0.0.2.0.0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:bs[0]>" : "instance type boolean";
+                        assertEquals(expected, d.currentValue().toString());
+                    } else if ("0.0.2.0.1".equals(d.statementId())) {
+                        assertEquals("true", d.currentValue().toString(), "Statement " + d.statementId());
+                    } else if ("0.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:bs[1]>||<v:bs[0]>" : "instance type boolean||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
+                        assertEquals(expected, d.currentValue().toString());
+                    } else if ("0.0.2.0.2".equals(d.statementId())) {
+                        String expected = "true";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("bs[1]".equals(d.variable().simpleName())) {
@@ -327,6 +341,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
             }
         };
+        // goal is to show no errors
         testClass("DependentVariables_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

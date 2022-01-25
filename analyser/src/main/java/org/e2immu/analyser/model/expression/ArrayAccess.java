@@ -61,8 +61,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
     }
 
     private static Variable singleVariable(Expression expression) {
-        VariableExpression ve;
-        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+        IsVariableExpression ve;
+        if ((ve = expression.asInstanceOf(IsVariableExpression.class)) != null) {
             return ve.variable();
         }
         return null;
@@ -184,9 +184,9 @@ public class ArrayAccess extends BaseExpression implements Expression {
         }
 
         DV notNullRequired = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
-        VariableExpression ve;
+        IsVariableExpression ve;
         if (notNullRequired.gt(MultiLevel.NULLABLE_DV) &&
-                (ve = builder.getExpression().asInstanceOf(VariableExpression.class)) != null) {
+                (ve = builder.getExpression().asInstanceOf(IsVariableExpression.class)) != null) {
             builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }
         return builder.build();
