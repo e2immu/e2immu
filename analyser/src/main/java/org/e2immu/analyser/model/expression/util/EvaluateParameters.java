@@ -86,13 +86,11 @@ public class EvaluateParameters {
         if (methodInfo != null) {
             ParameterInfo parameterInfo = getParameterInfo(methodInfo, position);
             // NOT_NULL, NOT_MODIFIED
-            DV independent;
             Map<Property, DV> map;
             try {
                 if (evaluationContext.getCurrentMethod() != null &&
                         evaluationContext.getCurrentMethod().getMethodInfo() == methodInfo) {
                     map = new HashMap<>(RECURSIVE_CALL);
-                    independent = MultiLevel.DEPENDENT_DV;
                 } else {
                     // copy from parameter into map used for forwarding
                     ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
@@ -100,7 +98,6 @@ public class EvaluateParameters {
                     map.put(Property.CONTEXT_MODIFIED, parameterAnalysis.getProperty(Property.MODIFIED_VARIABLE));
                     map.put(Property.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(Property.NOT_NULL_PARAMETER));
                     map.put(Property.CONTEXT_CONTAINER, parameterAnalysis.getProperty(Property.CONTAINER));
-                    independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());

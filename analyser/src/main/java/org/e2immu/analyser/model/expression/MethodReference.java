@@ -95,7 +95,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (contextContainer.valueIsFalse()) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-            DV contextModifiedDelay = DV.fromBoolDv(modified .isDelayed());
 
             Map<Property, DV> map = Map.of(
                     Property.CONTEXT_MODIFIED, modified,

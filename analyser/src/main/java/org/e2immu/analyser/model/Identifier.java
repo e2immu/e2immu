@@ -134,7 +134,7 @@ public interface Identifier extends Comparable<Identifier> {
     record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
         @Override
         public int compareTo(Identifier o) {
-            if (o instanceof ListOfIdentifiers loi) {
+            if (o instanceof ListOfIdentifiers) {
                 throw new UnsupportedOperationException("TODO");
             }
             return identifierOrder() - o.identifierOrder();

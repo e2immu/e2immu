@@ -100,7 +100,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         Set<Variable> notNullVariablesInCondition = conditionManager
                 .findIndividualNullInCondition(this, false);
         if (!Collections.disjoint(notNullVariablesInCondition, assignedVariables)) return true;
-        if (variable instanceof FieldReference fr) {
+        if (variable instanceof FieldReference) {
             Set<Variable> notNullVariablesInPrecondition = conditionManager
                     .findIndividualNullInPrecondition(this, false);
             return !Collections.disjoint(notNullVariablesInPrecondition, assignedVariables);
