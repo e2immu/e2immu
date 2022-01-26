@@ -12,9 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.a;
+package org.e2immu.analyser.parser.start.testexample.a;
 
-import org.e2immu.analyser.parser.failing.testexample.Fluent_0;
+import org.e2immu.analyser.parser.start.testexample.Fluent_0;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;

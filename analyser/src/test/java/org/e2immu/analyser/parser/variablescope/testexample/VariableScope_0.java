@@ -12,18 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.a;
+package org.e2immu.analyser.parser.variablescope.testexample;
 
-import org.e2immu.analyser.parser.failing.testexample.Fluent_3;
-import org.e2immu.annotation.NotModified;
 
-/*
-Variant to IFluent_0, but this one has no @E2Container on the interface.
-This causes/caused a crash.
-*/
-public interface IFluent_3 {
-    @NotModified
-    int value();
+public class VariableScope_0 {
 
-    class Builder extends Fluent_3.Builder {}
+    static int method(int i) {
+        {
+            int j = i;
+            if (j > 3) {
+                return j;
+            }
+        }
+        System.out.println("i is " + i); // here, j does not exist!
+        int j = 3 * i;
+        return j;
+    }
 }

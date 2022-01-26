@@ -12,9 +12,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.analyser.parser.failing.testexample.a.IFluent_1;
+import org.e2immu.analyser.parser.start.testexample.a.IFluent_1;
 import org.e2immu.annotation.*;
 
 import javax.annotation.processing.Generated;
@@ -24,7 +24,7 @@ import java.util.Objects;
 Identical to Fluent_0 apart from the @Generated annotation; and referring to IFluent_1
  */
 @E2Container
-@Generated("org.e2immu.analyser.parser.failing.testexample.a.IFluent_1")
+@Generated("org.e2immu.analyser.parser.start.testexample.a.IFluent_1")
 public class Fluent_1 implements IFluent_1 {
 
     public final int value;

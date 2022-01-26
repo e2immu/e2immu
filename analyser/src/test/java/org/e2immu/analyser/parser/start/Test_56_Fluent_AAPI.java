@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.start;
 
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
@@ -24,13 +23,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_32_Imports extends CommonTestRunner {
+public class Test_56_Fluent_AAPI extends CommonTestRunner {
+    public Test_56_Fluent_AAPI() {
+        super(true);
+    }
 
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("Imports_0", "a.SomeType", "b.SomeType"), 0, 0,
-                new DebugConfiguration.Builder().build(),
-                new AnalyserConfiguration.Builder().build(),
-                new AnnotatedAPIConfiguration.Builder().build());
+        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
+
 }

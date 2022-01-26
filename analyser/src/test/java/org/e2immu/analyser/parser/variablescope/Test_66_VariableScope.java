@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.variablescope;
 
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -74,18 +74,16 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "instance type int+j$1.0.2";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9?instance type int:0";
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
                         assertEquals(expect, d.currentValue().toString());
                     } else fail(d.statementId()); // no other statements
                 }
-                if ("j$1.0.2".equals(d.variableName())) {
-                    assertTrue(d.iteration() > 0);
-                    assertNotEquals("2", d.statementId());
-                }
                 if ("k".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<merge:int>" : "instance type int<=9?instance type int:0";
+                        // there should be no j here!
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0"
+                                : "instance type int<=9&&instance type int>=0?instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -142,7 +140,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("no interrupt=CONDITIONALLY,return=ALWAYS",
+                    assertEquals("no interrupt=CONDITIONALLY:1,return=ALWAYS:2",
                             d.statementAnalysis().flowData().getInterruptsFlow().entrySet().stream()
                                     .map(Object::toString).sorted().collect(Collectors.joining(",")));
                 }

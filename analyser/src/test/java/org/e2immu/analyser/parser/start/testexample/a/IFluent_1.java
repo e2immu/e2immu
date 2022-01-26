@@ -12,28 +12,15 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample.a;
 
-import org.e2immu.annotation.Constant;
+import org.e2immu.analyser.parser.start.testexample.Fluent_1;
 import org.e2immu.annotation.NotModified;
 
-/*
-trivial situations
- */
-public class ReturnValue_0 {
+// do not add @E2Container here, this tests a crash/infinite loop
+public interface IFluent_1 {
+    @NotModified //will be computed, and verified!!
+    int value();
 
-    @NotModified
-    private static int square(int i) {
-        return i * i;
-    }
-
-    @NotModified
-    public static int cube(int i) {
-        return square(i) * i;
-    }
-
-    @Constant("27")
-    public static int cube3() {
-        return cube(3);
-    }
+    class Builder extends Fluent_1.Builder {}
 }

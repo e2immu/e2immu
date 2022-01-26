@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.minor;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
@@ -21,7 +21,8 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.failing.testexample.Finalizer_1;
+import org.e2immu.analyser.parser.minor.testexample.Finalizer_1;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.EventuallyFinal;
@@ -47,11 +48,17 @@ public class Test_42_Finalizer extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+          if("done".equals(d.methodInfo().name)) {
+              assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
+          }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     if ("2".equals(d.statementId())) {
-                        assertDv(d, 2, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
                     }
                 }
@@ -61,14 +68,16 @@ public class Test_42_Finalizer extends CommonTestRunner {
         testClass("Finalizer_0", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_1() throws IOException {
-        testSupportAndUtilClasses(List.of(Finalizer_1.class, EventuallyFinal.class),
-                1, 0, new DebugConfiguration.Builder()
-                        .build());
+        testClass("Finalizer_1", 1, 0, new DebugConfiguration.Builder()
+                .build());
     }
+
+    // TODO Finalizer_2, Finalizer_3
 
 }

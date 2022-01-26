@@ -344,11 +344,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (delayedMethod != null) return delayedMethod;
         }
 
-        boolean delayedFinalizer = checkFinalizer(evaluationContext, builder, methodAnalysis, objectValue);
+        CausesOfDelay delayedFinalizer = checkFinalizer(evaluationContext, builder, methodAnalysis, objectValue);
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (parameterDelays.isDelayed() || delayedFinalizer) {
-            return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(parameterDelays));
+        if (parameterDelays.isDelayed() || delayedFinalizer.isDelayed()) {
+            return delayedMethod(evaluationContext, builder, modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer));
         }
 
         // companion methods
@@ -450,25 +450,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.link(source.variable(), v, delays.isDelayed() ? delays : level.max(l)));
     }
 
-    private boolean checkFinalizer(EvaluationContext evaluationContext,
-                                   EvaluationResult.Builder builder,
-                                   MethodAnalysis methodAnalysis,
-                                   Expression objectValue) {
+    // we raise an error IF a finalizer method is called on a parameter, or on a field inside a finalizer method
+    private CausesOfDelay checkFinalizer(EvaluationContext evaluationContext,
+                                         EvaluationResult.Builder builder,
+                                         MethodAnalysis methodAnalysis,
+                                         Expression objectValue) {
         if (methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
-            if (objectValue instanceof IsVariableExpression ve) {
-                if (raiseErrorForFinalizer(evaluationContext, builder, ve.variable())) return false;
-                // check links of this variable
-                LinkedVariables linked = evaluationContext.linkedVariables(ve.variable());
-                if (linked.isDelayed()) {
-                    // we'll have to come back, we need to know the linked variables
-                    return true;
+            IsVariableExpression ive;
+            if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
+                if (raiseErrorForFinalizer(evaluationContext, builder, ive.variable())) {
+                    return CausesOfDelay.EMPTY;
                 }
-                return linked.variables()
-                        .keySet()
-                        .stream().anyMatch(v -> raiseErrorForFinalizer(evaluationContext, builder, v));
             }
+            // check links of this expression
+            LinkedVariables linked = objectValue.linkedVariables(evaluationContext);
+            if (linked.isDelayed()) {
+                // we'll have to come back, we need to know the linked variables
+                return linked.causesOfDelay();
+            }
+            linked.variables()
+                    .keySet()
+                    .forEach(v -> raiseErrorForFinalizer(evaluationContext, builder, v));
         }
-        return false;
+        return CausesOfDelay.EMPTY;
     }
 
     private boolean raiseErrorForFinalizer(EvaluationContext evaluationContext,

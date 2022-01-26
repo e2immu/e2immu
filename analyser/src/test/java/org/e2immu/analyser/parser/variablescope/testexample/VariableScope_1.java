@@ -12,21 +12,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.a;
+package org.e2immu.analyser.parser.variablescope.testexample;
 
-/*
-this type is present in package a, and in package b
- */
-public class SomeType {
 
-    public final String s;
-    public static final int CONSTANT = 3;
+import java.util.Random;
 
-    public SomeType(String s) {
-        this.s = s;
-    }
+public class VariableScope_1 {
 
-    public String getS() {
-        return s.toUpperCase();
+    /*
+    convoluted code to ensure that k cannot simply be expressed in terms of a parameter
+    we want j to have a "value of its own"
+     */
+    static int method() {
+        int k;
+        {
+            int j = 0;
+            Random r = new Random();
+            for (int i = 0; i < 10; i++) {
+                j += r.nextInt();
+            }
+            k = j;
+        }
+        return k; // should not refer to j!
     }
 }

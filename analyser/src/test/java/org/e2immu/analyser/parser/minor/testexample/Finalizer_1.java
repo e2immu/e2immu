@@ -12,41 +12,41 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.minor.testexample;
 
-import org.e2immu.annotation.BeforeMark;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Finalizer;
+import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
-@Container
-public class Finalizer_2 {
+@E1Immutable(after = "eventuallyFinal")
+public class Finalizer_1 {
 
     /*
-    a "processor" takes an eventually final object in @BeforeMark state, does things to it,
-    and returns it in the @BeforeMark state in the finalizer. This guarantees that all temporary
-    data is lost. To ensure that the object stays in @BeforeMark state, the processor cannot
-    expose it except for through the finalizer.
+    the goal is to have a class that "finishes" a certain eventually immutable object.
+    It receives it in the @BeforeMark state, and returns it finally in the final state.
+    In the mean time, it gets modified (finished), while there is other temporary data around.
+    Once the final state is reached, we try to guarantee that the temporary data is destroyed
+    by severely limiting the scope of the finisher object.
      */
-
 
     private int count;
     @BeforeMark
     private final EventuallyFinal<String> eventuallyFinal;
 
-    public Finalizer_2(@BeforeMark EventuallyFinal<String> eventuallyFinal) {
+    public Finalizer_1(@BeforeMark EventuallyFinal<String> eventuallyFinal) {
         this.eventuallyFinal = eventuallyFinal;
     }
 
+    @Modified
     public void set(String s) {
         eventuallyFinal.setVariable(s);
         count++;
     }
 
     @Finalizer
-    @BeforeMark
+    @E2Container
     public EventuallyFinal<String> done(String last) {
-        eventuallyFinal.setVariable(last + "; tried " + count);
+        eventuallyFinal.setFinal(last + "; tried " + count);
         return eventuallyFinal;
     }
 }
+

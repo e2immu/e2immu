@@ -12,27 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.variablescope.testexample;
 
 
-import java.util.Random;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
-public class VariableScope_1 {
+import java.io.IOException;
+import java.io.Writer;
+import java.util.List;
 
-    /*
-    convoluted code to ensure that k cannot simply be expressed in terms of a parameter
-    we want j to have a "value of its own"
-     */
-    static int method() {
-        int k;
-        {
-            int j = 0;
-            Random r = new Random();
-            for (int i = 0; i < 10; i++) {
-                j += r.nextInt();
+public class VariableScope_4 {
+    // only difference between VS_4 and VS_2 is the redundant = null on ioe (statement 0)
+
+    @Nullable
+    static IOException writeLine(@NotNull List<String> list, @NotNull Writer writer) {
+        IOException ioe = null;
+        try {
+            for (String outputElement : list) {
+                writer.write(outputElement);
             }
-            k = j;
+            return null;
+        } catch (IOException e) {
+            ioe = e;
         }
-        return k; // should not refer to j!
+        return ioe; // should not contain a reference to 'e'
     }
 }

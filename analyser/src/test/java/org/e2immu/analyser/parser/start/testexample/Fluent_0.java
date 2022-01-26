@@ -12,24 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
-import org.e2immu.analyser.parser.failing.testexample.a.IFluent_2;
+import org.e2immu.analyser.parser.start.testexample.a.IFluent_0;
 import org.e2immu.annotation.*;
 
-import javax.annotation.processing.Generated;
 import java.util.Objects;
 
-/*
-Identical to Fluent_1 apart from reference to IFluent_2
- */
 @E2Container
-@Generated("org.e2immu.analyser.parser.failing.testexample.a.IFluent_2")
-public class Fluent_2 implements IFluent_2 {
+public class Fluent_0 implements IFluent_0 {
 
     public final int value;
 
-    private Fluent_2(int value) {
+    private Fluent_0(int value) {
         this.value = value;
     }
 
@@ -38,19 +33,19 @@ public class Fluent_2 implements IFluent_2 {
         return value;
     }
 
-    public final Fluent_2 withValue(int value) {
+    public final Fluent_0 withValue(int value) {
         if (this.value == value) return this;
-        return new Fluent_2(value);
+        return new Fluent_0(value);
     }
 
     @Override
     public boolean equals(Object another) {
         if (this == another) return true;
-        return another instanceof Fluent_2 && equalTo((Fluent_2) another);
+        return another instanceof Fluent_0 && equalTo((Fluent_0) another);
     }
 
-    private boolean equalTo(Fluent_2 another) {
-        return value == another.value;
+    private boolean equalTo(Fluent_0 another2) {
+        return value == another2.value;
     }
 
     /**
@@ -77,20 +72,20 @@ public class Fluent_2 implements IFluent_2 {
                 + "}";
     }
 
-    public static Fluent_2 copyOf(IFluent_2 instance) {
-        if (instance instanceof Fluent_2) {
-            return (Fluent_2) instance;
+    public static Fluent_0 copyOf(IFluent_0 instanceCopy) {
+        if (instanceCopy instanceof Fluent_0) {
+            return (Fluent_0) instanceCopy;
         }
-        return new IFluent_2.Builder().from(instance).build();
+        return new IFluent_0.Builder().from(instanceCopy).build();
     }
 
-    public static Fluent_2 copyOf2(IFluent_2 instance) {
-        return new IFluent_2.Builder().from(instance).build();
+    public static Fluent_0 copyOf2(IFluent_0 instance2) {
+        return new IFluent_0.Builder().from(instance2).build();
     }
 
     @Identity
-    public static Fluent_2 identity(IFluent_2 instance) {
-       return (Fluent_2) instance;
+    public static Fluent_0 identity(IFluent_0 instanceIdentity) {
+       return (Fluent_0) instanceIdentity;
     }
 
 
@@ -99,29 +94,30 @@ public class Fluent_2 implements IFluent_2 {
         private int value;
 
         public Builder() {
-            if (!(this instanceof IFluent_2.Builder)) {
+            if (!(this instanceof IFluent_0.Builder)) {
                 throw new UnsupportedOperationException("Use: new Primitive.Builder()");
             }
         }
 
         @Fluent
         @Modified
-        public final IFluent_2.Builder from(IFluent_2 instance) {
-            Objects.requireNonNull(instance, "instance");
-            value(instance.value());
-            return (IFluent_2.Builder) this;
+        public final IFluent_0.Builder from(IFluent_0 instanceFrom) {
+            if(instanceFrom == null) throw new NullPointerException();
+            value(instanceFrom.value());
+            return (IFluent_0.Builder) this;
         }
 
         @Fluent
         @Modified
-        public final IFluent_2.Builder value(int value) {
+        public final IFluent_0.Builder value(int value) {
             this.value = value;
-            return (IFluent_2.Builder) this;
+            return (IFluent_0.Builder) this;
         }
 
         @NotModified
-        public Fluent_2 build() {
-            return new Fluent_2(value);
+        @NotNull
+        public Fluent_0 build() {
+            return new Fluent_0(value);
         }
     }
 }

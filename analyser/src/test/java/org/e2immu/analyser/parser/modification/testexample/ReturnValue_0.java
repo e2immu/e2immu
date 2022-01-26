@@ -12,21 +12,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.b;
+package org.e2immu.analyser.parser.modification.testexample;
+
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotModified;
 
 /*
-this type is present in package a, and in package b
+trivial situations
  */
-public class SomeType {
+public class ReturnValue_0 {
 
-    public final String s;
-    public static final int CONSTANT = 4;
-
-    public SomeType(String s) {
-        this.s = s;
+    @NotModified
+    private static int square(int i) {
+        return i * i;
     }
 
-    public String getS() {
-        return s.toLowerCase();
+    @NotModified
+    public static int cube(int i) {
+        return square(i) * i;
+    }
+
+    @Constant("27")
+    public static int cube3() {
+        return cube(3);
     }
 }
