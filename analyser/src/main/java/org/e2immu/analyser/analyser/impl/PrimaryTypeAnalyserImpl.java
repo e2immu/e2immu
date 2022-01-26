@@ -97,7 +97,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
                         TypeAnalyser typeAnalyser;
-                        if (typeInfo.isInterface() && (typeInfo.typeInspection.get().isSealed() || typeInfo.typeResolution.get().hasOneKnownGeneratedImplementation())) {
+                        if (typeInfo.isAggregated()) {
                             typeAnalyser = new AggregatingTypeAnalyser(typeInfo, sortedType.primaryType(), this);
                         } else {
                             typeAnalyser = new ComputingTypeAnalyser(typeInfo, sortedType.primaryType(), this);

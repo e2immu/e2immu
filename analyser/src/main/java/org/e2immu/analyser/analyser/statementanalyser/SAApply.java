@@ -292,10 +292,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
+                true,
                 (vic, v) -> variableUnknown(v),
                 reassigned,
                 linkedVariablesFromChangeData,
                 sharedState.evaluationContext());
+        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
+                false,
+                (vic, v) -> variableUnknown(v),
+                reassigned,
+                linkedVariablesFromChangeData,
+                sharedState.evaluationContext());
+
         computeLinkedVariables.writeClusteredLinkedVariables();
 
         // 1
@@ -342,10 +350,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         delay = delay.merge(cImmStatus);
 
         // 5
-        CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
-        delay = delay.merge(cmStatus);
-
-        // 6
         CausesOfDelay extContStatus = computeLinkedVariables.write(EXTERNAL_CONTAINER, groupPropertyValues.getMap(EXTERNAL_CONTAINER));
         CausesOfDelay anyExtCont = statementAnalysis.variableStream()
                 .map(vi -> {
@@ -358,9 +362,13 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 })
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        // 7
+        // 6
         CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER, groupPropertyValues.getMap(CONTEXT_CONTAINER));
         delay = delay.merge(cContStatus);
+
+        // 7
+        CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED));
+        delay = delay.merge(cmStatus);
 
         // odds and ends
 

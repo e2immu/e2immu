@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.ParameterizedType;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,5 +46,17 @@ public record SetOfTypes(Set<ParameterizedType> types) {
     @Override
     public String toString() {
         return types.stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", "));
+    }
+
+    public SetOfTypes union(SetOfTypes other) {
+        Set<ParameterizedType> set = new HashSet<>(types);
+        set.addAll(other.types);
+        return new SetOfTypes(set);
+    }
+
+    public SetOfTypes intersection(SetOfTypes other) {
+        Set<ParameterizedType> set = new HashSet<>(types);
+        set.retainAll(other.types);
+        return new SetOfTypes(set);
     }
 }

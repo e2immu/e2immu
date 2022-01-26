@@ -174,7 +174,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                 }
                 if (d.variable() instanceof ParameterInfo) {
-                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);

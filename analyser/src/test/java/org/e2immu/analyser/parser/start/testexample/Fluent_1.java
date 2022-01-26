@@ -23,7 +23,7 @@ import java.util.Objects;
 /*
 Identical to Fluent_0 apart from the @Generated annotation; and referring to IFluent_1
  */
-@E2Container
+@ERContainer
 @Generated("org.e2immu.analyser.parser.start.testexample.a.IFluent_1")
 public class Fluent_1 implements IFluent_1 {
 
@@ -107,7 +107,7 @@ public class Fluent_1 implements IFluent_1 {
         @Fluent
         @Modified
         public final IFluent_1.Builder from(IFluent_1 instance) {
-            Objects.requireNonNull(instance, "instance");
+            if(instance == null) throw new NullPointerException();
             value(instance.value());
             return (IFluent_1.Builder) this;
         }

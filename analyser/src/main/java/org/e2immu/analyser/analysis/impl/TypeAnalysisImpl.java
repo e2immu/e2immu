@@ -392,6 +392,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public void setTransparentTypes(SetOfTypes setOfTypes) {
             hiddenContentTypes.set(setOfTypes);
         }
+        public void setHiddenContentTypesDelay(CausesOfDelay causes) {
+            hiddenContentTypes.setFirst(causes);
+        }
 
         public TypeAnalysis build() {
             return new TypeAnalysisImpl(typeInfo,

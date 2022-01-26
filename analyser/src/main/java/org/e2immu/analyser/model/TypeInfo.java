@@ -719,4 +719,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis, Comparabl
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         return inspection.modifiers().contains(TypeModifier.FINAL) || inspection.typeNature().isFinal();
     }
+
+    public boolean isAggregated() {
+        return isInterface() && (typeInspection.get().isSealed() || typeResolution.get().hasOneKnownGeneratedImplementation());
+    }
 }

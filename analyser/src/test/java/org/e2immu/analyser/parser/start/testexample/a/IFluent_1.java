@@ -15,9 +15,10 @@
 package org.e2immu.analyser.parser.start.testexample.a;
 
 import org.e2immu.analyser.parser.start.testexample.Fluent_1;
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotModified;
 
-// do not add @E2Container here, this tests a crash/infinite loop
+// do not add immutability information here, this tests a crash/infinite loop
 public interface IFluent_1 {
     @NotModified //will be computed, and verified!!
     int value();

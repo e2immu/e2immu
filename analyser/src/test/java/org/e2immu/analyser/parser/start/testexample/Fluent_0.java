@@ -19,7 +19,7 @@ import org.e2immu.annotation.*;
 
 import java.util.Objects;
 
-@E2Container
+@ERContainer
 public class Fluent_0 implements IFluent_0 {
 
     public final int value;

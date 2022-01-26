@@ -1152,9 +1152,16 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 .filter(v -> !prepareMerge.toRemove.contains(v))
                 .collect(Collectors.toUnmodifiableSet());
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(this, MERGE,
+                true,
                 (vic, v) -> !touchedWithoutDelayed.contains(v),
                 variablesWhereMergeOverwrites,
                 linkedVariablesFromBlocks, evaluationContext);
+        ComputeLinkedVariables computeLinkedVariablesCm = ComputeLinkedVariables.create(this, MERGE,
+                false,
+                (vic, v) -> !touchedWithoutDelayed.contains(v),
+                variablesWhereMergeOverwrites,
+                linkedVariablesFromBlocks, evaluationContext);
+
         computeLinkedVariables.writeLinkedVariables(touchedWithDelayed, prepareMerge.toRemove);
 
         for (Variable variable : touchedWithDelayed) {
@@ -1193,12 +1200,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         CausesOfDelay cImmStatus = computeLinkedVariables.write(CONTEXT_IMMUTABLE,
                 groupPropertyValues.getMap(CONTEXT_IMMUTABLE));
 
-        CausesOfDelay cmStatus = computeLinkedVariables.write(CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED));
-
         CausesOfDelay cContStatus = computeLinkedVariables.write(CONTEXT_CONTAINER,
                 groupPropertyValues.getMap(CONTEXT_CONTAINER));
 
+        CausesOfDelay cmStatus = computeLinkedVariablesCm.write(CONTEXT_MODIFIED,
+                groupPropertyValues.getMap(CONTEXT_MODIFIED));
         return AnalysisStatus.of(ennStatus.merge(cnnStatus).merge(cmStatus).merge(extImmStatus)
                 .merge(extContStatus).merge(cImmStatus).merge(cContStatus));
     }

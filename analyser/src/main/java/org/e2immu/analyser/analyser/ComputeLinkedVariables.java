@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.WeightedGraph;
@@ -45,16 +46,16 @@ Out:
 
 Hold:
 - clusters for LV 0 assigned, to update properties
+or,
 - clusters for LV 1 dependent, to update Context Modified
-
+In this case, the return variable is never linked to any other variable.
  */
 public class ComputeLinkedVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinkedVariables.class);
 
     private final VariableInfoContainer.Level level;
     private final StatementAnalysis statementAnalysis;
-    private final List<List<Variable>> clustersStaticallyAssigned;
-    private final List<List<Variable>> clustersDependent;
+    private final List<List<Variable>> clusters;
     public final CausesOfDelay delaysInClustering;
     private final WeightedGraph<Variable, DV> weightedGraph;
 
@@ -62,11 +63,9 @@ public class ComputeLinkedVariables {
                                    VariableInfoContainer.Level level,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph<Variable, DV> weightedGraph,
-                                   List<List<Variable>> clustersStaticallyAssigned,
-                                   List<List<Variable>> clustersDependent,
+                                   List<List<Variable>> clusters,
                                    CausesOfDelay delaysInClustering) {
-        this.clustersStaticallyAssigned = clustersStaticallyAssigned;
-        this.clustersDependent = clustersDependent;
+        this.clusters = clusters;
         this.delaysInClustering = delaysInClustering;
         this.level = level;
         this.statementAnalysis = statementAnalysis;
@@ -75,6 +74,7 @@ public class ComputeLinkedVariables {
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 VariableInfoContainer.Level level,
+                                                boolean staticallyAssigned,
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
@@ -111,11 +111,15 @@ public class ComputeLinkedVariables {
                 LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                         : vi1.getLinkedVariables().remove(reassigned);
                 LinkedVariables combined = external.merge(inVi);
-                LinkedVariables curated = combined
-                        .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
-                                immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
-                        .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-
+                LinkedVariables curated;
+                if (staticallyAssigned || !(variable instanceof ReturnVariable)) {
+                    curated = combined
+                            .removeIncompatibleWithImmutable(sourceImmutable, computeMyself, computeImmutable,
+                                    immutableCanBeIncreasedByTypeParameters, computeImmutableHiddenContent)
+                            .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
+                } else {
+                    curated = LinkedVariables.EMPTY;
+                }
                 weightedGraph.addNode(variable, curated.variables(), true);
                 if (curated.isDelayed()) {
                     curated.variables().forEach((v, value) -> {
@@ -129,12 +133,11 @@ public class ComputeLinkedVariables {
             }
         });
 
-        List<List<Variable>> clustersAssigned = computeClusters(weightedGraph, variables,
-                LinkedVariables.STATICALLY_ASSIGNED_DV, LinkedVariables.STATICALLY_ASSIGNED_DV);
-        List<List<Variable>> clustersDependent = computeClusters(weightedGraph, variables,
-                DV.MIN_INT_DV, LinkedVariables.DEPENDENT_DV);
-        return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clustersAssigned,
-                clustersDependent, SimpleSet.from(delaysInClustering));
+        List<List<Variable>> clusters = computeClusters(weightedGraph, variables,
+                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : DV.MIN_INT_DV,
+                staticallyAssigned ? LinkedVariables.STATICALLY_ASSIGNED_DV : LinkedVariables.DEPENDENT_DV);
+        return new ComputeLinkedVariables(statementAnalysis, level, ignore, weightedGraph, clusters,
+                SimpleSet.from(delaysInClustering));
     }
 
     private static List<List<Variable>> computeClusters(WeightedGraph<Variable, DV> weightedGraph,
@@ -159,22 +162,20 @@ public class ComputeLinkedVariables {
 
     public CausesOfDelay write(Property property, Map<Variable, DV> propertyValues) {
         /* context modified needs all linking to be done */
-        if (Property.CONTEXT_MODIFIED == property) {
-            if (delaysInClustering.isDelayed()) {
-                // a delay on clustering can be caused by a delay on the value to be linked
-                // replace @CM values by those delays, and inject a dedicated variable delay.
-                Map<Variable, DV> delayedValues = propertyValues.entrySet().stream()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                                e -> injectContextModifiedDelay(e.getKey(), e.getValue())));
-                return writeProperty(clustersDependent, property, delayedValues);
-            }
-            return writeProperty(clustersDependent, property, propertyValues);
+        if (Property.CONTEXT_MODIFIED == property && delaysInClustering.isDelayed()) {
+            // a delay on clustering can be caused by a delay on the value to be linked
+            // replace @CM values by those delays, and inject a dedicated variable delay.
+            Map<Variable, DV> delayedValues = propertyValues.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                            e -> injectContextModifiedDelay(e.getKey(), e.getValue())));
+            return writeProperty(clusters, property, delayedValues);
         }
+
         /* all other context properties can be written based on statically assigned values */
         try {
-            return writeProperty(clustersStaticallyAssigned, property, propertyValues);
+            return writeProperty(clusters, property, propertyValues);
         } catch (IllegalStateException ise) {
-            LOGGER.error("Clusters assigned are: {}", clustersStaticallyAssigned);
+            LOGGER.error("Clusters assigned are: {}", clusters);
             throw ise;
         }
     }
@@ -237,7 +238,7 @@ public class ComputeLinkedVariables {
      * yet have an EVALUATION level. It is used in SAApply.
      */
     public void writeClusteredLinkedVariables() {
-        for (List<Variable> cluster : clustersStaticallyAssigned) {
+        for (List<Variable> cluster : clusters) {
             for (Variable variable : cluster) {
                 VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
                 assert vic != null : "No variable named " + variable.fullyQualifiedName();

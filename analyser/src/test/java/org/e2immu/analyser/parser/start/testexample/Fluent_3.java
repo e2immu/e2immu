@@ -17,9 +17,7 @@ package org.e2immu.analyser.parser.start.testexample;
 import org.e2immu.analyser.parser.start.testexample.a.IFluent_3;
 import org.e2immu.annotation.*;
 
-import java.util.Objects;
-
-@E2Container
+@ERContainer
 public class Fluent_3 implements IFluent_3 {
 
     public final int value;
@@ -85,7 +83,7 @@ public class Fluent_3 implements IFluent_3 {
 
     @Identity
     public static Fluent_3 identity(IFluent_3 instance) {
-       return (Fluent_3) instance;
+        return (Fluent_3) instance;
     }
 
 
@@ -102,7 +100,7 @@ public class Fluent_3 implements IFluent_3 {
         @Fluent
         @Modified
         public final IFluent_3.Builder from(IFluent_3 instance) {
-            Objects.requireNonNull(instance, "instance");
+            if (instance == null) throw new RuntimeException();
             value(instance.value());
             return (IFluent_3.Builder) this;
         }

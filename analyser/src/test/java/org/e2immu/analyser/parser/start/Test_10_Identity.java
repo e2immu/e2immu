@@ -172,7 +172,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
 
                 String expect = d.iteration() == 0 ? "<m:idem2>" : "s/*@NotNull*/";
@@ -267,7 +267,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
             }
         };

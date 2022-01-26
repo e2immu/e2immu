@@ -329,7 +329,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         Set<ParameterizedType> explicitTypesFromParent;
         {
             TypeInfo parentClass = typeInspection.parentClass().typeInfo;
-            if (parentClass.isJavaLangObject()) {
+            // IMPORTANT: skip aggregated, otherwise infinite loop
+            if (parentClass.isJavaLangObject() || parentClass.isAggregated()) {
                 explicitTypesFromParent = analyserContext.getPrimitives().explicitTypesOfJLO();
             } else {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parentClass);
@@ -354,22 +355,26 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         {
             for (ParameterizedType ifType : typeInspection.interfacesImplemented()) {
                 TypeInfo ifTypeInfo = ifType.typeInfo;
-                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
-                CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
-                if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
-                    ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
-                    typeAnalyser.analyseTransparentTypes();
-                }
-                CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
-                if (delays2.isDelayed()) {
-                    log(DELAYED, "Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
-                            ifTypeInfo.simpleName);
-                    return delays2;
+                if(!ifTypeInfo.isAggregated()) {
+                    TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(ifTypeInfo);
+                    CausesOfDelay delays = typeAnalysis.hiddenContentTypeStatus();
+                    if (delays.isDelayed() && typeInfo.primaryType() == ifTypeInfo.primaryType()) {
+                        ComputingTypeAnalyser typeAnalyser = (ComputingTypeAnalyser) analyserContext.getTypeAnalyser(ifTypeInfo);
+                        typeAnalyser.analyseTransparentTypes();
+                    }
+                    CausesOfDelay delays2 = typeAnalysis.hiddenContentTypeStatus();
+                    if (delays2.isDelayed()) {
+                        log(DELAYED, "Wait for hidden content types to arrive {}, interface {}", typeInfo.fullyQualifiedName,
+                                ifTypeInfo.simpleName);
+                        return delays2;
+                    }
                 }
             }
         }
         Set<ParameterizedType> explicitTypesFromInterfaces = typeInspection.interfacesImplemented()
-                .stream().flatMap(i -> {
+                .stream()
+                .filter(i -> !i.typeInfo.isAggregated())
+                .flatMap(i -> {
                     TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(i.typeInfo);
                     return typeAnalysis.getExplicitTypes(analyserContext).stream();
                 })

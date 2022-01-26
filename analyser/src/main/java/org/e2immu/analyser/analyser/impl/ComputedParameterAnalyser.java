@@ -441,7 +441,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private void noFieldsInvolved() {
         for (Property property : PROPERTIES) {
             if (!parameterAnalysis.properties.isDone(property)) {
-                parameterAnalysis.setProperty(property, NOT_INVOLVED_DV);
+                parameterAnalysis.setProperty(property, property.valueWhenAbsent());
             }
         }
         parameterAnalysis.freezeAssignedToField();

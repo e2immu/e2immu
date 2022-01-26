@@ -128,7 +128,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(list)";
+                    String expectValue = d.iteration() <= 1 ? "<new:C1<I>>" : "new C1<>(list)";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // delay in iteration 1 because we need to know ci's IMMUTABLE property
@@ -140,7 +140,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                     assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
                 }
                 if ("ci2".equals(d.variableName()) && "5".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
+                    String expectValue = d.iteration() <= 1 ? "<new:C1<I>>" : "new C1<>(new ArrayList<>(list))";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     String expectLv = switch (d.iteration()) {

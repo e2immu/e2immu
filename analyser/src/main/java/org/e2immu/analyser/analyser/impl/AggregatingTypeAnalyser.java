@@ -37,6 +37,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";
     public static final String CONTAINER = "container";
+    public static final String TRANSPARENT = "transparent";
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
@@ -45,16 +46,17 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                             AnalyserContext analyserContextInput) {
         super(typeInfo, primaryType, analyserContextInput, Analysis.AnalysisMode.AGGREGATED);
 
-        // TODO improve; but we have not thought yet about how to deal with eventual immutability and sealed types
+        // IMPROVE but we have not thought yet about how to deal with eventual immutability and sealed types
         typeAnalysis.freezeApprovedPreconditionsE1();
         typeAnalysis.freezeApprovedPreconditionsE2();
-
         AnalyserProgram analyserProgram = analyserContextInput.getAnalyserProgram();
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>(analyserProgram)
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
-                .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER));
+                .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
+                .add(TRANSPARENT, iteration -> this.aggregateTransparent());
 
+        // TODO aggregate hidden content + explicit types
         analyserComponents = builder.build();
     }
 
@@ -117,6 +119,25 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         }
         return DONE;
     }
+
+    private AnalysisStatus aggregateTransparent() {
+        if (typeAnalysis.hiddenContentTypeStatus().isDone()) return DONE;
+        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentTypeStatus().causesOfDelay())
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        if (delays.isDelayed()) {
+            typeAnalysis.setHiddenContentTypesDelay(delays);
+            return delays;
+        }
+        SetOfTypes union = implementingAnalyses.get().stream()
+                .map(a -> new SetOfTypes(a.getExplicitTypes(analyserContext)))
+                .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
+        typeAnalysis.setExplicitTypes(union);
+        SetOfTypes intersection = implementingAnalyses.get().stream()
+                .map(TypeAnalysis::getTransparentTypes).reduce(SetOfTypes.EMPTY, SetOfTypes::intersection);
+        typeAnalysis.setTransparentTypes(intersection);
+        return DONE;
+    }
+
 
     @Override
     public boolean ignorePrivateConstructorsForFieldValue() {
