@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -34,19 +36,24 @@ public interface Expression extends Element, Comparable<Expression> {
     int getComplexity();
 
     @NotModified
+    @NotNull
     ParameterizedType returnType();
 
     @NotModified
+    @NotNull
     Precedence precedence();
 
     @NotModified
+    @NotNull
     EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
+    @NotNull1
     default List<LocalVariableReference> newLocalVariables() {
         return List.of();
     }
 
+    @NotNull
     @Override
     default Expression translate(TranslationMap translationMap) {
         throw new UnsupportedOperationException("all expressions need to have this implemented! " + getClass());
@@ -87,10 +94,12 @@ public interface Expression extends Element, Comparable<Expression> {
     // Use that method as the general way of obtaining a value for a property from a Value object
     // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
 
+    @NotNull
     default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("For type " + getClass() + ", property " + property);
     }
 
+    @NotNull
     default LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         return LinkedVariables.EMPTY;
     }
@@ -103,6 +112,7 @@ public interface Expression extends Element, Comparable<Expression> {
     TODO how do we implement the implicit parameter?
     TODO Lambda's
      */
+    @NotNull
     default LinkedVariables linked1VariablesScope(EvaluationContext evaluationContext) {
         return LinkedVariables.EMPTY;
     }
@@ -123,6 +133,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean isBoolValueFalse();
 
+    @NotNull
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
@@ -137,6 +148,7 @@ public interface Expression extends Element, Comparable<Expression> {
         predicate.test(this);
     }
 
+    @NotNull
     default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
         if (precedence.greaterThan(expression.precedence())) {
             return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
@@ -148,6 +160,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     boolean isBooleanConstant();
 
+    @NotNull
     default Expression removeAllReturnValueParts() {
         throw new UnsupportedOperationException("Implement! " + getClass());
     }
@@ -157,6 +170,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
+    @NotNull
     default Expression state() {
         throw new UnsupportedOperationException("Guarded by haveState();");
     }
@@ -165,11 +179,13 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
-
+    @NotNull
     Expression stateTranslateThisTo(FieldReference fieldReference);
 
+    @NotNull
     Expression createDelayedValue(EvaluationContext evaluationContext, CausesOfDelay causes);
 
+    @NotNull
     default CausesOfDelay causesOfDelay() {
         return CausesOfDelay.EMPTY;
     }
@@ -182,6 +198,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return causesOfDelay().isDone();
     }
 
+    @NotNull1
     default Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
         return Set.of(returnType());
     }
@@ -196,6 +213,7 @@ public interface Expression extends Element, Comparable<Expression> {
                 e instanceof Expression expression && expression.containsErasedExpressions());
     }
 
+    @NotNull
     default Expression generify(EvaluationContext evaluationContext) {
         return this;
     }

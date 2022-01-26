@@ -20,20 +20,26 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface AnalysisProvider {
     Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
+    @NotNull
     FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo);
 
+    @NotNull
     ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo);
 
     TypeAnalysis getTypeAnalysisNullWhenAbsent(TypeInfo typeInfo);
 
+    @NotNull
     TypeAnalysis getTypeAnalysis(TypeInfo typeInfo);
 
+    @NotNull
     MethodAnalysis getMethodAnalysis(MethodInfo methodInfo);
 
     AnalysisProvider DEFAULT_PROVIDER = new AnalysisProvider() {

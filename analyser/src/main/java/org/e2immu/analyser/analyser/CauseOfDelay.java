@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Location;
+import org.e2immu.annotation.NotNull;
 
 public interface CauseOfDelay {
 
@@ -91,8 +92,10 @@ public interface CauseOfDelay {
         }
     }
 
+    @NotNull
     Cause cause();
 
+    @NotNull
     Location location();
 
 }

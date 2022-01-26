@@ -110,6 +110,11 @@ class JavaLang {
 
         @NotNull
         String getSimpleName();
+
+        // Technically, a class loader cannot be immutable: the load method changes its content.
+        // Semantically, to the application, this does not matter
+        @NotNull
+        ClassLoader getClassLoader();
     }
 
     @ERContainer
@@ -228,6 +233,9 @@ class JavaLang {
             return null;
         }
 
+        @NotNull
+        static String join(CharSequence delimiter, CharSequence... elements) { return null; }
+
         int lastIndexOf(int ch) {
             return 0;
         }
@@ -240,6 +248,9 @@ class JavaLang {
         String repeat(int count) {
             return null;
         }
+
+        @NotNull
+        String replaceAll(String regex, String replacement) { return null; }
 
         @NotNull
         String[] split(String regex) { return null; }

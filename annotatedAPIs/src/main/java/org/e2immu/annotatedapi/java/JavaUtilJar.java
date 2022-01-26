@@ -12,25 +12,33 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.annotatedapi.java;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.*;
+import java.util.jar.JarEntry;
+import java.util.stream.Collector;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public interface CausesOfDelay extends DV, AnalysisStatus {
+public class JavaUtilJar {
 
-    CausesOfDelay EMPTY = new SimpleSet(Set.of());
+    static final String PACKAGE_NAME = "java.util.jar";
 
-    boolean contains(Variable variable);
+    interface JarEntry$ {
 
-    @NotNull
-    CausesOfDelay merge(CausesOfDelay other);
+        @NotNull
+        String getRealName();
+    }
 
-    @NotNull
-    Stream<CauseOfDelay> causesStream();
+    interface JarFile$ {
 
+        @NotNull1
+        Stream<JarEntry> stream();
+    }
 }

@@ -12,25 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.annotatedapi.javaparser;
 
-import org.e2immu.analyser.analyser.delay.SimpleSet;
-import org.e2immu.analyser.model.variable.Variable;
+import com.github.javaparser.Problem;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
-import java.util.Set;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Optional;
 
-public interface CausesOfDelay extends DV, AnalysisStatus {
+public class ComGithubJavaparser {
 
-    CausesOfDelay EMPTY = new SimpleSet(Set.of());
+    public static final String PACKAGE_NAME = "com.github.javaparser";
 
-    boolean contains(Variable variable);
+    interface ParseResult$<T> {
 
-    @NotNull
-    CausesOfDelay merge(CausesOfDelay other);
+        @NotNull
+        Optional<T> getResult();
 
-    @NotNull
-    Stream<CauseOfDelay> causesStream();
-
+        @NotNull1
+        List<Problem> getProblems();
+    }
 }

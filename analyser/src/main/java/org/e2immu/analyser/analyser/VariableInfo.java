@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +31,10 @@ import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 
 public interface VariableInfo {
+    @NotNull
     String name();
 
+    @NotNull
     Variable variable();
 
     /**
@@ -42,30 +46,36 @@ public interface VariableInfo {
         return !getLinkedVariables().isDelayed();
     }
 
+    @NotNull
     Expression getValue();
 
     default boolean isDelayed() {
         return !valueIsSet();
     }
 
+    @NotNull1
     Set<Integer> getReadAtStatementTimes();
 
     boolean valueIsSet();
 
     DV getProperty(Property property, DV delayValue);
 
+    @NotNull
     DV getProperty(Property property);
 
     /**
      * @return immutable copy of the properties map, for debugging mostly
      */
+    @NotNull
     Map<Property, DV> getProperties();
 
     /**
      * @return an immutable copy, or the same object frozen
      */
+    @NotNull
     VariableInfo freeze();
 
+    @NotNull1
     Stream<Map.Entry<Property, DV>> propertyStream();
 
     /**
@@ -76,8 +86,10 @@ public interface VariableInfo {
      * The last one in the tree set is the last assignment. The other ones are earlier assignments
      * which still contribute to the value, i.e., the last assignment was conditional
      */
+    @NotNull
     AssignmentIds getAssignmentIds();
 
+    @NotNull
     String getReadId();
 
     default boolean isReadAt(String index) {
@@ -102,6 +114,7 @@ public interface VariableInfo {
     }
 
     // extract the value properties
+    @NotNull
     Properties valueProperties();
 
 

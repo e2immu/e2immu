@@ -35,6 +35,7 @@ public interface VariableInfoContainer {
     but only when this variable nature is VariableDefinedOutsideLoop. All the others have to agree exactly,
     and can be used interchangeably.
      */
+    @NotNull
     VariableNature variableNature();
 
     int VARIABLE_FIELD_DELAY = -1;

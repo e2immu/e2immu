@@ -18,6 +18,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.type.Type;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 
 public class ComGithubJavaparserAstNodeTypes {
 
@@ -32,5 +33,11 @@ public class ComGithubJavaparserAstNodeTypes {
         @Modified
         @Fluent
         N setType(String typeString);
+    }
+
+    interface NodeWithName<N extends Node> {
+
+        @NotNull
+        String getName();
     }
 }

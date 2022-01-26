@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.annotation.NotNull;
 
 public interface InspectionProvider {
 
@@ -64,14 +65,19 @@ public interface InspectionProvider {
         };
     }
 
+    @NotNull
     FieldInspection getFieldInspection(FieldInfo fieldInfo);
 
+    @NotNull
     TypeInspection getTypeInspection(TypeInfo typeInfo);
 
+    @NotNull
     MethodInspection getMethodInspection(MethodInfo methodInfo);
 
+    @NotNull
     Primitives getPrimitives();
 
+    @NotNull
     default MethodInspection.Builder newMethodInspectionBuilder(Identifier identifier, TypeInfo typeInfo, String methodName) {
         throw new UnsupportedOperationException("Not implemented in "+getClass());
     }

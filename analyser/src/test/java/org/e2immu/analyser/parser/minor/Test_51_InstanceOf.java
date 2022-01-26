@@ -694,7 +694,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
                                 : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
                         assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
-                        assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                        assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());

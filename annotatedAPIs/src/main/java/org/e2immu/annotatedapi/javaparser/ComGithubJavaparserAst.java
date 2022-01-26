@@ -15,9 +15,13 @@
 package org.e2immu.annotatedapi.javaparser;
 
 import com.github.javaparser.Range;
+import com.github.javaparser.ast.PackageDeclaration;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull1;
 import org.w3c.dom.Node;
+
+import java.util.Optional;
 
 public class ComGithubJavaparserAst {
 
@@ -29,5 +33,11 @@ public class ComGithubJavaparserAst {
         @Fluent
         Node setRange(Range range);
 
+    }
+
+    interface CompilationUnit$ {
+
+        @NotNull1
+        Optional<PackageDeclaration> getPackageDeclaration();
     }
 }

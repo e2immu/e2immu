@@ -17,6 +17,8 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +27,12 @@ import java.util.stream.Collectors;
 
 public interface Element {
 
+    @NotNull
     Identifier getIdentifier();
 
     // definition
 
+    @NotNull1
     default List<? extends Element> subElements() {
         return List.of();
     }
@@ -47,6 +51,7 @@ public interface Element {
         });
     }
 
+    @NotNull1
     default <E extends Element> List<E> collect(Class<E> clazz) {
         List<E> result = new ArrayList<>();
         visit(result::add, clazz);
@@ -55,30 +60,35 @@ public interface Element {
 
     // translate
 
+    @NotNull
     default Element translate(TranslationMap translationMap) {
         return this;
     }
 
     // types referenced (used for imports, uploading annotations, dependency tree between types)
     // the boolean distinguishes between an explicit mention (used for import) and an implicit one.
+    @NotNull
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
     }
 
     // variables, in order of appearance
-
+    @NotNull1
     default List<Variable> variables(boolean descendIntoFieldReferences) {
         return subElements().stream()
                 .flatMap(e -> e.variables(descendIntoFieldReferences).stream())
                 .collect(Collectors.toList());
     }
 
+    @NotNull
     OutputBuilder output(Qualification qualification);
 
+    @NotNull
     default String minimalOutput() {
         return output(Qualification.EMPTY).toString();
     }
 
+    @NotNull
     default String debugOutput() {
         return output(Qualification.EMPTY).debug();
     }

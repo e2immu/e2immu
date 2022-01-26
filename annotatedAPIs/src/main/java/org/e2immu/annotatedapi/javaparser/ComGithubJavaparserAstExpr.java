@@ -17,8 +17,11 @@ package org.e2immu.annotatedapi.javaparser;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.SimpleName;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 public class ComGithubJavaparserAstExpr {
 
@@ -30,5 +33,14 @@ public class ComGithubJavaparserAstExpr {
         @Fluent
         ObjectCreationExpr setArguments(final NodeList<Expression> arguments);
 
+    }
+
+    interface MethodCallExpr$ {
+
+        @NotNull1
+        NodeList<Expression> getArguments();
+
+        @NotNull
+        SimpleName getName();
     }
 }

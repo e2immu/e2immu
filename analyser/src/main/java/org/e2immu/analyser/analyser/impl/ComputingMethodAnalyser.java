@@ -612,7 +612,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         Expression expression = methodAnalysis.singleReturnValue.get();
         if (expression.isConstant()) {
-            return DV.TRUE_DV;
+            return MultiLevel.CONTAINER_DV;
         }
         VariableInfo variableInfo = getReturnAsVariable();
 

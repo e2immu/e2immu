@@ -98,6 +98,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 assertEquals(1, overrides.size());
                 MethodAnalysis objectToString = overrides.stream().findFirst().orElseThrow();
                 assertEquals("Object", objectToString.getMethodInfo().typeInfo.simpleName);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 

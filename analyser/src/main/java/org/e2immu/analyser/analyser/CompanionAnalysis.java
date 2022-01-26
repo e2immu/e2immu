@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Map;
 
 public interface CompanionAnalysis {
 
+    @NotNull
     AnnotationParameters getAnnotationType();
 
     /**
