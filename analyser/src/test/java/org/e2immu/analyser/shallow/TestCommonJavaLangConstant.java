@@ -45,6 +45,6 @@ public class TestCommonJavaLangConstant extends CommonAnnotatedAPI {
 
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 }

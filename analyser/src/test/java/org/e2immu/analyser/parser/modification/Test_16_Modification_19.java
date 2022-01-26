@@ -159,7 +159,7 @@ public class Test_16_Modification_19 extends CommonTestRunner {
 
                 String expectContainerDelay = 0 == d.iteration() ? "cm@Parameter_setC;container@Class_C1;mom@Parameter_setC"
                         : "container@Class_C1;mom@Parameter_setC";
-                assertDv(d, expectContainerDelay, 3, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, expectContainerDelay, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 

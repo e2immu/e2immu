@@ -99,7 +99,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -107,7 +107,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("Enum_0".equals(d.typeInfo().simpleName)) {
                 assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, d.typeAnalysis().getProperty(Property.IMMUTABLE));
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -140,7 +140,7 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
 
@@ -455,7 +455,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 1, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
 
             if ("END".equals(d.fieldInfo().name)) {
@@ -466,7 +466,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("Position".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         // private field not read outside constructors, in default field analyser mode, as in test8

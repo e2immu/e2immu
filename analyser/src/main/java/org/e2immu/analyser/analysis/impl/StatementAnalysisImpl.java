@@ -1463,7 +1463,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(INDEPENDENT, independent);
 
         // if the parameter is not explicitly annotated as a container, we can take a default value
-        DV container = parameterAnalysis.getProperty(CONTAINER).maxIgnoreDelay(DV.FALSE_DV);
+        DV container = parameterAnalysis.getProperty(CONTAINER).maxIgnoreDelay(MultiLevel.NOT_CONTAINER_DV);
         properties.put(CONTAINER, container);
 
         boolean identity = parameterInfo.index == 0;
@@ -1506,7 +1506,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         result.put(CONTEXT_NOT_NULL, contextNotNull);
         result.put(CONTEXT_IMMUTABLE, MUTABLE_DV);
         result.put(CONTEXT_MODIFIED, DV.FALSE_DV);
-        result.put(CONTEXT_CONTAINER, DV.FALSE_DV);
+        result.put(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         return result;
     }
 
@@ -1908,7 +1908,7 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         vic.ensureEvaluation(location, assignmentIds, readId, changeData.readAtStatementTime());
         if (evaluationContext.isMyself(variable)) {
             vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV, EVALUATION);
-            vic.setProperty(CONTEXT_CONTAINER, DV.FALSE_DV, EVALUATION);
+            vic.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV, EVALUATION);
         }
     }
 

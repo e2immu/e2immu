@@ -125,7 +125,7 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
             if ("setA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "a".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));
+                        assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "a".equals(fr.fieldInfo.name)) {

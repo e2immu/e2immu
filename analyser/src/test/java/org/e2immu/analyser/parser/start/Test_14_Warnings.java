@@ -480,7 +480,7 @@ public class Test_14_Warnings extends CommonTestRunner {
     public void test7() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IsNotAContainer".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, CONTAINER);
             }
         };
 
@@ -490,7 +490,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 if ("MustBeContainer".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertTrue(d.methodInfo().methodResolution.get().overrides().isEmpty());
 
-                    assertDv(d, DV.TRUE_DV, CONTAINER);
+                    assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
                     assertDv(d, DV.TRUE_DV, MODIFIED_METHOD); // default value for @Container, void method
                     assertDv(d.p(0), DV.FALSE_DV, MODIFIED_VARIABLE);
                     assertDv(d.p(0), MultiLevel.DEPENDENT_DV, INDEPENDENT); // default for modifying methods
@@ -562,7 +562,7 @@ public class Test_14_Warnings extends CommonTestRunner {
                 if ("e".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
-                        assertEquals(DV.FALSE_DV, d.getProperty(CONTAINER));
+                        assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                 }
                 if ("ioe".equals(d.variableName())) {

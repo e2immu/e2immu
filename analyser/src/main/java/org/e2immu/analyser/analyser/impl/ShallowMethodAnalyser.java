@@ -147,7 +147,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     @Container on parameters needs to be contracted; but it does inherit
      */
     private DV computeContainerParameter(ParameterAnalysisImpl.Builder builder) {
-        return DV.FALSE_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
+        return MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfParameterOverrides(builder.getParameterInfo(), Property.CONTAINER));
     }
 
     private void computeMethodPropertiesAfterParameters() {
@@ -210,15 +210,15 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
         DV fromReturnType = typeAnalysis == null ? DV.MIN_INT_DV : typeAnalysis.getProperty(Property.CONTAINER);
         DV bestOfOverrides = bestOfOverrides(Property.CONTAINER);
-        DV formal = DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
-        if (DV.TRUE_DV.equals(formal)) return DV.TRUE_DV;
+        DV formal = MultiLevel.NOT_CONTAINER_DV.maxIgnoreDelay(bestOfOverrides.maxIgnoreDelay(fromReturnType));
+        if (MultiLevel.CONTAINER_DV.equals(formal)) return MultiLevel.CONTAINER_DV;
 
         // check identity and parameter contract
         if (methodAnalysis.properties.getOrDefault(Property.IDENTITY, DV.FALSE_DV).equals(DV.TRUE_DV)) {
             ParameterAnalysis p0 = parameterAnalyses.get(0);
             return p0.getProperty(Property.CONTAINER);
         }
-        return DV.FALSE_DV;
+        return MultiLevel.NOT_CONTAINER_DV;
     }
 
     // in a @Container type, @Fluent or void ==> @Modified, unless otherwise specified
@@ -227,7 +227,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV fluent = methodAnalysis.getProperty(Property.FLUENT);
         DV typeContainer = analyserContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(Property.CONTAINER);
         boolean voidMethod = methodInfo.noReturnValue();
-        DV addToModified = DV.fromBoolDv(typeContainer.valueIsTrue() && (fluent.valueIsTrue() || voidMethod));
+        DV addToModified = DV.fromBoolDv(typeContainer.equals(MultiLevel.CONTAINER_DV) && (fluent.valueIsTrue() || voidMethod));
         return DV.FALSE_DV.maxIgnoreDelay(bestOfOverrides(Property.MODIFIED_METHOD)).max(addToModified);
     }
 
@@ -249,9 +249,10 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV typeContainer = analyserContext.getTypeAnalysis(builder.getParameterInfo().owner.typeInfo).getProperty(Property.CONTAINER);
 
         DV inMap = builder.getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_VARIABLE);
+        boolean typeIsContainer = typeContainer.equals(MultiLevel.CONTAINER_DV);
         if (inMap.isDelayed()) {
             DV value;
-            if (typeContainer.valueIsTrue()) {
+            if (typeIsContainer) {
                 value = DV.FALSE_DV;
             } else if (override.isDone()) {
                 value = override;
@@ -269,7 +270,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                     Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                     "Override was non-modifying, while this parameter is modifying"));
-        } else if (typeContainer.valueIsTrue() && inMap.valueIsTrue()) {
+        } else if (typeIsContainer && inMap.valueIsTrue()) {
             if (!EXCEPTIONS_TO_CONTAINER.contains(methodInfo.fullyQualifiedName)) {
                 analyserResultBuilder.add(Message.newMessage(builder.getParameterInfo().newLocation(),
                         Message.Label.CONTRADICTING_ANNOTATIONS, "Type is @Container, parameter is @Modified"));

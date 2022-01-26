@@ -163,11 +163,11 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default DV safeContainer(ParameterizedType parameterizedType) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (parameterizedType.arrays > 0) {
-            return DV.TRUE_DV;
+            return MultiLevel.CONTAINER_DV;
         }
         if (bestType == null) {
             // unbound type parameter, null constant
-            return DV.FALSE_DV;
+            return MultiLevel.NOT_CONTAINER_DV;
         }
         TypeAnalysis typeAnalysis = getTypeAnalysisNullWhenAbsent(bestType);
         if (typeAnalysis == null) {

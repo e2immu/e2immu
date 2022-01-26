@@ -58,7 +58,7 @@ public final class Instance extends BaseExpression implements Expression {
                 Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                         Property.IMMUTABLE, MultiLevel.MUTABLE_DV,
                         Property.INDEPENDENT, MultiLevel.DEPENDENT_DV,
-                        Property.CONTAINER, DV.FALSE_DV,
+                        Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV,
                         Property.IDENTITY, DV.FALSE_DV)));
     }
 
@@ -205,7 +205,7 @@ public final class Instance extends BaseExpression implements Expression {
                 .filter(e -> EvaluationContext.VALUE_PROPERTIES.contains(e.getKey()))
                 .map(Map.Entry::getValue)
                 .noneMatch(DV::isDelayed) : "Properties: " + valueProperties;
-        assert !parameterizedType.isJavaLangString() || valueProperties.get(Property.CONTAINER).valueIsTrue();
+        assert !parameterizedType.isJavaLangString() || valueProperties.get(Property.CONTAINER).equals(MultiLevel.CONTAINER_DV);
         assert !parameterizedType.isPrimitiveExcludingVoid() || valueProperties.get(Property.NOT_NULL_EXPRESSION).equals(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         return true;
     }

@@ -657,7 +657,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.getMethodInfo().distinguishingName());
-                        typeAnalysis.setProperty(Property.CONTAINER, DV.FALSE_DV);
+                        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                         return DONE;
                     }
                 }
@@ -668,7 +668,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setProperty(Property.CONTAINER, allCauses.causesOfDelay().merge(marker));
             return AnalysisStatus.of(allCauses);
         }
-        typeAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
         log(TYPE_ANALYSER, "Mark {} as @Container", typeInfo.fullyQualifiedName);
         return DONE;
     }

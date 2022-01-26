@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -47,18 +48,18 @@ public class Test_57_Lambda extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("collector".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertDv(d, 1, DV.TRUE_DV, Property.CONTAINER);
+                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("collector".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collector = typeMap.get(Collector.class);
-            assertEquals(DV.FALSE_DV, collector.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.NOT_CONTAINER_DV, collector.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
         testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

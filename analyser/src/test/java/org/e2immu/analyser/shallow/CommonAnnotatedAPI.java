@@ -84,7 +84,7 @@ public abstract class CommonAnnotatedAPI {
 
     protected void testERContainerType(TypeAnalysis typeAnalysis) {
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
         assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.EXTENSION_CLASS));

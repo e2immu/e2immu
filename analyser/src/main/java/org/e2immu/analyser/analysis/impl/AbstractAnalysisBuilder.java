@@ -294,7 +294,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(Property.INDEPENDENT, value);
         }
         if (container) {
-            setProperty(Property.CONTAINER, DV.TRUE_DV);
+            setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             if (levelImmutable == MultiLevel.Level.ABSENT) {
                 setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
             }

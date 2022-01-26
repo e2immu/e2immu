@@ -241,7 +241,7 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE_DV, p0a.getProperty(Property.NOT_NULL_PARAMETER));
             assertEquals(MultiLevel.DEPENDENT_DV, p0a.getProperty(Property.INDEPENDENT));
 
-            assertEquals(DV.TRUE_DV, p0a.getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.CONTAINER_DV, p0a.getProperty(Property.CONTAINER));
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE_DV, p0a.getProperty(Property.IMMUTABLE));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()

@@ -52,7 +52,7 @@ public interface ConstantExpression<T> extends Expression {
     default DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         switch (property) {
             case CONTAINER:
-                return DV.TRUE_DV;
+                return MultiLevel.CONTAINER_DV;
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION:

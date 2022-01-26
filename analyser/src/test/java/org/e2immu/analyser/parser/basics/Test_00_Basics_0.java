@@ -17,8 +17,8 @@ package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.analysis.FieldAnalysis;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -118,6 +118,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     ", statement id " + d.statementId());
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Basics_0".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.CONTAINER_DV, CONTAINER);
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
+            }
+        };
         TypeMapVisitor typeMapVisitor = typeMap -> {
             // quick check that the XML annotations have been read properly, and copied into the correct place
             TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo();
@@ -131,6 +137,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 

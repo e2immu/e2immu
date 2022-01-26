@@ -202,7 +202,7 @@ public interface EvaluationContext {
     Properties PRIMITIVE_VALUE_PROPERTIES = Properties.of(Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
             IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV,
             INDEPENDENT, MultiLevel.INDEPENDENT_DV,
-            CONTAINER, DV.TRUE_DV,
+            CONTAINER, MultiLevel.CONTAINER_DV,
             IDENTITY, DV.FALSE_DV));
 
     default Properties getValueProperties(Expression value) {

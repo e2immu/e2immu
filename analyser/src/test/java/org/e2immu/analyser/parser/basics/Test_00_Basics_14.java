@@ -115,7 +115,7 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 // not contracted
-                assertEquals(DV.FALSE_DV, p0.getProperty(CONTAINER));
+                assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(CONTAINER));
             }
         };
 

@@ -95,7 +95,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
             case INDEPENDENT:
                 return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.INDEPENDENT);
             case CONTAINER:
-                return typeAnalysis == null ? DV.FALSE_DV : typeAnalysis.getProperty(Property.CONTAINER);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED_DV : typeAnalysis.getProperty(Property.CONTAINER);
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE_DV;
             case CONTEXT_MODIFIED:
@@ -110,7 +110,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case CONTAINER:
-                return DV.TRUE_DV;
+                return MultiLevel.CONTAINER_DV;
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case CONTEXT_MODIFIED:

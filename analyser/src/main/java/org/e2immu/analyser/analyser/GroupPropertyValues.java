@@ -95,7 +95,7 @@ public class GroupPropertyValues {
         addToMap(statementAnalysis, EXTERNAL_CONTAINER, x -> EXTERNAL_CONTAINER.valueWhenAbsent(), false);
         addToMap(statementAnalysis, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED_DV, true);
         addToMap(statementAnalysis, CONTEXT_MODIFIED, x -> DV.FALSE_DV, true);
-        addToMap(statementAnalysis, CONTEXT_CONTAINER, x -> DV.FALSE_DV, true);
+        addToMap(statementAnalysis, CONTEXT_CONTAINER, x -> MultiLevel.NOT_CONTAINER_DV, true);
     }
 
     private void addToMap(StatementAnalysis statementAnalysis,

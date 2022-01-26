@@ -396,9 +396,9 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo integer = typeMap.get(Integer.class);
-            assertEquals(DV.TRUE_DV, integer.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.CONTAINER_DV, integer.typeAnalysis.get().getProperty(Property.CONTAINER));
             TypeInfo boxedBool = typeMap.get(Boolean.class);
-            assertEquals(DV.TRUE_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.CONTAINER_DV, boxedBool.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
 
         testClass("InstanceOf_9", 0, 0, new DebugConfiguration.Builder()
@@ -503,12 +503,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<f:expression>" : "expression/*(Negation)*/.expression";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2.1.0".equals(d.statementId())) {
                         assertEquals("expression", d.currentValue().toString());
-                        assertDv(d, 0, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
@@ -523,7 +523,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         };
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("3".equals(d.statementId())) {
@@ -532,7 +532,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                             default -> "expression instanceof Negation&&null!=expression?expression/*(Negation)*/.expression:expression";
                         };
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTAINER);
+                        assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -541,7 +541,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("expression".equals(d.fieldInfo().name)) {
                 assertEquals("Negation", d.fieldInfo().owner.simpleName);
-                assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -555,10 +555,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Expression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
-                assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         testClass("InstanceOf_10", 0, 0, new DebugConfiguration.Builder()
@@ -608,10 +608,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Expression".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 0, DV.FALSE_DV, Property.CONTAINER);
+                assertDv(d, 0, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
-                assertDv(d, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -677,14 +677,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
                     // means: we have to wait until we know the property of the enclosing type
                     String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11" : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
-                    assertDv(d, expect, BIG, DV.TRUE_DV, Property.CONTAINER);
+                    assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 }
-                case "Expression" -> assertDv(d, DV.FALSE_DV, Property.CONTAINER);
-                case "EvaluationContext" -> assertDv(d, DV.FALSE_DV, Property.CONTAINER);
-                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", BIG, DV.TRUE_DV, Property.CONTAINER);
-                case "Negation" -> assertDv(d, DV.TRUE_DV, Property.CONTAINER);
-                case "Sum" -> assertDv(d, DV.TRUE_DV, Property.CONTAINER);
-                case "XB" -> assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, DV.TRUE_DV, Property.CONTAINER);
+                case "Expression", "EvaluationContext" -> assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                case "InstanceOf_11" -> assertDv(d, "cm@Parameter_evaluationContext;container@Class_InstanceOf_11", BIG, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "Negation", "Sum" -> assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                case "XB" -> assertDv(d, "cm@Parameter_x;container@Record_XB;mom@Parameter_x", 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 default -> fail("? " + d.typeInfo().simpleName);
             }
         };
@@ -695,12 +693,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals("new Expression(){}", d.fieldAnalysis().getValue().toString());
                         String expect = d.iteration() == 0 ? "container@Class_InstanceOf_11"
                                 : "cm@Parameter_evaluationContext;container@Class_InstanceOf_11";
-                        assertDv(d, expect, BIG, DV.TRUE_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, expect, BIG, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, BIG, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     case "Negation" -> {
                         assertEquals("expression", d.fieldAnalysis().getValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.EXTERNAL_CONTAINER);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.EXTERNAL_CONTAINER);
                         assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
                     }
                     default -> fail("? " + d.fieldInfo().owner.simpleName);

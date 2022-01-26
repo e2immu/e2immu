@@ -257,7 +257,7 @@ public class PrimitivesImpl implements Primitives {
                     .noParent(this)
                     .build());
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
-            builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+            builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
@@ -278,7 +278,7 @@ public class PrimitivesImpl implements Primitives {
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
-            builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+            builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual

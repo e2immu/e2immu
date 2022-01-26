@@ -95,7 +95,7 @@ public class TestAnnotatedXML {
     public void testObjectEquals() {
         TypeInfo object = typeContext.getFullyQualified(Object.class);
         TypeAnalysis typeAnalysis = object.typeAnalysis.get();
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
@@ -111,7 +111,7 @@ public class TestAnnotatedXML {
     public void testOptionalEquals() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = optional.typeAnalysis.get();
-        assertEquals(DV.FALSE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 

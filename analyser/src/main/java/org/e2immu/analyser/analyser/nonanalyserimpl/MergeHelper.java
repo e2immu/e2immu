@@ -123,7 +123,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
         if (evaluationContext.isMyself(vi.variable())) {
             vi.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV);
-            vi.setProperty(CONTEXT_CONTAINER, DV.FALSE_DV);
+            vi.setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
     }
 

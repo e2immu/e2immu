@@ -480,7 +480,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 methodAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
                 methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-                methodAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
+                methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),

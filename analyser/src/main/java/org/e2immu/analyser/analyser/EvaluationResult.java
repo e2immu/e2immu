@@ -465,18 +465,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.CONTEXT_CONTAINER, containerRequired);
                 return;
             }
-            if (containerRequired.valueIsFalse()) {
-                setProperty(variable, Property.CONTEXT_CONTAINER, DV.FALSE_DV);
+            if (containerRequired.equals(MultiLevel.NOT_CONTAINER_DV)) {
+                setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
                 return;
             }
             if (variable instanceof FieldReference || variable instanceof ParameterInfo) {
                 // will come back later
                 DV external = getPropertyFromInitial(variable, Property.EXTERNAL_CONTAINER);
-                if (external.valueIsFalse()) {
+                if (external.equals(MultiLevel.NOT_CONTAINER_DV)) {
                     Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                     messages.add(message);
                 }
-                setProperty(variable, Property.CONTEXT_CONTAINER, DV.TRUE_DV);
+                setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.CONTAINER_DV);
                 return;
             }
             DV container = getPropertyFromInitial(variable, Property.CONTAINER);
@@ -484,12 +484,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 setProperty(variable, Property.CONTEXT_CONTAINER, container);
                 return;
             }
-            if (container.valueIsTrue()) {
+            if (container.equals(MultiLevel.CONTAINER_DV)) {
                 return;
             }
             Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
             messages.add(message);
-            setProperty(variable, Property.CONTEXT_CONTAINER, DV.FALSE_DV);
+            setProperty(variable, Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
 
         public Builder assignmentToSelfIgnored(Variable variable) {

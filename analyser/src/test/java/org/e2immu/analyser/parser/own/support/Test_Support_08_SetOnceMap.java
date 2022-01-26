@@ -46,7 +46,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 assertEquals("Type java.util.function.Function<K,V>, Type param K, Type param V",
                         d.typeAnalysis().getTransparentTypes().toString());
-                assertDv(d, 4, DV.TRUE_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 

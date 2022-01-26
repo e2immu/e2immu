@@ -266,7 +266,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             TypeAnalysisImpl.Builder typeAnalysis = (TypeAnalysisImpl.Builder) typeAnalyses.get(typeInfo);
             typeAnalysis.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             typeAnalysis.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-            typeAnalysis.setProperty(Property.CONTAINER, DV.TRUE_DV);
+            typeAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
             typeAnalysis.setImmutableCanBeIncreasedByTypeParameters(false);
         }
     }
@@ -331,7 +331,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
         builder.companionAnalyses.freeze();
         VariableExpression ve = new VariableExpression(parameterInfo);
         builder.singleReturnValue.setFinal(new InlinedMethod(Identifier.generate(), methodInfo, ve, Set.of(ve),
@@ -363,7 +363,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(Property.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV);
-        builder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        builder.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
 
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.setFinal(UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
@@ -554,7 +554,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         DV container = builder.getProperty(Property.CONTAINER);
         if (container.isDelayed()) {
-            builder.setProperty(Property.CONTAINER, DV.FALSE_DV);
+            builder.setProperty(Property.CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         }
     }
 

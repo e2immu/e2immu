@@ -482,7 +482,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::isRead)
                 .map(vi -> vi.getProperty(Property.CONTEXT_CONTAINER))
-                .reduce(DV.FALSE_DV, DV::max);
+                .reduce(MultiLevel.NOT_CONTAINER_DV, DV::max);
         if (bestOverContext.isDelayed()) {
             log(DELAYED, "Delay @Container on {}, waiting for context container", fqn);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, bestOverContext);
@@ -508,7 +508,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             return analyserContext.defaultContainer(cc.returnType());
         }
         DV container = proxy.getProperty(CONTAINER);
-        if (container.valueIsTrue()) return DV.TRUE_DV;
+        if (MultiLevel.CONTAINER_DV.equals(container)) return MultiLevel.CONTAINER_DV;
         if (container.isDelayed()) return container;
 
         ParameterizedType type = proxy.getValue().returnType();
@@ -1001,7 +1001,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;
                             case NOT_NULL_EXPRESSION, EXTERNAL_NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                             case IDENTITY -> DV.FALSE_DV;
-                            case CONTAINER -> DV.TRUE_DV; // FIXME this should be diverted to the type
+                            case CONTAINER -> MultiLevel.CONTAINER_DV; // FIXME this should be diverted to the type
                             default -> throw new UnsupportedOperationException("? who wants to know " + property);
                         };
                     }

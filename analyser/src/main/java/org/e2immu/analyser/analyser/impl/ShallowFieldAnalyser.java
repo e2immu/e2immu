@@ -76,7 +76,7 @@ public class ShallowFieldAnalyser {
         DV typeIsContainer;
         if (!fieldAnalysisBuilder.properties.isDone(Property.CONTAINER)) {
             if (fieldAnalysisBuilder.bestType == null) {
-                typeIsContainer = DV.TRUE_DV;
+                typeIsContainer = MultiLevel.CONTAINER_DV;
             } else {
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysisNullWhenAbsent(fieldAnalysisBuilder.bestType);
                 if (typeAnalysis != null) {

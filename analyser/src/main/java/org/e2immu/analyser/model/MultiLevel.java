@@ -87,7 +87,8 @@ public class MultiLevel {
         BASE(0),
         IMMUTABLE_1(0), IMMUTABLE_2(1), IMMUTABLE_3(2), IMMUTABLE_R(MAX_LEVEL),
         INDEPENDENT_1(0), INDEPENDENT_2(1), INDEPENDENT_R(MAX_LEVEL),
-        NOT_NULL(0), NOT_NULL_1(1), NOT_NULL_2(2), NOT_NULL_3(3);
+        NOT_NULL(0), NOT_NULL_1(1), NOT_NULL_2(2), NOT_NULL_3(3),
+        CONTAINER(0);
 
         public final int level;
 
@@ -101,7 +102,11 @@ public class MultiLevel {
     }
     // different levels
 
-    // DEPENDENT (only at the first level, nothing to do with eventual)
+    // CONTAINER (only at first level, for now not eventual; but it needs NOT_INVOLVED next to TRUE and FALSE)
+    public static final DV NOT_CONTAINER_DV = compose(FALSE, CONTAINER, "notcontainer");
+    public static final DV CONTAINER_DV = compose(EFFECTIVE, CONTAINER, "container");
+
+    // DEPENDENT (only at the first level, for now not eventual)
 
     public static final DV DEPENDENT_DV = compose(Effective.FALSE, Level.INDEPENDENT_1, "dependent");
     public static final DV INDEPENDENT_1_DV = compose(EFFECTIVE, Level.INDEPENDENT_1, "independent1");

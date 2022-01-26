@@ -267,7 +267,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         private DV typeContainer() {
-            return fieldInfo.owner == bestType || bestType == null ? DV.FALSE_DV :
+            return fieldInfo.owner == bestType || bestType == null ? MultiLevel.NOT_CONTAINER_DV :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(Property.CONTAINER);
         }
 

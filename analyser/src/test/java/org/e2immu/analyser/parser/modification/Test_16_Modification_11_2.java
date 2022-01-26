@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -201,7 +202,7 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
                 assertTrue(d.typeAnalysis().getTransparentTypes().isEmpty());
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 1, DV.FALSE_DV, CONTAINER);
+                assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
             }
         };
 

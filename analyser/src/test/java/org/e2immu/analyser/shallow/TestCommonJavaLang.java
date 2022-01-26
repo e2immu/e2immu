@@ -79,7 +79,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         MethodInfo toString = object.findUniqueMethod("toString", 0);
         MethodAnalysis methodAnalysis = toString.methodAnalysis.get();
 
-        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
 
@@ -144,7 +144,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
             }
         }
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
     }
 
@@ -210,7 +210,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         FieldAnalysis fieldAnalysis = out.fieldAnalysis.get();
         assertEquals(DV.TRUE_DV, fieldAnalysis.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, fieldAnalysis.getProperty(Property.EXTERNAL_NOT_NULL));
-        assertEquals(DV.TRUE_DV, fieldAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, fieldAnalysis.getProperty(Property.CONTAINER));
         Expression value = fieldAnalysis.getValue();
         assertTrue(value.isDone());
         assertEquals("instance type PrintStream", value.toString());
@@ -222,7 +222,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
@@ -231,7 +231,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
 
@@ -241,7 +241,7 @@ public class TestCommonJavaLang extends CommonAnnotatedAPI {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test

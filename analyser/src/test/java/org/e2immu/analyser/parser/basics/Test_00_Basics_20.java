@@ -111,7 +111,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertTrue(d.currentValue() instanceof PropertyWrapper);
-                        assertEquals(DV.TRUE_DV, d.getProperty(CONTAINER));
+                        assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<v:list>"
@@ -124,7 +124,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
                         // delayed because linking is delayed!
                         assertDv(d, 2, DV.TRUE_DV, CONTEXT_MODIFIED);
-                        assertDv(d, 2, DV.TRUE_DV, CONTAINER);
+                        assertDv(d, 2, MultiLevel.CONTAINER_DV, CONTAINER);
                     }
                 }
                 if ("ci".equals(d.variableName()) && "4".equals(d.statementId())) {

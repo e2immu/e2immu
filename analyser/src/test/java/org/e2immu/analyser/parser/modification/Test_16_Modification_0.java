@@ -17,10 +17,7 @@ package org.e2immu.analyser.parser.modification;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -79,7 +76,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, size.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
 
             TypeInfo hashSet = typeMap.get(Set.class);
-            assertEquals(DV.TRUE_DV, hashSet.typeAnalysis.get().getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.CONTAINER_DV, hashSet.typeAnalysis.get().getProperty(Property.CONTAINER));
         };
 
         testClass("Modification_0", 0, 0, new DebugConfiguration.Builder()

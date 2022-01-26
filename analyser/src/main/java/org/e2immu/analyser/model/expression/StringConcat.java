@@ -58,7 +58,7 @@ public class StringConcat extends BinaryOperator {
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         return switch (property) {
-            case CONTAINER -> DV.TRUE_DV;
+            case CONTAINER -> MultiLevel.CONTAINER_DV;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV;
             case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL_DV;
             case INDEPENDENT -> MultiLevel.INDEPENDENT_DV;

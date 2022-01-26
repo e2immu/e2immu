@@ -80,7 +80,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                     case EXTERNAL_CONTAINER -> prev.min(change);
                     case CONTEXT_MODIFIED, EXTERNAL_IMMUTABLE, EXTERNAL_NOT_NULL -> prev.max(change);
                     case CONTEXT_IMMUTABLE -> evaluationContext.isMyself(variable) ? MultiLevel.MUTABLE_DV : prev.max(change);
-                    case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? DV.FALSE_DV : prev.max(change);
+                    case CONTEXT_CONTAINER -> evaluationContext.isMyself(variable) ? MultiLevel.NOT_CONTAINER_DV : prev.max(change);
                     case CONTEXT_NOT_NULL -> AnalysisProvider.defaultNotNull(variable.parameterizedType()).max(prev).max(change);
                     default -> throw new UnsupportedOperationException();
                 };
@@ -138,7 +138,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
         DV cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.MUTABLE_DV : cImm);
         DV cCont = res.remove(CONTEXT_CONTAINER);
-        groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? DV.FALSE_DV : cCont);
+        groupPropertyValues.set(CONTEXT_CONTAINER, variable, cCont == null ? MultiLevel.NOT_CONTAINER_DV : cCont);
 
         return res;
     }

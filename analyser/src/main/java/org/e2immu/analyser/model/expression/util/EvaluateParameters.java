@@ -48,7 +48,7 @@ public class EvaluateParameters {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        DV scopeIsContainer = scopeObject == null || recursiveOrPartOfCallCycle ? DV.FALSE_DV
+        DV scopeIsContainer = scopeObject == null || recursiveOrPartOfCallCycle ? MultiLevel.NOT_CONTAINER_DV
                 : evaluationContext.getProperty(scopeObject, Property.CONTAINER, true, true);
 
         for (Expression parameterExpression : parameterExpressions) {
@@ -130,7 +130,7 @@ public class EvaluateParameters {
                                            boolean recursiveOrPartOfCallCycle,
                                            Map<Property, DV> map) {
         if (recursiveOrPartOfCallCycle) {
-            map.put(Property.CONTEXT_CONTAINER, DV.FALSE_DV);
+            map.put(Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         } else {
             DV contextContainer = map.getOrDefault(Property.CONTEXT_CONTAINER, null);
             if (contextContainer == null) {

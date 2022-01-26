@@ -78,7 +78,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, IMMUTABLE);
-                    assertDv(d, 1, DV.TRUE_DV, CONTAINER);
+                    assertDv(d, 1, MultiLevel.CONTAINER_DV, CONTAINER);
                     assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
 
                 } else if ("1".equals(d.statementId())) {

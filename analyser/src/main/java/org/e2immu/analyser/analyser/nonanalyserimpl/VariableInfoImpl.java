@@ -248,7 +248,7 @@ public class VariableInfoImpl implements VariableInfo {
         setProperty(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         setProperty(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE_DV); // even if the variable is a primitive...
-        setProperty(CONTEXT_CONTAINER, DV.FALSE_DV);
+        setProperty(CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
         setProperty(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         setProperty(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
     }
