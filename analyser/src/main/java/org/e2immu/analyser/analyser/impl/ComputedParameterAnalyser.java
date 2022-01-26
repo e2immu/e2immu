@@ -22,10 +22,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
@@ -57,6 +54,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_FIELD_ASSIGNMENTS = "PA:analyseFieldAssignments";
     public static final String ANALYSE_CONTEXT = "PA:analyseContext";
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
+    public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
@@ -79,6 +77,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     .add(ANALYSE_FIELD_ASSIGNMENTS, ITERATION_1PLUS, this::analyseFieldAssignments)
                     .add(ANALYSE_CONTEXT, ITERATION_1PLUS, this::analyseContext)
                     .add(ANALYSE_INDEPENDENT_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseIndependentNoAssignment)
+                    .add(ANALYSE_CONTAINER_NO_ASSIGNMENT, ITERATION_1PLUS, this::analyseContainerNoAssignment)
                     .build();
 
     private AnalysisStatus analyseFirstIteration(SharedState sharedState) {
@@ -158,6 +157,41 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         return DONE;
+    }
+
+    // See e.g. Enum_1: at some point, if we have a parameter of our own type, we may obtain a safe value
+    private AnalysisStatus analyseContainerNoAssignment(SharedState sharedState) {
+        if (parameterAnalysis.properties.isDone(CONTAINER)) return DONE;
+        if (sharedState.iteration == 0) {
+            // not setting assigned to field here
+            return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+        }
+        if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
+            // we wait until the other analyser has finished, since we need the properties it computes
+            return parameterInfo.delay(CauseOfDelay.Cause.ASSIGNED_TO_FIELD);
+        }
+        ParameterizedType type = parameterInfo.parameterizedType;
+        DV safe = analyserContext.safeContainer(type);
+        if (safe != null) {
+            if (safe.isDone()) {
+                parameterAnalysis.setProperty(CONTAINER, safe);
+                return DONE;
+            }
+            return safe.causesOfDelay();
+        }
+        // for our own type, we don't have to use "safe", because we can see everything
+        DV formal = analyserContext.defaultContainer(type);
+        if (type.typeInfo == parameterInfo.getOwningType()) {
+            if (formal.isDone()) {
+                parameterAnalysis.setProperty(CONTAINER, formal);
+                return DONE;
+            }
+        }
+        DV context = parameterAnalysis.getProperty(CONTEXT_CONTAINER);
+        DV external = parameterAnalysis.getProperty(EXTERNAL_CONTAINER);
+        DV best = context.max(external).max(formal);
+        parameterAnalysis.setProperty(CONTAINER, best);
+        return AnalysisStatus.of(best);
     }
 
     private AnalysisStatus analyseIndependentNoAssignment(SharedState sharedState) {

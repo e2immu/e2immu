@@ -66,9 +66,9 @@ public class Test_26_Enum extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "{<f:ONE>,<f:TWO>,<f:THREE>}";
-                        case 1 -> "{<vp:ONE:container@Field_ONE;immutable@Enum_Enum_0>,<vp:TWO:container@Field_TWO;immutable@Enum_Enum_0>,<vp:THREE:container@Field_THREE;immutable@Enum_Enum_0>}";
-                        case 2 -> "{<vp:ONE:container@Field_ONE>,<vp:TWO:container@Field_TWO>,<vp:THREE:container@Field_THREE>}";
-                        default -> "{Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}";
+                        case 1 -> "{<vp:ONE:container@Enum_Enum_0;immutable@Enum_Enum_0>,<vp:TWO:container@Enum_Enum_0;immutable@Enum_Enum_0>,<vp:THREE:container@Enum_Enum_0;immutable@Enum_Enum_0>}";
+                        case 2 -> "{<vp:ONE:cm@Parameter_e;container@Enum_Enum_0>,<vp:TWO:cm@Parameter_e;container@Enum_Enum_0>,<vp:THREE:cm@Parameter_e;container@Enum_Enum_0>}";
+                        default -> "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -86,7 +86,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() <= 2 ? "<m:values>" : "{Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}";
+                String expect = d.iteration() <= 2 ? "<m:values>" : "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV, Property.IMMUTABLE);
@@ -99,7 +99,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getValue().toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.EXTERNAL_IMMUTABLE);
-                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
             }
         };
 
@@ -112,10 +112,10 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -140,7 +140,7 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "other".equals(p.name)) {
-                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                    assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 }
             }
 
@@ -196,10 +196,30 @@ public class Test_26_Enum extends CommonTestRunner {
             assertEquals(DV.FALSE_DV, max.methodAnalysis.get().getProperty(Property.MODIFIED_METHOD));
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Enum_1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ONE".equals(d.fieldInfo().name)) {
+                assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("best".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
+                // other is not linked to a field
+                // context container will not become CONTAINER:5
+                assertDv(d.p(0), MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_CONTAINER);
+                assertDv(d.p(0), 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
+
+                // yet, the type itself becomes container at the end of iteration 1
+                assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -209,6 +229,8 @@ public class Test_26_Enum extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

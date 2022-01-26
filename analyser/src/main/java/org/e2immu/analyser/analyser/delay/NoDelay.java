@@ -48,6 +48,25 @@ public record NoDelay(int value, String label) implements DV {
     }
 
     @Override
+    public DV minIgnoreNotInvolved(DV other) {
+        if (this == MIN_INT_DV) return other;
+        if (other == MIN_INT_DV) return this;
+
+        // make sure that FALSE wins from NOT_INVOLVED
+        if (other.value() == 0 && value > 0) {
+            return this;
+        }
+        if(value == 0 && other.value()>0) {
+            return other;
+        }
+
+        // normal
+        if (other.value() > value) return this;
+        // if other is a delay, its value is less than ours!
+        return other;
+    }
+
+    @Override
     public DV max(DV other) {
         if (this == MIN_INT_DV) return other;
         if (other == MIN_INT_DV) return this;

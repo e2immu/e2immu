@@ -114,6 +114,17 @@ public record SimpleSet(java.util.Set<CauseOfDelay> causes) implements CausesOfD
         return this;
     }
 
+    @Override
+    public DV minIgnoreNotInvolved(DV other) {
+        if (this == MIN_INT_DV) return other;
+        if (other == MIN_INT_DV) return this;
+        if (other.isDelayed()) {
+            return merge(other);
+        }
+        // other is not delayed
+        return this;
+    }
+
     private DV merge(DV other) {
         return new SimpleSet(Stream.concat(causesStream(),
                 other.causesOfDelay().causesStream()).collect(Collectors.toUnmodifiableSet()));

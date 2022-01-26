@@ -90,7 +90,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (external.equals(property.bestDv)) return external;
                 DV context = getPropertyFromMapDelayWhenAbsent(CONTEXT_CONTAINER);
                 if (context.equals(property.bestDv)) return context;
-                return external.max(context);
+                return external.max(context).max(container);
             }
 
             case IMMUTABLE: {

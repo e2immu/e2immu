@@ -102,4 +102,12 @@ public class TestMultiLevel {
         assertEquals(EFFECTIVELY_NOT_NULL_DV, composeOneLevelLessNotNull(EFFECTIVELY_CONTENT_NOT_NULL_DV));
         assertEquals(INDEPENDENT_1_DV, composeOneLevelLessIndependent(INDEPENDENT_2_DV));
     }
+
+    @Test
+    public void testDvMin() {
+        assertEquals(NOT_CONTAINER_DV, NOT_CONTAINER_DV.minIgnoreNotInvolved(NOT_INVOLVED_DV));
+        assertEquals(NOT_CONTAINER_DV, NOT_INVOLVED_DV.minIgnoreNotInvolved(NOT_CONTAINER_DV));
+        assertEquals(NOT_CONTAINER_DV, NOT_CONTAINER_DV.minIgnoreNotInvolved(CONTAINER_DV));
+        assertEquals(CONTAINER_DV, NOT_INVOLVED_DV.minIgnoreNotInvolved(CONTAINER_DV));
+    }
 }

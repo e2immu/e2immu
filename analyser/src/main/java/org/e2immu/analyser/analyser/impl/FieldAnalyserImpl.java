@@ -471,7 +471,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
             return AnalysisStatus.of(safeMinimum);
         }
-        if (safeMinimum.valueIsFalse() || safeMinimum.valueIsTrue() && !otherValues) {
+        if (safeMinimum.equals(MultiLevel.CONTAINER_DV) || safeMinimum.equals(MultiLevel.NOT_CONTAINER_DV) && !otherValues) {
             log(MODIFICATION, "Set @Container on {} to safe minimum over values: {}", fqn, safeMinimum);
             fieldAnalysis.setProperty(EXTERNAL_CONTAINER, safeMinimum);
             return DONE;

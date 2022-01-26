@@ -64,6 +64,8 @@ public interface DV extends WeightedGraph.Weight {
     @NotNull
     DV replaceDelayBy(DV nonDelay);
 
+    DV minIgnoreNotInvolved(DV change);
+
     default boolean gt(DV other) {
         return value() > other.value();
     }
@@ -94,5 +96,4 @@ public interface DV extends WeightedGraph.Weight {
 
     @NotNull
     String label();
-
 }
