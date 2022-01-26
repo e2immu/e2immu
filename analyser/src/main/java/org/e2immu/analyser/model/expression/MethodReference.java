@@ -92,7 +92,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         ForwardEvaluationInfo scopeForward;
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
-        if (contextContainer.valueIsFalse()) {
+        if (contextContainer.equals(MultiLevel.NOT_CONTAINER_DV)) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
 

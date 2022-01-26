@@ -177,7 +177,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         if (dv.isDelayed()) {
             return dv;
         }
-        if (bestType.isFinal(this) || bestType.isInterface() && dv.valueIsTrue()) {
+        if (bestType.isFinal(this) || bestType.isInterface() && dv.equals(MultiLevel.CONTAINER_DV)) {
             return dv;
         }
         return null;

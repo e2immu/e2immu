@@ -144,7 +144,7 @@ public class EvaluateParameters {
                                           boolean recursiveOrPartOfCallCycle,
                                           Map<Property, DV> map,
                                           DV scopeIsContainer) {
-        if (recursiveOrPartOfCallCycle || scopeIsContainer.valueIsTrue()) {
+        if (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
             map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
         } else if (scopeIsContainer.isDelayed()) {
             map.merge(Property.CONTEXT_MODIFIED, scopeIsContainer, DV::max);

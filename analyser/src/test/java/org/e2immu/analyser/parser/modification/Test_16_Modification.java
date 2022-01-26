@@ -175,8 +175,26 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test16() throws IOException {
-        // one error on the method
+        // one error on the method's parameter
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getErrors".equals(d.methodInfo().name)) {
+                if ("ErrorRegistry".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+                if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
+                    assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("messages".equals(d.fieldInfo().name)) {
+                assertEquals("instance type ArrayList<ErrorMessage>", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.CONTAINER_DV, Property.EXTERNAL_CONTAINER);
+            }
+        };
         testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -209,8 +227,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         //WARN in Method org.e2immu.analyser.parser.modification.testexample.Modification_21.example1() (line 44, pos 9): Potential null pointer exception: Variable: set
         testClass("Modification_21", 0, 1, new DebugConfiguration.Builder()
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build(),
+                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
 

@@ -204,6 +204,10 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(ArrayList.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+
+        MethodInfo methodInfo = typeInfo.findConstructor(0);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
     }
 
     @Test
