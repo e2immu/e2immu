@@ -60,10 +60,12 @@ public interface Analyser {
 
     // other methods
 
+    @NotNull
     WithInspectionAndAnalysis getMember();
 
     Analysis getAnalysis();
 
+    @NotNull
     String getName();
 
     AnalyserComponents<String, ?> getAnalyserComponents();

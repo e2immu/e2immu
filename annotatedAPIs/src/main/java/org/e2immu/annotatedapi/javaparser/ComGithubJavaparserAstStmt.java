@@ -14,54 +14,40 @@
 
 package org.e2immu.annotatedapi.javaparser;
 
-import com.github.javaparser.Range;
-import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.PackageDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.expr.Name;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.SwitchEntry;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
-import org.w3c.dom.Node;
 
-import java.util.Optional;
+public class ComGithubJavaparserAstStmt {
 
-public class ComGithubJavaparserAst {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.stmt";
 
-    public static final String PACKAGE_NAME = "com.github.javaparser.ast";
-
-    interface Node$ {
-
-        @Modified
-        @Fluent
-        Node setRange(Range range);
-
+    interface TryStmt$ {
+        @NotNull1
+        NodeList<Expression> getResources();
     }
 
-    interface ImportDeclaration$ {
-        @NotNull
-        Name getName();
-
-
-    }
-
-    interface CompilationUnit$ {
-
+    interface SwitchStmt$ {
         @NotNull1
-        Optional<PackageDeclaration> getPackageDeclaration();
-
-        @NotNull1
-        NodeList<ImportDeclaration> getImports();
-
-        @NotNull1
-        NodeList<TypeDeclaration<?>> getTypes();
-    }
-
-    interface PackageDeclaration$ {
+        NodeList<SwitchEntry> getEntries();
 
         @NotNull
-        Name getName();
+        Expression getSelector();
+    }
+
+    interface BlockStmt$ {
+
+        @NotNull1
+        NodeList<Statement> getStatements();
+    }
+
+    interface LocalClassDeclarationStmt$ {
+
+        @NotNull
+        ClassOrInterfaceDeclaration getClassDeclaration();
     }
 }

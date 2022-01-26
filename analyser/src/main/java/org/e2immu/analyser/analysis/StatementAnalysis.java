@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
 import java.util.Map;
@@ -106,14 +107,18 @@ public interface StatementAnalysis extends Analysis,
          */
     VariableInfoContainer findForWriting(@NotNull Variable variable);
 
+    @NotNull1
     Stream<VariableInfo> variableStream();
 
+    @NotNull1
     Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream();
 
+    @NotNull1
     Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(VariableInfoContainer.Level level);
 
     Expression notNullValuesAsExpression(EvaluationContext evaluationContext);
 
+    @NotNull
     NavigationData<StatementAnalysis> navigationData();
 
     FlowData flowData();

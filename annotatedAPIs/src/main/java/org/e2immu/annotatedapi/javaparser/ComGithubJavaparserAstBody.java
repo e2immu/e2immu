@@ -14,54 +14,43 @@
 
 package org.e2immu.annotatedapi.javaparser;
 
-import com.github.javaparser.Range;
-import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.PackageDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.expr.Name;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
+import com.github.javaparser.ast.body.BodyDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
-import org.w3c.dom.Node;
 
-import java.util.Optional;
+public class ComGithubJavaparserAstBody {
 
-public class ComGithubJavaparserAst {
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.body";
 
-    public static final String PACKAGE_NAME = "com.github.javaparser.ast";
+    interface CallableDeclaration$ {
 
-    interface Node$ {
-
-        @Modified
-        @Fluent
-        Node setRange(Range range);
+        @NotNull1
+        NodeList<TypeParameter> getTypeParameters();
 
     }
 
-    interface ImportDeclaration$ {
-        @NotNull
-        Name getName();
-
-
-    }
-
-    interface CompilationUnit$ {
+    interface TypeDeclaration$ {
 
         @NotNull1
-        Optional<PackageDeclaration> getPackageDeclaration();
-
-        @NotNull1
-        NodeList<ImportDeclaration> getImports();
-
-        @NotNull1
-        NodeList<TypeDeclaration<?>> getTypes();
-    }
-
-    interface PackageDeclaration$ {
+        NodeList<BodyDeclaration<?>> getMembers();
 
         @NotNull
-        Name getName();
+        SimpleName getName();
+    }
+
+    interface VariableDeclarator$ {
+
+        @NotNull
+        Type getType();
+    }
+    interface Parameter$ {
+
+        @NotNull1
+        NodeList<AnnotationExpr> getAnnotations();
     }
 }

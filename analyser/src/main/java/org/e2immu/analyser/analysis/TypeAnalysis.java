@@ -130,6 +130,7 @@ public interface TypeAnalysis extends Analysis {
     /**
      * @return the labels of the aspects, pointing to the method on which the aspect has been marked
      */
+    @NotNull
     Map<String, MethodInfo> getAspects();
 
     default boolean aspectsIsSet(String aspect) {
@@ -167,6 +168,7 @@ public interface TypeAnalysis extends Analysis {
         return status;
     }
 
+    @NotNull
     CausesOfDelay hiddenContentTypeStatus();
 
     boolean approvedPreconditionsIsNotEmpty(boolean e2);

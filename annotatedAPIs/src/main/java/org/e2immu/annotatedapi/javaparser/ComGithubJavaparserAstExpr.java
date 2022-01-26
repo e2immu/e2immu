@@ -15,13 +15,18 @@
 package org.e2immu.annotatedapi.javaparser;
 
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.stmt.SwitchEntry;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+
+import java.util.Optional;
 
 public class ComGithubJavaparserAstExpr {
 
@@ -32,8 +37,14 @@ public class ComGithubJavaparserAstExpr {
         @Modified
         @Fluent
         ObjectCreationExpr setArguments(final NodeList<Expression> arguments);
-
     }
+
+    interface SwitchExpr$ {
+        
+        @NotNull
+        Expression getSelector();
+    }
+
 
     interface MethodCallExpr$ {
 
@@ -42,5 +53,29 @@ public class ComGithubJavaparserAstExpr {
 
         @NotNull
         SimpleName getName();
+
+        @NotNull
+        Expression getScope();
+    }
+
+    interface MethodReferenceExpr$ {
+
+        @NotNull
+        Expression getScope();
+    }
+
+    interface LambdaExpr$ {
+
+        @NotNull1
+        NodeList<Parameter> getParameters();
+
+        @NotNull
+        Optional<Expression> getExpressionBody();
+    }
+
+    interface Expression$ {
+
+        @NotNull
+        StringLiteralExpr asStringLiteralExpr();
     }
 }

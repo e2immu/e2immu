@@ -333,7 +333,8 @@ abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     private boolean isEventual(AnnotationExpression annotationExpression) {
-        return !annotationExpression.extract("after", "").isBlank();
+        String after = annotationExpression.extract("after", "");
+        return after != null && !after.isBlank();
     }
 
     protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {

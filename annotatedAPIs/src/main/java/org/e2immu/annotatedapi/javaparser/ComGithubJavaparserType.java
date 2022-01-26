@@ -14,46 +14,17 @@
 
 package org.e2immu.annotatedapi.javaparser;
 
-import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.type.Type;
-import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotNull;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.annotation.NotNull1;
 
-public class ComGithubJavaparserAstNodeTypes {
+public class ComGithubJavaparserType {
 
-    public static final String PACKAGE_NAME = "com.github.javaparser.ast.nodeTypes";
+    public static final String PACKAGE_NAME = "com.github.javaparser.ast.type";
 
-    interface NodeWithType$<N extends Node, T extends Type> {
-
-        @Modified
-        @Fluent
-        N setType(T type);
-
-        @Modified
-        @Fluent
-        N setType(String typeString);
-    }
-
-    interface NodeWithName<N extends Node> {
-
-        @NotNull
-        String getName();
-    }
-
-    interface NodeWithVariables$ {
-
-        @NotNull
-        VariableDeclarator getVariable(int i);
-    }
-
-    interface NodeWithTypeParameters$ {
+    interface TypeParameter$ {
 
         @NotNull1
-        NodeList<TypeParameter> getTypeParameters();
+        NodeList<ClassOrInterfaceType> getTypeBound();
     }
 }
