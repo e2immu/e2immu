@@ -576,31 +576,4 @@ public class Test_14_Warnings extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
-
-
-    @Test
-    public void test13() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("apply".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
-                    String expected = "Integer.toString(ae.extract(\"level\",3))";
-                    assertEquals(expected, d.currentValue().toString());
-                }
-            }
-        };
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("apply".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                if ("1".equals(d.statementId())) {
-                    assertNotNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                }
-            }
-        };
-
-        // written to catch illegal modification suspected on i and inspected
-        // we end up with a legitimate INLINE_CONDITION_EVALUATES_TO_CONSTANT
-        testClass("Warnings_13", 1, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .build());
-    }
 }

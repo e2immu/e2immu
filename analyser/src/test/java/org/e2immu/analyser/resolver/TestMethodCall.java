@@ -18,6 +18,9 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -174,5 +177,27 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_17() throws IOException {
         inspectAndResolve(MethodCall_17.class);
+    }
+
+    @Test
+    public void test_18() throws IOException {
+        TypeMap typeMap = inspectAndResolve(MethodCall_18.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_18.class);
+        MethodInfo method1 = typeInfo.findUniqueMethod("method1", 0);
+        testConcreteReturnType(method1, "Type int");
+        MethodInfo method2 = typeInfo.findUniqueMethod("method2", 0);
+        testConcreteReturnType(method2, "Type java.lang.String[]");
+        MethodInfo method3 = typeInfo.findUniqueMethod("method3", 0);
+        testConcreteReturnType(method3, "Type java.lang.Integer");
+    }
+
+    private void testConcreteReturnType(MethodInfo method1, String expected) {
+        Block b1 = method1.methodInspection.get().getMethodBody();
+        LocalVariableCreation a1 = (LocalVariableCreation) (((ExpressionAsStatement) b1.structure.getStatements().get(0)).expression);
+        Lambda l1 = (Lambda) (a1.declarations.get(0).expression());
+        Block bl1 = l1.methodInfo.methodInspection.get().getMethodBody();
+        LocalVariableCreation al1 = (LocalVariableCreation) (((ExpressionAsStatement) bl1.structure.getStatements().get(0)).expression);
+        MethodCall mc1 = (MethodCall) (al1.declarations.get(0).expression());
+        assertEquals(expected, mc1.concreteReturnType.toString());
     }
 }

@@ -714,6 +714,11 @@ public class ParameterizedType {
         if (isType() && typeInfo.isVoid() || other.isType() && other.typeInfo.isVoid()) {
             return inspectionProvider.getPrimitives().voidParameterizedType();
         }
+        if(isTypeParameter() && !other.isTypeParameter()) return other;
+        if(other.isTypeParameter() && !isTypeParameter()) return this;
+        if(isBoxedExcludingVoid() && other.isPrimitiveExcludingVoid()) return other;
+        if(other.isBoxedExcludingVoid() && isPrimitiveExcludingVoid()) return this;
+
         if (isAssignableFrom(inspectionProvider, other)) {
             return other;
         }

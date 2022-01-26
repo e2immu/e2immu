@@ -12,13 +12,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.start.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class Warnings_13 {
+public class MethodCall_18 {
 
     interface AnnotationExpression {
         <T> T extract(String s, T t);
@@ -31,7 +31,8 @@ public class Warnings_13 {
         }
     };
 
-    public String method() {
+    // int
+    public String method1() {
         Function<AnnotationExpression, String> f1 = ae -> {
             Integer i = ae.extract("level", 3);
             return i == null ? null : Integer.toString(i);
@@ -39,6 +40,7 @@ public class Warnings_13 {
         return f1.apply(ae);
     }
 
+    // string[]
     public String method2() {
         Function<AnnotationExpression, String> f2 = ae -> {
             String[] inspected = ae.extract("to", new String[]{});
@@ -47,11 +49,12 @@ public class Warnings_13 {
         return f2.apply(ae);
     }
 
+    // Integer
     public String method3() {
-        Function<AnnotationExpression, String> f1 = ae -> {
+        Function<AnnotationExpression, String> f3 = ae -> {
             Integer i = ae.extract("level", null);
             return Integer.toString(i);
         };
-        return f1.apply(ae);
+        return f3.apply(ae);
     }
 }
