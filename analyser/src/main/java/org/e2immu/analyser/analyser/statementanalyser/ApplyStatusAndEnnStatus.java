@@ -20,9 +20,9 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 /*
     delays on ENN are dealt with later than normal delays on values
      */
-record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus) {
+record ApplyStatusAndEnnStatus(CausesOfDelay status, CausesOfDelay ennStatus, boolean progress) {
     public AnalysisStatus combinedStatus() {
         CausesOfDelay delay = status.merge(ennStatus);
-        return AnalysisStatus.of(delay);
+        return AnalysisStatus.of(delay).addProgress(progress);
     }
 }

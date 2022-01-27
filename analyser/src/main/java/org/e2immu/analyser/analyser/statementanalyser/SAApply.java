@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -380,7 +381,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 sharedState.localConditionManager()));
         CausesOfDelay externalDelay = ennStatus.merge(extImmStatus).merge(anyEnn)
                 .merge(anyExtImm).merge(extContStatus).merge(anyExtCont);
-        return new ApplyStatusAndEnnStatus(delay, externalDelay);
+
+        boolean progress = statementAnalysis.latestDelay(delay);
+        return new ApplyStatusAndEnnStatus(delay, externalDelay, progress);
     }
 
     // filter out inline conditional on throws statements, when the state becomes "false"

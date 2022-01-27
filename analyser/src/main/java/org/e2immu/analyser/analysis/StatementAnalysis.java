@@ -158,6 +158,8 @@ public interface StatementAnalysis extends Analysis,
     void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport);
     List<Variable> variablesReadBySubAnalysers();
 
+    boolean latestDelay(CausesOfDelay delay);
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

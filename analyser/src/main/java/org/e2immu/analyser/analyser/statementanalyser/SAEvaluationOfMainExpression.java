@@ -187,7 +187,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             boolean valueIsDelayed2 = value.isDelayed() || statusPost != DONE;
             statementAnalysis.stateData().setValueOfExpression(value, valueIsDelayed2);
 
-            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop));
+            return AnalysisStatus.of(ennStatus.merge(statusPost.causesOfDelay()).merge(stateForLoop))
+                    .addProgress(applyResult.progress());
         } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index());
             throw rte;

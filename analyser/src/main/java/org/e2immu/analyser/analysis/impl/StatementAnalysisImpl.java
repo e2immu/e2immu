@@ -79,6 +79,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
 
+    // a variable that changes from iteration to iteration... should be moved out at some point
+    private CausesOfDelay applyCausesOfDelay;
+
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
                                  Statement statement,
@@ -2027,5 +2030,12 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
     @Override
     public List<Variable> variablesReadBySubAnalysers() {
         return this.variablesReadBySubAnalysers.stream().toList();
+    }
+
+    @Override
+    public boolean latestDelay(CausesOfDelay delay) {
+        boolean different = !delay.equals(applyCausesOfDelay);
+        applyCausesOfDelay = delay;
+        return different;
     }
 }
