@@ -12,16 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.NotNull;
 
-public class InnerClass_0 {
+public class SubTypes_11 {
 
     @NotNull
     private final String outerField;
 
-    public InnerClass_0(@NotNull String outerField) {
+    public SubTypes_11(@NotNull String outerField) {
         if(outerField == null) throw new NullPointerException();
         this.outerField = outerField;
     }
@@ -34,7 +34,7 @@ public class InnerClass_0 {
         }
 
         String getOuter() {
-            return InnerClass_0.this.outerField; // this tests the InnerClass.this construct
+            return SubTypes_11.this.outerField; // this tests the InnerClass.this construct
         }
     }
 
@@ -47,7 +47,7 @@ public class InnerClass_0 {
         private final String unusedInnerField; // ERROR: not used
 
         SubClassUnusedField(String innerField) {
-            this.unusedInnerField = innerField + outerField.charAt(0);
+            this.unusedInnerField = innerField + outerField.charAt(1);
         }
     }
 

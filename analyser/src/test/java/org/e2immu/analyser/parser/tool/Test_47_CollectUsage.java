@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.tool;
 
 import org.apache.commons.io.FileUtils;
 import org.e2immu.analyser.annotatedapi.Composer;
@@ -21,7 +21,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.failing.testexample.CollectUsage_0;
+import org.e2immu.analyser.parser.tool.testexample.CollectUsage_0;
 import org.e2immu.analyser.usage.CollectUsages;
 import org.junit.jupiter.api.Test;
 

@@ -753,7 +753,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet; the initial field value is only visible in constructors
             // and then only to direct references (this.field)
-            if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis()) {
+            if (methodAnalysis.getMethodInfo().isConstructor                    && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);

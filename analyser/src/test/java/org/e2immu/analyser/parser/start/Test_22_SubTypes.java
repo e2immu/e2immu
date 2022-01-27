@@ -25,8 +25,10 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -266,5 +268,43 @@ public class Test_22_SubTypes extends CommonTestRunner {
     @Test
     public void test_10() throws IOException {
         testClass("SubTypes_10", 0, 0, new DebugConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_11() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("SubTypes_11".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId()) && "outerField".equals(d.variableName())) {
+                    assertTrue(d.variable() instanceof ParameterInfo);
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                }
+                if (d.variable() instanceof FieldReference fr && "outerField".equals(fr.fieldInfo.name)) {
+                    assertEquals("outerField", d.currentValue().toString());
+                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("nonPrivateNonFinal".equals(d.fieldInfo().name)) {
+                assertNotNull(d.haveError(Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
+            }
+            if ("unusedInnerField".equals(d.fieldInfo().name)) {
+                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("doAssignmentIntoNestedType".equals(d.methodInfo().name)) {
+                assertNotNull(d.haveError(Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
+            }
+        };
+
+
+        testClass("SubTypes_11", 4, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
     }
 }

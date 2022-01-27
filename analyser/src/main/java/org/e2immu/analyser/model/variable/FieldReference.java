@@ -75,6 +75,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         return fieldInfo.hashCode() + 37 * scope.hashCode();
 
     }
+
     private String computeFqn() {
         if (isStatic || scopeIsThis()) {
             return fieldInfo.fullyQualifiedName();
@@ -197,5 +198,17 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     public boolean scopeIsThis() {
         return !isStatic && isDefaultScope;
+    }
+
+    /*
+    the type in which we're evaluating the field reference
+    does is the scope mine?
+     */
+    public boolean scopeIsThis(TypeInfo currentType) {
+        IsVariableExpression ive;
+        if ((ive = scope.asInstanceOf(IsVariableExpression.class)) != null && ive.variable() instanceof This thisVar) {
+            return thisVar.typeInfo.equals(currentType);
+        }
+        return false;
     }
 }
