@@ -12,26 +12,23 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Singleton;
 
 @Singleton(absent = true)
-public class Singleton_3 {
+public class Singleton_4 {
 
-    public static final Singleton_3 SINGLETON = new Singleton_3(123);
+    public static final Singleton_4 SINGLETON = new Singleton_4(123);
+    public static final Singleton_4 SINGLETON_1 = new Singleton_4(9);
 
     private final int k;
 
-    private Singleton_3(int k) {
+    private Singleton_4(int k) {
         this.k = k;
     }
 
     public int multiply(int i) {
         return k * i;
-    }
-
-    public static Singleton_3 factory(int t) {
-        return new Singleton_3(t);
     }
 }

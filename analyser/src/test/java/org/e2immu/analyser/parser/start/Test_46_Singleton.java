@@ -12,16 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing;
+package org.e2immu.analyser.parser.start;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Precondition;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ValueAndPropertyProxy;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -56,22 +58,68 @@ public class Test_46_Singleton extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Singleton_1".equals(d.methodInfo().name)) {
+                Precondition precondition = d.methodAnalysis().getPrecondition();
+                String expected = d.iteration() == 0 ? "!<f:created>" : "!Singleton_1.created";
+                assertEquals(expected, precondition.expression().toString());
+                CausesOfDelay causesOfDelay = d.methodAnalysis().preconditionStatus();
+                assertEquals(d.iteration() < 1, causesOfDelay.isDelayed());
+            }
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("created".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() <= 1 ? "<variable value>" : "[true,false]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
+                assertDv(d, DV.FALSE_DV, Property.FINAL);
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Singleton_1".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, DV.TRUE_DV, Property.SINGLETON);
             }
         };
 
         testClass("Singleton_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String delays = switch (d.iteration()) {
+                    case 0 -> "initial:org.e2immu.analyser.parser.start.testexample.Singleton_2.SingletonClass.SINGLETON@Method_test_0";
+                    case 1 -> "container@Class_SingletonClass;immutable@Class_SingletonClass";
+                    case 2 -> "immutable@Class_SingletonClass";
+                    case 3 -> "var_missing:org.e2immu.analyser.parser.start.testexample.Singleton_2.SingletonClass.SINGLETON.k@Method_test_0";
+                    default -> "";
+                };
+                assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("SINGLETON".equals(d.fieldInfo().name)) {
+                assertEquals("SingletonClass", d.fieldInfo().owner.simpleName);
+                assertEquals("new SingletonClass(2)", d.fieldAnalysis().getValue().toString());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("multiply".equals(d.methodInfo().name)) {
+                String expect = d.iteration() <= 1 ? "<m:multiply>" : "k*i";
+                assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
         testClass("Singleton_2", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -114,7 +162,8 @@ public class Test_46_Singleton extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("false", d.currentValue().toString());
+                        String expected = d.iteration() == 0 ? "<s:boolean>" : "false";
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
             }
@@ -123,16 +172,16 @@ public class Test_46_Singleton extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("Singleton_7".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "!<f:created>" : "!created";
+                    String expected = d.iteration() == 0 ? "!<f:created>" : "!Singleton_7.created";
                     assertEquals(expected,
                             d.statementAnalysis().stateData().getPrecondition().expression().toString());
-                    String expected1 = d.iteration() == 0 ? "<f:created>" : "created";
+                    String expected1 = d.iteration() == 0 ? "<f:created>" : "Singleton_7.created";
                     assertEquals(expected1,
                             d.statementAnalysis().stateData().conditionManagerForNextStatement.get().condition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());
-                    String expectValue = d.iteration() == 0 ? "!<f:created>" : "!created";
+                    String expectValue = d.iteration() == 0 ? "!<f:created>" : "!Singleton_7.created";
                     assertEquals(expectValue,
                             d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
                 }
@@ -144,9 +193,10 @@ public class Test_46_Singleton extends CommonTestRunner {
                 FieldAnalysisImpl.Builder builder = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
                 String expected = d.iteration() <= 1 ? "<variable value>" : "false";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
-
-                assertEquals("[false, false]", builder.getValues().stream()
-                        .map(ValueAndPropertyProxy::getValue).toList().toString());
+                if (d.iteration() > 0) {
+                    assertEquals("[false, false]", builder.getValues().stream()
+                            .map(ValueAndPropertyProxy::getValue).toList().toString());
+                }
             }
         };
 

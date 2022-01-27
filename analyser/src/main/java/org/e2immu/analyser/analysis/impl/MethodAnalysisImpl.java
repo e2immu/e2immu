@@ -225,7 +225,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public CausesOfDelay preconditionStatus() {
-            return CausesOfDelay.EMPTY;
+            CausesOfDelay causes = precondition.get().expression().causesOfDelay();
+            assert causes.isDone() || precondition.isVariable();
+            return causes;
         }
 
         public Builder(AnalysisMode analysisMode,

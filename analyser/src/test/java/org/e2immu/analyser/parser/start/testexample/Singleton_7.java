@@ -12,19 +12,19 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.start.testexample;
 
 import org.e2immu.annotation.Singleton;
 
 @Singleton(absent = true)
-public class Singleton_4 {
-
-    public static final Singleton_4 SINGLETON = new Singleton_4(123);
-    public static final Singleton_4 SINGLETON_1 = new Singleton_4(9);
+public class Singleton_7 {
 
     private final int k;
+    private static boolean created;
 
-    private Singleton_4(int k) {
+    public Singleton_7(int k) {
+        if (created) throw new UnsupportedOperationException();
+        created = false;
         this.k = k;
     }
 
