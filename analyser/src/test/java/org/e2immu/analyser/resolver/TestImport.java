@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class TestImport extends CommonTest {
 
     public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper";
+    public static final String A = "org.e2immu.analyser.resolver.testexample.a";
 
     /**
      * The point of tests 0 and 1 is that Level. is ALWAYS the one in importhelper, and never the one in MultiLevel,

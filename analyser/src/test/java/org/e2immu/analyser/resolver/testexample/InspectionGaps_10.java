@@ -12,22 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-import org.e2immu.analyser.parser.failing.testexample.a.Value;
-
-@Value.Immutable
-public class InspectionGaps_9 {
-
-    @Value
-    static int method(@Value.Immutable.DeeplyImmutable boolean b) {
-        return b ? 3 : 2;
-    }
-
-    @Deprecated
-    static int method2() {
-        return 333;
-    }
+@javax.annotation.processing.Generated("out of thin air")
+public class InspectionGaps_10 {
 
     @java.lang.Deprecated // is preloaded
     static int method3() {

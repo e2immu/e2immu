@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.a;
+package org.e2immu.analyser.resolver.testexample.a;
 
 public @interface Value {
 

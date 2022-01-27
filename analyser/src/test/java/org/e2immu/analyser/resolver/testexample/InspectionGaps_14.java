@@ -12,31 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample.a;
+package org.e2immu.analyser.resolver.testexample;
 
-public class TypeWithStaticSubType {
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-    public static final class C1 {
-        public static final int CONSTANT = 33;
+
+// looks like issue with flatMap definition
+
+public class InspectionGaps_14<T> {
+
+    <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+        return null;
     }
 
-    public static final class C2 {
-        public static final int CONSTANT = 34;
-    }
-
-    public static final class SubType1 {
-        private final int divisor;
-
-       public SubType1(int divisor) {
-            this.divisor = divisor;
-        }
-
-        public int doSomething(int i) {
-            return i / divisor;
-        }
-    }
-
-    public interface SubType2 {
-        int doSomething(int i);
-    }
 }

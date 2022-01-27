@@ -12,43 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
+import java.util.*;
 
-public class InspectionGaps_7 {
+public class InspectionGaps_2 {
+    private static final Map<String, Integer> PRIORITY = new HashMap<>();
 
-    interface Interface1 {
-        String makeAString();
+    static {
+        PRIORITY.put("e2container", 1);
+        PRIORITY.put("e2immutable", 2);
     }
 
-    interface Interface2 {
-        String makeAString();
+    static {
+        PRIORITY.put("e1container", 3);
+        PRIORITY.put("e1immutable", 4);
     }
 
-    interface Interface12 extends Interface1, Interface2 {
-        String makeAString();
+    private static int priority(String in) {
+        return PRIORITY.getOrDefault(in.substring(0, in.indexOf('-')), 10);
     }
 
-    interface Interface12Without extends Interface1, Interface2 {
-    }
-
-    static class Class1 implements Interface1, Interface2 {
-
-        @Override
-        public String makeAString() {
-            return "x";
-        }
-    }
-
-    static String method1(Interface12 i) {
-        return i.makeAString();
-    }
-
-    static String method2(Class1 i) {
-        return i.makeAString();
-    }
-
-    static String method3(Interface12Without i) {
-        return i.makeAString();
+    private static String highestPriority(String[] annotations) {
+        List<String> toSort = new ArrayList<>(Arrays.asList(annotations));
+        toSort.sort(Comparator.comparing(InspectionGaps_2::priority));
+        return toSort.get(0);
     }
 }

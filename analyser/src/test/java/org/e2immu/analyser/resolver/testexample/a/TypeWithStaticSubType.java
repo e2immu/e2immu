@@ -12,19 +12,31 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample.a;
 
-// IMPORTANT: ensure that there is a * here
-import org.e2immu.analyser.parser.failing.testexample.a.TypeWithStaticSubType.*;
+public class TypeWithStaticSubType {
 
-public class InspectionGaps_12 {
-
-    public static int method1() {
-        SubType1 subType1 = new SubType1(2);
-        return subType1.doSomething(C1.CONSTANT);
+    public static final class C1 {
+        public static final int CONSTANT = 33;
     }
 
-    public static int method2(SubType2 subType2) {
-        return subType2.doSomething(C2.CONSTANT);
+    public static final class C2 {
+        public static final int CONSTANT = 34;
+    }
+
+    public static final class SubType1 {
+        private final int divisor;
+
+       public SubType1(int divisor) {
+            this.divisor = divisor;
+        }
+
+        public int doSomething(int i) {
+            return i / divisor;
+        }
+    }
+
+    public interface SubType2 {
+        int doSomething(int i);
     }
 }

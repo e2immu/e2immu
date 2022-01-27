@@ -12,18 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-
-// looks like issue with flatMap definition
-
-public class InspectionGaps_14<T> {
-
-    <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
-        return null;
-    }
-
+public class InspectionGaps_0 implements java.util.EventListener{
 }

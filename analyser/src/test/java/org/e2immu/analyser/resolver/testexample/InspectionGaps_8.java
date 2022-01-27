@@ -12,13 +12,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-@javax.annotation.processing.Generated("out of thin air")
-public class InspectionGaps_10 {
 
-    @java.lang.Deprecated // is preloaded
-    static int method3() {
-        return 332;
+public class InspectionGaps_8 {
+
+    static Runnable buildRunnable(boolean b) {
+        return b ? () -> System.out.println("left") : () -> System.out.println("right");
     }
 }

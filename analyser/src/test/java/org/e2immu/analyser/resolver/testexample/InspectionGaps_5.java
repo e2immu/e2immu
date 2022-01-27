@@ -12,7 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-public class InspectionGaps_0 implements java.util.EventListener{
+
+import static java.util.Locale.*;
+
+public class InspectionGaps_5 {
+
+    static String method() {
+        return CANADA.getCountry();
+    }
 }

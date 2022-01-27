@@ -12,12 +12,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
+// IMPORTANT: ensure that there is a * here; and that the static keyword is present!
 
-public class InspectionGaps_8 {
+import static org.e2immu.analyser.resolver.testexample.a.TypeWithStaticSubType.*;
 
-    static Runnable buildRunnable(boolean b) {
-        return b ? () -> System.out.println("left") : () -> System.out.println("right");
+public class InspectionGaps_13 {
+
+    public static int method1() {
+        SubType1 subType1 = new SubType1(2);
+        return subType1.doSomething(C1.CONSTANT);
+    }
+
+    public static int method2(SubType2 subType2) {
+        return subType2.doSomething(C2.CONSTANT);
     }
 }

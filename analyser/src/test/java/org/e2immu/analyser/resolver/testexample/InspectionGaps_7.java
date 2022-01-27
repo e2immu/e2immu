@@ -12,14 +12,43 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
 
-import static java.util.Locale.*;
+public class InspectionGaps_7 {
 
-public class InspectionGaps_5 {
+    interface Interface1 {
+        String makeAString();
+    }
 
-    static String method() {
-        return CANADA.getCountry();
+    interface Interface2 {
+        String makeAString();
+    }
+
+    interface Interface12 extends Interface1, Interface2 {
+        String makeAString();
+    }
+
+    interface Interface12Without extends Interface1, Interface2 {
+    }
+
+    static class Class1 implements Interface1, Interface2 {
+
+        @Override
+        public String makeAString() {
+            return "x";
+        }
+    }
+
+    static String method1(Interface12 i) {
+        return i.makeAString();
+    }
+
+    static String method2(Class1 i) {
+        return i.makeAString();
+    }
+
+    static String method3(Interface12Without i) {
+        return i.makeAString();
     }
 }

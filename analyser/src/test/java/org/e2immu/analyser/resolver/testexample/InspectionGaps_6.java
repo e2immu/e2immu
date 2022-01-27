@@ -12,30 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.resolver.testexample;
 
-import java.util.*;
 
-public class InspectionGaps_2 {
-    private static final Map<String, Integer> PRIORITY = new HashMap<>();
+public class InspectionGaps_6 {
 
-    static {
-        PRIORITY.put("e2container", 1);
-        PRIORITY.put("e2immutable", 2);
+    static int convert(float f) {
+        return Math.round(f);
     }
 
-    static {
-        PRIORITY.put("e1container", 3);
-        PRIORITY.put("e1immutable", 4);
-    }
-
-    private static int priority(String in) {
-        return PRIORITY.getOrDefault(in.substring(0, in.indexOf('-')), 10);
-    }
-
-    private static String highestPriority(String[] annotations) {
-        List<String> toSort = new ArrayList<>(Arrays.asList(annotations));
-        toSort.sort(Comparator.comparing(InspectionGaps_2::priority));
-        return toSort.get(0);
+    static String method() {
+        return "" + convert(3f);
     }
 }
