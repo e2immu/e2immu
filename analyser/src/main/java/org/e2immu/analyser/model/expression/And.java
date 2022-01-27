@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class And extends BaseExpression implements Expression {
+public class And extends ExpressionCanBeTooComplex {
     private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
 
     private final Primitives primitives;
@@ -91,7 +91,7 @@ public class And extends BaseExpression implements Expression {
         boolean changes = complexity < evaluationContext.limitOnComplexity();
         if (!changes) {
             LOGGER.debug("Not analysing AND operation, complexity {}", complexity);
-            return reducedComplexity(evaluationContext, values);
+            return reducedComplexity(evaluationContext, expressions, values);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 
@@ -159,27 +159,6 @@ public class And extends BaseExpression implements Expression {
         And res = new And(identifier, primitives, List.copyOf(concat));
         LOGGER.debug("Constructed {}", res);
         return res;
-    }
-
-    // make a MultiValue with one component per variable (so that they are marked "read")
-    // and one per assignment. Even though the And may be too complex, we should not ignore READ/ASSIGNED AT
-    // information
-    private Expression reducedComplexity(EvaluationContext evaluationContext, Expression[] values) {
-        ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();
-
-        // IMPROVE also add assignments
-        // catch all variable expressions
-        Set<IsVariableExpression> variableExpressions = Stream.concat(Arrays.stream(values), expressions.stream())
-                .flatMap(e -> e.collect(IsVariableExpression.class).stream()).collect(Collectors.toUnmodifiableSet());
-        List<Expression> newExpressions = new LinkedList<>(variableExpressions);
-        CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        Expression instance = causesOfDelay.isDelayed()
-                ? DelayedExpression.forTooComplex(booleanType, causesOfDelay)
-                : Instance.forTooComplex(identifier, booleanType);
-        newExpressions.add(instance);
-        MultiExpression multiExpression = new MultiExpression(newExpressions.toArray(Expression[]::new));
-        return new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), multiExpression);
     }
 
     private Action analyse(EvaluationContext evaluationContext, int pos, ArrayList<Expression> newConcat,

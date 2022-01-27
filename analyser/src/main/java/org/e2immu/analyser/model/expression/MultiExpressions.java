@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -110,12 +109,12 @@ public class MultiExpressions extends BaseExpression implements Expression {
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_ARRAY;
+        return multiExpression.lastExpression().order();
     }
 
     @Override
     public int internalCompareTo(Expression v) {
-        return Arrays.compare(multiExpression.expressions(), ((MultiExpressions) v).multiExpression.expressions());
+        return multiExpression.lastExpression().compareTo(v);
     }
 
     @Override

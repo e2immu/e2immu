@@ -200,11 +200,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private DV computeMethodContainer() {
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType.arrays > 0 || returnType.isPrimitiveExcludingVoid()) {
-            return DV.TRUE_DV;
+            return MultiLevel.CONTAINER_DV;
         }
         if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return DV.MIN_INT_DV; // no decision
         TypeInfo bestType = returnType.bestTypeInfo();
-        if (bestType == null) return DV.FALSE_DV; // unbound type parameter
+        if (bestType == null) return MultiLevel.NOT_CONTAINER_DV; // unbound type parameter
 
         // check formal return type
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(bestType);
