@@ -108,8 +108,7 @@ public class Assignment extends BaseExpression implements Expression {
         } else if (target instanceof ArrayAccess arrayAccess) {
             variableTarget = arrayAccess.dependentVariable;
         } else {
-            String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
-            variableTarget = new DependentVariable(name, name, null, target.returnType(), value.variables(true), null);
+            throw new UnsupportedOperationException();
         }
         hackForUpdatersInForLoop = false;
     }
@@ -296,10 +295,11 @@ public class Assignment extends BaseExpression implements Expression {
     // in case of array access, like integers[3] in Warnings_1, this becomes a different variable.
     // this method deals with that.
     private Variable handleArrayAccess(Expression evaluatedTarget) {
-        IsVariableExpression variableValue;
-        if ((variableValue = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
-                variableValue.variable() instanceof DependentVariable) {
-            return variableValue.variable();
+        IsVariableExpression ive;
+        if (variableTarget instanceof DependentVariable &&
+                (ive = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
+                ive.variable() instanceof DependentVariable) {
+            return ive.variable();
         }
         return variableTarget;
     }

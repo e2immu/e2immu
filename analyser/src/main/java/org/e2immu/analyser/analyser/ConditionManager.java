@@ -248,12 +248,13 @@ public record ConditionManager(Expression condition,
     }
 
     /**
-     * Extract NOT_NULL properties from the current absolute state, seen as a disjunction (filter mode REJECT)
+     * Extract NOT_NULL properties from the current condition in ACCEPT mode.
+     * See enum ACCEPT for more explanation of the difference between ACCEPT and REJECT.
      *
-     * @return individual variables that appear in a top-level disjunction as variable == null
+     * @return individual variables that appear in a top-level conjunction as variable == null
      */
     public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        return findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
+        return findIndividualNull(condition, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
     }
 
     /**

@@ -14,16 +14,13 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.support.Either;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -36,25 +33,45 @@ import java.util.Objects;
  * method(a, b)[i], with null arrayVariable, and dependent variables a, b, i
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
+
+    public record NonVariable(Expression value, Identifier identifier) {
+    }
+
     public final TypeInfo owningType;
     public final String name;
     public final String simpleName;
-    public final Variable arrayVariable;
-    public final List<Variable> dependencies; // idea: a change to these will invalidate the variable
+    public final Either<NonVariable, Variable> expressionOrArrayVariable;
 
-    public DependentVariable(String name,
-                             String simpleName,
-                             TypeInfo owningType,
-                             @NotNull ParameterizedType parameterizedType,  // the formal type
-                             @NotNull1 List<Variable> dependencies,         // all variables on which this one depends
-                             Variable arrayVariable) {     // can be null!
+    public DependentVariable(Identifier identifier,
+                             Expression arrayExpression,
+                             Expression indexExpression,
+                             @NotNull ParameterizedType parameterizedType) {  // the formal type
         super(parameterizedType);
-        this.name = name;
-        this.simpleName = simpleName;
-        this.arrayVariable = arrayVariable;
-        this.dependencies = dependencies;
-        this.owningType = owningType;
+        Variable arrayVariable = singleVariable(arrayExpression);
+        this.expressionOrArrayVariable = arrayVariable == null
+                ? Either.left(new NonVariable(arrayExpression, identifier))
+                : Either.right(arrayVariable);
+        Variable indexVariable = singleVariable(indexExpression);
+        String indexString = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.fullyQualifiedName());
+        String indexSimple = (indexVariable == null ? indexExpression.minimalOutput() : indexVariable.simpleName());
+        if (arrayVariable != null) {
+            name = arrayVariable.fullyQualifiedName() + "[" + indexString + "]";
+            simpleName = arrayVariable.simpleName() + "[" + indexSimple + "]";
+        } else {
+            name = "AV$" + expressionOrArrayVariable.getLeft().identifier + "[" + indexString + "]";
+            simpleName = "AV$[" + indexSimple + "]";
+        }
+        this.owningType = arrayVariable != null ? arrayVariable.getOwningType() : null;
     }
+
+    public static Variable singleVariable(Expression expression) {
+        IsVariableExpression ve;
+        if ((ve = expression.asInstanceOf(IsVariableExpression.class)) != null) {
+            return ve.variable();
+        }
+        return null;
+    }
+
 
     @Override
     public TypeInfo getOwningType() {
@@ -71,7 +88,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(name)); // TODO this can/should be more complex
+        return new OutputBuilder().add(new Text(name));
     }
 
     @Override
@@ -96,11 +113,21 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     @Override
     public boolean isLocal() {
+        if (expressionOrArrayVariable.isLeft()) return false;
+        Variable arrayVariable = expressionOrArrayVariable.getRight();
         return arrayVariable != null && arrayVariable.isLocal();
     }
 
     @Override
     public boolean needsNewVariableWithoutValueCall() {
         return true;
+    }
+
+    public boolean hasArrayVariable() {
+        return expressionOrArrayVariable.isRight();
+    }
+
+    public Variable arrayVariable() {
+        return expressionOrArrayVariable.getRight();
     }
 }

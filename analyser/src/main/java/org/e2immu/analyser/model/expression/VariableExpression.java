@@ -18,8 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -33,10 +31,9 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @E2Container
-public final class VariableExpression extends BaseExpression implements Expression, IsVariableExpression {
+public final class VariableExpression extends CommonVariableExpression {
 
     public interface Suffix {
 
@@ -142,26 +139,6 @@ public final class VariableExpression extends BaseExpression implements Expressi
     @Override
     public DV getProperty(EvaluationContext evaluationContext, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int order() {
-        return ExpressionComparator.ORDER_VARIABLE;
-    }
-
-    @Override
-    public int internalCompareTo(Expression v) {
-        VariableExpression variableValue;
-        if (v instanceof InlineConditional inlineConditional)
-            variableValue = (VariableExpression) inlineConditional.condition;
-        else if (v instanceof VariableExpression ve) variableValue = ve;
-        else throw new UnsupportedOperationException();
-        return id().compareTo(variableValue.id());
-    }
-
-    private String id() {
-        if (suffix != NO_SUFFIX) return variable.fullyQualifiedName() + suffix;
-        return variable.fullyQualifiedName();
     }
 
     @Override
@@ -334,8 +311,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(variable.output(qualification)).add(suffix.output());
-        return outputBuilder;
+        return new OutputBuilder().add(variable.output(qualification)).add(suffix.output());
     }
 
     @Override
@@ -384,7 +360,7 @@ public final class VariableExpression extends BaseExpression implements Expressi
                                                FieldInfo fieldInfo) {
         int i = 0;
         List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                .getParameterAnalyses(constructorCall.constructor()).collect(Collectors.toList());
+                .getParameterAnalyses(constructorCall.constructor()).toList();
         for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
             Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
             DV assignedOrLinked = assigned.get(fieldInfo);
@@ -398,5 +374,12 @@ public final class VariableExpression extends BaseExpression implements Expressi
 
     public Variable variable() {
         return variable;
+    }
+
+    // used by internal compare to
+    @Override
+    public String variableId() {
+        if (suffix != NO_SUFFIX) return variable.fullyQualifiedName() + suffix;
+        return variable.fullyQualifiedName();
     }
 }

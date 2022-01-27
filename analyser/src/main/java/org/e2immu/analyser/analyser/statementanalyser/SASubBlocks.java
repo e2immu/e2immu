@@ -316,7 +316,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesWithPrecondition()) {
-                    return findNotNullVariablesIn(evaluationContext, list.get(0).condition);
+                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
                 }
                 return Set.of();
             }
@@ -329,11 +329,11 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         return Set.of();
                     }
                     // if escapes
-                    return findNotNullVariablesIn(evaluationContext, list.get(1).condition);
+                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(1).condition);
                 }
                 if (escape1) {
                     // else escapes
-                    return findNotNullVariablesIn(evaluationContext, list.get(0).condition);
+                    return findNotNullVariablesInRejectMode(evaluationContext, list.get(0).condition);
                 }
                 return Set.of();
             }
@@ -342,7 +342,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return Set.of();
     }
 
-    private Set<Variable> findNotNullVariablesIn(EvaluationContext evaluationContext, Expression condition) {
+    private Set<Variable> findNotNullVariablesInRejectMode(EvaluationContext evaluationContext, Expression condition) {
         return ConditionManager.findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, true);
     }
 

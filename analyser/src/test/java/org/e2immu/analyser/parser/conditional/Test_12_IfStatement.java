@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -31,8 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_12_IfStatement extends CommonTestRunner {
     public Test_12_IfStatement() {
@@ -235,6 +235,48 @@ public class Test_12_IfStatement extends CommonTestRunner {
     @Test
     public void test_9() throws IOException {
         testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    // simpler version of DependentVariables_3, without the delays
+    @Test
+    public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("added".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("false", d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertEquals("a", d.currentValue().toString());
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        assertEquals("a||b", d.currentValue().toString());
+                    }
+                    if ("0.0.3".equals(d.statementId())) {
+                        assertEquals("a||b||c", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("0.0.0".equals(d.statementId())) {
+                assertEquals("a||b||c||d", d.absoluteState().toString());
+            }
+            if ("0.0.1.0.0".equals(d.statementId())) {
+                assertEquals("a", d.absoluteState().toString());
+            }
+            if ("0.0.2.0.0".equals(d.statementId())) {
+                assertEquals("b", d.absoluteState().toString());
+            }
+            if ("0.0.3.0.0".equals(d.statementId())) {
+                assertEquals("c", d.absoluteState().toString());
+            }
+        };
+        testClass("IfStatement_10", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

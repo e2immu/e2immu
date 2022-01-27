@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -86,7 +87,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     if ("3".equals(d.statementId())) {
                         assertEquals("12", d.currentValue().toString());
                     }
-                } else if ("new int[](3)[org.e2immu.analyser.parser.start.testexample.DependentVariables_0.method2(int):0:a]"
+                } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_0.method2(int):0:a]"
                         .equals(d.variableName())) {
                     assertTrue(d.statementId().compareTo("2") >= 0);
                     assertEquals("12", d.currentValue().toString());
@@ -179,8 +180,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<v:xs[index]>";
-                        case 1 -> "<array-access:X>";
+                   //     case 0 -> "<v:xs[index]>";
+                        case 0,1 -> "<array-access:X>";
                         default -> "nullable instance type X";
                     };
                     assertEquals(expected, d.currentValue().toString());
@@ -309,41 +310,79 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0
+                            ? "<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>"
+                            : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[3]";
+                    assertEquals(expected, d.evaluationResult().value().minimalOutput());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("bs[0]".equals(d.variable().simpleName())) {
                     assertEquals("org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]",
                             d.variable().fullyQualifiedName());
+                    String expect = d.iteration() == 0 ? "<v:bs[0]>" : "instance type boolean";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+                if ("added".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("instance type boolean", d.currentValue().toString(), "In statement " + d.statementId());
-                    } else if ("0.0.1.0.1".equals(d.statementId()) || "0.0.1.0.0".equals(d.statementId()) || "0.0.1".equals(d.statementId())
-                            || "0.0.2.0.0".equals(d.statementId()) || "0.0.2.0.0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:bs[0]>" : "instance type boolean";
+                        assertEquals("false", d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:bs[0]>"
+                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]";
                         assertEquals(expected, d.currentValue().toString());
-                    } else if ("0.0.2.0.1".equals(d.statementId())) {
-                        assertEquals("true", d.currentValue().toString(), "Statement " + d.statementId());
-                    } else if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:bs[1]>||<v:bs[0]>" : "instance type boolean||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
+                    }
+                    if ("0.0.2.0.1".equals(d.statementId()) || "0.0.2.0.2".equals(d.statementId())) {
+                        assertEquals("true", d.currentValue().toString(), "In " + d.statementId());
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:bs[0]>||<v:bs[1]>"
+                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
                         assertEquals(expected, d.currentValue().toString());
-                    } else if ("0.0.2.0.2".equals(d.statementId())) {
-                        String expected = "true";
+                    }
+                    if ("0.0.3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<v:bs[0]>||<v:bs[1]>||<v:bs[2]>"
+                                : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]||org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
-                if ("bs[1]".equals(d.variable().simpleName())) {
-                    //     assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
-                }
-                if ("bs[2]".equals(d.variable().simpleName())) {
-                    //    assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
-                }
-                if ("bs[3]".equals(d.variable().simpleName())) {
-                    //    assertEquals("instance type boolean", d.currentValue().toString(), "In statement "+d.statementId());
-                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("0.0.0".equals(d.statementId())) {
+                if (d.condition() instanceof Or or) {
+                    assertEquals(4, or.expressions().size());
+                } else fail();
+            }
+            if ("0.0.1.0.0".equals(d.statementId())) {
+                String expected = d.iteration() == 0
+                        ? "<v:bs[0]>&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
+                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]";
+                assertEquals(expected, d.absoluteState().toString());
+            }
+            if ("0.0.2.0.0".equals(d.statementId())) {
+                String expected = d.iteration() == 0
+                        ? "<v:bs[1]>&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
+                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[1]";
+                assertEquals(expected, d.absoluteState().toString());
+            }
+            if ("0.0.3.0.0".equals(d.statementId())) {
+                String expected = d.iteration() == 0
+                        ? "<v:bs[2]>&&(<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>)"
+                        : "org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[2]";
+                assertEquals(expected, d.absoluteState().toString());
             }
         };
         // goal is to show no errors
         testClass("DependentVariables_3", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

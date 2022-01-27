@@ -88,7 +88,7 @@ public record Configuration(InputConfiguration inputConfiguration,
             overall.setLevel(Level.INFO);
             for (String prefix : logTargets) {
                 ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
-                        LoggerFactory.getLogger("org.e2immu.analyser" + prefix);
+                        LoggerFactory.getLogger("org.e2immu.analyser." + prefix);
                 logger.setLevel(Level.DEBUG);
             }
         }

@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @E2Container
-public class DelayedVariableExpression extends BaseExpression implements Expression, IsVariableExpression {
+public class DelayedVariableExpression extends CommonVariableExpression {
     public final String msg;
     public final String debug;
     public final Variable variable;
@@ -155,11 +155,6 @@ public class DelayedVariableExpression extends BaseExpression implements Express
             builder.variableOccursInNotNullContext(variable, this, cnn);
         }
         return builder.setExpression(this).build();
-    }
-
-    @Override
-    public int order() {
-        return ExpressionComparator.ORDER_NO_VALUE;
     }
 
     @Override

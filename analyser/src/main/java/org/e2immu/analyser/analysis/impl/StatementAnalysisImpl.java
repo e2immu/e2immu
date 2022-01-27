@@ -1332,7 +1332,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             if (variableNature instanceof VariableNature.LoopVariable) {
                 initializeLoopVariable(vic, variable, evaluationContext.getAnalyserContext());
             } else {
-                initializeLocalOrDependentVariable(vic, variable);
+                initializeLocalOrDependentVariable(vic, variable, evaluationContext);
             }
         } else {
             throw new UnsupportedOperationException("? initialize variable of type " + variable.getClass());
@@ -1365,15 +1365,62 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // the linking (normal, and content) can only be done after evaluating the expression over which we iterate
     }
 
-    private void initializeLocalOrDependentVariable(VariableInfoContainer vic, Variable variable) {
+    private void initializeLocalOrDependentVariable(VariableInfoContainer vic,
+                                                    Variable variable,
+                                                    EvaluationContext evaluationContext) {
         DV defaultNotNull = AnalysisProvider.defaultNotNull(variable.parameterizedType());
         Properties properties = sharedContext(defaultNotNull);
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
         Identifier identifier = Identifier.generate(); // FIXME
-        UnknownExpression ue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
-        vic.setValue(ue, LinkedVariables.EMPTY, properties, true);
+        Expression initialValue;
+        if (variable instanceof DependentVariable dv) {
+            if (dv.hasArrayVariable()) {
+                initialValue = Instance.genericArrayAccess(identifier, evaluationContext,
+                        new VariableExpression(dv.arrayVariable()), dv);
+            } else {
+                Expression arrayValue = dv.expressionOrArrayVariable.getLeft().value();
+
+                DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
+                LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
+                        .changeAllTo(independent)
+                        .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
+                initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
+            }
+            Properties valueProperties = evaluationContext.getValueProperties(initialValue);
+            valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
+        } else {
+            initialValue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
+        }
+        vic.setValue(initialValue, LinkedVariables.EMPTY, properties, true);
+    }
+
+    /*
+  if the array base type is transparent, the independence of the elements in INDEPENDENT_1
+  If the array base type is not E2, we should return DEPENDENT.
+  See DependentVariables_1,_2
+   */
+    private static DV determineIndependentOfArrayBase(EvaluationContext evaluationContext, Expression value) {
+        ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
+        TypeInfo bestTypeInfo = arrayBaseType.bestTypeInfo();
+        if (bestTypeInfo != null) {
+            TypeInfo currentType = evaluationContext.getCurrentType();
+            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
+            DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
+            if (partOfHiddenContent.isDelayed()) {
+                return partOfHiddenContent;
+            }
+            if (partOfHiddenContent.valueIsTrue()) {
+                return MultiLevel.INDEPENDENT_1_DV;
+            }
+        }
+        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(arrayBaseType, false);
+        if (immutable.isDelayed()) {
+            return immutable;
+        }
+        int immutableLevel = MultiLevel.level(immutable);
+        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 
     private void initializeReturnVariable(VariableInfoContainer vic, ReturnVariable returnVariable) {

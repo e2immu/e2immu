@@ -19,4 +19,8 @@ import org.e2immu.analyser.model.variable.Variable;
 
 public interface IsVariableExpression extends Expression {
     Variable variable();
+
+    default String variableId() {
+        return variable().fullyQualifiedName();
+    }
 }

@@ -71,6 +71,17 @@ public class Filter {
         FilterResult<X> apply(Expression value);
     }
 
+    /**
+     * Consider the following code:
+     * void someMethod(String a, String b) { if(a == null || b == null) throw new NullPointerException(); ... }
+     * The state after the if-statement is a!=null&&b!=null.
+     * The condition at the throws is a==null||b==null.
+     *
+     * The first needs analysing in ACCEPT mode: only an AND construct will yield individual info.
+     * The second needs analysing in REJECT mode: only an OR will yield individual info IF the goal is to
+     * create the reasons for rejection.
+     *
+     */
     public enum FilterMode {
         ALL,    // default value = TRUE
         ACCEPT, // normal state of the variable AFTER the escape; independent = AND; does not recurse into OrValues; default value = TRUE

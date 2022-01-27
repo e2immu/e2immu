@@ -743,7 +743,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 Expression scope = parseExpressionStartVoid(arrayAccessExpr.getName());
                 Expression index = parseExpression(arrayAccessExpr.getIndex(),
                         new ForwardReturnTypeInfo(typeContext.getPrimitives().intParameterizedType()));
-                return new ArrayAccess(scope, index);
+                return new ArrayAccess(identifier, scope, index);
             }
             if (expression.isInstanceOfExpr()) {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();

@@ -15,11 +15,9 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
@@ -36,36 +34,12 @@ public class ArrayAccess extends BaseExpression implements Expression {
     public final DependentVariable dependentVariable;
     public final ParameterizedType returnType;
 
-    public ArrayAccess(@NotNull Expression expression, @NotNull Expression index) {
-        super(Identifier.generate());
+    public ArrayAccess(Identifier identifier, @NotNull Expression expression, @NotNull Expression index) {
+        super(identifier);
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();
-        dependentVariable = computeDependentVariable(expression, index, returnType);
-    }
-
-
-    private static DependentVariable computeDependentVariable(Expression expression,
-                                                              Expression index,
-                                                              ParameterizedType returnType) {
-        Variable arrayVariable = singleVariable(expression);
-        Variable indexVariable = singleVariable(index);
-        String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
-                + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.fullyQualifiedName()) + "]";
-        String simpleName = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.simpleName())
-                + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.simpleName()) + "]";
-        return new DependentVariable(name, simpleName,
-                arrayVariable == null ? null : arrayVariable.getOwningType(),
-                returnType, indexVariable == null ? List.of() : List.of(indexVariable),
-                arrayVariable);
-    }
-
-    private static Variable singleVariable(Expression expression) {
-        IsVariableExpression ve;
-        if ((ve = expression.asInstanceOf(IsVariableExpression.class)) != null) {
-            return ve.variable();
-        }
-        return null;
+        dependentVariable = new DependentVariable(identifier, expression, index, returnType);
     }
 
     @Override
@@ -84,7 +58,7 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayAccess(translationMap.translateExpression(expression), translationMap.translateExpression(index));
+        return new ArrayAccess(identifier, translationMap.translateExpression(expression), translationMap.translateExpression(index));
     }
 
     @Override
@@ -139,11 +113,11 @@ public class ArrayAccess extends BaseExpression implements Expression {
             }
             builder.setExpression(initializer.multiExpression.expressions()[intIndex]);
         } else {
-            boolean delayed = arrayValue.isDelayed() || indexValue.value().isDelayed();
-            DependentVariable evaluatedDependentVariable = computeDependentVariable(arrayValue, indexValue.value(),
-                    returnType);
-            if (evaluatedDependentVariable.arrayVariable != null) {
-                builder.markRead(evaluatedDependentVariable.arrayVariable);
+            Expression arrayExpression = DependentVariable.singleVariable(expression) != null ? expression : arrayValue;
+            boolean delayed = arrayExpression.isDelayed() || indexValue.value().isDelayed();
+            DependentVariable evaluatedDependentVariable = new DependentVariable(identifier, arrayExpression, indexValue.value(), returnType);
+            if (evaluatedDependentVariable.hasArrayVariable()) {
+                builder.markRead(evaluatedDependentVariable.arrayVariable());
             }
             if (forwardEvaluationInfo.isAssignmentTarget()) {
                 builder.setExpression(new VariableExpression(evaluatedDependentVariable));
@@ -154,18 +128,18 @@ public class ArrayAccess extends BaseExpression implements Expression {
                 builder.markRead(evaluatedDependentVariable);
 
                 if (delayed) {
-                    CausesOfDelay causesOfDelay = arrayValue.causesOfDelay()
+                    CausesOfDelay causesOfDelay = arrayExpression.causesOfDelay()
                             .merge(indexValue.value().causesOfDelay());
                     Expression dve = DelayedVariableExpression.forVariable(evaluatedDependentVariable, causesOfDelay);
 
                     builder.setExpression(dve);
                 } else {
-                    if (evaluatedDependentVariable.arrayVariable != null) {
-                        builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable, arrayValue,
+                    if (evaluatedDependentVariable.hasArrayVariable()) {
+                        builder.variableOccursInNotNullContext(evaluatedDependentVariable.arrayVariable(), arrayExpression,
                                 MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                     }
                     Expression currentValue = builder.currentExpression(evaluatedDependentVariable, forwardEvaluationInfo);
-                    if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
+                /*    if (currentValue.isDelayed() || currentValue instanceof UnknownExpression) {
                         // we have no value yet
                         Expression newObject = Instance.genericArrayAccess(getIdentifier(), evaluationContext, arrayValue,
                                 evaluatedDependentVariable);
@@ -176,9 +150,9 @@ public class ArrayAccess extends BaseExpression implements Expression {
                         builder.assignment(evaluatedDependentVariable, newObject, linkedVariables);
                         Expression wrappedObject = PropertyWrapper.propertyWrapper(newObject, linkedVariables);
                         builder.setExpression(wrappedObject);
-                    } else {
-                        builder.setExpression(currentValue);
-                    }
+                    } else {*/
+                    builder.setExpression(currentValue);
+                    //  }
                 }
             }
         }
@@ -190,32 +164,5 @@ public class ArrayAccess extends BaseExpression implements Expression {
             builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }
         return builder.build();
-    }
-
-    /*
-    if the array base type is transparent, the independence of the elements in INDEPENDENT_1
-    If the array base type is not E2, we should return DEPENDENT.
-    See DependentVariables_1,_2
-     */
-    private DV determineIndependentOfArrayBase(EvaluationContext evaluationContext, Expression value) {
-        ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
-        TypeInfo bestTypeInfo = arrayBaseType.bestTypeInfo();
-        if (bestTypeInfo != null) {
-            TypeInfo currentType = evaluationContext.getCurrentType();
-            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
-            DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
-            if (partOfHiddenContent.isDelayed()) {
-                return partOfHiddenContent;
-            }
-            if (partOfHiddenContent.valueIsTrue()) {
-                return MultiLevel.INDEPENDENT_1_DV;
-            }
-        }
-        DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(arrayBaseType, false);
-        if (immutable.isDelayed()) {
-            return immutable;
-        }
-        int immutableLevel = MultiLevel.level(immutable);
-        return MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
     }
 }

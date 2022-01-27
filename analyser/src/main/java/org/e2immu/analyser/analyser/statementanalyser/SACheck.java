@@ -141,7 +141,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
 
     private boolean uselessForDependentVariable(VariableInfo variableInfo) {
         if (variableInfo.variable() instanceof DependentVariable dv) {
-            return dv.arrayVariable != null && !variableHasBeenReadAfter(dv.arrayVariable,
+            return dv.hasArrayVariable() && !variableHasBeenReadAfter(dv.arrayVariable(),
                     variableInfo.getAssignmentIds().getLatestAssignment());
         }
         return true;
