@@ -15,37 +15,22 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.impl.LocationImpl;
-import org.e2immu.analyser.output.Formatter;
-import org.e2immu.analyser.output.FormattingOptions;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.visitor.CommonVisitorData;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.jupiter.api.BeforeAll;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class VisitorTestSupport {
 

@@ -26,13 +26,13 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class ParseLambdaExpr {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseLambdaExpr.class);
 
     public static Expression erasure(ExpressionContext expressionContext,
                                      LambdaExpr asLambdaExpr) {
@@ -44,7 +44,7 @@ public class ParseLambdaExpr {
         Set<LambdaExpressionErasures.Count> erasures = Set.of(
                 new LambdaExpressionErasures.Count(parameters, true),
                 new LambdaExpressionErasures.Count(parameters, false));
-        log(LAMBDA, "Returning erasure {}", erasures);
+        LOGGER.debug("Returning erasure {}", erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 
@@ -58,7 +58,7 @@ public class ParseLambdaExpr {
                 + "; forward is " + forwardReturnTypeInfo.type().detailedString(inspectionProvider)
                 + "; FI? " + forwardReturnTypeInfo.type().isFunctionalInterface(inspectionProvider);
 
-        log(LAMBDA, "Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
+        LOGGER.debug("Start parsing lambda at {}, {}", lambdaExpr.getBegin(), forwardReturnTypeInfo.toString(inspectionProvider));
 
         VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext());
         int cnt = 0;
@@ -106,7 +106,7 @@ public class ParseLambdaExpr {
             applyMethodInspectionBuilder.addParameter(parameterBuilder);
         }
         if (!allDefined) {
-            log(LAMBDA, "End parsing lambda, delaying, not all parameters are defined yet");
+            LOGGER.debug("End parsing lambda, delaying, not all parameters are defined yet");
             throw new UnsupportedOperationException("Not all parameters defined??");
         }
 
@@ -142,7 +142,7 @@ public class ParseLambdaExpr {
                 typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
                 Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
 
-        log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
+        LOGGER.debug("End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(inspectionProvider), anonymousType.fullyQualifiedName);
 
         return new Lambda(Identifier.from(lambdaExpr), inspectionProvider,

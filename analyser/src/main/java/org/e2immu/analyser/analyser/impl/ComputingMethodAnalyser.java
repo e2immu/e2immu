@@ -46,8 +46,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingMethodAnalyser.class);
@@ -185,7 +183,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     // called from primary type analyser
     @Override
     public AnalyserResult analyse(int iteration, EvaluationContext closure) {
-        log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
+        LOGGER.debug("Analysing method {}", methodInfo.fullyQualifiedName());
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
         SharedState sharedState = new SharedState(evaluationContext);
@@ -270,7 +268,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return DONE;
         }
 
-        log(EVENTUALLY, "Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
+        LOGGER.debug("Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
         AnnotationExpression annotation = detectEventual.makeAnnotation(eventual);
         methodAnalysis.annotations.put(annotation, true);
         return DONE;
@@ -290,7 +288,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .map(fa -> fa.getProperty(Property.FINAL))
                     .reduce(Property.FINAL.bestDv, DV::min);
             if (finalOverFields.isDelayed()) {
-                log(DELAYED, "Delaying eventual in {} until we know about @Final of fields",
+                LOGGER.debug("Delaying eventual in {} until we know about @Final of fields",
                         methodInfo.fullyQualifiedName);
                 return finalOverFields.causesOfDelay();
             }
@@ -316,7 +314,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
-                log(DELAYED, "Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
 
                 return haveEventuallyImmutableFields.causesOfDelay();
             }
@@ -339,7 +337,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     })
                     .reduce(DV.FALSE_DV, DV::max);
             if (haveContentChangeableField.isDelayed()) {
-                log(DELAYED, "Delaying eventual in {} until we know about transparent types of fields",
+                LOGGER.debug("Delaying eventual in {} until we know about transparent types of fields",
                         methodInfo.fullyQualifiedName);
                 return haveContentChangeableField.causesOfDelay();
             }
@@ -351,7 +349,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (parentClass.isJavaLangObject()) {
-                log(EVENTUALLY, "No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
+                LOGGER.debug("No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForEventual.set(Optional.empty());
                 return DONE;
             }
@@ -361,7 +359,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         if (methodAnalysis.precondition.isVariable()) {
-            log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
+            LOGGER.debug("Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
             return methodAnalysis.precondition.get().expression().causesOfDelay();
         }
         Precondition precondition = methodAnalysis.precondition.get();
@@ -376,7 +374,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData().conditionManagerForNextStatement.get();
                         if (cm.stateIsDelayed().isDelayed()) {
-                            log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
+                            LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);
                             return cm.stateIsDelayed();
                         }
@@ -398,7 +396,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     }
                 }
             }
-            log(EVENTUALLY, "No @Mark @Only annotation in {} from precondition, found {} from assignment",
+            LOGGER.debug("No @Mark @Only annotation in {} from precondition, found {} from assignment",
                     methodInfo.distinguishingName(), combinedPrecondition);
             methodAnalysis.preconditionForEventual.set(Optional.ofNullable(combinedPrecondition));
             return DONE;
@@ -412,13 +410,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {
-            log(EVENTUALLY, "No @Mark/@Only annotation in {}: found no individual field preconditions",
+            LOGGER.debug("No @Mark/@Only annotation in {}: found no individual field preconditions",
                     methodInfo.distinguishingName());
             methodAnalysis.preconditionForEventual.set(Optional.empty());
             return DONE;
         }
         Expression[] preconditionExpressions = filterResult.accepted().values().toArray(Expression[]::new);
-        log(EVENTUALLY, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
+        LOGGER.debug("Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
 
         Expression and = And.and(sharedState.evaluationContext, preconditionExpressions);
@@ -483,7 +481,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(Property.CONTAINER, MultiLevel.CONTAINER_DV);
                 return DONE;
             }
-            log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
+            LOGGER.debug("Method {} has return value {}, delaying", methodInfo.distinguishingName(),
                     value.debugOutput());
             if (variableInfo.isDelayed()) {
                 methodAnalysis.singleReturnValue.setVariable(delayedSrv(variableInfo.getValue().causesOfDelay()));
@@ -498,7 +496,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         if (!value.isConstant()) {
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
             if (modified.isDelayed()) {
-                log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
+                LOGGER.debug("Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 methodAnalysis.singleReturnValue.setVariable(delayedSrv(modified.causesOfDelay()));
                 return modified.causesOfDelay();
             }
@@ -531,7 +529,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
-                log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
                 methodAnalysis.singleReturnValue.setVariable(delayedSrv(externalNotNull.causesOfDelay()));
                 return externalNotNull.causesOfDelay();
             }
@@ -549,7 +547,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
             DV constantField = fieldAnalysis.getProperty(Property.CONSTANT);
             if (constantField.isDelayed()) {
-                log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation",
+                LOGGER.debug("Delaying return value of {}, waiting for effectively final value's @Constant designation",
                         methodInfo.distinguishingName);
                 methodAnalysis.singleReturnValue.setVariable(delayedSrv(constantField.causesOfDelay()));
                 return constantField.causesOfDelay();
@@ -568,14 +566,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             methodAnalysis.annotations.put(e2.constant, false);
         }
         methodAnalysis.setProperty(Property.CONSTANT, DV.fromBoolDv(isConstant));
-        log(METHOD_ANALYSER, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
+        LOGGER.debug("Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
         VariableExpression vv;
         boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
-        log(METHOD_ANALYSER, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
+        LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
         DV currentIdentity = methodAnalysis.getProperty(IDENTITY);
         if (currentIdentity.isDelayed()) {
@@ -592,7 +590,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV immutable = computeImmutableValue();
         if (immutable.isDelayed()) return immutable.causesOfDelay();
         methodAnalysis.setProperty(IMMUTABLE, immutable);
-        log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
+        LOGGER.debug("Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
@@ -601,13 +599,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         DV container = computeContainerValue();
         if (container.isDelayed()) return container.causesOfDelay();
         methodAnalysis.setProperty(CONTAINER, container);
-        log(IMMUTABLE_LOG, "Set @Container to {} on {}", container, methodInfo.fullyQualifiedName);
+        LOGGER.debug("Set @Container to {} on {}", container, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
     private DV computeContainerValue() {
         if (!methodAnalysis.singleReturnValue.isFinal()) {
-            log(DELAYED, "Delaying @Container on {} until return value is set", methodInfo.fullyQualifiedName);
+            LOGGER.debug("Delaying @Container on {} until return value is set", methodInfo.fullyQualifiedName);
             return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
         }
         Expression expression = methodAnalysis.singleReturnValue.get();
@@ -628,7 +626,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
 
         if (!methodAnalysis.singleReturnValue.isFinal()) {
-            log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
+            LOGGER.debug("Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
             return methodInfo.delay(CauseOfDelay.Cause.VALUE).merge(methodAnalysis.singleReturnValue.get().causesOfDelay());
         }
         Expression expression = methodAnalysis.singleReturnValue.get();
@@ -716,10 +714,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         // wait
         if (modified.valueIsFalse()) {
-            log(DELAYED, "Delaying @Modified of method {}, cycle", methodInfo.fullyQualifiedName);
+            LOGGER.debug("Delaying @Modified of method {}, cycle", methodInfo.fullyQualifiedName);
             return methodInfo.delay(CauseOfDelay.Cause.MODIFIED_CYCLE);
         }
-        log(DELAYED, "Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
+        LOGGER.debug("Delaying @Modified of method {}, modified", methodInfo.fullyQualifiedName);
         return modified.causesOfDelay();
     }
 
@@ -740,7 +738,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
-            log(MODIFICATION, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
+            LOGGER.debug("Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(property, DV.TRUE_DV);
             return DONE;
         }
@@ -754,7 +752,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .map(vi -> vi.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.FALSE_DV, DV::max);
         if (contextModified.isDelayed()) {
-            log(DELAYED, "Method {}: Not deciding on @Modified yet: no context modified",
+            LOGGER.debug("Method {}: Not deciding on @Modified yet: no context modified",
                     methodInfo.distinguishingName());
             methodAnalysis.setProperty(property, contextModified);
             return contextModified.causesOfDelay();
@@ -765,7 +763,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (thisVariable != null) {
                 DV thisModified = thisVariable.getProperty(Property.CONTEXT_MODIFIED);
                 if (thisModified.isDelayed()) {
-                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                    LOGGER.debug("In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
                     return thisModified.causesOfDelay();
                 }
@@ -791,13 +789,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .reduce(DV.MIN_INT_DV, DV::max);
             if (maxModified != DV.MIN_INT_DV) {
                 if (maxModified.isDelayed()) {
-                    log(DELAYED, "Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
+                    LOGGER.debug("Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
                     return maxModified.causesOfDelay();
                 }
                 contextModified = maxModified;
             }
         }
-        log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
+        LOGGER.debug("Mark method {} as {}", methodInfo.distinguishingName(),
                 contextModified.valueIsTrue() ? "@Modified" : "@NotModified");
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(property, contextModified);

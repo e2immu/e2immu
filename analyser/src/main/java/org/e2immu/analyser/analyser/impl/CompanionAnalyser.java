@@ -37,9 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class CompanionAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompanionAnalyser.class);
@@ -96,7 +93,7 @@ public class CompanionAnalyser {
             }
             companionAnalysis.value.set(evaluationResult.value());
 
-            log(ANALYSER, "Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
+            LOGGER.debug("Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
             return DONE;
         } catch (RuntimeException e) {
             LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
@@ -142,7 +139,7 @@ public class CompanionAnalyser {
             }
             remap.put(parameterInfo.name, value);
         }
-        log(COMPANION, "Companion map for {} of {}: {}", companionMethodName, mainMethod.fullyQualifiedName(), remap);
+        LOGGER.debug("Companion map for {} of {}: {}", companionMethodName, mainMethod.fullyQualifiedName(), remap);
         companionAnalysis.remapParameters.set(Map.copyOf(remap));
         companionAnalysis.parameterValues.set(parameterValues);
     }

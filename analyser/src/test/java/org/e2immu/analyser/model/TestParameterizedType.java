@@ -21,8 +21,6 @@ import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.util.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,11 +33,6 @@ import static org.e2immu.analyser.model.ParameterizedType.WildCard.NONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestParameterizedType {
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate();
-    }
 
     Primitives primitives;
     InspectionProvider IP;
@@ -197,13 +190,13 @@ public class TestParameterizedType {
                 "R as #1 in org.e2immu.Function=Type java.lang.Boolean, " +
                 "T as #0 in org.e2immu.Function=Type org.e2immu.Map<java.lang.String,java.lang.Integer>, " +
                 "V as #1 in org.e2immu.Map=Type java.lang.Integer", translation
-                .entrySet().stream().map(e -> e.getKey()+"="+e.getValue()).sorted().collect(Collectors.joining(", ")));
+                .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
 
         Map<NamedType, ParameterizedType> translation2 = function.asParameterizedType(IP)
                 .translateMap(IP, functionMapToBoolean, true);
         assertEquals("R as #1 in org.e2immu.Function=Type java.lang.Boolean, " +
                 "T as #0 in org.e2immu.Function=Type org.e2immu.Map<java.lang.String,java.lang.Integer>", translation2
-                .entrySet().stream().map(e -> e.getKey()+"="+e.getValue()).sorted().collect(Collectors.joining(", ")));
+                .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
     }
 
     @Test

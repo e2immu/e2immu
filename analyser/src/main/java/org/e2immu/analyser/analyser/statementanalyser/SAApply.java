@@ -29,8 +29,9 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -38,11 +39,9 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnalyser) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SAApply.class);
 
     private Location getLocation() {
         return statementAnalysis.location();
@@ -69,8 +68,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     Finally, general modifications are carried out
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
-                                  EvaluationResult evaluationResultIn,
-                                  List<PrimaryTypeAnalyser> localAnalysers) {
+                                  EvaluationResult evaluationResultIn) {
         CausesOfDelay delay = evaluationResultIn.causesOfDelay();
         EvaluationResult evaluationResult = variablesReadAndAssignedInSubAnalysers(evaluationResultIn,
                 sharedState.evaluationContext());
@@ -130,8 +128,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Expression bestValue = SAHelper.bestValue(changeData, vi1);
                 Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue, changeData.stateIsDelayed());
 
-                if (Logger.isLogEnabled(ANALYSER)) {
-                    log(ANALYSER, "Write value {} to variable {}",
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Write value {} to variable {}",
                             valueToWrite.output(new QualificationImpl()), // can't write lambda's properly, otherwise
                             variable.fullyQualifiedName());
                 }
@@ -166,7 +164,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                     FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo);
                     DV effFinal = fieldAnalysis.getProperty(Property.FINAL);
                     if (effFinal.isDelayed()) {
-                        log(DELAYED, "Delaying statement {}, assignment to field, no idea about @Final", index());
+                        LOGGER.debug("Delaying statement {}, assignment to field, no idea about @Final", index());
                         delay = delay.merge(effFinal.causesOfDelay());
                     }
                 }
@@ -204,11 +202,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 }
             }
             if (vi.isDelayed()) {
-                log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
+                LOGGER.debug("Apply of {}, {} is delayed because of unknown value for {}",
                         index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(vi.getValue().causesOfDelay());
             } else if (changeData.delays().isDelayed()) {
-                log(DELAYED, "Apply of {}, {} is delayed because of delay in method call on {}",
+                LOGGER.debug("Apply of {}, {} is delayed because of delay in method call on {}",
                         index(), methodInfo().fullyQualifiedName, variable);
                 delay = delay.merge(changeData.delays());
             }
@@ -228,7 +226,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         }
 
         ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties
-                (sharedState, evaluationResult, localAnalysers, delay, analyserContext, groupPropertyValues);
+                (sharedState, evaluationResult, delay, analyserContext, groupPropertyValues);
 
         // debugging...
 
@@ -274,7 +272,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
      */
     private ApplyStatusAndEnnStatus contextProperties(StatementAnalyserSharedState sharedState,
                                                       EvaluationResult evaluationResult,
-                                                      List<PrimaryTypeAnalyser> localAnalysers,
                                                       CausesOfDelay delay,
                                                       AnalyserContext analyserContext,
                                                       GroupPropertyValues groupPropertyValues) {
@@ -448,7 +445,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             CausesOfDelay marker = new SimpleSet(new VariableCause(variable, getLocation(), CauseOfDelay.Cause.STATE_DELAYED));
             if (stateIsDelayedInChangeData.causesStream().anyMatch(c -> c.cause() == CauseOfDelay.Cause.STATE_DELAYED &&
                     c instanceof VariableCause vc && vc.variable().equals(variable) && c.location().equals(vc.location()))) {
-                log(DELAYED, "Breaking delay " + marker);
+                LOGGER.debug("Breaking delay " + marker);
             } else {
                 CausesOfDelay merged = stateIsDelayedInChangeData.merge(marker);
                 LinkedVariables lv = LinkedVariables.delayedEmpty(merged);

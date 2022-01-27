@@ -19,9 +19,8 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.MethodInspection;
 import org.e2immu.analyser.model.TypeInfo;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
 in the method item, we have
@@ -35,6 +34,7 @@ The companion method is not necessarily static. (It is only when this. is used..
 */
 
 public class CreateCompanionMethod {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreateCompanionMethod.class);
 
     public static void add(TypeInfo currentType,
                            MethodInspectionImpl.Builder methodInspectionBuilder,
@@ -42,7 +42,7 @@ public class CreateCompanionMethod {
 
         String name = companionMethod.name.substring(0, companionMethod.name.indexOf('('));
         CompanionMethodName companionMethodName = CompanionMethodName.extract(name);
-        log(BYTECODE_INSPECTOR_DEBUG, "Extracted {}", companionMethodName);
+        LOGGER.debug("Extracted {}", companionMethodName);
 
         MethodInspection.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
         companionBuilder.setStatic(true);

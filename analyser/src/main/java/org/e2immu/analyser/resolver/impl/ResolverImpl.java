@@ -47,9 +47,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.util.ConvertExpressionWithTypeCreations.convertExpressionIntoSupplier;
 import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
-import static org.e2immu.analyser.util.Logger.isLogEnabled;
-import static org.e2immu.analyser.util.Logger.log;
 
 /*
 The Resolver is recursive with respect to types defined in statements: anonymous types (new XXX() { }),
@@ -159,7 +156,7 @@ public class ResolverImpl implements Resolver {
                                                            Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
         Set<TypeInfo> inCycle = new HashSet<>();
 
-        log(RESOLVER, "\n\n******* start sorting *********\n");
+        LOGGER.debug("\n\n******* start sorting *********\n");
         return typeGraph.sorted(typeInfo -> {
                     if (inCycle.add(typeInfo)) {
                         Set<TypeInfo> dependencies = typeGraph.dependencies(typeInfo);
@@ -167,11 +164,11 @@ public class ResolverImpl implements Resolver {
                         Set<TypeInfo> typesInCycle = Stream.concat(Stream.of(typeInfo),
                                         rawTypesInCycle.stream().filter(t -> !inCycle.contains(t)))
                                 .collect(Collectors.toUnmodifiableSet());
-                        if (isLogEnabled(RESOLVER)) {
+                        if (LOGGER.isDebugEnabled()) {
                             if (typesInCycle.size() == 1) {
-                                log(RESOLVER, "Type {} connects to previous cycles", typeInfo);
+                                LOGGER.debug("Type {} connects to previous cycles", typeInfo);
                             } else {
-                                log(RESOLVER, "Type {} is part of cycle of size {}, not yet visited {}:\n------\n{}\n------",
+                                LOGGER.debug("Type {} is part of cycle of size {}, not yet visited {}:\n------\n{}\n------",
                                         typeInfo,
                                         rawTypesInCycle.size(),
                                         typesInCycle.size(),
@@ -190,7 +187,7 @@ public class ResolverImpl implements Resolver {
                                 typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
                     }
                 },
-                typeInfo -> log(RESOLVER, "Adding {}", typeInfo.fullyQualifiedName),
+                typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
                 Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
     }
 
@@ -270,11 +267,11 @@ public class ResolverImpl implements Resolver {
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(null, null,
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName)));
 
-        if (isLogEnabled(RESOLVER)) {
-            log(RESOLVER, "Method graph has {} relations", methodFieldSubTypeGraph.relations());
-            log(RESOLVER, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Method graph has {} relations", methodFieldSubTypeGraph.relations());
+            LOGGER.debug("Method and field order in {}: {}", typeInfo.fullyQualifiedName,
                     methodFieldSubTypeOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
-            log(RESOLVER, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
+            LOGGER.debug("Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
         }
 
         return new SortedType(typeInfo, methodFieldSubTypeOrder);
@@ -293,11 +290,11 @@ public class ResolverImpl implements Resolver {
 
             // recursion, do sub-types first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
-                log(RESOLVER, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
+                LOGGER.debug("From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
                 doType(subType, expressionContextOfType, methodFieldSubTypeGraph);
             });
 
-            log(RESOLVER, "Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
+            LOGGER.debug("Resolving type #{}: {}", typeCounterForDebugging.incrementAndGet(), typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContextImpl.forTypeBodyParsing(this, typeInfo, primaryType, expressionContextOfType);
 
@@ -364,7 +361,7 @@ public class ResolverImpl implements Resolver {
             }
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
             fieldInfo.fieldInspection.set(fieldInspection.build());
-            log(RESOLVER, "Set field inspection of " + fieldInfo.fullyQualifiedName());
+            LOGGER.debug("Set field inspection of " + fieldInfo.fullyQualifiedName());
 
             doAnnotations(fieldInspection.getAnnotations(), expressionContext);
         });
@@ -464,7 +461,7 @@ public class ResolverImpl implements Resolver {
                     "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
             boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
             if (haveCompanionMethods) {
-                log(RESOLVER, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
+                LOGGER.debug("Start resolving companion methods of {}", methodInspection.getDistinguishingName());
 
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext().getMethodInspection(companionMethod);
@@ -478,7 +475,7 @@ public class ResolverImpl implements Resolver {
                     }
                 });
 
-                log(RESOLVER, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
+                LOGGER.debug("Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
             }
             try {
                 doMethodOrConstructor(typeInspection, methodInfo, (MethodInspectionImpl.Builder) methodInspection,
@@ -497,7 +494,7 @@ public class ResolverImpl implements Resolver {
                                        ExpressionContext expressionContext,
                                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
                                        Set<TypeInfo> restrictToType) {
-        log(RESOLVER, "Resolving {}", methodInfo.fullyQualifiedName);
+        LOGGER.debug("Resolving {}", methodInfo.fullyQualifiedName);
 
         // TYPE PARAMETERS OF METHOD
 
@@ -522,7 +519,7 @@ public class ResolverImpl implements Resolver {
                         typeInspection, methodInspection);
             }
             if (block != null && !block.getStatements().isEmpty()) {
-                log(RESOLVER, "Parsing block of method {}", methodInfo.name);
+                LOGGER.debug("Parsing block of method {}", methodInfo.name);
                 doBlock(subContext, methodInfo, methodInspection, block, blockBuilder);
             } else {
                 methodInspection.setInspectedBlock(blockBuilder.build());
@@ -606,7 +603,7 @@ public class ResolverImpl implements Resolver {
             ForwardReturnTypeInfo forwardReturnTypeInfo = new ForwardReturnTypeInfo(methodInspection.getReturnType());
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, forwardReturnTypeInfo);
             methodInspection.getParameters().forEach(newContext.variableContext()::add);
-            log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext());
+            LOGGER.debug("Parsing block with variable context {}", newContext.variableContext());
             Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);
             methodInspection.setInspectedBlock(parsedBlock);
         } catch (RuntimeException rte) {
@@ -713,7 +710,7 @@ public class ResolverImpl implements Resolver {
                     }
                 });
                 boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
-                log(RESOLVER, "Method {} is not static, does it have no calls on <this> scope? {}",
+                LOGGER.debug("Method {} is not static, does it have no calls on <this> scope? {}",
                         methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
                 methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
             }

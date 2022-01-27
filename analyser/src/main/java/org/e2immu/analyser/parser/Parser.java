@@ -42,8 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
-import static org.e2immu.analyser.util.Logger.log;
-
 
 public class Parser {
     private static final Logger LOGGER = LoggerFactory.getLogger(Parser.class);
@@ -214,8 +212,10 @@ public class Parser {
         for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
             typeMapVisitor.visit(typeMap);
         }
-        log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
-                sortedPrimaryTypes.stream().map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Analysing primary types:\n{}", sortedPrimaryTypes.stream()
+                    .map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
+        }
         List<List<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
         for (List<SortedType> sortedTypeCycle : groupByCycles) {
             analyseSortedTypeCycle(sortedTypeCycle, shallowContext);
@@ -242,7 +242,7 @@ public class Parser {
     private void analyseSortedTypeCycle(List<SortedType> sortedTypes, AnalyserContext analyserContext) {
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyserImpl(analyserContext, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), Either.right(getTypeContext()),
-                getTypeContext().typeMap.getE2ImmuAnnotationExpressions(), false);
+                getTypeContext().typeMap.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {

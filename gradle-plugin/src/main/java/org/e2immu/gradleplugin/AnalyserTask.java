@@ -17,7 +17,6 @@ package org.e2immu.gradleplugin;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.cli.RunAnalyser;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.util.Logger.LogTarget;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -26,15 +25,9 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class AnalyserTask extends ConventionTask {
-    private static final Set<LogTarget> DEBUG_TARGETS = Set.of(CONFIGURATION, BYTECODE_INSPECTOR, INSPECTOR, ANALYSER, UPLOAD);
-
     private static final Logger LOGGER = Logging.getLogger(AnalyserTask.class);
     private Map<String, String> analyserProperties;
 
@@ -51,16 +44,12 @@ public class AnalyserTask extends ConventionTask {
         } else if (LOGGER.isDebugEnabled()) {
             String inExtension = properties.get(Main.DEBUG);
             if (inExtension == null || inExtension.trim().isEmpty()) {
-                properties.put(Main.DEBUG, DEBUG_TARGETS.stream()
-                        .map(LogTarget::toString)
-                        .collect(Collectors.joining(",")));
+                properties.put(Main.DEBUG, inExtension);
             }
         }
-        org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, Set.of(CONFIGURATION));
 
         Configuration configuration = Main.fromProperties(properties);
-        log(CONFIGURATION, "Configuration:\n{}", configuration);
-        org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets());
+        LOGGER.debug("Configuration:\n{}", configuration);
 
         RunAnalyser runAnalyser = new RunAnalyser(configuration);
         runAnalyser.run();
@@ -70,10 +59,6 @@ public class AnalyserTask extends ConventionTask {
         if (exitValue != 0) {
             throw new RuntimeException("Analyser exited with error value " + exitValue + ": " + Main.exitMessage(exitValue));
         }
-    }
-
-    private static void logMessage(LogTarget logTarget, String msg, Object[] objects) {
-        LOGGER.debug(logTarget + ": " + msg, objects);
     }
 
     /**

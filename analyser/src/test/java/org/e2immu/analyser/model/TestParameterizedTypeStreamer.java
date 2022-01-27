@@ -19,8 +19,6 @@ import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.util.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -28,11 +26,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestParameterizedTypeStreamer {
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate();
-    }
 
     static class Clazz<T> {
         private final T t;

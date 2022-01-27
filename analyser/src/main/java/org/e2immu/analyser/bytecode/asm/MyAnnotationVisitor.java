@@ -22,16 +22,18 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
 import org.objectweb.asm.AnnotationVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyAnnotationVisitor.class);
+
     private final TypeContext typeContext;
     private final Inspection.InspectionBuilder<T> inspectionBuilder;
     private final AnnotationExpressionImpl.Builder expressionBuilder;
@@ -40,7 +42,7 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         super(ASM9);
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
-        log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
+        LOGGER.debug("My annotation visitor: {}", descriptor);
         FindType findType = (fqn, path) -> typeContext.typeMap.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
         ParameterizedType type = ParameterizedTypeFactory.from(typeContext, findType, descriptor).parameterizedType;
         expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
@@ -48,13 +50,13 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Annotation again: {}, {}", name, descriptor);
+        LOGGER.debug("Annotation again: {}, {}", name, descriptor);
         return null;
     }
 
     @Override
     public void visit(String name, Object value) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Assignment: {} to {}", name, value);
+        LOGGER.debug("Assignment: {} to {}", name, value);
         Expression expression = ExpressionFactory.from(typeContext, value);
         MemberValuePair mvp = new MemberValuePair(name, expression);
         expressionBuilder.addExpression(mvp);

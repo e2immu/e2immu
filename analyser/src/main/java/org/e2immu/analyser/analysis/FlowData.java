@@ -19,13 +19,13 @@ import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.e2immu.support.VariableFirstThen;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +34,6 @@ import java.util.Map;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.InterruptsFlow.*;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * Flow is that part of the analysis that is concerned with reachability of statements,
@@ -43,6 +42,7 @@ import static org.e2immu.analyser.util.Logger.log;
  * Flow analysis is never delayed.
  */
 public class FlowData {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlowData.class);
 
     // meant for statements following a
     private final VariableFirstThen<CausesOfDelay, DV> guaranteedToBeReachedInCurrentBlock;
@@ -166,7 +166,7 @@ public class FlowData {
 
     public DV execution(DV statementsExecution) {
         // combine with guaranteed to be reached in block
-        if(NEVER.equals(statementsExecution)) return NEVER;
+        if (NEVER.equals(statementsExecution)) return NEVER;
         DV inMethod = guaranteedToBeReachedInMethod.isSet() ? guaranteedToBeReachedInMethod.get() :
                 guaranteedToBeReachedInMethod.getFirst();
         return inMethod.min(statementsExecution);
@@ -265,7 +265,7 @@ public class FlowData {
         }
 
         if (stateIsDelayed.isDelayed()) {
-            log(Logger.LogTarget.DELAYED, "Delaying guaranteed to be reached, no value state");
+            LOGGER.debug("Delaying guaranteed to be reached, no value state");
             return delayBasedOnExecutionAndLocalConditionManager;
         }
 
@@ -338,7 +338,7 @@ public class FlowData {
         if (!blockExecution.isSet()) return blockExecution.getFirst();
 
         if (previousStatement != null && !previousStatement.flowData().interruptsFlowIsSet()) {
-            log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
+            LOGGER.debug("Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
                     previousStatement.index());
             return previousStatement.flowData().interruptsFlow.getFirst();
         }
@@ -352,7 +352,7 @@ public class FlowData {
             StatementAnalysis subStatementAnalysis = subAnalyser.getStatementAnalysis();
             FlowData flowData = subStatementAnalysis.flowData();
             if (!flowData.interruptsFlowIsSet()) {
-                log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
+                LOGGER.debug("Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
                         subAnalyser.index());
                 CausesOfDelay delays = flowData.interruptsFlow.getFirst().causesOfDelay();
                 interruptsFlow.setFirst(delays);
@@ -364,7 +364,7 @@ public class FlowData {
                 if (flowData.blockExecution.isFirst()) {
                     CausesOfDelay delays = flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
-                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
+                    LOGGER.debug("Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }
@@ -373,7 +373,7 @@ public class FlowData {
                 InterruptsFlow i = entry.getKey();
                 DV e = entry.getValue();
                 if (e.isDelayed()) {
-                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} interruptsFlow",
+                    LOGGER.debug("Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} interruptsFlow",
                             subAnalyser.index());
                     interruptsFlow.setFirst(e.causesOfDelay());
                     return e.causesOfDelay();
@@ -385,7 +385,7 @@ public class FlowData {
                 if (flowData.blockExecution.isFirst()) {
                     CausesOfDelay delays = flowData.blockExecution.getFirst().causesOfDelay();
                     interruptsFlow.setFirst(delays);
-                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
+                    LOGGER.debug("Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return delays;
                 }

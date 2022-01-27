@@ -24,14 +24,13 @@ import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.isLogEnabled;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class ParseMethodReferenceExpr {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodReferenceExpr.class);
 
     public static Expression parse(ExpressionContext expressionContext,
                                    MethodReferenceExpr methodReferenceExpr,
@@ -40,7 +39,7 @@ public class ParseMethodReferenceExpr {
         MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.computeSAM(typeContext);
         assert singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod();
 
-        log(METHOD_CALL, "Start parsing method reference {}", methodReferenceExpr);
+        LOGGER.debug("Start parsing method reference {}", methodReferenceExpr);
 
         Expression scope = expressionContext.parseExpressionStartVoid(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
@@ -85,7 +84,7 @@ public class ParseMethodReferenceExpr {
             for (int i = 0; i < singleAbstractMethod.methodInspection.getParameters().size(); i++) {
                 final int index = i;
                 ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(typeContext.getPrimitives(), i);
-                log(METHOD_CALL, "Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
+                LOGGER.debug("Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
                         methodCandidates.size(), concreteType.detailedString(), i);
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
@@ -108,12 +107,12 @@ public class ParseMethodReferenceExpr {
                 });
             }
             if (methodCandidates.size() > 1) {
-                log(METHOD_CALL, "Trying to weed out those of the same type, static vs instance");
+                LOGGER.debug("Trying to weed out those of the same type, static vs instance");
                 staticVsInstance(methodCandidates);
                 if (methodCandidates.size() > 1) {
-                    if (isLogEnabled(METHOD_CALL)) {
-                        log(METHOD_CALL, "Still have {}", methodCandidates.size());
-                        methodCandidates.forEach(mc -> log(METHOD_CALL, "- {}", mc.method().methodInspection.getDistinguishingName()));
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Still have {}", methodCandidates.size());
+                        methodCandidates.forEach(mc -> LOGGER.debug("- {}", mc.method().methodInspection.getDistinguishingName()));
                     }
                     // method candidates have been sorted; the first one should be the one we're after and others should be
                     // higher in the hierarchy (interfaces, parent classes)
@@ -127,7 +126,7 @@ public class ParseMethodReferenceExpr {
         List<ParameterizedType> types = inputTypes(parameterizedType, method, parametersPresented);
         ParameterizedType concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types, concreteReturnType);
-        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting,
+        LOGGER.debug("End parsing method reference {}, found {}", methodNameForErrorReporting,
                 method.methodInspection.getDistinguishingName());
         return new MethodReference(Identifier.from(methodReferenceExpr),
                 scope, method.methodInspection.getMethodInfo(), functionalType);
@@ -199,7 +198,7 @@ public class ParseMethodReferenceExpr {
         }
         Set<LambdaExpressionErasures.Count> erasures = new HashSet<>();
         for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
-            log(METHOD_CALL, "Found method reference candidate, this can work: {}",
+            LOGGER.debug("Found method reference candidate, this can work: {}",
                     methodCandidate.method().methodInspection.getDistinguishingName());
             MethodInspection methodInspection = methodCandidate.method().methodInspection;
             boolean scopeIsType = scopeIsAType(scope);
@@ -208,7 +207,7 @@ public class ParseMethodReferenceExpr {
             boolean isVoid = !constructor && methodInspection.isVoid();
             erasures.add(new LambdaExpressionErasures.Count(n, isVoid));
         }
-        log(METHOD_CALL, "End parsing unevaluated method reference {}, found counts {}", methodReferenceExpr, erasures);
+        LOGGER.debug("End parsing unevaluated method reference {}, found counts {}", methodReferenceExpr, erasures);
         return new LambdaExpressionErasures(erasures, expressionContext.getLocation());
     }
 

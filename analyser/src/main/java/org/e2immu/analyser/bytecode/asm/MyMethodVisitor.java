@@ -22,14 +22,16 @@ import org.e2immu.analyser.model.*;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyMethodVisitor extends MethodVisitor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyMethodVisitor.class);
+
     private final TypeInspection.Builder typeInspectionBuilder;
     private final TypeContext typeContext;
     private final MethodInspection.Builder methodInspectionBuilder;
@@ -67,13 +69,13 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Have method annotation {} {}", descriptor, visible);
+        LOGGER.debug("Have method annotation {} {}", descriptor, visible);
         return new MyAnnotationVisitor<>(typeContext, descriptor, methodInspectionBuilder);
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Have parameter annotation {} on parameter {}", descriptor, parameter);
+        LOGGER.debug("Have parameter annotation {} on parameter {}", descriptor, parameter);
         return new MyAnnotationVisitor<>(typeContext, descriptor, parameterInspectionBuilders[parameter]);
     }
 
@@ -105,7 +107,7 @@ public class MyMethodVisitor extends MethodVisitor {
                 if (lastParameterIsVarargs && i == numberOfParameters - 1) {
                     pib.setVarArgs(true);
                 }
-                log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
+                LOGGER.debug("Set parameterInspection {}", i);
             }
         }
 
@@ -119,7 +121,7 @@ public class MyMethodVisitor extends MethodVisitor {
                                 parameterInspectionBuilders[parameterItem.index]);
                     }
                 } else {
-                    log(BYTECODE_INSPECTOR_DEBUG, "Ignoring parameter with index {} on method {}",
+                    LOGGER.debug("Ignoring parameter with index {} on method {}",
                             parameterItem.index, methodInspectionBuilder.getFullyQualifiedName());
                 }
             }

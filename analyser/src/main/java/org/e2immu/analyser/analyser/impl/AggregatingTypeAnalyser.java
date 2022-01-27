@@ -23,16 +23,16 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingTypeAnalyser.class);
 
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";
@@ -111,10 +111,10 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                     .map(a -> a.getProperty(property))
                     .reduce(property.bestDv, DV::min);
             if (value.isDelayed()) {
-                log(DELAYED, "Delaying aggregate of {} for {}", property, typeInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying aggregate of {} for {}", property, typeInfo.fullyQualifiedName);
                 return value.causesOfDelay();
             }
-            log(ANALYSER, "Set aggregate of {} to {} for {}", property, value, typeInfo.fullyQualifiedName);
+            LOGGER.debug("Set aggregate of {} to {} for {}", property, value, typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(property, value);
         }
         return DONE;

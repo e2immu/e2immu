@@ -23,17 +23,16 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.isLogEnabled;
-import static org.e2immu.analyser.util.Logger.log;
-
 public final class Or extends BaseExpression implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Or.class);
+
     private final Primitives primitives;
     private final List<Expression> expressions;
     public static final int COMPLEXITY = 4;
@@ -71,7 +70,7 @@ public final class Or extends BaseExpression implements Expression {
 
         if (this.expressions.isEmpty() && values.size() == 1) {
             if (values.get(0) instanceof Or || values.get(0) instanceof And) {
-                log(EXPRESSION, "Return immediately in Or: {}", values.get(0));
+                LOGGER.debug("Return immediately in Or: {}", values.get(0));
                 return values.get(0);
             }
         }
@@ -89,7 +88,7 @@ public final class Or extends BaseExpression implements Expression {
         int complexity = values.stream().mapToInt(Expression::getComplexity).sum();
         boolean changes = complexity < LIMIT_ON_COMPLEXITY;
         if (!changes) {
-            log(ANALYSER, "Not analysing OR operation, complexity {}", complexity);
+            LOGGER.debug("Not analysing OR operation, complexity {}", complexity);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
 
@@ -104,7 +103,7 @@ public final class Or extends BaseExpression implements Expression {
 
             for (Expression value : concat) {
                 if (value instanceof BooleanConstant bc && bc.constant()) {
-                    log(EXPRESSION, "Return TRUE in Or, found TRUE");
+                    LOGGER.debug("Return TRUE in Or, found TRUE");
                     return new BooleanConstant(primitives, true);
                 }
             }
@@ -119,7 +118,7 @@ public final class Or extends BaseExpression implements Expression {
                 // this works because of sorting
                 // A || !A will always sit next to each other
                 if (value instanceof Negation ne && ne.expression.equals(prev)) {
-                    log(EXPRESSION, "Return TRUE in Or, found opposites {}", value);
+                    LOGGER.debug("Return TRUE in Or, found opposites {}", value);
                     return new BooleanConstant(primitives, true);
                 }
 
@@ -148,8 +147,8 @@ public final class Or extends BaseExpression implements Expression {
             Expression[] components = firstAnd.getExpressions().stream()
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
-            if (isLogEnabled(EXPRESSION)) {
-                log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
             }
             int complexityComponents = Arrays.stream(components).mapToInt(Expression::getComplexity).sum();
             if (complexityComponents < LIMIT_ON_COMPLEXITY) {
@@ -163,7 +162,7 @@ public final class Or extends BaseExpression implements Expression {
         }
 
         if (finalValues.isEmpty()) {
-            log(EXPRESSION, "Empty disjunction returned as false");
+            LOGGER.debug("Empty disjunction returned as false");
             return new BooleanConstant(primitives, false);
         }
 

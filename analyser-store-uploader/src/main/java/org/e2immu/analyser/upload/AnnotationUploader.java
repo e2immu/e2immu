@@ -39,9 +39,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.UPLOAD;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class AnnotationUploader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationUploader.class);
     public static final String TYPE_SUFFIX = "-t";
@@ -64,14 +61,14 @@ public class AnnotationUploader {
         Map<String, List<String>> map = new HashMap<>();
         for (TypeInfo type : types) {
             map.putAll(add(type));
-            log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
+            LOGGER.debug("Adding annotations of {}", type.fullyQualifiedName);
             type.typesReferenced().stream().map(Map.Entry::getKey).forEach(referredTo::add);
         }
         referredTo.removeAll(types);
 
-        log(UPLOAD, "Adding annotations of {} types referred to", referredTo.size());
+        LOGGER.debug("Adding annotations of {} types referred to", referredTo.size());
         for (TypeInfo type : referredTo) {
-            log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
+            LOGGER.debug("Adding annotations of {}", type.fullyQualifiedName);
             map.putAll(add(type));
         }
 
@@ -80,7 +77,7 @@ public class AnnotationUploader {
                 .forEach(message -> SMapList.add(map, fqn(((LocationImpl) message.location()).info),
                         "error" + suffix(((LocationImpl) message.location()).info)));
 
-        log(UPLOAD, "Writing {} annotations", map.size());
+        LOGGER.debug("Writing {} annotations", map.size());
         return map.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(",", e.getValue())));
     }
@@ -103,7 +100,7 @@ public class AnnotationUploader {
 
     private Map<String, List<String>> add(TypeInfo type) {
         if (!configuration.accept(type.packageName())) {
-            log(UPLOAD, "Rejecting type {} because of upload package configuration", type.fullyQualifiedName);
+            LOGGER.debug("Rejecting type {} because of upload package configuration", type.fullyQualifiedName);
             return Map.of();
         }
         Map<String, List<String>> map = new HashMap<>(annotations(type, type.fullyQualifiedName, TYPE_SUFFIX));
@@ -160,7 +157,7 @@ public class AnnotationUploader {
     public void writeMap(Map<String, String> map) {
         Gson gson = new Gson();
         String jsonString = gson.toJson(map);
-        log(UPLOAD, "Json: {}", jsonString);
+        LOGGER.debug("Json: {}", jsonString);
         writeJson(jsonString);
     }
 
@@ -172,7 +169,7 @@ public class AnnotationUploader {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Could not encode the JSON body");
         }
-        log(UPLOAD, "Calling PUT on " + url);
+        LOGGER.debug("Calling PUT on " + url);
         try (CloseableHttpResponse response = httpClient.execute(httpPut)) {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == 200) {
@@ -182,7 +179,7 @@ public class AnnotationUploader {
                 while (reader.hasNext()) {
                     String action = reader.nextName();
                     int count = reader.nextInt();
-                    log(UPLOAD, "Response: {} = {}", action, count);
+                    LOGGER.debug("Response: {} = {}", action, count);
                 }
             } else {
                 LOGGER.warn("PUT on {} returned response code {}", url, statusCode);

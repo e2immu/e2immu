@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -44,12 +43,6 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
     public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.parser.basics.testexample";
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
     public static final String JDK_16 = "/Library/Java/JavaVirtualMachines/adoptopenjdk-16.jdk/Contents/Home";
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate();
-    }
 
     protected TypeContext testClass(String className,
                                     int errorsToExpect,
@@ -89,23 +82,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(Stream.of(ANALYSER,
-                        //INSPECTOR,
-                        //RESOLVER,
-                        PRIMARY_TYPE_ANALYSER,
-                        LAMBDA,
-                        DELAYED,
-                        CONTEXT_MODIFICATION,
-                        FINAL,
-                        LINKED_VARIABLES,
-                        INDEPENDENCE,
-                        IMMUTABLE_LOG,
-                        METHOD_ANALYSER,
-                        TYPE_ANALYSER,
-                        NOT_NULL,
-                        MODIFICATION,
-                        EVENTUALLY
-                ).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);

@@ -25,9 +25,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.log;
-
 /**
  * Inside a compilation unit, there is a context in which names are known.
  * This context is inherently recursive, dependent on the container.
@@ -342,7 +339,6 @@ public class TypeContext implements TypeAndInspectionProvider {
         typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .map(this::getMethodInspection)
-                .peek(m -> log(METHOD_CALL, "Considering {}", m.getDistinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic())
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +

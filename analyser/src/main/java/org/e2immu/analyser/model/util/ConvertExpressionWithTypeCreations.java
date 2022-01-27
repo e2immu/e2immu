@@ -21,14 +21,15 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class ConvertExpressionWithTypeCreations {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConvertExpressionWithTypeCreations.class);
+
     public static MethodInfo convertExpressionIntoSupplier(ParameterizedType supplierReturnType,
                                                            boolean fieldIsStatic,
                                                            TypeInfo enclosingType,
@@ -70,8 +71,8 @@ public class ConvertExpressionWithTypeCreations {
         ReturnStatement statement = new ReturnStatement(Identifier.generate(), parsedExpression);
         Block block = new Block.BlockBuilder(identifier).addStatement(statement).build();
 
-        if (Logger.isLogEnabled(LAMBDA)) {
-            log(LAMBDA, "Constructed initializer {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Constructed initializer {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
         }
         return block;
     }

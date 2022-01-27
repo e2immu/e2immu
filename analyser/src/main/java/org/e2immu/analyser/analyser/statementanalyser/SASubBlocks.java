@@ -26,15 +26,16 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.Logger.LogTarget.PRECONDITION;
-import static org.e2immu.analyser.util.Logger.log;
 
 record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statementAnalyser) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SASubBlocks.class);
 
     private String index() {
         return statementAnalysis.index();
@@ -238,7 +239,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         .newForNextStatementDoNotChangePrecondition(evaluationContext, addToStateAfterStatement);
                 statementAnalysis.stateData().setLocalConditionManagerForNextStatement(newLocalConditionManager);
                 keepCurrentLocalConditionManager = false;
-                log(PRECONDITION, "Continuing beyond default condition with conditional", addToStateAfterStatement);
+                LOGGER.debug("Continuing beyond default condition with conditional {}", addToStateAfterStatement);
             }
         } else {
             int maxTime = statementAnalysis.flowData().getTimeAfterEvaluation();

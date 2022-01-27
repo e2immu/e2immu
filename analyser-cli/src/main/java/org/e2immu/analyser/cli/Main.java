@@ -23,10 +23,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class Main {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
     public static final String COMMA = ",";
 
@@ -85,7 +84,7 @@ public class Main {
         Configuration configuration = parseConfiguration(args);
         configuration.initializeLoggers();
         // the following will be output if the CONFIGURATION logger is active!
-        log(CONFIGURATION, "Configuration:\n{}", configuration);
+        LOGGER.debug("Configuration:\n{}", configuration);
         RunAnalyser runAnalyser = new RunAnalyser(configuration);
         runAnalyser.run();
         if (!configuration.quiet()) {

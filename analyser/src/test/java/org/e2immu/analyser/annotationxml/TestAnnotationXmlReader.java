@@ -16,7 +16,6 @@ package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.e2immu.analyser.util.Resources;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +32,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAnnotationXmlReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnnotationXmlReader.class);
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER);
-    }
 
     @Test
     public void test() throws ParserConfigurationException, SAXException, IOException {

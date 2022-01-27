@@ -17,23 +17,17 @@ package org.e2immu.analyser.cli;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
-import org.e2immu.analyser.util.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestConfiguration {
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate(CONFIGURATION);
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestConfiguration.class);
 
     @Test
     public void test() {
@@ -46,13 +40,13 @@ public class TestConfiguration {
                         .addClassPath("jmods/java.base.jmod").build())
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(BYTECODE_INSPECTOR.toString())
-                .addDebugLogTargets(INSPECTOR + "," + ANALYSER)
+                .addDebugLogTargets("bytecode")
+                .addDebugLogTargets("inspector,analyser")
                 .build();
-        log(CONFIGURATION, "Config1:\n{}", configuration);
+        LOGGER.debug("Config1:\n{}", configuration);
 
         Map<String, String> properties = new HashMap<>();
-        properties.put(Main.DEBUG, BYTECODE_INSPECTOR + "," + INSPECTOR + "," + ANALYSER);
+        properties.put(Main.DEBUG, "analyser,bytecode,inspector");
         properties.put(Main.SOURCE, "src/main/java");
         properties.put(Main.SOURCE_PACKAGES, "org.e2immu.analyser.util");
         properties.put(Main.CLASSPATH, "build/resources/main/annotatedAPIs" + Main.PATH_SEPARATOR +
@@ -60,7 +54,7 @@ public class TestConfiguration {
                 "jmods/java.base.jmod");
         properties.put(Main.UPLOAD, "true");
         Configuration configuration2 = Main.fromProperties(properties);
-        log(CONFIGURATION, "Config2:\n{}", configuration2);
+        LOGGER.debug("Config2:\n{}", configuration2);
         assertEquals(configuration.toString(), configuration2.toString());
         assertEquals(configuration, configuration2);
     }

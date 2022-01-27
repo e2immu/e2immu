@@ -37,9 +37,6 @@ import java.util.*;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.CONTEXT_NOT_NULL;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                     SAApply apply,
@@ -94,13 +91,13 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 if (state.isDelayed()) return state.causesOfDelay();
             } else if (statement() instanceof LocalClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext());
-                return apply.apply(sharedState, builder.build(), localAnalysers.get()).combinedStatus();
+                return apply.apply(sharedState, builder.build()).combinedStatus();
             } else if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 // empty parameters: this(); or super();
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
                 if (!assignments.isBooleanConstant()) {
                     EvaluationResult result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
-                    AnalysisStatus applyResult = apply.apply(sharedState, result, localAnalysers.get()).combinedStatus();
+                    AnalysisStatus applyResult = apply.apply(sharedState, result).combinedStatus();
                     return applyResult.combine(analysisStatus);
                 }
             }
@@ -142,7 +139,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (statementAnalysis.flowData().timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData().setTimeAfterEvaluation(result.statementTime(), index());
             }
-            ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result, localAnalysers.get());
+            ApplyStatusAndEnnStatus applyResult = apply.apply(sharedState, result);
 
             // post-process
 
@@ -152,15 +149,15 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (statementAnalysis.statement() instanceof ExplicitConstructorInvocation eci) {
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
                 if (!assignments.isBooleanConstant()) {
-                    log(ANALYSER, "Assignment expressions: {}", assignments);
+                    LOGGER.debug("Assignment expressions: {}", assignments);
                     result = assignments.evaluate(sharedState.evaluationContext(), structure.forwardEvaluationInfo());
-                    ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result, localAnalysers.get());
+                    ApplyStatusAndEnnStatus assignmentResult = apply.apply(sharedState, result);
                     statusPost = assignmentResult.status().merge(analysisStatus.causesOfDelay());
                     ennStatus = applyResult.ennStatus().merge(assignmentResult.ennStatus());
                 }
             }
             if (ennStatus.isDelayed()) {
-                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable: {}",
+                LOGGER.debug("Delaying statement {} in {} because of external not null/external immutable: {}",
                         index(), methodInfo().fullyQualifiedName, ennStatus);
             }
 
@@ -210,8 +207,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (state.isDelayed()) {
                 // we'll have to come back
                 CausesOfDelay stateForLoop = state.causesOfDelay();
-                log(DELAYED, "Delaying statement {} in {} because of state propagation to loop",
-                        index(), methodInfo().fullyQualifiedName, stateForLoop);
+                LOGGER.debug("Delaying statement {} in {} because of state propagation to loop",
+                        index(), methodInfo().fullyQualifiedName);
                 return stateForLoop;
             }
         }
@@ -251,7 +248,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             for (Map.Entry<ParameterInfo, Expression> e : result.accepted().entrySet()) {
                 boolean isNotNull = e.getValue().equalsNotNull();
                 Variable notNullVariable = e.getKey();
-                log(ANALYSER, "Found parameter (not)null ({}) assertion, {}", isNotNull, notNullVariable.simpleName());
+                LOGGER.debug("Found parameter (not)null ({}) assertion, {}", isNotNull, notNullVariable.simpleName());
                 if (isNotNull) {
                     builder.setProperty(notNullVariable, CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                     changes = true;

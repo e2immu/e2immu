@@ -34,9 +34,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER;
-import static org.e2immu.analyser.util.Logger.log;
-
 @E2Immutable
 public class AnnotationXmlReader implements AnnotationStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationXmlReader.class);
@@ -124,7 +121,7 @@ public class AnnotationXmlReader implements AnnotationStore {
     }
 
     private static int parse(URL annotationXml, Map<String, TypeItem> typeItemMap) throws ParserConfigurationException, IOException, SAXException {
-        log(ANNOTATION_XML_READER, "Parsing {}", annotationXml);
+        LOGGER.debug("Parsing {}", annotationXml);
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(annotationXml.openStream());
@@ -210,8 +207,7 @@ public class AnnotationXmlReader implements AnnotationStore {
                     Node subNode = annotationNodes.item(j);
                     if (subNode.getNodeType() == Node.ELEMENT_NODE &&
                             "annotation".equalsIgnoreCase(subNode.getNodeName())) {
-                        Node nameAttribute = subNode.getAttributes() == null ? null :
-                                subNode.getAttributes().getNamedItem("name");
+                        Node nameAttribute = subNode.getAttributes().getNamedItem("name");
                         if (nameAttribute != null) {
                             String annotationType = nameAttribute.getNodeValue();
                             Annotation.Builder annotationBuilder = new Annotation.Builder(annotationType);
@@ -220,7 +216,7 @@ public class AnnotationXmlReader implements AnnotationStore {
                             NodeList valueNodes = subNode.getChildNodes();
                             for (int k = 0; k < valueNodes.getLength(); k++) {
                                 Node valueNode = valueNodes.item(k);
-                                if (valueNode.getNodeType() == Node.ELEMENT_NODE && valueNode.getAttributes() != null) {
+                                if (valueNode.getNodeType() == Node.ELEMENT_NODE) {
                                     Node valNameNode = valueNode.getAttributes().getNamedItem("name");
                                     Node valValNode = valueNode.getAttributes().getNamedItem("val");
                                     if (valValNode != null) {
@@ -241,8 +237,7 @@ public class AnnotationXmlReader implements AnnotationStore {
                         }
                     } else if (subNode.getNodeType() == Node.ELEMENT_NODE &&
                             "definition".equalsIgnoreCase(subNode.getNodeName())) {
-                        Node paramNamesAttribute = subNode.getAttributes() == null ? null :
-                                subNode.getAttributes().getNamedItem("paramNames");
+                        Node paramNamesAttribute = subNode.getAttributes().getNamedItem("paramNames");
                         String paramNamesCsv;
                         if (paramNamesAttribute != null) {
                             paramNamesCsv = paramNamesAttribute.getNodeValue();
@@ -281,9 +276,9 @@ public class AnnotationXmlReader implements AnnotationStore {
             methodItem = new MethodItem(methodName, returnType);
             typeItem.getMethodItems().put(methodName, methodItem);
             if (returnType == null) {
-                log(ANNOTATION_XML_READER, "Created constructor {}", methodName);
+                LOGGER.debug("Created constructor {}", methodName);
             } else {
-                log(ANNOTATION_XML_READER, "Created method {} returns {}", methodName, returnType);
+                LOGGER.debug("Created method {} returns {}", methodName, returnType);
             }
         }
         return methodItem;
@@ -303,7 +298,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         companionItem = new MethodItem(companionStatic, companionTypeParametersCsv,
                 companionReturnType, companionName, parameterNamesCsv, function);
         methodItem.putCompanionMethod(companionItem);
-        log(ANNOTATION_XML_READER, "Created companion method {} returns {}", companionName, companionReturnType);
+        LOGGER.debug("Created companion method {} returns {}", companionName, companionReturnType);
     }
 
     private static FieldItem fieldItem(TypeItem typeItem, String fieldName) {
@@ -311,7 +306,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         if (fieldItem == null) {
             fieldItem = new FieldItem(fieldName);
             typeItem.getFieldItems().put(fieldName, fieldItem);
-            log(ANNOTATION_XML_READER, "Created field {}", fieldName);
+            LOGGER.debug("Created field {}", fieldName);
         }
         return fieldItem;
     }
@@ -321,7 +316,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         if (typeItem == null) {
             typeItem = new TypeItem(name);
             typeItemMap.put(name, typeItem);
-            log(ANNOTATION_XML_READER, "Created type {}", name);
+            LOGGER.debug("Created type {}", name);
         }
         return typeItem;
     }

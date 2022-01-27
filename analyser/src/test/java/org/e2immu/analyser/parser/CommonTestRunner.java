@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTestRunner extends VisitorTestSupport {
@@ -49,12 +48,6 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
 
     protected CommonTestRunner() {
         this.withAnnotatedAPIs = false;
-    }
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate();
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
@@ -113,23 +106,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(Stream.of(ANALYSER,
-                        //INSPECTOR,
-                        //RESOLVER,
-                        PRIMARY_TYPE_ANALYSER,
-                        LAMBDA,
-                        DELAYED,
-                        CONTEXT_MODIFICATION,
-                        FINAL,
-                        LINKED_VARIABLES,
-                        INDEPENDENCE,
-                        IMMUTABLE_LOG,
-                        METHOD_ANALYSER,
-                        TYPE_ANALYSER,
-                        NOT_NULL,
-                        MODIFICATION,
-                        EVENTUALLY
-                ).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
@@ -158,20 +135,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
 
         Configuration configuration = new Configuration.Builder()
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(Stream.of(ANALYSER,
-                        LAMBDA,
-                        DELAYED,
-                        FINAL,
-                        LINKED_VARIABLES,
-                        INDEPENDENCE,
-                        IMMUTABLE_LOG,
-                        METHOD_ANALYSER,
-                        TYPE_ANALYSER,
-                        NOT_NULL,
-                        MODIFICATION,
-                        EVENTUALLY
-
-                ).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .build();
@@ -184,9 +148,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
         List<SortedType> types = parser.run().sourceSortedTypes();
 
         if (!mustSee.isEmpty()) {
-            mustSee.forEach((label, iteration) -> {
-                LOGGER.error("MustSee: {} has only reached iteration {}", label, iteration);
-            });
+            mustSee.forEach((label, iteration) -> LOGGER.error("MustSee: {} has only reached iteration {}", label, iteration));
             assertEquals(0, mustSee.size());
         }
 

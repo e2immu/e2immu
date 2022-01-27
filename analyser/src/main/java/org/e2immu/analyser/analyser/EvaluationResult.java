@@ -30,9 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT_MODIFICATION;
-import static org.e2immu.analyser.util.Logger.log;
-
 /*
 Contains all side effects of analysing an expression.
 The 'apply' method of the analyser executes them.
@@ -431,7 +428,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     .getFieldAnalysis(fr.fieldInfo).getProperty(Property.IGNORE_MODIFICATIONS)
                     : DV.FALSE_DV;
             if (!ignoreContentModifications.valueIsTrue()) {
-                log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
+                LOGGER.debug("Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                 ChangeData cd = valueChanges.get(variable);
                 // if the variable is not present yet (a field), we expect it to have been markedRead
                 if (cd != null && cd.isMarkedRead() || evaluationContext.isPresent(variable)) {
@@ -450,7 +447,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     }
                     */
             } else {
-                log(CONTEXT_MODIFICATION, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
+                LOGGER.debug("Skip marking method object as context modified: {}", variable.fullyQualifiedName());
             }
         }
 

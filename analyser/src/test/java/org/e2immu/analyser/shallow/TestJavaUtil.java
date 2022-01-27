@@ -32,10 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestJavaUtil {
@@ -55,7 +52,7 @@ public class TestJavaUtil {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
-                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

@@ -32,14 +32,14 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class RangeDataImpl implements RangeData {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RangeDataImpl.class);
+
     private final Location location;
     private final EventuallyFinal<Range> range = new EventuallyFinal<>();
     private final SetOnce<Message> uselessAssignment = new SetOnce<>();
@@ -138,7 +138,7 @@ public class RangeDataImpl implements RangeData {
             Expression condition = result.value();
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
-                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
                 return new Range.Delayed(causes);
             }
             return computeRange(result.evaluationContext(), ve, init, update, condition);
@@ -189,7 +189,7 @@ public class RangeDataImpl implements RangeData {
             Expression condition = result.value();
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
-                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
                 return new Range.Delayed(causes);
             }
             return computeRange(result.evaluationContext(), ve, init, update, condition);
@@ -244,7 +244,7 @@ public class RangeDataImpl implements RangeData {
             Expression condition = result.value();
             CausesOfDelay causes = init.causesOfDelay().merge(update.causesOfDelay()).merge(condition.causesOfDelay());
             if (causes.isDelayed()) {
-                log(DELAYED, "Delaying range at {}: {}", statement.getIdentifier(), causes);
+                LOGGER.debug("Delaying range at {}: {}", statement.getIdentifier(), causes);
                 return new Range.Delayed(causes);
             }
             return computeRange(result.evaluationContext(), variable, init, update, condition);
@@ -302,7 +302,7 @@ public class RangeDataImpl implements RangeData {
                     int endExcl = (int) (xb.b() + (gt0.allowEquals() ? (increment < 0 ? -1 : 1) : 0));
                     if (xb.lessThan() && start < endExcl && increment > 0 || !xb.lessThan() && start > endExcl && increment < 0) {
                         Range r = new NumericRange(start, endExcl, increment, loopVar);
-                        log(EXPRESSION, "Identified range {}", r);
+                        LOGGER.debug("Identified range {}", r);
                         return r;
                     }
                     // int i=10; i<10; i++      int i=10; i>=11; i--

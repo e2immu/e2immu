@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.util.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,11 +60,6 @@ public class TestIsAssignableFromGenerics {
     }
 
     interface MyList3<T extends Node> extends MyComparable<MyList3<? extends T>> {
-    }
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate();
     }
 
     Primitives primitives;

@@ -24,16 +24,17 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeParameterImpl implements TypeParameter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeParameterImpl.class);
 
     public final String name;
     public final int index;
@@ -127,7 +128,7 @@ public class TypeParameterImpl implements TypeParameter {
     public void inspect(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
         List<ParameterizedType> typeBounds = new ArrayList<>();
         typeParameter.getTypeBound().forEach(cit -> {
-            log(INSPECTOR, "Inspecting type parameter {}", cit.getName().asString());
+            LOGGER.debug("Inspecting type parameter {}", cit.getName().asString());
             ParameterizedType bound = ParameterizedTypeFactory.from(typeContext, cit);
             typeBounds.add(bound);
         });

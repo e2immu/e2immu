@@ -25,15 +25,16 @@ import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.EVENTUALLY;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class AssignmentIncompatibleWithPrecondition {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AssignmentIncompatibleWithPrecondition.class);
+
     /**
      * @return null indicates delay; true indicates @Mark; also becomes @Only(before=)
      *
@@ -58,7 +59,7 @@ public class AssignmentIncompatibleWithPrecondition {
                 if (assigned) {
                     Expression pcExpression = precondition.expression();
                     String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
-                    log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                    LOGGER.debug("Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
                             methodAnalyser.getMethodInfo().distinguishingName(), index);
 
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);

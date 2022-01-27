@@ -25,16 +25,16 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class Assignment extends BaseExpression implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Assignment.class);
 
     public final Expression target;
     public final Expression value;
@@ -239,7 +239,7 @@ public class Assignment extends BaseExpression implements Expression {
 
         Variable newVariableTarget = handleArrayAccess(targetResult.value());
 
-        log(EXPRESSION, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
+        LOGGER.debug("Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
         E2 e2;
         if (binaryOperator != null) {
@@ -317,7 +317,7 @@ public class Assignment extends BaseExpression implements Expression {
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
                         && newVariableTarget.equals(ive2.variable())) &&
                 !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
-            log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
+            LOGGER.debug("Assigning identical value {} to {}", currentValue, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
             // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment
             // we'll assign to the value

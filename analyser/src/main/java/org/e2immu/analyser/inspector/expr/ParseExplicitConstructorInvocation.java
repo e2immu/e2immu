@@ -22,13 +22,13 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class ParseExplicitConstructorInvocation {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseExplicitConstructorInvocation.class);
 
     public static Statement parse(ExpressionContext expressionContext,
                                   TypeInfo enclosingType,
@@ -74,7 +74,7 @@ public class ParseExplicitConstructorInvocation {
                 errorInfo);
 
         assert candidate != null : "Should have found a unique candidate for " + errorInfo;
-        log(METHOD_CALL, "Resulting constructor is {}", candidate.method().methodInspection.getMethodInfo().fullyQualifiedName);
+        LOGGER.debug("Resulting constructor is {}", candidate.method().methodInspection.getMethodInfo().fullyQualifiedName);
 
         return new Result(candidate.method().methodInspection.getMethodInfo(), candidate.newParameterExpressions());
     }

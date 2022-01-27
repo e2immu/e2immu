@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-
 public abstract class CommonTest {
     protected static TypeMap inspectAndResolve(Class<?> clazz, String... extraSources) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
@@ -44,7 +42,7 @@ public abstract class CommonTest {
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets(Stream.of(RESOLVER, LAMBDA, METHOD_CALL).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("resolver,analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

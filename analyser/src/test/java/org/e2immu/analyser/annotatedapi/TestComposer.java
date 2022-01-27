@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,7 +54,7 @@ public class TestComposer {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(INSPECTOR + "," + ANALYSER + "," + CONFIGURATION)
+                .addDebugLogTargets("config,inspector,analyser")
                 .build();
 
         configuration.initializeLoggers();

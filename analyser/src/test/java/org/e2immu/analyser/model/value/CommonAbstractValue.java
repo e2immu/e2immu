@@ -33,7 +33,6 @@ import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -76,8 +75,6 @@ public abstract class CommonAbstractValue {
 
     @BeforeAll
     public static void beforeClass() {
-        Logger.activate(Logger.LogTarget.EXPRESSION);
-
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder(new Resources());
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         PRIMITIVES.setInspectionOfBoxedTypesForTesting();

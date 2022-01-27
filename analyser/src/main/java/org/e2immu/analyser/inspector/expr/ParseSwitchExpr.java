@@ -25,15 +25,15 @@ import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class ParseSwitchExpr {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseSwitchExpr.class);
 
     public static Expression parse(ExpressionContext expressionContext,
                                    SwitchExpr switchExpr,
@@ -151,7 +151,7 @@ public class ParseSwitchExpr {
                 typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
                 Map.of(anonymousType, expressionContext.newVariableContext("Lambda")));
 
-        log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
+        LOGGER.debug("End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType.detailedString(expressionContext.typeContext()), anonymousType.fullyQualifiedName);
 
         List<Lambda.OutputVariant> outputVariants = List.of(Lambda.OutputVariant.EMPTY);

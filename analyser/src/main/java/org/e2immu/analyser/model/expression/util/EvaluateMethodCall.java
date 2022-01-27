@@ -28,7 +28,8 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -36,9 +37,9 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.Property.IMMUTABLE;
 import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateMethodCall.class);
 
     private final EvaluationContext evaluationContext;
     private final AnalyserContext analyserContext;
@@ -197,7 +198,7 @@ public class EvaluateMethodCall {
                 }
             } else {
                 // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
-                log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying method value on {}", methodInfo.fullyQualifiedName);
                 return delay(builder, methodInfo, concreteReturnType, linkedVariablesForDelay.apply(srv.causesOfDelay()),
                         srv.causesOfDelay());
             }
@@ -340,7 +341,7 @@ public class EvaluateMethodCall {
             Expression paramValue = parameters.get(0);
             DV modifying = modifying(paramValue);
             if (modifying.isDelayed()) {
-                log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
+                LOGGER.debug("Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
                 return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariables.apply(modifying.causesOfDelay()),
                         modifying.causesOfDelay());

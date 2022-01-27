@@ -42,9 +42,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.config.AnalyserProgram.PROGRAM_ALL;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.PRIMARY_TYPE_ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 /*
 Recursive, but only for types inside statements, not for subtypes.
@@ -79,8 +76,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                                    Configuration configuration,
                                    Primitives primitives,
                                    Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
-                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                   boolean subAnalyser) {
+                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -148,7 +144,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {
                             analyser = null;
-                            log(PRIMARY_TYPE_ANALYSER, "Ignoring field {}, already has analysis", fieldInfo.fullyQualifiedName());
+                            LOGGER.debug("Ignoring field {}, already has analysis", fieldInfo.fullyQualifiedName());
                         }
                     } else if (mfs instanceof MethodInfo) {
                         analyser = methodAnalysers.get(mfs);
@@ -158,7 +154,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
                         throw new UnsupportedOperationException("have " + mfs);
                     }
                     return analyser == null ? Stream.empty() : Stream.of(analyser);
-                })).collect(Collectors.toList());
+                })).toList();
         fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
 
         List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
@@ -193,7 +189,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
             builder.add(analyser, supplier);
         }
         analyserComponents = builder.build();
-        log(PRIMARY_TYPE_ANALYSER, "List of analysers: {}", analysers);
+        LOGGER.debug("List of analysers: {}", analysers);
     }
 
     @Override
@@ -244,14 +240,14 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         AnalysisStatus analysisStatus;
 
         do {
-            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******",
+            LOGGER.debug("\n******\nStarting iteration {} of the primary type analyser on {}\n******",
                     iteration, name);
 
             AnalyserResult analyserResult = analyse(iteration, null);
             iteration++;
 
             if (!configuration.analyserConfiguration().analyserProgram().accepts(ITERATION_1PLUS)) {
-                log(ANALYSER, "\n******\nStopping after iteration 0 according to program\n******");
+                LOGGER.debug("\n******\nStopping after iteration 0 according to program\n******");
                 return;
             }
             analysisStatus = analyserResult.analysisStatus();
@@ -259,8 +255,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         } while (analysisStatus.isProgress());
         if (analysisStatus.isDelayed()) {
             logAnalysisStatuses(analyserComponents);
-            if (org.e2immu.analyser.util.Logger.isLogEnabled(org.e2immu.analyser.util.Logger.LogTarget.DELAYED)) {
-                LOGGER.error("Delays: {}", analysisStatus.causesOfDelay());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Delays: {}", analysisStatus.causesOfDelay());
             }
             throw new UnsupportedOperationException("No progress after " + iteration + " iterations for primary type(s) " + name + "?");
         }

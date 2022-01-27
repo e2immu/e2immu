@@ -43,9 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION_CONTEXT;
-import static org.e2immu.analyser.util.Logger.log;
-
 // cannot even be a @Container, since the VariableContext passed on to us gets modified along the way
 public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver,
                                     TypeInfo enclosingType,
@@ -64,7 +61,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             @NotNull @NotModified TypeInfo typeInfo,
             @NotNull @NotModified TypeContext typeContext,
             @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
-        log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, Objects.requireNonNull(typeInfo),
                 null, null,
                 null,
@@ -80,7 +77,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             @NotNull @NotModified TypeInfo primaryType,
             @NotNull @NotModified ExpressionContext expressionContextOfType) {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext().staticFieldImports();
-        log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
+        LOGGER.debug("Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, Objects.requireNonNull(enclosingType), null,
                 null,
                 null, null,
@@ -92,7 +89,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
-        log(EXPRESSION_CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
+        LOGGER.debug("Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, enclosingType, null,
                 methodInfo, null, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
@@ -100,7 +97,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContextImpl newVariableContext(@NotNull String reason) {
-        log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
+        LOGGER.debug("Creating a new variable context for {}", reason);
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType,
                 enclosingMethod,
                 enclosingField, typeOfEnclosingSwitchExpression,
@@ -110,7 +107,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newVariableContextForEachLoop(@NotNull VariableContext newVariableContext) {
-        log(EXPRESSION_CONTEXT, "Creating a new variable context for for-each loop");
+        LOGGER.debug("Creating a new variable context for for-each loop");
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 enclosingField,
                 typeOfEnclosingSwitchExpression,
@@ -121,7 +118,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
     public ExpressionContext newSwitchExpressionContext(TypeInfo subType,
                                                         VariableContext variableContext,
                                                         ForwardReturnTypeInfo typeOfEnclosingSwitchExpression) {
-        log(EXPRESSION_CONTEXT, "Creating a new switch expression context");
+        LOGGER.debug("Creating a new switch expression context");
         return new ExpressionContextImpl(resolver, enclosingType, subType,
                 null,
                 null, typeOfEnclosingSwitchExpression,
@@ -131,7 +128,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
-        log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
+        LOGGER.debug("Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
         return new ExpressionContextImpl(resolver, enclosingType, subType, null,
                 null, null, primaryType,
                 typeContext, variableContext, anonymousTypeCounters);
@@ -139,7 +136,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
-        log(EXPRESSION_CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
+        LOGGER.debug("Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContextImpl(resolver, subType, null,
                 null, null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
@@ -147,7 +144,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newTypeContext(String reason) {
-        log(EXPRESSION_CONTEXT, "Creating a new type context for {}", reason);
+        LOGGER.debug("Creating a new type context for {}", reason);
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
@@ -155,7 +152,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     @Override
     public ExpressionContext newTypeContext(FieldInfo fieldInfo) {
-        log(EXPRESSION_CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
+        LOGGER.debug("Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
         return new ExpressionContextImpl(resolver, enclosingType, null, null,
                 fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);

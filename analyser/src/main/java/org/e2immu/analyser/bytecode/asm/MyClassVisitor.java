@@ -41,8 +41,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyClassVisitor extends ClassVisitor {
@@ -103,7 +101,7 @@ public class MyClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Visit {} {} {} {} {} {}", version, access, name, signature, superName, interfaces);
+        LOGGER.debug("Visit {} {} {} {} {} {}", version, access, name, signature, superName, interfaces);
         int dollar = name.indexOf('$');
         if (dollar >= 0 && enclosingTypes.isEmpty()) {
             currentType = null;
@@ -119,7 +117,7 @@ public class MyClassVisitor extends ClassVisitor {
             TypeInspection typeInspection = typeContext.typeMap.getTypeInspection(currentType);
             if (typeInspection != null) {
                 if (typeInspection.getInspectionState().ge(FINISHED_BYTECODE)) {
-                    log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
+                    LOGGER.debug("Inspection of " + fqName + " has been set already");
                     types.add(currentType);
                     currentType = null;
                     currentTypePath = null;
@@ -153,21 +151,21 @@ public class MyClassVisitor extends ClassVisitor {
             if (superName != null) {
                 TypeInfo typeInfo = mustFindTypeInfo(parentFqName, superName);
                 if (typeInfo == null) {
-                    log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type {} unknown",
+                    LOGGER.debug("Stop inspection of {}, parent type {} unknown",
                             currentType.fullyQualifiedName, parentFqName);
                     errorStateForType(parentFqName);
                     return;
                 }
                 typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType(typeContext));
             } else {
-                log(BYTECODE_INSPECTOR_DEBUG, "No parent name for {}", fqName);
+                LOGGER.debug("No parent name for {}", fqName);
             }
             if (interfaces != null) {
                 for (String interfaceName : interfaces) {
                     String fqn = pathToFqn(interfaceName);
                     TypeInfo typeInfo = mustFindTypeInfo(fqn, interfaceName);
                     if (typeInfo == null) {
-                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type {} unknown",
+                        LOGGER.debug("Stop inspection of {}, interface type {} unknown",
                                 currentType.fullyQualifiedName, fqn);
                         errorStateForType(fqn);
                         return;
@@ -186,7 +184,7 @@ public class MyClassVisitor extends ClassVisitor {
                     ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
                             this::mustFindTypeInfo, signature.substring(pos));
                     if (res == null) {
-                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type unknown",
+                        LOGGER.debug("Stop inspection of {}, parent type unknown",
                                 currentType.fullyQualifiedName);
                         errorStateForType(parentFqName);
                         return;
@@ -199,7 +197,7 @@ public class MyClassVisitor extends ClassVisitor {
                         ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
                                 this::mustFindTypeInfo, signature.substring(pos));
                         if (interFaceRes == null) {
-                            log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type unknown",
+                            LOGGER.debug("Stop inspection of {}, interface type unknown",
                                     currentType.fullyQualifiedName);
                             errorStateForType(parentFqName);
                             return;
@@ -268,7 +266,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
         // Example of this situation: java.util.Comparators$NullComparator is being parsed, but Comparator itself
         // has not been seen yet.
-        log(BYTECODE_INSPECTOR_DEBUG, "Could not find " + parentFqName + " in stack of enclosing types " +
+        LOGGER.debug("Could not find " + parentFqName + " in stack of enclosing types " +
                 enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
         return null;
     }
@@ -278,7 +276,7 @@ public class MyClassVisitor extends ClassVisitor {
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         if (currentType == null) return null;
         boolean synthetic = (access & Opcodes.ACC_SYNTHETIC) != 0;
-        log(BYTECODE_INSPECTOR_DEBUG, "Field {} {} desc='{}' sig='{}' {} synthetic? {}", access,
+        LOGGER.debug("Field {} {} desc='{}' sig='{}' {} synthetic? {}", access,
                 name, descriptor, signature, value, synthetic);
         if (synthetic) return null;
 
@@ -327,7 +325,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
 
         boolean synthetic = (access & Opcodes.ACC_SYNTHETIC) != 0;
-        log(BYTECODE_INSPECTOR_DEBUG, "Method {} {} desc='{}' sig='{}' {} synthetic? {}", access, name,
+        LOGGER.debug("Method {} {} desc='{}' sig='{}' {} synthetic? {}", access, name,
                 descriptor, signature, Arrays.toString(exceptions), synthetic);
         if (synthetic) return null;
 
@@ -393,7 +391,7 @@ public class MyClassVisitor extends ClassVisitor {
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
         if (currentType == null) return;
 
-        log(BYTECODE_INSPECTOR_DEBUG, "Visit inner class {} {} {} {}", name, outerName, innerName, access);
+        LOGGER.debug("Visit inner class {} {} {} {}", name, outerName, innerName, access);
         if (name.equals(currentTypePath)) {
             checkTypeFlags(access, typeInspectionBuilder);
         } else if (innerName != null && outerName != null) {
@@ -405,7 +403,7 @@ public class MyClassVisitor extends ClassVisitor {
             if (stepSide || stepDown) {
                 String fqn = fqnOuter + "." + innerName;
 
-                log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
+                LOGGER.debug("Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
 
                 TypeInfo subTypeInMap = typeContext.typeMap.get(fqn);
                 TypeInspection.Builder subTypeInspection;
@@ -457,7 +455,7 @@ public class MyClassVisitor extends ClassVisitor {
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         if (currentType == null) return null;
 
-        log(BYTECODE_INSPECTOR_DEBUG, "Have class annotation {} {}", descriptor, visible);
+        LOGGER.debug("Have class annotation {} {}", descriptor, visible);
         return new MyAnnotationVisitor<>(typeContext, descriptor, typeInspectionBuilder);
     }
 
@@ -467,7 +465,7 @@ public class MyClassVisitor extends ClassVisitor {
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
         if (currentType == null) return null;
 
-        log(BYTECODE_INSPECTOR_DEBUG, "Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
+        LOGGER.debug("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
         return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
     }
 
@@ -475,7 +473,7 @@ public class MyClassVisitor extends ClassVisitor {
     public void visitEnd() {
         if (currentType != null) {
             try {
-                log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
+                LOGGER.debug("Visit end of class " + currentType.fullyQualifiedName);
                 if (typeInspectionBuilder == null)
                     throw new UnsupportedOperationException("? was expecting a type inspection builder");
 

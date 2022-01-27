@@ -34,6 +34,8 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -41,10 +43,10 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 class SAEvaluationContext extends AbstractEvaluationContextImpl {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SAEvaluationContext.class);
+
     private final boolean disableEvaluationOfMethodCallsUsingCompanionMethods;
     private final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
@@ -326,9 +328,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
 
     /**
      * Important that the closure is used for local variables and parameters (we'd never find them otherwise).
-     *  However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
+     * However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
      * have their own local copy.
-     *
+     * <p>
      * Equally important, if we have a local copy already, we must use it! See e.g. BasicCompanionMethods_11
      */
     private VariableInfo findForReading(Variable variable, boolean isNotAssignmentTarget) {
@@ -398,7 +400,7 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                         && vc.variable().equals(fr)
                         && vc.location().equals(here));
         if (cyclicDependency) {
-            log(DELAYED, "Breaking the delay by inserting a special delayed value");
+            LOGGER.debug("Breaking the delay by inserting a special delayed value");
             CauseOfDelay cause = new VariableCause(fr, here, CauseOfDelay.Cause.BREAK_INIT_DELAY);
             Expression dve = DelayedVariableExpression.forBreakingInitialisationDelay(fr, cause);
             return new VariableInfoImpl(getLocation(), fr, dve);

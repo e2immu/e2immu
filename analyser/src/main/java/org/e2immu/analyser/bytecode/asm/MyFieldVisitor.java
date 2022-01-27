@@ -20,12 +20,14 @@ import org.e2immu.analyser.model.FieldInspection;
 import org.e2immu.analyser.model.TypeInspection;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyFieldVisitor extends FieldVisitor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyFieldVisitor.class);
+
     private final FieldInfo fieldInfo;
     private final TypeContext typeContext;
     private final FieldInspection.Builder fieldInspectionBuilder;
@@ -44,7 +46,7 @@ public class MyFieldVisitor extends FieldVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Have field annotation {} {}", descriptor, visible);
+        LOGGER.debug("Have field annotation {} {}", descriptor, visible);
         return new MyAnnotationVisitor<>(typeContext, descriptor, fieldInspectionBuilder);
     }
 

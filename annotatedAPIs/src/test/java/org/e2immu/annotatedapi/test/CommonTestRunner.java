@@ -24,14 +24,12 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -39,11 +37,6 @@ public abstract class CommonTestRunner {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
 
     public static final String TESTS = "org.e2immu.annotatedapi.testexample";
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate(CONFIGURATION);
-    }
 
     public void test(List<String> testClasses, int errorsToExpect, int warningsToExpect) throws IOException {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
@@ -61,7 +54,7 @@ public abstract class CommonTestRunner {
                 .setAnnotationXmConfiguration(axc)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(INSPECTOR + "," + ANALYSER + "," + CONFIGURATION)
+                .addDebugLogTargets("analyser,config,inspector")
                 .build();
 
         configuration.initializeLoggers();

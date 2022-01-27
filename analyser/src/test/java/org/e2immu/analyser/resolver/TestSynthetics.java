@@ -31,13 +31,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.model.IsAssignableFrom.SAME_UNDERLYING_TYPE;
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSynthetics {
@@ -53,7 +49,7 @@ public class TestSynthetics {
         Configuration configuration = new Configuration.Builder()
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
-                .addDebugLogTargets(Stream.of(RESOLVER, METHOD_CALL).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("resolver")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

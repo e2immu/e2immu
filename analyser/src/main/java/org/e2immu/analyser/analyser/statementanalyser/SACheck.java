@@ -29,16 +29,16 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.PRECONDITION;
-import static org.e2immu.analyser.util.Logger.log;
 
 public record SACheck(StatementAnalysis statementAnalysis) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SACheck.class);
 
     private String index() {
         return statementAnalysis.index();
@@ -73,7 +73,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                 CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
                 Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
-                    log(PRECONDITION, "Escape with precondition {}", translated);
+                    LOGGER.debug("Escape with precondition {}", translated);
                     Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
                     statementAnalysis.stateData().setPrecondition(pc, preconditionIsDelayed.isDelayed());
                     return AnalysisStatus.of(preconditionIsDelayed);
@@ -102,7 +102,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
      */
     AnalysisStatus checkUselessAssignments(NavigationData<StatementAnalyser> navigationData) {
         if (!statementAnalysis.flowData().interruptsFlowIsSet()) {
-            log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
+            LOGGER.debug("Delaying checking useless assignment in {}, because interrupt status unknown", index());
             return statementAnalysis.flowData().interruptStatus().causesOfDelay();
         }
         InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData().bestAlwaysInterrupt();
@@ -206,21 +206,21 @@ public record SACheck(StatementAnalysis statementAnalysis) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             DV identity = methodAnalysis.getProperty(Property.IDENTITY);
             if (identity.isDelayed()) {
-                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
+                LOGGER.debug("Delaying unused return value in {} {}, waiting for @Identity of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return identity.causesOfDelay();
             }
             if (identity.valueIsTrue()) return DONE;
             DV fluent = methodAnalysis.getProperty(FLUENT);
             if (fluent.isDelayed()) {
-                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Fluent of {}",
+                LOGGER.debug("Delaying unused return value in {} {}, waiting for @Fluent of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return fluent.causesOfDelay();
             }
             if (fluent.valueIsTrue()) return DONE;
             DV modified = methodAnalysis.getProperty(MODIFIED_METHOD);
             if (modified.isDelayed() && !methodCall.methodInfo.isAbstract()) {
-                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",
+                LOGGER.debug("Delaying unused return value in {} {}, waiting for @Modified of {}",
                         index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
                 return modified.causesOfDelay();
             }
@@ -240,7 +240,7 @@ public record SACheck(StatementAnalysis statementAnalysis) {
                         }
                     }
                     if (delays.isDelayed()) {
-                        log(DELAYED, "Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
+                        LOGGER.debug("Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
                                 index(), methodInfo().fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
                         return delays;
                     }

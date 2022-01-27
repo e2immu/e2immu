@@ -19,10 +19,11 @@ import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.ClassReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +33,10 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
-import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class ByteCodeInspector implements OnDemandInspection {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ByteCodeInspector.class);
+
     private final Resources classPath;
     private final TypeContext typeContext;
     private final AnnotationStore annotationStore;
@@ -69,7 +69,7 @@ public class ByteCodeInspector implements OnDemandInspection {
             // NOTE that is is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of sub-types as interface or parent
         }
-        if (Logger.isLogEnabled(BYTECODE_INSPECTOR)) {
+        if (LOGGER.isDebugEnabled()) {
             logTypesInProcess(path);
         }
         String pathWithDotClass = path.endsWith(".class") ? path : path + ".class";
@@ -79,7 +79,7 @@ public class ByteCodeInspector implements OnDemandInspection {
     }
 
     private void logTypesInProcess(String path) {
-        log(BYTECODE_INSPECTOR, "Parsing {}, in process [{}]", path,
+        LOGGER.debug("Parsing {}, in process [{}]", path,
                 typeContext.typeMap.streamTypes()
                         .filter(e -> e.getValue().getInspectionState() == STARTING_BYTECODE)
                         .map(e -> e.getKey().fullyQualifiedName).collect(Collectors.joining(", ")));
@@ -89,9 +89,9 @@ public class ByteCodeInspector implements OnDemandInspection {
     public TypeInfo inspectFromPath(String path,
                                     Stack<TypeInfo> enclosingTypes,
                                     TypeContext parentTypeContext) {
-        if (Logger.isLogEnabled(BYTECODE_INSPECTOR)) {
+        if (LOGGER.isDebugEnabled()) {
             logTypesInProcess(path);
-            log(BYTECODE_INSPECTOR, enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)
+            LOGGER.debug(enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)
                     .collect(Collectors.joining(" -> ")));
         }
         byte[] classBytes = classPath.loadBytes(path + ".class");
@@ -105,7 +105,7 @@ public class ByteCodeInspector implements OnDemandInspection {
                                            Stack<TypeInfo> enclosingTypes,
                                            TypeContext parentTypeContext) {
         ClassReader classReader = new ClassReader(classBytes);
-        log(BYTECODE_INSPECTOR_DEBUG, "Constructed class reader with {} bytes", classBytes.length);
+        LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
 
         List<TypeInfo> types = new ArrayList<>();
         MyClassVisitor myClassVisitor = new MyClassVisitor(this,

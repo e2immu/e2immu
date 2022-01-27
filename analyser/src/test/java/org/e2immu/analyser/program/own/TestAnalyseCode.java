@@ -28,10 +28,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -70,7 +68,7 @@ public class TestAnalyseCode {
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
-                .addDebugLogTargets(Stream.of(ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.IsAssignableFrom.Mode.COVARIANT_ERASURE;
 import static org.e2immu.analyser.model.IsAssignableFrom.NOT_ASSIGNABLE;
-import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
-import static org.e2immu.analyser.util.Logger.log;
 
 public record ParseMethodCallExpr(TypeContext typeContext) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
@@ -40,7 +38,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
     public Expression erasure(ExpressionContext expressionContext, MethodCallExpr methodCallExpr) {
         String methodName = methodCallExpr.getName().asString();
         int numArguments = methodCallExpr.getArguments().size();
-        log(METHOD_CALL, "Start computing erasure of method call {}, method name {}, {} args", methodCallExpr,
+        LOGGER.debug("Start computing erasure of method call {}, method name {}, {} args", methodCallExpr,
                 methodName, numArguments);
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, TypeParameterMap.EMPTY);
@@ -66,7 +64,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     return returnType.applyTranslation(typeContext().getPrimitives(), map.map());
                 })
                 .collect(Collectors.toUnmodifiableSet());
-        log(METHOD_CALL, "Erasure types: {}", types);
+        LOGGER.debug("Erasure types: {}", types);
         return new MethodCallErasure(types, methodName);
     }
 
@@ -75,7 +73,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             ForwardReturnTypeInfo forwardReturnTypeInfo) {
         String methodName = methodCallExpr.getName().asString();
         int numArguments = methodCallExpr.getArguments().size();
-        log(METHOD_CALL, "Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
+        LOGGER.debug("Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
                 methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext()));
 
         Scope scope = Scope.computeScope(expressionContext, typeContext, methodCallExpr, forwardReturnTypeInfo.extra());
@@ -96,11 +94,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                     errorInfo);
 
             assert candidate != null : "Should have found a unique candidate for " + errorInfo.toString(typeContext);
-            log(METHOD_CALL, "Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
+            LOGGER.debug("Resulting method is {}", candidate.method.methodInspection.getMethodInfo().fullyQualifiedName);
 
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection, typeContext, expressionContext);
             ParameterizedType returnType = candidate.returnType(typeContext.getPrimitives());
-            log(METHOD_CALL, "Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
+            LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
             return new MethodCall(Identifier.from(methodCallExpr),
                     scope.objectIsImplicit(),
@@ -190,7 +188,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             multipleCandidatesError(errorInfo, methodCandidates);
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method();
-        log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
+        LOGGER.debug("Found method {}", method.methodInspection.getFullyQualifiedName());
 
 
         List<Expression> newParameterExpressions = reEvaluateErasedExpression(expressionContext, expressions,
@@ -214,7 +212,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         List<ParameterInfo> formalParameters = method.methodInspection.getParameters();
 
         for (Expression expression : newParameterExpressions) {
-            log(METHOD_CALL, "Examine parameter {}", i);
+            LOGGER.debug("Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
             ParameterInfo formalParameter = formalParameters.get(i);
             ParameterizedType formalParameterType =
@@ -294,7 +292,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             Expression e = evaluatedExpressions.get(i);
             assert e != null;
 
-            log(METHOD_CALL, "Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
+            LOGGER.debug("Reevaluating erased expression on {}, pos {}", errorInfo.methodName, i);
             ForwardReturnTypeInfo newForward = determineForwardReturnTypeInfo(method, i, outsideContext, cumulative);
 
             Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
@@ -466,7 +464,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 if (acceptedErasedTypesCombination == null) {
                     acceptedErasedTypesCombination = thisAcceptedErasedTypesCombination;
                 } else if (!acceptedErasedTypesCombination.equals(thisAcceptedErasedTypesCombination)) {
-                    log(METHOD_CALL, "Looks like multiple, different, combinations? {} to {}", acceptedErasedTypesCombination,
+                    LOGGER.debug("Looks like multiple, different, combinations? {} to {}", acceptedErasedTypesCombination,
                             thisAcceptedErasedTypesCombination);
                 }
             }

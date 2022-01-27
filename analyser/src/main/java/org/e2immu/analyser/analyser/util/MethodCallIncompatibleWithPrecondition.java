@@ -28,14 +28,14 @@ import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class MethodCallIncompatibleWithPrecondition {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodCallIncompatibleWithPrecondition.class);
+
     /*
     look into the latest value of the fields
     they must have instance state that is incompatible with the precondition.
@@ -55,7 +55,7 @@ public class MethodCallIncompatibleWithPrecondition {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
             if (!variableInfo.valueIsSet()) {
-                log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",
+                LOGGER.debug("Delaying isMark, no value for field {} in last statement of {}",
                         fieldInfo.name, methodAnalyser.getMethodInfo().fullyQualifiedName);
                 return new SimpleSet(new VariableCause(variableInfo.variable(),
                         statementAnalysis.location(), CauseOfDelay.Cause.VALUE));
@@ -115,7 +115,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         CompanionAnalysis companionAnalysis = entry.getValue();
                         Expression value = companionAnalysis.getValue();
                         if (companionMethodName.aspect() != null) {
-                            log(COMPANION, "Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
+                            LOGGER.debug("Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
 
                             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
                             MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
@@ -150,7 +150,7 @@ public class MethodCallIncompatibleWithPrecondition {
                     if (oInvariant.isPresent()) {
                         CompanionAnalysis companionAnalysis = aspectMainAnalysis.getCompanionAnalyses().get(oInvariant.get());
                         Expression invariant = companionAnalysis.getValue();
-                        log(COMPANION, "Found invariant expression {} for method call", invariant);
+                        LOGGER.debug("Found invariant expression {} for method call", invariant);
 
                         TranslationMap translationMap = new TranslationMapImpl.Builder()
                                 .put(new This(InspectionProvider.DEFAULT, aspectMain.typeInfo), ve.variable()).build();

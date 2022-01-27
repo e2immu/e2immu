@@ -19,7 +19,6 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,6 @@ public class TestCommonType {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
-        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR, Logger.LogTarget.BYTECODE_INSPECTOR);
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .build();

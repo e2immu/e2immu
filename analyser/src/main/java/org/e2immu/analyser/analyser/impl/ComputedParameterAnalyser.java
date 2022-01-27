@@ -44,8 +44,6 @@ import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_0;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ITERATION_1PLUS;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputedParameterAnalyser.class);
@@ -224,8 +222,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo vi = lastStatement.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
             if (vi != null) {
                 if (!vi.linkedVariablesIsSet()) {
-                    log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
-                            "Delay independent in parameter {}, waiting for linked1variables in statement {}",
+                    LOGGER.debug("Delay independent in parameter {}, waiting for linked1variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     return new SimpleSet(new VariableCause(parameterInfo, lastStatement.location(), CauseOfDelay.Cause.LINKING));
                 }
@@ -249,7 +246,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     int immutableLevel = MultiLevel.level(minHiddenContentImmutable);
                     DV independent = immutableLevel <= MultiLevel.Level.IMMUTABLE_2.level ? INDEPENDENT_1_DV :
                             MultiLevel.independentCorrespondingToImmutableLevelDv(immutableLevel);
-                    log(ANALYSER, "Assign {} to parameter {}", independent, parameterInfo.fullyQualifiedName());
+                    LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo.fullyQualifiedName());
                     parameterAnalysis.setProperty(INDEPENDENT, independent);
                     return DONE;
                 }
@@ -340,14 +337,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     DV inField = fieldAnalysis.getProperty(property);
                     if (inField.isDone()) {
                         if (!parameterAnalysis.properties.isDone(property)) {
-                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                            LOGGER.debug("Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), property);
                             parameterAnalysis.setProperty(property, inField);
                             changed = true;
                         }
                     } else {
                         propertiesDelayed.add(property);
-                        log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
+                        LOGGER.debug(
                                 "Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
                                 property, fieldInfo.name, parameterInfo.name);
                         delays = delays.merge(inField.causesOfDelay());
@@ -360,7 +357,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         SetOfTypes transparent = typeAnalysis.getTransparentTypes();
                         if (transparent.contains(parameterInfo.parameterizedType)) {
                             parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_1_DV);
-                            log(ANALYSER, "Set parameter to @Independent1: {} because transparent and linked/assigned to field {}",
+                            LOGGER.debug("Set parameter to @Independent1: {} because transparent and linked/assigned to field {}",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
                             changed = true;
                         } else {
@@ -380,7 +377,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                     typeIndependent = MultiLevel.independentCorrespondingToImmutableLevelDv(levelImmutable);
                                 }
                                 parameterAnalysis.setProperty(INDEPENDENT, typeIndependent);
-                                log(ANALYSER, "Set @Dependent on parameter {}: linked/assigned to field {}",
+                                LOGGER.debug("Set @Dependent on parameter {}: linked/assigned to field {}",
                                         parameterInfo.fullyQualifiedName(), fieldInfo.name);
                                 changed = true;
                             }
@@ -400,7 +397,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     v = property.falseDv;
                 }
                 parameterAnalysis.setProperty(property, v);
-                log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
+                LOGGER.debug("Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
                         property);
                 changed = true;
             }
@@ -552,11 +549,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 DV value = vi.getProperty(property);
                 if (value.isDone()) {
                     parameterAnalysis.setProperty(property, value);
-                    log(ANALYSER, "Set {} on parameter {} to {}", property,
+                    LOGGER.debug("Set {} on parameter {} to {}", property,
                             parameterInfo.fullyQualifiedName(), value);
                     changed = true;
                 } else {
-                    log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
+                    LOGGER.debug(
                             "Delays on {} not yet resolved for parameter {}, delaying", property,
                             parameterInfo.fullyQualifiedName());
                     delayFromContext = delayFromContext.merge(value.causesOfDelay());

@@ -26,15 +26,17 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements ParameterAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalyserImpl.class);
+
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
 
@@ -77,7 +79,7 @@ public abstract class ParameterAnalyserImpl extends AbstractAnalyser implements 
     public void check() {
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {
-            log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
+            LOGGER.debug("Checking parameter {}", parameterInfo.fullyQualifiedName());
             E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
             check(NotModified.class, e2.notModified);
             check(Modified.class, e2.modified);

@@ -41,16 +41,14 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class ConvertMethodReference {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConvertMethodReference.class);
 
     public static MethodInfo convertMethodReferenceIntoAnonymous(ParameterizedType functionalInterfaceType,
                                                                  TypeInfo enclosingType,
@@ -104,8 +102,8 @@ public class ConvertMethodReference {
         }
         Block block = new Block.BlockBuilder(methodReference.identifier).addStatement(statement).build();
 
-        if (Logger.isLogEnabled(LAMBDA)) {
-            log(LAMBDA, "Result of translating block: {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Result of translating block: {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
         }
         return block;
     }

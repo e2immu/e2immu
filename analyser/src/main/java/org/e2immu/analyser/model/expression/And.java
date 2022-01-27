@@ -25,17 +25,17 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class And extends BaseExpression implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
+
     private final Primitives primitives;
     private final List<Expression> expressions;
     public static final int COMPLEXITY = 3;
@@ -90,7 +90,7 @@ public class And extends BaseExpression implements Expression {
 
         boolean changes = complexity < evaluationContext.limitOnComplexity();
         if (!changes) {
-            log(ANALYSER, "Not analysing AND operation, complexity {}", complexity);
+            LOGGER.debug("Not analysing AND operation, complexity {}", complexity);
             return reducedComplexity(evaluationContext, values);
         }
         assert complexity < Expression.HARD_LIMIT_ON_COMPLEXITY : "Complexity reached " + complexity;
@@ -106,7 +106,7 @@ public class And extends BaseExpression implements Expression {
 
             for (Expression value : concat) {
                 if (value instanceof BooleanConstant bc && !bc.constant()) {
-                    log(EXPRESSION, "Return FALSE in And, found FALSE", value);
+                    LOGGER.debug("Return FALSE in And, found FALSE");
                     return new BooleanConstant(primitives, false);
                 }
             }
@@ -149,15 +149,15 @@ public class And extends BaseExpression implements Expression {
             concat = newConcat;
         }
         if (concat.isEmpty()) {
-            log(EXPRESSION, "And reduced to 0 components, return true");
+            LOGGER.debug("And reduced to 0 components, return true");
             return new BooleanConstant(primitives, true);
         }
         if (concat.size() == 1) {
-            log(EXPRESSION, "And reduced to 1 component: {}", concat.get(0));
+            LOGGER.debug("And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
         And res = new And(identifier, primitives, List.copyOf(concat));
-        log(EXPRESSION, "Constructed {}", res);
+        LOGGER.debug("Constructed {}", res);
         return res;
     }
 
@@ -190,7 +190,7 @@ public class And extends BaseExpression implements Expression {
         // this works because of sorting
         // A && !A will always sit next to each other
         if (value instanceof Negation negatedValue && negatedValue.expression.equals(prev)) {
-            log(EXPRESSION, "Return FALSE in And, found opposites for {}", value);
+            LOGGER.debug("Return FALSE in And, found opposites for {}", value);
             return Action.FALSE;
         }
 
@@ -231,7 +231,7 @@ public class And extends BaseExpression implements Expression {
             }
             if (changed) {
                 if (remaining.isEmpty()) {
-                    log(EXPRESSION, "Return FALSE in And, found opposite for {}", value);
+                    LOGGER.debug("Return FALSE in And, found opposite for {}", value);
                     return Action.FALSE;
                 }
                 // replace
@@ -304,7 +304,7 @@ public class And extends BaseExpression implements Expression {
             }
         }
 
-        Action actionEqEq = analyseEqEq(evaluationContext, newConcat, prev, value);
+        Action actionEqEq = analyseEqEq(evaluationContext, prev, value);
         if (actionEqEq != null) return actionEqEq;
 
         Action actionGeNotEqual = analyseGeNotEq(evaluationContext, newConcat, prev, value);
@@ -319,7 +319,7 @@ public class And extends BaseExpression implements Expression {
         return Action.ADD;
     }
 
-    private Action analyseEqEq(EvaluationContext evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
+    private Action analyseEqEq(EvaluationContext evaluationContext, Expression prev, Expression value) {
         if (prev instanceof Equals ev1) {
             if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a

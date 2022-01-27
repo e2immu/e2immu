@@ -25,7 +25,6 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.SMapList;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +39,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
-                org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
-    }
 
     private TypeMap parseFromJar(String path) throws IOException {
         String analyserJar = determineAnalyserJarName();

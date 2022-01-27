@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -34,11 +36,9 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingMethodAnalyser.class);
 
     public static final String MODIFIED = "modified";
     public static final String IMMUTABLE = "immutable";
@@ -132,7 +132,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                         methodInfo.returnType(), "interface method");
             }
             methodAnalysis.singleReturnValue.setFinal(value);
-            log(ANALYSER, "Set single value of {} to aggregate {}", methodInfo.fullyQualifiedName, singleValue);
+            LOGGER.debug("Set single value of {} to aggregate {}", methodInfo.fullyQualifiedName, singleValue);
         }
         return DONE;
     }
@@ -144,10 +144,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
                     .map(a -> a.getProperty(property))
                     .reduce(start, operator);
             if (value.isDelayed()) {
-                log(DELAYED, "Delaying aggregate of {} for {}", property, methodInfo.fullyQualifiedName);
+                LOGGER.debug("Delaying aggregate of {} for {}", property, methodInfo.fullyQualifiedName);
                 return value.causesOfDelay();
             }
-            log(ANALYSER, "Set aggregate of {} to {} for {}", property, value, methodInfo.fullyQualifiedName);
+            LOGGER.debug("Set aggregate of {} to {} for {}", property, value, methodInfo.fullyQualifiedName);
             methodAnalysis.setProperty(property, value);
         }
         return DONE;

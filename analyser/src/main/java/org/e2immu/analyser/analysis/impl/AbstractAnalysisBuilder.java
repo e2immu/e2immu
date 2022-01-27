@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.log;
-
 abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
@@ -280,9 +278,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                     levelImmutable = MultiLevel.Level.IMMUTABLE_2.max(levelImmutable);
                     levelIndependent = MultiLevel.Level.INDEPENDENT_1.max(levelIndependent);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
-                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
+                    LOGGER.debug("Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
-                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked1");
+                    LOGGER.debug("Ignoring informative annotation @Linked1");
                 } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() != t) {
                     // @AllowsInterrupt caught earlier on in the code, can be ignored here
                     throw new UnsupportedOperationException("? " + t.fullyQualifiedName);

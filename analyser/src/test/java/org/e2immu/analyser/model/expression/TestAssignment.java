@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -29,11 +28,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAssignment {
-
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate();
-    }
 
     private final Primitives primitives = new PrimitivesImpl();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);

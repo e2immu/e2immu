@@ -15,13 +15,13 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -36,11 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -60,8 +56,7 @@ public class TestDefaultAnnotations {
                 .addClassPath("jmods/java.base.jmod");
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER)
-                        .map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
@@ -88,7 +83,7 @@ public class TestDefaultAnnotations {
 
         long javaLangErrors = messages.stream()
                 .filter(m -> m.message().severity == Message.Severity.ERROR)
-                .filter(m -> !((LocationImpl)m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
+                .filter(m -> !((LocationImpl) m.location()).info.getTypeInfo().packageName().startsWith("java.lang"))
                 .count();
         LOGGER.info("Have {} error messages outside java.lang.*", javaLangErrors);
         assertEquals(0L, javaLangErrors);

@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,8 +41,6 @@ public class TestParseGenerics {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
-        Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR, Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
-
         Resources resources = new Resources();
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();

@@ -26,22 +26,23 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * a ? b : c
  */
 public class InlineConditional extends BaseExpression implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InlineConditional.class);
+
     public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
@@ -214,7 +215,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         }
 
         if (tooComplex) {
-            log(ANALYSER, "Reduced complexity in inline conditional");
+            LOGGER.debug("Reduced complexity in inline conditional");
             InlineConditional inlineConditional = new InlineConditional(identifier, inspectionProvider, condition, t, f);
             return builder.setExpression(inlineConditional).build();
         }

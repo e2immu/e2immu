@@ -15,7 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.inspector.expr.ParseArrayCreationExpr;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
@@ -23,8 +22,6 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.util.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestStatementAnalysisComparator {
-
-    @BeforeAll
-    public static void beforeAll() {
-        Logger.activate();
-    }
 
     Primitives primitives;
     Statement emptyStatement;

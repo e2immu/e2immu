@@ -23,10 +23,6 @@ import org.e2immu.analyser.parser.Parser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 
 public class TestInspectAndResolveAnalyserCode {
     @Test
@@ -54,7 +50,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(inputConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(Stream.of(RESOLVER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("resolver")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

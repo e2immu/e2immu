@@ -21,19 +21,17 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestPreloadJavaBase {
 
     @Test
     public void testPreload() throws IOException {
-        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR,
-                Logger.LogTarget.BYTECODE_INSPECTOR);
         InputConfiguration inputConfiguration = new InputConfiguration.Builder()
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .build();

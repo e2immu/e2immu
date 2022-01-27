@@ -24,15 +24,17 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.annotation.Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeInspectionImpl.class);
+    
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
     public final TypeNature typeNature;
@@ -423,7 +425,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 if (!res.isDollarType()) {
                     addSubType(subTypeBuilder.typeInfo());
                 }
-                log(INSPECTOR, "Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
+                LOGGER.debug("Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
 
                 ((TypeInspectionImpl.Builder) subTypeBuilder).recursivelyAddToTypeStore(false,
                         res.isDollarType(), typeStore, cid, dollarTypesAreNormalTypes);

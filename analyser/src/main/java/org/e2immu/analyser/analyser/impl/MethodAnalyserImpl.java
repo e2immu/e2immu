@@ -26,16 +26,17 @@ import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 public abstract class MethodAnalyserImpl extends AbstractAnalyser implements MethodAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyserImpl.class);
+
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
     public final boolean isSAM;
@@ -145,7 +146,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
-        log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
+        LOGGER.debug("Checking method {}", methodInfo.fullyQualifiedName());
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {
@@ -228,7 +229,7 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
         CausesOfDelay delay = parameterAnalysers.stream().filter(pa -> !pa.getParameterAnalysis().isAssignedToFieldDelaysResolved())
                 .map(pa -> pa.getParameterAnalysis().assignedToFieldDelays())
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        log(DELAYED, "Field to parameter for {}: {}", methodInfo.fullyQualifiedName, delay);
+        LOGGER.debug("Field to parameter for {}: {}", methodInfo.fullyQualifiedName, delay);
         return delay;
     }
 

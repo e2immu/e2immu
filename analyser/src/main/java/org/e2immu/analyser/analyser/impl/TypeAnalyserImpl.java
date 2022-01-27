@@ -28,12 +28,12 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 import static org.e2immu.analyser.config.AnalyserProgram.Step.ALL;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * In the type analysis record we state whether this type has "free fields" or not.
@@ -55,6 +55,8 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 
 public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyserImpl.class);
+
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
@@ -118,7 +120,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         // before we check, we copy the properties into annotations
-        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
+        LOGGER.debug("\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
         AnalyserProgram analyserProgram = analyserContext.getAnalyserProgram();
         if (analyserProgram.accepts(ALL)) {

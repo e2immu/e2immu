@@ -17,9 +17,7 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
@@ -29,11 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class TestParameterizedTypeFactory {
-    @BeforeAll
-    public static void beforeClass() {
-        Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR);
-    }
-
     private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(new Resources()));
     private final FindType findType = (fqn, path) -> typeContext.typeMap.getOrCreateFromPath(path,
             TRIGGER_BYTECODE_INSPECTION);
@@ -69,7 +62,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testCharArray() {
         ParameterizedType pt = create("[C").parameterizedType;
-        assertEquals(typeContext.getPrimitives().charTypeInfo(),                pt.typeInfo);
+        assertEquals(typeContext.getPrimitives().charTypeInfo(), pt.typeInfo);
         assertEquals(1, pt.arrays);
     }
 
@@ -88,7 +81,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testWildcard() {
         ParameterizedType pt = create("Ljava/lang/Class<*>;").parameterizedType;
-        assertEquals("java.lang.Class",                Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
+        assertEquals("java.lang.Class", Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         assertEquals(1, pt.parameters.size());
         ParameterizedType tp0 = pt.parameters.get(0);
         assertSame(ParameterizedType.WildCard.UNBOUND, tp0.wildCard);

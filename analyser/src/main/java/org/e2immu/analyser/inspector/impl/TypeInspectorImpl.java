@@ -39,8 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
-import static org.e2immu.analyser.util.Logger.log;
 
 /*
  Overall structure of an "Annotated API" Java class:
@@ -227,7 +225,7 @@ public class TypeInspectorImpl implements TypeInspector {
         for (BodyDeclaration<?> bd : annotationDeclaration.getMembers()) {
             if (bd.isAnnotationMemberDeclaration()) {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
-                log(INSPECTOR, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
+                LOGGER.debug("Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
                 TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
                 MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
@@ -473,7 +471,7 @@ public class TypeInspectorImpl implements TypeInspector {
             RecordSynthetics.ensureAccessors(expressionContext, typeInfo, builder, recordFields);
         }
 
-        log(INSPECTOR, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Setting type inspection of {}", typeInfo.fullyQualifiedName);
         typeInfo.typeInspection.set(builder.build());
         return dollarTypes;
     }

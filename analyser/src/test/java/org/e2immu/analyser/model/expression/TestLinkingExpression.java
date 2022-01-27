@@ -23,7 +23,9 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.Input;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,11 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -60,7 +58,7 @@ public class TestLinkingExpression {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotationXmConfiguration(annotationXmlConfiguration)
-                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

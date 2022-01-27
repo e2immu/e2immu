@@ -47,8 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysisImpl.class)
@@ -360,7 +358,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         StatementAnalyser statementAnalyser = followReplacements();
         StatementAnalyser previous = null;
         while (statementAnalyser != null && statementAnalyser.isDone()) {
-            log(ANALYSER, "Skip statement {}, done", statementAnalyser.index());
+            LOGGER.debug("Skip statement {}, done", statementAnalyser.index());
             previous = statementAnalyser;
             statementAnalyser = statementAnalyser.navigationDataNextGet().orElse(null);
             if (statementAnalyser != null) {
@@ -463,7 +461,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
                     analyserContext.getConfiguration().debugConfiguration(), analyserComponents);
 
-            log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index(),
+            LOGGER.debug("Returning from statement {} of {} with analysis status {}", statementAnalysis.index(),
                     myMethodAnalyser.getMethodInfo().name, result.analysisStatus());
             return result;
         } catch (Throwable rte) {
@@ -517,8 +515,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 Either.left(analyserContext.getPatternMatcher()),
-                                analyserContext.getE2ImmuAnnotationExpressions(),
-                                true);
+                                analyserContext.getE2ImmuAnnotationExpressions());
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;
                     }).toList();
@@ -539,11 +536,11 @@ public class StatementAnalyserImpl implements StatementAnalyser {
         AnalyserResult.Builder builder = new AnalyserResult.Builder();
         builder.setAnalysisStatus(NOT_YET_EXECUTED);
         for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
-            log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
+            LOGGER.debug("------- Starting local analyser {} ------", analyser.getName());
             AnalyserResult analyserResult = analyser
                     .analyse(sharedState.evaluationContext().getIteration(), sharedState.evaluationContext());
             builder.add(analyserResult);
-            log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
+            LOGGER.debug("------- Ending local analyser   {} ------", analyser.getName());
         }
         return builder.build();
     }

@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +43,6 @@ public class TestTypeInfoStream {
     private static final String GENERATED_PACKAGE = "org.e2immu.analyser.generatedannotation";
     public static final String JAVA_UTIL = "java.util";
     public static final String MODEL = "org.e2immu.analyser.model";
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate();
-    }
 
     @Test
     public void test() {

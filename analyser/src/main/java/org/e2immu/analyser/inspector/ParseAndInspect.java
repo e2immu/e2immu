@@ -40,8 +40,6 @@ import java.util.Optional;
 
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_JAVA_PARSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
-import static org.e2immu.analyser.util.Logger.log;
 
 public record ParseAndInspect(Resources classPath,
                               TypeMap.Builder typeMapBuilder,
@@ -65,7 +63,7 @@ public record ParseAndInspect(Resources classPath,
     public List<TypeInfo> run(ResolverImpl resolver,
                               TypeContext typeContextOfFile,
                               String fileName, String sourceCode) throws ParseException {
-        log(INSPECTOR, "Parsing compilation unit {}", fileName);
+        LOGGER.debug("Parsing compilation unit {}", fileName);
 
         JavaParser javaParser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_16));
         ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
@@ -176,7 +174,7 @@ public record ParseAndInspect(Resources classPath,
 
     private void importNamed(TypeContext typeContextOfFile, String fullyQualified) {
         // higher priority names, allowOverwrite = true
-        log(INSPECTOR, "Import of {}", fullyQualified);
+        LOGGER.debug("Import of {}", fullyQualified);
         TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified);
         // when a type is imported, its sub-types are accessible straight away
         // (they might need disambiguation, but that's not the problem here)
@@ -188,7 +186,7 @@ public record ParseAndInspect(Resources classPath,
     }
 
     private void importAsterisk(TypeContext typeContextOfFile, String packageName, String fullyQualified) {
-        log(INSPECTOR, "Need to parse folder {}", fullyQualified);
+        LOGGER.debug("Need to parse folder {}", fullyQualified);
         if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
             // we either have a type, a sub-type, or a package
             String[] fullyQualifiedSplit = fullyQualified.split("\\.");
@@ -215,7 +213,7 @@ public record ParseAndInspect(Resources classPath,
                     if (typeInfo == null) {
                         TypeInfo newTypeInfo = typeContextOfFile.typeMap
                                 .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
-                        log(INSPECTOR, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                        LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                         typeContextOfFile.addToContext(newTypeInfo, false);
                     } else {
                         typeContextOfFile.addToContext(typeInfo, false);
@@ -232,7 +230,7 @@ public record ParseAndInspect(Resources classPath,
         TypeInfo typeInfo = loadTypeDoNotImport(typeOrSubTypeName);
         TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
         if (inspection == null) {
-            log(INSPECTOR, "We cannot know whether member '{}' is a sub-type, or a method/field in {}", member, typeOrSubTypeName);
+            LOGGER.debug("We cannot know whether member '{}' is a sub-type, or a method/field in {}", member, typeOrSubTypeName);
             typeContextOfFile.addImportStatic(typeInfo, member);
             // FIXME this cannot be correct? member is not necessarily a field or method; could still be a subtype
         } else {
@@ -240,10 +238,10 @@ public record ParseAndInspect(Resources classPath,
                     .filter(st -> st.simpleName.equals(member))
                     .findFirst();
             if (memberAsSubType.isPresent()) {
-                log(INSPECTOR, "Add import static sub-type {} of {}", member, typeOrSubTypeName);
+                LOGGER.debug("Add import static sub-type {} of {}", member, typeOrSubTypeName);
                 typeContextOfFile.addToContext(memberAsSubType.get(), true);
             } else {
-                log(INSPECTOR, "Add import static member {} on class {}", member, typeOrSubTypeName);
+                LOGGER.debug("Add import static member {} on class {}", member, typeOrSubTypeName);
                 typeContextOfFile.addImportStatic(typeInfo, member);
             }
         }
@@ -256,7 +254,7 @@ public record ParseAndInspect(Resources classPath,
      */
     private void importStaticAsterisk(TypeContext typeContextOfFile, String fullyQualified) {
         TypeInfo typeInfo = loadTypeDoNotImport(fullyQualified);
-        log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Add import static wildcard {}", typeInfo.fullyQualifiedName);
         typeContextOfFile.addImportStaticWildcard(typeInfo);
         // also, import the static sub-types, but with lower priority (overwrite false)
         TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
@@ -268,7 +266,7 @@ public record ParseAndInspect(Resources classPath,
     }
 
     private void importSubTypesIn(TypeContext typeContext, TypeInfo typeInfo, String startingFrom) {
-        log(INSPECTOR, "Importing sub-types of {}, starting from {}", startingFrom, typeInfo.fullyQualifiedName);
+        LOGGER.debug("Importing sub-types of {}, starting from {}", startingFrom, typeInfo.fullyQualifiedName);
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
         if (inspection != null) {
             if (typeInfo.fullyQualifiedName.equals(startingFrom)) {
@@ -285,7 +283,7 @@ public record ParseAndInspect(Resources classPath,
         TypeInfo inMap = typeMapBuilder.get(fqn);
         if (inMap != null) {
             InspectionState inspectionState = typeMapBuilder().getInspectionState(inMap);
-            if(inspectionState != null) {
+            if (inspectionState != null) {
                 return inMap;
             }
             // there is no associated type inspection yet

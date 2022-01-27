@@ -28,17 +28,16 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfo.MERGE_WITHOUT_VALUE_PROPERTIES;
-import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.log;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -58,6 +57,8 @@ and potentially already in the value as well. In the former, the state of 1 shou
 
  */
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl vi) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MergeHelper.class);
+
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
      */
@@ -137,7 +138,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         if (postProcessState != null && !beforePostProcess.isDelayed() && !postProcessState.isDelayed() && !postProcessState.isBoolValueTrue()) {
             EvaluationContext child = evaluationContext.childState(postProcessState);
             Expression reEval = beforePostProcess.evaluate(child, ForwardEvaluationInfo.DEFAULT).getExpression();
-            log(EXPRESSION, "Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
+            LOGGER.debug("Post-processed {} into {} to reflect state after block", beforePostProcess, reEval);
             return reEval;
         }
         return beforePostProcess;

@@ -31,7 +31,8 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -41,9 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analysis.Analysis.AnalysisMode.CONTRACTED;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 
 /*
 The AnnotatedAPI analyser analyses types (and their methods, companion methods, fields)
@@ -71,6 +69,7 @@ The AggregatingMethodAnalyser plays no role in the AnnotatedAPI analyser.
  */
 
 public class AnnotatedAPIAnalyser implements AnalyserContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotatedAPIAnalyser.class);
 
     private final Configuration configuration;
     private final Messages messages = new Messages();
@@ -97,7 +96,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.analyserProgram = AnalyserProgram.PROGRAM_ALL;
 
-        log(ANALYSER, "Have {} types", types.size());
+        LOGGER.debug("Have {} types", types.size());
 
         DependencyGraph<TypeInfo> dependencyGraph = new DependencyGraph<>();
         for (TypeInfo typeInfo : types) {
@@ -107,9 +106,9 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         }
         List<TypeInfo> sorted = dependencyGraph.sorted();
         sorted.add(0, typeMap.get(Object.class));
-        if (Logger.isLogEnabled(ANALYSER)) {
-            log(ANALYSER, "Order of shallow analysis:");
-            sorted.forEach(typeInfo -> log(ANALYSER, "  Type {} {}",
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Order of shallow analysis:");
+            sorted.forEach(typeInfo -> LOGGER.debug("  Type {} {}",
                     typeInfo.fullyQualifiedName,
                     typeInfo.typeInspection.get().parentClass() == null ? "NO PARENT" : ""));
         }
@@ -196,7 +195,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
      * @return the message stream of all sub-analysers
      */
     public Stream<Message> analyse() {
-        log(ANALYSER, "Starting AnnotatedAPI analysis on {} types", typeAnalyses.size());
+        LOGGER.debug("Starting AnnotatedAPI analysis on {} types", typeAnalyses.size());
 
         hardcodedCrucialClasses();
 
@@ -336,7 +335,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         VariableExpression ve = new VariableExpression(parameterInfo);
         builder.singleReturnValue.setFinal(new InlinedMethod(Identifier.generate(), methodInfo, ve, Set.of(ve),
                 false));
-        log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }
 
@@ -368,7 +367,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.setFinal(UnknownExpression.forHardcodedMethodReturnValue(methodInfo.identifier,
                 primitives.booleanParameterizedType(), "isKnown return value"));
-        log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        LOGGER.debug("Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }
 
@@ -457,7 +456,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
             for (Map.Entry<MethodInfo, MethodAnalyser> entry : nonShallowOrWithCompanions.entrySet()) {
                 MethodInfo methodInfo = entry.getKey();
-                log(ANALYSER, "Analysing {}", methodInfo.fullyQualifiedName());
+                LOGGER.debug("Analysing {}", methodInfo.fullyQualifiedName());
 
                 AtomicReference<AnalysisStatus> methodAnalysisStatus = new AtomicReference<>(AnalysisStatus.DONE);
                 if (entry.getValue() instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
@@ -465,7 +464,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     for (Map.Entry<CompanionMethodName, MethodInfo> e : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
                         CompanionMethodName cmn = e.getKey();
                         if (!builder.companionAnalyses.isSet(cmn)) {
-                            log(ANALYSER, "Starting companion analyser for {}", cmn);
+                            LOGGER.debug("Starting companion analyser for {}", cmn);
 
                             CompanionAnalyser companionAnalyser = new CompanionAnalyser(this,
                                     getTypeAnalysis(methodInfo.typeInfo), cmn, e.getValue(),
@@ -476,7 +475,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                                 builder.companionAnalyses.put(cmn, companionAnalysis);
                             } else {
                                 assert analysisStatus.isDelayed();
-                                log(DELAYED, "Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
+                                LOGGER.debug("Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
                                 methodAnalysisStatus.set(analysisStatus);
                             }
                         }
@@ -487,7 +486,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                     AnalyserResult analyserResult = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
                     AnalysisStatus analysisStatus = analyserResult.analysisStatus();
                     if (analysisStatus != AnalysisStatus.DONE) {
-                        log(DELAYED, "{} in analysis of {}, computing method analyser", analysisStatus,
+                        LOGGER.debug("{} in analysis of {}, computing method analyser", analysisStatus,
                                 methodInfo.fullyQualifiedName());
                         methodAnalysisStatus.set(analysisStatus);
                     }
@@ -507,7 +506,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 throw new UnsupportedOperationException("No changes after iteration " + iteration +
                         "; have left: " + nonShallowOrWithCompanions.size());
             }
-            log(ANALYSER, "**** At end of iteration {} in shallow method analysis, removed {}, remaining {}",
+            LOGGER.debug("**** At end of iteration {} in shallow method analysis, removed {}, remaining {}",
                     iteration, methodsToRemove.size(), nonShallowOrWithCompanions.size());
             iteration++;
 

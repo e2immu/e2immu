@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.parser.own.testexample.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.support.Freezable;

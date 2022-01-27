@@ -17,12 +17,12 @@ package org.e2immu.analyser.shallow;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.PropertyException;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Message;
@@ -33,12 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -63,7 +59,7 @@ public abstract class CommonAnnotatedAPI {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
-                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER).map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
@@ -76,7 +72,7 @@ public abstract class CommonAnnotatedAPI {
         errors.forEach(e -> LOGGER.info("Error: " + e));
         // we do expect some
         long ownErrors = errors.stream()
-                .filter(m -> ((LocationImpl)m.location()).info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
+                .filter(m -> ((LocationImpl) m.location()).info.getTypeInfo().fullyQualifiedName.startsWith("org.e2immu"))
                 .peek(m -> LOGGER.info("OWN ERROR: {}", m))
                 .count();
         assertEquals(0L, ownErrors);

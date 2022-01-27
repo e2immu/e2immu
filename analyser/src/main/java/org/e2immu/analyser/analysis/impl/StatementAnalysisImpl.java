@@ -37,7 +37,6 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
-import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +51,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
@@ -81,7 +78,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
     private final AddOnceSet<Variable> variablesReadBySubAnalysers = new AddOnceSet<>();
-    private final SetOnceMap<FieldReference, EventuallyFinal<Expression>> fieldsAssignedBySubAnalysers = new SetOnceMap<>();
 
     public StatementAnalysisImpl(Primitives primitives,
                                  MethodAnalysis methodAnalysis,
@@ -1733,7 +1729,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public DV isEscapeAlwaysExecutedInCurrentBlock() {
         if (!flowData().interruptsFlowIsSet()) {
-            log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
+            LOGGER.debug("Delaying checking useless assignment in {}, because interrupt status unknown", index());
             return flowData().interruptStatus().causesOfDelay();
         }
         InterruptsFlow bestAlways = flowData().bestAlwaysInterrupt();
@@ -1853,7 +1849,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     stateData().setPrecondition(pc, preconditionExpression.isDelayed());
                 }
                 if (preconditionExpression.isDelayed()) {
-                    log(DELAYED, "Apply of {}, {} is delayed because of precondition",
+                    LOGGER.debug("Apply of {}, {} is delayed because of precondition",
                             index(), methodAnalysis.getMethodInfo().fullyQualifiedName);
                     stateData.setPrecondition(new Precondition(preconditionExpression,
                             precondition.causes()), true);

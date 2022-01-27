@@ -32,11 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -56,8 +52,7 @@ public class TestAnnotatedXML {
                 .addClassPath(InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS);
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .addDebugLogTargets(Stream.of(DELAYED, ANALYSER)
-                        .map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("analyser")
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);

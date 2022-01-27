@@ -16,7 +16,6 @@ package org.e2immu.analyser.util;
 
 import org.apache.commons.io.IOUtil;
 import org.e2immu.analyser.bytecode.TestByteCodeInspector;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestResources {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestResources.class);
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.RESOURCES);
-    }
 
     @Test
     public void testViaClassPath() throws IOException {

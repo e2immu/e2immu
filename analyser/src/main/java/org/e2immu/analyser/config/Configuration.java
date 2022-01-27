@@ -18,13 +18,11 @@ import ch.qos.logback.classic.Level;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Basic use:
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
  */
 @E2Immutable
 public record Configuration(InputConfiguration inputConfiguration,
-                            Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
+                            Set<String> logTargets,
                             boolean quiet,
                             boolean ignoreErrors,
                             boolean skipAnalysis,
@@ -43,14 +41,11 @@ public record Configuration(InputConfiguration inputConfiguration,
                             AnnotatedAPIConfiguration annotatedAPIConfiguration,
                             AnnotationXmlConfiguration annotationXmlConfiguration,
                             DebugConfiguration debugConfiguration) {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
-    public static final String PATH_SEPARATOR = System.getProperty("path.separator");
 
     @Override
     public String toString() {
         return "Configuration:" +
-                "\n    logTargets: " + logTargets.stream().map(org.e2immu.analyser.util.Logger.LogTarget::toString)
-                .collect(Collectors.joining(", ")) +
+                "\n    logTargets: " + String.join(", ", logTargets) +
                 "\n    quiet: " + quiet +
                 "\n    ignoreErrors: " + ignoreErrors +
                 "\n" +
@@ -85,11 +80,17 @@ public record Configuration(InputConfiguration inputConfiguration,
     }
 
     public void initializeLoggers() {
+        ch.qos.logback.classic.Logger overall = (ch.qos.logback.classic.Logger)
+                LoggerFactory.getLogger("org.e2immu.analyser");
         if (quiet) {
-            org.e2immu.analyser.util.Logger.configure(Level.ERROR);
+            overall.setLevel(Level.ERROR);
         } else {
-            org.e2immu.analyser.util.Logger.configure(Level.INFO);
-            org.e2immu.analyser.util.Logger.activate(logTargets);
+            overall.setLevel(Level.INFO);
+            for (String prefix : logTargets) {
+                ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                        LoggerFactory.getLogger("org.e2immu.analyser" + prefix);
+                logger.setLevel(Level.DEBUG);
+            }
         }
     }
 
@@ -100,7 +101,7 @@ public record Configuration(InputConfiguration inputConfiguration,
         private boolean quiet;
         private boolean ignoreErrors;
         private boolean skipAnalysis;
-        private final Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets = new HashSet<>();
+        private final Set<String> logTargets = new HashSet<>();
 
         private UploadConfiguration uploadConfiguration;
         private AnnotatedAPIConfiguration annotatedAPIConfiguration;
@@ -181,12 +182,7 @@ public record Configuration(InputConfiguration inputConfiguration,
         public Builder addDebugLogTargets(String debugLogTargets) {
             for (String s : debugLogTargets.split(",")) {
                 if (s != null && !s.trim().isEmpty()) {
-                    try {
-                        org.e2immu.analyser.util.Logger.LogTarget logTarget = org.e2immu.analyser.util.Logger.LogTarget.valueOf(s.toUpperCase());
-                        logTargets.add(logTarget);
-                    } catch (RuntimeException rte) {
-                        LOGGER.warn("Ignoring unrecognized log target '{}'", s.toUpperCase());
-                    }
+                    logTargets.add(s);
                 }
             }
             return this;

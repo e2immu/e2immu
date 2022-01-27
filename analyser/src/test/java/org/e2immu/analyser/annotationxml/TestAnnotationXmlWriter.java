@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;
-
 /*
   description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
     classpath = sourceSets.main.runtimeClasspath
@@ -65,8 +62,7 @@ public class TestAnnotationXmlWriter {
                 .addReadAnnotatedAPIPackages("java.")
                 .setWriteMode(AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE);
         Configuration configuration = new Configuration.Builder()
-                .addDebugLogTargets(List.of(ANNOTATION_XML_READER, ANNOTATION_XML_WRITER)
-                        .stream().map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets("annotationxml")
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotationXmConfiguration(annotationXml.build())
                 .setAnnotatedAPIConfiguration(annotatedAPI.build())

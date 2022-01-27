@@ -19,6 +19,7 @@ import org.e2immu.analyser.annotatedapi.Composer;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.inspector.NotFoundInClassPathException;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.output.Formatter;
@@ -39,11 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.e2immu.analyser.inspector.NotFoundInClassPathException;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATED_API_WRITER;
-import static org.e2immu.analyser.util.Logger.LogTarget.OUTPUT;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class RunAnalyser implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunAnalyser.class);
@@ -68,12 +64,12 @@ public class RunAnalyser implements Runnable {
                 throw new UnsupportedOperationException("Not yet implemented!");
             }
             if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
-                log(ANNOTATED_API_WRITER, "Writing annotated API files based on inspection");
+                LOGGER.debug("Writing annotated API files based on inspection");
                 Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
                 Composer composer = new Composer(composerData.typeMap(),
                         api.destinationPackage(), w -> true);
                 Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
-                log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
+                LOGGER.debug("Created {} java types, one for each package", apiTypes.size());
                 composer.write(apiTypes, api.writeAnnotatedAPIsDir());
             } else {
                 /* normal run */
@@ -90,11 +86,11 @@ public class RunAnalyser implements Runnable {
                 LOGGER.info("Have {} messages from analyser", parser.countMessages());
                 messages.addAll(parser.getMessages());
 
-                if(org.e2immu.analyser.util.Logger.isLogEnabled(OUTPUT)) {
+                if (LOGGER.isDebugEnabled()) {
                     for (SortedType sortedType : runResult.sourceSortedTypes()) {
                         OutputBuilder outputBuilder = sortedType.primaryType().output();
                         Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
-                        log(OUTPUT, "Annotated Java for {}:\n{}\n", sortedType.primaryType().fullyQualifiedName,
+                        LOGGER.debug("Annotated Java for {}:\n{}\n", sortedType.primaryType().fullyQualifiedName,
                                 formatter.write(outputBuilder));
                     }
                 }
@@ -113,17 +109,17 @@ public class RunAnalyser implements Runnable {
                 if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
                     Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
                             .stream().map(SortedType::primaryType).collect(Collectors.toSet());
-                    log(ANNOTATED_API_WRITER, "Writing annotated API files for usage of {} Java sources",
+                    LOGGER.debug("Writing annotated API files for usage of {} Java sources",
                             sourceTypes.size());
                     CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
                     Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
-                    log(ANNOTATED_API_WRITER, "Found {} objects in usage set", usage.size());
+                    LOGGER.debug("Found {} objects in usage set", usage.size());
                     Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
                             .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
-                    log(ANNOTATED_API_WRITER, "Found {} primary types in usage set", types.size());
+                    LOGGER.debug("Found {} primary types in usage set", types.size());
                     Composer composer = new Composer(runResult.typeMap(), api.destinationPackage(), usage::contains);
                     Collection<TypeInfo> apiTypes = composer.compose(types);
-                    log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
+                    LOGGER.debug("Created {} java types, one for each package", apiTypes.size());
                     composer.write(apiTypes, api.writeAnnotatedAPIsDir());
                 }
                 if (!configuration.ignoreErrors()

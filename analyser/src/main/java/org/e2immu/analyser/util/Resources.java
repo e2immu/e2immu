@@ -15,6 +15,8 @@
 package org.e2immu.analyser.util;
 
 import org.apache.commons.io.IOUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -29,9 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.jar.JarFile;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOURCES;
-import static org.e2immu.analyser.util.Logger.log;
-
 /**
  * The Trie contains the full name of the resource: the class file for java.util.List
  * is in [java, util, List.class], three levels deep. At the List.class node is a list
@@ -40,6 +39,7 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 
 public class Resources {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Resources.class);
 
     static class ResourceAccessException extends RuntimeException {
         public ResourceAccessException(String msg) {
@@ -108,7 +108,7 @@ public class Resources {
                 }
             }
         }
-        log(RESOURCES, "{} not found in class path", path);
+        LOGGER.debug("{} not found in class path", path);
         return null;
     }
 
@@ -124,9 +124,9 @@ public class Resources {
         while (roots.hasMoreElements()) {
             URL url = roots.nextElement();
             String urlString = url.toString();
-            log(RESOURCES, "Found classpath root {} for {}", url, prefix);
+            LOGGER.debug("Found classpath root {} for {}", url, prefix);
             URL strippedURL = new URL(urlString.substring(0, urlString.length() - prefix.length()));
-            log(RESOURCES, "Stripped URL is {}", strippedURL);
+            LOGGER.debug("Stripped URL is {}", strippedURL);
             if ("jar".equals(strippedURL.getProtocol())) {
                 entries += addJar(strippedURL);
             } else
@@ -149,7 +149,7 @@ public class Resources {
         AtomicInteger errors = new AtomicInteger();
         jarFile.stream().forEach(je -> {
             String realName = je.getRealName();
-            log(RESOURCES, "Adding {}", realName);
+            LOGGER.debug("Adding {}", realName);
             String[] split = je.getRealName().split("/");
             try {
                 URL fullUrl = new URL(jarUrl, je.getRealName());
@@ -182,7 +182,7 @@ public class Resources {
                 .filter(je -> je.getRealName().startsWith("classes/"))
                 .forEach(je -> {
                     String realName = je.getRealName().substring("classes/".length());
-                    log(RESOURCES, "Adding {}", realName);
+                    LOGGER.debug("Adding {}", realName);
                     String[] split = realName.split("/");
                     try {
                         URL fullUrl = new URL(jmodUrl, je.getRealName());
@@ -201,20 +201,19 @@ public class Resources {
     public void addDirectoryFromFileSystem(File base) {
         File file = new File("");
         try {
-            URL url = new URL("file:" + base.getPath());
-            recursivelyAddFiles(url, base, file);
+            recursivelyAddFiles(base, file);
         } catch (MalformedURLException e) {
             throw new UnsupportedOperationException("??");
         }
     }
 
-    private void recursivelyAddFiles(URL url, File baseDirectory, File dirRelativeToBase) throws MalformedURLException {
+    private void recursivelyAddFiles(File baseDirectory, File dirRelativeToBase) throws MalformedURLException {
         File dir = new File(baseDirectory, dirRelativeToBase.getPath());
         if (dir.isDirectory()) {
             File[] subDirs = dir.listFiles(File::isDirectory);
             if (subDirs != null) {
                 for (File subDir : subDirs) {
-                    recursivelyAddFiles(url, baseDirectory, new File(dirRelativeToBase, subDir.getName()));
+                    recursivelyAddFiles(baseDirectory, new File(dirRelativeToBase, subDir.getName()));
                 }
             }
             File[] files = dir.listFiles(f -> !f.isDirectory());
@@ -227,10 +226,10 @@ public class Resources {
                     String name = file.getName();
                     if (packageParts.length == 0 && name.endsWith(".annotated_api")) {
                         String[] partsFromFile = name.split("\\.");
-                        log(RESOURCES, "File {} in path from file {}", name, String.join("/", partsFromFile));
+                        LOGGER.debug("File {} in path from file {}", name, String.join("/", partsFromFile));
                         data.add(partsFromFile, file.toURI().toURL());
                     } else {
-                        log(RESOURCES, "File {} in path {}", name, String.join("/", packageParts));
+                        LOGGER.debug("File {} in path {}", name, String.join("/", packageParts));
                         data.add(StringUtil.concat(packageParts, new String[]{name}), file.toURI().toURL());
                     }
                 }
@@ -259,7 +258,7 @@ public class Resources {
             List<URL> urls = data.get(parts);
             if (urls != null) return String.join("/", parts);
         }
-        log(RESOURCES, "Cannot find {} with extension {} in classpath", fqn, extension);
+        LOGGER.debug("Cannot find {} with extension {} in classpath", fqn, extension);
         return null;
     }
 }

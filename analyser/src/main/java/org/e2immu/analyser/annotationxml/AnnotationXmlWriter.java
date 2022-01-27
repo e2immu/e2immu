@@ -37,8 +37,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;
-import static org.e2immu.analyser.util.Logger.log;
 
 @UtilityClass
 public class AnnotationXmlWriter {
@@ -86,7 +84,7 @@ public class AnnotationXmlWriter {
             String[] splitOfPackage = entry.getKey().split("\\.");
             File directory = new File(base, String.join("/", splitOfPackage));
             boolean created = directory.mkdirs();
-            log(ANNOTATION_XML_WRITER, "Created {}? {}", directory, created);
+            LOGGER.debug("Created {}? {}", directory, created);
             File outputFile = new File(directory, "annotations.xml");
             writeSinglePackage(outputFile, entry.getValue());
         }
@@ -113,7 +111,7 @@ public class AnnotationXmlWriter {
     }
 
     private static void addType(Document document, Element root, TypeItem typeItem) {
-        log(ANNOTATION_XML_WRITER, "Type {} has {} annots, {} fields, {} methods",
+        LOGGER.debug("Type {} has {} annots, {} fields, {} methods",
                 typeItem.name, typeItem.getAnnotations().size(),
                 typeItem.getFieldItems().size(), typeItem.getMethodItems().size());
         if (!typeItem.getAnnotations().isEmpty()) {
