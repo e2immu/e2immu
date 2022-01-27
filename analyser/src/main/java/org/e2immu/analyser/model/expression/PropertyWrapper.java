@@ -301,8 +301,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay()
-                .merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay())
-                .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay());
+                .merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay());
+          // FIXME is this needed?      .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay());
     }
 
     public Expression expression() {

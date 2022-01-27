@@ -618,6 +618,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (variableInfo.variable() instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
                 }
+                if (variableInfo.variable() instanceof DependentVariable dv && dv.hasArrayVariable() && dv.arrayVariable() instanceof FieldReference fieldReference) {
+                    fromFieldAnalyserIntoInitialOfDependentVariable(evaluationContext, vic, dv, fieldReference);
+                }
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -726,6 +729,26 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
                 vic.setProperty(Property.INDEPENDENT, independent, INITIAL);
             }
+        }
+    }
+
+    private void fromFieldAnalyserIntoInitialOfDependentVariable(EvaluationContext evaluationContext,
+                                                                 VariableInfoContainer vic,
+                                                                 DependentVariable dv,
+                                                                 FieldReference fieldReference) {
+        VariableInfo viInitial = vic.best(INITIAL);
+        if (viInitial.getValue().isDelayed()) {
+            Expression arrayValue = new VariableExpression(dv.arrayVariable());
+            Expression instance = Instance.genericArrayAccess(Identifier.generate(), evaluationContext, arrayValue, dv);
+
+            DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
+            LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
+                    .changeAllTo(independent)
+                    .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
+            Expression initialValue = PropertyWrapper.propertyWrapper(instance, linkedVariables);
+
+            Properties valueProperties = evaluationContext.getValueProperties(initialValue);
+            vic.setValue(initialValue, LinkedVariables.EMPTY, valueProperties, true);
         }
     }
 
@@ -1377,8 +1400,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         if (variable instanceof DependentVariable dv) {
             if (dv.hasArrayVariable()) {
-                initialValue = Instance.genericArrayAccess(identifier, evaluationContext,
-                        new VariableExpression(dv.arrayVariable()), dv);
+                Expression arrayValue = new VariableExpression(dv.arrayVariable());
+                initialValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayValue, dv);
             } else {
                 Expression arrayValue = dv.expressionOrArrayVariable.getLeft().value();
 

@@ -117,7 +117,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
             boolean delayed = arrayExpression.isDelayed() || indexValue.value().isDelayed();
             DependentVariable evaluatedDependentVariable = new DependentVariable(identifier, arrayExpression, indexValue.value(), returnType);
             if (evaluatedDependentVariable.hasArrayVariable()) {
-                builder.markRead(evaluatedDependentVariable.arrayVariable());
+                EvaluationResult arrayVarEval = new VariableExpression(evaluatedDependentVariable.arrayVariable()).evaluate(evaluationContext, forwardEvaluationInfo.notNullKeepAssignment());
+                builder.compose(arrayVarEval);
             }
             if (forwardEvaluationInfo.isAssignmentTarget()) {
                 builder.setExpression(new VariableExpression(evaluatedDependentVariable));

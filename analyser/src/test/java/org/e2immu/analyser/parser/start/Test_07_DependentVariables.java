@@ -152,8 +152,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("getX".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "xs".equals(fr.fieldInfo.name)) {
+                    String expect = d.iteration() <= 1 ? "<f:xs>" : "instance type X[]";
+                    assertEquals(expect, d.currentValue().toString());
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
-                    assertDv(d, 0, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = switch (d.iteration()) {
@@ -180,9 +182,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
                     String expected = switch (d.iteration()) {
-                   //     case 0 -> "<v:xs[index]>";
-                        case 0,1 -> "<array-access:X>";
-                        default -> "nullable instance type X";
+                        case 0, 1 -> "<array-access:X>";
+                        default -> "nullable instance type X/*{L xs:independent1:5,xs[index]:assigned:1}*/";
                     };
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
@@ -237,6 +238,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 assertEquals(d.iteration() == 0, d.fieldAnalysis().getLinkedVariables().isDelayed());
                 assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
             if ("i".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
