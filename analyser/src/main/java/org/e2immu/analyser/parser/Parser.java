@@ -180,7 +180,7 @@ public class Parser {
             URL url = Objects.requireNonNull(urls.get(typeInfo),
                     "Cannot find URL for " + typeInfo.fullyQualifiedName + " in " + urls);
             try {
-                LOGGER.info("Starting Java parser inspection of '{}'", url);
+                LOGGER.debug("Starting Java parser inspection of '{}'", url);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());

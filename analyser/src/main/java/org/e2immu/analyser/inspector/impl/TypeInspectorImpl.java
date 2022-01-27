@@ -134,7 +134,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                    TypeDeclaration<?> typeDeclaration,
                                    ExpressionContext expressionContext,
                                    DollarResolver dollarResolverInput) {
-        LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
+        LOGGER.debug("Inspecting type {}", typeInfo.fullyQualifiedName);
         assert typeDeclaration != null;
         builder.setPositionalIdentifier(Identifier.from(typeDeclaration.getBegin().orElse(null),
                 typeDeclaration.getEnd().orElse(null)));

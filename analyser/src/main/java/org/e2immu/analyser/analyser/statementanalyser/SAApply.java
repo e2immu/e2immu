@@ -247,7 +247,6 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
             builder.compose(evaluationResultIn);
             for (Variable variable : readBySubAnalysers) {
-                // FIXME this is naive!
                 builder.markRead(variable);
             }
             return builder.build();

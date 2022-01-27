@@ -125,8 +125,8 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2
-                            ? "this==<v:<m:values>[i]>"
-                            : "instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this";
+                            ? "<v:AV$[i]>==this"
+                            : "({Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}/*{L AV$[i]:assigned:1}*/)==this";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0".equals(d.statementId())) {
@@ -168,14 +168,15 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 2 ? "this==<v:<m:values>[i]>?<v:i>:<return value>"
-                                : "instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this?i:<return value>";
+                        String expected = d.iteration() <= 2
+                                ? "<v:AV$[i]>==this?<v:i>:<return value>"
+                                : "({Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}/*{L AV$[i]:assigned:1}*/)==this?i:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2
-                                ? "<loopIsNotEmptyCondition>&&this==<v:<m:values>[i]>?<v:i>:<return value>"
-                                : "instance type int<=2&&instance type int>=0&&instance type Enum_1/*{L {Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}[i]:assigned:1}*/==this?instance type int:<return value>";
+                                ? "<loopIsNotEmptyCondition>&&<v:AV$[i]>==this?<v:i>:<return value>"
+                                : "instance type int<=2&&instance type int>=0&&({Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}/*{L AV$[i]:assigned:1}*/)==this?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -254,16 +255,21 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
                 String expectValue = d.iteration() <= 2 ? "<m:values>" : "{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expectValue, d.currentValue().toString());
+
+                assertEquals("array:0", d.variableInfo().getLinkedVariables().toString());
             }
             if ("array[i]".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<v:array[i]>" : "instance type Enum_3";
+                    String expectValue = d.iteration() <= 2
+                            ? "<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/"
+                            : "instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0, 1, 2 -> "<loopIsNotEmptyCondition>?<v:array[i]>:<not yet assigned>";
-                        case 3 -> "<array length>>instance type int?instance type Enum_3:<not yet assigned>";
+                        case 0 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/";
+                        case 1, 2 -> "<loopIsNotEmptyCondition>?<v:array[i]>/*{DL array:initial@Enum_Enum_3,array[i]:assigned:1}*/:<array-access:Enum_3>/*{L array:not_involved:0,array[i]:assigned:1}*/";
+                        case 3 -> "<array length>>instance type int?instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/:instance type Enum_3/*{L array:not_involved:0,array[i]:assigned:1}*/";
                         default -> "instance type Enum_3";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -292,11 +298,7 @@ public class Test_26_Enum extends CommonTestRunner {
                             null != d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = switch (d.iteration()) {
-                        case 0 -> "this==<v:array[i]>";
-                        case 1, 2 -> "this==<v:<m:values>[i]>";
-                        default -> "instance type Enum_3/*{L array:independent:805,array[i]:assigned:1}*/==this";
-                    };
+                    String expectCondition = d.iteration() < 3 ? "<v:array[i]>==this" : "array[i]==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
@@ -339,7 +341,7 @@ public class Test_26_Enum extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d ->
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
 
-        // expect an "always true" warning on the assert
+        // expect an "always true" warning on the assert statement
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

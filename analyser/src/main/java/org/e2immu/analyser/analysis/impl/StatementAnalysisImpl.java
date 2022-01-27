@@ -594,7 +594,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     }
 
     /**
-     * Before iterations 1+, with fieldAnalyses non-empty only potentially for the the first statement
+     * Before iterations 1+, with fieldAnalyses non-empty only potentially for the first statement
      * of the method.
      *
      * @param evaluationContext overview object for the analysis of this primary type
@@ -618,9 +618,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 if (variableInfo.variable() instanceof FieldReference fieldReference) {
                     fromFieldAnalyserIntoInitial(evaluationContext, vic, fieldReference);
                 }
-                if (variableInfo.variable() instanceof DependentVariable dv && dv.hasArrayVariable() && dv.arrayVariable() instanceof FieldReference fieldReference) {
-                    fromFieldAnalyserIntoInitialOfDependentVariable(evaluationContext, vic, dv, fieldReference);
-                }
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -628,6 +625,15 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (copyFrom != null) {
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
+        variables.stream()
+                .map(Map.Entry::getValue)
+                .filter(VariableInfoContainer::isInitial)
+                .forEach(vic -> {
+                    VariableInfo variableInfo = vic.current();
+                    if (variableInfo.variable() instanceof DependentVariable dv && vic.getPreviousOrInitial().getValue().isDelayed()) {
+                        initializeLocalOrDependentVariable(vic, dv, evaluationContext);
+                    }
+                });
     }
 
     /* explicitly copy local variables from above or previous (they cannot be created on demand)
@@ -729,26 +735,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 DV independent = typeAnalysis.getProperty(Property.INDEPENDENT);
                 vic.setProperty(Property.INDEPENDENT, independent, INITIAL);
             }
-        }
-    }
-
-    private void fromFieldAnalyserIntoInitialOfDependentVariable(EvaluationContext evaluationContext,
-                                                                 VariableInfoContainer vic,
-                                                                 DependentVariable dv,
-                                                                 FieldReference fieldReference) {
-        VariableInfo viInitial = vic.best(INITIAL);
-        if (viInitial.getValue().isDelayed()) {
-            Expression arrayValue = new VariableExpression(dv.arrayVariable());
-            Expression instance = Instance.genericArrayAccess(Identifier.generate(), evaluationContext, arrayValue, dv);
-
-            DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
-            LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
-                    .changeAllTo(independent)
-                    .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
-            Expression initialValue = PropertyWrapper.propertyWrapper(instance, linkedVariables);
-
-            Properties valueProperties = evaluationContext.getValueProperties(initialValue);
-            vic.setValue(initialValue, LinkedVariables.EMPTY, valueProperties, true);
         }
     }
 
@@ -1396,27 +1382,50 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_NOT_NULL, EXTERNAL_NOT_NULL.valueWhenAbsent());
         properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
-        Identifier identifier = Identifier.generate(); // FIXME
+        Identifier identifier = Identifier.generate();
         Expression initialValue;
+        LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
+            Expression arrayValue;
+            Expression arrayBase;
+            LinkedVariables lvArrayBase;
+            DV independent;
+            Properties valueProperties;
             if (dv.hasArrayVariable()) {
-                Expression arrayValue = new VariableExpression(dv.arrayVariable());
-                initialValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayValue, dv);
+                arrayBase = new VariableExpression(dv.arrayVariable());
+                lvArrayBase = arrayBase.linkedVariables(evaluationContext);
+                independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
+                CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
+                if (causesOfDelay.isDelayed()) {
+                    arrayValue = DelayedVariableExpression.forVariable(dv, causesOfDelay);
+                } else {
+                    arrayValue = Instance.genericArrayAccess(identifier, evaluationContext, arrayBase, dv);
+                }
+                valueProperties = evaluationContext.getValueProperties(arrayValue);
             } else {
-                Expression arrayValue = dv.expressionOrArrayVariable.getLeft().value();
-
-                DV independent = determineIndependentOfArrayBase(evaluationContext, arrayValue);
-                LinkedVariables linkedVariables = arrayValue.linkedVariables(evaluationContext)
-                        .changeAllTo(independent)
-                        .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
-                initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
+                Expression unevaluated = dv.expressionOrArrayVariable.getLeft().value();
+                EvaluationResult result = unevaluated.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                arrayBase = result.getExpression();
+                arrayValue = arrayBase;
+                valueProperties = evaluationContext.getValueProperties(arrayValue);
+                CausesOfDelay vpDelay = valueProperties.delays();
+                lvArrayBase = arrayBase.linkedVariables(evaluationContext);
+                independent = determineIndependentOfArrayBase(evaluationContext, arrayBase);
+                CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay()).merge(vpDelay);
+                if (causesOfDelay.isDelayed()) {
+                    arrayValue = DelayedExpression.forValueOf(dv.parameterizedType, causesOfDelay);
+                }
             }
-            Properties valueProperties = evaluationContext.getValueProperties(initialValue);
+            linkedVariables = lvArrayBase
+                    .changeAllTo(independent)
+                    .merge(LinkedVariables.of(dv, LinkedVariables.ASSIGNED_DV));
+            initialValue = PropertyWrapper.propertyWrapper(arrayValue, linkedVariables);
             valueProperties.stream().forEach(e -> properties.put(e.getKey(), e.getValue()));
         } else {
             initialValue = UnknownExpression.forNotYetAssigned(identifier, variable.parameterizedType());
+            linkedVariables = LinkedVariables.EMPTY;
         }
-        vic.setValue(initialValue, LinkedVariables.EMPTY, properties, true);
+        vic.setValue(initialValue, linkedVariables, properties, true);
     }
 
     /*
@@ -1426,18 +1435,18 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
    */
     private static DV determineIndependentOfArrayBase(EvaluationContext evaluationContext, Expression value) {
         ParameterizedType arrayBaseType = value.returnType().copyWithoutArrays();
-        TypeInfo bestTypeInfo = arrayBaseType.bestTypeInfo();
-        if (bestTypeInfo != null) {
-            TypeInfo currentType = evaluationContext.getCurrentType();
-            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
-            DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
-            if (partOfHiddenContent.isDelayed()) {
-                return partOfHiddenContent;
-            }
-            if (partOfHiddenContent.valueIsTrue()) {
-                return MultiLevel.INDEPENDENT_1_DV;
-            }
+
+        TypeInfo currentType = evaluationContext.getCurrentType();
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(currentType);
+        DV partOfHiddenContent = typeAnalysis.isPartOfHiddenContent(arrayBaseType);
+        if (partOfHiddenContent.isDelayed()) {
+            return partOfHiddenContent;
         }
+        if (partOfHiddenContent.valueIsTrue()) {
+            return MultiLevel.INDEPENDENT_1_DV;
+        }
+
+        if (evaluationContext.isMyself(arrayBaseType)) return MultiLevel.NOT_INVOLVED_DV; // BREAK INFINITE LOOP
         DV immutable = evaluationContext.getAnalyserContext().defaultImmutable(arrayBaseType, false);
         if (immutable.isDelayed()) {
             return immutable;

@@ -24,15 +24,16 @@ import org.e2immu.support.Either;
 import java.util.Objects;
 
 /**
- * variable representing a complex expression by name.
- * we store it because w
+ * variable representing a complex expression by name, concretely, used to store array access variables.
+ * two situations: the array is a variable, and, more complex, the array is an expression.
  * <p>
- * array variable with known index a[0] (either as constant, or known value of variable)
- * array variable with unknown index a[i], with dependent i
+ * the former is much more stable than the latter.
+ * in the latter, we store the unevaluated expression to be re-evaluated at initialisation time.
  * <p>
- * method(a, b)[i], with null arrayVariable, and dependent variables a, b, i
+ * In either case StatementAnalysisImpl.initializeLocalOrDependentVariable needs to run on every iteration.
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
+
 
     public record NonVariable(Expression value, Identifier identifier) {
     }
