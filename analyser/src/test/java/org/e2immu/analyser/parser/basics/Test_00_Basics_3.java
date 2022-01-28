@@ -79,7 +79,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("getS".equals(d.methodInfo().name)) {
                 String expectValue = switch (d.iteration()) {
                     case 0 -> "<f:s>";
-                    case 1 -> "<vp:s:initial:this.s@Method_setS1_1>";
+                    case 1 -> "<vp:s:initial:this.s@Method_setS1_1;values:this.s@Field_s>";
                     default -> "s$0";
                 };
                 assertEquals(expectValue, d.evaluationResult().value().toString());
@@ -225,7 +225,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals(GET_S_RET_VAR, d.variableName());
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<f:s>";
-                        case 1 -> "<vp:s:initial:this.s@Method_setS1_1>";
+                        case 1 -> "<vp:s:initial:this.s@Method_setS1_1;values:this.s@Field_s>";
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
@@ -299,7 +299,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1" : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
+                String expect = d.iteration() == 0 ? "initial:this.s@Method_setS1_1;values:this.s@Field_s"
+                        : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
                 assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 // because the value is not known, the ENN cannot be either

@@ -157,7 +157,7 @@ public class Test_04_Precondition extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.FINAL));
-                String expectedDelay = "initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2";
+                String expectedDelay = "initial:this.integer@Method_setInteger_0.0.1;state:this.integer@Method_setInteger_0.0.2;values:this.integer@Field_integer";
                 assertDv(d, expectedDelay, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
             }
         };

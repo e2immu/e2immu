@@ -20,12 +20,11 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analysis.ConditionAndVariableInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -223,6 +223,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
 
     private Merge.ExpressionAndProperties valueProperties(VariableInfo vi) {
         return new Merge.ExpressionAndProperties(vi.getValue(), vi.valueProperties());
+    }
+
+    private Merge.ExpressionAndProperties valuePropertiesWrapToBreakFieldInitDelay(VariableInfo vi) {
+        SimpleSet causes = new SimpleSet(evaluationContext.getLocation(), CauseOfDelay.Cause.VALUES);
+        Map<Property, DV> delayedProperties = EvaluationContext.VALUE_PROPERTIES.stream()
+                .collect(Collectors.toUnmodifiableMap(p -> p, p -> causes));
+        Expression value = new DelayedWrappedExpression(Identifier.generate(), vi, causes);
+        return new Merge.ExpressionAndProperties(value, Properties.of(delayedProperties));
     }
 
     private Merge.ExpressionAndProperties valueProperties(VariableInfo vi, Expression value) {
@@ -434,6 +442,12 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
     }
 
     private Merge.ExpressionAndProperties inlineConditional(Expression condition, VariableInfo ifTrue, VariableInfo ifFalse) {
+        if (ifTrue.isDelayed() && !ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifTrue)) {
+            return valuePropertiesWrapToBreakFieldInitDelay(ifFalse);
+        }
+        if (!ifTrue.isDelayed() && ifFalse.isDelayed() && conditionsMetForBreakingInitialisationDelay(ifFalse)) {
+            return valuePropertiesWrapToBreakFieldInitDelay(ifTrue);
+        }
 
         Expression safe = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue.getValue(), ifFalse.getValue()));
@@ -460,6 +474,23 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
             properties = ifFalse.valueProperties();
         }
         return new Merge.ExpressionAndProperties(safe, properties);
+    }
+
+    private boolean conditionsMetForBreakingInitialisationDelay(VariableInfo vi) {
+        if (vi.variable() instanceof FieldReference) {
+            CausesOfDelay causes = vi.getValue().causesOfDelay();
+            if (vi.getValue() instanceof DelayedVariableExpression) {
+                if (causes.causesStream().anyMatch(c -> c instanceof VariableCause vc && vc.cause() == CauseOfDelay.Cause.VALUES
+                        && vc.variable().equals(vi.variable())) && evaluationContext.getCurrentMethod() != null) {
+                    MethodInfo methodInfo = evaluationContext.getCurrentMethod().getMethodInfo();
+                    // we have a field whose values cannot be determined; this is causing issues right now
+                    // do not do this during construction; for that purpose, use the break system of SAEvaluationContext.initialValueForReading
+                    return !methodInfo.isConstructor || methodInfo.methodResolution.get().partOfConstruction()
+                            != MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+                }
+            }
+        }
+        return false;
     }
 
     private Expression safe(EvaluationResult result) {

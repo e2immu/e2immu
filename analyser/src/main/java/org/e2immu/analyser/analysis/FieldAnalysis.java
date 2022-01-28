@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.annotation.NotNull;
 
 public interface FieldAnalysis extends Analysis {
 
@@ -29,8 +30,10 @@ public interface FieldAnalysis extends Analysis {
      if variable, set when the value properties are present
      otherwise, delayed
      */
+    @NotNull
     Expression getValue(); // final, or variable (in terms of an instance); null if not determined
 
+    @NotNull
     CausesOfDelay valuesDelayed();
 
     // end product of the dependency analysis of linkage between the variables in a method
@@ -40,10 +43,12 @@ public interface FieldAnalysis extends Analysis {
     // here, the key of the map are fields; the local variables and parameters are stored in method analysis
     // the values are either other fields (in which case these other fields are not linked to parameters)
     // or parameters
+    @NotNull
     LinkedVariables getLinkedVariables();
 
     DV isTransparentType();
 
+    @NotNull
     FieldInfo getFieldInfo();
 
     ParameterizedType concreteTypeNullWhenDelayed();

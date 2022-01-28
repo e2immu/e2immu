@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckImmutable;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.ExpandableAnalyserContextImpl;
@@ -870,8 +871,19 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
                     methodInfo.isConstructor && !ignorePrivateConstructors)) {
                 boolean added = false;
-                for (VariableInfo vi : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
+                for (VariableInfo vii : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
+                    VariableInfo vi;
+                    if(vii.getValue() instanceof DelayedWrappedExpression dwe) {
+                        // the reason for providing a VI rather than an expression in DWE is that it contains properties as well.
+                        // these properties are hard to compute here
+                        // IMPROVE we should detect DWE inside any expression, and then do some fancy replacement
+                        // SOLUTION: have the SAEvaluationOfMainExpression write a DWE around the final value when there is a DWE inside the expression
+                        vi = dwe.getVariableInfo();
+                    } else {
+                        vi = vii;
+                    }
                     Expression expression = vi.getValue();
+                    CausesOfDelay causesOfDelay = expression.causesOfDelay();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
                             && ve.variable() instanceof LocalVariableReference) {
@@ -882,15 +894,16 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                             == MethodResolution.CallStatus.PART_OF_CONSTRUCTION
                             ? ValueAndPropertyProxy.Origin.CONSTRUCTION : ValueAndPropertyProxy.Origin.METHOD;
                     ValueAndPropertyProxy proxy;
+
                     boolean viIsDelayed;
-                    if (vi.getValue().causesOfDelay().causesStream().anyMatch(cause -> cause instanceof VariableCause vc
+                    if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
                             && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
                             && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
                         proxy = breakDelayProxy(origin);
                         viIsDelayed = false;
                     } else {
                         proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
-                        viIsDelayed = vi.isDelayed();
+                        viIsDelayed = causesOfDelay.isDelayed();
                     }
                     values.add(proxy);
                     if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
@@ -899,9 +912,8 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     }
                     added = true;
                     if (viIsDelayed) {
-                        LOGGER.debug("Delay consistent value for field {} because of {}", fqn,
-                                vi.getValue().toString());
-                        delays = delays.merge(vi.getValue().causesOfDelay());
+                        LOGGER.debug("Delay consistent value for field {} because of {}", fqn, vi.getValue().toString());
+                        delays = delays.merge(causesOfDelay);
                     }
                 }
                 if (!added && methodInfo.isConstructor) {
@@ -1078,6 +1090,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     return "NO_INIT:" + getValue().toString();
                 }
             });
+        }
+        if (delays.isDelayed()) {
+            // inject a cause of delay that we can intercept in the next iteration
+            FieldReference fr = new FieldReference(analyserContext, fieldInfo);
+            VariableCause vc = new VariableCause(fr, new LocationImpl(fieldInfo), CauseOfDelay.Cause.VALUES);
+            delays = delays.merge(new SimpleSet(vc));
         }
         // order does not matter for this class, but is handy for testing
         values.sort(ValueAndPropertyProxy.COMPARATOR);
