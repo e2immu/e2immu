@@ -75,11 +75,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9&&instance type int>=0?instance type int+j$1.0.2:0";
+                                "instance type int<=9&&instance type int>=0?instance type int+<FIXME:not j>";
                         assertEquals(expect, d.currentValue().toString());
                     } else fail(d.statementId()); // no other statements
                 }
                 if ("k".equals(d.variableName())) {
+                    if("1.0.3".equals(d.statementId())) {
+
+                        // FIXME current issue is a loop problem more than a replacement in the merge of statement 1
+                        // there should be no self-reference in j to j$1.0.2
+                        String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9&&instance type int>=0?instance type int+<FIXME:not j>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                     if ("2".equals(d.statementId())) {
                         // there should be no j here!
                         String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0"

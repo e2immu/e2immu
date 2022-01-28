@@ -59,6 +59,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
+    public CausesOfDelay valuesDelayed() {
+        return CausesOfDelay.EMPTY;
+    }
+
+    @Override
     public ParameterizedType concreteTypeNullWhenDelayed() {
         if (fieldInfo.type.isUnboundTypeParameter()) return fieldInfo.type;
         if (value != null) {
@@ -145,6 +150,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         private static CausesOfDelay initialDelay(FieldInfo fieldInfo) {
             return fieldInfo.delay(CauseOfDelay.Cause.INITIAL_VALUE);
+        }
+
+        @Override
+        public CausesOfDelay valuesDelayed() {
+            if(values.isSet()) return CausesOfDelay.EMPTY;
+            return values.getFirst().causesOfDelay();
         }
 
         @Override

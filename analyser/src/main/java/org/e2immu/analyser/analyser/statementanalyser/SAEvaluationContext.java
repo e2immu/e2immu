@@ -365,20 +365,22 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
                     // is it a variable field, or a final field? if we don't know, return an empty VI
                     // in constructors, and sync blocks, this does not hold
                     DV effectivelyFinal = fieldAnalysis.getProperty(FINAL);
-                    if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValueYet(fieldAnalysis)) {
+                    if (effectivelyFinal.isDelayed() || effectivelyFinal.valueIsTrue() && noValuesYet(fieldAnalysis)) {
                         VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
                         if (breakDelay != null) return breakDelay;
                         return new VariableInfoImpl(getLocation(), variable);
                     }
-                } else {
-                    // we still could have a delay to be broken (See e.g. E2Immutable_1)
-                    // the condition of vi.getValue().isDelayed is for Final_0
-                    // IMPROVE conditions feel shaky, but do work for now
-                    if (vi.getValue().isDelayed() && noValueYet(fieldAnalysis)) {
-                        VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
-                        if (breakDelay != null) return breakDelay;
-                    }
                 }
+                // we still could have a delay to be broken (See e.g. E2Immutable_1)
+                // the condition of vi.getValue().isDelayed is for Final_0
+                // IMPROVE conditions feel shaky, but do work for now
+
+                // ConditionalInitialization_0: noValueYet is false because <variable value>, yet without value properties
+                if (vi.getValue().isDelayed() && noValuesYet(fieldAnalysis)) {
+                    VariableInfo breakDelay = breakDelay(fr, fieldAnalysis);
+                    if (breakDelay != null) return breakDelay;
+                }
+
             }
             if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                 StatementAnalysisImpl relevantLoop = (StatementAnalysisImpl) statementAnalysis.mostEnclosingLoop();
@@ -390,9 +392,9 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
         return vi;
     }
 
-    // E2Immutable_1
+    // E2Immutable_1, ConditionalInitialization_0
     private VariableInfo breakDelay(FieldReference fr, FieldAnalysis fieldAnalysis) {
-        CausesOfDelay causes = fieldAnalysis.getValue().causesOfDelay();
+        CausesOfDelay causes = fieldAnalysis.valuesDelayed().causesOfDelay();
         assert causes.isDelayed();
         Location here = getLocation();
         boolean cyclicDependency = causes.causesStream()
@@ -414,8 +416,8 @@ class SAEvaluationContext extends AbstractEvaluationContextImpl {
      * To break this delay, we need to return a VI with an instance object rather than a delay.
      * The getVariableValue() method then has to pick up this instance, and keep the variable.
      */
-    private boolean noValueYet(FieldAnalysis fieldAnalysis) {
-        return fieldAnalysis.getValue().isDelayed();
+    private boolean noValuesYet(FieldAnalysis fieldAnalysis) {
+        return fieldAnalysis.valuesDelayed().isDelayed();
     }
 
     private boolean isNotMine(Variable variable) {

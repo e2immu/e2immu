@@ -1320,8 +1320,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(Property.FINAL, DV.fromBoolDv(isFinal));
-        LOGGER.debug("Mark field {} as " + (isFinal ? "" : "not ") +
-                "effectively final", fqn);
+        LOGGER.debug("Mark field {} as " + (isFinal ? "" : "not ") + "effectively final", fqn);
 
         if (!isFinal) {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();

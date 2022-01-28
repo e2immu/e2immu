@@ -118,6 +118,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfoImpl 
         mergeValue.valueProperties().stream().forEach(e -> vi.setProperty(e.getKey(), e.getValue()));
         assert mergedValue.isDelayed() || allValuePropertiesSet();
 
+
         // TODO maybe we should do these together with the value as well?
         mergeNonValueProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
 

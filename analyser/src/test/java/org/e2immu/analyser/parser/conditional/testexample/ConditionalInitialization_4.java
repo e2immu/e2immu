@@ -12,30 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.failing.testexample;
+package org.e2immu.analyser.parser.conditional.testexample;
 
-import java.util.HashSet;
-import java.util.Set;
+public class ConditionalInitialization_4 {
+    private static int i;
 
-public class ConditionalInitialization_1 {
-    private Set<String> set = new HashSet<>(); // @NotNull
-
-    public ConditionalInitialization_1(boolean b) {
+    public ConditionalInitialization_4(boolean b) {
         if (b) {
-            set = Set.of("a", "b"); // @NotNull1
-        } else {
-            // here, the CI copy should not exist
-            System.out.println("Set is " + set);
+            i = i + 1;
         }
     }
 
-    public void setSet(Set<String> setParam, boolean c) {
-        if (c) {
-            this.set = setParam;
-        }
-    }
-
-    public Set<String> getSet() {
-        return set;
+    public static int getI() {
+        return i;
     }
 }
