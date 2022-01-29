@@ -122,6 +122,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     public static Expression propertyWrapper(Expression value, LinkedVariables linkedVariables) {
+        if (value instanceof PropertyWrapper pw) {
+            return new PropertyWrapper(pw.expression, pw.state, pw.properties, pw.linkedVariables.merge(linkedVariables), pw.castType);
+        }
         return new PropertyWrapper(value, null, Map.of(), linkedVariables, null);
     }
 
@@ -302,7 +305,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay()
                 .merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay());
-          // FIXME is this needed?      .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay());
+        // FIXME is this needed?      .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay());
     }
 
     public Expression expression() {

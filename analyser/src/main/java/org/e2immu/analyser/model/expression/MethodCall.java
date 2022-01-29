@@ -354,8 +354,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // companion methods
         Expression modifiedInstance;
         if (modified.valueIsTrue()) {
-            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
+            Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
+            // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
+            LinkedVariables thisLv = linkedVariables(evaluationContext);
+            modifiedInstance = thisLv.isEmpty() ? unlinkedModifiedInstance
+                    : PropertyWrapper.propertyWrapper(unlinkedModifiedInstance, thisLv);
         } else {
             modifiedInstance = null;
         }
@@ -801,9 +805,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     /*
-    If the method result is a type parameter, then the value parameters are better off with the concreteReturnType.
-    As Warnings_13.method3 shows, the concreteReturnType can be equal to the formal type (T), still be worse than the target type (Integer).
-    FIXME this needs solving at inspection level; we should have "Integer" as concreteReturnType for method3
+     See Warnings_13.method3 for an example why you're better off with the concreteReturnType rather than the formal type.
      */
 
     @Override

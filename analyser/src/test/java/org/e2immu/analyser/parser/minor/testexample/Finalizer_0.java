@@ -19,7 +19,7 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.MutableModifiesArguments;
 
-@MutableModifiesArguments // because of the error method, would have been @Container otherwise
+@MutableModifiesArguments // because of the error+testLinking method, would have been @Container otherwise
 public class Finalizer_0 {
 
     private int count;
@@ -46,6 +46,10 @@ public class Finalizer_0 {
         return new Finalizer_0().set("a").set("b").done("c");
     }
 
+    public static String testLinking(Finalizer_0 f) {
+        Finalizer_0 ff = f.set("x");
+        return ff.toString();
+    }
     /*
     error because a @Finalizer method is called on a parameter
      */

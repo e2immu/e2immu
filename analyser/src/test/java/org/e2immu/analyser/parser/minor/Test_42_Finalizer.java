@@ -21,15 +21,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.minor.testexample.Finalizer_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.support.EventuallyFinal;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -49,9 +46,9 @@ public class Test_42_Finalizer extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-          if("done".equals(d.methodInfo().name)) {
-              assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
-          }
+            if ("done".equals(d.methodInfo().name)) {
+                assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(Property.FINALIZER));
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -60,6 +57,15 @@ public class Test_42_Finalizer extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                         assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
+                    }
+                }
+            }
+            if ("testLinking".equals(d.methodInfo().name)) {
+                if ("ff".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("nullable instance type Finalizer_0/*@Identity*//*{L f:statically_assigned:0}*/",
+                                d.currentValue().toString());
+                        assertEquals("f:1,ff:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

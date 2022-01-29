@@ -23,7 +23,7 @@ public class Finalizer_1 {
     /*
     the goal is to have a class that "finishes" a certain eventually immutable object.
     It receives it in the @BeforeMark state, and returns it finally in the final state.
-    In the mean time, it gets modified (finished), while there is other temporary data around.
+    In the meantime, it gets modified (finished), while there is other temporary data around.
     Once the final state is reached, we try to guarantee that the temporary data is destroyed
     by severely limiting the scope of the finisher object.
      */
