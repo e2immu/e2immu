@@ -82,7 +82,9 @@ public class TypeExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new TypeExpression(translationMap.translateType(parameterizedType), diamond);
+        ParameterizedType translated = translationMap.translateType(parameterizedType);
+        if (translated == parameterizedType) return this;
+        return new TypeExpression(translated, diamond);
     }
 
     @Override

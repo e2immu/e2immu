@@ -350,7 +350,19 @@ public record ConditionManager(Expression condition,
         return conditionIsDelayed.merge(stateIsDelayed).merge(preconditionIsDelayed);
     }
 
-    public static record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
+    @Override
+    public String toString() {
+        return "CM{" +
+                (condition.isBoolValueTrue() ? "" : "condition=" + condition + ";") +
+                (conditionIsDelayed.isDone() ? "" : "cdelay=" + conditionIsDelayed + ";") +
+                (state.isBoolValueTrue() ? "" : "state=" + state + ";") +
+                (stateIsDelayed.isDone() ? "" : "sdelay=" + stateIsDelayed + ";") +
+                (precondition.isEmpty() ? "" : "pc=" + precondition + ";") +
+                (preconditionIsDelayed.isDone() ? "" : "pcdelay=" + preconditionIsDelayed + ";") +
+                (parent == null ? "" : "parent=" + parent) + '}';
+    }
+
+    public record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
 
         @Override
         public AnalyserContext getAnalyserContext() {

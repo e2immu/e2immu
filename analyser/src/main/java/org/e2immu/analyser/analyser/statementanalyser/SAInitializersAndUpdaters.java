@@ -14,17 +14,12 @@
 
 package org.e2immu.analyser.analyser.statementanalyser;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.ForwardAnalysisInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -34,10 +29,9 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
+import static org.e2immu.analyser.analyser.Property.*;
 
 record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
 
@@ -86,8 +80,14 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             String name = catchLv.name();
             if (!statementAnalysis.variableIsSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchLv);
+                Properties properties = Properties.of(Map.of(
+                        IMMUTABLE, IMMUTABLE.falseDv,
+                        INDEPENDENT, INDEPENDENT.falseDv,
+                        CONTAINER, CONTAINER.falseDv,
+                        IDENTITY, IDENTITY.falseDv,
+                        NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV));
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(location(), lvr, index(),
-                        Instance.forCatchOrThis(index(), lvr, analyserContext),
+                        Instance.forCatchOrThis(index(), lvr, properties),
                         statementAnalysis.navigationData().hasSubBlocks());
                 ((StatementAnalysisImpl) statementAnalysis).putVariable(name, vic);
             }
@@ -147,7 +147,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     VariableExpression ve;
                     if (e instanceof Assignment assignment && ((ve = assignment.target.asInstanceOf(VariableExpression.class)) != null)) {
                         boolean locallyCreated = variableCreatedInLoop.contains(ve.variable());
-                        if(locallyCreated) {
+                        if (locallyCreated) {
                             // for(int i=0; i...)
                             expressionsToEvaluate.add(assignment.value);
                         } else {

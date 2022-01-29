@@ -17,8 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.SimpleSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -168,7 +166,8 @@ public class DelayedVariableExpression extends CommonVariableExpression {
     // special treatment because of == equality.
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return Objects.requireNonNullElse(translationMap.translateDelayedVariableNullIfNotTranslated(variable), this);
+        Expression expression = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
+        return Objects.requireNonNullElse(expression, this);
     }
 
     // special treatment because of == equality

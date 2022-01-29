@@ -80,8 +80,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     public static Expression forCondition(ParameterizedType parameterizedType,
-                                      LinkedVariables linkedVariables,
-                                      CausesOfDelay causes) {
+                                          LinkedVariables linkedVariables,
+                                          CausesOfDelay causes) {
         String msg = brackets("c:" + parameterizedType.printSimple());
         return new DelayedExpression(msg, parameterizedType, linkedVariables, causes);
     }
@@ -235,8 +235,10 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     @Override
     public Expression translate(TranslationMap translationMap) {
         if (linkedVariables.isEmpty()) return this;
+        LinkedVariables translated = linkedVariables.translate(translationMap);
+        if (translated == linkedVariables) return this;
         return new DelayedExpression(msg, translationMap.translateType(parameterizedType),
-                linkedVariables.translate(translationMap), causesOfDelay);
+                translated, causesOfDelay);
     }
 
     @Override

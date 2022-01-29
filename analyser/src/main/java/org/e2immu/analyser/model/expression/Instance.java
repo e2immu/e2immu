@@ -44,14 +44,6 @@ public final class Instance extends BaseExpression implements Expression {
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
-    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
-                                                Properties valueProperties) {
-        return new Instance(Identifier.generate(),
-                fieldInfo.owner.asParameterizedType(inspectionProvider),
-                valueProperties);
-    }
-
-    // IMPROVE should this not be delayed?
     public static Instance forInlinedMethod(Identifier identifier,
                                             ParameterizedType parameterizedType) {
         return new Instance(identifier, parameterizedType,
@@ -63,6 +55,12 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Expression forMethodResult(Identifier identifier,
+                                             ParameterizedType parameterizedType,
+                                             Properties valueProperties) {
+        return new Instance(identifier, parameterizedType, valueProperties);
+    }
+
+    public static Expression forMerge(Identifier identifier,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {
         return new Instance(identifier, parameterizedType, valueProperties);
@@ -80,29 +78,9 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     // never null, never more interesting.
-    public static Instance forCatchOrThis(String index, Variable variable, AnalysisProvider analysisProvider) {
+    public static Instance forCatchOrThis(String index, Variable variable, Properties properties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType,
-                Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
-                        Property.IMMUTABLE, defaultImmutable(parameterizedType, analysisProvider),
-                        Property.INDEPENDENT, defaultIndependent(parameterizedType, analysisProvider),
-                        Property.CONTAINER, defaultContainer(parameterizedType, analysisProvider),
-                        Property.IDENTITY, DV.FALSE_DV)));
-    }
-
-    private static DV defaultIndependent(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = analysisProvider.defaultIndependent(parameterizedType);
-        return v.replaceDelayBy(MultiLevel.DEPENDENT_DV);
-    }
-
-    private static DV defaultImmutable(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = analysisProvider.defaultImmutable(parameterizedType, false);
-        return v.replaceDelayBy(MultiLevel.MUTABLE_DV);
-    }
-
-    private static DV defaultContainer(ParameterizedType parameterizedType, AnalysisProvider analysisProvider) {
-        DV v = analysisProvider.defaultContainer(parameterizedType);
-        return v.replaceDelayBy(DV.FALSE_DV);
+        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType, properties);
     }
 
     public static Instance forLoopVariable(String index, Variable variable, Properties valueProperties) {
@@ -168,12 +146,6 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     public static Instance forTooComplex(Identifier identifier,
-                                         ParameterizedType parameterizedType,
-                                         Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
-    }
-
-    public static Instance forTooComplex(Identifier identifier,
                                          ParameterizedType parameterizedType) {
         return new Instance(identifier, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
@@ -225,7 +197,9 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Instance(identifier, translationMap.translateType(parameterizedType), valueProperties);
+        ParameterizedType translated = translationMap.translateType(this.parameterizedType);
+        if(translated == this.parameterizedType) return this;
+        return new Instance(identifier, translated, valueProperties);
     }
 
     @Override

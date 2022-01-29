@@ -117,6 +117,7 @@ public final class VariableExpression extends CommonVariableExpression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
+        // removes all suffixes!
         Variable translated = translationMap.translateVariable(variable);
         if (translated != variable) {
             return new VariableExpression(translated, suffix);
@@ -125,9 +126,14 @@ public final class VariableExpression extends CommonVariableExpression {
         if (translated2 != null) {
             return translated2;
         }
+        // helps with bypassing suffixes
+        Expression translated3 = translationMap.translateVariableExpressionNullIfNotTranslated(variable);
+        if (translated3 != null) {
+            return translated3;
+        }
         if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
             Expression translatedScope = fieldReference.scope.translate(translationMap);
-            if (!translatedScope.equals(fieldReference.scope)) {
+            if (translatedScope != fieldReference.scope) {
                 ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
                 return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
                         translatedType, fieldReference.isStatic, fieldReference.isDefaultScope), suffix);

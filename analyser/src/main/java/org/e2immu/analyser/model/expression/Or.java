@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -282,7 +283,9 @@ public final class Or extends ExpressionCanBeTooComplex {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap)).toList();
+        List<Expression> translated = expressions.isEmpty() ? expressions :
+                expressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(expressions));
+        if (expressions == translated) return this;
         return new Or(identifier, primitives, translated);
     }
 

@@ -18,8 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
-import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -31,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class And extends ExpressionCanBeTooComplex {
     private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
@@ -612,8 +610,9 @@ public class And extends ExpressionCanBeTooComplex {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        if (translationMap.isEmpty()) return this;
-        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap)).toList();
+        List<Expression> translated = expressions.isEmpty() ? expressions :
+                expressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(expressions));
+        if (expressions == translated) return this;
         return new And(identifier, primitives, translated);
     }
 

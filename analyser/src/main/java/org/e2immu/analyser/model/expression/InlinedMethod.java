@@ -14,8 +14,8 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -115,7 +115,9 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return of(identifier, methodInfo, expression.translate(translationMap), fr -> containsVariableFields);
+        Expression translated = expression.translate(translationMap);
+        if (translated == expression) return this;
+        return of(identifier, methodInfo, translated, fr -> containsVariableFields);
     }
 
     @Override

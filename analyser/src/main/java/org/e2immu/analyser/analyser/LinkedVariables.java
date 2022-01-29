@@ -209,6 +209,7 @@ public class LinkedVariables {
         if (isEmpty()) return this;
         var translatedVariables = variables.entrySet().stream()
                 .collect(Collectors.toMap(e -> translationMap.translateVariable(e.getKey()), Map.Entry::getValue, DV::min));
+        if (translatedVariables.equals(variables)) return this;
         return new LinkedVariables(translatedVariables);
     }
 

@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -68,8 +69,13 @@ public class ArrayInitializer extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayInitializer(inspectionProvider, multiExpression.stream().map(translationMap::translateExpression)
-                .collect(Collectors.toList()), translationMap.translateType(commonType));
+        // IMPROVE can be made more efficient, make a TranslationCollector on arrays
+        List<Expression> exs = multiExpression.stream().toList();
+        List<Expression> translated = exs.stream().map(translationMap::translateExpression)
+                .collect(TranslationCollectors.toList(exs));
+        ParameterizedType translatedType = translationMap.translateType(commonType);
+        if (translatedType == commonType && translated == exs) return this;
+        return new ArrayInitializer(inspectionProvider, translated, translatedType);
     }
 
     @Override
@@ -152,7 +158,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
             // it is an array
             return MultiLevel.EFFECTIVELY_E1IMMUTABLE_DV;
         }
-        if(Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
+        if (Property.EXTERNAL_CONTAINER == property || Property.CONTAINER == property) {
             return MultiLevel.CONTAINER_DV;
         }
         // default is to refer to each of the components

@@ -53,7 +53,9 @@ public class EnclosedExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new EnclosedExpression(identifier, translationMap.translateExpression(inner));
+        Expression translated = translationMap.translateExpression(this.inner);
+        if (translated == inner) return this;
+        return new EnclosedExpression(identifier, translated);
     }
 
     @Override

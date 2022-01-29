@@ -879,7 +879,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
 
         // we go over the list of variables to merge, and try to find if we need to rename them because
-        // some scope has to be removed
+        // some scope has to be removed (field reference x.y where x cannot exist anymore).
         // this method relies on bestValueForToRemove
         // at the same time, when BOTH are present in the toMerge (in a subsequent iteration)
         // we remove the non-renamed
@@ -889,7 +889,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Variable renamed = renameVariable(variable);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
-                    translationMap.put(new VariableExpression(variable), new VariableExpression(renamed));
+                    translationMap.addVariableExpression(variable, new VariableExpression(renamed));
                     translationMap.put(variable, renamed);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
                             .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();
@@ -1015,19 +1015,33 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 VariableInfo best = toMerge.get(0).variableInfo();
                 Expression bestValue;
                 if (best.getValue().isDelayed()) {
-                    Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
-                    bestValue = new DelayedVariableOutOfScope(identifier,
-                            toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
+                    if (best.variable() instanceof FieldReference) {
+                        Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
+                        bestValue = new DelayedVariableOutOfScope(identifier,
+                                toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
+                    } else {
+                        // this should not be a DelayedVariableExpression, because then the variable does not disappear!
+                        bestValue = DelayedExpression.forMerge(best.variable().parameterizedType(),
+                                best.getLinkedVariables(), best.getValue().causesOfDelay());
+                    }
                 } else {
-                    bestValue = best.getValue();
+                    // at the moment, there may be references to other variables to be removed inside the best.getValue()
+                    // they will be replaced soon in applyTranslations()
+                    // on the other hand, we will already avoid self-references!
+                    TranslationMapImpl.Builder selfRefBuilder = new TranslationMapImpl.Builder();
+                    Expression instance = Instance.forMerge(Identifier.generate(), best.variable().parameterizedType(),
+                            Properties.of(best.getProperties()));
+                    selfRefBuilder.addVariableExpression(best.variable(), instance);
+                    bestValue = best.getValue().translate(selfRefBuilder.build());
                 }
                 prepareMerge.bestValueForToRemove.put(toRemove, bestValue);
-                prepareMerge.translationMap.put(new VariableExpression(toRemove), bestValue);
+                prepareMerge.translationMap.addVariableExpression(toRemove, bestValue);
             } // else: See e.g. Loops_3: block not executed
         }
         prepareMerge.computeRenames();
 
         TranslationMap translationMap = prepareMerge.translationMap.build();
+        applyTranslations(translationMap, prepareMerge.bestValueForToRemove);
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();
@@ -1092,6 +1106,29 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         return linkingAndGroupProperties(evaluationContext, groupPropertyValues, linkedVariablesMap,
                 variablesWhereMergeOverwrites, prepareMerge, setCnnVariables, translationMap);
+    }
+
+    private void applyTranslations(TranslationMap translationMap, Map<Variable, Expression> bestValueForToRemove) {
+        boolean changed = true;
+        int count = 0;
+        while (changed) {
+            changed = false;
+            for (Map.Entry<Variable, Expression> e : bestValueForToRemove.entrySet()) {
+                Expression current = e.getValue();
+                Expression replaced = current.translate(translationMap);
+                // note the object identity check... every translation should keep the same object if there is nothing to do
+                assert replaced == current || current instanceof DelayedVariableExpression || current instanceof DelayedExpression || !replaced.equals(current)
+                        : "If equals, should be same object: " + current.getClass() + ": " + current;
+                if (replaced != current) {
+                    changed = true;
+                    e.setValue(replaced);
+                }
+            }
+            if (++count > 10) {
+                throw new UnsupportedOperationException("Infinite loop protection");
+            }
+        }
+        // because there are no self-references anymore, this iteration should end!
     }
 
     /**
@@ -1357,7 +1394,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // otherwise we'll get delays
         // especially in the case of forEach, the lvc.expression is empty (e.g., 'String s') anyway
         // an assignment may be difficult.
-        // FIXME if the loop variable is of enclosed or own type, we'll get delays
         // we should not worry about them
         ParameterizedType parameterizedType = variable.parameterizedType();
         Properties valueProperties = analyserContext.defaultValueProperties(parameterizedType, true);
@@ -1480,7 +1516,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // context properties
         Properties properties = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
 
-        // FIXME Instance.forCatchOrThis will compute value properties
         // value properties
         properties.put(IDENTITY, IDENTITY.falseDv);
         properties.put(CONTAINER, CONTAINER.falseDv);
@@ -1493,7 +1528,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         properties.put(EXTERNAL_IMMUTABLE, EXTERNAL_IMMUTABLE.valueWhenAbsent());
         properties.put(EXTERNAL_CONTAINER, EXTERNAL_CONTAINER.valueWhenAbsent());
 
-        Instance value = Instance.forCatchOrThis(index, thisVar, analyserContext);
+        Instance value = Instance.forCatchOrThis(index, thisVar, properties);
         vic.setValue(value, LinkedVariables.of(thisVar, LinkedVariables.STATICALLY_ASSIGNED_DV), properties, true);
     }
 

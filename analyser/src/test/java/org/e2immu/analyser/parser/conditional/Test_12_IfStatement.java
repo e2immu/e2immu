@@ -15,22 +15,22 @@
 package org.e2immu.analyser.parser.conditional;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -232,9 +232,72 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .build());
     }
 
+    // IMPROVE for this test, it is fortunate that List.of().isEmpty() doesn't go to FALSE
     @Test
     public void test_9() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                if ("5".equals(d.statementId())) {
+                    Optional<EvaluationResult.ChangeData> cd = d.evaluationResult().changeData().entrySet().stream()
+                            .filter(e -> e.getKey().simpleName().equals("fromTypeBounds"))
+                            .map(Map.Entry::getValue).findAny();
+                    assertTrue(cd.isEmpty(), "Got: " + cd);
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:isEmpty>?<s:int>:<return value>" : "List.of().isEmpty()?5:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>"
+                                : "null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("4.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:isEmpty>?<s:int>:<return value>" : "<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("4.0.4".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>?<s:int>:8+(<v:fromTypeBounds>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<v:min>?<f:MAX_VALUE>:<m:size>)"
+                                : "8+(fromTypeBounds$4.0.3.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3?2147483647:instance type ParameterizedType.typeInfo.length())";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "null==<f:typeParameter>?null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>:<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>?<s:int>:8+(<merge:List<ParameterizedType>>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<merge:int>?<f:MAX_VALUE>:<m:size>)"
+                                : "null==from.typeParameter$0?null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6:8+(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=(XXXXX.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=instance type int?2147483647:instance type ParameterizedType.typeInfo.length())?2147483647:instance type ParameterizedType.typeInfo.length())";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("fromTypeBounds".equals(d.variableName())) {
+                    assertNotEquals("4", d.statementId(), "Variable should not exist here!");
+                    assertNotEquals("5", d.statementId(), "Variable should not exist here!");
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable lv) {
+                        assertEquals("4", lv.parentBlockIndex);
+                        if ("4.0.4".equals(d.statementId())) {
+                            String expected = d.iteration() == 0 ? "<m:getTypeBounds>" : "List.of()";
+                            assertEquals(expected, d.currentValue().toString());
+                        }
+                    } else if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside) {
+                        assertEquals("4.0.3", outside.statementIndex());
+                        assertTrue(outside.previousVariableNature() instanceof VariableNature.NormalLocalVariable);
+                        assertTrue(d.statementId().startsWith("4.0.3"));
+                    } else fail();
+                }
+            }
+        };
         testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

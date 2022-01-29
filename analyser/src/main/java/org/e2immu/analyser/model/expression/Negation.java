@@ -53,7 +53,9 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Negation(identifier, operator, translationMap.translateExpression(expression));
+        Expression translated = translationMap.translateExpression(this.expression);
+        if (translated == expression) return this;
+        return new Negation(identifier, operator, translated);
     }
 
     public static Expression negate(EvaluationContext evaluationContext, @NotNull Expression v) {
@@ -155,7 +157,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public Expression removeAllReturnValueParts() {
-        if(expression.isReturnValue()) return expression;
+        if (expression.isReturnValue()) return expression;
         return new Negation(identifier, operator, expression.removeAllReturnValueParts());
     }
 }

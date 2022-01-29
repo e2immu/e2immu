@@ -20,6 +20,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -97,8 +98,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     public Expression removeConstructor(Properties valueProperties, Primitives primitives) {
         assert arrayInitializer == null;
-        CausesOfDelay causesOfDelay= valueProperties.delays();
-        if(causesOfDelay.isDelayed()) {
+        CausesOfDelay causesOfDelay = valueProperties.delays();
+        if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forInstanceOf(primitives, parameterizedType, LinkedVariables.delayedEmpty(causesOfDelay), causesOfDelay);
         }
         return new Instance(identifier, parameterizedType, valueProperties);
@@ -146,11 +147,18 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public Expression translate(TranslationMap translationMap) {
+        ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
+        List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
+                : parameterExpressions.stream()
+                .map(translationMap::translateExpression).collect(TranslationCollectors.toList(parameterExpressions));
+        if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
+            return this;
+        }
         return new ConstructorCall(identifier,
                 constructor,
-                translationMap.translateType(parameterizedType),
+                translatedType,
                 diamond,
-                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                translatedParameterExpressions,
                 anonymousClass, // not translating this yet!
                 arrayInitializer == null ? null : TranslationMapImpl.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
     }
@@ -259,7 +267,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public Expression generify(EvaluationContext evaluationContext) {
-        if(anonymousClass == null && constructor != null) {
+        if (anonymousClass == null && constructor != null) {
             Properties valueProperties = evaluationContext.getValueProperties(this);
             return removeConstructor(valueProperties, evaluationContext.getPrimitives());
         }

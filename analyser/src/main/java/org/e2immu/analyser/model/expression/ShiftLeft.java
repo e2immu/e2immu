@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -27,6 +28,14 @@ public class ShiftLeft extends BinaryOperator {
 
     private ShiftLeft(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
         super(identifier, primitives, lhs, primitives.leftShiftOperatorInt(), rhs, Precedence.SHIFT);
+    }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        Expression tl = lhs.translate(translationMap);
+        Expression tr = rhs.translate(translationMap);
+        if(tl == lhs && tr == rhs) return this;
+        return new ShiftLeft(identifier, primitives, tl, tr);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

@@ -35,11 +35,11 @@ public class IfStatement_9 {
 
         List<ParameterizedType> targetTypeBounds = target.getTypeBounds();
         if (targetTypeBounds.isEmpty()) {
-            return 7;
+            return 5;
         }
         // other is a type
         if (from.typeInfo != null) {
-            return 7;
+            return 6;
         }
         if (from.typeParameter != null) {
             List<ParameterizedType> fromTypeBounds = from.getTypeBounds();

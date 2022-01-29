@@ -28,7 +28,10 @@ public class Product extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Product(identifier, primitives, lhs.translate(translationMap), rhs.translate(translationMap));
+        Expression tl = lhs.translate(translationMap);
+        Expression tr = rhs.translate(translationMap);
+        if(tl == lhs && tr == rhs) return this;
+        return new Product(identifier, primitives, tl, tr);
     }
 
     private Product(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {

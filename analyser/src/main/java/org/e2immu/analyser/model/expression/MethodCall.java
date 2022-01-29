@@ -81,12 +81,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression asExpression = translationMap.directExpression(this);
         if (asExpression != null) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
+        Expression translatedObject = translationMap.translateExpression(object);
+        List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
+                parameterExpressions.stream().map(translationMap::translateExpression).collect(TranslationCollectors.toList(parameterExpressions));
+        if (translatedMethod == methodInfo && translatedObject == object && translatedParameters == parameterExpressions) {
+            return this;
+        }
         return new MethodCall(identifier,
                 objectIsImplicit,
-                translationMap.translateExpression(object),
+                translatedObject,
                 translatedMethod,
                 translatedMethod.returnType(),
-                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()));
+                translatedParameters);
     }
 
     @Override
@@ -356,7 +362,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (modified.valueIsTrue()) {
             Expression unlinkedModifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, object, objectValue, parameterValues);
-            if(unlinkedModifiedInstance != null) {
+            if (unlinkedModifiedInstance != null) {
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
                 LinkedVariables thisLv = linkedVariables(evaluationContext);
                 modifiedInstance = thisLv.isEmpty() ? unlinkedModifiedInstance

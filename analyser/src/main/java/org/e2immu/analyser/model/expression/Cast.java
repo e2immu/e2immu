@@ -53,7 +53,10 @@ public class Cast extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Cast(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
+        Expression translatedExpression = translationMap.translateExpression(this.expression);
+        ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
+        if (translatedExpression == this.expression && translatedType == this.parameterizedType) return this;
+        return new Cast(translatedExpression, translatedType);
     }
 
     @Override

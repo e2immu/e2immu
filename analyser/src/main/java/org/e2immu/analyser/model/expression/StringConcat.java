@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -30,6 +31,14 @@ public class StringConcat extends BinaryOperator {
 
     private StringConcat(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
         super(identifier, primitives, lhs, primitives.plusOperatorInt(), rhs, Precedence.STRING_CONCAT);
+    }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        Expression tl = lhs.translate(translationMap);
+        Expression tr = rhs.translate(translationMap);
+        if(tl == lhs && tr == rhs) return this;
+        return new StringConcat(identifier, primitives, tl, tr);
     }
 
     public static Expression stringConcat(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {

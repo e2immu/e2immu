@@ -64,7 +64,9 @@ public class ClassExpression extends BaseExpression implements ConstantExpressio
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ClassExpression(primitives, translationMap.translateType(parameterizedType));
+        ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
+        if (this.parameterizedType == translatedType) return this;
+        return new ClassExpression(primitives, translatedType);
     }
 
     @Override
