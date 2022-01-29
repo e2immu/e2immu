@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.support.EventuallyFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +155,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 Properties changeDataProperties = Properties.of(changeData.properties());
                 Properties merged = SAHelper.mergeAssignment(variable, valueProperties, changeDataProperties, groupPropertyValues);
                 // LVs start empty, the changeData.linkedVariables will be added later
-                vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, merged, false);
+                boolean myself = sharedState.evaluationContext().isMyself(variable);
+                Properties combined;
+                if (myself && variable instanceof FieldReference fr && !fr.fieldInfo.isStatic()) {
+                    // captures self-referencing instance fields (but not static fields, as in Enum_)
+                    // a similar check exists in StatementAnalysisImpl.initializeFieldReference
+                    combined = sharedState.evaluationContext().ensureMyselfValueProperties(merged);
+                } else {
+                    combined = merged;
+                }
+                vic.setValue(valueToWritePossiblyDelayed, LinkedVariables.EMPTY, combined, false);
 
                 if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) {
                     statementAnalysis.addToAssignmentsInLoop(vic, variable.fullyQualifiedName());

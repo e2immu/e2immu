@@ -753,7 +753,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (!viInitial.valueIsSet()) {
             // we don't have an initial value yet; the initial field value is only visible in constructors
             // and then only to direct references (this.field)
-            if (methodAnalysis.getMethodInfo().isConstructor                    && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
+            if (methodAnalysis.getMethodInfo().isConstructor && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
@@ -1502,12 +1502,19 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // start with context properties
         Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo.type));
-
-        // the value and its properties are taken from the field analyser
         Expression value = fieldAnalysis.getValueForStatementAnalyser(fieldReference);
-        Properties valueProps = evaluationContext.getValueProperties(value);
-        Properties combined = properties.combine(valueProps);
 
+        Properties combined;
+        boolean myself = evaluationContext.isMyself(fieldReference);
+        if (myself && !fieldReference.fieldInfo.isStatic()) {
+            // captures self-referencing instance fields (but not static fields, as in Enum_)
+            // a similar check exists in SAApply
+            combined = evaluationContext.ensureMyselfValueProperties(properties);
+        } else {
+            // the value and its properties are taken from the field analyser
+            Properties valueProps = evaluationContext.getValueProperties(value);
+            combined = properties.combine(valueProps);
+        }
         // the external properties
         DV extNotNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
         combined.put(EXTERNAL_NOT_NULL, extNotNull);
@@ -2032,6 +2039,8 @@ Fields (and forms of This (super...)) will not exist in the first iteration; the
         return this.variablesReadBySubAnalysers.stream().toList();
     }
 
+    // IMPORTANT: Singleton_2 runs green when we only look at the previous delay
+    // it halts if we cannot progress if we encounter any of the earlier delays (so don't keep a set of delays)
     @Override
     public boolean latestDelay(CausesOfDelay delay) {
         boolean different = !delay.equals(applyCausesOfDelay);

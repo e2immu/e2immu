@@ -873,11 +873,12 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                 boolean added = false;
                 for (VariableInfo vii : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
                     VariableInfo vi;
-                    if(vii.getValue() instanceof DelayedWrappedExpression dwe) {
+                    if (vii.getValue() instanceof DelayedWrappedExpression dwe) {
                         // the reason for providing a VI rather than an expression in DWE is that it contains properties as well.
                         // these properties are hard to compute here
                         // IMPROVE we should detect DWE inside any expression, and then do some fancy replacement
                         // SOLUTION: have the SAEvaluationOfMainExpression write a DWE around the final value when there is a DWE inside the expression
+                        // after doing a translation for these inner DWEs to their enclosed value.
                         vi = dwe.getVariableInfo();
                     } else {
                         vi = vii;
@@ -896,24 +897,31 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
                     ValueAndPropertyProxy proxy;
 
                     boolean viIsDelayed;
-                    if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
-                            && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                            && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
-                        proxy = breakDelayProxy(origin);
-                        viIsDelayed = false;
+                    if (vi.getValue() instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
+                            methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.scopeIsThis()) {
+                        // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope
+                        // captures: this.field = someParameterOfMySelf.field;
+                        added = false; // we'll skip this!
                     } else {
-                        proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
-                        viIsDelayed = causesOfDelay.isDelayed();
-                    }
-                    values.add(proxy);
-                    if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
-                        // we'll warn for the combination of field initializer, and occurrence in at least one constructor
-                        occurrenceCountForError++;
-                    }
-                    added = true;
-                    if (viIsDelayed) {
-                        LOGGER.debug("Delay consistent value for field {} because of {}", fqn, vi.getValue().toString());
-                        delays = delays.merge(causesOfDelay);
+                        if (causesOfDelay.causesStream().anyMatch(cause -> cause instanceof VariableCause vc
+                                && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                                && vc.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo)) {
+                            proxy = breakDelayProxy(origin);
+                            viIsDelayed = false;
+                        } else {
+                            proxy = new ValueAndPropertyProxy.ValueAndPropertyProxyBasedOnVariableInfo(vi, origin);
+                            viIsDelayed = causesOfDelay.isDelayed();
+                        }
+                        values.add(proxy);
+                        if (!fieldInspection.isStatic() && methodInfo.isConstructor) {
+                            // we'll warn for the combination of field initializer, and occurrence in at least one constructor
+                            occurrenceCountForError++;
+                        }
+                        added = true;
+                        if (viIsDelayed) {
+                            LOGGER.debug("Delay consistent value for field {} because of {}", fqn, vi.getValue().toString());
+                            delays = delays.merge(causesOfDelay);
+                        }
                     }
                 }
                 if (!added && methodInfo.isConstructor) {
@@ -1061,7 +1069,7 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
             analyserResultBuilder.add(Message.newMessage(fieldInfo.newLocation(),
                     Message.Label.UNNECESSARY_FIELD_INITIALIZER));
         }
-        if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
+        if (!haveInitialiser && !fieldInfo.isExplicitlyFinal() && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
                     fieldInfo.type.bestTypeInfo());
             values.add(0, new ValueAndPropertyProxy() {

@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.model.MultiLevel.*;
 
 /**
  * Defaults because of tests
@@ -360,6 +361,16 @@ public interface EvaluationContext {
                     myself.nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
         }
         return false;
+    }
+
+    default Properties ensureMyselfValueProperties(Properties existing) {
+        Properties p = Properties.of(Map.of(
+                IMMUTABLE, MUTABLE_DV,
+                INDEPENDENT, DEPENDENT_DV, CONTAINER,
+                NOT_CONTAINER_DV, IDENTITY, DV.FALSE_DV,
+                NOT_NULL_EXPRESSION, NULLABLE_DV));
+        // combine overwrites
+        return existing.combine(p);
     }
 
     /*

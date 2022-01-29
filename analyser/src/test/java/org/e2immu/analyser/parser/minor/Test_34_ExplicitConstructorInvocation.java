@@ -15,10 +15,14 @@
 
 package org.e2immu.analyser.parser.minor;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -76,11 +80,40 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 .build());
     }
 
-    // discovered: no reEvaluate in DelayedVariableExpression
     @Test
     public void test_5() throws IOException {
         // 3 errors: private fields not read outside constructors
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (d.methodInfo().isConstructor && d.methodInfo().methodInspection.get().getParameters().size() == 1
+                    && "ExplicitConstructorInvocation_5".equals(d.methodInfo().methodInspection.get().getParameters().get(0).parameterizedType.typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo.name)) {
+                    assertEquals("parent/*@NotNull*/", d.currentValue().toString());
+                    assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("parent".equals(d.fieldInfo().name)) {
+                assertEquals("[null,parentContext/*@NotNull*/,parent/*@NotNull*/]", d.fieldAnalysis().getValue().toString());
+            }
+            if ("typeMap".equals(d.fieldInfo().name)) {
+                assertEquals("typeMap", d.fieldAnalysis().getValue().toString());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TypeMap".equals(d.typeInfo().simpleName)) {
+                assertDv(d, MultiLevel.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+
         testClass("ExplicitConstructorInvocation_5", 3, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
