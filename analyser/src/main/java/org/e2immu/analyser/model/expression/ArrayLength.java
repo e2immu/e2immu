@@ -56,7 +56,7 @@ public class ArrayLength extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression translated = translationMap.translateExpression(this.scope);
+        Expression translated = scope.translate(translationMap);
         if(translated != this.scope) return this;
         return new ArrayLength(primitives, translated);
     }

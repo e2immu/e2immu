@@ -1010,26 +1010,20 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             List<ConditionAndVariableInfo> toMerge = filterSubBlocks(evaluationContext, lastStatements, toRemove,
                     inSwitchStatementOldStyle);
             if (!toMerge.isEmpty()) { // a try statement can have more than one, it's only the first we're interested
-
+                Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
                 // and finally, copy the result into prepareMerge
                 VariableInfo best = toMerge.get(0).variableInfo();
                 Expression bestValue;
                 if (best.getValue().isDelayed()) {
-                    if (best.variable() instanceof FieldReference) {
-                        Identifier identifier = Identifier.forVariableOutOfScope(toRemove, index);
-                        bestValue = new DelayedVariableOutOfScope(identifier,
-                                toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
-                    } else {
-                        // this should not be a DelayedVariableExpression, because then the variable does not disappear!
-                        bestValue = DelayedExpression.forMerge(best.variable().parameterizedType(),
-                                best.getLinkedVariables(), best.getValue().causesOfDelay());
-                    }
+                    bestValue = new DelayedVariableOutOfScope(identifier,
+                            toRemove.parameterizedType(), best.getLinkedVariables(), best.getValue().causesOfDelay());
                 } else {
                     // at the moment, there may be references to other variables to be removed inside the best.getValue()
                     // they will be replaced soon in applyTranslations()
                     // on the other hand, we will already avoid self-references!
+                    // NOTE: Instance is based on identifier and type
                     TranslationMapImpl.Builder selfRefBuilder = new TranslationMapImpl.Builder();
-                    Expression instance = Instance.forMerge(Identifier.generate(), best.variable().parameterizedType(),
+                    Expression instance = Instance.forMerge(identifier, best.variable().parameterizedType(),
                             Properties.of(best.getProperties()));
                     selfRefBuilder.addVariableExpression(best.variable(), instance);
                     bestValue = best.getValue().translate(selfRefBuilder.build());
@@ -1040,8 +1034,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         prepareMerge.computeRenames();
 
-        TranslationMap translationMap = prepareMerge.translationMap.build();
-        applyTranslations(translationMap, prepareMerge.bestValueForToRemove);
+        TranslationMap translationMapBeforeApplyTranslations = prepareMerge.translationMap.build();
+        applyTranslations(translationMapBeforeApplyTranslations, prepareMerge.bestValueForToRemove);
+        TranslationMap translationMap = translationMapBeforeApplyTranslations.update(prepareMerge.bestValueForToRemove);
 
         Map<Variable, LinkedVariables> linkedVariablesMap = new HashMap<>();
         Set<Variable> variablesWhereMergeOverwrites = new HashSet<>();

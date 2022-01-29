@@ -45,8 +45,7 @@ public class TranslationCollectors<T> {
             @Override
             public BinaryOperator<List<T>> combiner() {
                 return (l1, l2) -> {
-                    l2.addAll(l1);
-                  return l2;
+                    throw new UnsupportedOperationException("Combiner not implemented");
                 };
             }
 

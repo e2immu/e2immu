@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -66,8 +67,12 @@ public class MultiValue extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiValue(identifier, inspectionProvider, new MultiExpression(multiExpression.stream()
-                .map(translationMap::translateExpression).toArray(Expression[]::new)), translationMap.translateType(commonType));
+        List<Expression> multi = multiExpression.stream().toList();
+        List<Expression> translated = multi.stream()
+                .map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(multi));
+        ParameterizedType translatedType = translationMap.translateType(commonType);
+        if (multi == translated && translatedType == commonType) return this;
+        return new MultiValue(identifier, inspectionProvider, MultiExpression.create(translated), translatedType);
     }
 
     @Override
@@ -103,7 +108,7 @@ public class MultiValue extends BaseExpression implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext,
                                      ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        for(Expression expression: multiExpression.expressions()) {
+        for (Expression expression : multiExpression.expressions()) {
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(result);
         }

@@ -20,6 +20,7 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -31,8 +32,6 @@ public interface TranslationMap {
 
     @NotNull
     Expression translateExpression(Expression expression);
-
-    Expression directExpression(Expression expression);
 
     @NotNull
     MethodInfo translateMethod(MethodInfo methodInfo);
@@ -60,4 +59,6 @@ public interface TranslationMap {
 
     // because equality of delayed variables is based on ==
     Expression translateVariableExpressionNullIfNotTranslated(Variable variable);
+
+    TranslationMap update(Map<Variable, Expression> variableExpressionMap);
 }

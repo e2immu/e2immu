@@ -122,8 +122,8 @@ public final class VariableExpression extends CommonVariableExpression {
         if (translated != variable) {
             return new VariableExpression(translated, suffix);
         }
-        Expression translated2 = translationMap.directExpression(this);
-        if (translated2 != null) {
+        Expression translated2 = translationMap.translateExpression(this);
+        if (translated2 != this) {
             return translated2;
         }
         // helps with bypassing suffixes

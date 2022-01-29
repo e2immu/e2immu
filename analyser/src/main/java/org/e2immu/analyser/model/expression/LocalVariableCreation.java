@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -73,9 +74,13 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        List<Declaration> translated = declarations.stream().map(d ->
-                new Declaration(d.identifier, translationMap.translateLocalVariable(d.localVariable),
-                        translationMap.translateExpression(d.expression))).toList();
+        List<Declaration> translated = declarations.stream().map(d -> {
+            LocalVariable tlv = translationMap.translateLocalVariable(d.localVariable);
+            Expression tex = d.expression.translate(translationMap);
+            if (tlv == d.localVariable && tex == d.expression) return d;
+            return new Declaration(d.identifier, tlv, tex);
+        }).collect(TranslationCollectors.toList(declarations));
+        if (translated == declarations) return this;
         return new LocalVariableCreation(primitives, translated, isVar);
     }
 

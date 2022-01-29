@@ -149,8 +149,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public Expression translate(TranslationMap translationMap) {
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         List<Expression> translatedParameterExpressions = parameterExpressions.isEmpty() ? parameterExpressions
-                : parameterExpressions.stream()
-                .map(translationMap::translateExpression).collect(TranslationCollectors.toList(parameterExpressions));
+                : parameterExpressions.stream().map(e -> e.translate(translationMap))
+                .collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedType == this.parameterizedType && translatedParameterExpressions == this.parameterExpressions) {
             return this;
         }

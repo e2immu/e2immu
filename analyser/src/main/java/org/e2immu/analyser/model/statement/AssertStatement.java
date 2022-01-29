@@ -38,7 +38,9 @@ public class AssertStatement extends StatementWithStructure {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new AssertStatement(identifier, translationMap.translateExpression(structure.expression()), message);
+        Expression tex = structure.expression().translate(translationMap);
+        if (tex == structure.expression()) return this;
+        return new AssertStatement(identifier, tex, message);
     }
 
     @Override

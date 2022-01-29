@@ -273,8 +273,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("4".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==<f:typeParameter>?null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>:<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>?<s:int>:8+(<merge:List<ParameterizedType>>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<merge:int>?<f:MAX_VALUE>:<m:size>)"
-                                : "null==from.typeParameter$0?null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6:8+(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=(XXXXX.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=instance type int?2147483647:instance type ParameterizedType.typeInfo.length())?2147483647:instance type ParameterizedType.typeInfo.length())";
+                                ? "null==<f:typeParameter>?null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>:<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>?<s:int>:8+(<out of scope:fromTypeBounds:4>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<out of scope:min:4>?<f:MAX_VALUE>:<m:size>)"
+                                : "null==from.typeParameter$0?null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6:8+(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=instance type int?2147483647:instance type ParameterizedType.typeInfo.length())?2147483647:instance type ParameterizedType.typeInfo.length())";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

@@ -115,8 +115,7 @@ public class DelayedVariableOutOfScope extends BaseExpression implements Express
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         LinkedVariables translatedLv = linkedVariables.translate(translationMap);
         if (translatedLv == linkedVariables && translatedType == parameterizedType) return this;
-        return new DelayedVariableOutOfScope(identifier, translatedType,
-                translatedLv, causesOfDelay);
+        return new DelayedVariableOutOfScope(identifier, translatedType, translatedLv, causesOfDelay);
     }
 
     @Override

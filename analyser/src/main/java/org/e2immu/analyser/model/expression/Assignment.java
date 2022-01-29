@@ -131,9 +131,9 @@ public class Assignment extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression translatedTarget = translationMap.translateExpression(this.target);
-        Expression translatedValue = translationMap.translateExpression(this.value);
-        if(translatedValue == this.value && translatedTarget == this.target) return this;
+        Expression translatedTarget = target.translate(translationMap);
+        Expression translatedValue = value.translate(translationMap);
+        if (translatedValue == this.value && translatedTarget == this.target) return this;
         return new Assignment(identifier, primitives, translatedTarget,
                 translatedValue, assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType);

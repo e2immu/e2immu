@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.impl;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -75,13 +76,7 @@ public class TranslationMapImpl implements TranslationMap {
 
     @Override
     public Expression translateExpression(Expression expression) {
-        Expression translated = Objects.requireNonNullElse(expressions.get(expression), expression);
-        return translated.translate(this);
-    }
-
-    @Override
-    public Expression directExpression(Expression expression) {
-        return expressions.get(expression);
+        return Objects.requireNonNullElse(expressions.get(expression), expression);
     }
 
     @Override
@@ -119,10 +114,12 @@ public class TranslationMapImpl implements TranslationMap {
     public ParameterizedType translateType(ParameterizedType parameterizedType) {
         ParameterizedType inMap = types.get(parameterizedType);
         if (inMap != null) return inMap;
-        if (parameterizedType.parameters.isEmpty()) return parameterizedType;
+        List<ParameterizedType> params = parameterizedType.parameters;
+        List<ParameterizedType> translatedTypes = params.isEmpty() ? params :
+                params.stream().map(this::translateType).collect(TranslationCollectors.toList(params));
+        if (params == translatedTypes) return parameterizedType;
         return new ParameterizedType(parameterizedType.typeInfo, parameterizedType.arrays,
-                parameterizedType.wildCard,
-                parameterizedType.parameters.stream().map(this::translateType).collect(Collectors.toList()));
+                parameterizedType.wildCard, translatedTypes);
     }
 
     @Override
@@ -145,6 +142,19 @@ public class TranslationMapImpl implements TranslationMap {
     public boolean isEmpty() {
         return statements.isEmpty() && expressions.isEmpty() && methods.isEmpty() &&
                 types.isEmpty() && variables.isEmpty() && localVariables.isEmpty() && variableExpressions.isEmpty();
+    }
+
+    @Override
+    public TranslationMap update(Map<Variable, Expression> variableExpressionMap) {
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        builder.variables.putAll(variables);
+        builder.expressions.putAll(expressions);
+        builder.methods.putAll(methods);
+        builder.statements.putAll(statements);
+        builder.types.putAll(types);
+        builder.variableExpressions.putAll(variableExpressions);
+        builder.variableExpressions.putAll(variableExpressionMap);
+        return builder.build();
     }
 
     @Container(builds = TranslationMapImpl.class)

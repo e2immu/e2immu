@@ -93,8 +93,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression translatedLhs = translationMap.translateExpression(this.lhs);
-        Expression translatedRhs = translationMap.translateExpression(this.rhs);
+        Expression translatedLhs = lhs.translate(translationMap);
+        Expression translatedRhs = rhs.translate(translationMap);
         if (translatedRhs == this.rhs && translatedLhs == this.lhs) return this;
         return new BinaryOperator(identifier, primitives, translatedLhs,
                 operator, translatedRhs, precedence);

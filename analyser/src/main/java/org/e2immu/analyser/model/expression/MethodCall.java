@@ -78,12 +78,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression asExpression = translationMap.directExpression(this);
-        if (asExpression != null) return asExpression;
+        Expression asExpression = translationMap.translateExpression(this);
+        if (asExpression != this) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
-        Expression translatedObject = translationMap.translateExpression(object);
+        Expression translatedObject = object.translate(translationMap);
         List<Expression> translatedParameters = parameterExpressions.isEmpty() ? parameterExpressions :
-                parameterExpressions.stream().map(translationMap::translateExpression).collect(TranslationCollectors.toList(parameterExpressions));
+                parameterExpressions.stream().map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(parameterExpressions));
         if (translatedMethod == methodInfo && translatedObject == object && translatedParameters == parameterExpressions) {
             return this;
         }

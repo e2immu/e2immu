@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -63,8 +64,11 @@ public class MultiExpressions extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiExpressions(identifier, inspectionProvider, new MultiExpression(multiExpression.stream()
-                .map(translationMap::translateExpression).toArray(Expression[]::new)));
+        List<Expression> multi = multiExpression.stream().toList();
+        List<Expression> translated = multi.stream()
+                .map(e -> e.translate(translationMap)).collect(TranslationCollectors.toList(multi));
+        if (multi == translated) return this;
+        return new MultiExpressions(identifier, inspectionProvider, new MultiExpression(translated.toArray(Expression[]::new)));
     }
 
     @Override

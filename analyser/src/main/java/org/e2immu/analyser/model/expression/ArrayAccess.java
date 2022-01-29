@@ -58,8 +58,8 @@ public class ArrayAccess extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Expression translatedExpression = translationMap.translateExpression(this.expression);
-        Expression translatedIndex = translationMap.translateExpression(this.index);
+        Expression translatedExpression = expression.translate(translationMap);
+        Expression translatedIndex = index.translate(translationMap);
         if (translatedIndex == this.index && translatedExpression == this.expression) return this;
         return new ArrayAccess(identifier, translatedExpression, translatedIndex);
     }

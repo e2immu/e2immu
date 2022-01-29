@@ -71,7 +71,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     public Expression translate(TranslationMap translationMap) {
         // IMPROVE can be made more efficient, make a TranslationCollector on arrays
         List<Expression> exs = multiExpression.stream().toList();
-        List<Expression> translated = exs.stream().map(translationMap::translateExpression)
+        List<Expression> translated = exs.stream().map(e->e.translate(translationMap))
                 .collect(TranslationCollectors.toList(exs));
         ParameterizedType translatedType = translationMap.translateType(commonType);
         if (translatedType == commonType && translated == exs) return this;

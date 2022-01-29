@@ -95,7 +95,7 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        List<Expression> translatedExpressions = expressions.stream().map(translationMap::translateExpression)
+        List<Expression> translatedExpressions = expressions.stream().map(e -> e.translate(translationMap))
                 .collect(TranslationCollectors.toList(expressions));
         if (translatedExpressions == expressions) return this;
         return new CommaExpression(expressions);
