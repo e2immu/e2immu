@@ -280,13 +280,13 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     }
                     if ("4.0.4".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>&&null!=<f:typeParameter>?<s:int>:8+(<v:fromTypeBounds>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<v:min>?<f:MAX_VALUE>:<m:size>)"
+                                ? "<m:isEmpty>?<s:int>:8+(<v:fromTypeBounds>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<v:min>?<f:MAX_VALUE>:<m:size>)"
                                 : "8+(fromTypeBounds$4.0.3.isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=min$4.0.3?2147483647:instance type ParameterizedType.typeInfo.length())";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==<f:typeParameter>?null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>:<m:isEmpty>&&!<m:isEmpty>&&null==<f:typeInfo>&&null!=<f:typeParameter>&&null!=<f:typeParameter>?<s:int>:8+(<out of scope:fromTypeBounds:4>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<out of scope:min:4>?<f:MAX_VALUE>:<m:size>)"
+                                ? "null==<f:typeParameter>?null==<f:typeInfo>?<m:isEmpty>?<s:int>:<return value>:<s:int>:<m:isEmpty>?<s:int>:8+(<out of scope:fromTypeBounds:4>.isEmpty()||<v:targetTypeBounds>.isEmpty()||<m:size>>=<out of scope:min:4>?<f:MAX_VALUE>:<m:size>)"
                                 : "null==from.typeParameter$0?null==from.typeInfo$0?List.of().isEmpty()?5:<return value>:6:8+(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=(List.of().isEmpty()||targetTypeBounds$4.0.3.isEmpty()||instance type ParameterizedType.typeInfo.length()>=instance type int?2147483647:instance type ParameterizedType.typeInfo.length())?2147483647:instance type ParameterizedType.typeInfo.length())";
                         assertEquals(expected, d.currentValue().toString());
                     }

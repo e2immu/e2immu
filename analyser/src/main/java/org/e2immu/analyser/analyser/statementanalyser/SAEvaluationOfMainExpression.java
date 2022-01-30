@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.LocationImpl;
+import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -333,21 +334,12 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             toEvaluate = structure.expression();
             evaluationContext = sharedState.evaluationContext();
         } else {
-            evaluationContext = new SAEvaluationContext(
-                    statementAnalysis, apply().myMethodAnalyser(), statementAnalyser,
-                    sharedState.evaluationContext().getAnalyserContext(), localAnalysers,
-                    sharedState.evaluationContext().getIteration(),
-                    localConditionManager.withoutState(statementAnalysis.primitives()), sharedState.evaluationContext().getClosure());
-            if (methodInfo().returnType().equals(statementAnalysis.primitives().booleanParameterizedType())) {
-                // state, boolean; evaluation of And will add clauses to the context one by one
-                toEvaluate = And.and(evaluationContext, localConditionManager.state(), structure.expression());
-            } else {
-                // state, not boolean
-                AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-                InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
-                        analyserContext, localConditionManager.state(), structure.expression(), currentReturnValue);
-                toEvaluate = inlineConditional.optimise(evaluationContext);
-            }
+            // substitute <return value> for the current expression, rather than rely on condition manager in eval context
+            Expression returnExpression =  UnknownExpression.forReturnVariable(methodInfo().identifier,
+                    returnVariable.returnType);
+            TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, structure.expression()).build();
+            toEvaluate = currentReturnValue.translate(tm);
+            evaluationContext = sharedState.evaluationContext().dropConditionManager();
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives(),
                 new VariableExpression(new ReturnVariable(methodInfo())), toEvaluate);

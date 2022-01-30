@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ForStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -101,7 +102,23 @@ public class RangeDataImpl implements RangeData {
                 return;
             }
         }
+        if (statement instanceof ForEachStatement) {
+            Range r = forEachConstantRange(statement, statementAnalysis, result);
+            if (r != null) {
+                if (r.isDelayed()) setDelayed(r);
+                else setRange(r);
+                return;
+            }
+        }
         setRange(Range.NO_RANGE);
+    }
+
+    // for(String x: new String[] { ... }) ...
+    // for(EnumType e: EnumType.values()) ...
+    private Range forEachConstantRange(Statement statement,
+                                       StatementAnalysis statementAnalysis,
+                                       EvaluationResult result) {
+        return null;
     }
 
     // int i=a; for(; i >=,<=b; i += c) {...do not write ...}

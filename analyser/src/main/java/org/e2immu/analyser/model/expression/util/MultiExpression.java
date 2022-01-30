@@ -74,4 +74,8 @@ public record MultiExpression(Expression... expressions) {
     public Expression lastExpression() {
         return expressions[expressions.length - 1];
     }
+
+    public int size() {
+        return expressions.length;
+    }
 }

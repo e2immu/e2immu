@@ -107,8 +107,7 @@ public class ArrayLength extends BaseExpression implements Expression {
         } else if (result.value().isDelayed()) {
             builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives(), result.value().causesOfDelay()));
         } else {
-            UnknownExpression unknownExpression = UnknownExpression.forArrayLength(scope.getIdentifier(), returnType());
-            builder.setExpression(unknownExpression);
+             builder.setExpression(this);
         }
         return builder.build();
     }

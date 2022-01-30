@@ -124,7 +124,7 @@ public class UnknownExpression extends BaseExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return this;
+        return translationMap.translateExpression(this);
     }
 
     @Override
