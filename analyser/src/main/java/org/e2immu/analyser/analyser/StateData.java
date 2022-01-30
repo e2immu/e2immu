@@ -15,9 +15,11 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 
@@ -30,10 +32,12 @@ import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEqu
 
 public class StateData {
 
-    public StateData(boolean isLoop) {
+    public StateData(boolean isLoop, Primitives primitives) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
         statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
+        conditionManagerForNextStatement.setVariable(ConditionManager.initialConditionManager(primitives));
     }
+
 
     /*
      precondition = conditions that cause an escape
@@ -76,7 +80,7 @@ public class StateData {
     the local condition manager of a subsequent statement in the same block needs to combine this value
     and the method level data's combined precondition.
      */
-    public final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
+    private final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
 
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         if (localConditionManager.isSafeDelayed()) {
@@ -87,6 +91,10 @@ public class StateData {
     public CausesOfDelay conditionManagerForNextStatementStatus() {
         if (conditionManagerForNextStatement.isFinal()) return CausesOfDelay.EMPTY;
         return conditionManagerForNextStatement.get().causesOfDelay();
+    }
+
+    public ConditionManager getConditionManagerForNextStatement() {
+        return conditionManagerForNextStatement.get();
     }
 
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();

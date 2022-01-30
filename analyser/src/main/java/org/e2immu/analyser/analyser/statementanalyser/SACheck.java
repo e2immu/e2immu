@@ -64,11 +64,11 @@ public record SACheck(StatementAnalysis statementAnalysis) {
         if (statementAnalysis.statement() instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         DV escapeAlwaysExecuted = statementAnalysis.isEscapeAlwaysExecutedInCurrentBlock();
         CausesOfDelay delays = escapeAlwaysExecuted.causesOfDelay()
-                .merge(statementAnalysis.stateData().conditionManagerForNextStatement.get().causesOfDelay());
+                .merge(statementAnalysis.stateData().conditionManagerForNextStatementStatus());
         if (!escapeAlwaysExecuted.valueIsFalse()) {
             if (escapeAlwaysExecuted.valueIsTrue()) {
                 // escapeCondition should filter out all != null, == null clauses
-                Expression precondition = statementAnalysis.stateData().conditionManagerForNextStatement.get()
+                Expression precondition = statementAnalysis.stateData().getConditionManagerForNextStatement()
                         .precondition(sharedState.evaluationContext());
                 CausesOfDelay preconditionIsDelayed = precondition.causesOfDelay().merge(delays);
                 Expression translated = sharedState.evaluationContext().acceptAndTranslatePrecondition(precondition);

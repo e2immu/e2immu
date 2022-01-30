@@ -243,8 +243,21 @@ public class Test_12_IfStatement extends CommonTestRunner {
                             .map(Map.Entry::getValue).findAny();
                     assertTrue(cd.isEmpty(), "Got: " + cd);
                 }
+                if ("4.0.1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>" : "List.of().isEmpty()";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                if ("4.0.1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:isEmpty>" : "List.of().isEmpty()";
+                    assertEquals(expected, d.condition().toString());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
@@ -295,16 +308,37 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
         };
-        testClass("IfStatement_9", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_9", 6, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
+    // quasi identical to test_9, but with "private" on the typeParameter field
+    @Test
+    public void test_10() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("targetIsATypeParameter".equals(d.methodInfo().name)) {
+                //if("0".equals(d.statementId())) {
+                //    assertEquals("", d.state().toString());
+                //}
+                if ("1".equals(d.statementId())) {
+                    assertEquals("expect some delay rather than true", d.state().toString());
+                    DV dv = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
+                    assertEquals("expect some delay", dv.toString());
+                    assertEquals(d.iteration() == 0, dv.isDelayed());
+                }
+            }
+        };
+        testClass("IfStatement_10", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
 
     // simpler version of DependentVariables_3, without the delays
     @Test
-    public void test_10() throws IOException {
+    public void test_11() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("added".equals(d.variableName())) {
@@ -337,7 +371,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertEquals("c", d.absoluteState().toString());
             }
         };
-        testClass("IfStatement_10", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_11", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

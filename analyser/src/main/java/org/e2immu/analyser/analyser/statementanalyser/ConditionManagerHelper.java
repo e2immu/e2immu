@@ -47,7 +47,7 @@ class ConditionManagerHelper {
             combinedPrecondition = Precondition.empty(primitives);
         }
 
-        ConditionManager previousCm = previous.stateData().conditionManagerForNextStatement.get();
+        ConditionManager previousCm = previous.stateData().getConditionManagerForNextStatement();
         // can be null in case the statement is unreachable
         if (previousCm == null) {
             return ConditionManager.impossibleConditionManager(primitives);

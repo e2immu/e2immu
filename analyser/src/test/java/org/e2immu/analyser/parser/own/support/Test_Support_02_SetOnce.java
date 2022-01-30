@@ -82,9 +82,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().flowData().getTimeAfterSubBlocks());
                     assertEquals("true", d.statementAnalysis().stateData()
-                            .conditionManagerForNextStatement.get().state().toString());
+                            .getConditionManagerForNextStatement().state().toString());
                     assertTrue(d.statementAnalysis().stateData()
-                            .conditionManagerForNextStatement.get().precondition().isEmpty());
+                            .getConditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().flowData().getTimeAfterSubBlocks());
@@ -106,7 +106,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
             if ("getOrDefaultNull".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    ConditionManager cm = d.statementAnalysis().stateData().conditionManagerForNextStatement.get();
+                    ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
                     String expectCondition = switch (d.iteration()) {
                         case 0 -> "<m:isSet>";
                         case 1 -> "null!=<f:t>";
@@ -122,7 +122,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
             if ("copy".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    ConditionManager cm = d.statementAnalysis().stateData().conditionManagerForNextStatement.get();
+                    ConditionManager cm = d.statementAnalysis().stateData().getConditionManagerForNextStatement();
                     String expectCondition = switch (d.iteration()) {
                         case 0 -> "<m:isSet>";
                         case 1 -> "null!=<f:t>";

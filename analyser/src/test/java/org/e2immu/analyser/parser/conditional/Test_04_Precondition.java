@@ -53,13 +53,13 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("either".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("null==e1&&null==e2",
-                            d.statementAnalysis().stateData().conditionManagerForNextStatement.get().condition().toString());
+                            d.statementAnalysis().stateData().getConditionManagerForNextStatement().condition().toString());
                     assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().stateData().getPrecondition().expression().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true",
-                            d.statementAnalysis().stateData().conditionManagerForNextStatement.get().state().toString());
+                            d.statementAnalysis().stateData().getConditionManagerForNextStatement().state().toString());
                     assertTrue(d.statementAnalysis().stateData().getPrecondition().isEmpty());
                     assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().methodLevelData().combinedPrecondition.get().expression().toString());
@@ -346,7 +346,7 @@ public class Test_04_Precondition extends CommonTestRunner {
             if ("setI".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
                     assertEquals("b&&i<=-1", d.statementAnalysis().stateData()
-                            .conditionManagerForNextStatement.get().absoluteState(d.evaluationContext()).toString());
+                            .getConditionManagerForNextStatement().absoluteState(d.evaluationContext()).toString());
 
                     assertEquals("!b||i>=0", d.statementAnalysis()
                             .stateData().getPrecondition().expression().toString());
@@ -355,7 +355,7 @@ public class Test_04_Precondition extends CommonTestRunner {
                     // has moved to the precondition
 
                     assertTrue(d.statementAnalysis().stateData()
-                            .conditionManagerForNextStatement.get().precondition().isEmpty());
+                            .getConditionManagerForNextStatement().precondition().isEmpty());
                     assertEquals("!b||i>=0", d.statementAnalysis()
                             .methodLevelData().combinedPrecondition.get().expression().toString());
                 }

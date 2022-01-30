@@ -54,11 +54,14 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new PropertyWrapper(expression.translate(translationMap),
-                state == null ? null : state.translate(translationMap),
-                properties,
-                linkedVariables == null ? null : linkedVariables.translate(translationMap),
-                castType == null ? null : translationMap.translateType(castType));
+        Expression transState = state == null ? null : state.translate(translationMap);
+        Expression tex = expression.translate(translationMap);
+        LinkedVariables transLv = linkedVariables == null ? null : linkedVariables.translate(translationMap);
+        ParameterizedType transType = castType == null ? null : translationMap.translateType(castType);
+        if(transState == state && tex == expression && transLv == linkedVariables && transType == castType) {
+            return this;
+        }
+        return new PropertyWrapper(tex, transState, properties, transLv, transType);
     }
 
     @Override

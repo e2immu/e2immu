@@ -427,7 +427,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         if (statementAnalysis.statement() instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
             Expression lastState = list.get(0).startOfBlock.lastStatement()
-                    .getStatementAnalysis().stateData().conditionManagerForNextStatement.get().state();
+                    .getStatementAnalysis().stateData().getConditionManagerForNextStatement().state();
             return evaluationContext.replaceLocalVariables(lastState);
         }
         return TRUE;

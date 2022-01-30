@@ -898,8 +898,9 @@ public class FieldAnalyserImpl extends AbstractAnalyser implements FieldAnalyser
 
                     boolean viIsDelayed;
                     if (vi.getValue() instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
-                            methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.scopeIsThis()) {
-                        // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope
+                            methodInfo.isConstructor && fr.fieldInfo.owner == methodInfo.typeInfo && !fr.isDefaultScope && !fr.isStatic) {
+                        // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
+                        // as well as ExplicitConstructorInvocation_4
                         // captures: this.field = someParameterOfMySelf.field;
                         added = false; // we'll skip this!
                     } else {

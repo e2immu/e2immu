@@ -95,7 +95,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
-        stateData = new StateData(statement instanceof LoopStatement);
+        stateData = new StateData(statement instanceof LoopStatement, primitives);
         location = new LocationImpl(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
         flowData = new FlowData(location);
         rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
@@ -889,7 +889,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Variable renamed = renameVariable(variable);
                 if (renamed != variable) {
                     renames.put(variable, renamed);
-                    translationMap.addVariableExpression(variable, new VariableExpression(renamed));
+                    Expression ve = !(renamed instanceof FieldReference fr) || fr.scope.isDone() ? new VariableExpression(renamed)
+                            : DelayedVariableExpression.forVariable(renamed, fr.scope.causesOfDelay());
+                    translationMap.addVariableExpression(variable, ve);
                     translationMap.put(variable, renamed);
                     Optional<VariableInfoContainer> orig = toMerge.stream()
                             .filter(vic2 -> vic2.current().variable().equals(renamed)).findFirst();

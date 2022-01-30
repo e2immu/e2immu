@@ -24,7 +24,7 @@ public class ExplicitConstructorInvocation_4 {
         this(1);
     }
 
-    public ExplicitConstructorInvocation_4( int max) {
+    public ExplicitConstructorInvocation_4(int max) {
         this.index = generator++;
         this.max = max;
     }

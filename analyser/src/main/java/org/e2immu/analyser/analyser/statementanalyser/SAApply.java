@@ -413,10 +413,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
             String index = vi1.getAssignmentIds().getLatestAssignmentIndex();
             StatementAnalysis sa = methodAnalyser.findStatementAnalyser(index).getStatementAnalysis();
-            if (sa.stateData().conditionManagerForNextStatement.isVariable()) {
+            if (sa.stateData().conditionManagerForNextStatementStatus().isDelayed()) {
                 return false; // we'll be back
             }
-            ConditionManager atAssignment = sa.stateData().conditionManagerForNextStatement.get();
+            ConditionManager atAssignment = sa.stateData().getConditionManagerForNextStatement();
             Expression myAbsoluteState = conditionManager.absoluteState(evaluationContext);
             Expression initialAbsoluteState = atAssignment.absoluteState(evaluationContext);
             if (!initialAbsoluteState.equals(myAbsoluteState)) return false;

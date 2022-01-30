@@ -75,7 +75,7 @@ public class AssignmentIncompatibleWithPrecondition {
                             if (incompatible != null) return DV.fromBoolDv(incompatible);
                         } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
-                            Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get()
+                            Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement()
                                     .individualStateInfo(evaluationContext, ve.variable());
                             if (!state.isBoolValueTrue()) {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
@@ -91,7 +91,7 @@ public class AssignmentIncompatibleWithPrecondition {
                     } else {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                        Expression state = statementAnalysis.stateData().conditionManagerForNextStatement.get().state();
+                        Expression state = statementAnalysis.stateData().getConditionManagerForNextStatement().state();
                         Expression combined = And.and(evaluationContext, state, notNull);
 
                         if (isCompatible(evaluationContext, combined, pcExpression)) {

@@ -175,7 +175,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     }
                     if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 2
-                                ? "<loopIsNotEmptyCondition>&&<v:AV$[i]>==this?<v:i>:<return value>"
+                                ? "<loopIsNotEmptyCondition>&&<v:AV$[i]>==this?<out of scope:i:0>:<return value>"
                                 : "instance type int<=2&&instance type int>=0&&({Enum_1.ONE,Enum_1.TWO,Enum_1.THREE}/*{L AV$[i]:assigned:1}*/)==this?instance type int:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }

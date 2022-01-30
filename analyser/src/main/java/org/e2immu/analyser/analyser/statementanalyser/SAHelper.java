@@ -166,7 +166,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                                     variableInfoContainer)));
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor : debugConfiguration.statementAnalyserVisitors()) {
-            ConditionManager cm = statementAnalysis.stateData().conditionManagerForNextStatement.get();
+            ConditionManager cm = statementAnalysis.stateData().getConditionManagerForNextStatement();
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
                             result,

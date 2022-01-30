@@ -14,34 +14,52 @@
 
 package org.e2immu.analyser.parser.conditional.testexample;
 
+
+import java.util.List;
+
+// quasi identical to _9, but with "private" in front of the typeParameter field. Cause(s/d) a crash.
 public class IfStatement_10 {
 
-    public static boolean method(boolean a, boolean b, boolean c, boolean d) {
-        if (a || b || c || d) {
-            boolean added = false;
-            if (a) {
-                System.out.println("0 is true");
-                added = true;
-            }
-            if (b) {
-                if (added) {
-                    System.out.println("1 is true, 0 was too");
-                }
-                added = true;
-                System.out.println("added");
-            }
-            if (c) {
-                if (added) {
-                    System.out.println("2, 0, 1 is true");
-                }
-                added = true;
-                System.out.println("added");
-            }
-            if (d) {
-                if (added) System.out.println("0 is true");
-            }
-            System.out.println("added");
+    static class ParameterizedType {
+        String typeInfo;
+        private String typeParameter;
+
+        List<ParameterizedType> getTypeBounds() {
+            return List.of();
         }
-        return true;
+
+        int size() {
+            return typeInfo.length();
+        }
+    }
+
+    private int targetIsATypeParameter(ParameterizedType from, ParameterizedType target) {
+        assert target.typeParameter != null;
+
+        List<ParameterizedType> targetTypeBounds = target.getTypeBounds();
+        if (targetTypeBounds.isEmpty()) {
+            return 5;
+        } // ** because we don't know that List.of().isEmpty() is true, the current state is !List.of().isEmpty
+        // other is a type
+        if (from.typeInfo != null) {
+            return 6;
+        }
+        if (from.typeParameter != null) {
+            List<ParameterizedType> fromTypeBounds = from.getTypeBounds();
+            if (fromTypeBounds.isEmpty()) {  // because of **, this can never be true
+                return 7; // unreachable code
+            }
+            // we both have type bounds; we go for the best combination
+            int min = Integer.MAX_VALUE;
+            for (ParameterizedType myBound : targetTypeBounds) {
+                for (ParameterizedType otherBound : fromTypeBounds) {
+                    int value = otherBound.size(); // potential null pointer on typeInfo, method expansion
+                    if (value < min) min = value;
+                }
+            }
+            return min + 8;
+
+        }
+        return 9;
     }
 }

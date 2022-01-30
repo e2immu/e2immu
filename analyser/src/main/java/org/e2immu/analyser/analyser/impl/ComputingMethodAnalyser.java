@@ -372,7 +372,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.getFieldInfo());
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
-                        ConditionManager cm = beforeAssignment.stateData().conditionManagerForNextStatement.get();
+                        ConditionManager cm = beforeAssignment.stateData().getConditionManagerForNextStatement();
                         if (cm.stateIsDelayed().isDelayed()) {
                             LOGGER.debug("Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index(),
                                     methodInfo.fullyQualifiedName);

@@ -177,7 +177,7 @@ public class Test_46_Singleton extends CommonTestRunner {
                             d.statementAnalysis().stateData().getPrecondition().expression().toString());
                     String expected1 = d.iteration() == 0 ? "<f:created>" : "Singleton_7.created";
                     assertEquals(expected1,
-                            d.statementAnalysis().stateData().conditionManagerForNextStatement.get().condition().toString());
+                            d.statementAnalysis().stateData().getConditionManagerForNextStatement().condition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData().combinedPrecondition.isFinal());

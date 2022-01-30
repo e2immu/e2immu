@@ -180,7 +180,12 @@ public class FlowData {
     public void setGuaranteedToBeReachedInCurrentBlock(DV executionInBlock) {
         if (executionInBlock.isDone()) {
             if ((!guaranteedToBeReachedInCurrentBlock.isSet() || !guaranteedToBeReachedInCurrentBlock.get().equals(executionInBlock))) {
-                guaranteedToBeReachedInCurrentBlock.set(executionInBlock);
+                try {
+                    guaranteedToBeReachedInCurrentBlock.set(executionInBlock);
+                } catch (IllegalStateException ise) {
+                    LOGGER.error("Overwriting guaranteedToBeReachedInCurrentBlock: old {}, new {}", guaranteedToBeReachedInCurrentBlock.get(),
+                            executionInBlock);
+                }
             }
         } else {
             guaranteedToBeReachedInCurrentBlock.setFirst(executionInBlock.causesOfDelay());
